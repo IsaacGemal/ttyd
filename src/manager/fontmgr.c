@@ -1,5 +1,6 @@
 #include "manager/fontmgr.h"
 #include "manager/dvdmgr.h"
+#include "driver/camdrv.h"
 #include "memory.h"
 #include "system.h"
 
@@ -13,13 +14,14 @@ GXColor fontColTbl[3] = {
 };
 s32 charspace[2] = {4, 2};
 const char* fontname[2] = {"papermarioset_JPN", "popjoyB22"};
+const Vec vec3_802c48c0 = {1.0f, 1.0f, 1.0f};
 
 typedef struct {
 	f32 x, y, z;
 } F32Vec;
 
 //.sbss
-F32Vec fontScale; //same layout as Vec
+Vec fontScale; //same layout as Vec
 GXColor fontColor;
 u8 fontAlpha;
 BOOL fontEdge;
@@ -31,6 +33,9 @@ BinaryFontHeader* pfh; //pointer to font header
 //local prototypes
 
 void JUTFont_DrawStart(GXColor color);
+void _JUTFont_DrawPos(u16 code, s16 x, s16 y);
+void FontDrawColor(GXColor* color);
+u16 JUTFont_CodeToGlyph(u32 code);
 
 GXColor FontGetDrawColor(void) {
 	return fontColor;
@@ -51,12 +56,7 @@ void FontDrawScale(f32 scale) {
 }
 
 void FontDrawScaleVec(Vec* scale) {
-	u32 x = *(u32*)scale;
-	u32 y = ((u32*)scale)[1];
-	u32 z = ((u32*)scale)[2];
-	*(u32*)&fontScale = x;
-	((u32*)&fontScale)[1] = y;
-	((u32*)&fontScale)[2] = z;
+	fontScale = *scale;
 }
 
 void FontDrawRainbowColorOff(void) {
@@ -68,21 +68,157 @@ void FontDrawNoiseOff(void) {
 	GXSetNumTevStages(1);
 }
 
-void FontDrawColor(GXColor* color) {
-	u8 a = color->a;
-	u32 pre = *(u32*)color;
-	fontColor = *(GXColor*)&pre;
-	color->a = (a * fontAlpha) / 255;
-	{
-		GXColor c2 = *color;
-		GXSetTevColor(GX_TEVREG1, c2);
+void FontDrawRainbowColor(void) {
+	GXSetNumTevStages(2);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+}
+
+extern GXTexObj* wakuTexObj;
+
+void FontDrawNoise(void) {
+	Mtx mtx;
+
+	GXSetNumTexGens(2);
+	GXSetNumTevStages(2);
+	GXSetTevKAlphaSel(GX_TEVSTAGE1, GX_TEV_KASEL_1);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP2, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+	GXLoadTexObj(&wakuTexObj[50], GX_TEXMAP2);
+	PSMTXScale(mtx, 0.015625f, 0.015625f, 1.0f);
+	GXLoadTexMtxImm(mtx, 0x21, GX_MTX2x4);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, 0x21, GX_FALSE, 0x7d);
+}
+
+// NONMATCHING (99.95%): only stack slots for the two inlined GXSetTevColor args are swapped (orig 0xc/0x10, ours 0x10/0xc).
+extern double floor(double x);
+
+// NONMATCHING (99.57%): correct algorithm; only float-register-allocation/constant-label diffs remain.
+u32 HSV2RGB(GXColor* hsv) {
+	f32 h = hsv->r * 360.0f * 0.00390625f;
+	f32 s = hsv->g / 255.0f;
+	f32 v = hsv->b / 255.0f;
+	f32 f = h / 60.0f;
+	s32 i = floor(f);
+	f32 m, n, r, g, b;
+	GXColor out;
+
+	f = f - (f32)i;
+	if (!(i & 1)) {
+		f = 1.0f - f;
 	}
+	m = v * (1.0f - s);
+	n = v * (1.0f - s * f);
+	switch (i) {
+		case 0: r = v; g = n; b = m; break;
+		case 1: r = n; g = v; b = m; break;
+		case 2: r = m; g = v; b = n; break;
+		case 3: r = m; g = n; b = v; break;
+		case 4: r = n; g = m; b = v; break;
+		case 5: r = v; g = m; b = n; break;
+	}
+	out.a = hsv->a;
+	out.r = 255.0f * r;
+	out.g = 255.0f * g;
+	out.b = 255.0f * b;
+	return *(u32*)&out;
+}
+
+void FontDrawCodeMtx(Mtx mtx, u16 code) {
+	CameraEntry* cam;
+
+	cam = camGetCurPtr();
+	PSMTXConcat(cam->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	if (fontEdge) {
+		GXColor c2;
+		GXColor saved = fontColor;
+		GXColor c = fontColTbl[0];
+		FontDrawColor(&c);
+		_JUTFont_DrawPos(code, -2, 0);
+		_JUTFont_DrawPos(code, 2, 0);
+		_JUTFont_DrawPos(code, 0, -2);
+		_JUTFont_DrawPos(code, 0, 2);
+		c2 = saved;
+		FontDrawColor(&c2);
+	}
+	_JUTFont_DrawPos(code, 0, 0);
+}
+
+// NONMATCHING (99.96%): same two swapped GXSetTevColor arg stack slots as FontDrawCodeMtx (plus a local float-pool label).
+void FontDrawCode(u16 code, f32 x, f32 y) {
+	Mtx mtx;
+	CameraEntry* cam;
+
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
+	PSMTXTransApply(mtx, mtx, x, y, 0.0f);
+	cam = camGetCurPtr();
+	PSMTXConcat(cam->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	if (fontEdge) {
+		GXColor c2;
+		GXColor saved = fontColor;
+		GXColor c = fontColTbl[0];
+		FontDrawColor(&c);
+		_JUTFont_DrawPos(code, -2, 0);
+		_JUTFont_DrawPos(code, 2, 0);
+		_JUTFont_DrawPos(code, 0, -2);
+		_JUTFont_DrawPos(code, 0, 2);
+		c2 = saved;
+		FontDrawColor(&c2);
+	}
+	_JUTFont_DrawPos(code, 0, 0);
+}
+
+void FontDrawColor(GXColor* color) {
+	fontColor = *color;
+	color->a = (color->a * fontAlpha) / 255;
+	GXSetTevColor(GX_TEVREG0, *color);
+}
+
+void FontDrawColor_(void) {
+	GXColor color;
+	color = fontColor;
+	FontDrawColor(&color);
+}
+
+void FontDrawColorIDX(u32 idx) {
+	GXColor color;
+	color = fontColTbl[idx];
+	FontDrawColor(&color);
 }
 
 void fontmgrInit(void) {
 	; //stubbed in retail
 }
 
+static BinaryFontWidth* FontGetWidthPtr(u16 code) {
+	BinaryFontWidth* width = (BinaryFontWidth*)(pfh + 1);
+	u32 blockcount = pfh->blockcount;
+	u32 i;
+
+	for (i = 0; i < blockcount; i++) {
+		switch (width->magic) {
+			case 'WID1':
+				if (code >= width->firstcode && code <= width->lastcode) {
+					return (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
+				}
+				break;
+		}
+		width = (BinaryFontWidth*)((u32)width + width->size);
+	}
+	return NULL;
+}
+
+// NONMATCHING (98.42%): head block-scan register swap (pfh in r8/r6, i in r6/r8), OSRoundUp32B scheduling of __memAlloc args, and sdata2/rodata label names.
 void fontmgrTexSetup(void) {
 	DVDEntry* dvd;
 	u32 size;
@@ -133,39 +269,189 @@ void fontmgrTexSetup(void) {
 			GX_FALSE,
 			GX_ANISO_1);
 
-		//TODO: finish after JUTFont done
+		*(u8*)((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)) + 1) = 7;
+		*(u8*)((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)) + 1) = 9;
 	}
 }
 
-//does some fucky stuff on the alpha channel that doesn't change anything
-void FontDrawStart(void) {
-	fontScale = (F32Vec){1.0f, 1.0f, 1.0f};
-	fontEdge = FALSE;
-	fontColor = fontColTbl[0];
-	fontAlpha = 0xFF;
-	JUTFont_DrawStart(fontColTbl[0]);
+// NONMATCHING (97.99%): width-lookup pointer held in r6 instead of retail r5; sdata2/rodata label names.
+void JUTFontSetup(u16 idx) {
+	u32 size;
+	DVDEntry* dvd;
+	BinaryFontBlock* ptr;
+	char path[128];
+	int i;
+
+	if (!pfh) {
+		sprintf(path, "%s/f/%s.bfn", getMarioStDvdRoot(), fontname[idx]);
+		dvd = DVDMgrOpen(path, 2, 0);
+		size = OSRoundUp32B(DVDMgrGetLength(dvd));
+		pfh = __memAlloc(HEAP_DEFAULT, size);
+		DVDMgrRead(dvd, pfh, size, 0);
+		DVDMgrClose(dvd);
+		ptr = (BinaryFontBlock*)(pfh + 1);
+		for (i = 0; i < pfh->blockcount; i++) {
+			switch (ptr->magic) {
+				case 'INF1':
+					pfi = (BinaryFontInfo*)ptr;
+					break;
+				case 'GLY1':
+					blockGlyph = (BinaryFontGlyph*)ptr;
+					break;
+				case 'MAP1':
+				case 'WID1':
+				default:
+					break;
+			}
+			ptr = (BinaryFontBlock*)((u32)ptr + ptr->size);
+		}
+		GXInitTexObj(
+			&fgTexObj,
+			&blockGlyph[1],
+			blockGlyph->sheetwidth,
+			blockGlyph->sheetheight,
+			GX_TF_I4,
+			GX_CLAMP,
+			GX_CLAMP,
+			GX_FALSE);
+		GXInitTexObjLOD(
+			&fgTexObj,
+			GX_LINEAR,
+			GX_LINEAR,
+			0.0f,
+			0.0f,
+			0.0f,
+			GX_FALSE,
+			GX_FALSE,
+			GX_ANISO_1);
+		{
+			BinaryFontWidth* width;
+			u16 code;
+			u32 blockcount;
+
+			code = JUTFont_CodeToGlyph(0x20);
+			width = (BinaryFontWidth*)(pfh + 1);
+			blockcount = pfh->blockcount;
+			for (i = 0; i < blockcount; i++) {
+				switch (width->magic) {
+					case 'WID1':
+						if (code >= width->firstcode && code <= width->lastcode) {
+							width = (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
+							goto done1;
+						}
+						break;
+				}
+				width = (BinaryFontWidth*)((u32)width + width->size);
+			}
+			width = NULL;
+		done1:
+			*(u8*)((u8*)width + 1) = 7;
+		}
+		{
+			BinaryFontWidth* width;
+			u16 code;
+			u32 blockcount;
+
+			code = JUTFont_CodeToGlyph(0x8140);
+			width = (BinaryFontWidth*)(pfh + 1);
+			blockcount = pfh->blockcount;
+			for (i = 0; i < blockcount; i++) {
+				switch (width->magic) {
+					case 'WID1':
+						if (code >= width->firstcode && code <= width->lastcode) {
+							width = (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
+							goto done2;
+						}
+						break;
+				}
+				width = (BinaryFontWidth*)((u32)width + width->size);
+			}
+			width = NULL;
+		done2:
+			*(u8*)((u8*)width + 1) = 9;
+		}
+	}
 }
 
+// NONMATCHING (52.34%): by-value `JUTFont_DrawStart(GXColor)` call is correct, but CW reserves a 0x20 frame (start at 0x10) vs retail's 0x10 frame (start at 0xc) and schedules the fontColTbl/vec3 loads differently.
 void FontDrawStart_alpha(u8 alpha) {
 	GXColor start;
 
 	start = fontColTbl[0];
 	fontAlpha = alpha;
-	fontScale = (F32Vec){1.0f, 1.0f, 1.0f};
+	fontScale = vec3_802c48c0;
 	fontEdge = FALSE;
 	fontColor = fontColTbl[0];
 	start.a = (start.a * alpha) / 255;
 	JUTFont_DrawStart(start);
 }
 
-void JUTFont_DrawStart(GXColor color) {
+// NONMATCHING (64.58%): `FontDrawStart_alpha(0xFF);` inlined; same frame/scheduling diffs as FontDrawStart_alpha.
+//does some fucky stuff on the alpha channel that doesn't change anything
+void FontDrawStart(void) {
+	FontDrawStart_alpha(0xFF);
+}
 
+extern GXColor unk_80422fd8;
+
+void JUTFont_DrawStart(GXColor color) {
+	CameraEntry* camera;
+	Mtx mtx;
+
+	camera = camGetCurPtr();
+	__GXSetIndirectMask(0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX1, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_U8, 0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_VTX, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumChans(1);
+	GXSetNumTexGens(1);
+	GXSetTevColor(GX_TEVREG0, color);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXLoadTexObj(&fgTexObj, GX_TEXMAP0);
+	PSMTXScale(mtx, 0.0019531f, 0.00097656f, 1.0f);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fd8);
+}
+
+void JUTFont_Free(void) {
+	if (pfh) {
+		__memFree(HEAP_DEFAULT, pfh);
+		pfh = NULL;
+	}
+}
+
+s32 FontGetMessageWidthLine(char* message, u32 line);
+
+s32 FontGetMessageWidth(char* message) {
+	return FontGetMessageWidthLine(message, 0);
 }
 
 
-
-
 u16 JUTFont_CodeToGlyph(u32 code);
+
+u16 hankakuSearch(s8 code) {
+	return JUTFont_CodeToGlyph(code);
+}
 
 u16 kanjiSearch(u16 code) {
 	return JUTFont_CodeToGlyph(code);
@@ -243,5 +529,6 @@ u16 JUTFont_CodeToGlyph(u32 code) {
 }
 
 u16 kanjiGetWidth(u16 code) {
-	return 0;
+	BinaryFontWidth* width = FontGetWidthPtr(code);
+	return *(u8*)((u8*)width + 1);
 }
