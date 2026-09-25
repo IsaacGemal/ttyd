@@ -17,10 +17,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 25 after wave 2, PR #1): 13.92% of code matched,
-  2,722 of 9,770 functions; game code 1,599 of 5,687. Before the fork's first wave: 12.16%, 2,065
-  (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is linked yet: `event` and `battle`
-  are at 100% code, the next step for them.
+- Progress (local build, Sep 25 after wave 3, PR #2): 3,114 of 9,770 functions matched. Before the fork's
+  first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is
+  linked yet: `event` and `battle` are at 100% code, the next step for them.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -402,3 +401,40 @@ Example entry:
     - BattleStatusEffectMain: 5.26% -> 100%
       change: BSE_* helper definitions wrapped in #pragma dont_inline on/reset
       observed: without it, BSE_SleepDelete was inlined into Main (original has a bl)
+
+## Wave 3: 24 agents, a lint step, and a second reviewed PR (2026-09-25, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol)
+
+24 Pi agents (DeepSeek V4.1 Flash), one existing source file each (the 24 with the most unmatched small functions),
+30-minute cap. The prompt added two rules: the partial-function rule, and "when you've been through the list once,
+go back to the near-misses and keep working until stopped". 23 of 24 files passed CI and landed as their own
+commits on `wave3` (PR #2): **2,722 -> 3,113 functions (+391)**, then +1 from a review fix. Rejected:
+`sac_bakugame`, whose agent was stopped mid-edit and left the file not compiling.
+
+**New merge step: `lint_patch.py`** (in the orchestrator's scratch for now). After CI passes it rejects a newly
+introduced empty stub below 100%, and flags without rejecting: partial functions missing a `// NONMATCHING` label,
+raw offset casts, structs and externs declared in a `.c` file, and pragmas with no reason. On wave 3 it flagged
+56 unlabelled partials, 272 raw-offset lines, 25 local structs and 126 local externs. Its first version wrongly
+rejected six good files (a comment-stripping bug, and it didn't exempt stubs already on `main` or functions that
+really are empty in the original); fixed and re-tested by blanking a real function.
+
+**Codex review, round 1** was given the lint output and told not to repeat it. It found five things lint can't:
+
+| Finding | Resolution |
+|---|---|
+| 193 added `#pragma`s forcing matches | Most were `optimize_for_size` toggled around functions. Compiling 8 battle files at `-O4,s` in `configure.py` (like `battle_camera`) keeps every match, so they're gone. The `dont_inline` / `opt_propagation` ones are needed (removing them loses matches); each now has a reason checked against the original asm or by removal. 5 unused pairs removed. |
+| Local externs contradicting headers | `psndSFXOn_3D` returns a value in the original: the header was wrong, now `s32`. Two others fixed. Two kept (the matches depend on them), each commented. |
+| `ExtWorkFull` duplicating `ExtWork` | Full layout moved into `extdrv.h`, casts dropped; one more function matched. |
+| Raw offsets for named fields | `protectId`, `poseTable` |
+| `evt_bero` offsets, wrong header comment | Field names; `animeArg1/2` are `u16` (the original loads them with `lhz`); `animeArg4` is at 0x38 |
+
+Lessons:
+- **Codex's advice isn't always the fix; its findings usually point at one.** "Remove the pragmas" would have lost
+  matches; the real fix was a per-file flag. CI caught each fix that quietly broke a match (three times).
+- **Many battle files were compiled at `-O4,s`.** Agents rediscover this function by function with pragmas; the
+  next wave's prompt or idioms file should say to check the file's flags first.
+- **A timed-out agent can leave its file broken mid-edit.** The launcher should keep the agent's last version
+  that built.
+- **About a third of the agents still finished early** despite the keep-going line.
+- Still open: the 56 unlabelled partial functions (the percentage is mechanical, "what still differs" needs a
+  look).
+
