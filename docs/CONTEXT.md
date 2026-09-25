@@ -18,7 +18,7 @@ anything worth keeping into a chapter here.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
 - Progress (local build, Sep 25 after wave 1): 13.09% of code matched, 2,407 of 9,770 functions; game code
-  1,247 of 5,687. Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the
+  1,284 of 5,687. Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the
   filename-case bug below). Nothing new is linked yet: `event` and `battle` are at 100% code, the next step for them.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
@@ -289,7 +289,7 @@ function. Files: battle_event_cmd, battle_audience, event, evt_npc, mapdrv, batt
 animdrv, battle, npcdrv, mario. A helper showed each agent its file's match % per function and an
 original-vs-yours instruction diff (objdiff one-shot mode).
 
-Result: **2,065 -> 2,407 functions (+342)**, game code 942 -> 1,247; code matched 12.16% -> 13.09%; data matched
+Result: **2,065 -> 2,407 functions (+342)**, game code 942 -> 1,284; code matched 12.16% -> 13.09%; data matched
 4.62% -> 5.14%. 10 files merged after `tools/ci.py` passed; 2 rejected by the ratchet:
 - `pmario_sound`: deleted 4 human stub functions (small fuzzy scores to 0) and used raw offsets.
 - `battle_audience`: ~50 new matches, but 7 existing functions collapsed (`BattleAudience_Init` 52% -> 0%).
