@@ -17,10 +17,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Baseline from decomp.dev (Sep 24): 12.1% of code matched, 2,027 of 9,770 functions, 100 of 1,239 units
-  complete. SDK 100%, MusyX 74%, game code (DOL) 942 of 5,687 functions, RELs 16 of 2,780.
-- Nothing has run yet at scale. Next step: get the build and objdiff running on the tower (`pop-os`), then
-  break down the unmatched functions by unit, size and kind before designing the queue.
+- Baseline (local build, Mac and Linux agree, Sep 24): 12.16% of code matched, 2,065 of 9,770 functions, 100
+  of 1,239 units complete. decomp.dev shows 2,027 because of the filename-case bug below. SDK 100%, MusyX 286/333 functions, game code (DOL) 942 of 5,687 functions, RELs 16 of 2,780.
+- The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 
@@ -81,3 +80,12 @@ Target is ~100 concurrent agents. Pieces:
   swapped mid-run as a better one arrived.
 - Common pattern: a large, loosely coordinated search plus a checker that can't be fooled. Our checker (byte
   match) is stricter than either of theirs, so most of our work is the system around it.
+
+## Build parity: `hardware.c` renamed to `HARDWARE.C` (2026-09-24, Claude Opus 5.5)
+
+The configure step lists `musyx/runtime/HARDWARE.C`, and the unit name must match `config/G8MJ01/splits.txt`,
+but the file on disk was `hardware.c`. macOS's case-insensitive filesystem found it anyway; Linux (the swarm
+machine, and decomp.dev's CI) did not, so that unit's 38 matched functions counted as unmatched there. That was
+the whole gap between a Mac build (2,065 functions) and decomp.dev (2,027). Renaming the file (not the configure
+entry, which un-maps the unit) makes Mac and Linux agree: 2,065 / 9,770, MusyX 286 / 333. A local build is the
+source of truth; decomp.dev lags it by this fix until upstream picks it up.
