@@ -10,6 +10,41 @@
 //local prototypes
 void BattleDrawEnemyHP(CameraId camId, void* param);
 
+void BattleMenuDisp_ActSelect_Disp(BattleWork* wp);
+void BattleMenuDisp_WeaponSelect_Disp(BattleWork* wp);
+void BattleMenuDisp_Operation_Disp(BattleWork* wp);
+void BattleMenuDisp_MultiItem_Disp(BattleWork* wp);
+void BattleMenuDisp_ChangePartySelect_Disp(BattleWork* wp);
+void BattleMenuDisp_ActSelect_End(BattleWork* wp);
+void BattleMenuDisp_WeaponSelect_End(BattleWork* wp);
+void BattleMenuDisp_Operation_End(BattleWork* wp);
+void BattleMenuDisp_MultiItem_End(BattleWork* wp);
+void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp);
+void BattleMenuDisp_ActSelect_Init(BattleWork* wp, s32 cursor, void* table, void* arg);
+void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, s32 cursor, void* table, void* arg);
+void BattleMenuDisp_Operation_Init(BattleWork* wp, void* arg);
+void BattleMenuDisp_MultiItem_Init(BattleWork* wp, void* arg);
+void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, void* arg);
+BattleUnit* BattleGetUnitPtr(BattleWork* wp, s32 index);
+void _btlcmd_MakeActClassTable(BattleWork* wp);
+void _btlcmd_MakeMultiItemTable(BattleWork* wp);
+void _btlcmd_MakeOperationTable(BattleWork* wp);
+void _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg);
+void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out);
+s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon);
+void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
+void btl_camera_set_mode(s32 mode, s32 param);
+void _cursor_init(BattleCursor* cursor);
+void SelectedItemCoordinateColorUpDate(void);
+void BattleStageOffLightInCommand(s32 a, s32 b);
+s32 BattleAudience_GetPresentItemNo(void);
+s32 BattleAudience_GetPresentTargetUnitId(void);
+void BattleAudience_SetPresentItemNo(s32 itemNo);
+void effRecoveryEntry(s32 type, s32 arg, f32 x, f32 y, f32 z);
+void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
+void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
+
 void BattleDrawEnemyHP(CameraId camId, void* param) {
 	BattleWork* wp = param;
 	BattleUnit* unit;
@@ -43,4 +78,456 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 			}
 		}
 	}
+}
+
+void BattleCommandInit(BattleWork* wp) {
+	wp->commandMenu.unk0 = 0;
+	wp->flags |= 0x80;
+}
+
+#pragma dont_inline on
+void BattleCommandDisplay_AllEnd(BattleWork* wp) {
+	wp->commandMenu.field_4 &= ~0x111111;
+}
+#pragma dont_inline reset
+
+void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp) {
+	wp->commandMenu.field_4 &= ~0x100000;
+}
+
+void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp) {
+	wp->commandMenu.cursor[13].field_0 = 0;
+	wp->commandMenu.cursor[13].field_4 = 0;
+	wp->commandMenu.cursor[13].unk8 = 2;
+}
+
+#pragma dont_inline on
+void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
+	BattleMenuDisp_ActSelect_End(wp);
+	wp->commandMenu.field_4 &= ~0x1;
+}
+#pragma dont_inline reset
+
+void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
+	BattleMenuDisp_WeaponSelect_End(wp);
+	wp->commandMenu.field_4 &= ~0x10;
+}
+
+void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
+	BattleMenuDisp_Operation_End(wp);
+	wp->commandMenu.field_4 &= ~0x100;
+}
+
+void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
+	BattleMenuDisp_MultiItem_End(wp);
+	wp->commandMenu.field_4 &= ~0x20;
+}
+
+void BattleCommandDisplay_ChangePartySelectMenuEnd(BattleWork* wp) {
+	BattleMenuDisp_ChangePartySelect_End(wp);
+	wp->commandMenu.field_4 &= ~0x1000;
+}
+
+void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) {
+	BattleMenuDisp_ChangePartySelect_Init(wp, arg);
+	wp->commandMenu.field_4 |= 0x01001000;
+}
+
+void BattleCommandDisplay_WeaponSelectMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleMenuDisp_WeaponSelect_Disp(wp);
+}
+
+void BattleCommandDisplay_OperationMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleMenuDisp_Operation_Disp(wp);
+}
+
+void BattleCommandDisplay_MultiItemMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleMenuDisp_MultiItem_Disp(wp);
+}
+
+void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleMenuDisp_ChangePartySelect_Disp(wp);
+}
+
+s32 _getHammerIconId(void) {
+	switch (pouchGetPtr()->hammerLevel) {
+	case 3:
+		return 0x9E;
+	case 2:
+		return 0x9D;
+	default:
+		return 0x9C;
+	}
+}
+
+s32 _getJumpIconId(void) {
+	switch (pouchGetPtr()->jumpLevel) {
+	case 3:
+		return 0xA1;
+	case 2:
+		return 0xA0;
+	default:
+		return 0x9F;
+	}
+}
+
+void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, void* arg) {
+	_btlcmd_MakeMultiItemTable(wp);
+	BattleMenuDisp_MultiItem_Init(wp, arg);
+	wp->commandMenu.field_4 |= 0x20;
+}
+
+void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
+	_btlcmd_MakeOperationTable(wp);
+	BattleMenuDisp_Operation_Init(wp, arg);
+	wp->commandMenu.field_4 |= 0x01000100;
+}
+
+void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, void* arg, void* arg2) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleCursor* cursor;
+
+	_btlcmd_MakeSelectWeaponTable(wp, arg);
+	_btlcmd_GetCursorPtr(cmd, (s32)arg, &cursor);
+	BattleMenuDisp_WeaponSelect_Init(wp, (s32)cursor, &cmd->unk8[0x80 - 0x8], arg2);
+	cmd->field_4 |= 0x01000010;
+}
+
+void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
+	BattleWork* work = wp;
+	void* a = arg;
+	BattleCursor* cursor;
+	BattleCommand* cmd = &work->commandMenu;
+
+	_btlcmd_MakeActClassTable(work);
+	_btlcmd_GetCursorPtr(cmd, 14, &cursor);
+	BattleMenuDisp_ActSelect_Init(work, (s32)cursor, &cmd->unk8[0], a);
+	*(s32*)&cmd->unk560[0] = 0;
+	cmd->field_4 |= 0x01000001;
+	if (a == NULL && cmd->unk540[0x18] == 0) {
+		_cursor_init(&cmd->cursor[2]);
+		_cursor_init(&cmd->cursor[3]);
+		_cursor_init(&cmd->cursor[4]);
+		_cursor_init(&cmd->cursor[5]);
+		_cursor_init(&cmd->cursor[6]);
+		_cursor_init(&cmd->cursor[7]);
+		_cursor_init(&cmd->cursor[8]);
+		_cursor_init(&cmd->cursor[9]);
+		_cursor_init(&cmd->cursor[11]);
+	}
+}
+
+void BattleCommandDisplay_ActMenuDisp(CameraId camId, BattleWork* wp) {
+	BattleCursor* cursor;
+	s32 idx = 0xE;
+
+	_btlcmd_GetCursorPtr(&wp->commandMenu, idx, &cursor);
+	BattleMenuDisp_ActSelect_Disp(wp);
+}
+
+void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp) {
+	BattleUnit* unit;
+	s32 id = wp->activeUnitId;
+
+	unit = BattleGetUnitPtr(wp, id);
+	wp->commandMenu.field_4 |= 0x00010000;
+	BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), 0x28);
+}
+
+void BattleCommandDisplay_ProtectPartnerSelectMenuSetup(BattleWork* wp) {
+	BattleUnit* unit;
+
+	unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleGetPartnerPtr(wp, unit);
+	wp->commandMenu.field_4 |= 0x00100000;
+	wp->commandMenu.field_4 &= ~0x01000000;
+}
+
+void BattleCommandDisplay_TargetSelectMenuEnd(BattleWork* wp) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleCursor* cursor;
+
+	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+	btl_camera_set_mode(0, 0);
+	cmd->field_4 &= ~0x10000;
+	cmd->field_4 &= ~0x01000000;
+}
+
+#pragma dont_inline on
+void _cursor_init(BattleCursor* cursor) {
+	cursor->field_0 = 0;
+	cursor->field_4 = 0;
+}
+#pragma dont_inline reset
+
+void _commandRestoreRec(void) {
+	BattleWork* wp = _battleWorkPointer;
+
+	if (wp->commandMenu.unk540[0x18] == 0) {
+		*(s32*)&wp->commandMenu.unk540[0x14] = wp->commandMenu.unk0;
+	} else if (*(s32*)&wp->commandMenu.unk540[0x14] == wp->commandMenu.unk0) {
+		*(s32*)&wp->commandMenu.unk540[0x14] = 0;
+		wp->commandMenu.unk540[0x18] = 0;
+	}
+}
+
+BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleCursor* cursor;
+	BattleWorkCommandWeapon* entry;
+
+	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+	entry = (BattleWorkCommandWeapon*)((u8*)cmd + cursor->field_0 * 0x1C);
+	return *(BattleWeapon**)((u8*)entry + 0x80);
+}
+
+BOOL BattleCommandAttackAudienceCheck(void) {
+	BattleWork* wp = _battleWorkPointer;
+	s32 pad = BattlePadCheckTrigger(0x400);
+
+	if (pad) {
+		if (!(wp->flags & 0x40000000)) {
+			BattleUnit* mario = BattleGetMarioPtr(wp);
+
+			if (mario->mAttributeFlags & kVeiled) {
+				return FALSE;
+			}
+			{
+				s32 item;
+
+				BattleAudience_GetItemOn(&item, NULL, NULL, NULL, NULL);
+				if (item != -1) {
+					BattleAudience_SetTarget(item);
+					BattleCommandDisplay_ActMenuEnd(wp);
+					*(s32*)&wp->commandMenu.unk540[4] = *(s32*)&wp->commandMenu.unk540[0];
+					*(s32*)&wp->commandMenu.unk540[0] = 0xB;
+					wp->commandMenu.unk0 = 0x1D;
+					BattleStageOffLightInCommand(0, 1);
+					wp->flags |= 0x4;
+					return TRUE;
+				}
+			}
+		}
+	}
+	return FALSE;
+}
+
+void BattleCommandDisplay(BattleWork* wp) {
+	BattleCommand* cmd = &wp->commandMenu;
+
+	if (cmd) {
+		SelectedItemCoordinateColorUpDate();
+		dispEntry(CAMERA_2D, 902.0f, 0, BattleDrawEnemyHP, wp);
+		if (cmd->field_4 & 0x1) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_ActMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x10) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_WeaponSelectMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x100) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_OperationMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x1000) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_ChangePartySelectMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x20) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_MultiItemMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x10000) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_TargetSelectMenuDisp, wp);
+		}
+		if (cmd->field_4 & 0x100000) {
+			dispEntry(CAMERA_2D, 500.0f, 0, (DispCallback)BattleCommandDisplay_ProtectPartnerSelectMenuDisp, wp);
+		}
+	}
+}
+
+void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+
+	switch (index) {
+	case 14:
+		if (unit->currentKind == 0xDE) {
+			*out = &cmd->cursor[0];
+		} else {
+			*out = &cmd->cursor[1];
+		}
+		break;
+	case 0:
+		*out = &cmd->cursor[2];
+		break;
+	case 1:
+		*out = &cmd->cursor[3];
+		break;
+	case 2:
+		*out = &cmd->cursor[11];
+		break;
+	case 3:
+		*out = &cmd->cursor[12];
+		break;
+	case 4:
+		*out = &cmd->cursor[7];
+		break;
+	case 5:
+		if (unit->currentKind == 0xDE) {
+			*out = &cmd->cursor[8];
+		} else {
+			*out = &cmd->cursor[9];
+		}
+		break;
+	case 6:
+		*out = &cmd->cursor[4];
+		break;
+	case 7:
+		*out = &cmd->cursor[5];
+		break;
+	case 8:
+		*out = &cmd->cursor[6];
+		break;
+	case 10:
+		*out = &cmd->cursor[10];
+		break;
+	}
+}
+
+void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
+	BattleWorkCommandWeapon* weapon;
+	BattleCursor* cursor;
+	s32 i;
+
+	_btlcmd_GetCursorPtr(&wp->commandMenu, arg, &cursor);
+	weapon = wcmd->mWeaponTable;
+	for (i = 0; i < cursor->unk8; i++, weapon++) {
+		s32 check;
+
+		weapon->field_0x4 = 0;
+		if (weapon->mWeaponParams == NULL) {
+			continue;
+		}
+		check = _btlcmd_CheckWeaponTargetNum(wp, unit, weapon->mWeaponParams);
+		if (check > 0) {
+			weapon->field_0x4 = 1;
+			weapon->field_0x18 = 0;
+		} else if (check != 0) {
+			weapon->field_0x18 = (arg == 4) ? 2 : 1;
+		} else {
+			switch (arg) {
+			case 0:
+				weapon->field_0x18 = 4;
+				break;
+			case 1:
+				weapon->field_0x18 = 5;
+				break;
+			default:
+				weapon->field_0x18 = 3;
+				break;
+			}
+		}
+	}
+}
+
+s32 _check_weapon_type_attack(BattleWeapon* weapon) {
+	s8* p = (s8*)weapon;
+
+	if (weapon == NULL) {
+		return 0;
+	}
+	if (weapon->hpDamageFn != NULL) {
+		return 1;
+	}
+	if (p[0x80] > 0 && p[0x81] > 0) {
+		return 1;
+	}
+	if (p[0x82] > 0 && p[0x83] > 0) {
+		return 1;
+	}
+	if (p[0x84] > 0 && p[0x85] > 0) {
+		return 1;
+	}
+	if (p[0x86] > 0 && p[0x87] > 0) {
+		return 1;
+	}
+	if (p[0x89] > 0 && p[0x8A] > 0) {
+		return 1;
+	}
+	if (p[0x8F] > 0 && p[0x90] > 0) {
+		return 1;
+	}
+	if (p[0x91] > 0 && p[0x92] > 0) {
+		return 1;
+	}
+	if (p[0x93] > 0 && p[0x94] > 0 && p[0x95] < 0) {
+		return 1;
+	}
+	if (p[0x96] > 0 && p[0x97] > 0 && p[0x98] < 0) {
+		return 1;
+	}
+	if (p[0x99] > 0 && p[0x9A] > 0 && p[0x9B] < 0) {
+		return 1;
+	}
+	if (p[0x9E] > 0) {
+		return 1;
+	}
+	if (p[0xA4] > 0) {
+		return 1;
+	}
+	if (p[0xA5] > 0) {
+		return 1;
+	}
+	if (p[0xA2] > 0 && p[0xA3] > 0) {
+		return 1;
+	}
+	return 0;
+}
+
+s32 _check_present_item(void) {
+	BattleWork* wp = _battleWorkPointer;
+	s32 item = BattleAudience_GetPresentItemNo();
+	s32 unitId;
+	BattleUnit* unit;
+	f32 z, y, x;
+
+	if (item >= 0x153) {
+		return 0;
+	}
+	unitId = BattleAudience_GetPresentTargetUnitId();
+	if (unitId < -1 || unitId >= 0x40) {
+		return 0;
+	}
+	unit = BattleGetUnitPtr(wp, unitId);
+	switch (item) {
+	case 0x7B:
+		BtlUnit_RecoverHp(unit, 1);
+		BtlUnit_GetPos(unit, &x, &y, &z);
+		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + 5.0f + y;
+		effRecoveryEntry(0, 1, x, y, z);
+		BattleAudience_SetPresentItemNo(0);
+		return 0;
+	case 0x7C:
+		BtlUnit_RecoverFp(unit, 1);
+		BtlUnit_GetPos(unit, &x, &y, &z);
+		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + 5.0f + y;
+		effRecoveryEntry(1, 1, x, y, z);
+		BattleAudience_SetPresentItemNo(0);
+		return 0;
+	case 0:
+		return 0;
+	default:
+		break;
+	}
+	if (item < 0 || item >= 0x153) {
+		return 0;
+	}
+	wp->commandMenu.unk540[0x18] = 1;
+	if (wp->commandMenu.unk0 == 0xC || wp->commandMenu.unk0 == 0xD) {
+		wp->commandMenu.unk540[0x18] = 2;
+	}
+	BattleCommandDisplay_AllEnd(wp);
+	*(s32*)&wp->commandMenu.unk540[4] = *(s32*)&wp->commandMenu.unk540[0];
+	*(s32*)&wp->commandMenu.unk540[0] = 0xC;
+	wp->commandMenu.unk0 = 0x1D;
+	return 1;
 }
