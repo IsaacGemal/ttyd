@@ -22,10 +22,10 @@ typedef struct BeroEntry {
 	s32* exitEvent; //0x24
 	s32 nextareaArg1; //0x28
 	const char* nextareaArg2; //0x2C
-	s16 animeArg1; //0x30
-	s16 animeArg2; //0x32
+	u16 animeArg1; //0x30
+	u16 animeArg2; //0x32
 	s32 animeArg3; //0x34
-	s32 animeArg4; //0x28
+	s32 animeArg4; //0x38
 } BeroEntry;
 
 EVT_DEF(evt_bero_info_run);

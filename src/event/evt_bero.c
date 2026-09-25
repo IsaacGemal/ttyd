@@ -217,10 +217,10 @@ USER_FUNC(evt_bero_get_info_anime) {
 	s32* args = event->args;
 
 	bero = BeroINFOARR[evtGetValue(event, args[0])];
-	evtSetValue(event, args[1], *(u16*)((u8*)bero + 0x30));
-	evtSetValue(event, args[2], *(u16*)((u8*)bero + 0x32));
+	evtSetValue(event, args[1], bero->animeArg1);
+	evtSetValue(event, args[2], bero->animeArg2);
 	evtSetValue(event, args[3], bero->animeArg3);
-	evtSetValue(event, args[4], *(s32*)((u8*)bero + 0x38)); // animeArg4 is at 0x38, header says 0x28
+	evtSetValue(event, args[4], bero->animeArg4);
 	return EVT_RETURN_DONE;
 }
 

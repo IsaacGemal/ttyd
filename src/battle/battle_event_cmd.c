@@ -3759,7 +3759,7 @@ USER_FUNC(btlevtcmd_SetGuard) {
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
     s32 value = BattleTransID(event, evtGetValue(event, args[1]));
 
-    *(s32*)((u8*)unit + 0x13C) = value;
+    unit->protectId = value;
     return EVT_RETURN_DONE;
 }
 
@@ -3904,7 +3904,7 @@ USER_FUNC(btlevtcmd_AnimeSetPoseTable) {
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
-    *(s32*)((u8*)part + 0x1BC) = args[2];
+    part->poseTable = (void*)args[2];
     return EVT_RETURN_DONE;
 }
 
