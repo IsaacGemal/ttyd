@@ -14,8 +14,12 @@ GXColor fontColTbl[3] = {
 s32 charspace[2] = {4, 2};
 const char* fontname[2] = {"papermarioset_JPN", "popjoyB22"};
 
+typedef struct {
+	f32 x, y, z;
+} F32Vec;
+
 //.sbss
-Vec fontScale;
+F32Vec fontScale; //same layout as Vec
 GXColor fontColor;
 u8 fontAlpha;
 BOOL fontEdge;
@@ -27,6 +31,53 @@ BinaryFontHeader* pfh; //pointer to font header
 //local prototypes
 
 void JUTFont_DrawStart(GXColor color);
+
+GXColor FontGetDrawColor(void) {
+	return fontColor;
+}
+
+void FontDrawEdge(void) {
+	fontEdge = TRUE;
+}
+
+void FontDrawEdgeOff(void) {
+	fontEdge = FALSE;
+}
+
+void FontDrawScale(f32 scale) {
+	fontScale.x = scale;
+	fontScale.y = scale;
+	fontScale.z = scale;
+}
+
+void FontDrawScaleVec(Vec* scale) {
+	u32 x = *(u32*)scale;
+	u32 y = ((u32*)scale)[1];
+	u32 z = ((u32*)scale)[2];
+	*(u32*)&fontScale = x;
+	((u32*)&fontScale)[1] = y;
+	((u32*)&fontScale)[2] = z;
+}
+
+void FontDrawRainbowColorOff(void) {
+	GXSetNumTevStages(1);
+}
+
+void FontDrawNoiseOff(void) {
+	GXSetNumTexGens(1);
+	GXSetNumTevStages(1);
+}
+
+void FontDrawColor(GXColor* color) {
+	u8 a = color->a;
+	u32 pre = *(u32*)color;
+	fontColor = *(GXColor*)&pre;
+	color->a = (a * fontAlpha) / 255;
+	{
+		GXColor c2 = *color;
+		GXSetTevColor(GX_TEVREG1, c2);
+	}
+}
 
 void fontmgrInit(void) {
 	; //stubbed in retail
@@ -88,7 +139,7 @@ void fontmgrTexSetup(void) {
 
 //does some fucky stuff on the alpha channel that doesn't change anything
 void FontDrawStart(void) {
-	fontScale = (Vec){1.0f, 1.0f, 1.0f};
+	fontScale = (F32Vec){1.0f, 1.0f, 1.0f};
 	fontEdge = FALSE;
 	fontColor = fontColTbl[0];
 	fontAlpha = 0xFF;
@@ -100,7 +151,7 @@ void FontDrawStart_alpha(u8 alpha) {
 
 	start = fontColTbl[0];
 	fontAlpha = alpha;
-	fontScale = (Vec){1.0f, 1.0f, 1.0f};
+	fontScale = (F32Vec){1.0f, 1.0f, 1.0f};
 	fontEdge = FALSE;
 	fontColor = fontColTbl[0];
 	start.a = (start.a * alpha) / 255;
