@@ -132,7 +132,6 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
-#pragma opt_propagation off
 void BattleStageInit(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -182,12 +181,10 @@ void BattleStageInit(void) {
 	BattleStageObjectInit();
 	batSpotInit();
 }
-#pragma opt_propagation on
 
 void BattleStageMain(void) {
 }
 
-#pragma opt_propagation off
 void BattleStageEnd(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -204,7 +201,6 @@ void BattleStageEnd(void) {
 		}
 	}
 }
-#pragma opt_propagation on
 
 BattleSpotWork* BatSpotGetPtr(void) {
     return wp;
@@ -506,6 +502,7 @@ void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease)
 }
 #pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetTarget stops matching.
 #pragma opt_propagation off
 #pragma dont_inline on
 void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
@@ -532,6 +529,7 @@ void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease
 }
 #pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetPosition stops matching.
 #pragma opt_propagation off
 void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -556,6 +554,7 @@ void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ea
 }
 #pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetWidth stops matching.
 #pragma opt_propagation off
 void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -572,6 +571,7 @@ void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 }
 #pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetLightColor stops matching.
 #pragma opt_propagation off
 void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -588,6 +588,7 @@ void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 eas
 }
 #pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightRelease stops matching.
 #pragma opt_propagation off
 void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -608,7 +609,6 @@ void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 }
 #pragma opt_propagation on
 
-#pragma opt_propagation off
 void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
 	BattleUnit* unit;
 	f32 ux, uy, uz;
@@ -620,10 +620,8 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 	uz = uz + z;
 	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
 }
-#pragma opt_propagation on
 #pragma dont_inline reset
 
-#pragma opt_propagation off
 s32 BattleStageSysLightEntry(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -655,9 +653,7 @@ s32 BattleStageSysLightEntry(const char* name) {
 
 	return i;
 }
-#pragma opt_propagation on
 
-#pragma opt_propagation off
 s32 BattleStageGetLightNumberByName(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -676,7 +672,6 @@ s32 BattleStageGetLightNumberByName(const char* name) {
 
 	return -1;
 }
-#pragma opt_propagation on
 
 void BattleStageDispDark(CameraId camId, void* param);
 void BattleStageDispLight(CameraId camId, void* param);
@@ -704,6 +699,7 @@ void BattleStageDisp(void) {
 	dispEntry(4, float_6000_8041c850, 2, BattleStageDispLight, NULL);
 }
 
+// Keep drawCone out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	CameraEntry* cam = camGetPtr(camId);

@@ -226,6 +226,7 @@ static MapObject* mapGetMapObjSub(const char* name) {
 	return 0;
 }
 
+// Keep mapGrpSetColor out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
 void mapGrpSetColor(const char* name, GXColor* color) {
@@ -613,6 +614,7 @@ void mapGrpFlushOn(const char* name) {
 	mapGrpFlagOn(name, 0x100000);
 }
 
+// Keep mapGrpFlagOff, mapGrpFlagOn out of line: the original calls them rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (99.29%): register allocation inside the inlined mapErrorEntry error body
 void mapGrpFlagOff(const char* name, u32 flag) {

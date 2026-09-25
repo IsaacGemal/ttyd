@@ -1223,6 +1223,7 @@ void SoundDVDMain(void) {
     }
 }
 
+// Keep _ssDVDReadAsync_activeChk out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
 }

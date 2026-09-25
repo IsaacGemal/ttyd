@@ -1192,6 +1192,7 @@ void BattleAudienceNumToTarget(void) {
 	}
 }
 
+// Keep BattleAudience_WinSetActive out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BattleAudience_WinSetActive(u8 active) {
 	BattleAudienceWinGetPtr()->mActive = active;

@@ -211,6 +211,7 @@ void BSE_Sleep(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_SleepDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_SleepDelete(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -223,6 +224,7 @@ void BSE_SleepDelete(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_Biribiri out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_Biribiri(BattleUnit* unit) {
 	BattleEffectPos* work;
@@ -255,6 +257,7 @@ void BSE_Biribiri(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_BiribiriDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_BiribiriDelete(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -306,6 +309,7 @@ void BSE_Fire(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_FireDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_FireDelete(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -318,6 +322,7 @@ void BSE_FireDelete(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_Freeze out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_Freeze(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -353,6 +358,7 @@ void BSE_Freeze(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_FreezeDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_FreezeDelete(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -365,6 +371,7 @@ void BSE_FreezeDelete(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_Kagegakure out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_Kagegakure(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -391,6 +398,7 @@ void BSE_Kagegakure(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BSE_KagegakureDelete out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BSE_KagegakureDelete(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -474,6 +482,7 @@ void BattleStatusChangeInfoWorkInit(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep _get_pri out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 s32 _get_pri(s8 type) {
 	s8* val;
@@ -555,6 +564,7 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	return result;
 }
 
+// Keep BattleStatusChangeAnnouceMain_Unit out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit) {
 	return FALSE;
@@ -571,6 +581,7 @@ void BattleStatusChangeMsgWorkInit(void) {
 	}
 }
 
+// Keep BattleStatusChangeMsgSetAnnouce out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg) {
 	BattleStatusChangeEntry* entry = &((BattleStatusChangeMsgWork*)((u8*)_battleWorkPointer + 0x18D88))->entries[type];

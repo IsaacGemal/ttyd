@@ -231,6 +231,7 @@ s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId) {
     return 0;
 }
 
+// Keep BtlUnit_CanActStatus out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 BOOL BtlUnit_CanActStatus(BattleUnit* unit) {
     if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) || BtlUnit_CheckStatus(unit, STATUS_STOP) ||
@@ -249,6 +250,7 @@ void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName) {
     btlDispChangeAnime(part, animName, FALSE);
 }
 
+// Keep BtlUnit_SetAnimType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (96%): tail `type < 0x1F && type >= 0x1D` compiles to `bge body; b skip`, mine `blt skip`.
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
@@ -346,6 +348,7 @@ s32 BtlUnit_GetUnitId(BattleUnit* unit) {
     return unit->unitId;
 }
 
+// Keep BtlUnit_GetPartsPtr, BtlUnit_GetBodyPartsId out of line: the original calls them rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (87%): target entry test is `bne loop; blr`, mine the inverse `beqlr; b loop`.
 BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
@@ -382,6 +385,7 @@ s32 BtlUnit_GetBodyPartsId(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// Keep BtlUnit_GetPos out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BtlUnit_GetPos(BattleUnit* unit, f32* x, f32* y, f32* z) {
     *x = unit->mPosition.x;
@@ -420,6 +424,7 @@ void BtlUnit_AddPartsPos(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     part->mPosition.z += z;
 }
 
+// Keep BtlUnit_GetPartsWorldPos out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BtlUnit_GetPartsWorldPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
     BattleUnit* owner = part->mOwner;
@@ -732,6 +737,7 @@ void BtlUnit_SetOffsetPos(BattleUnit* unit, f32 x, f32 y, f32 z) {
     }
 }
 
+// Keep BtlUnit_GetPartsOffsetPos out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BtlUnit_GetPartsOffsetPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
     *x = part->mPositionOffset.x;
@@ -900,6 +906,7 @@ s8 BtlUnit_GetBelong(BattleUnit* unit) {
     return unit->mAlliance;
 }
 
+// Keep _CheckMoveCount out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void _CheckMoveCount(BattleUnit* unit) {
     s8 maxmoves;
@@ -1357,6 +1364,7 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     }
 }
 
+// Keep BtlUnit_CheckStatus out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
@@ -1375,6 +1383,7 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
 }
 #pragma dont_inline reset
 
+// Keep BtlUnit_CheckStatusFlag out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
     if (unit) {
@@ -1404,6 +1413,7 @@ void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags) {
     unit->flags &= ~flags;
 }
 
+// Keep BtlUnit_GetPoseNameFromType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (87%): target uses `beq found` for the second poseId compare, mine `bne skip`, plus one dead `b`.
 char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
@@ -1455,6 +1465,7 @@ void BtlUnit_SetParamToPouch(BattleUnit* unit) {
 
 
 
+// Keep BtlUnit_ResetMoveStatus out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
     s32 count;
@@ -1492,6 +1503,7 @@ void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
 
 
 
+// Keep BtlUnit_GetFp, BtlUnit_SetFp out of line: the original calls them rather than inlining.
 #pragma dont_inline on
 s32 BtlUnit_GetFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;
@@ -1516,6 +1528,7 @@ void BtlUnit_SetFp(BattleUnit* unit, s32 value) {
 }
 #pragma dont_inline reset
 
+// Keep BtlUnit_GetMaxFp out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 s32 BtlUnit_GetMaxFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;

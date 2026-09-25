@@ -2847,6 +2847,7 @@ void _MoveSoundControlCore(BattleUnit* unit, void* work, void* owner, f32 x, f32
 void psndSFXOff(s32 id);
 s32 BattleRunWaitEvent(BattleUnit* unit);
 
+// Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void _MoveSoundControlEndCore(void* a, u32* work) {
     if (work[6] != 0xFFFFFFFF) {

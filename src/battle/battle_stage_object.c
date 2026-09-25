@@ -435,6 +435,7 @@ USER_FUNC(_fall_frame_delete) {
 	return EVT_RETURN_DONE;
 }
 
+// Keep _mobj_shake_main out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void _mobj_shake_main(BattleStageObject* obj) {
 	obj->mShakePeriodPosition++;

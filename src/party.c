@@ -616,6 +616,7 @@ void partyUsePost(PartyEntry* party) {
     }
 }
 
+// Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (88%): only the N__partyChgRunMode argument setup order differs
 // (`lbz r4,0x34; mr r3,r30; mr r5` vs ours `mr r5; lbz r4`).
@@ -656,6 +657,7 @@ void partyChgPose(PartyEntry* party, char* pose) {
     party->field_8 |= 0x2000;
 }
 
+// Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (90%): same argument-setup ordering difference as partyChgRunMode.
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {

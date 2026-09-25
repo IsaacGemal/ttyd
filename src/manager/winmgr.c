@@ -376,6 +376,7 @@ void winMgrHelpMain(WinMgrEntry* entry) {
     }
 }
 
+// Keep winMgrHelpDraw out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void winMgrHelpDraw(WinMgrEntry* entry) {
 }

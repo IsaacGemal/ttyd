@@ -60,6 +60,7 @@ extern const char str_802EDE60[];
 extern const char str_802EDE68[];
 extern const char str_802EDE70[];
 
+// Keep searchPoseTbl out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 	int i;
@@ -75,6 +76,7 @@ const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 }
 #pragma dont_inline reset
 
+// Keep btlDispGXInit2DSub out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispGXInit2DSub(void) {
 	GXSetCullMode(GX_CULL_NONE);
@@ -121,6 +123,7 @@ void btlDispGXInit2D(void) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 }
 
+// Keep btlDispGXPoint2DRasta out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispGXPoint2DRasta(f32 x, f32 y, u8 r, u8 g, u8 b, u8 a) {
 	GXPosition3f32(x, y, float_0_8041bf58);
@@ -136,6 +139,7 @@ void btlDispGXQuads2DRasta(f32 x0, f32 y0, f32 x1, f32 y1, u8 r, u8 g, u8 b, u8 
 	btlDispGXPoint2DRasta(x0, y1, r, g, b, a);
 }
 
+// Keep btlDispGXPoint2D out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispGXPoint2D(f32 x, f32 y, u8 r, u8 g, u8 b, u8 a, f32 s, f32 t) {
 	GXPosition3f32(x, y, float_0_8041bf58);
@@ -151,6 +155,7 @@ void btlDispGXQuads2D(f32 x0, f32 y0, f32 x1, f32 y1, u8 r, u8 g, u8 b, u8 a) {
 	btlDispGXPoint2D(x1, y1, r, g, b, a, float_1_8041bf64, float_1_8041bf64);
 	btlDispGXPoint2D(x0, y1, r, g, b, a, float_0_8041bf58, float_1_8041bf64);
 }
+// Keep btlDispTexPlaneInit out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispTexPlaneInit(void) {
 	GXSetCullMode(GX_CULL_NONE);
@@ -226,6 +231,7 @@ void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 
 	btlDispTexPlainGX(id, color, color, color, color);
 }
 
+// Keep btlDispTexPlane2 out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color) {
 	CameraEntry* camera;
