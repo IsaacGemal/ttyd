@@ -230,6 +230,8 @@ void partyPaperLightOff(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
 }
 
+// NONMATCHING (99.9%): low-HP check sign-extension lands in r0 instead of the
+// original's r3 (`extsb r3,r0`/`cmpwi r3,8`). Tried temps, s8/s32 locals, no change.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -239,7 +241,7 @@ char* partyChgPoseId(PartyEntry* party, s32 index) {
         return party->field_18;
     }
     v5 = 0;
-    if ((party->currentMemberId < 8) && (partyGetHp() <= 5)) {
+    if (party->currentMemberId < 8 && partyGetHp() <= 5) {
         v5 = TRUE;
     }
     if (v5 == TRUE) {
@@ -614,6 +616,9 @@ void partyUsePost(PartyEntry* party) {
     }
 }
 
+#pragma dont_inline on
+// NONMATCHING (88%): only the N__partyChgRunMode argument setup order differs
+// (`lbz r4,0x34; mr r3,r30; mr r5` vs ours `mr r5; lbz r4`).
 void partyChgRunMode(PartyEntry* party, s32 mode) {
     if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
         P8(party, 0x35) = P8(party, 0x34);
@@ -622,6 +627,7 @@ void partyChgRunMode(PartyEntry* party, s32 mode) {
         party->field_8 |= 8;
     }
 }
+#pragma dont_inline reset
 
 void partyChgPaper(PartyEntry* party, char* paper) {
     if (party->flags2 & 2) {
@@ -650,6 +656,8 @@ void partyChgPose(PartyEntry* party, char* pose) {
     party->field_8 |= 0x2000;
 }
 
+#pragma dont_inline on
+// NONMATCHING (90%): same argument-setup ordering difference as partyChgRunMode.
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
     if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
         P8(party, 0x35) = P8(party, 0x34);
@@ -659,6 +667,7 @@ void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
         P8(party, 0x38) = unk;
     }
 }
+#pragma dont_inline reset
 
 void L_allPartyRideOn(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -732,9 +741,7 @@ void party_ride_yoshi_force_move(void) {
 
     if (party) {
         getRidePos(party, &pos);
-        ((u32*)&party->position)[0] = ((u32*)&pos)[0];
-        ((u32*)&party->position)[1] = ((u32*)&pos)[1];
-        ((u32*)&party->position)[2] = ((u32*)&pos)[2];
+        party->position = pos;
         PF32(party, 0x110) = PF32(party->playerPtr, 0x1AC);
         PF32(party, 0xFC) = toMovedir(PF32(party, 0x110));
     }
@@ -796,18 +803,34 @@ void partyUpdateKeyData(PartyEntry* party) {
         P16(party, 0x156) = 0;
         return;
     }
-    P8(party, 0x158) = *(u8*)((u8*)gp + 0x13B8 + member);
-    P8(party, 0x159) = -*(u8*)((u8*)gp + 0x13BC + member);
-    P8(party, 0x15A) = *(u8*)((u8*)gp + 0x13C0 + member);
-    P8(party, 0x15B) = -*(u8*)((u8*)gp + 0x13C4 + member);
-    P8(party, 0x15C) = *(u8*)((u8*)gp + 0x13C8 + member);
-    P8(party, 0x15D) = *(u8*)((u8*)gp + 0x13CC + member);
+    P8(party, 0x158) = gp->stickX[member];
+    P8(party, 0x159) = -gp->stickY[member];
+    P8(party, 0x15A) = gp->substickX[member];
+    P8(party, 0x15B) = -gp->substickY[member];
+    P8(party, 0x15C) = gp->triggerLeft[member];
+    P8(party, 0x15D) = gp->triggerRight[member];
     P8(party, 0x15E) = 0;
     P8(party, 0x15F) = 0;
-    P16(party, 0x150) = *(u32*)((u8*)gp + 0x1328 + member * 4);
-    P16(party, 0x152) = *(u32*)((u8*)gp + 0x1338 + member * 4);
-    P16(party, 0x154) = *(u32*)((u8*)gp + 0x1348 + member * 4);
-    P16(party, 0x156) = *(u32*)((u8*)gp + 0x1368 + member * 4);
+    P16(party, 0x150) = gp->button[member];
+    P16(party, 0x152) = gp->buttonNew[member];
+    P16(party, 0x154) = gp->buttonRepeat[member];
+    P16(party, 0x156) = gp->buttonUp[member];
+}
+
+s32 partyDoWork(void) {
+    PartyEntry* party = partyGetPtr(marioGetPtr()->currPartySlotId[0]);
+    f32 speed;
+
+    if (!party) {
+        return 0;
+    }
+    if (P8(party, 0x34) != 0 && P8(party, 0x34) != 1 && P8(party, 0x34) != 2) {
+        return 0;
+    }
+    speed = 0.0f;
+    marioGetPtr()->baseSpeed = speed;
+    partyChgRunMode(party, 3);
+    return 1;
 }
 
 s32 partyGetNum(void) {
@@ -953,21 +976,27 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     }
 }
 
+// NONMATCHING (97%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
+// low-HP `extsb r3,r0` vs our `extsb r0,r0`.
 s32 partyEntry(void) {
-    s32 ret = partyEntryMain();
-    PartyEntry* party = partyGetPtr(ret);
-    s32 index = 1;
-    s32 lowHp;
+    PartyEntry* party;
+    s32 index;
     char* pose;
+    s32 ret;
+    s32 lowHp;
 
-    P32(party, 0x70) = ((u32*)vec3_802ccd30)[0];
-    P32(party, 0x74) = ((u32*)vec3_802ccd30)[1];
-    P32(party, 0x78) = ((u32*)vec3_802ccd30)[2];
+    ret = partyEntryMain();
+    party = partyGetPtr(ret);
+    *(Vec*)((u8*)party + 0x70) = *(const Vec*)vec3_802ccd30;
     P8(party, 0x38) = 0xa;
-    PF32(party, 0x110) = PF32(party->playerPtr, 0x1A8);
-    PF32(party, 0x10C) = PF32(party->playerPtr, 0x1A8);
+    {
+        MarioWork* mario = party->playerPtr;
+        PF32(party, 0x110) = PF32(mario, 0x1A8);
+        PF32(party, 0x10C) = PF32(mario, 0x1A8);
+    }
     partyGetAppearPos2(party, &party->position);
     *(Vec*)((u8*)party + 0xB8) = party->position;
+    index = 1;
     if (!(party->flags2 & 2)) {
         lowHp = 0;
         if (party->currentMemberId < 8 && partyGetHp() <= 5) {
@@ -993,15 +1022,15 @@ s32 partyEntry(void) {
     return ret;
 }
 
+// NONMATCHING (89%): partyChgPoseId is inlined but mwcc does not constant-fold
+// the `index == 1` branch for the literal argument 1, leaving an extra cmpwi chain.
 void party_force_ride_yoshi(PartyEntry* party) {
     Vec pos;
 
     N_partyForceChgRunMode(party, 0xc, 0xa);
     party->flags &= ~0x100;
     getRidePos(party, &pos);
-    ((u32*)&party->position)[0] = ((u32*)&pos)[0];
-    ((u32*)&party->position)[1] = ((u32*)&pos)[1];
-    ((u32*)&party->position)[2] = ((u32*)&pos)[2];
+    party->position = pos;
     partyChgPoseId(party, 1);
     PF32(party, 0x114) = 0.0f;
     partyShadowOff(party);
@@ -1039,23 +1068,21 @@ s32 partyKill(s32 index) {
     typedef void (*PartyFunc)(PartyEntry*);
     PartyEntry* party = partyGetPtr(index);
     MarioWork* player;
-    u8* base;
 
     if (!party) {
         return 0;
     }
     player = party->playerPtr;
-    base = (u8*)player + index;
-    party_dp = &partyDataTbl[partyGetPtr(PS8(base, 0x241))->currentMemberId];
+    party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
     if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
         ((PartyFunc)party_dp->exit_func)(party);
     }
-    if (partyGetPtr(PS8(base, 0x241))) {
-        P8(base, 0x243) = partyGetPtr(PS8(base, 0x241))->currentMemberId;
+    if (partyGetPtr(player->currPartySlotId[index])) {
+        player->prevPartyMemberId[index] = partyGetPtr(player->currPartySlotId[index])->currentMemberId;
     } else {
-        P8(base, 0x243) = 0;
+        player->prevPartyMemberId[index] = 0;
     }
-    P8(base, 0x241) = -1;
+    player->currPartySlotId[index] = -1;
     partyPtrTbl[index] = NULL;
     animPoseRelease(party->paperAnimGroup);
     __memFree(HEAP_DEFAULT, party);
@@ -1066,18 +1093,17 @@ s32 partyKill2(s32 index) {
     typedef void (*PartyFunc)(PartyEntry*);
     PartyEntry* party = partyGetPtr(index);
     MarioWork* player;
-    u8* base;
 
     if (!party) {
         return 0;
     }
     player = party->playerPtr;
-    party_dp = &partyDataTbl[partyGetPtr(PS8((u8*)player + index, 0x241))->currentMemberId];
+    party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
     if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
         ((PartyFunc)party_dp->exit_func)(party);
     }
-    P8((u8*)player + index, 0x243) = 0;
-    P8((u8*)player + index, 0x241) = -1;
+    player->prevPartyMemberId[index] = 0;
+    player->currPartySlotId[index] = -1;
     partyPtrTbl[index] = NULL;
     animPoseRelease(party->paperAnimGroup);
     __memFree(HEAP_DEFAULT, party);
