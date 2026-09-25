@@ -96,3 +96,31 @@ The tower's `~/ttyd-ws` (165 per-agent copies of the source from the Sep 19 run,
 predates the Snood method and its layout won't be reused. Its 146 `LOG.md` files (~580 KB) were kept on the Mac
 in the gitignored `archive/sep19-swarm-logs/`, unreviewed. They are notes on what mwcc needed to match
 specific functions, raw material for the shared compiler notes.
+
+## Operating principles, first pass (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+1. **The human era is the reference for good work.** Tag `human-baseline` marks `2df569d`, the last upstream
+   commit before this fork; everything at or before it is human work. It's the model for what a good merge
+   looks like: file layout, header conventions, naming, how a unit moves from `NonMatching` to `Matching` in
+   `configure.py`, and when compiler flags get set per file (`extra_cflags=["-O4,s", "-inline none"]`). The best
+   worked examples are upstream PRs #10-#13 by Ilwyd: small (3-12 files), one area each, e.g. #12 `motion/mot_walk`,
+   "All functions matching". NWPlayer123's direct commits are larger batches (up to ~40 files). Agents should be
+   pointed at these, and `git diff human-baseline..HEAD` is exactly the AI-era work.
+2. **Merges are richer than patches.** Probably one branch per unit, and the merger opens a PR on this private
+   repo with the objdiff before/after in the body and merges it once the checker passes. That gives each
+   change a reviewable record, which is also the provenance record for how each function was reached.
+   (Not settled; decide when the queue is designed.)
+3. **First tests on DeepSeek V4.1 Flash,** because that inference path is known to work. Scaling capacity is
+   Isaac's to arrange.
+4. **Try Pi as the harness** (github.com/badlogic/pi-mono, `@earendil-works/pi-coding-agent`, MIT). Minimal
+   agent with 4 tools (read, write, edit, bash); `pi --print` / `--mode json` for headless runs, `--mode rpc` and
+   a TypeScript SDK for embedding in an orchestrator; OpenAI-compatible endpoints via `models.json`; persistent
+   sessions; and **automatic retry** (`agent_end.willRetry`), which opencode lacks: one provider 500 killed half
+   the Snood recon wave. Plan: run the same small task set through opencode and Pi and compare matches, time
+   and tokens before choosing.
+5. **Escalate the stuck.** Most functions should fall to the cheap model; the rest need the big guns, the way
+   Snood's last mile (`tick`, the register-allocation forensics) needed a frontier model working by hand. The
+   queue must record why an attempt failed so the next tier starts from it, not from zero.
+6. **One oracle.** A function is matched when the local objdiff build says so over its full extent, nothing
+   else: not a model's claim, not a fuzzy score, not decomp.dev. Mac and Linux builds must agree (they do, as of
+   the `HARDWARE.C` fix). Every tier and every harness answers to the same checker.
