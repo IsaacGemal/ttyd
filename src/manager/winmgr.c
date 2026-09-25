@@ -1,3 +1,4 @@
+#include "manager/fontmgr.h"
 #include "manager/winmgr.h"
 #include "driver/dispdrv.h"
 #include "mario/mario_pouch.h"
@@ -7,7 +8,6 @@
 #include <string.h>
 
 extern ItemData itemDataTable[];
-extern s32 FontGetMessageWidthLine(const char* msg, u16* width);
 extern s32 partyChkJoin(s32 id);
 extern u16 party_id_table[];
 extern const char* msgSearch(const char* tag);

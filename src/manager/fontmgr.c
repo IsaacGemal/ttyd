@@ -440,10 +440,8 @@ void JUTFont_Free(void) {
 	}
 }
 
-s32 FontGetMessageWidthLine(char* message, u32 line);
-
-s32 FontGetMessageWidth(char* message) {
-	return FontGetMessageWidthLine(message, 0);
+u16 FontGetMessageWidth(const char* message) {
+	return FontGetMessageWidthLine(message, NULL);
 }
 
 

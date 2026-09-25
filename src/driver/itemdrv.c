@@ -42,7 +42,6 @@ extern const Vec vec3_802cabf8;
 extern void FontDrawEdge(void);
 extern void FontDrawEdgeOff(void);
 extern void FontDrawColor(GXColor* color);
-extern u16 FontGetMessageWidth(const char* msg);
 extern void FontDrawMessage(s32 x, s32 y, const char* msg);
 
 //.bss

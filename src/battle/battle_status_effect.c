@@ -1,3 +1,4 @@
+#include "manager/fontmgr.h"
 #include "battle/battle_status_effect.h"
 #include "driver/windowdrv.h"
 #include "battle/battle_unit.h"
@@ -102,7 +103,6 @@ f32 sinfd(f32 x);
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit);
 void _st_chg_msg_disp(CameraId camera, void* param);
 const char* msgSearch(const char* tag);
-u32 FontGetMessageWidthLine(const char* msg, u16* lines);
 void FontDrawStart(void);
 void FontDrawMessage(s32 x, s32 y, const char* msg);
 

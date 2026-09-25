@@ -215,7 +215,6 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg);
 void FontDrawStringMtx(Mtx mtx, const char* msg);
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);
 void FontDrawScaleVec(Vec scale);
-u16 FontGetMessageWidth(const char* msg);
 void FontDrawEdge(void);
 void FontDrawEdgeOff(void);
 

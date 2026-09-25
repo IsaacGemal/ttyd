@@ -934,9 +934,7 @@ s32 BattleAudience_HaitiRandForFallObject(void) {
 	return ret + r * 20;
 }
 
-// NONMATCHING (93.52%): structure matches, but MWCC recomputes the stack index with an extra
-// `slwi` from count instead of keeping a running byte offset in r27, so several callee-saved
-// registers land on different numbers (r22-r31) than the original.
+// NONMATCHING (96.97%): same instructions, different callee-saved register numbers (r22-r31).
 s32 BattleAudience_NoUsedHaitiRand(void) {
 	extern s32 haiti_data[][10];
 	s32 count, i, j, start, memberId;
@@ -945,6 +943,7 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 
 	BattleAudienceBaseGetPtr();
 	haiti = haiti_data[pouchGetPtr()->rank];
+	count = 0;
 	for (i = 0; i < 10; i++) {
 		start = (20 - haiti[i]) / 2;
 		for (j = 0; j < haiti[i]; j++) {

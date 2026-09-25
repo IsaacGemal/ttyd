@@ -1,3 +1,4 @@
+#include "manager/fontmgr.h"
 #include "battle/battle_stage_object.h"
 #include "battle/battle.h"
 #include "system.h"
@@ -50,7 +51,6 @@ extern f32 float_neg120_8041cd60;
 extern const char str_802F3C84[];
 extern const char* msgSearch(const char* tag);
 extern void FontDrawStart(void);
-extern u16 FontGetMessageWidth(const char* msg);
 extern void FontDrawString(const char* str, f32 x, f32 y);
 // Differs from windowdrv.h (s16, GXColor by value): with the header's signature the caller copies the color
 // and _disp_escape_wall_message stops matching (99.06%). The ABI is the same; the original passes it uncopied.
