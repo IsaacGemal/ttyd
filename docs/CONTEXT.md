@@ -328,3 +328,15 @@ Not built yet; to work on shortly. The Bun port's pattern: implementer plus adve
 Open: Codex usage limits (Isaac will upgrade the plan if needed), and how to trigger and collect the review.
 An alternative to compare later: a separate no-context review agent on a different model, given a
 "find problems" prompt.
+
+## Pragma policy (2026-09-25, Claude Opus 5.5, at Isaac's request)
+
+Codex's review of wave 2 called the agents' `#pragma` toggles match hacks. Decision: keep them, with rules.
+1. **Whole-file compiler settings go in `configure.py`,** as per-file flags (`extra_cflags=["-O4,s"]`), the way
+   the human-written units do it; not as a pragma at the top of a source file. (Done for `battle_camera.c`.)
+2. **Narrow `dont_inline` / `opt_propagation` toggles are allowed.** They are ordinary Metrowerks tools that the
+   original developers used, and the human code here uses them the same way (`hitdrv.c`, `evtmgr.c`). Banning
+   them would push agents toward worse tricks.
+3. **Every pragma an agent adds carries a one-line reason,** and the cleanup index counts them so growth is
+   visible. A pragma with no reason goes back to the agent. Melee kept 308 at 100%, so the count alone isn't a
+   failure. `tools/ci.py` allows only these known kinds (`--allow-pragma` for review of anything new).
