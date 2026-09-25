@@ -20,6 +20,11 @@ extern GlobalWork* gp;
 extern int sprintf(char* str, const char* format, ...);
 extern double tan(double arg);
 
+// The header's AnimationPoseData padding at 0x1A0 is 4 bytes short: the original
+// binary has groups at 0x1A8 and mpAnims at 0x1AC. Work around it locally.
+#define ANIM_POSE_DATA_GROUPS(data) (*(AnimPoseGroup**)((u8*)(data) + 0x1A8))
+#define ANIM_POSE_DATA_ANIMS(data) (*(AnimTableEntry**)((u8*)(data) + 0x1AC))
+
 //.data
 u8 _vivihimoData[0xC00]; // TODO: embed the actual data? gets overwritten by a/vivian.bin in animInit()
 
@@ -44,6 +49,12 @@ u32 anim_ext_tex_size;
 Mtx mtx; // TODO: make sure it's put in .sbss
 s32 g_modeling_mtx_lv;
 Mtx* g_modeling_mtx;
+Mtx g_modeling_mtx_stack[32];
+extern Vec vec3_802c2dd4[];
+u32 zero_80419a50 = 0;
+
+void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
+void pushGXModelMtx_TransformNode__(void* node);
 
 // local declarations
 void animPoseRefresh(void);
@@ -261,7 +272,7 @@ label_2:
             check = wp->totalTextures;
             for (i = 0; i < check; i++) {
                 texture = &wp->textures[i];
-                if (texture->active) {
+                if ((u32)texture->active != 0) {
                     if (texture->handle) {
                         if (!strcmp(texture->handle->filename, textureName)) {
                             texture->references++;
@@ -273,7 +284,7 @@ label_2:
 
             for (i = 0, texId = 0; i < wp->totalTextures; i++, texId++) {
                 temptex = &wp->textures[i];
-                if (!temptex->active) {
+                if ((u32)temptex->active == 0) {
                     texture = temptex;
                     goto label_3;
                 }
@@ -339,41 +350,44 @@ label_5:
 }
 
 s32 animPaperPoseEntry(const char* animName, s32 group) {
-    AnimationPoseData* data;
     AnimationPose* pose;
-    s32 i, poseId;
+    s32 i;
 
-    for (i = 0, poseId = 0; i < wp->totalPoses; i++, poseId++) {
+    for (i = 0; i < wp->totalPoses; i++) {
         pose = &wp->poses[i];
         if (pose->flags & 1) {
             if (pose->typeFlags & 1 && pose->typeFlags & 2 && pose->type == group) {
-                data = *wp->files[pose->fileId].handle->data;
-                if (!strcmp(data->fileName, animName)) {
+                if (!strcmp(animPoseGetBaseData(pose)->fileName, animName)) {
                     break;
                 }
             }
         }
     }
-    if (poseId == wp->totalPoses) {
-        poseId = -1;
+    if (i == wp->totalPoses) {
+        i = -1;
     }
-    if (poseId < 0) {
-        poseId = animPoseEntry(animName, group);
-        if (poseId != -2) {
-            pose = &wp->poses[poseId];
+    if (i < 0) {
+        i = animPoseEntry(animName, group);
+        if (i != -2) {
+            pose = &wp->poses[i];
             pose->typeFlags = 3;
             pose->references = 0;
             pose->flags |= 1;
         }
     } else {
-        wp->poses[poseId].references++;
+        wp->poses[i].references++;
     }
-    return poseId;
+    return i;
 }
 
 BOOL animEffectAsync(const char* animName, u32 group) {
-    s32 model, anim;
-    void** ag2tg;
+    s32 fileId;
+    s32 other;
+    void** data;
+    u8* entry;
+    u8* result;
+    s32 offset;
+    s32 size;
 
     switch (group) {
         case 0:
@@ -386,9 +400,34 @@ BOOL animEffectAsync(const char* animName, u32 group) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    model = fileAsyncf(5, NULL, "%s/%s", "a", animName);
+    fileId = fileAsyncf(5, NULL, "%s/%s", "a", animName);
+    data = wp->mp_ag2tg->data;
+    size = (s32)data[1];
+    entry = (u8*)data[0];
+    for (offset = 0; offset < size; offset += 0x20) {
+        if (!strcmp((char*)entry, animName)) {
+            result = entry + 0x20;
+            goto found;
+        }
+        entry += 0x20;
+    }
+    result = (u8*)&zero_80419a50;
+found:
+    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
 
-    return FALSE;
+    if (fileId == -1) {
+        return TRUE;
+    }
+    if ((u32)fileId == 0) {
+        return FALSE;
+    }
+    if (other == -1) {
+        return TRUE;
+    }
+    if ((u32)other == 0) {
+        return FALSE;
+    }
+    return TRUE;
 }
 
 void animPosePeraOn(s32 poseId) {
@@ -402,7 +441,7 @@ void animPosePeraOff(s32 poseId) {
 void animPosePaperPeraOn(s32 poseId) {
     AnimationPose *src, *dst;
 
-    src = &wp->poses[poseId];
+    src = animPoseGetAnimPosePtr(poseId);
     dst = &wp->poses[src->paperId];
     dst->flags |= 8;
     dst->field_0x70 = src->field_0x70;
@@ -413,53 +452,152 @@ void animPosePaperPeraOn(s32 poseId) {
 void animPosePaperPeraOff(s32 poseId) {
     AnimationPose* src;
 
-    src = &wp->poses[poseId];
+    src = animPoseGetAnimPosePtr(poseId);
     wp->poses[src->paperId].flags &= ~8;
 }
 
 void animPoseSetLocalTimeRate(s32 poseId, f32 localTimeRate) {
-    wp->poses[poseId].localTimeRate = localTimeRate;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->localTimeRate = localTimeRate;
 }
 
 // TODO: get animTimeGetTime to inline here
 void animPoseSetLocalTime(s32 poseId, f32 localTimeFrames) {
     AnimationPose *pose, *pera;
+    OSTime time;
 
     pose = &wp->poses[poseId];
-    pose->localTime = animTimeGetTime(pose->type) - (localTimeFrames * 16.666666f);
+    time = (localTimeFrames * 16.666666f);
+    pose->localTime = animTimeGetTime(pose->type) - time;
     pose->mLocalTimeInit = pose->localTime;
     if (pose->paperId != -1) {
         pera = &wp->poses[pose->paperId];
-        pera->localTime = pose->localTime;
+        if (!(pera->typeFlags & 2)) {
+            pera->localTime = pose->localTime;
+        }
     }
 }
 
 void animPoseSetStartTime(s32 poseId, OSTime startTime) {
-    wp->poses[poseId].localTime = startTime;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->localTime = startTime;
 }
 
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
-    AnimationPoseData* data;
-    AnimationPose* pose;
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
+    s32 top = data->mAnimCount;
+    s32 animId = (s32)animName;
 
-    pose = &wp->poses[poseId];
-    data = *wp->files[pose->fileId].handle->data;
+    if (animId != 0) {
+        for (animId = 0; animId < top; animId++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
+                break;
+            }
+        }
+        if (animId >= top) {
+            animId = 0;
+        }
+    }
+    if (!reset && pose->animId == animId) {
+        return;
+    }
+    pose->animId = animId;
+    if (pose->paperId != -1 && (pose->flags & 2)) {
+        pose->flags |= 4;
+    }
+    pose->localTime = animTimeGetTime(pose->type);
+    pose->lastFrameZero = -1;
+    pose->lastFrameTime = 0.0f;
+    pose->field_0x80 = 0;
+    pose->loopTime = 0.0f;
 }
 
 s32 animPaperPoseGetId(const char* animName, s32 group) {
-    return 0;
+    AnimationPose* pose;
+    AnimationPoseData* data;
+    s32 i;
+
+    for (i = 0; i < wp->totalPoses; i++) {
+        pose = &wp->poses[i];
+        if ((pose->flags & 1) && (pose->typeFlags & 1) && (pose->typeFlags & 2) && pose->type == group) {
+            data = *wp->files[pose->fileId].handle->data;
+            if (!strcmp(data->fileName, animName)) {
+                break;
+            }
+        }
+    }
+    if (i == wp->totalPoses) {
+        i = -1;
+    }
+    return i;
 }
 
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
 }
 
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data = *wp->files[wp->poses[pose->paperId].fileId].handle->data;
+    s32 top = data->mAnimCount;
+    s32 animId = (s32)animName;
+
+    if (animId != 0) {
+        for (animId = 0; animId < top; animId++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
+                break;
+            }
+        }
+        if (animId >= top) {
+            animId = 0;
+        }
+    }
+    *(s32*)((u8*)pose + 0x94) = animId;
+    pose->mLocalTimeInit = animTimeGetTime(pose->type);
+    if (pose->paperId != -1 && !(wp->poses[pose->paperId].typeFlags & 2)) {
+        animPoseMain(pose->paperId);
+    }
 }
 
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
 }
 
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data;
+    s32 top;
+    s32 i;
+
+    if (pose->paperId == -1) {
+        return;
+    }
+    pose = &wp->poses[pose->paperId];
+    data = *wp->files[pose->fileId].handle->data;
+    top = data->mAnimCount;
+    if (animName != NULL) {
+        for (i = 0; i < top; i++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
+                break;
+            }
+        }
+        if (i == top) {
+            i = 0;
+        }
+    } else {
+        i = 0;
+    }
+    if (!reset && pose->animId == i) {
+        return;
+    }
+    pose->animId = i;
+    if (pose->paperId != -1 && (pose->flags & 2)) {
+        pose->flags |= 4;
+    }
+    pose->localTime = animTimeGetTime(pose->type);
+    pose->lastFrameZero = -1;
+    pose->lastFrameTime = 0.0f;
+    pose->field_0x80 = 0;
+    pose->loopTime = 0.0f;
 }
 
 void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disableDraw) {
@@ -469,51 +607,69 @@ void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disable
 }
 
 f32 animPoseGetRadius(s32 poseId) {
-    return 0.0f;
+    AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
+    return (f32)*(s32*)((u8*)data + 0xC8) * 2.0f;
 }
 
 f32 animPoseGetHeight(s32 poseId) {
-    return 0.0f;
+    AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
+    return (f32)*(s32*)((u8*)data + 0xCC) * 2.0f;
 }
 
 f32 animPoseGetLoopTimes(s32 id) {
-    return wp->poses[id].loopTime;
+    AnimationPose* pose = &wp->poses[id];
+    return pose->loopTime;
 }
 
 BOOL animPoseGetPeraEnd(s32 poseId) {
-    return FALSE;
+    AnimationPose* pose = &wp->poses[poseId];
+
+    if (pose->flags & 8) {
+        goto compute;
+    }
+    return TRUE;
+compute:
+    return fabs(pose->field_0x7C - pose->rotationY) < 10.0;
 }
 
 void animPoseSetMaterialFlagOn(s32 poseId, u32 mask) {
-    wp->poses[poseId].materialFlag |= mask;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->materialFlag |= mask;
 }
 
 void animPoseSetMaterialFlagOff(s32 poseId, u32 mask) {
-    wp->poses[poseId].materialFlag &= ~mask;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->materialFlag &= ~mask;
 }
 
 void animPoseSetMaterialLightFlagOn(s32 poseId, u32 mask) {
-    wp->poses[poseId].materialLightFlag |= mask;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->materialLightFlag |= mask;
 }
 
 void animPoseSetMaterialLightFlagOff(s32 poseId, u32 mask) {
-    wp->poses[poseId].materialLightFlag &= ~mask;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->materialLightFlag &= ~mask;
 }
 
 void animPoseSetMaterialEvtColor(s32 poseId, GXColor color) {
-    wp->poses[poseId].materialColor = color;
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->materialColor = color;
 }
 
 u32 animPoseGetMaterialFlag(s32 poseId) {
-    return wp->poses[poseId].materialFlag;
+    AnimationPose* pose = &wp->poses[poseId];
+    return pose->materialFlag;
 }
 
 u32 animPoseGetMaterialLightFlag(s32 poseId) {
-    return wp->poses[poseId].materialLightFlag;
+    AnimationPose* pose = &wp->poses[poseId];
+    return pose->materialLightFlag;
 }
 
 GXColor* animPoseGetMaterialEvtColor(s32 poseId) {
-    return &wp->poses[poseId].materialColor;
+    AnimationPose* pose = &wp->poses[poseId];
+    return (GXColor*)*(u32*)&pose->materialColor;
 }
 
 void animPoseMain(s32 poseId) {
@@ -830,15 +986,139 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
 }
 
 void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void* a5, void* a6, s32 a7, s32 a8) {
+    wp->mpTexObjs[0] = a4 ? a1 : NULL;
+    wp->mpTexObjs[1] = a5 ? a2 : NULL;
+    wp->mpCurTexObj = a6 ? a3 : NULL;
+    wp->mpTexDatas[0] = a4;
+    wp->mpTexDatas[1] = a5;
+    wp->mpCurTexData = a6;
+    wp->field_0xD8 = a7;
+    wp->field_0xDC = a7;
 }
 
 void animPoseRelease(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationTextureFile* texture;
+    AnimationPoseFile* file;
+
+    if ((u32)pose->typeFlags != 0) {
+        pose->references--;
+        if (pose->references < 0) {
+            file = &wp->files[pose->fileId];
+            file->references--;
+            if (file->references <= 0) {
+                file->active = 0;
+                texture = &wp->textures[file->textureId];
+                texture->references--;
+                if (texture->references <= 0) {
+                    fileFree(texture->handle);
+                    texture->active = 0;
+                }
+                fileFree(file->handle);
+            }
+            pose->flags = 0;
+        }
+    } else {
+        if (pose->flags & 0x40) {
+            smartFree(*(smartEntry**)((u8*)pose + 0x15C));
+        }
+        if (pose->flags & 0x80) {
+            smartFree(*(smartEntry**)((u8*)pose + 0x164));
+        }
+        file = &wp->files[pose->fileId];
+        file->references--;
+        if (file->references <= 0) {
+            file->active = 0;
+            texture = &wp->textures[file->textureId];
+            texture->references--;
+            if (texture->references <= 0) {
+                fileFree(texture->handle);
+                texture->active = 0;
+            }
+            fileFree(file->handle);
+        }
+        pose->flags = 0;
+    }
 }
 
 void animPaperPoseRelease(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationTextureFile* texture;
+    AnimationPoseFile* file;
+
+    pose->references--;
+    if (pose->references < 0) {
+        file = &wp->files[pose->fileId];
+        file->references--;
+        if (file->references <= 0) {
+            file->active = 0;
+            texture = &wp->textures[file->textureId];
+            texture->references--;
+            if (texture->references <= 0) {
+                fileFree(texture->handle);
+                texture->active = 0;
+            }
+            fileFree(file->handle);
+        }
+        pose->flags = 0;
+    }
 }
 
 // animPoseAutoRelease
+void animPoseAutoRelease(s32 type) {
+    AnimationPose* pose;
+    AnimationTextureFile* texture;
+    AnimationPoseFile* file;
+    s32 i;
+
+    for (i = 0; i < wp->totalPoses; i++) {
+        pose = &wp->poses[i];
+        if ((pose->flags & 1) && pose->type == type) {
+            if ((u32)pose->typeFlags != 0) {
+                pose->references--;
+                if (pose->references < 0) {
+                    file = &wp->files[pose->fileId];
+                    file->references--;
+                    if (file->references <= 0) {
+                        file->active = 0;
+                        texture = &wp->textures[file->textureId];
+                        texture->references--;
+                        if (texture->references <= 0) {
+                            fileFree(texture->handle);
+                            texture->active = 0;
+                        }
+                        fileFree(file->handle);
+                    }
+                    pose->flags = 0;
+                }
+            } else {
+                if (pose->flags & 0x40) {
+                    smartFree(*(smartEntry**)((u8*)pose + 0x15C));
+                }
+                if (pose->flags & 0x80) {
+                    smartFree(*(smartEntry**)((u8*)pose + 0x164));
+                }
+                file = &wp->files[pose->fileId];
+                file->references--;
+                if (file->references <= 0) {
+                    file->active = 0;
+                    texture = &wp->textures[file->textureId];
+                    texture->references--;
+                    if (texture->references <= 0) {
+                        fileFree(texture->handle);
+                        texture->active = 0;
+                    }
+                    fileFree(file->handle);
+                }
+                pose->flags = 0;
+            }
+        }
+    }
+    if (type == 1) {
+        wp->inBattle = FALSE;
+    }
+    animPoseRefresh();
+}
 
 void animPaperPoseDisp(CameraId camId, void* param) {
     AnimationPose* pose;
@@ -858,10 +1138,34 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 // animPoseDisp_MakeExtTexture
 
 void animSetPaperTexMtx(Mtx mtx1, Mtx mtx2, Mtx mtx3) {
+    if (mtx1 == NULL) {
+        wp->paperMtxPtr[0] = NULL;
+    } else {
+        PSMTXCopy(mtx1, wp->paperMtx[0]);
+        wp->paperMtxPtr[0] = &wp->paperMtx[0];
+    }
+    if (mtx2 == NULL) {
+        wp->paperMtxPtr[1] = NULL;
+    } else {
+        PSMTXCopy(mtx2, wp->paperMtx[1]);
+        wp->paperMtxPtr[1] = &wp->paperMtx[1];
+    }
+    if (mtx3 == NULL) {
+        wp->paperMtxPtr[2] = NULL;
+    } else {
+        PSMTXCopy(mtx3, wp->paperMtx[2]);
+        wp->paperMtxPtr[2] = &wp->paperMtx[2];
+    }
 }
 
 BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
-    // int i;
+    s32 fileId;
+    s32 other;
+    void** data;
+    u8* entry;
+    u8* result;
+    s32 offset;
+    s32 size;
 
     switch (group) {
         case 0:
@@ -874,9 +1178,31 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    // fileAsyncf(5, callback, "%s/%s", "a", name);
+    fileId = fileAsyncf(5, callback, "%s/%s", "a", name);
+    data = wp->mp_ag2tg->data;
+    size = (s32)data[1];
+    entry = (u8*)data[0];
+    for (offset = 0; offset < size; offset += 0x20) {
+        if (!strcmp((char*)entry, name)) {
+            result = entry + 0x20;
+            goto found;
+        }
+        entry += 0x20;
+    }
+    result = (u8*)&zero_80419a50;
+found:
+    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
 
-    return FALSE;
+    if (fileId == -1) {
+        return TRUE;
+    }
+    if ((u32)fileId == 0) {
+        return FALSE;
+    }
+    if (other == -1) {
+        return TRUE;
+    }
+    return other != 0;
 }
 
 AnimationPose* animPoseGetAnimPosePtr(s32 poseId) {
@@ -885,7 +1211,7 @@ AnimationPose* animPoseGetAnimPosePtr(s32 poseId) {
 
 AnimData* animPoseGetAnimDataPtr(s32 poseId) {
     AnimationPose* pose = animPoseGetAnimPosePtr(poseId);
-    return animPoseGetAnimBaseDataPtr(poseId)->mpAnims[pose->animId].data;
+    return ANIM_POSE_DATA_ANIMS(animPoseGetAnimBaseDataPtr(poseId))[pose->animId].data;
 }
 
 AnimationPoseData* animPoseGetAnimBaseDataPtr(s32 poseId) {
@@ -895,36 +1221,155 @@ AnimationPoseData* animPoseGetAnimBaseDataPtr(s32 poseId) {
 
 AnimTableEntry* animPoseGetCurrentAnim(s32 poseId) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
-    return &data->mpAnims[animPoseGetAnimPosePtr(poseId)->animId];
+    return &ANIM_POSE_DATA_ANIMS(data)[animPoseGetAnimPosePtr(poseId)->animId];
 }
 
-// animPoseTestXLU
+BOOL animPoseTestXLU(s32 poseId) {
+    AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
+    return (*(u32*)data->field_0xC4 >> 3) & 1;
+}
+
 // evalProc
+void evalProc(s32 parentGroupId, s32 groupId) {
+    AnimPoseGroup* group;
+    AnimPoseGroup* parent;
+    AnimationPoseData* data;
+    Vec pos;
+    f32* nodes;
+    f32 x, y, z;
+
+    if (groupId == -1) {
+        return;
+    }
+    data = wp->mpCurPoseData;
+    group = &ANIM_POSE_DATA_GROUPS(data)[groupId];
+
+    if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
+        f32* node;
+
+        nodes = (f32*)wp->mpCurPose->mpNodes;
+        node = &nodes[group->nodeId];
+        if (group->useSSC) {
+            if (parentGroupId == -1) {
+                x = y = z = 1.0f;
+            } else {
+                parent = &ANIM_POSE_DATA_GROUPS(data)[parentGroupId];
+                if (!parent->useSSC) {
+                    x = y = z = 1.0f;
+                } else {
+                    x = nodes[parent->nodeId + 3];
+                    y = nodes[parent->nodeId + 4];
+                    z = nodes[parent->nodeId + 5];
+                }
+            }
+            pushGXModelMtx_JointNode__(node, x, y, z);
+        } else {
+            pushGXModelMtx_TransformNode__(node);
+        }
+
+        if (wp->mpCurPose->flags & 0x40) {
+            pos = vec3_802c2dd4[0];
+            pos.x = (*g_modeling_mtx)[0][3];
+            pos.y = (*g_modeling_mtx)[1][3];
+            pos.z = (*g_modeling_mtx)[2][3];
+            ((Vec*)*(void**)((u8*)wp->mpCurPose + 0x15C))[groupId] = pos;
+        }
+        if (wp->mpCurPose->flags & 0x80) {
+            PSMTXCopy(*g_modeling_mtx, (*(Mtx**)((u8*)wp->mpCurPose + 0x164))[groupId]);
+        }
+        if (!(wp->mpCurPose->flags & 0x20) || groupId != *wp->mpCurPose->vivianGroupNo) {
+            evalProc(groupId, group->childGroupId);
+        }
+        g_modeling_mtx_lv--;
+        g_modeling_mtx = &g_modeling_mtx_stack[g_modeling_mtx_lv];
+    }
+    evalProc(groupId, group->brotherGroupId);
+}
 
 void animPoseWorldPositionEvalOn(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
+    u8 type;
+
+    if (pose->flags & 0x40) {
+        return;
+    }
+    pose->flags |= 0x40;
+    switch (pose->type) {
+        case 0:
+            type = 1;
+            break;
+        case 1:
+            type = 2;
+            break;
+        case 2:
+            type = 0;
+            break;
+    }
+    *(s32*)((u8*)pose + 0x160) = data->groupCount;
+    *(void**)((u8*)pose + 0x15C) = smartAlloc(data->groupCount * sizeof(Vec), type);
 }
 
-// L_animPoseWorldPositionEvalOff
+void L_animPoseWorldPositionEvalOff(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    if (pose->flags & 0x40) {
+        pose->flags &= ~0x40;
+        smartFree(*(smartEntry**)((u8*)pose + 0x15C));
+        *(void**)((u8*)pose + 0x15C) = NULL;
+    }
+}
 
 void animPoseWorldMatrixEvalOn(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
+    u8 type;
+
+    if (pose->flags & 0x80) {
+        return;
+    }
+    pose->flags |= 0x80;
+    switch (pose->type) {
+        case 0:
+            type = 1;
+            break;
+        case 1:
+            type = 2;
+            break;
+        case 2:
+            type = 0;
+            break;
+    }
+    *(s32*)((u8*)pose + 0x168) = data->groupCount;
+    *(void**)((u8*)pose + 0x164) = smartAlloc(data->groupCount * sizeof(Mtx), type);
 }
 
-// animPoseVivianMain
+void animPoseVivianMain(s32 poseId, Vec* pos) {
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->flags |= 0x20;
+    pose->matrix[0][3] = pos->x;
+    pose->matrix[1][3] = pos->y;
+    pose->matrix[2][3] = pos->z;
+}
 
 s32 animPoseGetVivianType(s32 poseId) {
-    return wp->poses[poseId].vivianType;
+    AnimationPose* pose = &wp->poses[poseId];
+    return pose->vivianType;
 }
 
-// animPoseSetDispCallBack
+void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData) {
+    AnimationPose* pose = &wp->poses[poseId];
+    pose->dispCallback = dispCallback;
+    pose->dispUserDataCallback = dispUserData;
+}
+
 // animPoseDrawShape
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name) {
     AnimPoseShape* shape;
     AnimationPoseData* data;
-    s32 fileId, i;
+    s32 i;
 
-    fileId = wp->poses[poseId].fileId;
-    data = *wp->files[fileId].handle->data;
+    data = animPoseGetAnimBaseDataPtr(poseId);
     shape = data->shapes;
     for (i = 0; i < data->shapeCount; i++, shape++) {
         if (!strcmp(shape->name, name)) {
@@ -937,11 +1382,10 @@ s32 animPoseGetShapeIdx(s32 poseId, const char* name) {
 s32 animPoseGetGroupIdx(s32 poseId, const char* name) {
     AnimPoseGroup* group;
     AnimationPoseData* data;
-    s32 fileId, i;
+    s32 i;
 
-    fileId = wp->poses[poseId].fileId;
-    data = *wp->files[fileId].handle->data;
-    group = data->groups;
+    data = animPoseGetAnimBaseDataPtr(poseId);
+    group = ANIM_POSE_DATA_GROUPS(data);
     for (i = 0; i < data->groupCount; i++, group++) {
         if (!strcmp(group->name, name)) {
             return i;
@@ -951,7 +1395,6 @@ s32 animPoseGetGroupIdx(s32 poseId, const char* name) {
 }
 
 const char* animPoseGetGroupName(s32 poseId, s32 group) {
-    s32 fileId = wp->poses[poseId].fileId;
-    AnimationPoseData* data = *wp->files[fileId].handle->data;
-    return data->groups[group].name;
+    AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
+    return ANIM_POSE_DATA_GROUPS(data)[group].name;
 }
