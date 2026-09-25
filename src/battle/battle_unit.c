@@ -1,12 +1,284 @@
 #include "battle/battle_unit.h"
 #include "battle/battle.h"
+#include "battle/battle_disp.h"
 #include "system.h"
 #include <string.h>
 
 extern BattleWork* _battleWorkPointer;
+extern u32 _enemy_can_use_item_table[];
 
 //local prototypes
 void _CheckMoveCount(BattleUnit* unit);
+BOOL BtlUnit_CanActStatus(BattleUnit* unit);
+void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
+void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
+void BtlUnit_ChangeStayAnim(s32 unitId);
+void BtlUnit_ChangeTalkAnim(s32 unitId);
+void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName);
+void BtlUnit_SetBodyAnimType(BattleUnit* unit, s32 type);
+void BtlUnit_PoseSoundInit(BattleUnitPart* part);
+s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
+BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit);
+void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset);
+void BattleAudience_Case_MarioDanger(void);
+void BattleAudience_Case_MarioPinch(void);
+BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
+void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2);
+void BtlUnit_HpGaugeInit(BattleUnit* unit);
+
+// Local field overlays for regions the shared header leaves unnamed.
+typedef struct BattleUnitAnimFields {
+    u8 pad_0[0x2D0];
+    s32 mBodyPartsId;    // 0x2D0
+    char* mTalkPoseName; // 0x2D4
+    char* mStayPoseName; // 0x2D8
+} BattleUnitAnimFields;
+
+typedef struct BattleUnitPartFields {
+    u8 pad_0[0x204];
+    u32 mFlags; // 0x204
+    u8 pad_1[0x4D0 - 0x208];
+    void* mPoseSoundTable; // 0x4D0
+    s32 mPoseSoundFrame;   // 0x4D4
+    f32 mPoseSoundPrev;    // 0x4D8
+    f32 mPoseSoundCur;     // 0x4DC
+    s32 mPoseSoundCount;   // 0x4E0
+    u8 mPoseSoundFlag;     // 0x4E4
+    u8 pad_2[3];
+    s32 mPoseSoundEventId; // 0x4E8
+    BattleUnit* mOwner;    // 0x4EC
+    GXColor color;         // 0x4F0
+    u8 pad_3[0x500 - 0x4F4];
+} BattleUnitPartFields;
+
+typedef struct BattleUnitKindCoinFields {
+    u8 pad_0[0x10];
+    u8 field_0x10; // 0x10
+    u8 field_0x11; // 0x11
+    u8 field_0x12; // 0x12
+} BattleUnitKindCoinFields;
+
+typedef struct HpGaugeLocal {
+    s16 field_0;  // 0x0
+    u16 field_2;  // 0x2
+    s16 field_4;  // 0x4
+    s16 field_6;  // 0x6
+    s16 field_8;  // 0x8
+    s16 field_A;  // 0xA
+    s32 field_C;  // 0xC
+    s32 field_10; // 0x10
+    f32 field_14; // 0x14
+    f32 field_18; // 0x18
+} HpGaugeLocal;
+
+void BtlUnit_SetTotalHitDamage(BattleUnit* unit, s16 damage) {
+    unit->totalHpDamageTaken = damage;
+}
+
+void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
+    BattleUnitPartFields* fields = (BattleUnitPartFields*)part;
+    fields->mPoseSoundFrame = 0;
+    fields->mPoseSoundPrev = 0.0f;
+    fields->mPoseSoundCur = 0.0f;
+}
+
+BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
+    if (unit->mAttributeFlags & kVeiled) {
+        return TRUE;
+    }
+    if (unit->currentKind == 0xE4 && unit->work[4] > 0) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+s32 BtlUnit_GetCoin(BattleUnit* unit) {
+    s32 coins;
+    s32 i;
+
+    if (!unit) {
+        return 0;
+    }
+    coins = ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x12;
+    for (i = 0; i < ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x10; i++) {
+        if (irand(100) < ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x11) {
+            coins++;
+        }
+    }
+    return coins;
+}
+
+BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 i;
+    s32 id = unit->unitId;
+    BattleUnit* other = NULL;
+
+    for (i = 0; i < 64; i++) {
+        other = BattleGetUnitPtr(wp, i);
+        if (other && other->currentKind == 0xDF && other->work[0] == id) {
+            break;
+        }
+    }
+    if (i >= 64) {
+        return NULL;
+    }
+    return other;
+}
+
+void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
+    if (unit->currentHp <= unit->mKindParams->mPerilHP && unit->currentHp < unit->maxHp) {
+        if (!(unit->mStatusFlags & 0x20000000)) {
+            unit->mStatusFlags |= 0x20000000;
+            if (!a2 && unit->currentKind == 0xDE) {
+                BattleAudience_Case_MarioDanger();
+            }
+        }
+    } else if (unit->mStatusFlags & 0x20000000) {
+        unit->mStatusFlags &= ~0x20000000;
+    }
+
+    if (unit->currentHp <= unit->mKindParams->mDangerHP && unit->currentHp < unit->maxHp) {
+        if (!(unit->mStatusFlags & 0x10000000)) {
+            unit->mStatusFlags |= 0x10000000;
+            if (!(unit->mStatusFlags & 0x20000000) && !a2 && unit->currentKind == 0xDE) {
+                BattleAudience_Case_MarioPinch();
+            }
+        }
+    } else if (unit->mStatusFlags & 0x10000000) {
+        unit->mStatusFlags &= ~0x10000000;
+    }
+}
+
+void BtlUnit_ReviseHpFp(BattleUnit* unit) {
+    PouchData* pouch = pouchGetPtr();
+
+    if (unit->currentKind == 0xDE) {
+        unit->baseMaxHp = pouch->baseMaxHP;
+        unit->maxHp = pouch->baseMaxHP + unit->badgesEquipped.HpPlus * 5;
+        unit->baseMaxFp = pouch->baseMaxFP;
+        unit->maxFp = pouch->baseMaxFP + unit->badgesEquipped.FpPlus * 5;
+        if (unit->currentHp > unit->maxHp) {
+            unit->currentHp = unit->maxHp;
+        }
+        if (unit->currentFp > unit->maxFp) {
+            unit->currentFp = unit->maxFp;
+        }
+    } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+        s32 party = BattleTransPartyId(unit->currentKind);
+
+        unit->baseMaxHp = pouch->partyData[party].baseMaxHP;
+        unit->maxHp = pouch->partyData[party].baseMaxHP + unit->badgesEquipped.HpPlus * 5;
+        unit->currentHp = pouch->partyData[party].currentHP;
+        if (unit->currentHp > unit->maxHp) {
+            unit->currentHp = unit->maxHp;
+        }
+    } else {
+        unit->maxHp = unit->baseMaxHp + unit->badgesEquipped.HpPlus * 5;
+        if (unit->currentHp > unit->maxHp) {
+            unit->currentHp = unit->maxHp;
+        }
+        unit->maxFp = unit->baseMaxFp + unit->badgesEquipped.FpPlus * 5;
+        if (unit->currentFp > unit->maxFp) {
+            unit->currentFp = unit->maxFp;
+        }
+    }
+}
+
+void BtlUnit_HpGaugeInit(BattleUnit* unit) {
+    HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
+    f32 ratio;
+
+    gauge->field_4 = 0;
+    gauge->field_8 = 0;
+    gauge->field_0 = 0;
+    gauge->field_C = unit->currentHp;
+    gauge->field_10 = unit->currentHp;
+    ratio = (f32)unit->currentHp / (f32)unit->maxHp;
+    gauge->field_14 = ratio;
+    gauge->field_18 = ratio;
+    if (gauge->field_0 == 1) {
+        gauge->field_6 = 0x28;
+        gauge->field_A = gauge->field_6 + 0x1E;
+    } else {
+        gauge->field_6 = 0x14;
+        gauge->field_A = gauge->field_6 + 0x1E;
+    }
+}
+
+s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId) {
+    s32* table = (s32*)_enemy_can_use_item_table;
+
+    if (itemId >= 0xF0 && itemId < 0x153) {
+        return itemId;
+    }
+    while (*table) {
+        if (*table == itemId) {
+            return itemId;
+        }
+        table++;
+    }
+    return 0;
+}
+
+BOOL BtlUnit_CanActStatus(BattleUnit* unit) {
+    if (BtlUnit_CheckStatus(unit, STATUS_SLEEP)) {
+        return FALSE;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_STOP)) {
+        return FALSE;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_DIZZY)) {
+        return FALSE;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+        return FALSE;
+    }
+    return !BtlUnit_CheckStatusFlag(unit, 1);
+}
+
+BOOL BtlUnit_CanGuardStatus(BattleUnit* unit) {
+    return BtlUnit_CanActStatus(unit);
+}
+
+void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName) {
+    btlDispChangeAnime(part, animName, FALSE);
+}
+
+void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
+    const char* animName = BtlUnit_GetPoseNameFromType(part, type);
+
+    if (type >= 0x1D && type < 0x28) {
+        btlDispChangeAnime(part, animName, TRUE);
+    } else {
+        btlDispChangeAnime(part, animName, FALSE);
+    }
+    if (type >= 0x1D && type < 0x1F) {
+        ((BattleUnitPartFields*)part)->mFlags |= 0x10;
+    }
+}
+
+void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName) {
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), animName, FALSE);
+}
+
+void BtlUnit_SetBodyAnimType(BattleUnit* unit, s32 type) {
+    BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), type);
+}
+
+void BtlUnit_ChangeStayAnim(s32 unitId) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, ((BattleUnitAnimFields*)unit)->mBodyPartsId),
+                       ((BattleUnitAnimFields*)unit)->mStayPoseName, FALSE);
+}
+
+void BtlUnit_ChangeTalkAnim(s32 unitId) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, ((BattleUnitAnimFields*)unit)->mBodyPartsId),
+                       ((BattleUnitAnimFields*)unit)->mTalkPoseName, FALSE);
+}
 
 BOOL BtlUnit_Init(void) { //TODO: force stmw/lmw, otherwise 1:1
     int i;
@@ -237,33 +509,24 @@ void BtlUnit_GetPartsRotate(BattleUnitPart* part, f32* x, f32* y, f32* z) {
 
 void BtlUnit_AddPartsRotate(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     part->mRotation.x += x;
-    if (part->mRotation.x <= 360.0f) {
-        if (part->mRotation.x < 0.0f) {
-            part->mRotation.x += 360.0f;
-        }
-    }
-    else {
+    if (part->mRotation.x > 360.0f) {
         part->mRotation.x -= 360.0f;
+    } else if (part->mRotation.x < 0.0f) {
+        part->mRotation.x += 360.0f;
     }
 
     part->mRotation.y += y;
-    if (part->mRotation.y <= 360.0f) {
-        if (part->mRotation.y < 0.0f) {
-            part->mRotation.y += 360.0f;
-        }
-    }
-    else {
+    if (part->mRotation.y > 360.0f) {
         part->mRotation.y -= 360.0f;
+    } else if (part->mRotation.y < 0.0f) {
+        part->mRotation.y += 360.0f;
     }
 
     part->mRotation.z += z;
-    if (part->mRotation.z <= 360.0f) {
-        if (part->mRotation.z < 0.0f) {
-            part->mRotation.z += 360.0f;
-        }
-    }
-    else {
+    if (part->mRotation.z > 360.0f) {
         part->mRotation.z -= 360.0f;
+    } else if (part->mRotation.z < 0.0f) {
+        part->mRotation.z += 360.0f;
     }
 }
 
@@ -610,9 +873,9 @@ void _CheckMoveCount(BattleUnit* unit) {
 }
 
 void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* strength) {
-    s8 status_turns, status_strength;
+    s8 status_turns = 0, status_strength = 0;
 
-    switch (type) {
+    switch ((s8)type) {
         case STATUS_SLEEP:
             status_strength = unit->mSleepTurns;
             status_turns = status_strength;
@@ -1061,7 +1324,10 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
     if (turns) {
         return TRUE;
     }
-    return type == STATUS_ELECTRIC && unit->badgesEquipped.ZapTap;
+    if ((s8)type == STATUS_ELECTRIC && unit->badgesEquipped.ZapTap) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
@@ -1092,6 +1358,27 @@ void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags) {
 }
 
 char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
+    BattleDispPose* pose = part->poseTable;
+    s32 bound;
+
+    if (type <= 0x1C) {
+        bound = 0x1C;
+    } else if (type < 0x28) {
+        bound = 0x27;
+    } else if (type < 0x46) {
+        bound = 0x45;
+    } else {
+        return NULL;
+    }
+    while (pose) {
+        if ((s32)pose->poseId >= 0x46) {
+            return NULL;
+        }
+        if ((s32)pose->poseId == type || (s32)pose->poseId == bound) {
+            return (char*)pose->poseName;
+        }
+        pose++;
+    }
     return NULL;
 }
 
@@ -1099,9 +1386,7 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
 
 
 
-void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2) {
 
-}
 
 
 
@@ -1129,51 +1414,52 @@ void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
 
 s32 BtlUnit_GetFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;
+    BattleWork* wp = _battleWorkPointer;
     s32 result = unit->currentFp;
 
     if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
-        result = BattleGetMarioPtr(_battleWorkPointer)->currentFp;
+        result = BattleGetMarioPtr(wp)->currentFp;
     }
     return result;
 }
 
 void BtlUnit_SetFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
-    if (kind < TYPE_PARTNER_MIN || kind >= TYPE_PARTNER_MAX) {
+    BattleWork* wp = _battleWorkPointer;
+
+    if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
+        BattleGetMarioPtr(wp)->currentFp = value;
+    } else {
         unit->currentFp = value;
-    }
-    else {
-        BattleGetMarioPtr(_battleWorkPointer)->currentFp = value;
     }
 }
 
 s32 BtlUnit_GetMaxFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;
+    BattleWork* wp = _battleWorkPointer;
     s32 result = unit->maxFp;
 
     if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
-        result = BattleGetMarioPtr(_battleWorkPointer)->maxFp;
+        result = BattleGetMarioPtr(wp)->maxFp;
     }
     return result;
 }
 
 void BtlUnit_SetMaxFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
-    if (kind < TYPE_PARTNER_MIN || kind >= TYPE_PARTNER_MAX) {
+    BattleWork* wp = _battleWorkPointer;
+
+    if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
+        BattleGetMarioPtr(wp)->maxFp = value;
+    } else {
         unit->maxFp = value;
-    }
-    else {
-        BattleGetMarioPtr(_battleWorkPointer)->maxFp = value;
     }
 }
 
 void BtlUnit_RecoverHp(BattleUnit* unit, s32 value) {
-    s32 hp;
-
     unit->currentHp += value;
-    hp = unit->maxHp;
-    if (unit->currentHp > hp) {
-        unit->currentHp = hp;
+    if (unit->currentHp > unit->maxHp) {
+        unit->currentHp = unit->maxHp;
     }
 }
 
@@ -1236,5 +1522,12 @@ BOOL BtlUnit_CheckData(BattleUnit* unit, s32 tag) {
 }
 
 BOOL BtlUnit_GetEnemyBelong(BattleUnit* unit) {
-    return UNIT_ALLIANCE_PARTY ? FALSE : TRUE; //wrong, can't be arsed to match
+    switch (unit->mAlliance) {
+        case 0:
+            return TRUE;
+        case 1:
+            return FALSE;
+        default:
+            return unit->mAlliance;
+    }
 }
