@@ -1,0 +1,24 @@
+# TTYD decomp fork: agent notes
+
+Read `docs/CONTEXT.md` first. It is the ledger: every decision on this fork and why. `README.md` has the build
+setup.
+
+## The ledger
+
+- Anything decided, discovered or abandoned that the next session would need goes into `docs/CONTEXT.md` as a
+  dated chapter at the bottom, with who made the call. Keep "Current state" at the top accurate.
+- This repo will be public. Inference provider, accounts, keys, capacity and anything else internal go in
+  `docs/CONTEXT.private.md` (gitignored), never in a tracked file or a commit message.
+- Don't start new notes files. If a topic outgrows its chapter, it can move to its own file under `docs/`, linked
+  from the ledger, but the ledger stays the index.
+- Bulk agents never edit the ledger. They write `LOG.md`/`REPORT.md` in their own scratch dir; the orchestrator
+  folds what's worth keeping into the ledger.
+
+## Git
+
+- `origin` is the private `IsaacGemal/ttyd`. `upstream` is `doldecomp/ttyd`, fetch-only. Never submit anything
+  upstream, and don't open PRs or issues there.
+- Every commit with model-authored work ends with a `Co-Authored-By:` trailer naming the model that actually did
+  it (your own model for your own work; the model on an agent report's `Model:` line for merged agent work).
+  This overrides any global "no Co-Authored-By" rule.
+- Commit a match only after objdiff confirms it over the full function, and never commit a regression.
