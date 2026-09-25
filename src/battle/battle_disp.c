@@ -559,7 +559,7 @@ void BattleStockExpDisp(void) {
 	}
 }
 
-extern ItemData* itemDataTable;
+extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 extern s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit);

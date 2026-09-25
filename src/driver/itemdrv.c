@@ -1,3 +1,5 @@
+// mario_pouch.h declares pouchGetCoin as s16, but itemCoinDrop in the original uses the result without sign
+// extension, as if this file saw it declared int. Hide the header's prototype and redeclare it.
 #define pouchGetCoin pouchGetCoin_decl
 #include "mario/mario_pouch.h"
 #undef pouchGetCoin

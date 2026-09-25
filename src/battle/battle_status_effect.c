@@ -1,4 +1,5 @@
 #include "battle/battle_status_effect.h"
+#include "driver/windowdrv.h"
 #include "battle/battle_unit.h"
 #include "battle/battle.h"
 #include "driver/icondrv.h"
@@ -101,7 +102,6 @@ f32 sinfd(f32 x);
 BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit);
 void _st_chg_msg_disp(CameraId camera, void* param);
 const char* msgSearch(const char* tag);
-extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 height, f32 width, f32 curve);
 u32 FontGetMessageWidthLine(const char* msg, u16* lines);
 void FontDrawStart(void);
 void FontDrawMessage(s32 x, s32 y, const char* msg);
@@ -716,7 +716,7 @@ void _st_chg_msg_disp(CameraId camera, void* param) {
 	width = packed & 0xFFFF;
 	half = (packed >> 16) & 0x7FFF;
 	f31 = 0.0f - (f32)half;
-	windowDispGX_Waku_col(0, &color, f31 - 20.0f, -117.0f + (f32)(lines * 0x1D), (f32)(width + 0x28),
+	windowDispGX_Waku_col(0, color, f31 - 20.0f, -117.0f + (f32)(lines * 0x1D), (f32)(width + 0x28),
 	                      (f32)((lines + 1) * 0x1D + 1), 10.0f);
 	FontDrawStart();
 	FontDrawMessage((s32)f31, (s32)-120.0f + lines * 0x1D, msg);

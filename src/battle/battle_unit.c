@@ -1662,7 +1662,6 @@ s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c) {
     return BtlUnit_snd_se_pos(unit, a, b, c, &pos);
 }
 
-extern s32 psndSFXOn_3D(const char* name, Vec* pos);
 extern void psndSFX_pit(s32 id, s32 pitch);
 extern void psndSFX_vol(s32 id, s32 vol);
 extern s32 psndSFX_get_vol(s32 id);

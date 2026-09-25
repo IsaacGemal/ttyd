@@ -52,6 +52,8 @@ extern const char* msgSearch(const char* tag);
 extern void FontDrawStart(void);
 extern u16 FontGetMessageWidth(const char* msg);
 extern void FontDrawString(const char* str, f32 x, f32 y);
+// Differs from windowdrv.h (s16, GXColor by value): with the header's signature the caller copies the color
+// and _disp_escape_wall_message stops matching (99.06%). The ABI is the same; the original passes it uncopied.
 extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
 
 // .sdata data tables (defined here so references use the small-data area).

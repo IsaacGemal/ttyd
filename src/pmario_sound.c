@@ -4621,8 +4621,8 @@ void psndSetPosDirListener(Vec* position, f32 direction) {  //1:1
     psnd.direction = direction;
 }
 
-void psndSFXOn_3D(const char* name, Vec* position) {
-	__psndSFXOn((s32)name, 0xFF, 0xFF, 0, position, 0, 0x10, 0);
+s32 psndSFXOn_3D(const char* name, Vec* position) {
+	return __psndSFXOn((s32)name, 0xFF, 0xFF, 0, position, 0, 0x10, 0);
 }
 
 //functions below were not present in the placeholder file
