@@ -300,21 +300,6 @@ void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
 	animPoseSetLocalTimeRate(*(s32*)((char*)unit + 0x1c0), ((f32*)&unit->hpGauge.field_0xC)[1] * ((f32*)&unit->hpGauge.field_0xC)[2]);
 }
 
-void btlDispPoseAnime(BattleUnit* unit) {
-	s32* wp = (s32*)((char*)unit + 0x204);
-
-	*wp &= ~0x12;
-	*wp |= 1;
-	*wp &= ~(0xF << 7);
-	*wp &= ~(0xF << 28 | 0x7 << 28);
-}
-
-void btlDispChangePeraAnime(BattleUnit* unit) {
-	((f32*)&unit->hpGauge.field_0xC)[1] = 0.0f;
-	*(u8*)((char*)unit + 0x215) = 0;
-	animPoseSetEffectAnim(*(s32*)((char*)unit + 0x1c0), str_802EDE38, 1);
-}
-
 f32 getGravityDispOffset(BattleUnit* unit) {
 	volatile f64 d;
 	union { f64 d; u32 w[2]; } u;
