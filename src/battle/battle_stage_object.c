@@ -459,12 +459,12 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 	if (isFirstCall) {
 		for (i = 0; i < 64; i++) {
 			unit = BattleGetUnitPtr(wp, i);
-			if (unit != NULL && (*(u32*)((u8*)unit + 0x1C) & 0x80000000) == 0
+			if (unit != NULL && (unit->flags & 0x80000000) == 0
 			    && !BtlUnit_CheckStatus(unit, 0x1B)) {
 				if (*(void**)((u8*)unit + 0x2BC) != NULL) {
 					EventEntry* e = evtEntry(*(void**)((u8*)unit + 0x2BC), 10, 0);
 					if (e != NULL) {
-						e->unitId = *(s32*)((u8*)unit + 0x0);
+						e->unitId = unit->unitId;
 					}
 					*(s32*)((u8*)unit + 0x2C0) = e->eventId;
 				}
@@ -473,7 +473,7 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 	}
 	for (i = 0; i < 64; i++) {
 		unit = BattleGetUnitPtr(wp, i);
-		if (unit != NULL && (*(u32*)((u8*)unit + 0x1C) & 0x80000000) == 0) {
+		if (unit != NULL && (unit->flags & 0x80000000) == 0) {
 			if (*(s32*)((u8*)unit + 0x2C0) != 0 && !evtCheckID(*(s32*)((u8*)unit + 0x2C0))) {
 				*(s32*)((u8*)unit + 0x2C0) = 0;
 			}
@@ -600,10 +600,10 @@ USER_FUNC(_mobj_destroy) {
 			obj->mFlags |= 1;
 			unit = BattleGetUnitPtr(wp, obj->mBattleUnitIdx);
 			if (unit != NULL) {
-				u8* p = *(u8**)((u8*)unit + 0x14);
+				BattleUnitPart* p = unit->mParts;
 				while (p != NULL) {
-					*(u32*)(p + 0x1AC) |= 0x10000;
-					p = *(u8**)p;
+					p->attributes |= 0x10000;
+					p = p->mNextPart;
 				}
 			}
 		}
