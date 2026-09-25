@@ -340,3 +340,21 @@ Codex's review of wave 2 called the agents' `#pragma` toggles match hacks. Decis
 3. **Every pragma an agent adds carries a one-line reason,** and the cleanup index counts them so growth is
    visible. A pragma with no reason goes back to the agent. Melee kept 308 at 100%, so the count alone isn't a
    failure. `tools/ci.py` allows only these known kinds (`--allow-pragma` for review of anything new).
+
+## Partial functions: allowed if labelled, never empty (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Codex's reviews of wave 2 found the same failure four times: a function that isn't byte-matched but looks
+implemented (`evt_shop_setup` returned after an empty loop; `btlDispPoseAnime` was 95% similar but cleared the
+wrong flags; `battleCameraMoveTo` and `battleCameraMain` were empty). CI can't see these, since the byte check only
+proves matched functions. A stricter "only functions that reach 100% may change" rule was considered and set
+aside for now because it throws away real partial progress. The rule instead:
+
+1. **Labelled.** Any function an agent adds or changes that doesn't reach 100% carries a marker comment directly
+   above it, stating the score and what still differs, e.g. `// NONMATCHING (95%): wrong flag mask at 0x204`.
+   The merger checks this mechanically against the report's per-function scores.
+2. **Never empty.** An unmatched function with an empty or near-empty body (a stub standing in for real code) is
+   rejected outright.
+3. **Never worse.** A function's score may not drop (the existing ratchet); deliberate removals of wrong code use
+   `tools/ci.py --allow-regress FUNC`.
+
+Revisit if labelled partials keep causing trouble; the strict rule is the fallback.
