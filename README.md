@@ -33,6 +33,15 @@ Replace with your Discord server's ID and invite URL.
 
 A work-in-progress decompilation of Paper Mario: The Thousand-Year Door.
 
+> [!NOTE]
+> This is an AI-assisted fork of [doldecomp/ttyd](https://github.com/doldecomp/ttyd). All work up to the fork
+> point is theirs: NWPlayer123 and the other doldecomp contributors built the project, its tooling and the first
+> stretch of matched code, and released it under the MIT license.
+>
+> Work added here is done with AI agents. Every function is accepted only when it compiles to the exact bytes of
+> the original game, and the agents' match attempts are kept as a record of how each one was reached. Nothing from
+> this fork is submitted upstream.
+
 This repository does **not** contain any game assets or assembly whatsoever. An existing copy of the game is required.
 
 Supported versions:
