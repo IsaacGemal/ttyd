@@ -264,7 +264,7 @@ Lessons for the swarm:
   strict; loosen it to an allowlist of these known ones, still flagging anything else.
 - Snood's cleanup recon found the same families by hand (register pins = hack, duplicate aliases = retype).
 
-## Melee as the reference, and a rising merge bar (2026-09-25, Isaac; written up by Claude Opus 5.5)
+## Melee as the reference, and guarding against slop (2026-09-25, Isaac; written up by Claude Opus 5.5)
 
 1. **Other finished decomps are sources of truth; Melee first.** Melee (doldecomp/melee, local at `~/melee`)
    reached 100% this month: same console, same compiler family, ~3.9 MB of code like ours, finished by the
@@ -273,13 +273,9 @@ Lessons for the swarm:
    and `PAD_STACK` conventions, and its git history, which shows how a project gets from 0 to 100 and how the
    long tail was finished. Also relevant: other Metrowerks GameCube decomps (Pikmin 2, Wind Waker, Sunshine,
    Twilight Princess) for shared libraries and idioms.
-2. **The merge bar rises over time, and it's automated.** Agents can grind indefinitely; review time can't. So
-   as many standards as possible become machine checks that agents must pass before a human or orchestrator looks
-   at the result, leaving review for judgment calls ("take this, take this, not this"). Raise the bar in steps,
-   like the ratchet itself, since a bar that's too strict too early stops agents from landing anything:
-   - now: byte match, no regressions, lint (no asm, no unexplained pragmas);
-   - next: cleanup-index counts may not rise (see the Melee cleanup chapter);
-   - then: match hacks only inside `#ifdef MUST_MATCH`, so the default code reads cleanly;
-   - later: naming and header standards learned from Melee (named struct fields over raw offsets, one
-     canonical declaration per symbol).
-   Melee's finished code is the calibration for where the bar should end up.
+2. **Guarding against slop as the problems get harder.** Agents can keep going indefinitely; review time can't.
+   As the work moves to harder functions, we'll want better ways to make sure agents aren't producing slop
+   (code that matches but reads badly or cuts corners), ideally as automated checks or flags so review can stay
+   on the judgment calls. The finished repos, Melee especially, are what those checks can be modelled on: its
+   cleanup index is one example. We don't know yet exactly what this looks like. What we have now, at minimum:
+   lint, byte match, and no regressions (`tools/ci.py`).
