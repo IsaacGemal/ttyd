@@ -184,3 +184,13 @@ function failed at lint. Clean run: ~25 s on the Mac.
 
 Next: run it on the tower as a self-hosted GitHub runner while the repo is private (the game stays on the
 tower). Before going public that runner must stop running pull-request code.
+
+## Parked ideas
+
+Considered and deliberately not built yet. Pick one up by adding a dated chapter.
+
+- **Self-hosted GitHub runner on the tower** (parked 2026-09-25). Supersedes the "Next" line of the local-CI
+  chapter. Would run `tools/ci.py` on each push and show checks in GitHub's UI. Not needed now: the merger calls
+  `tools/ci.py` directly and records the result in the PR or commit. Revisit when the repo goes public, for a
+  visible "build passing" badge; then it must run only on pushes to `main`, never on pull requests (see the
+  private go-public checklist). Not implemented, not tested.
