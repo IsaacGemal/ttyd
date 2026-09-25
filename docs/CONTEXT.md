@@ -89,3 +89,10 @@ machine, and decomp.dev's CI) did not, so that unit's 38 matched functions count
 the whole gap between a Mac build (2,065 functions) and decomp.dev (2,027). Renaming the file (not the configure
 entry, which un-maps the unit) makes Mac and Linux agree: 2,065 / 9,770, MusyX 286 / 333. A local build is the
 source of truth; decomp.dev lags it by this fix until upstream picks it up.
+
+## Sep 19 swarm workspaces cleared (2026-09-25, Isaac + Claude Opus 5.5)
+
+The tower's `~/ttyd-ws` (165 per-agent copies of the source from the Sep 19 run, ~890 MB) was deleted: that run
+predates the Snood method and its layout won't be reused. Its 146 `LOG.md` files (~580 KB) were kept on the Mac
+in the gitignored `archive/sep19-swarm-logs/`, unreviewed. They are notes on what mwcc needed to match
+specific functions, raw material for the shared compiler notes.
