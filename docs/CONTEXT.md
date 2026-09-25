@@ -546,10 +546,11 @@ What Snood's `tick` (3,680 B, 41% -> exact in about 20 commits) needed, and how 
    function compiles. Port Snood's `link_diff.py --regions` when the >3 KB functions (120 of them) come up.
 2. **Seeing inside the compiler.** Snood's compiler (agbcc) is open source, so its passes could be dumped. TTYD's
    (`mwcceppc.exe`, GC/2.6) is a closed binary. Candidates to get that back:
-   [mwcc-rs](https://github.com/zcanann/mwcc-rs) (a byte-exact Rust reimplementation in progress; register
+   [mwcc-rs](https://github.com/zcanann/mwcc-rs) (a Rust reimplementation aiming at byte-exact output, with
+   profiles for GC/1.3-2.7 including 2.6, and `--emit-artifacts` to dump its intermediate stages; register
    coloring is its hardest part) and [JackPriceBurns/mwcc](https://github.com/JackPriceBurns/mwcc) (partial
-   decompilation of Melee's version, with allocator notes). Both target other versions than 2.6. First
-   experiment when the time comes: compile our matched functions with mwcc-rs and see what share it reproduces.
+   decompilation of Melee's version, with allocator notes). First experiment when the time comes: compile our
+   matched functions with mwcc-rs's 2.6 profile and see what share it reproduces exactly.
    decomp-permuter already supports MWCC (Melee uses it).
 3. **Accumulated knowledge:** an idioms file, near-miss log and hard-function notes, built up over the project.
 4. **Patient, verified small steps by a strong model.**
