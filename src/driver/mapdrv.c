@@ -44,10 +44,14 @@ extern GXColor dat_80419844;
 extern GXColor dat_80419820;
 extern GXColor unk_80422f8c;
 extern GXColor unk_80422f90;
+extern GXColor unk_80422f84;
 extern f32 float_0_80419850;
 extern f32 float_1000_80419874;
 extern f32 float_10_80419864;
 extern f32 float_deg2rad_80419868;
+extern f32 float_1_80419860;
+extern Vec vec3_802c18f4[];
+extern Vec vec3_802c1900[];
 extern const char str_8041986C[];
 
 //.sdata
@@ -55,23 +59,29 @@ f32 scrl_uv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 s32 fog_type[5] = {2, 4, 5, 6, 7};
 
 //forward decls for functions defined later in this file
+static MapObject* mapGetMapObjSub(const char* name);
 void mapGrpFlagOff(const char* name, u32 flag);
 void mapGrpFlagOn(const char* name, u32 flag);
 void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
 void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
 void setColor(MapObject* obj, GXColor* color, s32 a3);
-void mapSetPolygon(MapObject* obj, s32 a2);
+void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
 void _mapDispMapGrp(MapObject* obj, void* a2);
 void _mapDispMapObj(MapObject* obj, void* a2);
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2);
-void _mapDispMapObj_NoMaterial(MapObject* obj, void* a2);
+void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj);
+void mapDispMapObj_bbox(s32 camId, MapObject* obj);
 void _setOffScrnId(MapObject* obj, s32 id, s32 a3);
 s32 offscreenNameToId(const char* name);
 void mapSearchDmdJointSub(void* a, void* b);
 void mapSearchDmdJointSub2(void* a, void* b, const char* c);
 void mapGrpSetColor(const char* name, GXColor* color);
+void mapObjFlagOff(const char* name, u32 flag);
+void mapObjFlagOn(const char* name, u32 flag);
+void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* scale, void* a4);
 
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
+	GXColor c;
 	GXColor color;
 
 	color = *(GXColor*)&unk_80422f90;
@@ -79,16 +89,36 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	color.g = g;
 	color.b = b;
 	color.a = a;
-	mapGrpSetColor(name, &color);
+	c = color;
+	mapGrpSetColor(name, &c);
 	mapGrpFlagOff(name, 0x40);
 }
 
+// NONMATCHING (98.45%): register allocation of the first inlined search and error body
+void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
+	GXColor color;
+	MapObject* obj;
+
+	color = *(GXColor*)&unk_80422f8c;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	obj = mapGetMapObjSub(name);
+	if (obj) {
+		*(u32*)((u8*)obj + 0xC) = *(u32*)&color;
+		*(u32*)obj->field_0x0 |= 0x40;
+	}
+	mapObjFlagOff(name, 0x40);
+}
+
+// NONMATCHING (95.71%): the "|" literal lands at a different .sdata2 offset than str_8041986C
 void mapSearchDmdJoint(void* a, char* b) {
-	if (*(u8*)b == 0x7C) {
-		mapSearchDmdJointSub2(a, b, str_8041986C);
+	if (*b != 0x7C) {
+		mapSearchDmdJointSub(a, b);
 	}
 	else {
-		mapSearchDmdJointSub(a, b);
+		mapSearchDmdJointSub2(a, b, "|");
 	}
 }
 
@@ -98,6 +128,79 @@ void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
 	_mapDispMapGrp_NoMaterial(obj, entry);
 	sysWaitDrawSync();
 	GXReadBoundingBox((u16*)((u8*)entry + 0xEC), (u16*)((u8*)entry + 0xEE), (u16*)((u8*)entry + 0xF0), (u16*)((u8*)entry + 0xF2));
+}
+
+// NONMATCHING (98.84%): loop i/offset register swap only
+void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
+	Mtx invMtx;
+	Mtx mtx;
+	s32 i;
+	GXColor color;
+
+	sysWaitDrawSync();
+	GXClearBoundingBox();
+	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	PSMTXInvXpose(mtx, invMtx);
+	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_ALL);
+	GXSetNumChans(1);
+	color = unk_80422f84;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	for (i = 0; i < obj->joints->partCount; i++) {
+		mapSetPolygon(obj, obj->joints->parts[i].mesh);
+	}
+	sysWaitDrawSync();
+	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
+}
+
+void mapObjGetPos(const char* name, Vec* pos) {
+	Vec pos2;
+	s32 scale;
+	MapObject* obj;
+
+	scale = 0;
+	pos2 = vec3_802c18f4[0];
+	obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		*pos = vec3_802c1900[0];
+	}
+	else {
+		mapObjGetPosSub(obj, &pos2, &scale, NULL);
+		PSVECScale(&pos2, pos, float_1_80419860 / (f32)scale);
+	}
+}
+
+void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj) {
+	Mtx mtx;
+	Mtx invMtx;
+	GXColor color;
+	s32 i;
+
+	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	PSMTXInvXpose(mtx, invMtx);
+	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_ALL);
+	GXSetNumChans(1);
+	color = unk_80422f84;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	for (i = 0; i < obj->joints->partCount; i++) {
+		mapSetPolygon(obj, obj->joints->parts[i].mesh);
+	}
 }
 
 static MapObject* mapGetMapObjSub(const char* name) {
@@ -123,11 +226,14 @@ static MapObject* mapGetMapObjSub(const char* name) {
 	return 0;
 }
 
+#pragma dont_inline on
+// NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
 void mapGrpSetColor(const char* name, GXColor* color) {
 	GXColor c = *color;
 
 	setColor(mapGetMapObjSub(name), &c, 0);
 }
+#pragma dont_inline reset
 
 void mapObjSetColor(const char* name, GXColor* color) {
 	MapObject* obj = mapGetMapObjSub(name);
@@ -149,6 +255,7 @@ void mapObjClearOffScreen(const char* name) {
 	*(u32*)obj->field_0x0 &= ~0x80;
 }
 
+// NONMATCHING (97.86%): offscreenNameToId result goes r3->r4 directly; target uses r0
 void mapGrpSetOffScreen(const char* name, const char* offName) {
 	_setOffScrnId(mapGetMapObjSub(name), offscreenNameToId(offName), 0);
 }
@@ -217,6 +324,7 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 	}
 }
 
+// NONMATCHING (99.35%): register allocation inside the inlined mapErrorEntry error body
 void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -279,6 +387,7 @@ void mapReStartAnimationAll(void) {
 	}
 }
 
+// NONMATCHING (97.61%): MWCC emits beq found+fallthrough, target emits bne continue;b found
 void mapPauseAnimation(const char* name) {
 	MapEntryAnimData* found;
 	s32 i;
@@ -291,13 +400,9 @@ void mapPauseAnimation(const char* name) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if (!(*(u16*)found & 0x1)) {
-				continue;
+			if ((*(u16*)found & 0x1) && strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
+				goto found;
 			}
-			if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
-				continue;
-			}
-			goto found;
 		}
 	}
 	found = NULL;
@@ -307,6 +412,7 @@ found:
 	}
 }
 
+// NONMATCHING (97.61%): MWCC emits beq found+fallthrough, target emits bne continue;b found
 void mapReStartAnimation(const char* name) {
 	MapEntryAnimData* found;
 	s32 i;
@@ -319,13 +425,11 @@ void mapReStartAnimation(const char* name) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if (!(*(u16*)found & 0x1)) {
-				continue;
+			if (*(u16*)found & 0x1) {
+				if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
+					goto found;
+				}
 			}
-			if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
-				continue;
-			}
-			goto found;
 		}
 	}
 	found = NULL;
@@ -335,6 +439,7 @@ found:
 	}
 }
 
+// NONMATCHING (97.66%): MWCC emits beq found+fallthrough, target emits bne continue;b found
 void mapSetPlayRate(const char* name, f32 rate) {
 	MapEntryAnimData* found;
 	s32 i;
@@ -347,13 +452,11 @@ void mapSetPlayRate(const char* name, f32 rate) {
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if (!(*(u16*)found & 0x1)) {
-				continue;
+			if (*(u16*)found & 0x1) {
+				if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
+					goto found;
+				}
 			}
-			if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
-				continue;
-			}
-			goto found;
 		}
 	}
 	found = NULL;
@@ -489,10 +592,13 @@ void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
 	*c2 = *(u32*)((u8*)entry + 0x34);
 }
 
+// NONMATCHING (97.00%): register allocation of the inlined mapWork/activeGroup address computation
 void mapSetFog(u32 color, f32 near, f32 far, u32* color2) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-	u32 c2 = *color2;
+	MapWork* wp = mapWork + activeGroup;
+	MapEntry* entry = &wp->entries[0];
+	u32 c2;
 
+	c2 = *color2;
 	*(u32*)((u8*)entry + 0x28) = color;
 	*(f32*)((u8*)entry + 0x2C) = near;
 	*(f32*)((u8*)entry + 0x30) = far;
@@ -505,6 +611,80 @@ void mapGrpFlushOff(const char* name) {
 
 void mapGrpFlushOn(const char* name) {
 	mapGrpFlagOn(name, 0x100000);
+}
+
+#pragma dont_inline on
+// NONMATCHING (99.29%): register allocation inside the inlined mapErrorEntry error body
+void mapGrpFlagOff(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		mapFlgOff(obj, flag, 0);
+	}
+}
+
+// NONMATCHING (99.29%): register allocation inside the inlined mapErrorEntry error body
+void mapGrpFlagOn(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		mapFlgOn(obj, flag, 0);
+	}
+}
+#pragma dont_inline reset
+
+// NONMATCHING (99.28%): register allocation inside the inlined mapErrorEntry error body
+void mapObjFlagOff(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~flag;
+	}
+}
+
+// NONMATCHING (99.32%): register allocation inside the inlined mapErrorEntry error body
+void mapObjFlagOn(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
+		*(u32*)obj->field_0x0 |= flag;
+	}
+}
+
+// NONMATCHING (99.26%): register allocation inside the inlined mapErrorEntry error body
+void mapObjFlushOff(const char* name) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~0x100000;
+	}
+}
+
+// NONMATCHING (99.26%): register allocation inside the inlined mapErrorEntry error body
+void mapObjFlushOn(const char* name) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 |= 0x100000;
+	}
 }
 
 void mapDispMapGrp(MapObject* obj, void* a2) {
@@ -583,6 +763,7 @@ s32 mapGetJoints(MapFileJoint* joint) { //1:1
 	return numJoints;
 }
 
+// NONMATCHING (89.41%): local .rodata constants land at different offsets than vec3_802c16d8/e4
 void mapGetBoundingBox(Vec min, Vec max) {
 	Vec vec;
 	MapFileJoint* joint;
@@ -646,6 +827,7 @@ void mapInit(void) {
 	mapClipOffFlag = FALSE;
 }
 
+// NONMATCHING (0.00%): not implemented
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	int i;
 	MapFileJointPart* part;
@@ -661,6 +843,7 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	}
 }
 
+// NONMATCHING (0.40%): only a stub is present
 MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	return NULL;
 
@@ -670,6 +853,7 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 }
 
 //recursively inlined
+// NONMATCHING (70.05%): partial recursive object-tree build; branch/register differences
 MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isRoot, s32 index) {
 	MapObject* obj = _mapEnt(joint, parent, mtx, index);
 	if (joint->child) {
@@ -683,6 +867,7 @@ MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isR
 	return obj;
 }
 
+// NONMATCHING (99.21%): wp vs index*0x178 register swap
 MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	MapWork* wp;
 	u32 size;
@@ -696,6 +881,7 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
 
+// NONMATCHING (0.70%): only the opening/loop skeleton is present
 void makeDisplayList(BOOL group) {
 
 }
@@ -717,6 +903,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
+// NONMATCHING (92.24%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	MapWork* wp = &mapWork[activeGroup];
 	MapEntry* entry = &wp->entries[0];
@@ -740,7 +927,7 @@ found:
 		if (*(u16*)found & 0x2) {
 			*valid = TRUE;
 		}
-		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->retraceCount;
+		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->framerate;
 	}
 	else {
 		*valid = TRUE;
@@ -749,6 +936,7 @@ found:
 
 //more animation functions
 
+// NONMATCHING (21.94%): partial map loader; large body still differs
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
@@ -856,9 +1044,11 @@ extern void envReInit(void);
 extern void camUnLoadRoad(CameraId cameraId);
 extern void camSetTypePersp(CameraId cameraId);
 extern BOOL arcDataCheck(void* data);
+extern void* aramMgrToAram(void* data, u32 size);
 extern void arcDelete(s32 id);
 extern f32 float_0_804198cc;
 
+// NONMATCHING (96.94%): entry vs i register swap (target r29=entry, r30=i)
 void mapUnLoad(void) {
 	MapEntry* entry;
 	s32 i;
@@ -919,6 +1109,7 @@ BOOL mapPreLoad(void) {
 	return TRUE; //do nothing
 }
 
+// NONMATCHING (99.42%): wp kept in r31 but the load/move order differs from target
 void mapLoad(const char* map) {
 	MapWork* wp;
 
@@ -930,11 +1121,64 @@ void mapLoad(const char* map) {
 	wp->entries[0].count = 1;
 }
 
+// NONMATCHING (96.54%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0
+void bmapLoad(const char* map1, const char* map2) {
+	s32 offset;
+	u8* p;
+	MapEntry* entry;
+	s32 i;
+	MapWork* wp;
+
+	sysWaitDrawSync();
+	offset = 0;
+	wp = mapWork;
+	activeGroup = 0;
+	p = (u8*)wp;
+	for (i = 0; i < wp->entries[0].count; i++) {
+		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
+		if (*(void**)((u8*)entry + 0x16C)) {
+			_mapFree(*(void**)((u8*)entry + 0x16C));
+		}
+		*(s32*)((u8*)entry + 0x168) = 0;
+		*(s32*)((u8*)entry + 0x16C) = 0;
+		*(s32*)(p + 0x170) = 0;
+		*(s32*)(p + 0x178) = 0;
+		*(s32*)(p + 0x174) = 0;
+		if (*(void**)(p + 0x7C)) {
+			if (!arcDataCheck(*(void**)(p + 0x7C))) {
+				*(void**)(p + 0x170) = aramMgrToAram(*(void**)(p + 0x7C), *(u32*)(p + 0x80));
+				*(void**)(p + 0x178) = aramMgrToAram(*(void**)(p + 0x84), *(u32*)(p + 0x88));
+				_mapFree(*(void**)(p + 0x84));
+				_mapFree(*(void**)(p + 0x7C));
+				*(void**)(p + 0x84) = NULL;
+				*(void**)(p + 0x7C) = NULL;
+			}
+			else {
+				*(void**)(p + 0x174) = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));
+				_mapFree(*(void**)(p + 0x8C));
+				*(void**)(p + 0x8C) = NULL;
+			}
+		}
+		offset += 0x178;
+		p += 0x178;
+	}
+	activeGroup = 1;
+	entry = (MapEntry*)((u8*)mapWork + 0x2F4);
+	memset(entry, 0, 0x2F4);
+	_mapLoad((MapWork*)entry, 0, map1);
+	entry->count = 1;
+	if (map2) {
+		_mapLoad((MapWork*)entry, 1, map2);
+		entry->count = 2;
+	}
+}
 
 
 
 
 
+
+// NONMATCHING (42.11%): partial TEV setup; large body still differs
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXTevStageID tevStage;
 	Mtx queen_mtx;
@@ -1242,10 +1486,12 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 
 
+// NONMATCHING (0.07%): only a stub is present
 void mapMain(void) {
 
 }
 
+// NONMATCHING (0.19%): only a stub is present
 void mapDisp(void) {
 
 }
@@ -1277,10 +1523,12 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
 
 
 
+// NONMATCHING (0.28%): only a stub is present
 void mapSetMaterialLight(s32 flags, Vec position) {
 
 }
 
+// NONMATCHING (0.50%): only a stub is present
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 
 }
