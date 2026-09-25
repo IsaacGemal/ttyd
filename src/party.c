@@ -1,6 +1,38 @@
 #include "party.h"
 #include "driver/animdrv.h"
 #include "mario/mario_pouch.h"
+#include "mario/mariost.h"
+#include "memory.h"
+double sin(double x);
+double cos(double x);
+
+// Raw field accessors for fields missing from the shared PartyEntry header.
+#define P8(p, off) (*(u8*)((u8*)(p) + (off)))
+#define PS8(p, off) (*(s8*)((u8*)(p) + (off)))
+#define P16(p, off) (*(u16*)((u8*)(p) + (off)))
+#define P32(p, off) (*(u32*)((u8*)(p) + (off)))
+#define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
+
+void partyChgRunMode(PartyEntry* party, s32 mode);
+void partyChgMot(PartyEntry* party, s32 mot);
+s32 partyEntryMain(void);
+s32 partyGetHp(void);
+void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
+void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
+void bomhei_use_cancel(void);
+void getRidePos(PartyEntry* party, Vec* pos);
+void vivianUnhold(PartyEntry* party);
+void marioGetoffYoshi(void);
+void driveParty(PartyEntry* party);
+void unk_8013be14(void);
+void partyHelloMain(PartyEntry* party);
+void L_partyVivianTailStart(PartyEntry* party);
+f32 toMovedir(f32 angle);
+f32 toMovedir2(f32 a, f32 b);
+f32 toMovedirSimple(f32 a);
+s32 N_marioShipGetDir(void);
+s32 yoshiGetStatus(void);
+void sincosf(f32* ret_sin, f32* ret_cos, f32 degree);
 
 //.data
 typedef struct PartyData {
@@ -16,67 +48,12 @@ typedef struct PartyData {
     void* exit_func;  // 9
 } PartyData;
 
-char* partyPoseTbl[20][15] = {
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-    { "PKR_Z_1", "PKR_S_1", "PKR_W_1", "PKR_R_1", "PKR_J_1A", "PKR_J_1B", "PKR_N_1", "PKR_T_1", "PKR_D_1", "PKR_D_4",
-      "PKR_S_1", "PKR_S_1", "PKR_D_2", "PKR_W_2", "PKR_R_2" },
-    { "PNK_Z_1", "PNK_S_1", "PNK_W_1", "PNK_R_1", "PNK_J_1A", "PNK_J_1B", "PNK_N_1", "PNK_T_1", "PNK_D_1", "PNK_D_4",
-      "PNK_S_1", "PNK_S_1", "PNK_D_2", "PNK_W_2", "PNK_R_2" },
-    { "Z_1", "S_1", "W_1", "R_1", "J_1A", "J_1B", "N_1", "T_1", "D_1", "F_1", "S_1", "S_1", "D_2", "W_3", "R_3" },
-    { "PYS_Z_1", "PYS_S_1", "PYS_W_1", "PYS_R_1", "PYS_J_1A", "PYS_J_1B", "PYS_N_1", "PYS_T_1", "PYS_D_1", "PYS_D_4",
-      "PYS_S_1", "PYS_S_1", "PYS_D_2", "PYS_W_3", "PYS_R_3" },
-    { "PWD_Z_1", "PWD_S_1", "PWD_W_1", "PWD_R_1", "PWD_S_1", "PWD_S_1", "PWD_N_1", "PWD_T_1", "PWD_D_1", "PWD_F_1",
-      "PWD_S_1", "PWD_S_1", "PWD_D_2", "PWD_W_2", "PWD_R_2" },
-    { "PTR_Z_1", "PTR_S_1", "PTR_W_1", "PTR_R_1", "PTR_S_1", "PTR_S_1", "PTR_N_1", "PTR_T_1", "PTR_D_1", "PTR_F_1",
-      "PTR_Z_1", "PTR_Z_1", "PTR_D_2", "PTR_W_2", "PTR_R_2" },
-    { "PCH_Z_1", "PCH_S_1", "PCH_W_1", "PCH_R_1", "PCH_J_1A", "PCH_J_1B", "PCH_N_1", "PCH_T_1", "PCH_D_1", "PCH_F_1",
-      "PCH_S_1", "PCH_S_1", "PCH_D_2", "PCH_R_2", "PCH_W_2" },
-    { "PYS_E_1", "PYS_E_2", "PYS_E_3", "PYS_E_3", "PYS_E_2", "PYS_E_2", "PYS_E_2", "PYS_E_2", "PYS_E_2", "PYS_E_2",
-      "PYS_E_2", "PYS_E_2", "PYS_E_2", "PYS_E_3", "PYS_E_3" },
-    { "Z_1", "S_1", "W_1", "R_1", "J_1A", "J_1B", "S_1", "T_1", "D_1", "D_1", "Z_1", "Z_1", "S_1", "W_1", "R_1" },
-    { "Z_1", "S_1", "W_1", "R_1", "J_1A", "J_1B", "S_1", "T_1", "Z_1", "Z_1", "S_1", "Z_1", "Z_1", "W_1", "R_1" },
-    { "Z_1", "S_1", "W_1", "R_1", "W_1", "W_1", "S_1", "T_1", "Z_1", "Z_1", "S_1", "Z_1", "Z_1", "W_1", "R_1" },
-    { "Z_1", "S_1", "W_1", "R_1", "S_1", "S_1", "S_1", "T_1", "S_1", "S_1", "S_1", "S_1", "S_1", "W_1", "R_1" },
-    { "PKR_Z_1", "PKR_S_1", "PKR_W_1", "PKR_R_1", "PKR_J_1A", "PKR_J_1B", "PKR_N_1", "PKR_T_1", "PKR_D_1", "PKR_D_4",
-      "PKR_S_1", "PKR_S_1", "PKR_D_2", "PKR_W_2", "PKR_R_2" },
-    { "PNK_Z_1", "PNK_S_1", "PNK_W_1", "PNK_R_1", "PNK_J_1A", "PNK_J_1B", "PNK_N_1", "PNK_T_1", "PNK_D_1", "PNK_D_4",
-      "PNK_S_1", "PNK_S_1", "PNK_D_2", "PNK_W_2", "PNK_R_2" },
-    { "Z_1", "S_1", "W_1", "R_1", "J_1A", "J_1B", "N_1", "T_1", "D_1", "F_1", "S_1", "S_1", "D_2", "W_3", "R_3" },
-    { "PYS_Z_1", "PYS_S_1", "PYS_W_1", "PYS_R_1", "PYS_J_1A", "PYS_J_1B", "PYS_N_1", "PYS_T_1", "PYS_D_1", "PYS_D_4",
-      "PYS_S_1", "PYS_S_1", "PYS_D_2", "PYS_W_2", "PYS_R_2" },
-    { "PWD_Z_1", "PWD_S_1", "PWD_W_1", "PWD_R_1", "PWD_S_1", "PWD_S_1", "PWD_N_1", "PWD_T_1", "PWD_D_1", "PWD_F_1",
-      "PWD_S_1", "PWD_S_1", "PWD_D_2", "PWD_W_2", "PWD_R_2" },
-    { "PTR_Z_1", "PTR_S_1", "PTR_W_1", "PTR_R_1", "PTR_S_1", "PTR_S_1", "PTR_N_1", "PTR_T_1", "PTR_D_1", "PTR_F_1",
-      "PTR_Z_1", "PTR_Z_1", "PTR_D_2", "PTR_W_2", "PTR_R_2" },
-    { "PCH_Z_1", "PCH_S_1", "PCH_W_1", "PCH_R_1", "PCH_J_1A", "PCH_J_1B", "PCH_N_1", "PCH_T_1", "PCH_D_1", "PCH_F_1",
-      "PCH_S_1", "PCH_S_1", "PCH_D_2", "PCH_R_2", "PCH_W_2" }
-};
-
-char* partyDotPoseTbl[8][15] = {
-    { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL },
-    { "Z_2", "Z_2", "W_2", "R_2", "Z_2", "Z_2", "Z_2", "Z_2", "Z_2", "Z_2", "Z_2", "Z_2", "Z_2", "W_2", "R_2" },
-    { "Z_3", "Z_3", "W_3", "R_3", "Z_3", "Z_3", "Z_3", "Z_3", "Z_3", "Z_3", "Z_3", "Z_3", "Z_3", "W_3", "R_3" },
-    { "Z_13", "Z_13", "W_13", "R_13", "Z_13", "Z_13", "Z_13", "Z_13", "Z_13", "Z_13", "Z_13", "Z_13", "Z_13", "W_13",
-      "R_13" },
-    { "Z_5", "Z_5", "W_5", "R_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "W_5", "R_5" },
-    { "Z_4", "Z_4", "W_4", "R_4", "Z_4", "Z_4", "Z_4", "Z_4", "Z_4", "Z_4", "Z_4", "Z_4", "Z_4", "W_4", "R_4" },
-    { "Z_12", "Z_12", "W_12", "R_12", "Z_12", "Z_12", "Z_12", "Z_12", "Z_12", "Z_12", "Z_12", "Z_12", "Z_12", "W_12",
-      "R_12" },
-    { "Z_14", "Z_14", "W_14", "R_14", "Z_14", "Z_14", "Z_14", "Z_14", "Z_14", "Z_14", "Z_14", "Z_14", "Z_14", "W_14",
-      "R_14" }
-};
-
-char* yoshiDotPoseTbl[7][15] = {
-    { "Z_5", "Z_5", "W_5", "R_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "Z_5", "W_5", "R_5" },
-    { "Z_6", "Z_6", "W_6", "R_6", "Z_6", "Z_6", "Z_6", "Z_6", "Z_6", "Z_6", "Z_6", "Z_6", "Z_6", "W_6", "R_6" },
-    { "Z_7", "Z_7", "W_7", "R_7", "Z_7", "Z_7", "Z_7", "Z_7", "Z_7", "Z_7", "Z_7", "Z_7", "Z_7", "W_7", "R_7" },
-    { "Z_8", "Z_8", "W_8", "R_8", "Z_8", "Z_8", "Z_8", "Z_8", "Z_8", "Z_8", "Z_8", "Z_8", "Z_8", "W_8", "R_8" },
-    { "Z_9", "Z_9", "W_9", "R_9", "Z_9", "Z_9", "Z_9", "Z_9", "Z_9", "Z_9", "Z_9", "Z_9", "Z_9", "W_9", "R_9" },
-    { "Z_10", "Z_10", "W_10", "R_10", "Z_10", "Z_10", "Z_10", "Z_10", "Z_10", "Z_10", "Z_10", "Z_10", "Z_10", "W_10",
-      "R_10" },
-    { "Z_11", "Z_11", "W_11", "R_11", "Z_11", "Z_11", "Z_11", "Z_11", "Z_11", "Z_11", "Z_11", "Z_11", "Z_11", "W_11",
-      "R_11" }
-};
+extern char* partyPoseTbl[20][15];
+extern char* partyDotPoseTbl[8][15];
+extern char* yoshiDotPoseTbl[7][15];
+extern PartyData partyDataTbl[];
+const f32 vec3_802ccd30[3] = { 0.0f, 0.0f, 0.0f };
+void partyGetAppearPos2(PartyEntry* party, Vec* pos);
 
 /*
     000b95ec 000020 800bebcc  4 partyGetPtr 	party.o
@@ -186,7 +163,16 @@ char* yoshiDotPoseTbl[7][15] = {
     000ad464 00dd4c 800b2a44  1 .text 	party.o
 */
 
+//.sbss
+s32 partyCtrlNo;
+PartyData* party_dp;
 PartyEntry* partyPtrTbl[2];
+
+//.sdata
+char* yoshigroup[7] = {
+    "c_babyyoshi",   "c_babyyoshi2", "c_babyyoshi3", "c_babyyoshi4",
+    "c_babyyoshi5",  "c_babyyoshi6", "c_babyyoshi7",
+};
 
 PartyEntry* partyGetPtr(s32 index) {
     if (index >= 0) {
@@ -500,4 +486,600 @@ s32 partyEntry2(s32 memberId) {
 
 void partySetCamId(PartyEntry* party, s32 cameraId) {
     party->camId = cameraId;
+}
+
+void partyKeyOn(void) {}
+
+void partyKeyOff(void) {}
+
+void partyShadowOff(PartyEntry* party) {
+    if (party) {
+        party->flags2 |= 0x100000;
+    }
+}
+
+void partyInit(void) {
+    memset(partyPtrTbl, 0, sizeof(partyPtrTbl));
+}
+
+void partyStop(PartyEntry* party) {
+    partyChgRunMode(party, 0);
+}
+
+void partyRun(PartyEntry* party) {
+    if (P8(party, 0x34) == 0) {
+        partyChgRunMode(party, 1);
+    }
+}
+
+f32 partyGetHeight(PartyEntry* party) {
+    if (party->currentMemberId == PARTY_MEMBER_YOSHI && (party->flags & PARTY_FLAG_IS_BEING_USED)) {
+        return 18.5f + PF32(party, 0xF0);
+    }
+    return PF32(party, 0xF0);
+}
+
+void partyInitCamId(PartyEntry* party) {
+    party->camId = marioGetCamId();
+}
+
+void partyCtrlOff(void) {
+    PartyEntry* party = partyPtrTbl[0];
+
+    if (party) {
+        party->flags |= PARTY_FLAG_CTRL_OFF;
+    }
+    party = partyPtrTbl[1];
+    if (party) {
+        party->flags |= PARTY_FLAG_CTRL_OFF;
+    }
+}
+
+void partyCtrlOn(void) {
+    PartyEntry* party = partyPtrTbl[0];
+
+    if (party) {
+        party->flags &= ~PARTY_FLAG_CTRL_OFF;
+    }
+    party = partyPtrTbl[1];
+    if (party) {
+        party->flags &= ~PARTY_FLAG_CTRL_OFF;
+    }
+}
+
+void L_partyClearCont(PartyEntry* party) {
+    P8(party, 0x158) = 0;
+    P8(party, 0x159) = 0;
+    P8(party, 0x15A) = 0;
+    P8(party, 0x15B) = 0;
+    P8(party, 0x15C) = 0;
+    P8(party, 0x15D) = 0;
+    P8(party, 0x15E) = 0;
+    P8(party, 0x15F) = 0;
+    P16(party, 0x150) = 0;
+    P16(party, 0x152) = 0;
+    P16(party, 0x154) = 0;
+    P16(party, 0x156) = 0;
+}
+
+s32 partyRideChk(PartyEntry* party) {
+    s32 result = 0;
+
+    if (party == NULL) {
+        return 0;
+    }
+    if (P8(party, 0x34) == 11) {
+        result = 1;
+        if (P8(party, 0x38) >= 2) {
+            result = 2;
+        }
+    }
+    return result;
+}
+
+void partySetForceMove(PartyEntry* party, s16 unk, f32 x, f32 z) {
+    PF32(party, 0x100) = x;
+    P16(party, 0x28) = unk;
+    PF32(party, 0x104) = z;
+    partyChgRunMode(party, 9);
+    partyChgMot(party, 1);
+}
+
+s32 partyEntryHello(void) {
+    s32 ret = partyEntryMain();
+
+    partyChgRunMode(partyGetPtr(ret), 4);
+    return ret;
+}
+
+s32 partyGoodbye(s32 index) {
+    s32 ret = 0;
+
+    if (index >= 0) {
+        partyChgRunMode(partyGetPtr(index), 8);
+        ret = 1;
+    }
+    return ret;
+}
+
+void partyUsePost(PartyEntry* party) {
+    typedef void (*PartyFunc)(PartyEntry*);
+
+    if (party && P8(party, 0x34) == 3) {
+        PartyFunc post = (PartyFunc)partyDataTbl[party->currentMemberId].post_func;
+
+        if (post) {
+            post(party);
+        }
+    }
+}
+
+void partyChgRunMode(PartyEntry* party, s32 mode) {
+    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
+        P8(party, 0x35) = P8(party, 0x34);
+        N__partyChgRunMode(party, P8(party, 0x34), mode);
+        P8(party, 0x34) = mode;
+        party->field_8 |= 8;
+    }
+}
+
+void partyChgPaper(PartyEntry* party, char* paper) {
+    if (party->flags2 & 2) {
+        return;
+    }
+    if (party->field_1C && strcmp((char*)party->field_1C, paper) == 0) {
+        return;
+    }
+    party->field_1C = (u32)paper;
+    party->field_20 = 0;
+    party->field_8 |= 0x4000;
+}
+
+void partyChgPose(PartyEntry* party, char* pose) {
+    if (party->flags2 & 2) {
+        return;
+    }
+    if (party->field_18 && strcmp(party->field_18, pose) == 0) {
+        return;
+    }
+    if (party->flags2 & 0x8000) {
+        return;
+    }
+    party->field_18 = pose;
+    party->field_20 = 0;
+    party->field_8 |= 0x2000;
+}
+
+void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
+    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
+        P8(party, 0x35) = P8(party, 0x34);
+        N__partyChgRunMode(party, P8(party, 0x34), mode);
+        P8(party, 0x34) = mode;
+        party->field_8 &= ~8;
+        P8(party, 0x38) = unk;
+    }
+}
+
+void L_allPartyRideOn(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        partyChgRunMode(party, 0xb);
+    }
+    party = partyGetPtr(marioGetExtraPartyId());
+    if (party) {
+        partyChgRunMode(party, 0xb);
+    }
+}
+
+void allPartyRideShip(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        bomhei_use_cancel();
+        party->flags |= 0x20000;
+        partyChgRunMode(party, 0xb);
+    }
+    party = partyPtrTbl[1];
+    if (party) {
+        party->flags |= 0x20000;
+        partyChgRunMode(party, 0xb);
+    }
+}
+
+void allPartyRidePlane(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        bomhei_use_cancel();
+        party->flags |= 0x10000;
+        partyChgRunMode(party, 0xb);
+    }
+    party = partyPtrTbl[1];
+    if (party) {
+        party->flags |= 0x10000;
+        partyChgRunMode(party, 0xb);
+    }
+}
+
+void allPartyRideOff(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party && P8(party, 0x34) == 0xb) {
+        P8(party, 0x38) = 0x64;
+    }
+    party = partyGetPtr(marioGetExtraPartyId());
+    if (party && P8(party, 0x34) == 0xb) {
+        P8(party, 0x38) = 0x64;
+    }
+}
+
+void allPartyRideOff2(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party && P8(party, 0x34) == 0xb) {
+        P8(party, 0x38) = 0x65;
+    }
+    party = partyGetPtr(marioGetExtraPartyId());
+    if (party && P8(party, 0x34) == 0xb) {
+        P8(party, 0x38) = 0x65;
+    }
+}
+
+void party_ride_yoshi_force_move(void) {
+    PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
+    Vec pos;
+
+    if (party) {
+        getRidePos(party, &pos);
+        ((u32*)&party->position)[0] = ((u32*)&pos)[0];
+        ((u32*)&party->position)[1] = ((u32*)&pos)[1];
+        ((u32*)&party->position)[2] = ((u32*)&pos)[2];
+        PF32(party, 0x110) = PF32(party->playerPtr, 0x1AC);
+        PF32(party, 0xFC) = toMovedir(PF32(party, 0x110));
+    }
+}
+
+s32 yoshiSetColor(void) {
+    s32 color = irand(1000);
+
+    if (color < 150) {
+        color = 0;
+    } else if (color < 300) {
+        color = 1;
+    } else if (color < 450) {
+        color = 2;
+    } else if (color < 600) {
+        color = 3;
+    } else if (color < 750) {
+        color = 4;
+    } else if (color < 900) {
+        color = 5;
+    } else {
+        color = 6;
+    }
+    ((void (*)(s32, s32))pouchSetPartyColor)(PARTNER_YOSHI, color);
+    return color;
+}
+
+void allPartyForceRideOn(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        N_partyForceChgRunMode(party, 0xb, 0xb);
+        party->flags2 |= 1;
+        partyShadowOff(party);
+    }
+    party = partyGetPtr(marioGetExtraPartyId());
+    if (party) {
+        N_partyForceChgRunMode(party, 0xb, 0xb);
+        party->flags2 |= 1;
+        partyShadowOff(party);
+    }
+}
+
+void partyUpdateKeyData(PartyEntry* party) {
+    s32 member = PS8(party, 0x30);
+
+    if (party->flags & 0x60000000) {
+        P8(party, 0x158) = 0;
+        P8(party, 0x159) = 0;
+        P8(party, 0x15A) = 0;
+        P8(party, 0x15B) = 0;
+        P8(party, 0x15C) = 0;
+        P8(party, 0x15D) = 0;
+        P8(party, 0x15E) = 0;
+        P8(party, 0x15F) = 0;
+        P16(party, 0x150) = 0;
+        P16(party, 0x152) = 0;
+        P16(party, 0x154) = 0;
+        P16(party, 0x156) = 0;
+        return;
+    }
+    P8(party, 0x158) = *(u8*)((u8*)gp + 0x13B8 + member);
+    P8(party, 0x159) = -*(u8*)((u8*)gp + 0x13BC + member);
+    P8(party, 0x15A) = *(u8*)((u8*)gp + 0x13C0 + member);
+    P8(party, 0x15B) = -*(u8*)((u8*)gp + 0x13C4 + member);
+    P8(party, 0x15C) = *(u8*)((u8*)gp + 0x13C8 + member);
+    P8(party, 0x15D) = *(u8*)((u8*)gp + 0x13CC + member);
+    P8(party, 0x15E) = 0;
+    P8(party, 0x15F) = 0;
+    P16(party, 0x150) = *(u32*)((u8*)gp + 0x1328 + member * 4);
+    P16(party, 0x152) = *(u32*)((u8*)gp + 0x1338 + member * 4);
+    P16(party, 0x154) = *(u32*)((u8*)gp + 0x1348 + member * 4);
+    P16(party, 0x156) = *(u32*)((u8*)gp + 0x1368 + member * 4);
+}
+
+s32 partyGetNum(void) {
+    s32 num = 0;
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        PartyEntry* party = partyGetPtr(i);
+
+        if (party && (party->flags & 1)) {
+            num++;
+        }
+    }
+    return num;
+}
+
+void partyMain(void) {
+    s32 num;
+    s32 i;
+
+    marioGetPtr();
+    num = partyGetNum();
+    if (num != 0) {
+        unk_8013be14();
+        for (i = 0; i < 2; i++) {
+            PartyEntry* party = partyPtrTbl[i];
+
+            if (party && (party->flags & 1) && marioBgmodeChk() != 1) {
+                driveParty(party);
+            }
+        }
+    }
+}
+
+void partyDokanEnd(s32 index, s32 unk) {
+    PartyEntry* party = partyGetPtr(index);
+
+    if (party && P8(party, 0x34) == 0xa) {
+        P8(party, 0x38) = 0x64;
+        P8(party, 0x2E) = unk;
+        party->flags2 &= ~8;
+        party->flags2 &= ~0x10;
+        party->flags2 &= ~0xC0;
+        party->flags &= ~0x04000000;
+        party->flags &= ~0x02000000;
+        if (party) {
+            party->flags2 &= ~0x100000;
+        }
+        *(Vec*)((u8*)party + 0xB8) = party->position;
+        L_partyVivianTailStart(party);
+    }
+}
+
+void partyHello(PartyEntry* party) {
+    const f32* v = vec3_802ccd30;
+    MarioWork* mario;
+
+    if (party->field_8 & 8) {
+        party->field_8 &= ~8;
+        mario = party->playerPtr;
+        if (P16(mario, 0x2E) == 0x16 || P16(mario, 0x2E) == 0x18 || P16(mario, 0x2E) == 0x19) {
+            P8(party, 0x38) = 0x1e;
+        } else if (P8(party, 0x34) == 4 || P8(party, 0x34) == 5) {
+            party->flags2 |= 0x10;
+            *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 54);
+            P8(party, 0x38) = 0;
+            PF32(party, 0x110) = PF32(mario, 0x1A8);
+            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+            party->position = *(Vec*)((u8*)mario + 0x8C);
+            *(Vec*)((u8*)party + 0xB8) = party->position;
+        } else if (P8(party, 0x34) == 7) {
+            *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 57);
+            P8(party, 0x38) = 0x14;
+            PF32(party, 0x110) = PF32(mario, 0x1A8);
+            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+        } else {
+            *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 60);
+            P8(party, 0x38) = 0xa;
+            PF32(party, 0x110) = PF32(mario, 0x1A8);
+            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+            party->position = *(Vec*)((u8*)mario + 0x8C);
+            *(Vec*)((u8*)party + 0xB8) = party->position;
+        }
+        party->flags &= ~0x100;
+    }
+    partyHelloMain(party);
+}
+
+void getRidePos(PartyEntry* party, Vec* pos) {
+    MarioWork* mario = party->playerPtr;
+    f32 angle;
+    f32 sn;
+    f32 cs;
+    u16 id = P16(mario, 0x2E);
+
+    if (id == 0x1A) {
+        angle = 3.1416f * toMovedir(PF32(mario, 0x1AC)) / 180.0f;
+        if (yoshiGetStatus() != 2) {
+            pos->x = PF32(mario, 0x8C) - 10.0f * (f32)sin(angle);
+            pos->z = PF32(mario, 0x94) - 10.0f * (f32)cos(angle);
+            pos->y = PF32(mario, 0x90) + 20.0f;
+        } else {
+            pos->x = PF32(mario, 0x8C) - 20.0f * (f32)sin(angle);
+            pos->z = PF32(mario, 0x94) - 20.0f * (f32)cos(angle);
+            pos->y = PF32(mario, 0x90) + 16.0f;
+        }
+        if (party->currentSlotId != 0) {
+            PartyEntry* other = partyGetPtr(marioGetPartyId());
+            f32 a = toMovedir2(PF32(mario, 0x1AC), 10.0f);
+
+            sincosf(&sn, &cs, a);
+            if (yoshiGetStatus() != 2) {
+                pos->x = other->position.x - 12.0f * sn;
+                pos->z = other->position.z - 12.0f * cs;
+                pos->y = other->position.y + 20.0f;
+            } else {
+                pos->x = other->position.x - 22.0f * sn;
+                pos->z = other->position.z - 22.0f * cs;
+                pos->y = other->position.y + 16.0f;
+            }
+        }
+    } else if (id == 0x18) {
+        pos->x = PF32(mario, 0x8C);
+        pos->z = PF32(mario, 0x94);
+        pos->y = PF32(mario, 0x90) + 40.0f;
+    } else if (id == 0x19) {
+        f32 a;
+
+        if (N_marioShipGetDir() != 0) {
+            a = 0.0f;
+        } else {
+            a = 180.0f;
+        }
+        a = toMovedirSimple(a);
+        sincosf(&sn, &cs, a);
+        pos->x = PF32(mario, 0x8C) + 22.0f * sn;
+        pos->z = PF32(mario, 0x94) + 22.0f * cs;
+        pos->y = PF32(mario, 0x90);
+    } else {
+        pos->x = PF32(mario, 0x8C);
+        pos->z = PF32(mario, 0x94);
+        pos->y = PF32(mario, 0x90) + 20.0f;
+    }
+}
+
+s32 partyEntry(void) {
+    s32 ret = partyEntryMain();
+    PartyEntry* party = partyGetPtr(ret);
+    s32 index = 1;
+    s32 lowHp;
+    char* pose;
+
+    P32(party, 0x70) = ((u32*)vec3_802ccd30)[0];
+    P32(party, 0x74) = ((u32*)vec3_802ccd30)[1];
+    P32(party, 0x78) = ((u32*)vec3_802ccd30)[2];
+    P8(party, 0x38) = 0xa;
+    PF32(party, 0x110) = PF32(party->playerPtr, 0x1A8);
+    PF32(party, 0x10C) = PF32(party->playerPtr, 0x1A8);
+    partyGetAppearPos2(party, &party->position);
+    *(Vec*)((u8*)party + 0xB8) = party->position;
+    if (!(party->flags2 & 2)) {
+        lowHp = 0;
+        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+            lowHp = 1;
+        }
+        if (lowHp == 1) {
+            index = 12;
+        }
+        if (!(party->flags2 & 0x8000)) {
+            pose = partyPoseTbl[party->currentMemberId][index];
+        } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+            pose = partyDotPoseTbl[party->currentMemberId][index];
+        } else {
+            pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTY_MEMBER_YOSHI)][index];
+        }
+        if (!(party->field_18 && !strcmp(party->field_18, pose))) {
+            party->field_18 = pose;
+            party->field_20 = 0;
+            party->field_8 |= 0x2000;
+        }
+    }
+    P8(party, 0x34) = 1;
+    return ret;
+}
+
+void party_force_ride_yoshi(PartyEntry* party) {
+    Vec pos;
+
+    N_partyForceChgRunMode(party, 0xc, 0xa);
+    party->flags &= ~0x100;
+    getRidePos(party, &pos);
+    ((u32*)&party->position)[0] = ((u32*)&pos)[0];
+    ((u32*)&party->position)[1] = ((u32*)&pos)[1];
+    ((u32*)&party->position)[2] = ((u32*)&pos)[2];
+    partyChgPoseId(party, 1);
+    PF32(party, 0x114) = 0.0f;
+    partyShadowOff(party);
+    PF32(party, 0x110) = PF32(party->playerPtr, 0x1AC);
+    PF32(party, 0xFC) = toMovedir(PF32(party, 0x110));
+}
+
+BOOL partyGoodbyeInit(PartyEntry* party) {
+    typedef void (*PartyFunc)(PartyEntry*);
+    u16 v;
+
+    P8(party, 0x38) = 10;
+    party_dp = &partyDataTbl[party->currentMemberId];
+    if (party_dp->init_func) {
+        ((PartyFunc)party_dp->init_func)(party);
+    }
+    if (party->flags & PARTY_FLAG_IS_BEING_USED) {
+        if (party->currentMemberId == PARTY_MEMBER_VIVIAN) {
+            vivianUnhold(party);
+            P8(party, 0x38) = 0;
+        }
+        if (party->currentMemberId == PARTY_MEMBER_YOSHI) {
+            marioGetoffYoshi();
+            P8(party, 0x38) = 0;
+        }
+    }
+    v = *(u16*)((u8*)party->playerPtr + 0x2E);
+    if (v == 0x16 || v == 0x18 || v == 0x19) {
+        P8(party, 0x38) = 0x14;
+    }
+    return FALSE;
+}
+
+s32 partyKill(s32 index) {
+    typedef void (*PartyFunc)(PartyEntry*);
+    PartyEntry* party = partyGetPtr(index);
+    MarioWork* player;
+    u8* base;
+
+    if (!party) {
+        return 0;
+    }
+    player = party->playerPtr;
+    base = (u8*)player + index;
+    party_dp = &partyDataTbl[partyGetPtr(PS8(base, 0x241))->currentMemberId];
+    if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
+        ((PartyFunc)party_dp->exit_func)(party);
+    }
+    if (partyGetPtr(PS8(base, 0x241))) {
+        P8(base, 0x243) = partyGetPtr(PS8(base, 0x241))->currentMemberId;
+    } else {
+        P8(base, 0x243) = 0;
+    }
+    P8(base, 0x241) = -1;
+    partyPtrTbl[index] = NULL;
+    animPoseRelease(party->paperAnimGroup);
+    __memFree(HEAP_DEFAULT, party);
+    return 0;
+}
+
+s32 partyKill2(s32 index) {
+    typedef void (*PartyFunc)(PartyEntry*);
+    PartyEntry* party = partyGetPtr(index);
+    MarioWork* player;
+    u8* base;
+
+    if (!party) {
+        return 0;
+    }
+    player = party->playerPtr;
+    party_dp = &partyDataTbl[partyGetPtr(PS8((u8*)player + index, 0x241))->currentMemberId];
+    if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
+        ((PartyFunc)party_dp->exit_func)(party);
+    }
+    P8((u8*)player + index, 0x243) = 0;
+    P8((u8*)player + index, 0x241) = -1;
+    partyPtrTbl[index] = NULL;
+    animPoseRelease(party->paperAnimGroup);
+    __memFree(HEAP_DEFAULT, party);
+    return 0;
 }
