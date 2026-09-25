@@ -311,3 +311,20 @@ Lessons:
   are left for a later cleanup pass, not blocked at merge.
 - **A shared temp path in a helper is a race.** Every agent's helper wrote the same `/tmp` file for the first
   few minutes; per-workspace paths now.
+
+## Planned soon: Codex as the PR reviewer (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Not built yet; to work on shortly. The Bun port's pattern: implementer plus adversarial reviewer. Here:
+
+1. The orchestrator picks which agent results to accept from a wave (after `tools/ci.py` passes each).
+2. It opens **one PR per wave** on this repo with those merges.
+3. **Codex (GPT) reviews the PR.** In Isaac's experience it is by far the most thorough out-of-the-box
+   reviewer. CI has already settled "does it match", so the review can focus on what CI can't judge: raw offsets
+   where a named field exists, deleted or disabled code, workarounds, anything that games the checker. Wave 1's
+   `pmario_sound` (deleted stubs) and `evt_npc` (`*(f32*)(mario + 0x8c)` instead of `MarioWork.position`) are good
+   calibration cases for whether it catches what the orchestrator caught.
+4. The orchestrator fixes what it finds, then merges.
+
+Open: Codex usage limits (Isaac will upgrade the plan if needed), and how to trigger and collect the review.
+An alternative to compare later: a separate no-context review agent on a different model, given a
+"find problems" prompt.
