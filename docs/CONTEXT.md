@@ -163,3 +163,24 @@ on the fully matched, linked game. That holds only if three things are true, so 
 **Progress display, both tracks:** code (fuzzy / matched / linked) and data (matched / linked), overall and per
 category (game DOL, RELs, SDK, MusyX), from the report at each merge, plotted over time like decomp.dev. The
 headline number is code linked; matched is shown next to it as work in the pipeline.
+
+## Local CI: `tools/ci.py` (2026-09-25, Isaac + Claude Opus 5.5)
+
+The gate every change passes, human or agent: `python3 tools/ci.py`. GitHub's workflow is disabled on this fork
+(it pulls doldecomp's private build image, which carries the game files, and gets denied).
+
+1. **Lint** the diff against `--base` (default `HEAD`): no new inline `asm`, no new `#pragma`
+   (`--allow-pragma`), no edits under `config/ orig/ tools/ .github/ libs/ assets/` (`--allow-protected`), and
+   `configure.py` changes limited to `Object(...)` lines.
+2. **Build**: configure + ninja. Ninja itself fails if a linked module stops hashing to `build.sha1`.
+3. **Ratchet**: `objdiff-cli report changes` against `build/ci/accepted.json`; any function, unit or total that
+   got worse fails the run. (The template's own `ninja changes` only prints regressions and exits 0.)
+4. **Summary** of both tracks with deltas: code fuzzy / matched / linked, data matched / linked.
+
+`--accept` makes a passing build the new baseline (the merger does this after each merge); `--init` sets the
+first one. The baseline lives in `build/`, so it is per machine. Tested on 2026-09-25: a one-character change
+to a matched function failed at the ratchet (`weaponGetPowerDefault` 100% -> 99.5%), and an added `asm`
+function failed at lint. Clean run: ~25 s on the Mac.
+
+Next: run it on the tower as a self-hosted GitHub runner while the repo is private (the game stays on the
+tower). Before going public that runner must stop running pull-request code.

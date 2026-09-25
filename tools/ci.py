@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Local CI: the single pass/fail gate for any change, human or agent.
+
+    python3 tools/ci.py                 check the working tree against the accepted state
+    python3 tools/ci.py --base REV      lint the diff against REV instead of HEAD
+    python3 tools/ci.py --accept        on success, make this build the new accepted state
+    python3 tools/ci.py --init          accept the current build without checks (first run only)
+
+Steps, stopping at the first failure:
+1. Lint the diff: no new inline asm, no new #pragma, no edits to protected paths, and configure.py
+   changes limited to Object(...) lines. Overrides: --allow-pragma, --allow-protected.
+2. Build: configure + ninja. Ninja fails if a linked module stops hashing to config/*/build.sha1.
+3. Ratchet: compare build/<ver>/report.json with the accepted report (build/ci/accepted.json) using
+   objdiff-cli. Any function, unit or total that got worse fails the run, whatever else improved.
+4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas.
+"""
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+VERSION = "G8MJ01"
+BUILD = ROOT / "build" / VERSION
+CI_DIR = ROOT / "build" / "ci"
+ACCEPTED = CI_DIR / "accepted.json"
+OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
+
+PROTECTED = ("config/", "orig/", "tools/", ".github/", "libs/", "assets/")
+ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
+PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b")
+UNIT_KEYS = ["fuzzy_match_percent", "matched_code_percent", "matched_data_percent",
+             "complete_code_percent", "complete_data_percent"]
+FUNC_KEYS = ["fuzzy_match_percent"]
+SUMMARY = [("code fuzzy", "fuzzy_match_percent"), ("code matched", "matched_code_percent"),
+           ("code linked", "complete_code_percent"), ("data matched", "matched_data_percent"),
+           ("data linked", "complete_data_percent")]
+
+
+def run(cmd, **kw):
+    return subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True, **kw)
+
+
+def fail(step, msg):
+    print(f"FAIL [{step}] {msg}")
+    sys.exit(1)
+
+
+def lint(base, allow_pragma, allow_protected):
+    names = run(["git", "diff", "--name-only", base]).stdout.split()
+    names += run(["git", "ls-files", "--others", "--exclude-standard"]).stdout.split()
+    problems = []
+    for name in names:
+        if name.startswith(PROTECTED) and name != "tools/ci.py" and not allow_protected:
+            problems.append(f"{name}: protected path (pass --allow-protected if intended)")
+    diff = run(["git", "diff", "-U0", base, "--", "src", "include", "rels", "configure.py"]).stdout
+    for path in run(["git", "ls-files", "--others", "--exclude-standard", "src", "include", "rels"]).stdout.split():
+        diff += f"+++ b/{path}\n" + "".join("+" + l for l in (ROOT / path).read_text(errors="replace").splitlines(True))
+    current = None
+    for line in diff.splitlines():
+        if line.startswith("+++ "):
+            current = line[6:] if line.startswith("+++ b/") else None
+            continue
+        if not line.startswith("+") or current is None:
+            continue
+        added = line[1:]
+        if current == "configure.py":
+            if added.strip() and "Object(" not in added:
+                problems.append(f"configure.py: only Object(...) lines may change: {added.strip()[:100]}")
+            continue
+        code = added.split("//", 1)[0]
+        if ASM_RE.search(code):
+            problems.append(f"{current}: new inline asm: {added.strip()[:100]}")
+        if PRAGMA_RE.search(code) and not allow_pragma:
+            problems.append(f"{current}: new #pragma (pass --allow-pragma if intended): {added.strip()[:100]}")
+    if problems:
+        fail("lint", "\n  " + "\n  ".join(problems))
+    print(f"ok   [lint] {len(names)} changed file(s) vs {base}")
+
+
+def build():
+    r = run([sys.executable, "configure.py"])
+    if r.returncode:
+        fail("build", "configure.py failed:\n" + r.stderr[-2000:])
+    ninja = shutil.which("ninja") or str(ROOT / ".venv" / "bin" / "ninja")
+    r = run([ninja])
+    if r.returncode:
+        fail("build", "ninja failed (compile error, or a linked module no longer matches build.sha1):\n"
+             + (r.stdout + r.stderr)[-3000:])
+    print("ok   [build] ninja clean; linked modules match build.sha1")
+
+
+def ratchet():
+    current = BUILD / "report.json"
+    changes = CI_DIR / "changes.json"
+    r = run([str(OBJDIFF), "report", "changes", "--format", "json", str(ACCEPTED), str(current), "-o", str(changes)])
+    if r.returncode:
+        fail("ratchet", "objdiff-cli report changes failed:\n" + r.stderr[-2000:])
+    data = json.loads(changes.read_text())
+    worse, better = [], []
+
+    def cmp(name, obj, keys):
+        for k in keys:
+            a, b = obj.get("from", {}).get(k, 0.0), obj.get("to", {}).get(k, 0.0)
+            (worse if b < a else better if b > a else []).append((name, k, a, b))
+
+    cmp("TOTAL", data, UNIT_KEYS)
+    for unit in data.get("units", []):
+        cmp(unit["name"], unit, UNIT_KEYS)
+        for fn in unit.get("functions", []):
+            cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
+    if worse:
+        lines = [f"{n} {k.removesuffix('_percent')}: {a:.2f} -> {b:.2f}" for n, k, a, b in worse[:40]]
+        fail("ratchet", f"{len(worse)} regression(s) vs the accepted build:\n  " + "\n  ".join(lines))
+    print(f"ok   [ratchet] no regressions; {len(better)} measure(s) improved")
+
+
+def summary():
+    now = json.loads((BUILD / "report.json").read_text())["measures"]
+    before = json.loads(ACCEPTED.read_text())["measures"]
+    for label, k in SUMMARY:
+        a, b = float(before.get(k, 0)), float(now.get(k, 0))
+        print(f"     {label:13} {b:6.2f}%  ({b - a:+.2f})")
+    print(f"     functions     {now.get('matched_functions', 0)} / {now.get('total_functions', 0)} matched")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--base", default="HEAD")
+    ap.add_argument("--accept", action="store_true")
+    ap.add_argument("--init", action="store_true")
+    ap.add_argument("--allow-pragma", action="store_true")
+    ap.add_argument("--allow-protected", action="store_true")
+    a = ap.parse_args()
+    CI_DIR.mkdir(parents=True, exist_ok=True)
+    if a.init:
+        build()
+        shutil.copy(BUILD / "report.json", ACCEPTED)
+        print(f"accepted current build as the baseline ({ACCEPTED.relative_to(ROOT)})")
+        return
+    if not ACCEPTED.exists():
+        fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
+    lint(a.base, a.allow_pragma, a.allow_protected)
+    build()
+    ratchet()
+    summary()
+    if a.accept:
+        shutil.copy(BUILD / "report.json", ACCEPTED)
+        print("     accepted: this build is the new baseline")
+    print("PASS")
+
+
+if __name__ == "__main__":
+    main()

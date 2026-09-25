@@ -22,4 +22,5 @@ setup.
 - Every commit with model-authored work ends with a `Co-Authored-By:` trailer naming the model that actually did
   it (your own model for your own work; the model on an agent report's `Model:` line for merged agent work).
   This overrides any global "no Co-Authored-By" rule.
-- Commit a match only after objdiff confirms it over the full function, and never commit a regression.
+- Run `python3 tools/ci.py` before every commit; commit only on PASS. It is the oracle: lint, build, the
+  no-regression ratchet, and the progress summary. Never commit a regression.
