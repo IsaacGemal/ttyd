@@ -17,9 +17,10 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 25 after wave 1): 13.09% of code matched, 2,407 of 9,770 functions; game code
-  1,284 of 5,687. Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the
-  filename-case bug below). Nothing new is linked yet: `event` and `battle` are at 100% code, the next step for them.
+- Progress (local build, Sep 25 after wave 2, PR #1): 13.92% of code matched,
+  2,722 of 9,770 functions; game code 1,599 of 5,687. Before the fork's first wave: 12.16%, 2,065
+  (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is linked yet: `event` and `battle`
+  are at 100% code, the next step for them.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -358,3 +359,22 @@ aside for now because it throws away real partial progress. The rule instead:
    `tools/ci.py --allow-regress FUNC`.
 
 Revisit if labelled partials keep causing trouble; the strict rule is the fallback.
+
+## Wave 2 and the first Codex-reviewed PR (2026-09-25, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol)
+
+12 Pi agents (DeepSeek V4.1 Flash via DeepSeek's API), 10 new files plus retries of wave 1's two rejects, with two
+new prompt rules (never delete/disable existing functions; use named fields). All 12 passed CI (both retries now
+did); each landed as its own commit on `wave-2`, opened as PR #1, reviewed twice by Codex (`codex exec review`
+with a rules file, GPT-5.6 Sol, medium), fixed, and merged (`4ed1a8a`). 2,414 -> 2,722 functions: +306 from the
+agents, +2 from a header type fix found in review.
+
+What review found that CI can't: unmatched functions that look implemented (empty or incomplete bodies, wrong
+flags), raw offsets where headers name the field, private struct copies that disagree with the headers. Two
+header types were wrong (`mShopPoints` is s16, `mStarPowersObtained` u16), and fixing the second matched two more
+functions. Each full-PR review found a different subset of issues (9, then 10 new), so one pass over a ~6,300-line
+diff isn't an audit.
+
+Takeaways: the one essential new safeguard vs Snood is the partial-function rule (labelled, never empty); with it,
+"CI + that rule" is the merge bar. Codex review is an occasional audit, not a gate. Readability issues are cleanup
+passes, as on Snood and Melee. Left for a follow-up: four duplicated structs (`ShopWork`, `StatusWindowValue`,
+`BattleStageWork`, the second `PaperSoundEffect`). GitHub is the source of truth for merged state.
