@@ -444,3 +444,23 @@ Lessons:
 Not built yet, on purpose. Notes pay off when several agents make repeated passes at the same hard function, which
 is mostly the end game (around 90%). Until then each file gets one pass, and each agent's `REPORT.md` (per-function
 before/after and what it tried) is kept in the orchestrator's scratch, so the notes can be backfilled from it later.
+
+## Wave 3 review, round 2 (2026-09-25, Claude Opus 5.5; review GPT-5.6 Sol)
+
+Round 2 confirmed round 1's fixes and found five new issues, all fixed; 3,114 functions before and after.
+- **A real bug:** `BattleAudience_NoUsedHaitiRand` used its counter uninitialized. The agent's 93.52% was partly
+  earned by the bug; initializing it where the original does (before the loops) scores 96.97%.
+- **One signature for the font width functions,** declared five ways across seven files. The original callers
+  mask the result to 16 bits, so both return `u16`; declared once in `fontmgr.h`.
+- **Two more split layouts** like `ExtWork`: `ShadowEntry` and `ProjShadowWork` now have their full layouts in
+  `shadowdrv.h`.
+- **Raw offsets** in `winmgr` and `mapdrv` replaced by named fields; `ItemData::star_piece_price` is `u16`.
+
+Lessons:
+- **Two rounds found different things again** (as in wave 2): round 1 the broad patterns, round 2 bugs and
+  signatures inside individual functions. A second round is worth it on a PR this size.
+- **Named fields don't always compile to the same code.** Five shadow setters only match in their byte-offset
+  form (the original adds the field offset before the store), and a header edit that silently didn't apply
+  left callers with no prototype. CI caught both.
+- **Types the original reads unsigned** (`lhz`) keep turning up declared signed in the headers (`animeArg1/2`,
+  `star_piece_price`). Worth a mechanical check across the headers later.
