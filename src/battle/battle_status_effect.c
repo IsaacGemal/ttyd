@@ -4,7 +4,6 @@
 #include "driver/icondrv.h"
 #include <string.h>
 
-#pragma optimize_for_size on
 
 //.sdata
 //Status Type Priority Data

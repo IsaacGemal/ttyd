@@ -81,7 +81,6 @@ const char* BattleGetRankNameLabel(s32 level) {
     return found->rankUpName;
 }
 
-#pragma optimize_for_size on
 s32 _keta_get(s32 value) {
     s32 digits = 0;
 
@@ -97,9 +96,7 @@ s32 _keta_get(s32 value) {
     }
     return digits;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     s32 idx = event->args[0];
     PouchData* pouch = pouchGetPtr();
@@ -108,9 +105,7 @@ s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, idx, (s32)rank->rankUpMessage);
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e = event;
     BattleWork* wp = _battleWorkPointer;
@@ -134,7 +129,6 @@ s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
 void _audience_Whistle_control(void) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -152,7 +146,6 @@ void _audience_Whistle_control(void) {
     }
 }
 
-#pragma optimize_for_size on
 s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     s32 i;
@@ -176,9 +169,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     }
     return (event->userdata[1] == 0) ? 2 : 0;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -207,9 +198,7 @@ s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
     *(f32*)(entry + 0x8) = (f32)*(s32*)((u8*)event + 0x8C);
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -239,9 +228,7 @@ s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     effPokopiPchargeN64Entry(*(f32*)(entry + 0x0), *(f32*)(entry + 0x4), *(f32*)(entry + 0x8), 1.5f, 3, 0x78);
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 selected = *(s32*)((u8*)work + 0x10);
@@ -272,9 +259,7 @@ s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -322,9 +307,7 @@ s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 void _check_audience_battle_end_exec(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleGroupSetup* group = wp->fbatInfo->setup->groupSetup;
@@ -352,9 +335,7 @@ void _check_audience_battle_end_exec(void) {
         BattleAudience_Case_FastVictory((f32)(level - turn));
     }
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 void _ExecAllUnitBattleEndEvent(void) {
     BattleWork* wp;
     s32 i;
@@ -373,7 +354,6 @@ void _ExecAllUnitBattleEndEvent(void) {
         }
     }
 }
-#pragma optimize_for_size off
 
 s32 _lvup_ap_recover_full(void) {
     BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -383,7 +363,6 @@ s32 _lvup_ap_recover_full(void) {
     return 2;
 }
 
-#pragma optimize_for_size on
 s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -395,7 +374,6 @@ s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
 void _BattleMarioKouraDelete(void) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -404,7 +382,6 @@ void _BattleMarioKouraDelete(void) {
     event->unitId = mario->unitId;
 }
 
-#pragma optimize_for_size on
 void _GetExpIcon_End(BattleSeqEndWork* work) {
     s32 i;
 
@@ -413,9 +390,7 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
         iconDelete((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18));
     }
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
@@ -471,9 +446,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
                    *(f32*)((u8*)work + 0x120 + i * 0xC));
     }
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     BattleSeqEndWork* work = arg;
     s32 i;
@@ -508,9 +481,7 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
     }
     *(u32*)((u8*)work + 0x30) |= 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -524,9 +495,7 @@ s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_obj_set_color(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -538,9 +507,7 @@ s32 _lvup_obj_set_color(EventEntry* event, BOOL isFirstCall) {
     obj[0x33] = evtGetValue(event, args[4]);
     return 2;
 }
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 s32 _lvup_select_obj_lvup_param_disp(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 i;
@@ -550,7 +517,6 @@ s32 _lvup_select_obj_lvup_param_disp(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#pragma optimize_for_size off
 
 s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -559,7 +525,6 @@ s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-#pragma optimize_for_size on
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -569,7 +534,6 @@ s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, val);
     return 2;
 }
-#pragma optimize_for_size off
 
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};
@@ -599,7 +563,6 @@ void _MarioExpDisp(CameraId camId, void* param) {
     }
 }
 
-#pragma optimize_for_size on
 void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
     BattleSeqEndWork* work;
     BattleWork* wp = param;
@@ -626,7 +589,6 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
         dispEntry(camId, 900.0f, 1, L__LvupParamHelpMsgDisp, wp);
     }
 }
-#pragma optimize_for_size off
 
 void btlseqEnd_DispInit(BattleWork* wp) {
     *(u32*)((u8*)wp->seqEndWork + 0x30) = 0;

@@ -132,7 +132,6 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
-#pragma optimize_for_size on
 #pragma opt_propagation off
 void BattleStageInit(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -184,12 +183,10 @@ void BattleStageInit(void) {
 	batSpotInit();
 }
 #pragma opt_propagation on
-#pragma optimize_for_size off
 
 void BattleStageMain(void) {
 }
 
-#pragma optimize_for_size on
 #pragma opt_propagation off
 void BattleStageEnd(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -208,14 +205,12 @@ void BattleStageEnd(void) {
 	}
 }
 #pragma opt_propagation on
-#pragma optimize_for_size off
 
 BattleSpotWork* BatSpotGetPtr(void) {
     return wp;
 }
 
 #pragma dont_inline on
-#pragma optimize_for_size on
 void batSpotInit(void) {
 	Vec* g = vec3_802f31a8;
 	int i;
@@ -236,7 +231,6 @@ void batSpotInit(void) {
 		entry->field_28 = batSpotInit_28;
 	}
 }
-#pragma optimize_for_size off
 
 void batSpotMain() {
     s32 count = wp->count;
@@ -247,7 +241,6 @@ void batSpotMain() {
     }
 }
 
-#pragma optimize_for_size on
 void batSpotDisp(CameraId camId, void* param) {
 	s32 i;
 	BattleSpotEntry* entry;
@@ -299,7 +292,6 @@ void batSpotDisp(CameraId camId, void* param) {
 		}
 	}
 }
-#pragma optimize_for_size off
 
 //drawCone
 
@@ -367,7 +359,6 @@ void screen_capture(CameraId camId, void* param) {
 	screen_wp->field_0x4 = 1;
 }
 
-#pragma optimize_for_size on
 s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
@@ -396,7 +387,6 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	evtEntry(screen_evt, 0, 0);
 	return 2;
 }
-#pragma optimize_for_size off
 
 
 
@@ -476,7 +466,6 @@ void BattleStageOnLightEnemyInCommand(void) {
 void BattleStageOffLightEnemyInCommand(void) {
 }
 
-#pragma optimize_for_size on
 f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
 	s32 i;
 
@@ -491,7 +480,6 @@ f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) 
 		return a[i] + t * (b[i] + t * (c[i] + t * d[i]));
 	}
 }
-#pragma optimize_for_size off
 
 // ------------------------------------------------------------ light setters
 #pragma opt_propagation off
@@ -620,7 +608,6 @@ void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 }
 #pragma opt_propagation on
 
-#pragma optimize_for_size on
 #pragma opt_propagation off
 void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
 	BattleUnit* unit;
@@ -634,10 +621,8 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
 }
 #pragma opt_propagation on
-#pragma optimize_for_size off
 #pragma dont_inline reset
 
-#pragma optimize_for_size on
 #pragma opt_propagation off
 s32 BattleStageSysLightEntry(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -671,9 +656,7 @@ s32 BattleStageSysLightEntry(const char* name) {
 	return i;
 }
 #pragma opt_propagation on
-#pragma optimize_for_size off
 
-#pragma optimize_for_size on
 #pragma opt_propagation off
 s32 BattleStageGetLightNumberByName(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
@@ -694,7 +677,6 @@ s32 BattleStageGetLightNumberByName(const char* name) {
 	return -1;
 }
 #pragma opt_propagation on
-#pragma optimize_for_size off
 
 void BattleStageDispDark(CameraId camId, void* param);
 void BattleStageDispLight(CameraId camId, void* param);
@@ -723,7 +705,6 @@ void BattleStageDisp(void) {
 }
 
 #pragma dont_inline on
-#pragma optimize_for_size on
 void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	CameraEntry* cam = camGetPtr(camId);
 	Mtx mTrans;
@@ -769,10 +750,8 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		GXColor4u8(0, 0, 0, color / 3);
 	}
 }
-#pragma optimize_for_size off
 #pragma dont_inline off
 
-#pragma optimize_for_size on
 void BattleStageDispDark(CameraId camId, void* param) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	CameraEntry* cam = camGetPtr(4);
@@ -803,4 +782,3 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	GXSetZMode(1, 1, 0);
 	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_neg640_8041c840, float_640_8041c844, float_105_8041c848);
 }
-#pragma optimize_for_size off

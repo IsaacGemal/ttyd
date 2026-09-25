@@ -14,7 +14,6 @@ f32 float_1p3_8041c3d0 = 1.3f;
 f32 float_1p5_8041c3d4 = 1.5f;
 f32 float_0p5_8041c3d8 = 0.5f;
 
-#pragma optimize_for_size on
 
 //local prototypes
 void _CheckMoveCount(BattleUnit* unit);
@@ -304,7 +303,6 @@ BOOL BtlUnit_Init(void) {
     return TRUE;
 }
 
-#pragma optimize_for_size off
 BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
@@ -335,7 +333,6 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     //TODO: finish
     return NULL;
 }
-#pragma optimize_for_size on
 
 BOOL BtlUnit_Delete(BattleUnit* unit) {
     return FALSE;
@@ -1248,7 +1245,6 @@ void BtlUnit_ClearStatus(BattleUnit* unit) {
     BattleStatusChangeInfoWorkInit(unit);
 }
 
-#pragma optimize_for_size off
 // NONMATCHING (76%): case bodies/branches in the recovery switch still differ (HP/FP regen, defense).
 BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
@@ -1360,7 +1356,6 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
             return FALSE;
     }
 }
-#pragma optimize_for_size on
 
 #pragma dont_inline on
 BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {

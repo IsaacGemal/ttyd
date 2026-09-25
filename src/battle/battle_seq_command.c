@@ -5,7 +5,6 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 
-#pragma optimize_for_size on
 
 //TODO: move into battle/seq/?
 

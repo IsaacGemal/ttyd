@@ -1,5 +1,4 @@
 #include "battle/battle_stage_object.h"
-#pragma optimize_for_size on
 #include "battle/battle.h"
 #include "system.h"
 #include <string.h>
@@ -289,7 +288,6 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 
 // NONMATCHING (94.57%): only the address form differs. Target emits `slwi r0,r3,2; add r5,r31,r0;
 // lwz r5,0x3c(r5)`; mwcc folds the +0x3C into the index and emits `addi r0,r5,0x3c; lwzx r5,r31,r0`.
-#pragma optimize_for_size on
 USER_FUNC(_nozzle_work_get_weapon_address) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000 - 0x7F40;
 	s32* args = event->args;
@@ -299,9 +297,7 @@ USER_FUNC(_nozzle_work_get_weapon_address) {
 	evtSetValue(event, args[1], *(s32*)(w + idx * 4 + 0x3C));
 	return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size on
 
-#pragma optimize_for_size on
 void BattleStage_NozzleDirChangeCheck(void) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 	u8 i;
@@ -312,7 +308,6 @@ void BattleStage_NozzleDirChangeCheck(void) {
 		}
 	}
 }
-#pragma optimize_for_size on
 
 USER_FUNC(_announce_wall_message) {
 	if (isFirstCall) {
@@ -771,7 +766,6 @@ USER_FUNC(_mobj_set_alpha) {
 	return EVT_RETURN_DONE;
 }
 
-#pragma optimize_for_size on
 BattleStageObject* BattleGetObjectPtr(s32 id) {
 	BattleWork* wp = _battleWorkPointer;
 	int i;
@@ -784,9 +778,7 @@ BattleStageObject* BattleGetObjectPtr(s32 id) {
 	}
 	return NULL; //if none of the IDs match
 }
-#pragma optimize_for_size on
 
-#pragma optimize_for_size on
 BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	BattleWork* wp = _battleWorkPointer;
 	int i;
@@ -800,7 +792,6 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	}
 	return NULL; //if name not found
 }
-#pragma optimize_for_size on
 
 void BattleStageObjectInit(void) {
 

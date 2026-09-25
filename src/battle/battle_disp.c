@@ -7,7 +7,6 @@
 #include <dolphin/gx.h>
 #include <string.h>
 
-#pragma optimize_for_size on
 
 extern BattleWork* _battleWorkPointer;
 

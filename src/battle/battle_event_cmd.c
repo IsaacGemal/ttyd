@@ -17,7 +17,6 @@
 // The original unit was built for size; without this the neg/or/srawi mask and
 // the /60 reciprocal-multiply codegen differ from the target (verified with the
 // GC/2.6 compiler).
-#pragma optimize_for_size on
 
 extern BattleWork* _battleWorkPointer;
 
