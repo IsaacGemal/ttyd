@@ -1818,7 +1818,7 @@ void BattleAudienceAddPuni(s32 num) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i;
-	if (*(u16*)((u8*)pouchGetPtr() + 0x8c) != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
+	if (pouchGetPtr()->mStarPowersObtained != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
 			num > 0 && !(wp->flags & 0x100)) {
 		f32 one = float_1_8041e620;
 		for (i = 0; i < num; i++) {

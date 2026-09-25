@@ -1,5 +1,6 @@
 #include "pmario_sound.h"
 #include "sound.h"
+#include "mario/mariost.h"
 #include <string.h>
 #include <dolphin/os.h>
 //TODO: put this in a folder?
@@ -4756,13 +4757,6 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, s32 vol, s32 pan, s32 pitch,
 	return __psndSFXOn((s32)name, vol, pan, pitch, position, 0, flags, 0);
 }
 
-typedef struct GlobalWorkTime_s {
-	u8 _pad[0x38];
-	OSTime renderTime;
-} GlobalWorkTime;
-
-extern GlobalWorkTime* gp;
-
 s32 psndBGMPlayTime(s32 id) {
 	PaperSoundBGM* bgm = &psbgm[id & 0xF];
 
@@ -4894,10 +4888,10 @@ void psndStopAllFadeOut(void) {
 void psndMapChange(void) {
 	int i;
 
-	if (strcmp(psnd.unk40, (char*)gp + 0x12C) != 0) {
+	if (strcmp(psnd.unk40, gp->currentMapName) != 0) {
 		*(u16*)((u8*)&psnd + 0x52) = 0;
 	}
-	strcpy(psnd.unk40, (char*)gp + 0x12C);
+	strcpy(psnd.unk40, gp->currentMapName);
 	psnd.unk56 &= ~0x100;
 	for (i = 0; i < 40; i++) {
 		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[i];

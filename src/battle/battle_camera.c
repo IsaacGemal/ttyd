@@ -542,7 +542,3 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
 }
 
 #pragma dont_inline reset
-
-void battleCameraMoveTo(void) {}
-
-void battleCameraMain(void) {}
