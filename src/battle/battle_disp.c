@@ -3,6 +3,7 @@
 #include "battle/battle_menu_disp.h"
 #include "battle/battle_unit.h"
 #include "sdk/texPalette.h"
+#include <dolphin/gx.h>
 
 extern BattleWork* _battleWorkPointer;
 
@@ -20,10 +21,37 @@ s32 _status_pose_table[] = {
 
 //local prototypes
 const char* searchPoseTbl(BattleDispPose* table, s32 poseId);
-void btlDispGXInit2DSub(void);
-void btlDispTexPlaneInit(void);
-void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3);
-void btlDispGetTexSize(u32 id, u16* width, u16* height);
+static void btlDispGXInit2DSub(void);
+static void btlDispTexPlaneInit(void);
+static void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3);
+static void btlDispGetTexSize(u32 id, u16* width, u16* height);
+static void _pose_def(BattleUnit* unit);
+static void _pose_one_pattern(BattleUnit* unit);
+static void _pose_two_pattern(BattleUnit* unit);
+static void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation);
+
+//.rodata
+static Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
+
+extern s32 animPoseSetLocalTimeRate(s32 poseId, f32 localTimeRate);
+extern void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset);
+extern void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag);
+extern s32 animPoseEntry(const char* animName, s32 type);
+extern void animPoseSetMaterialLightFlagOn(s32 poseId, u32 mask);
+extern s32 sysMsec2Frame(s32 msec);
+extern s32 irand(s32 max);
+extern f32 sinfd(f32 deg);
+extern double double_to_int_802ede28;
+extern f32 float_4_8041bf3c;
+extern f32 float_2_8041bf68;
+extern const char str_802EDE38[];
+extern const char str_802EDE40[];
+extern const char str_802EDE48[];
+extern const char str_802EDE50[];
+extern const char str_802EDE58[];
+extern const char str_802EDE60[];
+extern const char str_802EDE68[];
+extern const char str_802EDE70[];
 
 const char* searchPoseTbl(BattleDispPose* table, s32 poseId) { //TODO: fix mtctr
 	int i;
@@ -265,7 +293,44 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 
 
 void btlDispEntAnime(BattleUnit* unit) {
+}
 
+void btlDispAnimeSpeed(BattleUnit* unit, f32 speed) {
+	((f32*)&unit->hpGauge.field_0xC)[1] = speed;
+	animPoseSetLocalTimeRate(*(s32*)((char*)unit + 0x1c0), ((f32*)&unit->hpGauge.field_0xC)[1] * ((f32*)&unit->hpGauge.field_0xC)[2]);
+}
+
+void btlDispPoseAnime(BattleUnit* unit) {
+	s32* wp = (s32*)((char*)unit + 0x204);
+
+	*wp &= ~0x12;
+	*wp |= 1;
+	*wp &= ~(0xF << 7);
+	*wp &= ~(0xF << 28 | 0x7 << 28);
+}
+
+void btlDispChangePeraAnime(BattleUnit* unit) {
+	((f32*)&unit->hpGauge.field_0xC)[1] = 0.0f;
+	*(u8*)((char*)unit + 0x215) = 0;
+	animPoseSetEffectAnim(*(s32*)((char*)unit + 0x1c0), str_802EDE38, 1);
+}
+
+f32 getGravityDispOffset(BattleUnit* unit) {
+	volatile f64 d;
+	union { f64 d; u32 w[2]; } u;
+	u.w[0] = 0x43300000;
+	u.w[1] = ((*(u16*)((char*)unit + 0x1a6) * 3 + 0x10e) % 360 ^ 0x8000);
+	d = u.d - double_to_int_802ede28;
+	return float_4_8041bf3c * sinfd(d) + float_4_8041bf3c;
+}
+
+f32 getFloatDispOffset(BattleUnit* unit) {
+	volatile f64 d;
+	union { f64 d; u32 w[2]; } u;
+	u.w[0] = 0x43300000;
+	u.w[1] = ((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360 ^ 0x8000);
+	d = u.d - double_to_int_802ede28;
+	return float_2_8041bf68 * sinfd(d) + float_2_8041bf68;
 }
 void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation);
 
