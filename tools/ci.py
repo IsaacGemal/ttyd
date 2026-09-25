@@ -12,6 +12,8 @@ Steps, stopping at the first failure:
 2. Build: configure + ninja. Ninja fails if a linked module stops hashing to config/*/build.sha1.
 3. Ratchet: compare build/<ver>/report.json with the accepted report (build/ci/accepted.json) using
    objdiff-cli. Any function, unit or total that got worse fails the run, whatever else improved.
+   --allow-regress FUNC excuses a named, not-yet-matched function's fuzzy score (and its unit's and the
+   total's fuzzy score) for deliberate removals of wrong code.
 4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas.
 """
 import argparse
@@ -93,7 +95,7 @@ def build():
     print("ok   [build] ninja clean; linked modules match build.sha1")
 
 
-def ratchet():
+def ratchet(allowed=()):
     current = BUILD / "report.json"
     changes = CI_DIR / "changes.json"
     r = run([str(OBJDIFF), "report", "changes", "--format", "json", str(ACCEPTED), str(current), "-o", str(changes)])
@@ -112,6 +114,13 @@ def ratchet():
         cmp(unit["name"], unit, UNIT_KEYS)
         for fn in unit.get("functions", []):
             cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
+    if allowed:
+        units = {n.split(":", 1)[0] for n, _, a, _ in worse if n.split(":")[-1] in allowed and a < 100}
+        excused = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100)
+                   or (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))]
+        for n, k, a, b in excused:
+            print(f"     allowed regression: {n} {k.removesuffix('_percent')}: {a:.2f} -> {b:.2f}")
+        worse = [w for w in worse if w not in excused]
     if worse:
         lines = [f"{n} {k.removesuffix('_percent')}: {a:.2f} -> {b:.2f}" for n, k, a, b in worse[:40]]
         fail("ratchet", f"{len(worse)} regression(s) vs the accepted build:\n  " + "\n  ".join(lines))
@@ -134,6 +143,9 @@ def main():
     ap.add_argument("--init", action="store_true")
     ap.add_argument("--allow-pragma", action="store_true")
     ap.add_argument("--allow-protected", action="store_true")
+    ap.add_argument("--allow-regress", action="append", default=[], metavar="FUNC",
+                    help="a not-yet-matched function whose score may drop, e.g. when removing a wrong partial "
+                         "implementation; repeatable. Only fuzzy scores may drop, never matched or linked.")
     a = ap.parse_args()
     CI_DIR.mkdir(parents=True, exist_ok=True)
     if a.init:
@@ -145,7 +157,7 @@ def main():
         fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
     lint(a.base, a.allow_pragma, a.allow_protected)
     build()
-    ratchet()
+    ratchet(set(a.allow_regress))
     summary()
     if a.accept:
         shutil.copy(BUILD / "report.json", ACCEPTED)
