@@ -22,48 +22,6 @@ static ExtWork work[2];
 #define extGetWork() (gp->inBattle ? &work[1] : &work[0])
 
 // Extended work layout (header only declares the first fields)
-typedef struct ExtPose {
-	u32 flags;      //0x0
-	f32 field_0x4;  //0x4
-	f32 field_0x8;  //0x8
-	Mtx* matrix;    //0xC
-	s32 field_0x10; //0x10
-	f32 field_0x14; //0x14
-	f32 field_0x18; //0x18
-	f32 field_0x1C; //0x1C
-} ExtPose;
-
-typedef struct ExtTexture {
-	void* image;        //0x0
-	GXTexObj texObj;    //0x4
-	GXTexRegion region; //0x24
-} ExtTexture;
-
-typedef struct ExtSortEntry {
-	s32 field_0x0; //0x0
-	f32 field_0x4; //0x4
-} ExtSortEntry;
-
-typedef struct ExtWorkFull {
-	s32 poseNum;           //0x0
-	s32 texCount;          //0x4
-	ExtPose* poses;        //0x8
-	ExtTexture* textures;  //0xC
-	Mtx* mtx;              //0x10
-	f32* vertices;         //0x14
-	void* normals;         //0x18
-	void* colors;          //0x1C
-	void* uvs;             //0x20
-	ExtSortEntry* sortList;//0x24
-	void* dlBuffer;        //0x28
-	u32* dlSizes;          //0x2C
-	void (*cb0)(void);     //0x30
-	void (*cb1)(void);     //0x34
-	s32 lastTex;           //0x38
-	Mtx field_0x3C;        //0x3C
-	u32 texSize;           //0x6C
-} ExtWorkFull;
-
 // .data
 static u32 sintbl[450] = {
 	0x00000000, 0x3C8EF77F, 0x3D0EF241, 0x3D565E46, 0x3D8EDC3C, 0x3DB27ED8,
@@ -156,7 +114,7 @@ static f32 shadow_vtx_pad[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 static f32 shadow_coord[8] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
 void extDrawShadow(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	s32 i;
 	ExtSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
@@ -179,7 +137,7 @@ void extDrawShadow(void) {
 }
 
 void extLoadShadowMtx(Mtx mtx) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	PSMTXCopy(mtx, wp->field_0x3C);
 }
 
@@ -245,7 +203,7 @@ void extLoadTextureExit(void) {
 }
 
 void extLoadTexture(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
 	u32 total = 0;
 	s32 i;
@@ -270,7 +228,7 @@ void extLoadTexture(void) {
 }
 
 void extLoadVertex(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 
 	GXClearVtxDesc();
 	GXSetVtxDesc(9, 3);
@@ -290,7 +248,7 @@ void extLoadRenderMode(void) {
 }
 
 void extDraw(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	s32 i;
 	ExtSortEntry* sort = wp->sortList;
 
@@ -317,7 +275,7 @@ void extDraw(void) {
 }
 
 void extPoseDraw(s32 poseId) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	ExtPose* pose = &wp->poses[poseId];
 
 	if (pose->flags & 1) {
@@ -342,12 +300,12 @@ void extPoseDraw(s32 poseId) {
 }
 
 s32 extGetPoseNum(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	return wp->poseNum;
 }
 
 ExtPose* extGetPosePtr(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	return wp->poses;
 }
 
@@ -362,7 +320,7 @@ static s32 compare(void* a, void* b) {
 }
 
 void extMain(void) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	ExtPose* pose;
 	ExtSortEntry* sort;
 	CameraEntry* cam;
@@ -472,34 +430,33 @@ void extMain(void) {
 
 void extReset(void) {
 	ExtWork* wp = extGetWork();
-	ExtWorkFull* wf = (ExtWorkFull*)wp;
 
-	if (wf->poses != NULL) {
-		__memFree(2, wf->poses);
+	if (wp->poses != NULL) {
+		__memFree(2, wp->poses);
 	}
-	if (wf->textures != NULL) {
-		__memFree(2, wf->textures);
+	if (wp->textures != NULL) {
+		__memFree(2, wp->textures);
 	}
-	if (wf->mtx != NULL) {
-		__memFree(2, wf->mtx);
+	if (wp->mtx != NULL) {
+		__memFree(2, wp->mtx);
 	}
-	if (wf->vertices != NULL) {
-		__memFree(2, wf->vertices);
+	if (wp->vertices != NULL) {
+		__memFree(2, wp->vertices);
 	}
-	if (wf->sortList != NULL) {
-		__memFree(2, wf->sortList);
+	if (wp->sortList != NULL) {
+		__memFree(2, wp->sortList);
 	}
-	if (wf->dlBuffer != NULL) {
-		__memFree(2, wf->dlBuffer);
+	if (wp->dlBuffer != NULL) {
+		__memFree(2, wp->dlBuffer);
 	}
-	if (wf->dlSizes != NULL) {
-		__memFree(2, wf->dlSizes);
+	if (wp->dlSizes != NULL) {
+		__memFree(2, wp->dlSizes);
 	}
-	memset(wf, 0, 0x70);
+	memset(wp, 0, 0x70);
 }
 
 void extMakeTexture(CameraId camId, void* param) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
 	void* p = param;
 	f32 backup[4];
@@ -556,7 +513,7 @@ void extMakeTexture(CameraId camId, void* param) {
 }
 
 void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
-	ExtWorkFull* wp = (ExtWorkFull*)extGetWork();
+	ExtWork* wp = extGetWork();
 	s32 texCount = 0;
 	void* p = param;
 	s32 i;
@@ -598,5 +555,5 @@ void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void),
 void extInit(void) {
 	ExtWork* wp = extGetWork();
 	wp->poseNum = 0;
-	wp->field_0x8 = 0;
+	wp->poses = NULL;
 }
