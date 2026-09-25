@@ -438,3 +438,9 @@ Lessons:
 - Still open: the 56 unlabelled partial functions (the percentage is mechanical, "what still differs" needs a
   look).
 
+
+## Per-file notes deferred (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Not built yet, on purpose. Notes pay off when several agents make repeated passes at the same hard function, which
+is mostly the end game (around 90%). Until then each file gets one pass, and each agent's `REPORT.md` (per-function
+before/after and what it tried) is kept in the orchestrator's scratch, so the notes can be backfilled from it later.
