@@ -1,15 +1,85 @@
 #include "driver/npcdrv.h"
 #include "dolphin/gx/GXStruct.h"
 #include "driver/animdrv.h"
+#include "driver/effdrv.h"
+#include "driver/itemdrv.h"
 #include "driver/msgdrv.h"
 #include "mario/mario.h"
+#include "mario/mario_party.h"
 #include "mario/mariost.h"
+#include "party.h"
+#include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "system.h"
 #include <string.h>
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
+extern char MarioStayPose[32];
+extern char MarioTalkPose[32];
+extern s32 marioChkTalkable(void);
+void _npcGroupDead(NpcEntry* entry);
+void fbatHitCheck(s32 a1, s32 a2);
+ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
+void itemFlagOn(ItemEntry* item, u16 flag);
+EffectEntry* effMajinaiEntry(s32 a1, f32 x, f32 y, f32 z);
+void npcGroupDead(NpcEntry* entry, s32 type);
+s32 kpaMutekiCheck(void);
+void kpaAddScorePos(s32 score, Vec* pos);
+char* partyChgPoseId(PartyEntry* party, s32 index);
+f32 cloudGetBreathPower(f32 param_1, Vec* param_2);
+
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
 
 typedef struct NpcWork2 {
     NpcWork field;  // 0x0
@@ -369,22 +439,14 @@ NpcTribeInfo* npcGetTribe(const char* tribeName) { // 1:1
 }
 
 void npcDelete(NpcEntry* entry) {
-    if (entry->slaves[0]) {
-        entry->slaves[0]->master = NULL;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        if (entry->slaves[i]) {
+            entry->slaves[i]->master = NULL;
+        }
+        entry->slaves[i] = NULL;
     }
-    entry->slaves[0] = NULL;
-    if (entry->slaves[1]) {
-        entry->slaves[1]->master = NULL;
-    }
-    entry->slaves[0] = NULL;
-    if (entry->slaves[2]) {
-        entry->slaves[2]->master = NULL;
-    }
-    entry->slaves[0] = NULL;
-    if (entry->slaves[3]) {
-        entry->slaves[3]->master = NULL;
-    }
-    entry->slaves[0] = NULL;
 
     if (entry->prev) {
         if (entry->next) {
@@ -407,11 +469,21 @@ void npcDelete(NpcEntry* entry) {
     npcGetWorkPtrInline()->count--;
 }
 
+void npcDeleteGroup(NpcEntry* entry) {
+    if (entry->master) {
+        entry = entry->master;
+    }
+    while (entry->prev) {
+        entry = entry->prev;
+    }
+    _npcDeleteGroup(entry);
+}
+
 void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     int i;
 
     if (entry->next) {
-        npcDeleteGroup(entry->next);
+        _npcDeleteGroup(entry->next);
     }
 
     for (i = 0; i < 4; i++) {
@@ -421,16 +493,6 @@ void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
         }
     }
     npcDelete(entry);
-}
-
-void npcDeleteGroup(NpcEntry* entry) {
-    if (entry->master) {
-        entry = entry->master;
-    }
-    while (entry->prev) {
-        entry = entry->prev;
-    }
-    _npcDeleteGroup(entry);
 }
 
 void npcMain(void) {
@@ -489,11 +551,12 @@ void npcMain(void) {
 
 NpcEntry* npcNameToPtr(const char* name) {
     NpcWork* wp = npcGetWorkPtrInline();
-    NpcEntry* entry;
     int i;
+    s32 total;
+    NpcEntry* entry;
 
-    for (i = 0; i < wp->total; i++) {
-        entry = &wp->entries[i];
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry->flags & 1 && !strcmp(entry->description, name)) {
             break;
         }
@@ -503,16 +566,17 @@ NpcEntry* npcNameToPtr(const char* name) {
 
 NpcEntry* npcNameToPtr_NoAssert(const char* name) {
     NpcWork* wp = npcGetWorkPtrInline();
-    NpcEntry* entry;
     int i;
+    s32 total;
+    NpcEntry* entry;
 
-    for (i = 0; i < wp->total; i++) {
-        entry = &wp->entries[i];
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry->flags & 1 && !strcmp(entry->description, name)) {
             break;
         }
     }
-    if (i >= wp->total) {
+    if (i >= total) {
         return NULL;
     } else {
         return entry;
@@ -561,6 +625,10 @@ void fbatSetAttackAnnounceEnable(void) {
     gp->fbatData->firstStrike.enabled = TRUE;
 }
 
+void fbatHitCheckAll(void) {
+    fbatHitCheck(0x13F1, 0);
+}
+
 void _fbatFirstAttackAnnounceDisp(CameraId camId, void* param) {
     FirstStrikeInfo* firstStrike = param;
     const char* message;
@@ -569,6 +637,170 @@ void _fbatFirstAttackAnnounceDisp(CameraId camId, void* param) {
 }
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {
+    slave->master = npc;
+    npc->slaves[id] = slave;
+}
+
+void npcSetLink(NpcEntry* npc, NpcEntry* link) {
+    npc->next = link;
+    link->prev = npc;
+}
+
+void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work) {
+    ((void**)((u8*)npc + 0x2CC))[index] = work;
+}
+
+void* npcGetBtlSetupWork(NpcEntry* npc, s32 index) {
+    return ((void**)((u8*)npc + 0x2CC))[index];
+}
+
+void fbatSandersBombTriggerOn(void) {
+    gp->fbatData->field_54C[1] = TRUE;
+}
+
+void npcClearDeadInfo(void) {
+    memset(gp->fbatData->deadInfo, 0, 0x500);
+}
+
+s32 N_fbatPreventMarioEventChk(void) {
+    s32 mode = gp->fbatData->mode;
+
+    if (mode != 0 && mode != 1 && mode != 8) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void npcTuningRy(NpcEntry* npc, f32 angle) {
+    npc->direction = reviseAngle(angle);
+}
+
+f32 npcTransRytoFaceDir(NpcEntry* npc) {
+    if (reviseAngle(npc->direction) < 180.0f) {
+        return 90.0f;
+    }
+    return 270.0f;
+}
+
+void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose) {
+    strcpy(MarioStayPose, stayPose);
+    strcpy(MarioTalkPose, talkPose);
+}
+
+void npcSetColor(const char* name, GXColor* color) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    s32 i;
+
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    entry->color = *color;
+}
+
+void npcStartForOneEvent(NpcEntry* entry) {
+    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000) && (entry->jumpFlags & 0x10000)) {
+        entry->jumpFlags &= ~0x10000;
+        evtStartID(entry->regularEvtId);
+        animPoseSetLocalTimeRate(entry->poseId, 1.0f);
+    }
+}
+
+void npcStopForOneEvent(NpcEntry* entry) {
+    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000)) {
+        entry->jumpFlags |= 0x10000;
+        evtStopID(entry->regularEvtId);
+        animPoseSetLocalTimeRate(entry->poseId, 0.0f);
+    }
+}
+
+void npcStartForEvent(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        npcStartForOneEvent(entry);
+    }
+}
+
+void npcStopForEvent(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        npcStopForOneEvent(entry);
+    }
+}
+
+NpcEntry* fbatNpcTalkCheck(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+
+    if (wp->field_0x10 && marioChkTalkable()) {
+        return wp->field_0x10;
+    }
+    return NULL;
+}
+
+s32 _check(EventEntry* evt) {
+    s32* args = evt->args;
+    s32 arg0 = args[0];
+
+    if (pouchGetPtr()->mMerleeCurseUsesRemaining) {
+        evtSetValue(evt, arg0, 0);
+    } else {
+        evtSetValue(evt, arg0, 1);
+    }
+    return 2;
+}
+
+s32 npcKoopaModeMobjBoundDeadCheck(void* mobj) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    s32 total;
+    NpcEntry* entry;
+    int i;
+    s32 count = 0;
+    total = wp->total;
+    if (mobj == NULL) {
+        return 0;
+    }
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
+            !(*(u16*)entry->field_31E & 8) && *(u32*)entry->field_300 == (u32)mobj) {
+            npcGroupDead(entry, 8);
+            count++;
+        }
+    }
+    return count;
+}
+
+void npcGroupDead(NpcEntry* entry, s32 type) {
+    if (entry->master) {
+        entry = entry->master;
+    }
+    while (entry->prev) {
+        entry = entry->prev;
+    }
+    _npcGroupDead(entry);
+}
+
+void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
+    *(s32*)entry->field_140 |= 0x10;
+    entry->jumpFlags |= 4;
+    entry->koopaEncounterType = koopaEncounterType;
+    if (entry->flags & 4) {
+        gp->fbatData->deadInfo[0].mask |= (1 << entry->field_314);
+    }
 }
 
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
@@ -578,12 +810,326 @@ NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {
     NpcTerritoryType type;
 
     type = NPC_TERRITORY_TYPE_NOTHING;
-    while (info->description) {
-        if (!strcmp(info->description, description)) {
+    for (;;) {
+        if (info->description == NULL) {
+            break;
+        }
+        if (strcmp(info->description, description) == 0) {
             type = info->type;
             break;
         }
         info++;
     }
     return type;
+}
+
+void npcGetBackItemEntry(NpcEntry* entry) {
+    NpcBattleInfo* info = &entry->battleInfo;
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        ItemType item = info->recoveredItems[i];
+        if (item) {
+            ItemEntry* itemEntryPtr = itemEntry(NULL, item, 0xB, -1, 0, entry->position.x, entry->position.y, entry->position.z);
+            itemFlagOn(itemEntryPtr, 0x100);
+            info->recoveredItems[i] = 0;
+        }
+    }
+}
+
+void npcBlurOff(const char* name) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    entry->flags &= ~0x100;
+}
+
+s32 _majinai_effect(EventEntry* evt, s32 a2) {
+    MarioWork* mario = marioGetPtr();
+
+    if (a2 != 0) {
+        EffectEntry* effect;
+
+        effect = effMajinaiEntry(0, mario->position.x,
+                                 mario->position.y + mario->wPlayerCollisionBox.y + 16.0f, mario->position.z);
+        evt->userdata[0] = (s32)effect;
+        *(f32*)((u8*)effect->userdata + 0x10) = 0.8f;
+        effSetName((EffectEntry*)evt->userdata[0], "mjef_coinup");
+    }
+    if (evt->userdata[0] != 0 && effNameToPtr("mjef_coinup") != NULL) {
+        return 0;
+    }
+    return 2;
+}
+
+void npcExecAllReglEvt(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && entry->moveEvent) {
+            EventEntry* evt;
+
+            if (entry->regularEvtId) {
+                evtDeleteID(entry->regularEvtId);
+            }
+            evt = evtEntry(entry->moveEvent, 0, 0x20);
+            evt->wNpcEventType = 1;
+            evt->ownerNPC = entry;
+            entry->regularEvtId = evt->eventId;
+        }
+    }
+}
+
+void npcExecAllInitEvt(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1)) {
+            if (entry->initEvent) {
+                EventEntry* evt;
+
+                if (entry->initEvtId) {
+                    evtDeleteID(entry->initEvtId);
+                }
+                evt = evtEntry(entry->initEvent, 0, 0);
+                evt->wNpcEventType = 0;
+                evt->ownerNPC = entry;
+                entry->initEvtId = evt->eventId;
+            } else {
+                entry->initEvtId = 0;
+            }
+        }
+    }
+}
+
+BOOL npcWaitAllInitEvtEnd(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    BOOL result = TRUE;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && !(entry->flags & 2)) {
+            if (entry->initEvtId) {
+                result = FALSE;
+                if (!evtCheckID(entry->initEvtId)) {
+                    entry->initEvtId = 0;
+                    entry->flags |= 2;
+                }
+            } else {
+                entry->flags |= 2;
+            }
+        }
+    }
+    return result;
+}
+
+
+s32 npcCalcScore(NpcEntry* entry) {
+    FieldBattleData* fbatData = gp->fbatData;
+    s32 score = 0x12C;
+    Vec pos;
+
+    pos = entry->position;
+    pos.y += entry->tribe->height;
+
+    if (entry->koopaEncounterType == 0x10) {
+        score = 0;
+    } else {
+        if (entry->koopaEncounterType == 8) {
+            score = 0x190;
+        }
+        if (kpaMutekiCheck()) {
+            score += 0x64;
+        }
+        if (entry->koopaEncounterType == 2) {
+            (*(s32*)&fbatData->field_570[4])++;
+            score *= *(s32*)&fbatData->field_570[4];
+        }
+        if (entry->koopaEncounterType == 1) {
+            (*(s32*)&fbatData->field_570[8])++;
+            *(s32*)&fbatData->field_570[0xC] += score;
+        }
+        if (score > 0x270F) {
+            score = 0x2710;
+        }
+    }
+    if (score > 0) {
+        kpaAddScorePos(score, &pos);
+    }
+    return score;
+}
+
+void npcBlurOn(const char* name) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    entry->flags |= 0x100;
+    entry->positionHistory[0] = entry->position;
+    entry->positionHistory[1] = entry->position;
+    entry->positionHistory[2] = entry->position;
+    entry->positionHistory[3] = entry->position;
+    entry->positionHistory[4] = entry->position;
+}
+
+void npcSetStayPose(const char* name) {
+    NpcWork* wp;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    if (name[0] == 0) {
+        return;
+    }
+    if (!strcmp(name, "(^x^)party")) {
+        return;
+    }
+    if (!strcmp(name, "party")) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "extparty")) {
+        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "mario")) {
+        marioChgPose(MarioStayPose);
+        return;
+    }
+
+    wp = gp->inBattle ? &work.battle : &work.field;
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    if (entry->flags & 0x200) {
+        animPoseSetAnim(entry->poseId, entry->stayAnim, TRUE);
+    }
+}
+
+void npcSetTalkPose(const char* name) {
+    NpcWork* wp;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    if (name[0] == 0) {
+        return;
+    }
+    if (!strcmp(name, "(^x^)party")) {
+        return;
+    }
+    if (!strcmp(name, "party")) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "extparty")) {
+        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "mario")) {
+        marioChgPose(MarioTalkPose);
+        return;
+    }
+
+    wp = gp->inBattle ? &work.battle : &work.field;
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    if (entry->flags & 0x200) {
+        animPoseSetAnim(entry->poseId, entry->talkAnim, TRUE);
+    }
+}
+
+s32 npcCheckBlow(NpcEntry* entry) {
+    Vec pos;
+
+    if (entry->flags & 0x20000000) {
+        return FALSE;
+    }
+    if (entry->flags & 0x20) {
+        return FALSE;
+    }
+    pos = entry->position;
+    if (cloudGetBreathPower(entry->width, &pos) > 0.0f) {
+        return TRUE;
+    }
+    pos.y = entry->position.y - entry->height * 0.5f;
+    if (cloudGetBreathPower(entry->width, &pos) > 0.0f) {
+        return TRUE;
+    }
+    pos.y = entry->position.y - entry->height;
+    return cloudGetBreathPower(entry->width, &pos) > 0.0f;
+}
+
+NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
+    f32 dx = x - entry->position.x;
+    f32 dy = y - entry->position.y;
+    f32 dz = z - entry->position.z;
+
+    if (y != entry->position.y) {
+        if (y >= entry->position.y) {
+            if (y <= entry->position.y + entry->height) {
+                dy = 0.0f;
+            } else {
+                dy = y - (entry->position.y + entry->height);
+            }
+        }
+    }
+    *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
+    if (*outDist < radius + entry->width * 0.5f) {
+        return entry;
+    }
+    return NULL;
 }
