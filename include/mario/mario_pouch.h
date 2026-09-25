@@ -425,7 +425,7 @@ typedef struct PouchData {
     u32 mEmailReceivedFlags[4];        // 0x580
     u32 mEmailReadFlags[4];            // 0x590
     u8 field_0x5A0[0x10];              // 0x5A0
-    u16 mShopPoints;                   // 0x5B0
+    s16 mShopPoints;                   // 0x5B0
     u8 field_0x5B2[2];                 // 0x5B2
     u32 field_0x5B4;                   // 0x5B4
     u8 mMerleeCurseUsesRemaining;      // 0x5B8

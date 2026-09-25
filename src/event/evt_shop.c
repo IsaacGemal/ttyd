@@ -217,7 +217,7 @@ USER_FUNC(get_shop_point) {
 	s32* args = event->args;
 	PouchData* pouch = pouchGetPtr();
 
-	evtSetValue(event, args[0], *(s16*)((u8*)pouch + 0x5B0));
+	evtSetValue(event, args[0], pouch->mShopPoints);
 	return EVT_RETURN_DONE;
 }
 
@@ -233,7 +233,7 @@ USER_FUNC(point_wait) {
 	ShopWork* wp = (ShopWork*)_wp;
 	PouchData* pouch = pouchGetPtr();
 
-	if (wp->field_0x38 != *(s16*)((u8*)pouch + 0x5B0)) {
+	if (wp->field_0x38 != pouch->mShopPoints) {
 		psndSFXOn((const char*)0x8CA);
 		return EVT_RETURN_BLOCK;
 	}
@@ -245,7 +245,7 @@ USER_FUNC(point_disp_onoff) {
 	PouchData* pouch = pouchGetPtr();
 	ShopWork* wp = (ShopWork*)_wp;
 
-	wp->field_0x38 = *(s16*)((u8*)pouch + 0x5B0);
+	wp->field_0x38 = pouch->mShopPoints;
 	if (value != 0) {
 		winMgrOpen(wp->field_0x58);
 	}
@@ -298,7 +298,7 @@ USER_FUNC(exchange_shop_point) {
 	s32 price;
 
 	for (i = 0, p = shopPointList; (price = p->price) != -1; i++, p++) {
-		if (price <= *(s16*)((u8*)pouch + 0x5B0) && !(pouch->field_0x5B4 & (1 << i))) {
+		if (price <= pouch->mShopPoints && !(pouch->field_0x5B4 & (1 << i))) {
 			pouch->field_0x5B4 |= 1 << i;
 			return EVT_RETURN_DONE;
 		}
@@ -315,7 +315,7 @@ USER_FUNC(chk_shop_point) {
 	s32 price;
 
 	for (i = 0, p = shopPointList; (price = p->price) != -1; i++, p++) {
-		points = *(s16*)((u8*)pouch + 0x5B0);
+		points = pouch->mShopPoints;
 
 		if (price > points) {
 			continue;
@@ -363,9 +363,9 @@ USER_FUNC(add_shop_point) {
 	if (strncmp(gp->currentMapName, str + 0x90, 6) == 0 && swGet(0xFC) && v3 < 900000) {
 		v0 *= 2;
 	}
-	*(s16*)((u8*)pouch + 0x5B0) += v0;
-	if (*(s16*)((u8*)pouch + 0x5B0) > 0x12C) {
-		*(s16*)((u8*)pouch + 0x5B0) = 0x12C;
+	pouch->mShopPoints += v0;
+	if (pouch->mShopPoints > 0x12C) {
+		pouch->mShopPoints = 0x12C;
 	}
 	return EVT_RETURN_DONE;
 }
@@ -422,11 +422,11 @@ void point_disp(WinMgrEntry* entry) {
 		}
 		PSMTXTrans(mtx, float_124_8041bc50 + (f32)entry->field_0x18, (f32)entry->field_0x1C - float_38_8041bc54, float_0_8041bc34);
 		iconNumberDispGx(mtx, wp->field_0x38, 0, *(GXColor*)&dat_8041bbe8);
-		delta = *(s16*)((u8*)pouch + 0x5B0) - wp->field_0x38;
+		delta = pouch->mShopPoints - wp->field_0x38;
 		if (delta != 0) {
 			delta /= 10;
 			if (delta == 0) {
-				delta = (*(s16*)((u8*)pouch + 0x5B0) > wp->field_0x38) ? 1 : -1;
+				delta = (pouch->mShopPoints > wp->field_0x38) ? 1 : -1;
 			}
 			wp->field_0x38 += delta;
 		}
