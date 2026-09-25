@@ -538,3 +538,26 @@ linked (linked code 8.12% -> 8.26%). The 11 that fail are the finisher agents' f
 `unit_purple_teresa` (doesn't build when linked). The linked number moves in small steps until finisher agents
 complete large files like `event` and `battle`.
 
+
+## Preparing for the hard tail (2026-09-25, Isaac + Claude Opus 5.5)
+
+What Snood's `tick` (3,680 B, 41% -> exact in about 20 commits) needed, and how TTYD gets the equivalent:
+1. **A scoreboard for one huge function:** split into address windows, each scored separately while the whole
+   function compiles. Port Snood's `link_diff.py --regions` when the >3 KB functions (120 of them) come up.
+2. **Seeing inside the compiler.** Snood's compiler (agbcc) is open source, so its passes could be dumped. TTYD's
+   (`mwcceppc.exe`, GC/2.6) is a closed binary. Candidates to get that back:
+   [mwcc-rs](https://github.com/zcanann/mwcc-rs) (a byte-exact Rust reimplementation in progress; register
+   coloring is its hardest part) and [JackPriceBurns/mwcc](https://github.com/JackPriceBurns/mwcc) (partial
+   decompilation of Melee's version, with allocator notes). Both target other versions than 2.6. First
+   experiment when the time comes: compile our matched functions with mwcc-rs and see what share it reproduces.
+   decomp-permuter already supports MWCC (Melee uses it).
+3. **Accumulated knowledge:** an idioms file, near-miss log and hard-function notes, built up over the project.
+4. **Patient, verified small steps by a strong model.**
+
+Cheap now, expensive later, so do soon:
+- **A per-file compiler-flag sweep.** Wrong flags make functions impossible (wave 3's eight `-O4,s` battle
+  files), which looks exactly like "very hard" in the endgame.
+- **Keep every attempt:** for each function that ends below 100%, its best version and what was tried, not
+  just the agent's final file.
+- **Start the idioms file:** fold each wave's "compiler idioms" report sections into one shared file.
+- Keep fixing types in review and linking continuously, so those problems don't all arrive at the end.
