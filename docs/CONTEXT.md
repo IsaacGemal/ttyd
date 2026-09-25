@@ -13,6 +13,7 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
+- New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first.
 - Fork of [doldecomp/ttyd](https://github.com/doldecomp/ttyd) at `2df569d` (Jul 5, 2026), private at
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
@@ -464,3 +465,64 @@ Lessons:
   left callers with no prototype. CI caught both.
 - **Types the original reads unsigned** (`lhz`) keep turning up declared signed in the headers (`animeArg1/2`,
   `star_piece_price`). Worth a mechanical check across the headers later.
+
+## The orchestrator's role: how to pick this up (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+For a new Claude session taking over. Isaac sets direction; the orchestrator (a Claude Code session on Isaac's
+Mac) runs the waves, merges, reviews and keeps this ledger. Agents do the matching; the orchestrator never
+takes an agent's word for anything, only the build's.
+
+**Start here.**
+1. Read this ledger top to bottom, then `docs/CONTEXT.private.md` if it exists (gitignored, on Isaac's Mac
+   only): inference provider, keys, the tower, capacity, what can and can't go public.
+2. Check the live state: `gh pr list`, `git log --oneline -15`, and `python3 tools/ci.py` on `main` (it should
+   pass with nothing changed). GitHub is the source of truth for what's merged.
+3. Ask Isaac what's next. Don't launch a wave, spend on inference or share traces without him.
+
+**One wave, end to end** (wave 3 is the worked example):
+1. **Pick files.** Existing `src/` files with the most unmatched small functions, from
+   `build/G8MJ01/report.json`; skip files another open PR touches. Later waves will add "finisher" agents on
+   nearly complete files (see "Linking" below).
+2. **Launch** 12-24 Pi agents on the tower, one file each, a copy of the repo per agent, 30-minute cap. The
+   prompt is in the launcher (`launch.py`); it carries the rules from this ledger (no asm, pragmas only with a
+   reason, never delete existing functions, the partial-function rule, named fields, write `REPORT.md` with a
+   `Model:` line).
+3. **Merge each result** with the merge script: apply the patch, `tools/ci.py` (build, byte-match, ratchet),
+   then `lint_patch.py` (rejects new empty stubs; flags unlabelled partials, raw offsets, local structs and
+   externs, pragmas without reasons). One commit per file on a `waveN` branch, crediting the agent's model
+   with `Co-Authored-By:` and the orchestrator's model too. Reject files that don't build; don't hand-repair
+   an agent's half-finished edit.
+4. **Open one PR per wave**, then **Codex review** (`codex exec`, GPT-5.6 Sol, medium effort, read-only
+   sandbox) with the rules file and the lint output, told not to repeat the lint. Two rounds on a big PR:
+   they find different things.
+5. **Fix every finding yourself**, each checked by `tools/ci.py` before committing. A finding points at a
+   problem; its suggested fix may be wrong (removing "match-forcing" pragmas would have lost matches; the real
+   fix was a per-file compiler flag). `--allow-regress FUNC` only for a small fuzzy drop in a named, unmatched
+   function, said in the commit message.
+6. **Write the ledger chapter** (results, what review found, lessons), then Isaac merges the PR.
+
+**Rules the orchestrator keeps.**
+- Nothing about the inference provider, accounts, keys or costs in this repo: it will be public. A local
+  pre-commit hook blocks the obvious cases; private notes go in `CONTEXT.private.md`.
+- Every number in a commit message or this ledger comes from the build. Report failures and rejections as
+  plainly as successes.
+- Ask Isaac before adding hooks, cron jobs or other standing setup, before force-pushing anything but your own
+  PR branch, and before sharing agent sessions anywhere.
+- Codex runs on GPT-5.6 Sol at medium effort; never a larger model (it burns Isaac's usage).
+- Delete with `trash`, not `rm -rf`; Python packages with `uv`.
+
+**Where the tooling lives.** `tools/ci.py` is in the repo. The wave tooling (launcher, the agents' `check.py`
+helper, merge script, `lint_patch.py`, Codex rules files) is still in the orchestrator's scratch on Isaac's Mac,
+`~/snood/scratch/ttyd_wave3/`, next to each agent's `REPORT.md`, patch and session log. The provider-neutral
+parts (merge script, lint, linking) should move into `tools/` so a new session doesn't depend on that folder.
+
+**Linking.** A file counts as linked only when the whole file matches (code and data) and it's flipped from
+`NonMatching` to `Matching` in `configure.py` with the build's checksums still passing. Waves don't do this on
+their own. Planned: an auto-link step in the merge pipeline that tries the flip for every file at 100% and keeps
+it only if the checksums pass. A test on Sep 25 linked 7 of 10 candidates; `swdrv`, `gxsub`, `seqdrv` and
+`synth_dbtab` show 100% in the report but fail to link, which is work for a finisher agent.
+
+**Open threads as of this chapter:** 56 partial functions without a `// NONMATCHING` label; `sac_bakugame`
+(rejected in wave 3); four duplicated structs from wave 2 (`ShopWork`, `StatusWindowValue`, `BattleStageWork`,
+`PaperSoundEffect`); agents that stop early; the launcher should keep a timed-out agent's last version that
+built; headers that declare signed what the original reads unsigned.
