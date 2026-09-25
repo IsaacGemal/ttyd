@@ -194,3 +194,39 @@ Considered and deliberately not built yet. Pick one up by adding a dated chapter
   `tools/ci.py` directly and records the result in the PR or commit. Revisit when the repo goes public, for a
   visible "build passing" badge; then it must run only on pushes to `main`, never on pull requests (see the
   private go-public checklist). Not implemented, not tested.
+
+## Harness: Pi over opencode (2026-09-25, Claude Opus 5.5)
+
+Decision: swarm agents run on [Pi](https://github.com/badlogic/pi-mono) (`@earendil-works/pi-coding-agent`),
+not opencode, which ran every Snood agent. The reasons are specific failures from Snood's record
+(`~/snood/notes/AGENT_WAVES.md`) and a head-to-head trial on Snood cleanup work on 2026-09-25:
+
+- **opencode lost work on failures it could have survived.** One provider 500 made `opencode run` exit, and
+  anything not yet written to disk was gone: on Sep 24 three of four recon agents hit one within 23 seconds and
+  two had to be rerun from zero. Pi retries transient provider errors itself (`retry.*` in
+  `~/.pi/agent/settings.json`, 3 attempts by default) and saves every session to disk, so a dead or timed-out
+  agent can be resumed with `pi --session <id>` and told to finish, instead of starting over.
+- **opencode stalled on its own permission prompts.** Snood round 5's G02 hung on a permission prompt and wrote
+  nothing; round 7's G04 hit an external-directory denial and left no report. Pi has no approval prompts in
+  headless mode. The flip side: its tools run with the process's full permissions, so isolation has to come from
+  the OS (a worktree per agent, resource limits, no secrets in the environment beyond the model key).
+- **opencode was a black box; Pi is measurable.** opencode's output was colored text with no token counts, so
+  Snood's spend could only be estimated afterwards. Pi's `--mode json` emits a structured event for every turn
+  and tool call with exact usage: input, cached input and output tokens. That is how the trial showed the
+  inference difference (below), and it's what the orchestrator needs to watch 100 agents and spot one that has
+  hung.
+- **Less baggage.** Pi's base prompt is ~2,300 tokens and has 4 tools (read, write, edit, bash); the task
+  prompt is nearly all of an agent's context. It can also be driven from TypeScript (SDK) or over stdin (RPC)
+  if the orchestrator outgrows spawning processes.
+- **Trial result.** Two Pi agents build-tested 15 register pins and asm barriers in Snood; each confirmed the
+  unmodified file matched first, tested one removal at a time, and wrote a correct report and patch. All 3
+  "removable" results and a spot-checked "load-bearing" one reproduced independently, and the removals were
+  committed (Snood `865a9a5`). On DeepSeek's API turns took 2-3 s with ~90% of input served from cache, and
+  each agent finished in under 30 s. Prompt caching is what makes that possible: agents re-send their whole
+  growing conversation every turn, so an endpoint without it is several times slower on the same work.
+
+Known gotchas: Pi needs Node 22+ (the tower's `~/.zshenv` now puts nvm's Node 24 first); headless runs must
+close stdin (`</dev/null`) or Pi waits for piped input; Pi doesn't tell the model its own name, so the prompt
+has to supply the exact `Model:` line; and agents must still write their report as they go, since a hard kill
+(`timeout`) ends the process whatever the harness. Still untested: Pi's automatic retry under real 500s, because
+the providers used in the trial never failed.
