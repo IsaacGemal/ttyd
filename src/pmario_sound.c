@@ -1,6 +1,7 @@
 #include "pmario_sound.h"
 #include "sound.h"
 #include <string.h>
+#include <dolphin/os.h>
 //TODO: put this in a folder?
 
 //.data
@@ -4325,6 +4326,32 @@ void psndBGMMain(void);
 void psndENVMain(void);
 void psndSFXMain(void);
 
+//local declarations for symbols without a header prototype
+BOOL psndBGMOn_f_d(s32, char*, s32, s32, s32);
+BOOL psndENVOn_f_d(s32, s32, s32, s32);
+BOOL psndENVOff_f_d(s32, s32, s32);
+s32 __psndSFXOn(s32, s32, s32, s32, Vec*, s32, s32, s32);
+s32 SoundSSCheck(s32);
+void SoundSSSetPlayFreqCh(s32);
+void SoundSSStopCh(s32);
+
+// psbgmlist is defined in another unit; only field_0x4 is read here
+typedef struct BGMListEntry {
+    u32 field_0x0;
+    u32 field_0x4;
+    u8 field_0x8[0x8];
+} BGMListEntry;
+
+extern BGMListEntry psbgmlist[];
+
+// same layout as PaperSoundEffect but with unk6 as u16 so loads are lhz, not lha
+typedef struct PaperSoundEffectU16_s {
+    s32 unk0;
+    u16 unk4;
+    u16 unk6;
+    u8 _pad[0x28 - 0x8];
+} PaperSoundEffectU16;
+
 static f32 angleABf(f32 x1, f32 y1, f32 x2, f32 y2) {
 	f32 xdiff, ydiff;
 	f32 xabs, yabs;
@@ -4489,11 +4516,18 @@ BOOL psndPushGroup(void) {
 	if (_psndPushGroup_trg) {
 		return TRUE;
 	}
-	if (group <= 11) {
-		_psndPushGroup_trg = TRUE;
-		tbl[0] = group;
-		tbl[1] = -1;
+	if (group > 11) {
+		init_f = TRUE;
+		SoundLoadDVD2Free();
+		return FALSE;
 	}
+	_psndPushGroup_trg = TRUE;
+	((u8*)tbl)[0] = group;
+	((u8*)tbl)[1] = 0xFF;
+	SoundLoadDVD2PushGroup((u8*)tbl);
+	_psndPushGroup_trg = FALSE;
+	group++;
+	return TRUE;
 }
 
 
@@ -4520,25 +4554,35 @@ void psndSFXMain(void) {
 
 }
 
-void psndStopAllFadeOut(void) {
-
-}
 
 BOOL psndBGMOn(u32 r3, char* bgm_name) {
-	return FALSE;
+	return psndBGMOn_f_d(r3, bgm_name, 0x3E8, 0x2EE, 0);
 }
 
 BOOL psndENVOff(u32 r3) { //probably "id"
-	return FALSE;
+	return psndENVOff_f_d(r3, 0x3E8, 0);
 }
 
 void psndSFXAllOff(void) {
+	int i;
 
+	for (i = 0; i < 40; i++) {
+		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[i];
+
+		if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
+			sfx->unk6 |= 0x40;
+		}
+	}
+	if (*(u8*)((u8*)&psnd + 0x24) != 2) {
+		*(u8*)((u8*)&psnd + 0x24) = 2;
+		*(s16*)((u8*)&psnd + 0x26) = 0x2D;
+		*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+	}
 }
 
 
 void psndSFXOn(const char* sfx_name) {
-
+	__psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
 BOOL psndBGMOff_f_d(s32 flags, u16 fadetime, BOOL someswitch) {
@@ -4546,7 +4590,12 @@ BOOL psndBGMOff_f_d(s32 flags, u16 fadetime, BOOL someswitch) {
 }
 
 BOOL psndBGMStartCheck(s32 id) {
+	PaperSoundBGM* bgm = &psbgm[id & 0xF];
 
+	if ((u32)bgm->unk0 == -1) {
+		return TRUE;
+	}
+	return (SoundSSCheck(bgm->streamId) >> 3) & 1;
 }
 
 void psndSetFlag(s32 flag) { //1:1 except maybe param
@@ -4572,5 +4621,294 @@ void psndSetPosDirListener(Vec* position, f32 direction) {  //1:1
 }
 
 void psndSFXOn_3D(const char* name, Vec* position) {
+	__psndSFXOn((s32)name, 0xFF, 0xFF, 0, position, 0, 0x10, 0);
+}
 
+//functions below were not present in the placeholder file
+u16 psndGetFlag(void) {
+	return psnd.unk56;
+}
+
+BOOL psndBGMChk(s32 id) {
+	s32 val = psbgm[id & 0xF].unk0;
+
+	return (s32)(~((val + 1) | (-1 - val))) >> 31;
+}
+
+BOOL psndBGMChkSilent(s32 id) {
+	PaperSoundBGM* bgm = &psbgm[id & 0xF];
+
+	if ((u32)bgm->unk0 == -1) {
+		return FALSE;
+	}
+	return bgm->unk21[5] == 8;
+}
+
+void psndBGMScope(s32 id, s32 scope) {
+	PaperSoundBGM* bgm = &psbgm[id & 0xF];
+
+	if ((u32)bgm->unk0 == -1) {
+		return;
+	}
+	if (scope > 0) {
+		bgm->unk8[8] = 0xFF;
+	}
+	if (scope < 0) {
+		bgm->unk8[8] = 0;
+	}
+	if (scope == 0) {
+		bgm->unk8[8] = 0x1E;
+	}
+}
+
+void psndBGM_rate(s32 id) {
+	s32 idx = id & 0xF;
+	PaperSoundBGM* bgm = &psbgm[idx];
+	s32 bgmid = bgm->unk0;
+
+	if ((u32)bgmid == -1) {
+		return;
+	}
+	if (!(psbgmlist[bgmid].field_0x4 & 0x80000000)) {
+		return;
+	}
+	SoundSSSetPlayFreqCh(bgm->streamId);
+}
+
+s32 psndSFXChk(u32 id) {
+	PaperSoundEffect* sfx;
+	u32 sub;
+	s32 val;
+
+	if (id == -1) {
+		return -1;
+	}
+	sub = (id >> 8) & 0xFFFF;
+	sfx = &pssfx[id & 0xFF];
+	if (sub != *(u16*)((u8*)sfx + 4)) {
+		return -1;
+	}
+	val = sfx->unk0;
+	return (s32)(~((val + 1) | (-1 - val))) >> 31;
+}
+
+u8 psndSFX_get_vol(s32 id) {
+	PaperSoundEffect* sfx;
+
+	if ((u32)id == -1) {
+		return 0;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return 0;
+	}
+	return sfx->unk8[0];
+}
+
+void psndSFX_vol(s32 id, u8 vol) {
+	PaperSoundEffect* sfx;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return;
+	}
+	sfx->unk8[0] = vol;
+}
+
+void psndSFX_dist(s32 id, u16 dist) {
+	PaperSoundEffect* sfx;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return;
+	}
+	*(u16*)((u8*)sfx + 0x12) = dist;
+}
+
+void psndSFX_pos(s32 id, Vec* position) {
+	PaperSoundEffect* sfx;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return;
+	}
+	*(Vec*)((u8*)sfx + 0x1C) = *position;
+}
+
+void psndSFXOnVol(s32 a, s32 b) {
+	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
+}
+
+void psndSFXOn_(const char* name) {
+	__psndSFXOn((s32)name, 0xFF, 0xFF, 0, 0, 0, 0x10, 1);
+}
+
+s32 psndSFXOnEx_3D(const char* name, Vec* position, s32 vol, s32 pan, s32 pitch, s32 flags) {
+	return __psndSFXOn((s32)name, vol, pan, pitch, position, 0, flags, 0);
+}
+
+typedef struct GlobalWorkTime_s {
+	u8 _pad[0x38];
+	OSTime renderTime;
+} GlobalWorkTime;
+
+extern GlobalWorkTime* gp;
+
+s32 psndBGMPlayTime(s32 id) {
+	PaperSoundBGM* bgm = &psbgm[id & 0xF];
+
+	if ((u32)bgm->unk0 == -1) {
+		return 600000;
+	}
+	return OSTicksToMilliseconds(gp->renderTime - *(OSTime*)((u8*)bgm + 0x30));
+}
+
+BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
+	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
+}
+
+BOOL psndBGMOff(s32 flags) {
+	return psndBGMOff_f_d(flags, 0x3E8, 0);
+}
+
+BOOL psndENVOn(s32 a, s32 b) {
+	return psndENVOn_f_d(a, b, 0x3E8, 0);
+}
+
+void psndSetReverb(s32 mode) {
+	switch (mode) {
+	case 0:
+		*(u16*)((u8*)&psnd + 0x52) = 0;
+		break;
+	case 1:
+		*(u16*)((u8*)&psnd + 0x52) = 0x14;
+		break;
+	case 2:
+		*(u16*)((u8*)&psnd + 0x52) = 0x28;
+		break;
+	case 3:
+		*(u16*)((u8*)&psnd + 0x52) = 0x3C;
+		break;
+	}
+}
+
+s32 psndENV_LPF(s32 id, s32 freq) {
+	u16* env = (u16*)((u8*)&psnd + 0x18);
+	s32 ret;
+
+	if (env[id & 0xF] == 0) {
+		ret = 0;
+	}
+	else {
+		if ((freq & 0xFFFF) == 0) {
+			freq = 0x7D00;
+		}
+		((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
+		ret = 1;
+	}
+	return ret;
+}
+
+void psndSFXOff(s32 id) {
+	PaperSoundEffect* sfx;
+	SoundEffectEntry* entry;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return;
+	}
+	if (((u16*)sfx)[3] & 1) {
+		sfx->unk0 = -1;
+		sfx->unk18 = -1;
+		return;
+	}
+	entry = &pssfxlist[sfx->unk0 & 0x1FFF];
+	if ((u32)sfx->unk18 != -1) {
+		if (entry->field_0x4 & 0x80000000) {
+			SoundSSStopCh(sfx->unk18);
+		}
+		else if (entry->field_0x4 & 0x40000000) {
+			SoundSongStopCh(sfx->unk18);
+		}
+		else {
+			SoundEfxStop(sfx->unk18);
+		}
+	}
+	sfx->unk0 = -1;
+	sfx->unk18 = -1;
+}
+
+void psndSFX_pit(s32 id, u16 pitch) {
+	PaperSoundEffect* sfx;
+	SoundEffectEntry* entry;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	if ((u32)sfx->unk0 == -1) {
+		return;
+	}
+	if (((u16*)sfx)[3] & 1) {
+		((s16*)sfx)[10] = pitch;
+	}
+	else {
+		entry = &pssfxlist[sfx->unk0 & 0x1FFF];
+		if (!(entry->field_0x4 & 0x80000000)) {
+			if (!(entry->field_0x4 & 0x80000000)) {
+				SoundEfxSetPitch(sfx->unk18, pitch);
+			}
+		}
+	}
+}
+
+void psndStopAllFadeOut(void) {
+	int i;
+
+	psndBGMOff_f_d(0x200, 0x3E8, 0);
+	psndBGMOff_f_d(0x201, 0x3E8, 0);
+	psndENVOff(0x200);
+	psndENVOff(0x201);
+	for (i = 0; i < 40; i++) {
+		if ((u32)((PaperSoundEffectU16*)&pssfx[i])->unk0 != -1) {
+			((PaperSoundEffectU16*)&pssfx[i])->unk6 |= 0x40;
+		}
+	}
+	*(u8*)((u8*)&psnd + 0x24) = 2;
+	*(s16*)((u8*)&psnd + 0x26) = 0x2D;
+	*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+}
+
+void psndMapChange(void) {
+	int i;
+
+	if (strcmp(psnd.unk40, (char*)gp + 0x12C) != 0) {
+		*(u16*)((u8*)&psnd + 0x52) = 0;
+	}
+	strcpy(psnd.unk40, (char*)gp + 0x12C);
+	psnd.unk56 &= ~0x100;
+	for (i = 0; i < 40; i++) {
+		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[i];
+
+		if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
+			sfx->unk6 |= 0x40;
+		}
+	}
+	if (*(u8*)((u8*)&psnd + 0x24) != 2) {
+		*(u8*)((u8*)&psnd + 0x24) = 2;
+		*(s16*)((u8*)&psnd + 0x26) = 0x2D;
+		*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+	}
 }
