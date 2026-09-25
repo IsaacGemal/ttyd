@@ -87,17 +87,11 @@ extern void FontDrawMessage(s32 x, s32 y, const char* msg);
 s32 evtShopIsActive(void) {
 	s32 active;
 
-	if (strcmp(gp->currentMapName, mapname) != 0) {
-		goto no;
+	if (strcmp(gp->currentMapName, mapname) == 0 && ((ShopWork*)_wp)->flags != 0) {
+		active = 1;
+	} else {
+		active = 0;
 	}
-	if (((ShopWork*)_wp)->flags == 0) {
-		goto no;
-	}
-	active = 1;
-	goto end;
-no:
-	active = 0;
-end:
 	return active;
 }
 
