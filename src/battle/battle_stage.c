@@ -586,7 +586,7 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	PSMTXRotRad(mRotZ, 'z', float_deg2rad_8041c820 * entry->field_10.z);
 	PSMTXConcat(mRotZ, mRotY, mRotY);
 	PSMTXConcat(mRotY, mRotX, mTmp);
-	PSMTXConcat((MtxPtr)((u8*)cam + 0x11C), mTrans, mTrans);
+	PSMTXConcat(cam->view, mTrans, mTrans);
 	PSMTXConcat(mTrans, mTmp, mTmp);
 	PSMTXConcat(mTmp, mScale, mTmp);
 	GXLoadPosMtxImm(mTmp, 0);
@@ -630,7 +630,7 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	GXSetNumChans(1);
 	GXSetChanCtrl(4, 0, 1, 1, 0, 2, 2);
 	GXSetNumTexGens(0);
-	GXLoadPosMtxImm((MtxPtr)((u8*)cam + 0x11C), 0);
+	GXLoadPosMtxImm(cam->view, 0);
 	GXSetNumTevStages(1);
 	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);

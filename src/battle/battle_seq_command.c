@@ -274,11 +274,9 @@ void _commandRestoreRec(void) {
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
-	BattleWorkCommandWeapon* entry;
 
 	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
-	entry = (BattleWorkCommandWeapon*)((u8*)cmd + cursor->field_0 * 0x1C);
-	return *(BattleWeapon**)((u8*)entry + 0x80);
+	return ((BattleWorkCommand*)cmd)->mWeaponTable[cursor->field_0].mWeaponParams;
 }
 
 BOOL BattleCommandAttackAudienceCheck(void) {
