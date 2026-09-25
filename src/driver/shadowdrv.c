@@ -4,24 +4,6 @@
 #include "driver/mobjdrv.h"
 #include <string.h>
 
-// Layout of ShadowEntry (header only declares unk0). Local so fields can be named.
-typedef struct ShadowEntryFields {
-    u16 flags;               // 0x0
-    u8 unk2;                 // 0x2
-    u8 type;                 // 0x3
-    Vec position;            // 0x4
-    f32 size;                // 0x10
-    f32 unk14;               // 0x14
-    s16 unk18;               // 0x18
-    u16 camId;               // 0x1A
-    f32 decayX;              // 0x1C
-    f32 decayY;              // 0x20
-    f32 decayZ;              // 0x24
-    u8 mode;                 // 0x28
-    u8 unk29[3];             // 0x29
-    Mtx matrix;              // 0x2C
-} ShadowEntryFields;
-
 extern const Vec vec3_802c1a90;
 extern const Vec vec3_802c1acc;
 extern const Vec vec3_802c1ae4;
@@ -36,19 +18,6 @@ typedef struct ShadowConfigFields {
     u8 pad3C[4];
     s32 unk40;
 } ShadowConfigFields;
-
-typedef struct ProjShadowFields {
-    s32 unk0;
-    s32 unk4;
-    s32 unk8;
-    Mtx unkC;
-    u8 pad3C[0x7C - 0x3C];
-    Mtx unk7C;
-    u8 padAC[0xDC - 0xAC];
-    GXTexObj texObj;
-    smartEntry* unkFC;
-    GXColor unk100;
-} ProjShadowFields;
 
 Mtx tmp_view;
 u32 tmp_sci[4];
@@ -163,7 +132,7 @@ void* shadowGetDepthShadowProjTexMtx(void) {
 }
 
 void* shadowGetProjShadowProjTexMtx(void) {
-    return &pswp->unkC[0x70];
+    return &pswp->unk7C;
 }
 
 GXColor shadowGetProjShadowColor(void) {
@@ -178,6 +147,8 @@ void shadowProjShadowDrawCountUp(void) {
     pswp->unk4++;
 }
 
+// The setters below address entries by byte offset (id * sizeof(ShadowEntry) + field offset): the original
+// adds the field offset to the index before the store (stbx), which entries[id].field doesn't reproduce.
 void shadowSetType(s32 id, s32 type) {
     ((u8*)cswp->entries)[id * 0x5C + 3] = type;
 }
@@ -195,7 +166,7 @@ void shadowSetCamId(s32 id, s32 camId) {
 }
 
 void shadowFlagOn(s32 id, u16 flag) {
-    ShadowEntryFields* entry = (ShadowEntryFields*)cswp->entries;
+    ShadowEntry* entry = cswp->entries;
     entry[id].flags |= flag;
 }
 
@@ -208,7 +179,7 @@ void* shadowGetProjShadowConfig(void) {
 }
 
 void shadowSetVolumeDecay(s32 id, f32 x, f32 y, f32 z) {
-    ShadowEntryFields* entry = (ShadowEntryFields*)cswp->entries;
+    ShadowEntry* entry = cswp->entries;
     entry[id].decayX = x;
     entry[id].decayY = y;
     entry[id].decayZ = z;
@@ -241,7 +212,7 @@ GXTexObj* shadowGetDepthShadowTexObj(void) {
 
 GXTexObj* shadowGetProjShadowTexObj(void) {
     if (pswp->unk0 & 1) {
-        return smartTexObj((GXTexObj*)&pswp->unkC[0xD0], *(void**)((u8*)pswp + 0xFC));
+        return smartTexObj(&pswp->texObj, &pswp->unkFC->address);
     }
     return NULL;
 }
@@ -266,9 +237,9 @@ GXColor shadowGetDepthShadowColor(void) {
 }
 
 s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
-    ShadowEntryFields* entries = (ShadowEntryFields*)cswp->entries;
+    ShadowEntry* entries = cswp->entries;
     s32 id = cswp->unk104;
-    ShadowEntryFields* entry = &entries[id];
+    ShadowEntry* entry = &entries[id];
     Vec pos;
 
     entry->flags = 0;
@@ -296,9 +267,9 @@ s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
 
 // NONMATCHING (95.08%): instruction sequence identical; only scratch register allocation differs.
 void shadowEntry(f32 x, f32 y, f32 z, f32 size) {
-    ShadowEntryFields* entries = (ShadowEntryFields*)cswp->entries;
+    ShadowEntry* entries = cswp->entries;
     s32 id = cswp->unk104;
-    ShadowEntryFields* entry = &entries[id];
+    ShadowEntry* entry = &entries[id];
     Vec pos;
 
     entry->flags = 0;
@@ -324,7 +295,7 @@ void shadowEntry(f32 x, f32 y, f32 z, f32 size) {
 }
 
 // NONMATCHING (99.31%): body is identical; only FP scratch register allocation differs.
-void cylinder(ShadowEntryFields* entry) {
+void cylinder(ShadowEntry* entry) {
     u8* base = lbl_80303460;
 
     if (entry->flags & 4) {
@@ -369,7 +340,7 @@ void cylinder(ShadowEntryFields* entry) {
 }
 
 // NONMATCHING (96.18%): body matches; remaining diffs are call-argument register scheduling.
-void projShadowEnd(s32 arg0, ProjShadowFields* work) {
+void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     ShadowConfigFields* config;
     CameraEntry* cam;
     Mtx mtx;
@@ -427,7 +398,7 @@ void projShadowEnd(s32 arg0, ProjShadowFields* work) {
 // NONMATCHING (99.94%): body identical; only the 0.0f .sdata2 relocation differs (pool offsets).
 // NONMATCHING (98.91%): body matches; only float-constant pool labels and a couple of operand orders differ.
 void shadowCharShadowDisp_Collision(void) {
-    ShadowEntryFields* entry = (ShadowEntryFields*)cswp->entries;
+    ShadowEntry* entry = cswp->entries;
     HitCheckQuery query;
     HitEntry* hit;
     f32 (*mtx)[4];
