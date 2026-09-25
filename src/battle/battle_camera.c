@@ -11,10 +11,6 @@ extern f64 sqrt(f64);
 
 extern BattleWork *_battleWorkPointer;
 
-// This unit was compiled with -O4,s in the original; the matching prologues
-// (stmw/lmw for even two saved registers) only come out under size opt.
-#pragma optimize_for_size on
-
 // Fields of BattleCameraWork that the shared header does not declare yet.
 // Offsets are relative to the start of BattleCameraWork (0x2754 absolute).
 typedef struct BattleCameraWorkExt {
