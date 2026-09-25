@@ -357,7 +357,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
 
     count = 0;
     for (i = 0; i < 8; i++) {
-        if (*(u16*)((u8*)pouchGetPtr() + 0x8C) & (1 << i)) {
+        if (pouchGetPtr()->mStarPowersObtained & (1 << i)) {
             count += 100;
         }
     }
@@ -383,7 +383,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
     }
     y += 12.0f;
     for (i = 0; i < 8; i++) {
-        if (*(u16*)((u8*)pouchGetPtr() + 0x8C) & (1 << i)) {
+        if (pouchGetPtr()->mStarPowersObtained & (1 << i)) {
             Vec pos;
 
             pos.x = x + i * 32;

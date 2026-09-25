@@ -275,10 +275,10 @@ s32 pouchReceiveMailCount(void) {
 }
 
 void pouchGetStarStone(u32 id) {
-	if (!*(u16*)&mpp->mStarPowersObtained) {
+	if (!mpp->mStarPowersObtained) {
 		mpp->audienceCount = 2.0f;
 	}
-	*(u16*)&mpp->mStarPowersObtained |= 1 << id;
+	mpp->mStarPowersObtained |= 1 << id;
 	mpp->maximumSP = (s16)(100 * (id + 1));
 	if (mpp->maximumSP < 0) {
 		mpp->maximumSP = 0;

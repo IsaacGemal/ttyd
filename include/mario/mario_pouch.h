@@ -404,7 +404,7 @@ typedef struct PouchData {
     f32 audienceCount;                 // 0x84
     s16 rank;                          // 0x88
     s16 level;                         // 0x8A
-    s16 mStarPowersObtained;           // 0x8C
+    u16 mStarPowersObtained;           // 0x8C
     s16 baseMaxHP;                     // 0x8E
     s16 baseMaxFP;                     // 0x90
     s16 availableBP;                   // 0x92
