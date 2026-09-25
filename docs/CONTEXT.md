@@ -17,8 +17,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Baseline (local build, Mac and Linux agree, Sep 24): 12.16% of code matched, 2,065 of 9,770 functions, 100
-  of 1,239 units complete. decomp.dev shows 2,027 because of the filename-case bug below. SDK 100%, MusyX 286/333 functions, game code (DOL) 942 of 5,687 functions, RELs 16 of 2,780.
+- Progress (local build, Sep 25 after wave 1): 13.09% of code matched, 2,407 of 9,770 functions; game code
+  1,247 of 5,687. Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the
+  filename-case bug below). Nothing new is linked yet: `event` and `battle` are at 100% code, the next step for them.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -279,3 +280,34 @@ Lessons for the swarm:
    on the judgment calls. The finished repos, Melee especially, are what those checks can be modelled on: its
    cleanup index is one example. We don't know yet exactly what this looks like. What we have now, at minimum:
    lint, byte match, and no regressions (`tools/ci.py`).
+
+## Wave 1: 12 agents, 20 minutes (2026-09-25, Claude Opus 5.5; agents DeepSeek V4.1 Flash)
+
+Setup: Pi + DeepSeek V4.1 Flash via DeepSeek's API, on the tower, one agent per source file, each in its own copy
+of the repo with a warm build (`~/ttyd-agents/<file>`), 20-minute cap, told to update REPORT.md after every
+function. Files: battle_event_cmd, battle_audience, event, evt_npc, mapdrv, battle_unit, pmario_sound, party,
+animdrv, battle, npcdrv, mario. A helper showed each agent its file's match % per function and an
+original-vs-yours instruction diff (objdiff one-shot mode).
+
+Result: **2,065 -> 2,407 functions (+342)**, game code 942 -> 1,247; code matched 12.16% -> 13.09%; data matched
+4.62% -> 5.14%. 10 files merged after `tools/ci.py` passed; 2 rejected by the ratchet:
+- `pmario_sound`: deleted 4 human stub functions (small fuzzy scores to 0) and used raw offsets.
+- `battle_audience`: ~50 new matches, but 7 existing functions collapsed (`BattleAudience_Init` 52% -> 0%).
+  Patch kept in `~/snood/scratch/ttyd_wave1/`; the new matches could be salvaged.
+`event` went to 219/219 mostly by renaming already-correct functions to their original symbol names from
+`config/G8MJ01/symbols.txt` (objdiff pairs functions by name). `mario` hit the cap but lost nothing, because its
+report and file were current.
+
+Cost: 1,849 turns, ~301M tokens, 99.4% of them cached input (297.6M cached, 1.7M uncached, 1.9M output); about
+$2-3 at DeepSeek's list prices. The tower sat at load ~0.3 throughout.
+
+Lessons:
+- **Incremental reports work.** The one agent that hit the cap lost nothing.
+- **The ratchet earns its keep.** Both rejections were caught without reading the diffs.
+- **`#pragma` needs an allowlist, not a ban.** Two merges needed `--allow-pragma` for `dont_inline`, which the
+  human code already uses.
+- **Smells come with the speed.** Merged code adds raw offsets and casts (e.g. `*(f32*)(mario + 0x8c)` where
+  `MarioWork.position` exists). Melee matched first and built its cleanup index after reaching 100%, so these
+  are left for a later cleanup pass, not blocked at merge.
+- **A shared temp path in a helper is a race.** Every agent's helper wrote the same `/tmp` file for the first
+  few minutes; per-workspace paths now.
