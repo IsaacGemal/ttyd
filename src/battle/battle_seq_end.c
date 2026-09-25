@@ -25,6 +25,13 @@ void mapGrpFlagOn(const char* name, u32 flag);
 void FontDrawString(const char* str, f32 x, f32 y);
 extern int sprintf(char* str, const char* format, ...);
 
+void _GetExpIcon_Main(BattleWork* wp);
+void _LvupParamConfirmDisp(CameraId camId, void* param);
+void L__LvupParamHelpMsgDisp(CameraId camId, void* param);
+void _lvup_select_object_disp(CameraId camId, void* param);
+void btlseqEnd_DispMain(CameraId camId, BattleWork* wp);
+void effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32 b);
+
 extern s32 btlevtcmd_RunDataEventChild[];
 s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);
 
@@ -92,6 +99,7 @@ s32 _keta_get(s32 value) {
 }
 #pragma optimize_for_size off
 
+#pragma optimize_for_size on
 s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     s32 idx = event->args[0];
     PouchData* pouch = pouchGetPtr();
@@ -100,11 +108,13 @@ s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, idx, (s32)rank->rankUpMessage);
     return 2;
 }
+#pragma optimize_for_size off
 
+#pragma optimize_for_size on
 s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e = event;
-    s32* args = e->args;
     BattleWork* wp = _battleWorkPointer;
+    s32* args = e->args;
     s32 type = evtGetValue(e, args[0]);
     s32 outIdx = args[1];
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(e, type));
@@ -124,6 +134,7 @@ s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
+#pragma optimize_for_size off
 
 void _audience_Whistle_control(void) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -131,24 +142,226 @@ void _audience_Whistle_control(void) {
     if (work == NULL) {
         return;
     }
-    if (*(s32*)((u8*)work + 0x0) >= 0x0700001C) {
-        return;
-    }
-    if (*(s32*)((u8*)work + 0x0) >= 0x07000007) {
-        if (--*(s32*)((u8*)work + 0x2A0) < 0) {
-            *(s32*)((u8*)work + 0x2A0) = irand(0x78) + 0x3C;
-            BattleAudienceSoundWhistle();
+    if (*(s32*)((u8*)work + 0x0) < 0x0700001C) {
+        if (*(s32*)((u8*)work + 0x0) >= 0x07000007) {
+            if (--*(s32*)((u8*)work + 0x2A0) < 0) {
+                *(s32*)((u8*)work + 0x2A0) = irand(0x78) + 0x3C;
+                BattleAudienceSoundWhistle();
+            }
         }
-    } else {
-        return;
     }
 }
 
-void _ExecAllUnitBattleEndEvent(void) {
+#pragma optimize_for_size on
+s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
+    BattleSpotWork* spot = BatSpotGetPtr();
+    s32 i;
+    s32* args = event->args;
+
+    if (isFirstCall) {
+        event->userdata[0] = evtGetValue(event, args[0]);
+        event->userdata[1] = event->userdata[0];
+        event->userdata[2] = *((u8*)spot->entries + 0x2B);
+    }
+    event->userdata[1]--;
+    for (i = 0; i < 5; i++) {
+        BattleSpotEntry* entry = &spot->entries[i];
+        u32 color = 0xFFFFFF00;
+
+        ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], 0.0f, (f32)event->userdata[2]);
+        entry->field_28 = color;
+        if (((u8*)&entry->field_28)[3] == 0) {
+            entry->flags &= ~2;
+        }
+    }
+    return (event->userdata[1] == 0) ? 2 : 0;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleSeqEndWork* work = wp->seqEndWork;
+    s32 selected = *(s32*)((u8*)work + 0x10);
+    BattleUnit* mario = BattleGetMarioPtr(wp);
+    u8* entry = (u8*)work + 0x200 + selected * 0x34;
+    f32 turn;
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[1] = 0x3C;
+        event->userdata[2] = (s32)*(f32*)(entry + 0x0);
+        event->field_84 = (s32)*(f32*)(entry + 0x8);
+        *(s32*)((u8*)event + 0x88) = (s32)mario->mPosition.x;
+        *(s32*)((u8*)event + 0x8C) = (s32)mario->mPosition.z;
+    }
+    event->userdata[0]++;
+    if (event->userdata[0] < event->userdata[1]) {
+        *(f32*)(entry + 0x0) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)*(s32*)((u8*)event + 0x88));
+        *(f32*)(entry + 0x8) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)*(s32*)((u8*)event + 0x8C));
+        turn = 2160.0f;
+        *(f32*)(entry + 0x1C) = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], 0.0f, turn));
+        return 0;
+    }
+    *(f32*)(entry + 0x0) = (f32)*(s32*)((u8*)event + 0x88);
+    *(f32*)(entry + 0x8) = (f32)*(s32*)((u8*)event + 0x8C);
+    return 2;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleSeqEndWork* work = wp->seqEndWork;
+    s32 selected = *(s32*)((u8*)work + 0x10);
+    u8* entry = (u8*)work + 0x200 + selected * 0x34;
+    s32 half;
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[1] = (s32)*(f32*)(entry + 0x4);
+        event->userdata[2] = 0x10;
+        event->field_84 = 0x1E;
+        entry[0x28] = 2;
+    }
+    event->userdata[0]++;
+    if (event->userdata[0] < event->userdata[2]) {
+        half = event->userdata[2] / 2;
+        if (event->userdata[0] < half) {
+            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, 0.0f, (f32)(s32)event->field_84);
+        } else {
+            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, 0.0f);
+        }
+        return 0;
+    }
+    *(f32*)(entry + 0x4) = (f32)event->userdata[1];
+    entry[0x28] = 4;
+    effPokopiPchargeN64Entry(*(f32*)(entry + 0x0), *(f32*)(entry + 0x4), *(f32*)(entry + 0x8), 1.5f, 3, 0x78);
+    return 2;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
+    BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
+    s32 selected = *(s32*)((u8*)work + 0x10);
+    s32 i;
+
+    if (isFirstCall) {
+        event->userdata[0] = 0;
+        event->userdata[2] = 0x1E;
+        for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+            if (i != selected) {
+                ((u8*)work)[i * 0x34 + 0x228] = 3;
+            }
+        }
+    }
+    event->userdata[0]++;
+    if (event->userdata[0] < event->userdata[2]) {
+        for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+            if (i != selected) {
+                ((u8*)work)[i * 0x34 + 0x233] = (u8)(s32)intplGetValue(5, event->userdata[0], event->userdata[2], 255.0f, 0.0f);
+            }
+        }
+        return 0;
+    }
+    for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
+        if (i != selected) {
+            ((u8*)work)[i * 0x34 + 0x233] = 0;
+        }
+    }
+    return 2;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+s32 _disable_enemy_unit_disp(EventEntry* event, BOOL isFirstCall) {
+    BattleWork* wp = _battleWorkPointer;
     s32 i;
 
     for (i = 0; i < 0x40; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, i);
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+        BattleUnitType type;
+
+        if (unit == NULL) {
+            continue;
+        }
+        if ((u32)unit->flags & 0x80000000) {
+            continue;
+        }
+        type = unit->currentKind;
+        if (type == 0xDC) {
+            continue;
+        }
+        if (type == 0xDE) {
+            continue;
+        }
+        if (type >= 0xE0 && type < 0xE7 && unit->mAlliance == 0 && type != 0xE5) {
+            continue;
+        }
+        {
+            void* data = BtlUnit_GetData(unit, 0x42);
+
+            if (data != NULL) {
+                EventEntry* e = evtEntry(data, 0xA, 0);
+                e->unitId = unit->unitId;
+            } else if (unit->currentKind != 0xE5) {
+                unit->mAttributeFlags |= 0x21000000;
+            }
+        }
+    }
+    {
+        BattleStageObject* obj = BattleSearchObjectPtr("if_body");
+
+        if (obj != NULL) {
+            *(u8*)((u8*)wp + 0x180DC) |= 0x20;
+            obj->mFlags |= 1;
+            mapGrpFlagOn("if_body", 1);
+            mapGrpFlagOn("if_wire", 1);
+        }
+    }
+    return 2;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+void _check_audience_battle_end_exec(void) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleGroupSetup* group = wp->fbatInfo->setup->groupSetup;
+    s32 firstLevel = group->enemyData[0].mUnitKindParams->mLevel;
+    s32 turn;
+    s32 sum;
+    s32 i;
+    s32 level;
+    BattleUnitSetup* entry;
+    PouchData* pouch;
+
+    if (firstLevel > (pouch = pouchGetPtr())->level + 1) {
+        BattleAudience_Case_GreatVictory();
+    }
+    turn = wp->turnCount;
+    pouch = pouchGetPtr();
+    sum = 0;
+    level = pouch->level + 1;
+    entry = group->enemyData;
+    for (i = 0; i < group->numEnemies; i++, entry++) {
+        sum += entry->mUnitKindParams->mLevel;
+    }
+    level = sum * 2 / level / 3;
+    if (turn < level) {
+        BattleAudience_Case_FastVictory((f32)(level - turn));
+    }
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+void _ExecAllUnitBattleEndEvent(void) {
+    BattleWork* wp;
+    s32 i;
+
+    wp = _battleWorkPointer;
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
 
         if (unit != NULL) {
             void* data = BtlUnit_GetData(unit, 0x3F);
@@ -160,6 +373,7 @@ void _ExecAllUnitBattleEndEvent(void) {
         }
     }
 }
+#pragma optimize_for_size off
 
 s32 _lvup_ap_recover_full(void) {
     BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -169,6 +383,7 @@ s32 _lvup_ap_recover_full(void) {
     return 2;
 }
 
+#pragma optimize_for_size on
 s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -180,6 +395,7 @@ s32 _nozzle_set_offset(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
+#pragma optimize_for_size off
 
 void _BattleMarioKouraDelete(void) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -188,6 +404,7 @@ void _BattleMarioKouraDelete(void) {
     event->unitId = mario->unitId;
 }
 
+#pragma optimize_for_size on
 void _GetExpIcon_End(BattleSeqEndWork* work) {
     s32 i;
 
@@ -196,20 +413,120 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
         iconDelete((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18));
     }
 }
+#pragma optimize_for_size off
 
+#pragma optimize_for_size on
+void _GetExpIcon_Main(BattleWork* wp) {
+    BattleSeqEndWork* work = wp->seqEndWork;
+    s32 exp = *(s16*)((u8*)work + 0xA);
+    s32 i;
+
+    for (i = 0; i < exp / 10; i++) {
+        iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
+        if (*(s32*)((u8*)work + 0x80 + i * 4) <= 0) {
+            *(s32*)((u8*)work + 0x80 + i * 4) = 0x40;
+        } else {
+            *(s32*)((u8*)work + 0x80 + i * 4) += 0x40;
+            if (*(s32*)((u8*)work + 0x80 + i * 4) > 0xFF) {
+                *(s32*)((u8*)work + 0x80 + i * 4) = 0xFF;
+            }
+        }
+        if (*(s32*)((u8*)work + 0xCC + i * 4) < 0x10) {
+            *(s32*)((u8*)work + 0xCC + i * 4) += 1;
+        }
+        *(f32*)((u8*)work + 0x118 + i * 0xC) =
+            (24.0f - 18.0f * (f32)i) + 36.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10);
+    }
+    for (; i < 10; i++) {
+        iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
+        *(s32*)((u8*)work + 0x80 + i * 4) = 0;
+        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
+    }
+    {
+        s32 rem = exp % 10;
+        s32 j;
+
+        for (j = 10; j - 10 < rem; j++) {
+            iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
+            if (*(s32*)((u8*)work + 0x80 + j * 4) <= 0) {
+                *(s32*)((u8*)work + 0x80 + j * 4) = 0x40;
+            } else {
+                *(s32*)((u8*)work + 0x80 + j * 4) += 0x40;
+                if (*(s32*)((u8*)work + 0x80 + j * 4) > 0xFF) {
+                    *(s32*)((u8*)work + 0x80 + j * 4) = 0xFF;
+                }
+            }
+        }
+        for (; j < 0x13; j++) {
+            iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
+            *(s32*)((u8*)work + 0x80 + j * 4) = 0;
+            *(s32*)((u8*)work + 0xCC + j * 4) = 0;
+        }
+    }
+    for (i = 0; i < 0x13; i++) {
+        iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
+                     (u8)*(s32*)((u8*)work + 0x80 + i * 4));
+        iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
+                   *(f32*)((u8*)work + 0x118 + i * 0xC), *(f32*)((u8*)work + 0x11C + i * 0xC),
+                   *(f32*)((u8*)work + 0x120 + i * 0xC));
+    }
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
+void _GetExpIcon_Init(BattleSeqEndWork* arg) {
+    BattleSeqEndWork* work = arg;
+    s32 i;
+    char name[0x10];
+
+    for (i = 0; i < 10; i++) {
+        sprintf(name, "_Bgsp%d", i);
+        iconEntry2D(name, 0x18C);
+        *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
+        iconSetScale(name, 0.9f);
+        iconFlagOn(name, 2);
+        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
+        *(f32*)((u8*)work + 0x118 + i * 0xC) =
+            36.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10) + (24.0f - 18.0f * (f32)i);
+        *(f32*)((u8*)work + 0x11C + i * 0xC) = 25.0f;
+        *(f32*)((u8*)work + 0x120 + i * 0xC) = 0.0f;
+        iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
+                   *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
+    }
+    for (; i < 0x13; i++) {
+        sprintf(name, "_Bgsp%d", i);
+        iconEntry2D(name, 0x18C);
+        *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
+        iconSetScale(name, 0.45f);
+        iconFlagOn(name, 2);
+        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
+        *(f32*)((u8*)work + 0x118 + i * 0xC) = 86.9f - 16.2f * (f32)(i - 9);
+        *(f32*)((u8*)work + 0x11C + i * 0xC) = 0.0f;
+        *(f32*)((u8*)work + 0x120 + i * 0xC) = 0.0f;
+        iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
+                   *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
+    }
+    *(u32*)((u8*)work + 0x30) |= 2;
+}
+#pragma optimize_for_size off
+
+#pragma optimize_for_size on
 s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 flags = evtGetValue(event, args[0]);
+    u32 mask = args[1];
 
     if (flags != 0) {
-        *(u32*)((u8*)work + 0x30) |= args[1];
+        *(u32*)((u8*)work + 0x30) = *(u32*)((u8*)work + 0x30) | mask;
     } else {
-        *(u32*)((u8*)work + 0x30) &= ~args[1];
+        *(u32*)((u8*)work + 0x30) = *(u32*)((u8*)work + 0x30) & ~mask;
     }
     return 2;
 }
+#pragma optimize_for_size off
 
+#pragma optimize_for_size on
 s32 _lvup_obj_set_color(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
@@ -221,6 +538,7 @@ s32 _lvup_obj_set_color(EventEntry* event, BOOL isFirstCall) {
     obj[0x33] = evtGetValue(event, args[4]);
     return 2;
 }
+#pragma optimize_for_size off
 
 #pragma optimize_for_size on
 s32 _lvup_select_obj_lvup_param_disp(EventEntry* event, BOOL isFirstCall) {
@@ -244,9 +562,11 @@ s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
 #pragma optimize_for_size on
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-    BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
+    BattleWork* wp = _battleWorkPointer;
+    s32 val = args[0];
+    BattleSeqEndWork* work = wp->seqEndWork;
 
-    *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, args[0]);
+    *(s32*)((u8*)work + 0x2A4) = evtGetValue(event, val);
     return 2;
 }
 #pragma optimize_for_size off
@@ -261,7 +581,8 @@ void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     Vec pos;
-    char buf[16];
+    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+    char buf[8];
     s32 len;
 
     pouchGetPtr();
@@ -269,8 +590,6 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.y = -200.0f;
     pos.z = 0.0f;
     if (work != NULL) {
-        GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-
         sprintf(buf, "%2d", *(s16*)((u8*)work + 0xA));
         len = strlen(buf);
         windowDispGX_Waku_col(0, color, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
@@ -279,6 +598,35 @@ void _MarioExpDisp(CameraId camId, void* param) {
         FontDrawString(buf, 225.0f, -163.0f);
     }
 }
+
+#pragma optimize_for_size on
+void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
+    BattleSeqEndWork* work;
+    BattleWork* wp = param;
+    work = wp->seqEndWork;
+
+    if (work == NULL) {
+        return;
+    }
+    if (*(u32*)((u8*)work + 0x30) & 2) {
+        _GetExpIcon_Main(wp);
+        dispEntry(camId, 900.0f, 1, _GetExpIcon_Disp, wp);
+    }
+    if (*(u32*)((u8*)work + 0x30) & 4) {
+        dispEntry(camId, 900.0f, 1, _MarioExpDisp, wp);
+    }
+    if (*(u32*)((u8*)work + 0x30) & 8) {
+        Vec pos = {0.0f, 0.0f, 0.0f};
+        dispEntry(4, dispCalcZ(&pos), 2, _lvup_select_object_disp, wp);
+    }
+    if (*(u32*)((u8*)work + 0x30) & 0x10) {
+        dispEntry(camId, 900.0f, 1, _LvupParamConfirmDisp, wp);
+    }
+    if (*(u32*)((u8*)work + 0x30) & 0x20) {
+        dispEntry(camId, 900.0f, 1, L__LvupParamHelpMsgDisp, wp);
+    }
+}
+#pragma optimize_for_size off
 
 void btlseqEnd_DispInit(BattleWork* wp) {
     *(u32*)((u8*)wp->seqEndWork + 0x30) = 0;
