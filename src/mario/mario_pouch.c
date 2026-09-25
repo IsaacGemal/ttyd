@@ -3,6 +3,7 @@
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_yuugijou.h"
 #include "data/item_data.h"
+#include "driver/msgdrv.h"
 #include "memory.h"
 #include <string.h>
 
@@ -96,7 +97,7 @@ ItemType pouchHaveBadge(s32 id) {
 s32 pouchGetHaveItemCnt(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < MAX_HELD_ITEMS; i++) {
+	for (count = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
 		if (mpp->heldItems[i] != ITEM_NULL) {
 			count++;
 		}
@@ -107,7 +108,7 @@ s32 pouchGetHaveItemCnt(void) {
 s32 pouchGetKeepItemCnt(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < MAX_STORED_ITEMS; i++) {
+	for (count = 0, i = 0; i < MAX_STORED_ITEMS; i++) {
 		if (mpp->storedItems[i] != ITEM_NULL) {
 			count++;
 		}
@@ -118,7 +119,7 @@ s32 pouchGetKeepItemCnt(void) {
 s32 pouchGetHaveBadgeCnt(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < MAX_BADGES; i++) {
+	for (count = 0, i = 0; i < MAX_BADGES; i++) {
 		if (mpp->badges[i] != ITEM_NULL) {
 			count++;
 		}
@@ -129,7 +130,7 @@ s32 pouchGetHaveBadgeCnt(void) {
 s32 pouchGetEquipBadgeCnt(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < MAX_BADGES; i++) {
+	for (count = 0, i = 0; i < MAX_BADGES; i++) {
 		if (mpp->equippedBadges[i] != ITEM_NULL) {
 			count++;
 		}
@@ -138,9 +139,12 @@ s32 pouchGetEquipBadgeCnt(void) {
 }
 
 s32 pouchGetEmptyHaveItemCnt(void) {
-	s32 i, count;
+	s32 i, count, max;
+	s32 have;
 
-	for (i = 0, count = 0; i < GetHeldItemCount; i++) {
+	have = (s32)pouchCheckItem(ITEM_STRANGE_SACK);
+	max = have ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+	for (i = 0, count = 0; i < max; i++) {
 		if (mpp->heldItems[i] == ITEM_NULL) {
 			count++;
 		}
@@ -151,7 +155,7 @@ s32 pouchGetEmptyHaveItemCnt(void) {
 s32 pouchGetEmptyKeepItemCnt(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < MAX_STORED_ITEMS; i++) {
+	for (count = 0, i = 0; i < MAX_STORED_ITEMS; i++) {
 		if (mpp->storedItems[i] == ITEM_NULL) {
 			count++;
 		}
@@ -208,12 +212,10 @@ BOOL pouchGetItem(ItemType type) {
 
 
 char* pouchGetYoshiName(void) {
-	if (strlen(mpp->yoshiName)) {
-		return mpp->yoshiName;
+	if (strlen(mpp->yoshiName) < 1) {
+		return (char*)msgSearch("name_party3");
 	}
-	else {
-		return NULL; // return msgSearch("name_party3");
-	}
+	return mpp->yoshiName;
 }
 
 void pouchSetYoshiName(char* name) {
@@ -221,7 +223,7 @@ void pouchSetYoshiName(char* name) {
 }
 
 void pouchSetPartyColor(PartyId partnerId, u16 color) {
-	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | (color << 13));
+	mpp->partyData[partnerId].flags = (u16)((mpp->partyData[partnerId].flags & 0x1FFF) | ((color & 7) << 13));
 }
 
 s32 pouchGetPartyColor(PartyId partnerId) {
@@ -243,11 +245,13 @@ void pouchOpenMail(s32 mailId) {
 }
 
 void pouchReceiveMail(s32 mailId) {
-	s32 index, shift, count;
 	int i;
+	s32 count;
+	s32 index;
+	s32 shift;
 
-	shift = mailId % 32;
 	index = mailId / 32;
+	shift = mailId % 32;
 
 	//increment through known IDs to add to mEmailIds
 	for (i = 0, count = 0; i < 99; i++) {
@@ -262,7 +266,7 @@ void pouchReceiveMail(s32 mailId) {
 s32 pouchReceiveMailCount(void) {
 	s32 i, count;
 
-	for (i = 0, count = 0; i < 99; i++) {
+	for (count = 0, i = 0; i < 99; i++) {
 		if (mpp->mEmailReceivedFlags[i / 32] & (1 << (i % 32))) {
 			count++;
 		}
@@ -271,10 +275,10 @@ s32 pouchReceiveMailCount(void) {
 }
 
 void pouchGetStarStone(u32 id) {
-	if (!mpp->mStarPowersObtained) {
+	if (!*(u16*)&mpp->mStarPowersObtained) {
 		mpp->audienceCount = 2.0f;
 	}
-	mpp->mStarPowersObtained |= 1 << id;
+	*(u16*)&mpp->mStarPowersObtained |= 1 << id;
 	mpp->maximumSP = (s16)(100 * (id + 1));
 	if (mpp->maximumSP < 0) {
 		mpp->maximumSP = 0;
@@ -308,7 +312,7 @@ u8 pouchGetKpaCoin(void) {
 }
 
 void pouchMajinaiInit(u32 curseCount) {
-	if (mpp->mMerleeCurseUsesRemaining < curseCount) {
+	if ((s32)mpp->mMerleeCurseUsesRemaining < (s32)curseCount) {
 		mpp->mMerleeCurseUsesRemaining = (u8)curseCount;
 		mpp->mTurnsUntilMerleeActivation = -1;
 		mpp->mMerleeNextCurseType = 0;
@@ -412,7 +416,9 @@ void pouchReviseMarioParam(void) {
 	mpp->maximumFP = mpp->baseMaxFP;
 
 	for (i = 0; i < 200; i++) {
-		switch (mpp->equippedBadges[i]) {
+		s16 badge = mpp->equippedBadges[i];
+
+		switch (badge) {
 			case ITEM_HP_PLUS:
 				mpp->maximumHP += 5;
 				break;
@@ -440,19 +446,14 @@ BOOL pouchRemoveKeepItem(s32 id, s32 index) {
 	if (mpp->storedItems[index] != id) {
 		return FALSE;
 	}
-	if (index < 32) {
-		for (i = (MAX_STORED_ITEMS - index); i < 32; i++) {
-			if (mpp->storedItems[i] == id) {
-				mpp->storedItems[i] = 0;
-				if (index < 31) {
-					for (j = 31; j < 31 - index; j--) {
-						mpp->storedItems[j] = mpp->storedItems[j + 1];
-						mpp->storedItems[j + 1] = 0;
-					}
-				}
-				return TRUE;
+	for (i = index; i < MAX_STORED_ITEMS; i++) {
+		if (mpp->storedItems[i] == id) {
+			mpp->storedItems[i] = ITEM_NULL;
+			for (j = i; j < MAX_STORED_ITEMS - 1; j++) {
+				mpp->storedItems[j] = mpp->storedItems[j + 1];
+				mpp->storedItems[j + 1] = ITEM_NULL;
 			}
-			index++;
+			return TRUE;
 		}
 	}
 	return FALSE;
@@ -460,24 +461,45 @@ BOOL pouchRemoveKeepItem(s32 id, s32 index) {
 
 //TODO: this function
 BOOL pouchAddKeepItem(s16 id) {
+	int i, j;
+
+	for (i = MAX_STORED_ITEMS - 1; i >= 0; i--) {
+		if (mpp->storedItems[i] == ITEM_NULL) {
+			for (j = i; j > 0; j--) {
+				mpp->storedItems[j] = mpp->storedItems[j - 1];
+			}
+			mpp->storedItems[0] = id;
+			return TRUE;
+		}
+	}
 	return FALSE;
 }
 
 s32 pouchGetPartyAttackLv(PartyId partyId) {
-	return mpp->partyData[partyId].attackLevel;
+	PouchPartyData* party = &mpp->partyData[partyId];
+
+	return party->attackLevel;
 }
 
 s32 pouchGetHammerLv(void) {
 	s8 level = 0;
+	s32 c;
 
-	if (pouchCheckItem(ITEM_ULTRA_HAMMER)) {
+	c = (s32)pouchCheckItem(ITEM_ULTRA_HAMMER);
+	if (c) {
 		level = 3;
 	}
-	else if (pouchCheckItem(ITEM_SUPER_HAMMER)) {
-		level = 2;
-	}
-	else if (pouchCheckItem(ITEM_HAMMER)) {
-		level = 1;
+	else {
+		c = (s32)pouchCheckItem(ITEM_SUPER_HAMMER);
+		if (c) {
+			level = 2;
+		}
+		else {
+			c = (s32)pouchCheckItem(ITEM_HAMMER);
+			if (c) {
+				level = 1;
+			}
+		}
 	}
 	mpp->hammerLevel = level;
 	return mpp->hammerLevel;
@@ -485,15 +507,23 @@ s32 pouchGetHammerLv(void) {
 
 s32 pouchGetJumpLv(void) {
 	s8 level = 0;
+	s32 c;
 
-	if (pouchCheckItem(ITEM_ULTRA_BOOTS)) {
+	c = (s32)pouchCheckItem(ITEM_ULTRA_BOOTS);
+	if (c) {
 		level = 3;
 	}
-	else if (pouchCheckItem(ITEM_SUPER_BOOTS)) {
-		level = 2;
-	}
-	else if (pouchCheckItem(ITEM_BOOTS)) {
-		level = 1;
+	else {
+		c = (s32)pouchCheckItem(ITEM_SUPER_BOOTS);
+		if (c) {
+			level = 2;
+		}
+		else {
+			c = (s32)pouchCheckItem(ITEM_BOOTS);
+			if (c) {
+				level = 1;
+			}
+		}
 	}
 	mpp->jumpLevel = level;
 	return mpp->jumpLevel;
@@ -590,7 +620,10 @@ s16 pouchGetHP(void) {
 }
 
 s16 pouchAddHP(s16 points) {
-	mpp->currentHP += points;
+	s32 hp;
+
+	hp = mpp->currentHP + points;
+	mpp->currentHP = hp;
 	if (mpp->currentHP < 0) {
 		mpp->currentHP = 0;
 	}
@@ -714,29 +747,31 @@ BOOL pouchRemoveItem(ItemType type) {
 
 
 
+#pragma dont_inline on
 u32 pouchCheckItem(u32 itemId) {
-	u32 itemCnt;
 	int i;
+	u32 itemCnt;
+	s32 id = (s32)itemId;
 
-	if (KEY_ITEM_MIN <= itemId <= KEY_ITEM_MAX) {
-		for (i = 0, itemCnt = 0; i < MAX_KEY_ITEMS; i++) {
-			if (mpp->keyItems[i] == itemId) {
+	if (ITEM_MIN <= id && id < ITEM_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_HELD_ITEMS; i++) {
+			if (id == mpp->heldItems[i]) {
 				itemCnt++;
 			}
 		}
 		return itemCnt;
 	}
-	else if (ITEM_MIN <= itemId <= ITEM_MAX) {
-		for (i = 0, itemCnt = 0; i < MAX_HELD_ITEMS; i++) {
-			if (mpp->heldItems[i] == itemId) {
+	else if (KEY_ITEM_MIN <= id && id < KEY_ITEM_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_KEY_ITEMS; i++) {
+			if (id == mpp->keyItems[i]) {
 				itemCnt++;
 			}
 		}
 		return itemCnt;
 	}
-	else if (BADGE_MIN <= itemId <= BADGE_MAX) {
-		for (i = 0, itemCnt = 0; i < MAX_BADGES; i++) {
-			if (mpp->badges[i] == itemId) {
+	else if (BADGE_MIN <= id && id < BADGE_MAX) {
+		for (itemCnt = 0, i = 0; i < MAX_BADGES; i++) {
+			if (id == mpp->badges[i]) {
 				itemCnt++;
 			}
 		}
@@ -745,4 +780,145 @@ u32 pouchCheckItem(u32 itemId) {
 	else {
 		return 0;
 	}
+}
+#pragma dont_inline reset
+
+s32 comp_kind(s16* a, s16* b) {
+	s32 va = itemDataTable[*a].type_sort_order;
+	s32 vb = itemDataTable[*b].type_sort_order;
+
+	if (va > vb) {
+		return 1;
+	}
+	if (va < vb) {
+		return -1;
+	}
+	return 0;
+}
+
+s32 comp_kind_r(s16* a, s16* b) {
+	s32 va = itemDataTable[*a].type_sort_order;
+	s32 vb = itemDataTable[*b].type_sort_order;
+
+	if (va < vb) {
+		return 1;
+	}
+	if (va > vb) {
+		return -1;
+	}
+	return 0;
+}
+
+BOOL N_pouchUnEquipBadgeID(s32 badgeId) {
+	int i;
+
+	for (i = 0; i < 200; i++) {
+		if (mpp->equippedBadges[i] == badgeId) {
+			if (mpp->equippedBadges[i]) {
+				mpp->equippedBadges[i] = 0;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+void unk_800d06b4(char* src, char* dst) {
+	u16 c;
+	int i;
+	int len = strlen(src) / 2;
+
+	for (i = 0; i < len; i++) {
+		c = *(u16*)(src + i * 2);
+		if (c >= 0x829F && c < 0x82DE) {
+			c += 0xA1;
+		}
+		else if (c >= 0x82DE && c <= 0x82F1) {
+			c += 0xA2;
+		}
+		*(u16*)(dst + i * 2) = c;
+	}
+	dst[i * 2] = 0;
+}
+
+s32 comp_aiueo(s16* a, s16* b) {
+	u16 buf_a[64];
+	u16 buf_b[64];
+	const char* str;
+	s32 i;
+	s32 len;
+	u16 c;
+	s16 id_a = *a;
+	s16 id_b = *b;
+
+	str = msgSearch(itemDataTable[id_a].name);
+	len = strlen(str) / 2;
+	for (i = 0; i < len; i++) {
+		c = ((const u16*)str)[i];
+		if (c >= 0x829F && c < 0x82DE) {
+			c += 0xA1;
+		}
+		else if (c >= 0x82DE && c <= 0x82F1) {
+			c += 0xA2;
+		}
+		buf_a[i] = c;
+	}
+	((u8*)buf_a)[i * 2] = 0;
+
+	str = msgSearch(itemDataTable[id_b].name);
+	len = strlen(str) / 2;
+	for (i = 0; i < len; i++) {
+		c = ((const u16*)str)[i];
+		if (c >= 0x829F && c < 0x82DE) {
+			c += 0xA1;
+		}
+		else if (c >= 0x82DE && c <= 0x82F1) {
+			c += 0xA2;
+		}
+		buf_b[i] = c;
+	}
+	((u8*)buf_b)[i * 2] = 0;
+
+	return strcmp((const char*)buf_a, (const char*)buf_b);
+}
+
+s32 comp_aiueo_r(s16* a, s16* b) {
+	u16 buf_a[64];
+	u16 buf_b[64];
+	const char* str;
+	s32 i;
+	s32 len;
+	u16 c;
+	s16 id_a = *a;
+	s16 id_b = *b;
+
+	str = msgSearch(itemDataTable[id_a].name);
+	len = strlen(str) / 2;
+	for (i = 0; i < len; i++) {
+		c = ((const u16*)str)[i];
+		if (c >= 0x829F && c < 0x82DE) {
+			c += 0xA1;
+		}
+		else if (c >= 0x82DE && c <= 0x82F1) {
+			c += 0xA2;
+		}
+		buf_a[i] = c;
+	}
+	((u8*)buf_a)[i * 2] = 0;
+
+	str = msgSearch(itemDataTable[id_b].name);
+	len = strlen(str) / 2;
+	for (i = 0; i < len; i++) {
+		c = ((const u16*)str)[i];
+		if (c >= 0x829F && c < 0x82DE) {
+			c += 0xA1;
+		}
+		else if (c >= 0x82DE && c <= 0x82F1) {
+			c += 0xA2;
+		}
+		buf_b[i] = c;
+	}
+	((u8*)buf_b)[i * 2] = 0;
+
+	return strcmp((const char*)buf_b, (const char*)buf_a);
 }
