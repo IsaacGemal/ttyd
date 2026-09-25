@@ -19,8 +19,8 @@ anything worth keeping into a chapter here.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
 - Progress (local build, Sep 25 after wave 3, PR #2): 3,114 of 9,770 functions matched. Before the fork's
-  first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is
-  linked yet: `event` and `battle` are at 100% code, the next step for them.
+  first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below). Linked code
+  8.26% (was 8.12%) after `tools/autolink.py` linked 15 fully matched files.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -526,3 +526,15 @@ it only if the checksums pass. A test on Sep 25 linked 7 of 10 candidates; `swdr
 (rejected in wave 3); four duplicated structs from wave 2 (`ShopWork`, `StatusWindowValue`, `BattleStageWork`,
 `PaperSoundEffect`); agents that stop early; the launcher should keep a timed-out agent's last version that
 built; headers that declare signed what the original reads unsigned.
+
+## Auto-linking built (2026-09-25, Isaac + Claude Opus 5.5)
+
+Supersedes "Planned" in the Linking paragraph of the orchestrator chapter. `tools/autolink.py` tries every file
+the report shows fully matched but `configure.py` still marks `NonMatching`: it flips it, rebuilds, and keeps
+the flip only if the checksums pass. The merge script runs it after each merged file. First run: 15 of 26
+linked (linked code 8.12% -> 8.26%). The 11 that fail are the finisher agents' first queue: `battle_party`,
+`npc_data`, `seqdrv` (linker errors); `ac_table`, `item_data`, `swdrv`, `mot_walk`, `gxsub`, `synth_dbtab`,
+`dsp_import` (checksum mismatches, so something the report doesn't measure still differs);
+`unit_purple_teresa` (doesn't build when linked). The linked number moves in small steps until finisher agents
+complete large files like `event` and `battle`.
+
