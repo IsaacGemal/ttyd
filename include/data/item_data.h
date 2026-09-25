@@ -12,7 +12,7 @@ typedef struct ItemData {
 	s16 type_sort_order; //0x12
 	s16 buy_price; //0x14
 	s16 discount_price; //0x16
-	s16 star_piece_price; //0x18
+	u16 star_piece_price; //0x18
 	s16 sell_price; //0x1A
 	s8 bp_cost; //0x1C
 	s8 hp_restored; //0x1D

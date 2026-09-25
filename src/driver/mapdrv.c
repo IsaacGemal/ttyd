@@ -1146,14 +1146,14 @@ void bmapLoad(const char* map1, const char* map2) {
 		*(s32*)(p + 0x170) = 0;
 		*(s32*)(p + 0x178) = 0;
 		*(s32*)(p + 0x174) = 0;
-		if (*(void**)(p + 0x7C)) {
-			if (!arcDataCheck(*(void**)(p + 0x7C))) {
-				*(void**)(p + 0x170) = aramMgrToAram(*(void**)(p + 0x7C), *(u32*)(p + 0x80));
-				*(void**)(p + 0x178) = aramMgrToAram(*(void**)(p + 0x84), *(u32*)(p + 0x88));
-				_mapFree(*(void**)(p + 0x84));
-				_mapFree(*(void**)(p + 0x7C));
-				*(void**)(p + 0x84) = NULL;
-				*(void**)(p + 0x7C) = NULL;
+		if (((MapEntry*)p)->dat) {
+			if (!arcDataCheck(((MapEntry*)p)->dat)) {
+				*(void**)(p + 0x170) = aramMgrToAram(((MapEntry*)p)->dat, ((MapEntry*)p)->datSize);
+				*(void**)(p + 0x178) = aramMgrToAram(((MapEntry*)p)->tpl, ((MapEntry*)p)->tplSize);
+				_mapFree(((MapEntry*)p)->tpl);
+				_mapFree(((MapEntry*)p)->dat);
+				((MapEntry*)p)->tpl = NULL;
+				((MapEntry*)p)->dat = NULL;
 			}
 			else {
 				*(void**)(p + 0x174) = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));

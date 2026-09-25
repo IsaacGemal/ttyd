@@ -50,12 +50,6 @@ typedef struct WinMgrSelectItem {
     u16 field_0x2; // 0x2
 } WinMgrSelectItem;
 
-typedef struct ItemDataSort {
-    u8 pad_0x0[0x18];
-    u16 field_0x18; // 0x18
-    u8 pad_0x1A[0x28 - 0x1A];
-} ItemDataSort;
-
 //.data
 WinMgrSelectTbl select_desc_tbl[] = { { 3, NULL } };
 
@@ -410,8 +404,8 @@ s32 winMgrSelect(WinMgrSelect* select) {
 }
 
 s32 unk_802379e4(void* a, void* b) {
-    s32 va = itemDataTable[*(u16*)((u8*)a + 2)].type_sort_order;
-    s32 vb = itemDataTable[*(u16*)((u8*)b + 2)].type_sort_order;
+    s32 va = itemDataTable[((WinMgrSelectItem*)a)->field_0x2].type_sort_order;
+    s32 vb = itemDataTable[((WinMgrSelectItem*)b)->field_0x2].type_sort_order;
 
     if (va > vb) {
         return 1;
@@ -420,9 +414,8 @@ s32 unk_802379e4(void* a, void* b) {
 }
 
 s32 unk_80237a2c(void* a, void* b) {
-    u8* base = (u8*)&itemDataTable[0].star_piece_price;
-    u32 va = *(u16*)(base + *(u16*)((u8*)a + 2) * 0x28);
-    u32 vb = *(u16*)(base + *(u16*)((u8*)b + 2) * 0x28);
+    u32 va = itemDataTable[((WinMgrSelectItem*)a)->field_0x2].star_piece_price;
+    u32 vb = itemDataTable[((WinMgrSelectItem*)b)->field_0x2].star_piece_price;
 
     if (va > vb) {
         return 1;
