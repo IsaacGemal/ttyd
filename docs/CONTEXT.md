@@ -230,3 +230,36 @@ close stdin (`</dev/null`) or Pi waits for piped input; Pi doesn't tell the mode
 has to supply the exact `Model:` line; and agents must still write their report as they go, since a hard kill
 (`timeout`) ends the process whatever the harness. Still untested: Pi's automatic retry under real 500s, because
 the providers used in the trial never failed.
+
+## Code smells to track: Melee's cleanup index (2026-09-25, Isaac + Claude Opus 5.5)
+
+After Melee hit 100% its team started tracking cleanup with `tools/cleanup_index.py`
+(doldecomp/melee, rendered at doldecomp.github.io/melee/cleanup/). It counts "sites" by their outermost form, in
+three families:
+
+- **move** (a struct field nobody has named yet): `cast+offset` `*(f32*)((u8*)p + 0xE0)`, `cast+index`
+  `((T*)p)[n]`, `raw-offset` `p + 0xNN`, `m2c-field` (`M2C_FIELD(p, T*, off)`), `abs-address` `(T*)0x80xxxxxx`.
+- **retype** (types not worked out): `struct-ptr-cast`, `prim-ptr-cast` `(u8*)p`, `deref-cast` `*(T*)p`,
+  `ptr-to-int` `(u32)p`.
+- **hack** (code shaped for the compiler, not the reader): `PAD_STACK(n)`, `#ifdef MUST_MATCH` regions,
+  `#pragma` (except push/pop), `goto`, `longjmp`.
+
+Run unmodified against this repo (script copied beside `src/` and `include/`), as of `5762fcd`:
+
+| | TTYD now | Melee now (100% matched) |
+|---|---|---|
+| total sites | 413 in 45 files | 8,020 in 649 files |
+| move / retype / hack | 55 / 306 / 52 | 778 / 3,787 / 3,455 |
+| biggest | 148 prim-ptr-cast, 79 deref-cast, 40 abs-address, 33 pragma, 19 goto | 2,162 struct-ptr-cast, 2,147 PAD_STACK, 668 goto |
+
+Lessons for the swarm:
+- **This is the readability counterpart of the byte ratchet.** Matching can't go down, and these counts shouldn't
+  go up per merge either: a merge that adds match hacks or raw offsets should say why. Candidate for `tools/ci.py`
+  as a second, softer ratchet (warn, then fail once the counts are stable).
+- **Melee's `MUST_MATCH` pattern** keeps the hack out of the readable code: the clean version is the default and
+  the compiler-shaped version sits in `#ifdef MUST_MATCH` (147 files use it). Worth adopting so agents' hacks are
+  labelled and removable later.
+- **`#pragma` is not automatically a cheat in Metrowerks code.** The human-written TTYD source already has 33
+  (`opt_propagation`, `dont_inline`, `pool_data`, ...), so `tools/ci.py`'s blanket "no new #pragma" rule is too
+  strict; loosen it to an allowlist of these known ones, still flagging anything else.
+- Snood's cleanup recon found the same families by hand (register pins = hack, duplicate aliases = retype).
