@@ -124,3 +124,21 @@ specific functions, raw material for the shared compiler notes.
 6. **One oracle.** A function is matched when the local objdiff build says so over its full extent, nothing
    else: not a model's claim, not a fuzzy score, not decomp.dev. Mac and Linux builds must agree (they do, as of
    the `HARDWARE.C` fix). Every tier and every harness answers to the same checker.
+
+## Refinement: emulate the unit of work, and the two oracles (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Refines principles 1 and 6 above.
+
+- **What to copy from the human era is the unit of work, not the prose.** Code written by agents for other
+  agents to read has different needs from code written for humans, so the human style isn't the target. The
+  target is how they define a finished unit: one file, all functions matched, cleaned up, and flipped from
+  `NonMatching` to `Matching` in `configure.py` so it links, in one self-contained change.
+- **Progress has two tracks, each with its own oracle.** objdiff reports, for code: fuzzy match, perfect
+  (matched) and fully linked; for data: matched and fully linked. "Matched" means the compiled object equals
+  the original per function or symbol. "Linked" means the unit is marked `Matching`, goes into the real link, and
+  the final DOL/RELs still hash to `config/G8MJ01/build.sha1`. Linked is the stricter bar and the real finish
+  line; matched is a step toward it. Fuzzy is a progress hint for agents, never a pass. (Snood collapsed the two:
+  its single check was "the whole ROM rebuilds byte-identical", which is the linked bar for everything at once.)
+- **Probably code first, data later.** Someone suggested agents work on code and leave data for later: data
+  placement is hard to get right until the code that references it is in C, and linking a unit settles its data
+  anyway. Not decided; revisit when designing the queue.
