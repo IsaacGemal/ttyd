@@ -378,3 +378,27 @@ Takeaways: the one essential new safeguard vs Snood is the partial-function rule
 "CI + that rule" is the merge bar. Codex review is an occasional audit, not a gate. Readability issues are cleanup
 passes, as on Snood and Melee. Left for a follow-up: four duplicated structs (`ShopWork`, `StatusWindowValue`,
 `BattleStageWork`, the second `PaperSoundEffect`). GitHub is the source of truth for merged state.
+
+## Per-file notes: an empirical log for each source file (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Design, not yet built. The unit of work is the source file, so knowledge about a file lives in one place that
+mirrors it: `src/<path>.c` -> `notes/<path>.md` (tracked). An agent assigned a file gets that file's notes (plus
+the shared compiler-idioms file) in its prompt, and nothing else.
+
+The notes are a scientific log: measured, append-only, never rewritten.
+- **Measurements come from the build, not the agent.** The merge script writes each function's score before
+  and after (from CI's report comparison), with date, model and commit.
+- **The agent supplies only change and observation:** what it tried, and what it saw in the instruction diff
+  ("original loads lha, ours lhz"). No interpretation or adjectives; a guess is labelled as one.
+- One entry per function per attempt, including failed and reverted ones, so the next agent starts from what
+  was already tried.
+- Knowledge that isn't about one file goes elsewhere: data types into the headers in `include/`, compiler tricks
+  into a shared idioms file, process lessons into this ledger.
+- Raw evidence (full reports, Pi sessions) stays in scratch, or on Traces if Isaac approves sharing.
+
+Example entry:
+
+    ## 2026-09-25 · GLM-5.3-Flash · commit db9e3ff
+    - BattleStatusEffectMain: 5.26% -> 100%
+      change: BSE_* helper definitions wrapped in #pragma dont_inline on/reset
+      observed: without it, BSE_SleepDelete was inlined into Main (original has a bl)
