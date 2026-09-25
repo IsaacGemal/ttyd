@@ -11,49 +11,6 @@ extern f64 sqrt(f64);
 
 extern BattleWork *_battleWorkPointer;
 
-// Fields of BattleCameraWork that the shared header does not declare yet.
-// Offsets are relative to the start of BattleCameraWork (0x2754 absolute).
-typedef struct BattleCameraWorkExt {
-    s32 flags;              // 0x00
-    s32 unk4;               // 0x04
-    s32 priLimit;           // 0x08
-    s32 mode;               // 0x0C
-    s32 unk10;              // 0x10
-    s32 unk14;              // 0x14
-    s32 unk18;              // 0x18
-    s32 unk1C;              // 0x1C
-    s32 unk20;              // 0x20
-    f32 zoom;               // 0x24
-    s16 moveSpeedLv;        // 0x28
-    s16 zoomSpeedLv;        // 0x2A
-    u8 unk2C[0x5C - 0x2C];  // 0x2C
-    Vec position;           // 0x5C
-    Vec unk68;              // 0x68 (speed / delta)
-    u8 unk74[0x80 - 0x74];  // 0x74
-    s32 unk80;              // 0x80
-    s32 unk84;              // 0x84
-    s32 unk88;              // 0x88
-    Vec unk8C;              // 0x8C
-    Vec unk98;              // 0x98
-    Vec unkA4;              // 0xA4
-    Vec unkB0;              // 0xB0
-    Vec unkBC;              // 0xBC
-    Vec unkC8;              // 0xC8
-    s32 unkD4;              // 0xD4
-    s32 unkD8;              // 0xD8
-    s32 unkDC;              // 0xDC
-    s32 unkE0;              // 0xE0
-    s32 unkE4;              // 0xE4
-    s32 unkE8;              // 0xE8
-    f32 unkEC;              // 0xEC
-    f32 unkF0;              // 0xF0
-    f32 unkF4;              // 0xF4
-    f32 unkF8;              // 0xF8
-    u8 unkFC[0x104 - 0xFC]; // 0xFC
-} BattleCameraWorkExt;
-
-#define CAM(wp) ((BattleCameraWorkExt *)&(wp)->cameraWork)
-
 // prototypes for the event wrappers
 USER_FUNC(evt_btl_camera_wait_move_end);
 USER_FUNC(evt_btl_camera_off_posoffset_manual);
@@ -121,7 +78,7 @@ USER_FUNC(evt_btl_camera_wait_move_end) {
 }
 
 f32 battleCameraGetPosMoveSpeed(void) {
-  BattleCameraWorkExt *camera = CAM(_battleWorkPointer);
+  BattleCameraWork *camera = &_battleWorkPointer->cameraWork;
   f32 x = camera->unk68.x;
   f32 y = camera->unk68.y;
   f32 z = camera->unk68.z;
@@ -140,7 +97,7 @@ USER_FUNC(evt_btl_camera_set_prilimit) {
 
 void btl_camera_off_posoffset_manual(s32 id) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -159,7 +116,7 @@ USER_FUNC(evt_btl_camera_off_posoffset_manual) {
 
 void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -183,7 +140,7 @@ USER_FUNC(evt_btl_camera_set_posoffset) {
 
 void btl_camera_nomove_z_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -206,7 +163,7 @@ USER_FUNC(evt_btl_camera_nomove_z_onoff) {
 
 void btl_camera_nomove_y_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -229,7 +186,7 @@ USER_FUNC(evt_btl_camera_nomove_y_onoff) {
 
 void btl_camera_nomove_x_onoff(s32 id, s32 on) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -252,7 +209,7 @@ USER_FUNC(evt_btl_camera_nomove_x_onoff) {
 
 void btl_camera_noshake(s32 id) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -269,7 +226,7 @@ USER_FUNC(evt_btl_camera_noshake) {
 
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -299,7 +256,7 @@ USER_FUNC(evt_btl_camera_shake_h) {
 
 void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -329,7 +286,7 @@ USER_FUNC(evt_btl_camera_shake_w) {
 
 void btl_camera_set_zoomSpeedLv(s32 id, s32 lv) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -352,7 +309,7 @@ USER_FUNC(evt_btl_camera_set_zoomSpeedLv) {
 
 void btl_camera_set_moveSpeedLv(s32 id, s32 lv) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -376,7 +333,7 @@ USER_FUNC(evt_btl_camera_set_moveSpeedLv) {
 
 void btl_camera_add_zoom(s32 id, f32 z) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -394,7 +351,7 @@ USER_FUNC(evt_btl_camera_add_zoom) {
 
 void btl_camera_set_zoom(s32 id, f32 z) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -412,7 +369,7 @@ USER_FUNC(evt_btl_camera_set_zoom) {
 
 void btl_camera_set_mode(s32 id, s32 mode) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
 
   if (id < camera->priLimit) {
     return;
@@ -458,7 +415,7 @@ USER_FUNC(evt_btl_camera_set_moveto) {
 void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
                            f32 f5, f32 f6) {
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
   CameraEntry *cam = camGetPtr(4);
 
   if (id < camera->priLimit) {
@@ -484,7 +441,7 @@ void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
 USER_FUNC(evt_btl_camera_set_homing_unit) {
   BattleWork *wp;
   s32 *args;
-  BattleCameraWorkExt *camera;
+  BattleCameraWork *camera;
   BattleUnit *unit;
   BattleUnitPart *part;
   s32 priority, type, type2;
@@ -496,7 +453,7 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   type = evtGetValue(event, args[1]);
   type2 = evtGetValue(event, args[2]);
   wp = _battleWorkPointer;
-  camera = CAM(wp);
+  camera = &wp->cameraWork;
   (void)priority;
   camera->unk10 = BattleTransID(event, type);
   unit = BattleGetUnitPtr(wp, camera->unk10);
@@ -523,7 +480,7 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   s32 type2 = evtGetValue(event, args[3]);
   s32 partId2 = evtGetValue(event, args[4]);
   BattleWork *wp = _battleWorkPointer;
-  BattleCameraWorkExt *camera = CAM(wp);
+  BattleCameraWork *camera = &wp->cameraWork;
   BattleUnit *unit;
   BattleUnitPart *part;
   f32 x, y, z;
@@ -553,7 +510,7 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   s32 *args = event->args;
   s32 priority, type, partId, memberId;
   BattleWork *wp;
-  BattleCameraWorkExt *camera;
+  BattleCameraWork *camera;
   BattleAudience *audience;
   BattleUnit *unit;
   BattleUnitPart *part;
@@ -565,7 +522,7 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   partId = evtGetValue(event, args[2]);
   memberId = evtGetValue(event, args[3]);
   wp = _battleWorkPointer;
-  camera = CAM(wp);
+  camera = &wp->cameraWork;
   audience = BattleAudienceBaseGetPtr();
   if (priority < camera->priLimit) {
     return EVT_RETURN_DONE;
