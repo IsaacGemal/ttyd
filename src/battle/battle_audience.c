@@ -1,5 +1,6 @@
 #include "battle/battle_audience.h"
 #include "battle/battle.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "mario/mario_pouch.h"
 #include "system.h"
@@ -302,30 +303,35 @@ BOOL BattleAudience_CheckReaction(void) {
 	return FALSE;
 }
 
+// NONMATCHING (97.55%): MWCC's value-range analysis truncates the `type` operand to a byte
+// (`clrlwi r0,r30,24` + `cmpw`) where the original compares the full 32-bit parameter (`cmpw r0,r30`).
+// No source form of the comparison (`(s32)type`, local temp, reversed operands) suppresses it.
 BOOL check_exe_phase_evt_status(s32 index, AudienceMemberType type) {
 	BattleAudienceMember* member;
 
 	member = BattleAudienceGetPtr(index);
-	if (!BattleAudience_GetSysCtrl(index)) {
+	if ((u8)BattleAudience_GetSysCtrl(index) == 0) {
 		return FALSE;
 	}
-	if (member->type != type) {
+	if (member->type != (s32)type) {
 		return FALSE;
 	}
-	switch (member->status) { //TODO: check if switch, might be IDA
-		case 13:
-			return FALSE;
-		case 12:
-			return FALSE;
-		case 11:
-			return FALSE;
-		case 21:
-			return FALSE;
-		case 22:
-			return FALSE;
-		default:
-			return (member->flags >> 3) & 1;
+	if (member->status == 13) {
+		return FALSE;
 	}
+	if (member->status == 12) {
+		return FALSE;
+	}
+	if (member->status == 11) {
+		return FALSE;
+	}
+	if (member->status == 21) {
+		return FALSE;
+	}
+	if (member->status == 22) {
+		return FALSE;
+	}
+	return (member->flags >> 3) & 1;
 }
 
 //TODO: re-type "value" for btlseq "states"
@@ -608,8 +614,8 @@ void BattleAudience_Delete(s32 index) {
 	member = BattleAudienceGetPtr(index);
 	if (member->flags & 0x80) {
 		*(s32*)((u8*)member + 0x134) = 0;
-		member->flags = 0;
 	}
+	member->flags = 0;
 }
 
 void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
@@ -639,10 +645,10 @@ void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 
 BOOL BattleAudience_GetAnimEnd(s32 index) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
-	if (**(s32**)((u8*)member + 0x28) == -1) {
-		return *(s32*)((u8*)member + 0x2c) == 0;
+	if (**(s32**)((u8*)member + 0x28) != -1) {
+		return FALSE;
 	}
-	return FALSE;
+	return *(s32*)((u8*)member + 0x2c) <= 0;
 }
 
 void BattleAudience_GetPosition(s32 index, f32* x, f32* y, f32* z) {
@@ -770,11 +776,11 @@ void BattleAudience_GetItemOn2(s32* memberId, f32* x, f32* y, f32* z, ItemType* 
 	}
 
 	if (itemType) {
-		if (member->itemId >= 0) {
-			*itemType = audience->items[member->itemId].mItemType;
+		if (member->itemId < 0) {
+			*itemType = ITEM_NULL;
 		}
 		else {
-			*itemType = ITEM_NULL;
+			*itemType = audience->items[member->itemId].mItemType;
 		}
 	}
 }
@@ -802,8 +808,20 @@ void BattleAudience_Attack(s32 index) {
 	BattleAudienceGetPtr(index)->flags |= 0x40;
 }
 
+// NONMATCHING (99.21%): only the f0/f1 register assignment of the dot product differs. The original
+// puts the y-difference in f1 and m94 in f0 (`fsubs f1,f1,f0`, `lfs f0,0x94`, `fmadds f1,f2,f1,f0`); MWCC
+// here puts them the other way and swaps the fmadds operands. Source permutations don't change it.
 BOOL BattleAudience_GetFront(s32 index) {
-	return FALSE;
+	BattleAudienceMember* member;
+	CameraEntry* cam;
+
+	BattleAudienceBaseGetPtr();
+	member = BattleAudienceGetPtr(index);
+	cam = camGetPtr(CAMERA_3D);
+	return !((cam->cameraAt.x - cam->cameraPos.x) * *(f32*)((u8*)member + 0x90) +
+	             (cam->cameraAt.y - cam->cameraPos.y) * *(f32*)((u8*)member + 0x94) +
+	             (cam->cameraAt.z - cam->cameraPos.z) * *(f32*)((u8*)member + 0x98) >=
+	         float_0_8041e618);
 }
 
 #pragma dont_inline on
@@ -836,23 +854,23 @@ BOOL BattleAudience_GetSysCtrl(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
-	if ((u8)BattleAudience_GetExist(index)) {
-		return !(member->flags & 0x10);
+	if ((u8)BattleAudience_GetExist(index) == 0) {
+		return FALSE;
 	}
-	return FALSE;
+	return !(member->flags & 0x10);
 }
 
 BOOL BattleAudience_GetWaiting(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
-	if (!BattleAudience_GetSysCtrl(index)) {
+	if ((u8)BattleAudience_GetSysCtrl(index) == 0) {
 		return FALSE;
 	}
-	if (member->itemId == -1) {
+	if (member->itemId != -1) {
 		return FALSE;
 	}
-	return member->status <= 3;
+	return (u8)(member->status <= 3);
 }
 
 BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
@@ -898,13 +916,51 @@ s32 BattleAudience_GetAudienceNoFromOffset(s32 index, s32 column, s32 row) {
 
 #pragma dont_inline on
 s32 BattleAudience_HaitiRandForFallObject(void) {
-	return 0;
+	s32 r = irand(3);
+	s32 ret = 10;
+	u32 unused = irand(12);
+
+	switch (r) {
+	case 0:
+		ret = irand(12) + 4;
+		break;
+	case 1:
+		ret = irand(10) + 5;
+		break;
+	case 2:
+		ret = irand(8) + 6;
+		break;
+	}
+	return ret + r * 20;
 }
 
+// NONMATCHING (96.97%): same instructions, different callee-saved register numbers (r22-r31).
 s32 BattleAudience_NoUsedHaitiRand(void) {
-	return 0;
-}
+	extern s32 haiti_data[][10];
+	s32 count, i, j, start, memberId;
+	s32 stack[200];
+	s32* haiti;
 
+	BattleAudienceBaseGetPtr();
+	haiti = haiti_data[pouchGetPtr()->rank];
+	count = 0;
+	for (i = 0; i < 10; i++) {
+		start = (20 - haiti[i]) / 2;
+		for (j = 0; j < haiti[i]; j++) {
+			memberId = start + i * 20;
+			if (!(BattleAudienceGetPtr(memberId)->flags & 1) &&
+			    !(BattleAudienceGetPtr(memberId)->flags & 0x100)) {
+				stack[count] = memberId;
+				count++;
+			}
+			start++;
+		}
+	}
+	if (count >= 1) {
+		return stack[irand(count)];
+	}
+	return -1;
+}
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	return 0;
 }
@@ -922,7 +978,7 @@ s32 BattleAudience_GetPPAudienceNum(void) {
 
 s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = 0, i;
+	s32 i, count = 0;
 
 	for (i = 0; i < 200; i++) {
 		if (BattleAudience_GetPPAudienceNum_Sub(i)) {
@@ -943,17 +999,23 @@ s32 BattleAudience_GetPPAudienceNum_L(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(0);
 }
 
+// NONMATCHING (99.48%): register allocation and add-operand order of the index differ. MWCC emits
+// `add r29,r31` (j+akk) then `add r27,r3` (offset+...) where the original emits `add r31,r27`
+// (akk+offset) then `add r29,r3` (j+...). Everything else (saved regs, loop bodies, compare) matches.
 s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr(); //unused
-	s32 i, j, index, count = 0;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 akk;
+	s32 i, j;
+	s32 count = 0;
 
-	for (i = 0; i < 10; i++) {
+	count = 0;
+	for (i = 0, akk = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-			index = ((i * 20) + offset) + j;
-			if (BattleAudience_GetPPAudienceNum_Sub(index)) {
+			if (BattleAudience_GetPPAudienceNum_Sub(akk + (offset + j)) == 1) {
 				count++;
 			}
 		}
+		akk += 20;
 	}
 	return count;
 }
@@ -1129,9 +1191,12 @@ void BattleAudienceNumToTarget(void) {
 	}
 }
 
+// Keep BattleAudience_WinSetActive out of line: the original calls it rather than inlining.
+#pragma dont_inline on
 void BattleAudience_WinSetActive(u8 active) {
 	BattleAudienceWinGetPtr()->mActive = active;
 }
+#pragma dont_inline reset
 
 void BattleAudience_Case_JumpNewRecord(void) {
 }
@@ -1297,12 +1362,9 @@ void BattleAudience_Case_Escape_Good(void) {
 }
 
 void BattleAudience_Case_FastVictory(f32 value) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 val = float_5_8041e62c * value;
-	f32 delta = audience->mAudienceDeltaMultiplier;
-	val = float_0p01_8041e628 * val;
-	delta = val * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	BattleAudienceAddTargetNum(
+	    float_0p01_8041e628 * (float_5_8041e62c * value) * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	    float_0_8041e618);
 }
 
 #pragma dont_inline on
@@ -1542,9 +1604,11 @@ void BattleAudienceSoundSleep(s32 index) {
 }
 
 s32 BattleAudienceNumToTargetSub(void) {
-	s32 count = 0;
 	s32 i;
+	s32 count;
+
 	BattleAudienceBaseGetPtr();
+	count = 0;
 	for (i = 0; i < 200; i++) {
 		if ((u8)BattleAudience_GetExist(i) == 1) {
 			if (BattleAudienceGetPtr(i)->status != 12) {
@@ -1567,8 +1631,8 @@ void BattleAudience_Case_AcrobatBad(void) {
 	if (count >= 1) {
 		BattleAudienceSoundBooing();
 		BattleAudienceJoy(0);
-		audience->flags |= 0x200;
 	}
+	audience->flags |= 0x200;
 }
 
 void BattleAudience_Case_AcrobatGood(void) {
@@ -1584,18 +1648,18 @@ void BattleAudience_Case_AcrobatGood(void) {
 		BattleAudienceSoundCheer(0xb4, 0x78);
 		BattleAudienceSoundClap(0xb4, 0x78);
 		BattleAudienceJoy(1);
-		audience->mNumStylishCommandsThisAttack++;
-		if (audience->mNumStylishCommandsThisAttack > 5) {
-			audience->mNumStylishCommandsThisAttack = 5;
-		}
-		audience->flags |= 0x100;
 	}
+	audience->mNumStylishCommandsThisAttack++;
+	if (audience->mNumStylishCommandsThisAttack > 5) {
+		audience->mNumStylishCommandsThisAttack = 5;
+	}
+	audience->flags |= 0x100;
 }
 
 void BattleAudience_Case_ActionCommandGood(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = 0;
 	s32 i;
+	s32 count = 0;
 	for (i = 0; i < 200; i++) {
 		if ((u8)BattleAudience_GetWaiting(i) == 1) {
 			count++;
@@ -1604,8 +1668,8 @@ void BattleAudience_Case_ActionCommandGood(void) {
 	if (count != 0) {
 		BattleAudienceSoundCheer(0xb4, 0x78);
 		BattleAudienceJoy(0);
-		audience->flags |= 0x10;
 	}
+	audience->flags |= 0x10;
 }
 
 void BattleAudience_Case_ActionCommandBad(void* arg) {
@@ -1726,11 +1790,13 @@ void BattleAudienceSoundCallKind(s32 kind) {
 	r = BattleAudience_GetPPAudienceNum_R();
 	l = BattleAudience_GetPPAudienceNum_L();
 	BattleAudienceSoundStop(8);
-	if (kind == 1) {
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
-	}
-	else if (kind == 2) {
+	switch (kind) {
+	case 2:
 		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
+		break;
+	case 1:
+		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
+		break;
 	}
 	if (AUD_SOUND_ID(sound) != -1) {
 		AUD_SOUND_HEAD(sound);

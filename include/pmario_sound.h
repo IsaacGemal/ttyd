@@ -104,7 +104,7 @@ BOOL psndENVOff(u32 r3);
 void psndSFXAllOff(void);
 
 void psndSFXOn(const char* name);
-void psndSFXOn_3D(const char* name, Vec* position);
+s32 psndSFXOn_3D(const char* name, Vec* position);
 
 BOOL psndBGMOff_f_d(s32 flags, u16 fadetime, BOOL someswitch);
 BOOL psndBGMStartCheck(s32 id);

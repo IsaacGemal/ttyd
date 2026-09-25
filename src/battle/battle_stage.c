@@ -18,6 +18,9 @@ static BattleSpotWork* wp = &work;
 s32 batSpotInit_28 = -1;
 
 extern Vec vec3_802f31a8[];
+extern Vec vec3_802f31b4[];
+extern Vec vec3_802f31c0[];
+extern Vec vec3_802f31cc[];
 extern f32 float_0_8041c7f0;
 extern f32 float_1_8041c7f4;
 extern f32 float_1000_8041c814;
@@ -29,6 +32,9 @@ extern f32 float_290_8041c854;
 extern f32 float_200_8041c858;
 extern f32 float_90_8041c85c;
 extern f32 float_neg50_8041c860;
+extern u32 unk_80423018;
+extern u32 unk_8042301c;
+extern u32 unk_80423028;
 extern f32 float_deg2rad_8041c820;
 extern f32 float_6p2832_8041c824;
 extern f32 float_30_8041c828;
@@ -38,10 +44,7 @@ extern f32 float_105_8041c848;
 extern s32 rand(void);
 
 typedef struct BattleStageDark {
-	u8 field_0;   //0x0
-	u8 field_1;   //0x1
-	u8 field_2;   //0x2
-	u8 field_3;   //0x3
+	u32 field_0;  //0x0
 	u8 field_4;   //0x4
 	u8 field_5;   //0x5
 	u8 field_6;   //0x6
@@ -121,6 +124,7 @@ typedef struct BattleStageWork {
 
 // forward declarations
 void batSpotDisp(CameraId camId, void* param);
+void drawCone(CameraId camId, BattleSpotEntry* entry);
 BattleSpotEntry* batSpotEntry(void);
 void batSpotInit(void);
 
@@ -136,10 +140,12 @@ void BattleStageInit(void) {
 	stage->field_0 = 0;
 
 	{
-		BattleStageLight* light = stage->lights;
-		for (i = 0; i < 12; i++, light++) {
+		s32 offset = 0;
+		for (i = 0; i < 12; i++) {
+			BattleStageLight* light = (BattleStageLight*)((u8*)stage->lights + offset);
 			light->flags = 0;
 			light->spline = NULL;
+			offset += 0xe8;
 		}
 	}
 
@@ -159,12 +165,18 @@ void BattleStageInit(void) {
 	stage->audDark.field_C = 0;
 	stage->audDark.field_14 = 0;
 
-	stage->field_B24 = float_290_8041c854;
-	stage->field_B28 = float_200_8041c858;
-	stage->field_B2C = float_90_8041c85c;
-	stage->field_B30 = stage->field_B24;
-	stage->field_B34 = float_neg50_8041c860;
-	stage->field_B38 = float_200_8041c858;
+	{
+		f32 f90 = float_90_8041c85c;
+		f32 fn50 = float_neg50_8041c860;
+		f32 f200 = float_200_8041c858;
+		f32 f290 = float_290_8041c854;
+		stage->field_B24 = f290;
+		stage->field_B28 = f200;
+		stage->field_B2C = f90;
+		stage->field_B30 = stage->field_B24;
+		stage->field_B34 = fn50;
+		stage->field_B38 = f200;
+	}
 
 	BattleStageObjectInit();
 	batSpotInit();
@@ -177,11 +189,15 @@ void BattleStageEnd(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
 
-	for (i = 0; i < 12; i++) {
-		BattleStageLight* light = &stage->lights[i];
-		if (light->spline != NULL) {
-			__memFree(HEAP_BATTLE, light->spline);
-			light->spline = NULL;
+	{
+		s32 offset = 0;
+		for (i = 0; i < 12; i++) {
+			BattleStageLight* light = (BattleStageLight*)((u8*)stage->lights + offset);
+			if (light->spline != NULL) {
+				__memFree(HEAP_BATTLE, light->spline);
+				light->spline = NULL;
+			}
+			offset += 0xe8;
 		}
 	}
 }
@@ -192,6 +208,7 @@ BattleSpotWork* BatSpotGetPtr(void) {
 
 #pragma dont_inline on
 void batSpotInit(void) {
+	Vec* g = vec3_802f31a8;
 	int i;
 	BattleSpotEntry* entry;
 
@@ -200,10 +217,13 @@ void batSpotInit(void) {
 	memset(wp->entries, 0, sizeof(BattleSpotEntry) * wp->count);
 
 	for (i = 0; i < 5; i++) {
+		Vec v;
 		entry = batSpotEntry();
-		entry->field_4 = (Vec){50.0f * i + -100.0f, 0.0f, -50.0f};
-		entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
-		entry->field_1C = (Vec){20.0f, 20.0f, 150.0f};
+		v = g[4];
+		v.x = 50.0f * i + -100.0f;
+		entry->field_4 = v;
+		entry->field_10 = g[5];
+		entry->field_1C = g[6];
 		entry->field_28 = batSpotInit_28;
 	}
 }
@@ -218,6 +238,55 @@ void batSpotMain() {
 }
 
 void batSpotDisp(CameraId camId, void* param) {
+	s32 i;
+	BattleSpotEntry* entry;
+
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xB, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0xFF, 0xFF, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaIn(0, 7, 7, 7, 5);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetNumChans(1);
+
+	entry = wp->entries;
+	for (i = 0; i < wp->count; entry++, i++) {
+		if ((entry->flags & 1) && (entry->flags & 2)) {
+			GXSetCullMode(2);
+			GXSetAlphaUpdate(1);
+			GXSetColorUpdate(0);
+			GXSetZMode(1, 3, 0);
+			GXSetBlendMode(0, 4, 5, 0);
+			GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+			drawCone(camId, entry);
+
+			GXSetCullMode(1);
+			GXSetAlphaUpdate(1);
+			GXSetColorUpdate(0);
+			GXSetZMode(1, 3, 0);
+			GXSetBlendMode(0, 4, 5, 0);
+			GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+			GXSetChanMatColor(4, *(GXColor*)&unk_80423028);
+			drawCone(camId, entry);
+
+			GXSetCullMode(2);
+			GXSetAlphaUpdate(0);
+			GXSetColorUpdate(1);
+			GXSetZMode(1, 3, 0);
+			GXSetBlendMode(1, 6, 7, 0);
+			GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+			GXSetChanMatColor(4, *(GXColor*)&entry->field_28);
+			drawCone(camId, entry);
+		}
+	}
 }
 
 //drawCone
@@ -263,12 +332,14 @@ typedef struct ScreenWork {
 } ScreenWork;
 
 extern ScreenWork* screen_wp;
-extern u32 screen_evt[];
+extern u32 screen_evt[7];
 s32 screen_evt_func(void);
 void screen_capture(CameraId camId, void* param);
 
 f32 randf(f32 min, f32 max) {
-	return (f32)rand() / float_32767_8041c81c * (max - min) + min;
+	f32 r = (f32)rand() / float_32767_8041c81c;
+	f32 d = max - min;
+	return r * d + min;
 }
 
 s32 screen_evt_func(void) {
@@ -284,27 +355,33 @@ void screen_capture(CameraId camId, void* param) {
 	screen_wp->field_0x4 = 1;
 }
 
-void tou_gamen_screen_tev_init(EventEntry* event) {
+s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
 	size = GXGetTexBufferSize(0x260, 0x1E0, 0, 0, 0);
 	screen_wp = _mapAlloc(0x2C);
 	screen_wp->field_0x0 = _mapAlloc(size);
-	screen_wp->field_0x4 = 0;
-	screen_wp->field_0xC = float_1_8041c7f4;
-	screen_wp->field_0x8 = float_1_8041c7f4;
-	screen_wp->field_0x14 = float_0_8041c7f0;
-	screen_wp->field_0x10 = float_0_8041c7f0;
-	screen_wp->field_0x1C = float_0_8041c7f0;
-	screen_wp->field_0x18 = float_0_8041c7f0;
-	screen_wp->field_0x20 = 0;
-	screen_wp->field_0x28 = float_neg1_8041c818;
+	{
+		f32 negOne = float_neg1_8041c818;
+		f32 zero = float_0_8041c7f0;
+		f32 one = float_1_8041c7f4;
+		screen_wp->field_0x4 = 0;
+		screen_wp->field_0xC = one;
+		screen_wp->field_0x8 = one;
+		screen_wp->field_0x14 = zero;
+		screen_wp->field_0x10 = zero;
+		screen_wp->field_0x1C = zero;
+		screen_wp->field_0x18 = zero;
+		screen_wp->field_0x20 = 0;
+		screen_wp->field_0x28 = negOne;
+	}
 
 	if (evtGetValue(event, GSW(0)) == 0xA3) {
 		screen_wp->field_0x24 = 1;
 	}
 
 	evtEntry(screen_evt, 0, 0);
+	return 2;
 }
 
 
@@ -386,13 +463,12 @@ void BattleStageOffLightEnemyInCommand(void) {
 }
 
 f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
-	s32 i = count - 1;
+	s32 i;
 
-	while (i >= 0) {
+	for (i = count - 1; i >= 0; i--) {
 		if ((f32)(value - knots[i]) >= 0.0f) {
 			break;
 		}
-		i--;
 	}
 
 	{
@@ -402,11 +478,14 @@ f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) 
 }
 
 // ------------------------------------------------------------ light setters
+#pragma opt_propagation off
 void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
 
-	light->upFrom = light->upCur;
+	light->upFrom.x = light->upCur.x;
+	light->upFrom.y = light->upCur.y;
+	light->upFrom.z = light->upCur.z;
 	light->upTo.x = x;
 	light->upTo.y = y;
 	light->upTo.z = z;
@@ -414,33 +493,51 @@ void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease)
 	light->upFramesTotal = frames;
 	light->upEase = ease;
 	if (frames == 0) {
-		light->upCur = (Vec){x, y, z};
+		Vec tmp = vec3_802f31cc[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->upCur = tmp;
 	}
 }
+#pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetTarget stops matching.
+#pragma opt_propagation off
 #pragma dont_inline on
 void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
 
-	light->targetFrom = light->targetCur;
+	light->targetFrom.x = light->targetCur.x;
+	light->targetFrom.y = light->targetCur.y;
+	light->targetFrom.z = light->targetCur.z;
 	light->targetTo.x = x;
 	light->targetTo.y = y;
 	light->targetTo.z = z;
 	light->targetFrames = frames;
 	light->targetFramesTotal = frames;
 	light->targetEase = ease;
-	light->flags &= ~2;
+	light->flags &= ~4;
 	if (frames == 0) {
-		light->targetCur = (Vec){x, y, z};
+		Vec tmp = vec3_802f31c0[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->targetCur = tmp;
 	}
 }
+#pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetPosition stops matching.
+#pragma opt_propagation off
 void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
 
-	light->posFrom = light->posCur;
+	light->posFrom.x = light->posCur.x;
+	light->posFrom.y = light->posCur.y;
+	light->posFrom.z = light->posCur.z;
 	light->posTo.x = x;
 	light->posTo.y = y;
 	light->posTo.z = z;
@@ -448,10 +545,17 @@ void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ea
 	light->posFramesTotal = frames;
 	light->posEase = ease;
 	if (frames == 0) {
-		light->posCur = (Vec){x, y, z};
+		Vec tmp = vec3_802f31b4[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->posCur = tmp;
 	}
 }
+#pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetWidth stops matching.
+#pragma opt_propagation off
 void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -465,7 +569,10 @@ void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
 		light->widthCur = (f32)width;
 	}
 }
+#pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightSetLightColor stops matching.
+#pragma opt_propagation off
 void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -476,10 +583,13 @@ void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 eas
 	light->colorFramesTotal = frames;
 	light->colorEase = ease;
 	if (frames == 0) {
-		light->colorCur = light->colorFrom;
+		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0};
 	}
 }
+#pragma opt_propagation on
 
+// Copy propagation off: without it BattleStageLightRelease stops matching.
+#pragma opt_propagation off
 void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
@@ -490,13 +600,14 @@ void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 		} else {
 			light->flags |= 2;
 			light->colorFrom = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0};
-			light->colorTo = (BattleStageColor){0, 0, 0, 0};
+			light->colorTo = *(BattleStageColor*)&unk_8042301c;
 			light->colorFrames = frames;
 			light->colorFramesTotal = frames;
 			light->colorEase = ease;
 		}
 	}
 }
+#pragma opt_propagation on
 
 void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
 	BattleUnit* unit;
@@ -504,26 +615,40 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 
 	unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
 	BtlUnit_GetPos(unit, &ux, &uy, &uz);
-	BattleStageLightSetTarget(idx, frames, ux + x, uy + y, uz + z, ease);
+	ux = ux + x;
+	uy = uy + y;
+	uz = uz + z;
+	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
 }
 #pragma dont_inline reset
 
 s32 BattleStageSysLightEntry(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
+	s32 offset = 0;
 
 	for (i = 0; i <= 6; i++) {
-		if (stage->lights[i].flags & 1) {
-			strcmp(stage->lights[i].name, name);
+		BattleStageLight* light = (BattleStageLight*)((u8*)stage + (4 + offset));
+		if (light->flags & 1) {
+			strcmp(light->name, name);
 		}
+		offset += 0xe8;
 	}
 
-	for (i = 0; i <= 6; i++) {
-		if (!(stage->lights[i].flags & 1)) {
-			stage->lights[i].flags = 1;
-			strcpy(stage->lights[i].name, name);
-			break;
-		}
+	i = 0;
+	offset = 0;
+	{
+		s32 count = 7;
+		do {
+			BattleStageLight* light = (BattleStageLight*)((u8*)stage + (4 + offset));
+			if (!(light->flags & 1)) {
+				light->flags = 1;
+				strcpy(light->name, name);
+				break;
+			}
+			i++;
+			offset += 0xe8;
+		} while (--count);
 	}
 
 	return i;
@@ -533,9 +658,15 @@ s32 BattleStageGetLightNumberByName(const char* name) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
 
-	for (i = 0; i < 12; i++) {
-		if ((stage->lights[i].flags & 1) && strcmp(stage->lights[i].name, name) == 0) {
-			return i;
+	{
+		BattleStageLight* lights = stage->lights;
+		s32 offset = 0;
+		for (i = 0; i < 12; i++) {
+			BattleStageLight* light = (BattleStageLight*)((u8*)lights + offset);
+			if ((light->flags & 1) && strcmp(light->name, name) == 0) {
+				return i;
+			}
+			offset += 0xe8;
 		}
 	}
 
@@ -568,6 +699,8 @@ void BattleStageDisp(void) {
 	dispEntry(4, float_6000_8041c850, 2, BattleStageDispLight, NULL);
 }
 
+// Keep drawCone out of line: the original calls it rather than inlining.
+#pragma dont_inline on
 void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	CameraEntry* cam = camGetPtr(camId);
 	Mtx mTrans;
@@ -594,7 +727,7 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	GXBegin(0xA0, 0, 0x20);
 
 	color = ((u8*)entry)[0x2B];
-	GXPosition3f32(0.0f, 0.0f, 0.0f);
+	GXPosition3f32(float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0);
 	GXColor4u8(0, 0, 0, color);
 
 	for (i = 0; i < 0x1F; i++) {
@@ -603,7 +736,7 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		f32 s;
 
 		if (i == 0x1E) {
-			angle = 0.0f;
+			angle = float_0_8041c7f0;
 		} else {
 			angle = float_6p2832_8041c824 * (f32)(-i) / float_30_8041c828;
 		}
@@ -613,6 +746,7 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		GXColor4u8(0, 0, 0, color / 3);
 	}
 }
+#pragma dont_inline off
 
 void BattleStageDispDark(CameraId camId, void* param) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;

@@ -13,14 +13,14 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
+- New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first.
 - Fork of [doldecomp/ttyd](https://github.com/doldecomp/ttyd) at `2df569d` (Jul 5, 2026), private at
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 25 after wave 2, PR #1): 13.92% of code matched,
-  2,722 of 9,770 functions; game code 1,599 of 5,687. Before the fork's first wave: 12.16%, 2,065
-  (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is linked yet: `event` and `battle`
-  are at 100% code, the next step for them.
+- Progress (local build, Sep 25 after wave 3, PR #2): 3,114 of 9,770 functions matched. Before the fork's
+  first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below). Nothing new is
+  linked yet: `event` and `battle` are at 100% code, the next step for them.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -402,3 +402,127 @@ Example entry:
     - BattleStatusEffectMain: 5.26% -> 100%
       change: BSE_* helper definitions wrapped in #pragma dont_inline on/reset
       observed: without it, BSE_SleepDelete was inlined into Main (original has a bl)
+
+## Wave 3: 24 agents, a lint step, and a second reviewed PR (2026-09-25, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol)
+
+24 Pi agents (DeepSeek V4.1 Flash), one existing source file each (the 24 with the most unmatched small functions),
+30-minute cap. The prompt added two rules: the partial-function rule, and "when you've been through the list once,
+go back to the near-misses and keep working until stopped". 23 of 24 files passed CI and landed as their own
+commits on `wave3` (PR #2): **2,722 -> 3,113 functions (+391)**, then +1 from a review fix. Rejected:
+`sac_bakugame`, whose agent was stopped mid-edit and left the file not compiling.
+
+**New merge step: `lint_patch.py`** (in the orchestrator's scratch for now). After CI passes it rejects a newly
+introduced empty stub below 100%, and flags without rejecting: partial functions missing a `// NONMATCHING` label,
+raw offset casts, structs and externs declared in a `.c` file, and pragmas with no reason. On wave 3 it flagged
+56 unlabelled partials, 272 raw-offset lines, 25 local structs and 126 local externs. Its first version wrongly
+rejected six good files (a comment-stripping bug, and it didn't exempt stubs already on `main` or functions that
+really are empty in the original); fixed and re-tested by blanking a real function.
+
+**Codex review, round 1** was given the lint output and told not to repeat it. It found five things lint can't:
+
+| Finding | Resolution |
+|---|---|
+| 193 added `#pragma`s forcing matches | Most were `optimize_for_size` toggled around functions. Compiling 8 battle files at `-O4,s` in `configure.py` (like `battle_camera`) keeps every match, so they're gone. The `dont_inline` / `opt_propagation` ones are needed (removing them loses matches); each now has a reason checked against the original asm or by removal. 5 unused pairs removed. |
+| Local externs contradicting headers | `psndSFXOn_3D` returns a value in the original: the header was wrong, now `s32`. Two others fixed. Two kept (the matches depend on them), each commented. |
+| `ExtWorkFull` duplicating `ExtWork` | Full layout moved into `extdrv.h`, casts dropped; one more function matched. |
+| Raw offsets for named fields | `protectId`, `poseTable` |
+| `evt_bero` offsets, wrong header comment | Field names; `animeArg1/2` are `u16` (the original loads them with `lhz`); `animeArg4` is at 0x38 |
+
+Lessons:
+- **Codex's advice isn't always the fix; its findings usually point at one.** "Remove the pragmas" would have lost
+  matches; the real fix was a per-file flag. CI caught each fix that quietly broke a match (three times).
+- **Many battle files were compiled at `-O4,s`.** Agents rediscover this function by function with pragmas; the
+  next wave's prompt or idioms file should say to check the file's flags first.
+- **A timed-out agent can leave its file broken mid-edit.** The launcher should keep the agent's last version
+  that built.
+- **About a third of the agents still finished early** despite the keep-going line.
+- Still open: the 56 unlabelled partial functions (the percentage is mechanical, "what still differs" needs a
+  look).
+
+
+## Per-file notes deferred (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+Not built yet, on purpose. Notes pay off when several agents make repeated passes at the same hard function, which
+is mostly the end game (around 90%). Until then each file gets one pass, and each agent's `REPORT.md` (per-function
+before/after and what it tried) is kept in the orchestrator's scratch, so the notes can be backfilled from it later.
+
+## Wave 3 review, round 2 (2026-09-25, Claude Opus 5.5; review GPT-5.6 Sol)
+
+Round 2 confirmed round 1's fixes and found five new issues, all fixed; 3,114 functions before and after.
+- **A real bug:** `BattleAudience_NoUsedHaitiRand` used its counter uninitialized. The agent's 93.52% was partly
+  earned by the bug; initializing it where the original does (before the loops) scores 96.97%.
+- **One signature for the font width functions,** declared five ways across seven files. The original callers
+  mask the result to 16 bits, so both return `u16`; declared once in `fontmgr.h`.
+- **Two more split layouts** like `ExtWork`: `ShadowEntry` and `ProjShadowWork` now have their full layouts in
+  `shadowdrv.h`.
+- **Raw offsets** in `winmgr` and `mapdrv` replaced by named fields; `ItemData::star_piece_price` is `u16`.
+
+Lessons:
+- **Two rounds found different things again** (as in wave 2): round 1 the broad patterns, round 2 bugs and
+  signatures inside individual functions. A second round is worth it on a PR this size.
+- **Named fields don't always compile to the same code.** Five shadow setters only match in their byte-offset
+  form (the original adds the field offset before the store), and a header edit that silently didn't apply
+  left callers with no prototype. CI caught both.
+- **Types the original reads unsigned** (`lhz`) keep turning up declared signed in the headers (`animeArg1/2`,
+  `star_piece_price`). Worth a mechanical check across the headers later.
+
+## The orchestrator's role: how to pick this up (2026-09-25, Isaac; written up by Claude Opus 5.5)
+
+For a new Claude session taking over. Isaac sets direction; the orchestrator (a Claude Code session on Isaac's
+Mac) runs the waves, merges, reviews and keeps this ledger. Agents do the matching; the orchestrator never
+takes an agent's word for anything, only the build's.
+
+**Start here.**
+1. Read this ledger top to bottom, then `docs/CONTEXT.private.md` if it exists (gitignored, on Isaac's Mac
+   only): inference provider, keys, the tower, capacity, what can and can't go public.
+2. Check the live state: `gh pr list`, `git log --oneline -15`, and `python3 tools/ci.py` on `main` (it should
+   pass with nothing changed). GitHub is the source of truth for what's merged.
+3. Ask Isaac what's next. Don't launch a wave, spend on inference or share traces without him.
+
+**One wave, end to end** (wave 3 is the worked example):
+1. **Pick files.** Existing `src/` files with the most unmatched small functions, from
+   `build/G8MJ01/report.json`; skip files another open PR touches. Later waves will add "finisher" agents on
+   nearly complete files (see "Linking" below).
+2. **Launch** 12-24 Pi agents on the tower, one file each, a copy of the repo per agent, 30-minute cap. The
+   prompt is in the launcher (`launch.py`); it carries the rules from this ledger (no asm, pragmas only with a
+   reason, never delete existing functions, the partial-function rule, named fields, write `REPORT.md` with a
+   `Model:` line).
+3. **Merge each result** with the merge script: apply the patch, `tools/ci.py` (build, byte-match, ratchet),
+   then `lint_patch.py` (rejects new empty stubs; flags unlabelled partials, raw offsets, local structs and
+   externs, pragmas without reasons). One commit per file on a `waveN` branch, crediting the agent's model
+   with `Co-Authored-By:` and the orchestrator's model too. Reject files that don't build; don't hand-repair
+   an agent's half-finished edit.
+4. **Open one PR per wave**, then **Codex review** (`codex exec`, GPT-5.6 Sol, medium effort, read-only
+   sandbox) with the rules file and the lint output, told not to repeat the lint. Two rounds on a big PR:
+   they find different things.
+5. **Fix every finding yourself**, each checked by `tools/ci.py` before committing. A finding points at a
+   problem; its suggested fix may be wrong (removing "match-forcing" pragmas would have lost matches; the real
+   fix was a per-file compiler flag). `--allow-regress FUNC` only for a small fuzzy drop in a named, unmatched
+   function, said in the commit message.
+6. **Write the ledger chapter** (results, what review found, lessons), then Isaac merges the PR.
+
+**Rules the orchestrator keeps.**
+- Nothing about the inference provider, accounts, keys or costs in this repo: it will be public. A local
+  pre-commit hook blocks the obvious cases; private notes go in `CONTEXT.private.md`.
+- Every number in a commit message or this ledger comes from the build. Report failures and rejections as
+  plainly as successes.
+- Ask Isaac before adding hooks, cron jobs or other standing setup, before force-pushing anything but your own
+  PR branch, and before sharing agent sessions anywhere.
+- Codex runs on GPT-5.6 Sol at medium effort; never a larger model (it burns Isaac's usage).
+- Delete with `trash`, not `rm -rf`; Python packages with `uv`.
+
+**Where the tooling lives.** `tools/ci.py` is in the repo. The wave tooling (launcher, the agents' `check.py`
+helper, merge script, `lint_patch.py`, Codex rules files) is still in the orchestrator's scratch on Isaac's Mac,
+`~/snood/scratch/ttyd_wave3/`, next to each agent's `REPORT.md`, patch and session log. The provider-neutral
+parts (merge script, lint, linking) should move into `tools/` so a new session doesn't depend on that folder.
+
+**Linking.** A file counts as linked only when the whole file matches (code and data) and it's flipped from
+`NonMatching` to `Matching` in `configure.py` with the build's checksums still passing. Waves don't do this on
+their own. Planned: an auto-link step in the merge pipeline that tries the flip for every file at 100% and keeps
+it only if the checksums pass. A test on Sep 25 linked 7 of 10 candidates; `swdrv`, `gxsub`, `seqdrv` and
+`synth_dbtab` show 100% in the report but fail to link, which is work for a finisher agent.
+
+**Open threads as of this chapter:** 56 partial functions without a `// NONMATCHING` label; `sac_bakugame`
+(rejected in wave 3); four duplicated structs from wave 2 (`ShopWork`, `StatusWindowValue`, `BattleStageWork`,
+`PaperSoundEffect`); agents that stop early; the launcher should keep a timed-out agent's last version that
+built; headers that declare signed what the original reads unsigned.

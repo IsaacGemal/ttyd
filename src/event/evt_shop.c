@@ -1,3 +1,4 @@
+#include "manager/fontmgr.h"
 #include "evt/evt_shop.h"
 #include "mario/mariost.h"
 #include "mario/mario_pouch.h"
@@ -81,7 +82,6 @@ extern void FontDrawStart(void);
 extern void FontDrawEdge(void);
 extern void FontDrawEdgeOff(void);
 extern void FontDrawColor(GXColor* color);
-extern u16 FontGetMessageWidth(const char* msg);
 extern void FontDrawMessage(s32 x, s32 y, const char* msg);
 
 s32 evtShopIsActive(void) {
