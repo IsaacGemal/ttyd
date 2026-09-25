@@ -8,7 +8,8 @@ setup.
 - Anything decided, discovered or abandoned that the next session would need goes into `docs/CONTEXT.md` as a
   dated chapter at the bottom, with who made the call. Keep "Current state" at the top accurate.
 - This repo will be public. Inference provider, accounts, keys, capacity and anything else internal go in
-  `docs/CONTEXT.private.md` (gitignored), never in a tracked file or a commit message.
+  `docs/CONTEXT.private.md` (gitignored), never in a tracked file or a commit message. Before the repo is made
+  public, work through the checklist at the top of that file.
 - Don't start new notes files. If a topic outgrows its chapter, it can move to its own file under `docs/`, linked
   from the ledger, but the ledger stays the index.
 - Bulk agents never edit the ledger. They write `LOG.md`/`REPORT.md` in their own scratch dir; the orchestrator
