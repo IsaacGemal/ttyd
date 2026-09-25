@@ -6,6 +6,15 @@
 
 extern BattleWork* _battleWorkPointer;
 extern u32 _enemy_can_use_item_table[];
+extern f64 pow(f64 x, f64 y);
+
+const f32 float_1_8041c3c0 = 1.0f;
+f32 float_1p1_8041c3cc = 1.1f;
+f32 float_1p3_8041c3d0 = 1.3f;
+f32 float_1p5_8041c3d4 = 1.5f;
+f32 float_0p5_8041c3d8 = 0.5f;
+
+#pragma optimize_for_size on
 
 //local prototypes
 void _CheckMoveCount(BattleUnit* unit);
@@ -25,6 +34,7 @@ void BattleAudience_Case_MarioPinch(void);
 BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
 void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2);
 void BtlUnit_HpGaugeInit(BattleUnit* unit);
+s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos);
 
 // Local field overlays for regions the shared header leaves unnamed.
 typedef struct BattleUnitAnimFields {
@@ -185,6 +195,7 @@ void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     }
 }
 
+// NONMATCHING (96%): target reads the gauge type with `lhz` + `cmpwi`; the then/else block layout also differs.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
     f32 ratio;
@@ -221,21 +232,15 @@ s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId) {
     return 0;
 }
 
+#pragma dont_inline on
 BOOL BtlUnit_CanActStatus(BattleUnit* unit) {
-    if (BtlUnit_CheckStatus(unit, STATUS_SLEEP)) {
-        return FALSE;
-    }
-    if (BtlUnit_CheckStatus(unit, STATUS_STOP)) {
-        return FALSE;
-    }
-    if (BtlUnit_CheckStatus(unit, STATUS_DIZZY)) {
-        return FALSE;
-    }
-    if (BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+    if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) || BtlUnit_CheckStatus(unit, STATUS_STOP) ||
+        BtlUnit_CheckStatus(unit, STATUS_FREEZE) || BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
         return FALSE;
     }
     return !BtlUnit_CheckStatusFlag(unit, 1);
 }
+#pragma dont_inline reset
 
 BOOL BtlUnit_CanGuardStatus(BattleUnit* unit) {
     return BtlUnit_CanActStatus(unit);
@@ -245,6 +250,8 @@ void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName) {
     btlDispChangeAnime(part, animName, FALSE);
 }
 
+#pragma dont_inline on
+// NONMATCHING (96%): tail `type < 0x1F && type >= 0x1D` compiles to `bge body; b skip`, mine `blt skip`.
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     const char* animName = BtlUnit_GetPoseNameFromType(part, type);
 
@@ -253,17 +260,24 @@ void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     } else {
         btlDispChangeAnime(part, animName, FALSE);
     }
-    if (type >= 0x1D && type < 0x1F) {
-        ((BattleUnitPartFields*)part)->mFlags |= 0x10;
+    if (type < 0x1F) {
+        if (type >= 0x1D) {
+            ((BattleUnitPartFields*)part)->mFlags |= 0x10;
+        }
     }
 }
+#pragma dont_inline reset
 
 void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName) {
-    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), animName, FALSE);
+    s32 bodyId = BtlUnit_GetBodyPartsId(unit);
+
+    btlDispChangeAnime(BtlUnit_GetPartsPtr(unit, bodyId), animName, FALSE);
 }
 
 void BtlUnit_SetBodyAnimType(BattleUnit* unit, s32 type) {
-    BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)), type);
+    s32 bodyId = BtlUnit_GetBodyPartsId(unit);
+
+    BtlUnit_SetAnimType(BtlUnit_GetPartsPtr(unit, bodyId), type);
 }
 
 void BtlUnit_ChangeStayAnim(s32 unitId) {
@@ -280,7 +294,7 @@ void BtlUnit_ChangeTalkAnim(s32 unitId) {
                        ((BattleUnitAnimFields*)unit)->mTalkPoseName, FALSE);
 }
 
-BOOL BtlUnit_Init(void) { //TODO: force stmw/lmw, otherwise 1:1
+BOOL BtlUnit_Init(void) {
     int i;
     BattleWork* wp = _battleWorkPointer;
 
@@ -290,6 +304,7 @@ BOOL BtlUnit_Init(void) { //TODO: force stmw/lmw, otherwise 1:1
     return TRUE;
 }
 
+#pragma optimize_for_size off
 BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
@@ -320,6 +335,7 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     //TODO: finish
     return NULL;
 }
+#pragma optimize_for_size on
 
 BOOL BtlUnit_Delete(BattleUnit* unit) {
     return FALSE;
@@ -333,17 +349,23 @@ s32 BtlUnit_GetUnitId(BattleUnit* unit) {
     return unit->unitId;
 }
 
+#pragma dont_inline on
+// NONMATCHING (87%): target entry test is `bne loop; blr`, mine the inverse `beqlr; b loop`.
 BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
-    BattleUnitPart* part;
+    BattleUnitPart* part = unit->mParts;
 
-    part = unit->mParts;
-    if (partNum >= 0) {
-        if (part->mNextPart) {
-            while (part && part->mKindPartParams->partNum != partNum) {
-                part = part->mNextPart;
-            }
-        }
+    if (partNum < 0) {
+        return part;
     }
+    if (part->mNextPart == NULL) {
+        return part;
+    }
+    do {
+        if (part->mKindPartParams->partNum == partNum) {
+            return part;
+        }
+        part = part->mNextPart;
+    } while (part);
     return part;
 }
 
@@ -361,12 +383,15 @@ s32 BtlUnit_GetBodyPartsId(BattleUnit* unit) {
     }
     return ret;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 void BtlUnit_GetPos(BattleUnit* unit, f32* x, f32* y, f32* z) {
     *x = unit->mPosition.x;
     *y = unit->mPosition.y;
     *z = unit->mPosition.z;
 }
+#pragma dont_inline reset
 
 void BtlUnit_SetPos(BattleUnit* unit, f32 x, f32 y, f32 z) {
     unit->mPosition.x = x;
@@ -398,9 +423,24 @@ void BtlUnit_AddPartsPos(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     part->mPosition.z += z;
 }
 
+#pragma dont_inline on
 void BtlUnit_GetPartsWorldPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
+    BattleUnit* owner = part->mOwner;
+    f32 ownerX, offsetX, ownerY, offsetY, ownerZ, offsetZ;
 
+    if (part->attributes & 0x10000000) {
+        *x = part->mPosition.x;
+        *y = part->mPosition.y;
+        *z = part->mPosition.z;
+    } else {
+        BtlUnit_GetPos(owner, &ownerX, &ownerY, &ownerZ);
+        BtlUnit_GetPartsOffsetPos(part, &offsetX, &offsetY, &offsetZ);
+        *x = ownerX + offsetX * (f32)owner->faceDirection;
+        *y = ownerY + offsetY;
+        *z = ownerZ + offsetZ;
+    }
 }
+#pragma dont_inline reset
 
 void BtlUnit_GetHitPos(BattleUnit* unit, BattleUnitPart* part, f32* x, f32* y, f32* z) {
     f32 y_multiply = 1.0f;
@@ -695,11 +735,13 @@ void BtlUnit_SetOffsetPos(BattleUnit* unit, f32 x, f32 y, f32 z) {
     }
 }
 
+#pragma dont_inline on
 void BtlUnit_GetPartsOffsetPos(BattleUnitPart* part, f32* x, f32* y, f32* z) {
     *x = part->mPositionOffset.x;
     *y = part->mPositionOffset.y;
     *z = part->mPositionOffset.z;
 }
+#pragma dont_inline reset
 
 void BtlUnit_SetPartsOffsetPos(BattleUnitPart* part, f32 x, f32 y, f32 z) {
     f32 thefuckyone = -2.0468902587890625f;
@@ -861,6 +903,7 @@ s8 BtlUnit_GetBelong(BattleUnit* unit) {
     return unit->mAlliance;
 }
 
+#pragma dont_inline on
 void _CheckMoveCount(BattleUnit* unit) {
     s8 maxmoves;
 
@@ -871,6 +914,7 @@ void _CheckMoveCount(BattleUnit* unit) {
         }
     }
 }
+#pragma dont_inline reset
 
 void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* strength) {
     s8 status_turns = 0, status_strength = 0;
@@ -1003,6 +1047,7 @@ void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* s
     }
 }
 
+// NONMATCHING (82%): HUGE/TINY and DEFENSE_UP/DOWN branch trees differ; target also `extsb`s type before the switch.
 BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 strength) {
     switch (type) {
         case STATUS_SLEEP:
@@ -1203,6 +1248,8 @@ void BtlUnit_ClearStatus(BattleUnit* unit) {
     BattleStatusChangeInfoWorkInit(unit);
 }
 
+#pragma optimize_for_size off
+// NONMATCHING (76%): case bodies/branches in the recovery switch still differ (HP/FP regen, defense).
 BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
 
@@ -1313,7 +1360,9 @@ BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
             return FALSE;
     }
 }
+#pragma optimize_for_size on
 
+#pragma dont_inline on
 BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
 
@@ -1329,13 +1378,16 @@ BOOL BtlUnit_CheckStatus(BattleUnit* unit, StatusEffectType type) {
     }
     return FALSE;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BtlUnit_CheckStatusFlag(BattleUnit* unit, s32 flags) {
     if (unit) {
         return unit->mStatusFlags & flags;
     }
     return 0;
 }
+#pragma dont_inline reset
 
 void BtlUnit_OnStatusFlag(BattleUnit* unit, s32 flags) {
     unit->mStatusFlags |= flags;
@@ -1357,6 +1409,8 @@ void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags) {
     unit->flags &= ~flags;
 }
 
+#pragma dont_inline on
+// NONMATCHING (87%): target uses `beq found` for the second poseId compare, mine `bne skip`, plus one dead `b`.
 char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
     BattleDispPose* pose = part->poseTable;
     s32 bound;
@@ -1381,6 +1435,7 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
     }
     return NULL;
 }
+#pragma dont_inline reset
 
 
 
@@ -1405,13 +1460,44 @@ void BtlUnit_SetParamToPouch(BattleUnit* unit) {
 
 
 
+#pragma dont_inline on
 void BtlUnit_ResetMoveStatus(BattleUnit* unit) {
+    s32 count;
 
+    unit->moveState = 0;
+    unit->movesRemaining = unit->maxMoveCount;
+    if (BtlUnit_CheckStatus(unit, STATUS_FAST)) {
+        unit->movesRemaining *= 2;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_SLOW)) {
+        if (unit->movesRemaining >= 2) {
+            unit->movesRemaining /= 2;
+        } else {
+            count = 2;
+            if (unit->maxMoveCount < 1) {
+                count *= 2;
+            }
+            if (unit->activeTurns >= count) {
+                unit->movesRemaining = 1;
+                unit->moveState = 0;
+            } else {
+                unit->movesRemaining = 0;
+                unit->moveState = 10;
+            }
+        }
+    }
+    unit->maxMovesThisTurn = unit->movesRemaining;
+    if (unit->maxMovesThisTurn == 0) {
+        unit->movesRemaining = 0;
+        unit->moveState = 10;
+    }
 }
+#pragma dont_inline reset
 
 
 
 
+#pragma dont_inline on
 s32 BtlUnit_GetFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
@@ -1433,7 +1519,9 @@ void BtlUnit_SetFp(BattleUnit* unit, s32 value) {
         unit->currentFp = value;
     }
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BtlUnit_GetMaxFp(BattleUnit* unit) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
@@ -1444,6 +1532,7 @@ s32 BtlUnit_GetMaxFp(BattleUnit* unit) {
     }
     return result;
 }
+#pragma dont_inline reset
 
 void BtlUnit_SetMaxFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
@@ -1463,19 +1552,20 @@ void BtlUnit_RecoverHp(BattleUnit* unit, s32 value) {
     }
 }
 
+// NONMATCHING (94%): two callee-save register-assignment instructions differ.
 void BtlUnit_RecoverFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
     s16 max;
     s16* fp; //but why
 
-    if (kind < TYPE_PARTNER_MIN || kind >= TYPE_PARTNER_MAX) {
-        max = BtlUnit_GetMaxFp(unit);
-        fp = &unit->currentFp;
-    }
-    else {
+    if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
         max = BtlUnit_GetMaxFp(BattleGetMarioPtr(_battleWorkPointer));
         fp = &BattleGetMarioPtr(wp)->currentFp;
+    }
+    else {
+        max = BtlUnit_GetMaxFp(unit);
+        fp = &unit->currentFp;
     }
     *fp += value;
     if (*fp > max) {
@@ -1531,3 +1621,191 @@ BOOL BtlUnit_GetEnemyBelong(BattleUnit* unit) {
             return unit->mAlliance;
     }
 }
+
+typedef struct BtlUnitSeMode {
+    s32 field_0x0;  // 0x0
+    s32 field_0x4;  // 0x4
+    s16 field_0x8;  // 0x8
+    s16 field_0xA;  // 0xA
+    s16 field_0xC;  // 0xC
+    s16 field_0xE;  // 0xE
+    s16 field_0x10; // 0x10
+    s16 field_0x12; // 0x12
+    s16 field_0x14; // 0x14
+    s32 field_0x18; // 0x18
+} BtlUnitSeMode;
+
+void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g) {
+    se->field_0x0 = a;
+    se->field_0x4 = b;
+    se->field_0xC = c;
+    se->field_0xE = d;
+    se->field_0x10 = d;
+    se->field_0x14 = 0;
+    se->field_0x8 = f;
+    se->field_0xA = g;
+    se->field_0x18 = -1;
+}
+
+s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c) {
+    Vec pos;
+
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    return BtlUnit_snd_se_pos(unit, a, b, c, &pos);
+}
+
+extern s32 psndSFXOn_3D(const char* name, Vec* pos);
+extern void psndSFX_pit(s32 id, s32 pitch);
+extern void psndSFX_vol(s32 id, s32 vol);
+extern s32 psndSFX_get_vol(s32 id);
+
+// NONMATCHING (87%): register allocation is rotated (target keeps a in r27/val in r30, mine a in r30/val in r29).
+#pragma dont_inline on
+s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
+    s32 handle;
+    s32 val = 0;
+    s8 turns, strength;
+
+    if (BtlUnit_CheckStatus(unit, STATUS_TINY)) {
+        BtlUnit_GetStatus(unit, STATUS_TINY, &turns, &strength);
+        val = (s16)(((s8)strength * 2 - 1) * -341);
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_HUGE)) {
+        BtlUnit_GetStatus(unit, STATUS_HUGE, &turns, &strength);
+        val = (s16)(((s8)strength * 2 + 1) * -341);
+    }
+    val = (s16)((c + val) + (irand(0x29) - 0x14));
+    handle = psndSFXOn_3D((const char*)a, pos);
+    psndSFX_pit(handle, val);
+    if ((u32)(b - 0xF1190000) < 0x4D80) {
+        psndSFX_vol(handle, psndSFX_get_vol(handle));
+    } else {
+        psndSFX_vol(handle, (u8)b);
+    }
+    return handle;
+}
+#pragma dont_inline reset
+
+// NONMATCHING (84%): switch compare tree roots at 3 instead of 4; info pointer kept in a callee-save
+// register instead of a temp; double_to_int constant uses a local symbol. Semantics are identical.
+s32 BtlUnit_GetExp(BattleUnit* unit) {
+    BattleWork* wp = _battleWorkPointer;
+    FieldBattleInfo* info = wp->fbatInfo;
+    PouchData* pouch = pouchGetPtr();
+    f32 mult;
+
+    if (pouch->level > unit->mLevel) {
+        return 0;
+    }
+    switch (info->setup->groupSetup->numEnemies) {
+        case 0:
+        case 1:
+        case 2:
+            mult = float_1_8041c3c0;
+            break;
+        case 3:
+            mult = float_1p1_8041c3cc;
+            break;
+        case 4:
+            mult = float_1p3_8041c3d0;
+            break;
+        default:
+            mult = float_1p5_8041c3d4;
+            break;
+    }
+    return (s32)(mult * (f32)(unit->mLevel - pouch->level) * float_0p5_8041c3d8) + unit->mKindParams->mBonusExp;
+}
+
+typedef struct BattleWeaponFields {
+    u8 pad_0x0[0x8];
+    s32 itemId;    // 0x8
+    u8 pad_0xC[0x11 - 0xC];
+    u8 field_0x11; // 0x11
+    u8 field_0x12; // 0x12
+} BattleWeaponFields;
+
+extern s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
+extern void BtlActRec_AddPoint(void* p, s32 value);
+extern void BtlActRec_AddCount(void* p);
+
+// NONMATCHING (98%): pouchAddAP(s16) forces an extra extsh on the computed AP delta.
+void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 fp;
+    s32 cost;
+
+    fp = BtlUnit_GetFp(unit);
+    cost = BtlUnit_GetWeaponCost(unit, weapon);
+    BtlUnit_SetFp(unit, fp - cost);
+    if (unit->currentKind == UNIT_MARIO) {
+        BtlActRec_AddPoint((u8*)wp + 0x16F2F, (u8)cost);
+        BtlActRec_AddCount((u8*)wp + 0x16F30);
+    } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+        BtlActRec_AddPoint((u8*)wp + 0x16F31, (u8)cost);
+        BtlActRec_AddCount((u8*)wp + 0x16F32);
+    }
+    pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+}
+
+// NONMATCHING (95%): pouchGetAP is declared s16 in the header, so an extra extsh is emitted; the
+// target used a 32-bit-return declaration. Semantics identical.
+BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
+    s32 fp = BtlUnit_GetFp(unit);
+    s32 cost = BtlUnit_GetWeaponCost(unit, weapon);
+
+    if (fp < cost) {
+        return FALSE;
+    }
+    return pouchGetAP() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+}
+
+// NONMATCHING (98%): compiler pool constants are anonymous (@1121/@1123) vs the target's named
+// double_to_int_802efab8 / double_2_802efad0; one address-materialization sequence differs.
+#pragma dont_inline on
+s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
+    s32 cost = ((BattleWeaponFields*)weapon)->field_0x11;
+    s32 badgeCount;
+
+    if (((BattleWeaponFields*)weapon)->itemId != 0) {
+        badgeCount = pouchEquipCheckBadge(((BattleWeaponFields*)weapon)->itemId);
+        switch (((BattleWeaponFields*)weapon)->itemId) {
+            case 0xF0:
+            case 0xF1:
+            case 0xF2:
+            case 0xF3:
+            case 0xF7:
+            case 0xF8:
+            case 0xF9:
+            case 0xFC:
+            case 0x100:
+            case 0x101:
+            case 0x14C:
+            case 0x14D:
+            case 0x14E:
+            case 0x151:
+            case 0x152:
+                cost = (s32)(cost * pow(badgeCount - 1, 2.0));
+                break;
+            case 0xF4:
+            case 0xF5:
+            case 0xF6:
+            case 0xFB:
+            case 0xFD:
+                cost = cost * badgeCount;
+                break;
+            default:
+                break;
+        }
+    }
+    if (cost != 0) {
+        cost -= ((u8*)unit)[0x2F1];
+        if (cost <= 0) {
+            cost = 1;
+        }
+    }
+    if (cost >= 1000) {
+        cost = 999;
+    }
+    return cost;
+}
+#pragma dont_inline reset
