@@ -142,3 +142,24 @@ Refines principles 1 and 6 above.
 - **Probably code first, data later.** Someone suggested agents work on code and leave data for later: data
   placement is hard to get right until the code that references it is in C, and linking a unit settles its data
   anyway. Not decided; revisit when designing the queue.
+
+## Measuring progress autonomously: the ratchet (2026-09-25, Isaac + Claude Opus 5.5)
+
+Goal: the system measures its own progress, so even if some share of agent work is bad, grinding on converges
+on the fully matched, linked game. That holds only if three things are true, so they are rules:
+
+1. **Nothing merged can make any number go down.** Every merge regenerates `report.json` and runs
+   `objdiff-cli report changes <previous> <current>` (built into objdiff). Any function, unit or data symbol
+   that got worse rejects the merge, even if the target improved. The last accepted `report.json` is the ratchet.
+2. **Bad work must not be able to pass the checker.** The byte check can be satisfied by cheating, so the merger
+   also lints the diff. The obvious one: Metrowerks accepts `asm` functions, so an agent could paste the
+   original instructions and "match" trivially. Human game code uses `asm` in exactly one place
+   (`memcpy_as4` in `src/system.c`); new `asm`, new `#pragma` tricks, and edits to `configure.py` flags outside
+   the unit being worked on are rejected or flagged for review. The list grows as agents find loopholes.
+3. **Stuck work leaves a trail.** Convergence isn't automatic: the long tail is where Snood spent most of its
+   effort. Failed attempts record what they tried and how close they got, so the next attempt or tier starts
+   from there.
+
+**Progress display, both tracks:** code (fuzzy / matched / linked) and data (matched / linked), overall and per
+category (game DOL, RELs, SDK, MusyX), from the report at each merge, plotted over time like decomp.dev. The
+headline number is code linked; matched is shown next to it as work in the pipeline.
