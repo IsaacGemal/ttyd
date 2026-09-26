@@ -10,8 +10,6 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
   PRAGMA     an added `dont_inline on` / `opt_propagation off` / `optimize_for_size on` with no reason comment
   IMPLICIT   a call to a function with no prototype in scope (C then assumes it returns int and promotes
              floats), found with clang -Wimplicit-function-declaration; skipped if clang isn't installed
-  SEMDIFF    a touched function below 100% whose constants, masks, compares, calls or data references differ
-             from the original's (tools/semdiff.py): a lead for review, often a real logic bug
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
 import json
@@ -31,7 +29,7 @@ lines = text.splitlines()
 def definitions(text):
     """Function definitions: name -> (start line, body text)."""
     funcs = {}
-    for m in re.finditer(r"^(?:USER_FUNC\(\s*(\w+)\s*\)|[A-Za-z_][\w \*]*?\b(\w+)\s*\([^;{)]*\))\s*\{", text,
+    for m in re.finditer(r"^(?:(?:static\s+)?USER_FUNC\(\s*(\w+)\s*\)|[A-Za-z_][\w \*]*?\b(\w+)\s*\([^;{)]*\))\s*\{", text,
                          re.M):
         name, start, depth, i = m.group(1) or m.group(2), m.end(), 1, m.end()
         while depth and i < len(text):
@@ -91,22 +89,6 @@ try:
         out.append(f"IMPLICIT   {name}")
 except FileNotFoundError:
     pass
-try:
-    sys.path.insert(0, "tools")
-    import semdiff
-    cfg = json.load(open("objdiff.json"))
-    ou = next(x for x in cfg["units"] if x["name"] == "MarioSt/" + unit)
-    diff_json = semdiff.run_objdiff(["-p", ".", "-u", "MarioSt/" + unit])
-    for r in semdiff.compare(ou["target_path"], ou["base_path"], diff_json,
-                             sorted(n for n in touched if pct.get(n, 100) < 100)):
-        toks = [f"-{t}" for t in r["missing"]] + [f"+{t}" for t in r["extra"]]
-        if len(toks) > 12:
-            out.append(f"SEMDIFF    {r['function']} ({r['percent']}%): {len(toks)} differences, likely wrong "
-                       f"throughout; first: {'; '.join(toks[:4])}")
-        elif toks:
-            out.append(f"SEMDIFF    {r['function']} ({r['percent']}%): {'; '.join(toks)}")
-except (SystemExit, StopIteration, OSError) as e:
-    out.append(f"SEMDIFF    skipped: {e}")
 for n in stubs:
     print(f"STUB       {n}")
 print("\n".join(out))

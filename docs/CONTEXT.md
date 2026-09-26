@@ -32,6 +32,11 @@ anything worth keeping into a chapter here.
 - Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
 - Sessions don't message each other for now (Isaac, Sep 26): the orchestrator runs reviews itself or Isaac
   starts them. Next session: see "Ideas for wave 6" at the end.
+- **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** `ci.py`, the ratchet, `lint_patch.py`,
+  `label_partials.py`, `autolink.py` and `merge_agent.sh` were all written quickly by models, and
+  several have already had silent blind spots. Rare or subtle ones will surface only much later (linking whole
+  files, the RELs, the hard tail). When a result surprises you, suspect the tool first. See the chapter "Our
+  tools will have bugs".
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 
@@ -755,3 +760,46 @@ flags; a case passes if the expected token is flagged before and gone after.
   partials were never reviewed for logic. A backlog for a review or finisher pass.
 
 Add a case to the back-test whenever a review finds a bug in a partial function.
+
+## Our tools will have bugs, and some will only show up late (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+**Assume it.** Every tool in `tools/` was written fast, by models, against the cases in front of us. The ones
+found so far were silent, not crashes, and each let things through for a while:
+- `label_partials.py` never saw `USER_FUNC(name)` definitions, counted every "extra" instruction twice, and
+  swapped the function name and text of every `--note` (so no note was ever written).
+- `lint_patch.py`'s STUB and UNLABELLED checks never saw `USER_FUNC(name)` (event functions) through wave 5,
+  and then missed `static USER_FUNC(name)`.
+- `semdiff.py` (since parked, see below) read no rlwinm masks at all in its first version, and its Codex
+  review found 13 more issues.
+These are the easy ones, found because a reviewer looked. The rare ones will appear when the project reaches
+situations nobody has tested: whole files linking, data and scripts, the area modules (RELs), the last hard
+functions, a new compiler flag, a file layout objdiff reports differently.
+
+**What to do about it:**
+- **The build's checksums are the only oracle that can't be wrong in our favour.** A linked file hashing to
+  `build.sha1` is proof. Everything else (scores, the ratchet, lint, semdiff, labels) is a tool that can have a
+  blind spot. Weigh conclusions that rest on them accordingly.
+- **When something is surprising, suspect the tool before the code or the agent.** A clean lint on a file
+  that feels wrong, a score that doesn't move, a check that never fires.
+- **Every tool gets tests on real past cases** (Melee's `tools/check/tests/` pattern; the parked
+  `semdiff_backtest.py` on `wip/semdiff` is an example), and a new case whenever a bug is found in or by it.
+- **When a tool bug is found, ask what it let through before now,** and re-run the fixed tool over earlier
+  waves. E.g. the USER_FUNC blind spot means waves 1-5's event functions were never STUB- or
+  UNLABELLED-checked.
+- **Tool changes get reviewed like game code**, and each bug found in a tool goes in this ledger with what it
+  may have let through.
+- **No flag is not evidence of correctness.**
+
+## `semdiff.py` parked: tried, and set aside for Melee's approach (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+Supersedes "`tools/semdiff.py`: logic differences in partial functions" above. **Work in progress, not on
+`main`:** the tool, its back-test and its Codex-reviewed revision live on the branch `wip/semdiff` (commit
+`a7b5ed9`), with the review's findings and what was fixed in that branch's ledger.
+
+Why it was set aside (Isaac's call): Melee, which finished this month and is the reference for how to do this,
+solved the same problem (partial functions with wrong logic) differently. It builds and runs the non-matching
+game: match-only tricks sit behind `MUST_MATCH`, a `--linkable` build links unfinished units, and bugs show up
+as behaviour (Aug 2026: "fix inverted scale copy in non-matching builds", "fix infinite spin in non-matching
+builds"). A homegrown heuristic that Melee never needed shouldn't sit in the merge path. `lint_patch.py` no
+longer calls it; its `USER_FUNC` fixes stay. Revisit `semdiff` only if the runnable build can't be made to
+work, or as a comparison against it.
