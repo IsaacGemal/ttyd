@@ -83,340 +83,81 @@ const char str_804203A4[] = "P_W_8";
 const char str_804203AC[] = "P_R_8";
 const char gap_09_804203B4_sdata2[4] = {0, 0, 0, 0};
 
-void peach_talk(void) {
-    MarioWork* mp = marioGetPtr();
-    if (mp->trigFlags & 1) {
-        f32 t;
-        mp->trigFlags &= ~1;
-        t = *(const f32*)&float_0_80420250;
-        mp->multiTimer = 0;
-        mp->airTimer = 0;
-        mp->currSubMotionId = 0;
-        mp->baseSpeed = t;
-        marioAdjustMoveDir();
-        peachChgPose(str_80420254);
-    }
-}
+
 
 #pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-void peach_dash(void) {
+void peachSetStsNormal(void) {
     MarioWork* mp = marioGetPtr();
-    if (mp->trigFlags & 1) {
-        mp->trigFlags &= ~1;
-        mp->flags &= ~0xF0000;
-        if (mp->forceMoveTimer == 0) {
-            mp->baseSpeed = marioGetDashSpd();
-        }
-        peachChgPose(str_8042025C);
-        mp->currSubMotionId = 0;
-        mp->multiTimer = 0;
-    }
-    if (mp->forceMoveTimer == 0) {
-        mp->baseSpeed = marioGetDashSpd();
-    }
-    if (mp->flags & 0x20) {
-        MarioWork* mp2 = marioGetPtr();
-        u32 snd2;
-        u32 snd;
-        u32 pf = mp2->peachFlags;
-        if (!(pf & 0x2000)) {
-            if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
-                snd = 0x80c;
-                snd2 = 0x80b;
-            } else {
-                snd = 0x7c4;
-                snd2 = 0x7c3;
-            }
-        } else {
-            snd = 0x7e9;
-            snd2 = 0x7e8;
-        }
-        {
-            s32 mt = (s32)mp2->multiTimer;
-            if (mt % 20 == 0) {
-                psndSFXOn_3D((const char*)snd, &mp2->position);
-            } else if (mt % 10 == 0) {
-                psndSFXOn_3D((const char*)snd2, &mp2->position);
-            }
-        }
-        mp2->multiTimer++;
-    } else {
-        s8 d1 = mp->wStickDir1;
-        s8 d2 = mp->wStickDir2;
-        if (d1 * d1 + d2 * d2 <= 0xbd1) {
-            marioChgMot(1);
-        } else {
-            mp->directionView = mp->controlStickAngle;
-            {
-                MarioWork* mp2 = marioGetPtr();
-                u32 snd2;
-                u32 snd;
-                u32 pf = mp2->peachFlags;
-                if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
-                        snd = 0x80c;
-                        snd2 = 0x80b;
-                    } else {
-                        snd = 0x7c4;
-                        snd2 = 0x7c3;
-                    }
-                } else {
-                    snd = 0x7e9;
-                    snd2 = 0x7e8;
-                }
-                {
-                    s32 mt = (s32)mp2->multiTimer;
-                    if (mt % 20 == 0) {
-                        psndSFXOn_3D((const char*)snd, &mp2->position);
-                    } else if (mt % 10 == 0) {
-                        psndSFXOn_3D((const char*)snd2, &mp2->position);
-                    }
-                }
-                mp2->multiTimer++;
-            }
-            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
-                marioChgMot(0);
-            }
-        }
-    }
-}
-#pragma opt_propagation on
-
-void peach_walk(void) {
-    MarioWork* mp = marioGetPtr();
-    if (mp->trigFlags & 1) {
-        mp->trigFlags &= ~1;
-        mp->flags &= ~0xF0000;
-        if (mp->forceMoveTimer == 0) {
-            mp->baseSpeed = marioGetWalkSpd();
-        }
-        peachChgPose(str_80420264);
-        mp->currSubMotionId = 0;
-        mp->multiTimer = 0;
-    }
-    if (mp->forceMoveTimer == 0) {
-        mp->baseSpeed = marioGetWalkSpd();
-    }
-    {
-        s8 d1 = mp->wStickDir1;
-        s8 d2 = mp->wStickDir2;
-        if (d1 * d1 + d2 * d2 > 0xbd1) {
-            marioChgMot(2);
-        } else {
-            mp->directionView = mp->controlStickAngle;
-            {
-                MarioWork* mp2 = marioGetPtr();
-                u32 snd;
-                u32 snd2;
-                u32 pf = mp2->peachFlags;
-                if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
-                        snd = 0x80c;
-                        snd2 = 0x80b;
-                    } else {
-                        snd = 0x7c4;
-                        snd2 = 0x7c3;
-                    }
-                } else {
-                    snd = 0x7e9;
-                    snd2 = 0x7e8;
-                }
-                {
-                    s32 mt = (s32)mp2->multiTimer;
-                    if (mt % 40 == 0) {
-                        psndSFXOn_3D((const char*)snd, &mp2->position);
-                    } else if (mt % 20 == 0) {
-                        psndSFXOn_3D((const char*)snd2, &mp2->position);
-                    }
-                }
-                mp2->multiTimer++;
-            }
-            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
-                marioChgMot(0);
-            }
-        }
-    }
-}
-
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-void peach_stay(void) {
-    MarioWork* mp = marioGetPtr();
-    if (mp->trigFlags & 1) {
-        mp->trigFlags &= ~1;
-        mp->flags &= ~0xF0000;
-        mp->airTimer = 0;
-        mp->multiTimer = 0;
-        mp->currSubMotionId = 0;
-        peachChgPose(str_8042026C);
-        if (!(mp->flags & 0x20)) {
-            mp->baseSpeed = *(volatile const f32*)&float_0_80420250;
-        }
-    }
-    if (mp->controlStickSensitivity > *(volatile const f32*)&float_0_80420250) {
-        marioChgMot(1);
-    }
-    if ((mp->flags & 0x8) || (mp->dispFlags & 0x40000000)) {
-        return;
-    }
-    if (mp->peachFlags & 0x27f0) {
-        return;
-    }
-    switch (mp->currSubMotionId) {
-        case 0:
-            if ((s32)(++mp->multiTimer) >= sysMsec2Frame(50000)) {
-                marioChgPose(str_80420274);
-                mp->multiTimer = 0x50;
-                mp->currSubMotionId = 1;
-                *(s32*)((u8*)mp + 0x278) = psndSFXOn_3D((const char*)0x101, &mp->position);
-                marioAdjustMoveDir();
-            }
-            break;
-        case 1:
-            if ((s32)(--mp->multiTimer) < 0) {
-                marioChgPose(str_8042026C);
-                mp->multiTimer = 0x64;
-                mp->currSubMotionId = 2;
-            }
-            break;
-        case 2:
-            if ((s32)(--mp->multiTimer) < 0) {
-                marioChgPose(str_8042027C);
-                mp->multiTimer = 0;
-                mp->currSubMotionId = 0x14;
-                *(s32*)((u8*)mp + 0x2b4) = 0;
-            }
-            break;
-        case 0x14:
-            if ((s32)(++*(s32*)((u8*)mp + 0x2b4)) >= sysMsec2Frame(0x2710)) {
-                *(s32*)((u8*)mp + 0x2b4) = sysMsec2Frame(0x2710);
-            }
-            if ((s32)(++mp->multiTimer) >= 0x64) {
-                mp->multiTimer = 0;
-            }
-            if (mp->flags & 0x8) {
-                marioChgPose(str_8042026C);
-                mp->currSubMotionId = 0;
-            }
-            break;
-    }
-}
-#pragma opt_propagation on
-
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-s32 peachMain(void) {
-    MarioWork* mp = marioGetPtr();
-    if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
-        *(Vec*)((u8*)mp + 0x110) = mp->position;
-        {
-            f32 zero = *(const f32*)&float_0_80420250;
-            *(f32*)((u8*)mp + 0x174) = zero;
-            *(f32*)((u8*)mp + 0x178) = zero;
-            *(f32*)((u8*)mp + 0x17C) = zero;
-        }
-        marioBottomless();
-        marioPreDisp();
-        marioBalloonMain();
-        mario_kemuri_80130474();
-        partyMain();
-        marioCamMain();
-        *(s32*)((u8*)mp + 0x34) += 1;
-        return 1;
-    }
-    if (mp->flags & 0x40000) {
-        marioMove();
-        marioChkOverhead();
-        if (mp->airTimer > 0x64) {
-            marioChgMot(0xA);
-            marioSetFallPara();
-        }
-    } else if (mp->flags & 0x10000) {
-        marioJump();
-        marioMove();
-        marioChkOverhead();
-        if (mp->airTimer > 5) {
-            marioChkGnd2();
-        }
-    } else if (mp->flags & 0x20000) {
-        marioMove();
-        marioFall();
-        marioChkOverhead();
-        if (mp->currMotionId != 0x10 && mp->currMotionId != 0x11 && mp->airTimer > 5) {
-            marioChkGnd2();
-        }
-    } else {
-        marioMove();
-        marioChkOverhead();
-        marioChkGnd();
-    }
-    if (mp->flags & 0x20) {
-        mp->forceMoveTimer--;
-        if (mp->forceMoveTimer <= 0) {
-            mp->forceMoveTimer = 0;
-            mp->flags &= ~0x20;
-        }
-    }
-    marioBoots();
-    marioBottomless();
-    marioPreDisp();
-    marioBalloonMain();
-    mario_kemuri_80130474();
-    partyMain();
-    marioCamMain();
-    {
-        f32 zero = *(const f32*)&float_0_80420250;
-        *(s32*)((u8*)mp + 0x34) += 1;
-        *(Vec*)((u8*)mp + 0x110) = mp->position;
-        *(f32*)((u8*)mp + 0x174) = zero;
-        *(f32*)((u8*)mp + 0x178) = zero;
-        *(f32*)((u8*)mp + 0x17C) = zero;
-    }
-    return 1;
-}
-#pragma opt_propagation on
-
-void peachPreInit(void) {
-}
-
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-void peachTransformOff(void) {
-    MarioWork* mp = marioGetPtr();
-    if (mp->characterId != 1) {
-        marioSetCharMode(1);
-    }
     if (mp->peachFlags & 0x2000) {
-        mp->peachFlags &= ~0x2000;
-        if (mp->paperAnimGroupId[0] >= 0) {
-            animPoseRelease(mp->paperAnimGroupId[0]);
+        mp = marioGetPtr();
+        if (mp->characterId != 1) {
+            marioSetCharMode(1);
         }
-        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
-        npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
-        mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
-        mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+        if (mp->peachFlags & 0x2000) {
+            mp->peachFlags &= ~0x2000;
+            if (mp->paperAnimGroupId[0] >= 0) {
+                animPoseRelease(mp->paperAnimGroupId[0]);
+            }
+            mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
+            npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
+            mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
+            mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+        }
+    } else {
+        mp->peachFlags &= ~0x7F0;
+        peachChgPose(str_8042026C);
     }
 }
 #pragma opt_propagation on
 
-#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-void peachTransformOn(void) {
+void peachSetStsAftershower(void) {
     MarioWork* mp = marioGetPtr();
-    if (mp->characterId != 1) {
-        marioSetCharMode(1);
-    }
-    if (!(mp->peachFlags & 0x2000)) {
-        mp->peachFlags |= 0x2000;
-        if (mp->paperAnimGroupId[0] >= 0) {
-            animPoseRelease(mp->paperAnimGroupId[0]);
-        }
-        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC900, 2);
-        npcSetMarioAutoTalkPose(str_8042028C, str_80420290);
-        {
-            f32 f30 = *(volatile const f32*)&float_30_80420294;
-            mp->wPlayerCollisionBox.y = f30;
-            mp->wPlayerCollisionBox.x = f30;
-        }
-    }
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x10;
+    peachChgPose(str_8042026C);
 }
-#pragma opt_propagation on
+
+void peachSetStsInvisible(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x20;
+    peachChgPose(str_8042026C);
+}
+
+void peachSetStsHappy(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x40;
+    peachChgPose(str_8042026C);
+}
+
+void peachSetStsUneasy(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x80;
+    peachChgPose(str_8042026C);
+}
+
+void peachSetStsAngry(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x100;
+    peachChgPose(str_8042026C);
+}
+
+void peachSetStsOrdinary(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x200;
+    peachChgPose(str_8042026C);
+}
+
+void peachSetStsCarry(void) {
+    MarioWork* mp = marioGetPtr();
+    mp->peachFlags &= ~0x7F0;
+    mp->peachFlags |= 0x400;
+    peachChgPose(str_8042026C);
+}
 
 void peachChgPose(const char* pose) {
     MarioWork* mp = marioGetPtr();
@@ -528,76 +269,337 @@ void peachChgPose(const char* pose) {
     }
 }
 
-void peachSetStsCarry(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x400;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsOrdinary(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x200;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsAngry(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x100;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsUneasy(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x80;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsHappy(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x40;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsInvisible(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x20;
-    peachChgPose(str_8042026C);
-}
-
-void peachSetStsAftershower(void) {
-    MarioWork* mp = marioGetPtr();
-    mp->peachFlags &= ~0x7F0;
-    mp->peachFlags |= 0x10;
-    peachChgPose(str_8042026C);
-}
-
 #pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
-void peachSetStsNormal(void) {
+void peachTransformOn(void) {
     MarioWork* mp = marioGetPtr();
-    if (mp->peachFlags & 0x2000) {
-        mp = marioGetPtr();
-        if (mp->characterId != 1) {
-            marioSetCharMode(1);
+    if (mp->characterId != 1) {
+        marioSetCharMode(1);
+    }
+    if (!(mp->peachFlags & 0x2000)) {
+        mp->peachFlags |= 0x2000;
+        if (mp->paperAnimGroupId[0] >= 0) {
+            animPoseRelease(mp->paperAnimGroupId[0]);
         }
-        if (mp->peachFlags & 0x2000) {
-            mp->peachFlags &= ~0x2000;
-            if (mp->paperAnimGroupId[0] >= 0) {
-                animPoseRelease(mp->paperAnimGroupId[0]);
-            }
-            mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
-            npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
-            mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
-            mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC900, 2);
+        npcSetMarioAutoTalkPose(str_8042028C, str_80420290);
+        {
+            f32 f30 = *(volatile const f32*)&float_30_80420294;
+            mp->wPlayerCollisionBox.y = f30;
+            mp->wPlayerCollisionBox.x = f30;
         }
-    } else {
-        mp->peachFlags &= ~0x7F0;
-        peachChgPose(str_8042026C);
     }
 }
 #pragma opt_propagation on
+
+#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
+void peachTransformOff(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->characterId != 1) {
+        marioSetCharMode(1);
+    }
+    if (mp->peachFlags & 0x2000) {
+        mp->peachFlags &= ~0x2000;
+        if (mp->paperAnimGroupId[0] >= 0) {
+            animPoseRelease(mp->paperAnimGroupId[0]);
+        }
+        mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
+        npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
+        mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
+        mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+    }
+}
+#pragma opt_propagation on
+
+void peachPreInit(void) {
+}
+
+#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
+s32 peachMain(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->currMotionId == MARIO_MOTION_JUMP_3) {
+        *(Vec*)(mp->unk104 + 0xC) = mp->position;
+        {
+            f32 zero = *(const f32*)&float_0_80420250;
+            *(f32*)(mp->unk170 + 4) = zero;
+            *(f32*)(mp->unk170 + 8) = zero;
+            *(f32*)(mp->unk170 + 0xC) = zero;
+        }
+        marioBottomless();
+        marioPreDisp();
+        marioBalloonMain();
+        mario_kemuri_80130474();
+        partyMain();
+        marioCamMain();
+        *(s32*)(mp->field_0x32 + 2) += 1;
+        return 1;
+    }
+    if (mp->flags & 0x40000) {
+        marioMove();
+        marioChkOverhead();
+        if (mp->airTimer > 0x64) {
+            marioChgMot(0xA);
+            marioSetFallPara();
+        }
+    } else if (mp->flags & 0x10000) {
+        marioJump();
+        marioMove();
+        marioChkOverhead();
+        if (mp->airTimer > 5) {
+            marioChkGnd2();
+        }
+    } else if (mp->flags & 0x20000) {
+        marioMove();
+        marioFall();
+        marioChkOverhead();
+        if (mp->currMotionId != 0x10 && mp->currMotionId != 0x11 && mp->airTimer > 5) {
+            marioChkGnd2();
+        }
+    } else {
+        marioMove();
+        marioChkOverhead();
+        marioChkGnd();
+    }
+    if (mp->flags & 0x20) {
+        mp->forceMoveTimer--;
+        if (mp->forceMoveTimer <= 0) {
+            mp->forceMoveTimer = 0;
+            mp->flags &= ~0x20;
+        }
+    }
+    marioBoots();
+    marioBottomless();
+    marioPreDisp();
+    marioBalloonMain();
+    mario_kemuri_80130474();
+    partyMain();
+    marioCamMain();
+    {
+        f32 zero = *(const f32*)&float_0_80420250;
+        *(s32*)(mp->field_0x32 + 2) += 1;
+        *(Vec*)(mp->unk104 + 0xC) = mp->position;
+        *(f32*)(mp->unk170 + 4) = zero;
+        *(f32*)(mp->unk170 + 8) = zero;
+        *(f32*)(mp->unk170 + 0xC) = zero;
+    }
+    return 1;
+}
+#pragma opt_propagation on
+
+#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
+void peach_stay(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->trigFlags & 1) {
+        mp->trigFlags &= ~1;
+        mp->flags &= ~0xF0000;
+        mp->airTimer = 0;
+        mp->multiTimer = 0;
+        mp->currSubMotionId = 0;
+        peachChgPose(str_8042026C);
+        if (!(mp->flags & 0x20)) {
+            mp->baseSpeed = *(volatile const f32*)&float_0_80420250;
+        }
+    }
+    if (mp->controlStickSensitivity > *(volatile const f32*)&float_0_80420250) {
+        marioChgMot(1);
+    }
+    if ((mp->flags & 0x8) || (mp->dispFlags & 0x40000000)) {
+        return;
+    }
+    if (mp->peachFlags & 0x27f0) {
+        return;
+    }
+    switch (mp->currSubMotionId) {
+        case 0:
+            if ((s32)(++mp->multiTimer) >= sysMsec2Frame(50000)) {
+                marioChgPose(str_80420274);
+                mp->multiTimer = 0x50;
+                mp->currSubMotionId = 1;
+                *(s32*)(mp->field_0x250 + 0x28) = psndSFXOn_3D((const char*)0x101, &mp->position);
+                marioAdjustMoveDir();
+            }
+            break;
+        case 1:
+            if ((s32)(--mp->multiTimer) < 0) {
+                marioChgPose(str_8042026C);
+                mp->multiTimer = 0x64;
+                mp->currSubMotionId = 2;
+            }
+            break;
+        case 2:
+            if ((s32)(--mp->multiTimer) < 0) {
+                marioChgPose(str_8042027C);
+                mp->multiTimer = 0;
+                mp->currSubMotionId = 0x14;
+                *(s32*)(mp->field_0x2AC + 8) = 0;
+            }
+            break;
+        case 0x14:
+            if ((s32)(++*(s32*)(mp->field_0x2AC + 8)) >= sysMsec2Frame(0x2710)) {
+                *(s32*)(mp->field_0x2AC + 8) = sysMsec2Frame(0x2710);
+            }
+            if ((s32)(++mp->multiTimer) >= 0x64) {
+                mp->multiTimer = 0;
+            }
+            if (mp->flags & 0x8) {
+                marioChgPose(str_8042026C);
+                mp->currSubMotionId = 0;
+            }
+            break;
+    }
+}
+#pragma opt_propagation on
+
+void peach_walk(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->trigFlags & 1) {
+        mp->trigFlags &= ~1;
+        mp->flags &= ~0xF0000;
+        if (mp->forceMoveTimer == 0) {
+            mp->baseSpeed = marioGetWalkSpd();
+        }
+        peachChgPose(str_80420264);
+        mp->currSubMotionId = 0;
+        mp->multiTimer = 0;
+    }
+    if (mp->forceMoveTimer == 0) {
+        mp->baseSpeed = marioGetWalkSpd();
+    }
+    {
+        s8 d1 = mp->wStickDir1;
+        s8 d2 = mp->wStickDir2;
+        if (d1 * d1 + d2 * d2 > 0xbd1) {
+            marioChgMot(2);
+        } else {
+            mp->directionView = mp->controlStickAngle;
+            {
+                MarioWork* mp2 = marioGetPtr();
+                u32 snd;
+                u32 snd2;
+                u32 pf = mp2->peachFlags;
+                if (!(pf & 0x2000)) {
+                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+                        snd = 0x80c;
+                        snd2 = 0x80b;
+                    } else {
+                        snd = 0x7c4;
+                        snd2 = 0x7c3;
+                    }
+                } else {
+                    snd = 0x7e9;
+                    snd2 = 0x7e8;
+                }
+                {
+                    s32 mt = (s32)mp2->multiTimer;
+                    if (mt % 40 == 0) {
+                        psndSFXOn_3D((const char*)snd, &mp2->position);
+                    } else if (mt % 20 == 0) {
+                        psndSFXOn_3D((const char*)snd2, &mp2->position);
+                    }
+                }
+                mp2->multiTimer++;
+            }
+            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
+                marioChgMot(0);
+            }
+        }
+    }
+}
+
+#pragma opt_propagation off // keep named .sdata2 float refs (no duplicate literals) + exact scheduling
+void peach_dash(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->trigFlags & 1) {
+        mp->trigFlags &= ~1;
+        mp->flags &= ~0xF0000;
+        if (mp->forceMoveTimer == 0) {
+            mp->baseSpeed = marioGetDashSpd();
+        }
+        peachChgPose(str_8042025C);
+        mp->currSubMotionId = 0;
+        mp->multiTimer = 0;
+    }
+    if (mp->forceMoveTimer == 0) {
+        mp->baseSpeed = marioGetDashSpd();
+    }
+    if (mp->flags & 0x20) {
+        MarioWork* mp2 = marioGetPtr();
+        u32 snd2;
+        u32 snd;
+        u32 pf = mp2->peachFlags;
+        if (!(pf & 0x2000)) {
+            if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+                snd = 0x80c;
+                snd2 = 0x80b;
+            } else {
+                snd = 0x7c4;
+                snd2 = 0x7c3;
+            }
+        } else {
+            snd = 0x7e9;
+            snd2 = 0x7e8;
+        }
+        {
+            s32 mt = (s32)mp2->multiTimer;
+            if (mt % 20 == 0) {
+                psndSFXOn_3D((const char*)snd, &mp2->position);
+            } else if (mt % 10 == 0) {
+                psndSFXOn_3D((const char*)snd2, &mp2->position);
+            }
+        }
+        mp2->multiTimer++;
+    } else {
+        s8 d1 = mp->wStickDir1;
+        s8 d2 = mp->wStickDir2;
+        if (d1 * d1 + d2 * d2 <= 0xbd1) {
+            marioChgMot(1);
+        } else {
+            mp->directionView = mp->controlStickAngle;
+            {
+                MarioWork* mp2 = marioGetPtr();
+                u32 snd2;
+                u32 snd;
+                u32 pf = mp2->peachFlags;
+                if (!(pf & 0x2000)) {
+                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+                        snd = 0x80c;
+                        snd2 = 0x80b;
+                    } else {
+                        snd = 0x7c4;
+                        snd2 = 0x7c3;
+                    }
+                } else {
+                    snd = 0x7e9;
+                    snd2 = 0x7e8;
+                }
+                {
+                    s32 mt = (s32)mp2->multiTimer;
+                    if (mt % 20 == 0) {
+                        psndSFXOn_3D((const char*)snd, &mp2->position);
+                    } else if (mt % 10 == 0) {
+                        psndSFXOn_3D((const char*)snd2, &mp2->position);
+                    }
+                }
+                mp2->multiTimer++;
+            }
+            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
+                marioChgMot(0);
+            }
+        }
+    }
+}
+#pragma opt_propagation on
+
+void peach_talk(void) {
+    MarioWork* mp = marioGetPtr();
+    if (mp->trigFlags & 1) {
+        f32 t;
+        mp->trigFlags &= ~1;
+        t = *(const f32*)&float_0_80420250;
+        mp->multiTimer = 0;
+        mp->airTimer = 0;
+        mp->currSubMotionId = 0;
+        mp->baseSpeed = t;
+        marioAdjustMoveDir();
+        peachChgPose(str_80420254);
+    }
+}
