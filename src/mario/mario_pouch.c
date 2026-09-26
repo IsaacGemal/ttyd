@@ -418,6 +418,9 @@ void pouchReviseMarioParam(void) {
 	for (i = 0; i < 200; i++) {
 		s16 badge = mpp->equippedBadges[i];
 
+		if (badge == ITEM_NULL) {
+			continue;
+		}
 		switch (badge) {
 			case ITEM_HP_PLUS:
 				mpp->maximumHP += 5;
@@ -482,7 +485,7 @@ s32 pouchGetPartyAttackLv(PartyId partyId) {
 }
 
 s32 pouchGetHammerLv(void) {
-	s8 level = 0;
+	int level = 0;
 	s32 c;
 
 	c = (s32)pouchCheckItem(ITEM_ULTRA_HAMMER);
@@ -506,7 +509,7 @@ s32 pouchGetHammerLv(void) {
 }
 
 s32 pouchGetJumpLv(void) {
-	s8 level = 0;
+	int level = 0;
 	s32 c;
 
 	c = (s32)pouchCheckItem(ITEM_ULTRA_BOOTS);
@@ -681,6 +684,7 @@ s32 pouchGetCoin(void) {
 
 
 
+// NONMATCHING (91.64%): logic now correct (signed pouchCheckItem test, shift count maximum-1-i, index-based shift loop). Leftover is scheduling: the original hoists the `table1+i`/`table2+i` pointer setup and `temp=0` above the `if (table2)` branch and branches later.
 BOOL pouchRemoveItem(ItemType type) {
 	s16* table1, * table2;
 	BOOL valid;
@@ -693,7 +697,7 @@ BOOL pouchRemoveItem(ItemType type) {
 	if (type >= ITEM_MIN && type < ITEM_MAX) {
 		table1 = mpp->heldItems;
 		table2 = NULL;
-		maximum = GetHeldItemCount;
+		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
 		valid = TRUE;
 	}
 	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
@@ -721,17 +725,17 @@ BOOL pouchRemoveItem(ItemType type) {
 				table2[i] = ITEM_NULL;
 			}
 			if (table2) {
-				for (j = maximum - i, temp = 0; j != 0; j--, temp++) {
-					table1[temp] = table1[temp + 1];
-					table1[temp + 1] = ITEM_NULL;
-					table2[temp] = table2[temp + 1];
-					table2[temp + 1] = ITEM_NULL;
+				for (j = i; j < maximum - 1; j++) {
+					table1[j] = table1[j + 1];
+					table1[j + 1] = ITEM_NULL;
+					table2[j] = table2[j + 1];
+					table2[j + 1] = ITEM_NULL;
 				}
 			}
 			else {
-				for (j = maximum - i, temp = 0; j != 0; j--, temp++) {
-					table1[temp] = table1[temp + 1];
-					table1[temp + 1] = ITEM_NULL;
+				for (j = i; j < maximum - 1; j++) {
+					table1[j] = table1[j + 1];
+					table1[j + 1] = ITEM_NULL;
 				}
 			}
 			break;
@@ -841,20 +845,21 @@ void unk_800d06b4(char* src, char* dst) {
 	dst[i * 2] = 0;
 }
 
+// NONMATCHING (88.23%): instructions are identical but CodeWarrior colors the itemDataTable base r31/str r30 where the original has base r30/str r31; loop registers follow.
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
 	s32 i;
 	s32 len;
-	u16 c;
+	u32 c;
 	s16 id_a = *a;
 	s16 id_b = *b;
 
 	str = msgSearch(itemDataTable[id_a].name);
 	len = strlen(str) / 2;
 	for (i = 0; i < len; i++) {
-		c = ((const u16*)str)[i];
+		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
 			c += 0xA1;
 		}
@@ -862,13 +867,14 @@ s32 comp_aiueo(s16* a, s16* b) {
 			c += 0xA2;
 		}
 		buf_a[i] = c;
+		str += 2;
 	}
 	((u8*)buf_a)[i * 2] = 0;
 
 	str = msgSearch(itemDataTable[id_b].name);
 	len = strlen(str) / 2;
 	for (i = 0; i < len; i++) {
-		c = ((const u16*)str)[i];
+		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
 			c += 0xA1;
 		}
@@ -876,26 +882,28 @@ s32 comp_aiueo(s16* a, s16* b) {
 			c += 0xA2;
 		}
 		buf_b[i] = c;
+		str += 2;
 	}
 	((u8*)buf_b)[i * 2] = 0;
 
 	return strcmp((const char*)buf_a, (const char*)buf_b);
 }
 
+// NONMATCHING (87.87%): same base/str r30/r31 color swap as comp_aiueo.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
 	const char* str;
 	s32 i;
 	s32 len;
-	u16 c;
+	u32 c;
 	s16 id_a = *a;
 	s16 id_b = *b;
 
 	str = msgSearch(itemDataTable[id_a].name);
 	len = strlen(str) / 2;
 	for (i = 0; i < len; i++) {
-		c = ((const u16*)str)[i];
+		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
 			c += 0xA1;
 		}
@@ -903,13 +911,14 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 			c += 0xA2;
 		}
 		buf_a[i] = c;
+		str += 2;
 	}
 	((u8*)buf_a)[i * 2] = 0;
 
 	str = msgSearch(itemDataTable[id_b].name);
 	len = strlen(str) / 2;
 	for (i = 0; i < len; i++) {
-		c = ((const u16*)str)[i];
+		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
 			c += 0xA1;
 		}
@@ -917,6 +926,7 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 			c += 0xA2;
 		}
 		buf_b[i] = c;
+		str += 2;
 	}
 	((u8*)buf_b)[i * 2] = 0;
 
