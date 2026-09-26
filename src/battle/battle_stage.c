@@ -405,7 +405,7 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 
 
 #pragma dont_inline on
-void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
+void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->field_6 = dark->field_4;
 	dark->field_8 = a;
 	dark->field_C = frames;
@@ -416,7 +416,7 @@ void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
 	}
 }
 
-void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
+void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->field_7 = dark->field_5;
 	dark->field_9 = a;
 	dark->field_10 = frames;
@@ -428,33 +428,33 @@ void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
 }
 #pragma dont_inline reset
 
-void BattleStageSetStgDark(u8 a, s32 frames, u8 ease) {
+void BattleStageSetStgDark(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDark(&stage->stgDark, a, frames, ease);
 }
 
-void BattleStageSetStgDarkBase(u8 a, s32 frames, u8 ease) {
+void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDarkBase(&stage->stgDark, a, frames, ease);
 }
 
-void BattleStageSetAudDark(u8 a, s32 frames, u8 ease) {
+void BattleStageSetAudDark(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDark(&stage->audDark, a, frames, ease);
 }
 
-void BattleStageSetAudDarkBase(u8 a, s32 frames, u8 ease) {
+void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDarkBase(&stage->audDark, a, frames, ease);
 }
 
-void BattleStageReturnStgDarkBase(s32 frames, u8 ease) {
+void BattleStageReturnStgDarkBase(s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageDark* dark = &stage->stgDark;
 	BattleStageSetDark(dark, dark->field_5, frames, ease);
 }
 
-void BattleStageReturnAudDarkBase(s32 frames, u8 ease) {
+void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageDark* dark = &stage->audDark;
 	BattleStageSetDark(dark, dark->field_5, frames, ease);

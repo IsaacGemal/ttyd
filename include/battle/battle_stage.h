@@ -36,3 +36,10 @@ BattleStage* BattleStageGetPtr(void);
 void BattleStageInit(void);
 void BattleStageMain(void);
 void BattleStageEnd(void);
+
+void BattleStageSetStgDark(u8 a, s32 frames, s32 ease);
+void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease);
+void BattleStageSetAudDark(u8 a, s32 frames, s32 ease);
+void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease);
+void BattleStageReturnStgDarkBase(s32 frames, s32 ease);
+void BattleStageReturnAudDarkBase(s32 frames, s32 ease);

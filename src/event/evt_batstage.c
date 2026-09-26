@@ -2,6 +2,7 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "battle/battle.h"
+#include "battle/battle_stage.h"
 #include <dolphin/types.h>
 #include <string.h>
 
@@ -15,12 +16,6 @@ extern void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z
 extern void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease);
 extern void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease);
 extern void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease);
-extern void BattleStageSetAudDark(u8 a, s32 frames, s32 ease);
-extern void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease);
-extern void BattleStageSetStgDark(u8 a, s32 frames, s32 ease);
-extern void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease);
-extern void BattleStageReturnAudDarkBase(s32 frames, s32 ease);
-extern void BattleStageReturnStgDarkBase(s32 frames, s32 ease);
 
 // .rodata
 const char dat_802f32f8[3][0x20] = {
