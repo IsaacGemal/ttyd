@@ -883,7 +883,7 @@ config.libs = [
             Object(NonMatching, "npc_event.c"),
             Object(NonMatching, "parse.c"),
             Object(NonMatching, "party.c"),
-            Object(NonMatching, "peach.c"),
+            Object(Matching, "peach.c"),
             Object(NonMatching, "pmario_sound.c"),
             Object(NonMatching, "romfont.c"),
             Object(NonMatching, "sound.c"),
