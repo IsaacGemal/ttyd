@@ -10,9 +10,14 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "driver/animdrv.h"
+#include "driver/camdrv.h"
+#include <dolphin/os.h>
 #include <string.h>
 
 extern GlobalWork* gp;
+extern const char str_802C4DA8[];
+extern const char str_802C4DB4[];
+extern f32 float_37p5_8041a408;
 
 //.bss
 s32 BeroSW[16]; //switches
@@ -288,7 +293,9 @@ USER_FUNC(evt_bero_get_now_number) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (94.05%): register allocation / branch layout differs from the original
+	// NONMATCHING (94.05%): the 16-entry zero fill uses stwu/mr instead of the original's
+	// addi base + offset stores, and in the fill loop entry/num are in r5/r6 where the
+	// original has them in r6/r5.
 USER_FUNC(evt_bero_get_info) {
 	BeroEntry** table = BeroINFOARR;
 	BeroEntry* entry;
@@ -327,7 +334,9 @@ USER_FUNC(evt_bero_get_info) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (86.42%): register allocation / branch layout differs from the original
+	// NONMATCHING (86.42%): same as evt_bero_get_info plus the kind/names block: the names[]
+	// template is anonymous instead of jumptable_802C4970 and the switch/ternary branch
+	// layout and several registers (r5/r6/r28/r31) differ from the original.
 USER_FUNC(evt_bero_get_into_info) {
 	BeroEntry** table = BeroINFOARR;
 	BeroEntry* entry;
@@ -404,6 +413,7 @@ USER_FUNC(evt_bero_get_into_info) {
 // ---- reconstructed functions ----
 void camRoadReset(void);
 void camShiftReset(void);
+void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
 void N_marioSetBottomlessRespawnPosOnBeroEntry(f32 x, f32 y, f32 z);
 
 USER_FUNC(evt_bero_mario_go_init) {
@@ -423,6 +433,23 @@ USER_FUNC(evt_bero_mario_go_wait) {
 USER_FUNC(evt_bero_cam_shift_init) {
 	camRoadReset();
 	camShiftReset();
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_cam3d_change) {
+	s32* args = event->args;
+	CameraEntry* cam = camGetPtr(CAMERA_3D);
+	s32 time = evtGetValue(event, args[0]);
+	s32 curve = evtGetValue(event, args[1]);
+
+	cam->presetPos = cam->cameraPos;
+	cam->presetAt = cam->cameraAt;
+	cam->storedPos = BeroPT;
+	cam->storedAt = BeroAT;
+	cam->startTimeA = gp->renderTime;
+	cam->durationA = OSMillisecondsToTicks(time);
+	cam->stateA = 3;
+	cam->curveA = curve;
 	return EVT_RETURN_DONE;
 }
 
@@ -498,7 +525,8 @@ USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (90.39%): register allocation / branch layout differs from the original
+	// NONMATCHING (90.39%): evtGetValue's args temporary is in r31 (original r29) and the
+	// table/test registers also differ; logic itself matches the original.
 USER_FUNC(evt_bero_id_filter) {
 	s32* args = event->args;
 	s32 id = evtGetValue(event, args[0]);
@@ -627,7 +655,6 @@ USER_FUNC(evt_bero_switch_on) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (97.92%): register allocation / branch layout differs from the original
 USER_FUNC(evt_bero_read_mario_pera) {
 	if (isFirstCall) {
 		event->userdata[0] = 0;
@@ -635,13 +662,19 @@ USER_FUNC(evt_bero_read_mario_pera) {
 	switch (event->userdata[0]) {
 	default:
 		break;
+#ifdef MUST_MATCH
+	// MUST_MATCH: the empty case 2 makes MWCC emit the retail switch decision tree
+	// (cmpwi/beq/bge/b) instead of folding the default edges together.
+	case 2:
+		break;
+#endif
 	case 0:
-		if (animGroupBaseAsync("p_dokan_x", 0, 0)) {
+		if (animGroupBaseAsync(str_802C4DA8, 0, 0)) {
 			event->userdata[0] = 1;
 		}
 		break;
 	case 1:
-		if (animGroupBaseAsync("p_dokan_y", 0, 0)) {
+		if (animGroupBaseAsync(str_802C4DB4, 0, 0)) {
 			event->userdata[0] = 100;
 		}
 		break;
@@ -710,7 +743,36 @@ USER_FUNC(bero_set_disp_position_pipe) {
 
 void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end);
 
-	// NONMATCHING (97.50%): register allocation / branch layout differs from the original
+typedef struct CameraParams {
+	f32 fovY;   // 0x00
+	f32 aspect; // 0x04
+	f32 far;    // 0x08
+	Vec pos;    // 0x0C
+	Vec at;     // 0x18
+} CameraParams;
+
+	// NONMATCHING (66.58%): the (Vec){0,0,0} templates and the 1.0f constant are emitted as
+	// anonymous .rodata/.sdata2 symbols instead of vec3_802c4990/vec3_802c499c/float_1_8041a404
+	// (whole-file data layout), so the frame and constant relocations differ.
+USER_FUNC(bero_get_position_pipe2) {
+	s32* args = event->args;
+	s32 a = evtGetValue(event, args[0]);
+	s32 b = (s32)evtGetFloat(event, args[1]);
+	Vec start, end;
+	CameraParams work;
+
+	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
+	end.y += 1.0f;
+	camRoadReset();
+	camShiftReset();
+	camRoadMain(&work.fovY, end.x, end.y, end.z, end.x, end.y, end.z, 0.0f);
+	BeroPT = work.pos;
+	BeroAT = work.at;
+	return EVT_RETURN_DONE;
+}
+
+	// NONMATCHING (97.50%): kind/a are in r31/r30 where the original has r30/r31, and the
+	// BeroEY ternary is stored directly from f2 instead of the original's f0 + frsp f2,f0.
 USER_FUNC(bero_get_position_pipe_pure) {
 	s32* args = event->args;
 	s32 kind;
@@ -723,16 +785,18 @@ USER_FUNC(bero_get_position_pipe_pure) {
 	kind = event->lwData[5];
 	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
 	BeroSX = start.x;
-	BeroSY = kind == 8 ? start.y - 37.5f : start.y;
+	BeroSY = kind == 8 ? start.y - float_37p5_8041a408 : start.y;
 	BeroSZ = start.z;
 	BeroEX = end.x;
-	BeroEY = kind == 8 ? end.y - 37.5f : end.y;
+	BeroEY = kind == 8 ? end.y - float_37p5_8041a408 : end.y;
 	BeroEZ = end.z;
 	N_marioSetBottomlessRespawnPosOnBeroEntry(BeroEX, BeroEY, BeroEZ);
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (95.07%): register allocation / branch layout differs from the original
+	// NONMATCHING (98.29%): the local names[] template is emitted as an anonymous .rodata
+	// symbol (@NNN) instead of jumptable_802C4970, and the enter/exitEvent ternaries branch
+	// with beq/b instead of the original's bne (register allocation / branch layout).
 USER_FUNC(evt_bero_get_info_num) {
 	BeroEntry* entry;
 	s32 kind;
@@ -741,22 +805,30 @@ USER_FUNC(evt_bero_get_info_num) {
 	id = evtGetValue(event, event->args[0]);
 	entry = BeroINFOARR[id];
 	event->lwData[3] = (s32)entry->hitName;
-	event->lwData[4] = *(u16*)((u8*)entry + 0x4);
+	event->lwData[4] = *(u16*)&entry->kinddirArg1;
 	kind = entry->kinddirArg3;
 	{
 		const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
-	if (kind == 0x4E20) {
+	switch (kind) {
+	case 0x4E20:
 		if (kind == 0x2710) {
 			kind = 0x2710;
-		} else if ((*(u16*)((u8*)entry + 0x4) & 0xFFF) < 2) {
-			for (kind = 0; (u32)kind < 8U; kind++) {
-				if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
-					break;
-				}
-			}
 		} else {
-			kind = 0x2710;
+			switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
+			case 0:
+			case 1:
+				for (kind = 0; (u32)kind < 8U; kind++) {
+					if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
+						break;
+					}
+				}
+				break;
+			default:
+				kind = 0x2710;
+				break;
+			}
 		}
+		break;
 	}
 	}
 	event->lwData[5] = kind;
@@ -766,7 +838,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	event->lwData[9] = BeroSW[id];
 	event->lwData[10] = entry->field_0x20;
 	if (entry->field_0x20 == -1) {
-		switch (*(u16*)((u8*)entry + 0x4) & 0xFFF) {
+		switch (*(u16*)&entry->kinddirArg1 & 0xFFF) {
 		case 0xF00:
 			event->lwData[10] = 0;
 			break;
