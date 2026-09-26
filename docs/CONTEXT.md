@@ -699,3 +699,12 @@ right); `evt_sub` reuses `EventEntry`'s 0x88 as a pointer (needs a union); three
 (kinopio `Wait`, `sac_deka` `create_timing`, `party_yoshi` `L_getStick`); 17 local redeclarations of functions
 their headers already declare.
 
+
+## Review routine: sequential, so each reviewer also checks the last round's fixes (2026-09-26, Isaac)
+
+Supersedes "one Codex round plus one Claude round" run in parallel (wave 5), which left the orchestrator's
+own fixes unreviewed. Per PR: **Codex reviews -> the orchestrator fixes and commits -> Claude reviews the whole
+PR including those fix commits -> the orchestrator fixes -> merge.** Codex goes first because its usage runs
+out first and it does the broad sweep; Claude goes second because it reads logic against the asm more deeply,
+which is what checking fixes needs. Only the last round's fixes go unreviewed, and there are usually few.
+Wave 5's fix commits (ce5b249..59e9d2f) were reviewed after the fact.
