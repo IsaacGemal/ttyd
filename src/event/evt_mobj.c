@@ -775,7 +775,7 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (69%): switch dispatch and the MOBJ_* pool addresses are laid out differently
+// NONMATCHING (69.03%): switch dispatch and the MOBJ_* pool addresses are laid out differently
 
 s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -806,7 +806,7 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     obj->unk1D0 = mobj_switch_red;
     obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
-    obj->flags |= 0xa1000000;
+    obj->flags |= 0xa10000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
     mobjCalcMtx(obj);
@@ -893,7 +893,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (75%): switch dispatch and the MOBJ_* pool addresses are laid out differently
+// NONMATCHING (75.04%): switch dispatch and the MOBJ_* pool addresses are laid out differently
 
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -927,7 +927,7 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     obj->unk1D0 = mobj_switch_blue;
     obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
-    obj->flags |= 0xa1000000;
+    obj->flags |= 0xa10000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
     if (type == 2) {
@@ -940,7 +940,7 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (93%): register allocation (r28/r30 swapped) around the local jumptable
+// NONMATCHING (93.34%): register allocation (r28/r30 swapped) around the local jumptable
 
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -968,7 +968,7 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     obj->unk1D0 = mobj_jumpstand_blue;
     obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
-    obj->flags |= 0x20000000;
+    obj->flags |= 0x200000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
     *(f32*)((u8*)obj + 0x1AC) = f31;
@@ -1037,7 +1037,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (91%): register allocation around the local jumptable
+// NONMATCHING (91.16%): register allocation around the local jumptable
 
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -1064,7 +1064,7 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     obj->unk1D0 = mobj_jumpstand_red;
     obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
-    obj->flags |= 0x20000000;
+    obj->flags |= 0x200000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
     mobjCalcMtx(obj);
@@ -1148,7 +1148,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (96%): one extra callee-saved register
+// NONMATCHING (96.42%): one extra callee-saved register
 
 s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -1182,7 +1182,7 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     obj->unk1D4 = (s32*)unk1D4;
     obj->unk1D8 = (s32*)unk1D8;
     obj->flags |= 4;
-    obj->flags |= 0x20000000;
+    obj->flags |= 0x200000;
     obj->unk1E4 = unk1E4;
     obj->unk1DC = 0;
     mobjCalcMtx2(obj);

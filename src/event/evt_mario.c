@@ -1309,6 +1309,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (92.25%): register allocation (r29/r31) and the order of a few float loads and stores.
 USER_FUNC(evt_koopa_hip_attack) {
     MarioWork* mario;
     s32 first = isFirstCall;
@@ -1395,8 +1396,8 @@ USER_FUNC(evt_koopa_hip_attack) {
             marioClearJumpPara();
             mario->hitobjStandOn = ground;
             mario->position.y = v0;
-            mario->flags &= ~(MARIO_FLAG_PRE_BATTLE_PHYSICS | MARIO_FLAG_IS_CARRYING_BOBBERY |
-                              MARIO_FLAG_ITEM_GET_DISABLED | MARIO_FLAG_IS_PUSHING);
+            mario->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
+                              MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
             *(f32*)((u8*)mario + 0x128) = fabsf(distABf(mario->position.x, mario->position.z,
                                                         *(f32*)((u8*)mario + 0x11C), *(f32*)((u8*)mario + 0x124)));
             mario->airTimer = 0;

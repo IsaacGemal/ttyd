@@ -123,7 +123,8 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// NONMATCHING (80%): register allocation differs (compiler keeps extra live ints); constant pool labels cosmetic
+// NONMATCHING (80.50%): the original saves f29 and r28-r31 individually where ours uses stmw, and register
+// allocation differs throughout.
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -209,7 +210,7 @@ void kpaFireMain(void) {
         PSMTXTrans(m0, node->pos.x, node->pos.y, node->pos.z);
         PSMTXScale(m2, f30, f30, f30);
         PSMTXConcat(m0, m2, m0);
-        PSMTXConcat(m3, m0, m3);
+        PSMTXConcat(m3, m0, m0);
         v = vec3_802fc920;
         PSMTXMultVec(m0, &v, &out);
         hit = kpaFlameHitCheck(out.x, out.y, out.z, f31);
