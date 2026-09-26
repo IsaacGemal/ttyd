@@ -60,8 +60,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    and compare the instructions with `check.py FUNC`.
 10. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
-11. **Calling a function with no prototype.** C then assumes it returns int and promotes floats to double.
-   Include the header, or declare it as its definition says.
+11. **Calling a function with no prototype.** The build rejects it (`-requireprotos`, as in Melee). Include the
+   header that declares it, or add the prototype to the header of the file that defines it, as its definition
+   (or the original's calls) say. Not a local declaration that contradicts a header.
 12. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
    object (declare it as the original's symbol) instead.
 13. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a

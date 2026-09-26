@@ -57,6 +57,7 @@
 
 #include <dolphin/vi.h>
 #include <string.h>
+#include <dolphin/os.h>
 
 extern void DEMOPadInit(void);
 extern BOOL g_bFirstSmartAlloc;

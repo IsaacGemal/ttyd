@@ -9,6 +9,7 @@
 #include "mario/mario_motion.h"
 #include "mario/mario_sbr.h"
 #include <string.h>
+#include "driver/seqdrv.h"
 
 //.data
 const char* dotMarioPose[4][6] = {

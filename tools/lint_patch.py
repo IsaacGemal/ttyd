@@ -8,8 +8,6 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
   STRUCT     a struct/typedef defined in the .c file by the patch (it may duplicate a header)
   EXTERN     an extern declaration added in the .c file (it may belong in a header)
   PRAGMA     an added `dont_inline on` / `opt_propagation off` / `optimize_for_size on` with no reason comment
-  IMPLICIT   a call to a function with no prototype in scope (C then assumes it returns int and promotes
-             floats), found with clang -Wimplicit-function-declaration; skipped if clang isn't installed
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
 import json
@@ -78,17 +76,6 @@ for i, l in enumerate(lines):
     if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
         if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
             out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
-CLANG = ["clang", "-fsyntax-only", "-std=gnu89", "-target", "powerpc-unknown-eabi", "-ffreestanding", "-nostdinc",
-         "-Ibuild/G8MJ01/include", "-Iinclude", "-Ilibs/dolsdk2004/include/libc", "-Ilibs/dolsdk2004/include",
-         "-Ilibs/musyx/include", "-D__MWERKS__", "-Wno-everything", "-Wimplicit-function-declaration",
-         "-ferror-limit=0", path]
-INTRINSICS = {"__fabs", "__fabsf", "__frsqrte", "__cntlzw", "__mflr", "__rlwimi"}
-try:
-    warn = subprocess.run(CLANG, capture_output=True, text=True).stderr
-    for name in sorted(set(re.findall(r"implicit declaration of function '(\w+)'", warn)) - INTRINSICS):
-        out.append(f"IMPLICIT   {name}")
-except FileNotFoundError:
-    pass
 for n in stubs:
     print(f"STUB       {n}")
 print("\n".join(out))

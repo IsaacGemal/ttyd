@@ -5,3 +5,6 @@ void marioChgMot(s32 motion);
 BOOL marioChkItemMotion(void);
 BOOL marioChkJump(void);
 BOOL marioChkTransform(void);
+
+void marioChgStayMotion(void);
+void marioChgShipMotion(void);

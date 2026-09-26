@@ -13,6 +13,7 @@
 #include "memory.h"
 #include "system.h"
 #include <string.h>
+#include "manager/evtmgr_cmd.h"
 
 #define MAX_MOBJ_WORK 3
 

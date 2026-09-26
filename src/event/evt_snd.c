@@ -1,5 +1,6 @@
 #include "evt/evt_snd.h"
 #include "pmario_sound.h"
+#include "manager/evtmgr_cmd.h"
 
 USER_FUNC(evt_snd_bgmon) {
     //psndBGMOn((u32)evt->args[0], (const char*)evt->args[1]);

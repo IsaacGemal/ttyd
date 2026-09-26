@@ -2,6 +2,7 @@
 #include "evt/evt_cmd.h"
 #include "mario/mariost.h"
 #include <dolphin/os.h>
+#include "manager/evtmgr_cmd.h"
 
 extern GlobalWork* gp;
 

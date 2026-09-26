@@ -3,6 +3,9 @@
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include "memory.h"
+#include "mario/mario_cam.h"
+#include "system.h"
+#include "mario/mario_party.h"
 double sin(double x);
 double cos(double x);
 

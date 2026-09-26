@@ -10,6 +10,12 @@
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+#include "mario/mario.h"
+#include "party.h"
+
+// Callers mask these to u8/u16 (clrlwi), but pmario_sound.c's definition only matches with ints, so this
+// prototype can't live in pmario_sound.h yet.
+s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
 extern char* strcat(char* dest, const char* src);
 extern EffectEntry* effKemuri10N64Entry(s32 a1, f32 a2, f32 a3, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8);
@@ -25,7 +31,6 @@ extern void npcBlurOn(const char* name);
 extern void npcBlurOff(const char* name);
 extern void* npcGetBtlSetupWork(NpcEntry* npc, s32 index);
 extern void npcSetBtlSetupWork(NpcEntry* npc, s32 index, s32 value);
-extern void* partyGetPtr(s32 index);
 extern s32 partyCtrlOn(void);
 extern s32 marioCtrlOn(void);
 extern s32 marioGetPartyId(void);
@@ -618,11 +623,11 @@ USER_FUNC(evt_npc_move_position) {
     if (npc->footstepAccum > (f32)npc->footstepStride / npc->moveSpeed) {
         if (npc->footstepToggle != 0) {
             if (npc->footstepSfxA != 0) {
-                psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->footstepSfxA), &npc->position, 0xff, 0xff, 0, 8);
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxA)), &npc->position, 0xff, 0xff, 0, 8);
             }
         } else {
             if (npc->footstepSfxB != 0) {
-                psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->footstepSfxB), &npc->position, 0xff, 0xff, 0, 8);
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxB)), &npc->position, 0xff, 0xff, 0, 8);
             }
         }
         npc->footstepAccum = 0.0f;
@@ -684,7 +689,7 @@ USER_FUNC(evt_npc_jump_position) {
             sfxFlag = 0x10000;
         }
         if (npc->jumpSfx != 0) {
-            psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->jumpSfx), &npc->position, 0xff, 0xff, 0, 8);
+            psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->jumpSfx)), &npc->position, 0xff, 0xff, 0, 8);
         }
 
         npc->jumpVelY = 0.0f;
@@ -797,7 +802,7 @@ USER_FUNC(evt_npc_jump_position) {
         }
     }
     if (npc->landSfx != 0) { // 0x1f0
-        psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->landSfx), &npc->position, 0xff, 0xff, 0, 8);
+        psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->landSfx)), &npc->position, 0xff, 0xff, 0, 8);
     }
     return EVT_RETURN_YIELD;
 }
@@ -834,7 +839,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
             }
         }
         if (npc->jumpSfx != 0) {
-            psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->jumpSfx), &npc->position, 0xff, 0xff, 0, 8);
+            psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->jumpSfx)), &npc->position, 0xff, 0xff, 0, 8);
         }
     }
 
@@ -858,7 +863,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
         }
     }
     if (npc->landSfx != 0) { // 0x1f0
-        psndSFXOnEx_3D(sfxFlag | searchPSSFXList(npc->landSfx), &npc->position, 0xff, 0xff, 0, 8);
+        psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->landSfx)), &npc->position, 0xff, 0xff, 0, 8);
     }
 
     return EVT_RETURN_DONE;

@@ -12,6 +12,8 @@
 #include "pmario_sound.h"
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "driver/icondrv.h"
+#include "driver/swdrv.h"
 
 extern GlobalWork* gp;
 

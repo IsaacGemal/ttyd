@@ -85,3 +85,5 @@ typedef struct PiantaParlorWork {
 
 void yuugijou_init(void);
 
+struct EventEntry* evtYuuWindow(void);
+BOOL evtYuuWindowEndChk(void);

@@ -83,7 +83,7 @@ void DVDMgrMain(void) { //1:1
         }
     }
     
-    qqsort(array, count, sizeof(u8), compare);
+    qqsort(array, count, sizeof(u8), (int (*)(void*, void*))compare);
     
     for (table = array, i = 0; i < count; table++, i++) {
         valid = FALSE;

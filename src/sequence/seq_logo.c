@@ -17,6 +17,7 @@
 #include <demo/DEMOPad.h>
 #include <dolphin/vi.h>
 #include <string.h>
+#include <dolphin/os.h>
 
 extern GlobalWork* gp;
 extern GXRenderModeObj GXNtsc480ProgMarioSt;

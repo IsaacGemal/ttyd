@@ -42,3 +42,5 @@ typedef struct BattleCameraWork {
 } BattleCameraWork;
 
 void battleCameraInit(void);
+
+void battleCameraMain(void);

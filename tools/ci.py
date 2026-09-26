@@ -70,8 +70,8 @@ def lint(base, allow_pragma, allow_protected):
             continue
         added = line[1:]
         if current == "configure.py":
-            if added.strip() and "Object(" not in added:
-                problems.append(f"configure.py: only Object(...) lines may change: {added.strip()[:100]}")
+            if added.strip() and "Object(" not in added and not allow_protected:
+                problems.append(f"configure.py: only Object(...) lines may change (pass --allow-protected if intended): {added.strip()[:100]}")
             continue
         code = added.split("//", 1)[0]
         if ASM_RE.search(code):

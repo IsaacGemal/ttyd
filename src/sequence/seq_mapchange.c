@@ -10,6 +10,7 @@
 #include "pmario_sound.h"
 #include <stdio.h>
 #include <string.h>
+#include "database.h"
 
 extern BadgeShopWork* bdsw;
 extern BOOL dbg_lotteryinfo; // evt_lottery

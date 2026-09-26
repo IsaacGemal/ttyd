@@ -30,6 +30,8 @@ void OSRegisterResetFunction(OSResetFunctionInfo* info);
 void OSUnregisterResetFunction(OSResetFunctionInfo* info);
 void OSResetSystem(int reset, u32 resetCode, BOOL forceMenu);
 u32 OSGetResetCode();
+#define OS_RESETCODE_RESTART 0x80000000
+#define OSIsRestart() ((OSGetResetCode() & OS_RESETCODE_RESTART) ? TRUE : FALSE)
 u32 OSSetBootDol(u32 dolOffset);
 
 #ifdef __cplusplus

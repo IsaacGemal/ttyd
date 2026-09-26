@@ -1,5 +1,6 @@
 #include "evt/evt_fade.h"
 #include "driver/fadedrv.h"
+#include "manager/evtmgr_cmd.h"
 
 USER_FUNC(evt_fade_entry) {
 	s32* args = event->args;

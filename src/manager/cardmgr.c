@@ -23,6 +23,7 @@ extern int sprintf(char* str, const char* format, ...);
 #include "assets/_mariost_icon_tex.inc"
 #include "assets/_mariost_icon_tlut.inc"
 #include "assets/_mariost_banner_tex.inc"
+#include <dolphin/card.h>
 
 //.sbss
 static CardWork* wp;

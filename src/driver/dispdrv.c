@@ -83,7 +83,7 @@ s32 _sort(const void** sortA, const void** sortB) {
 }
 
 void dispSort(void) {
-	qqsort(pSortWork, entry_n, 4, _sort);
+	qqsort(pSortWork, entry_n, 4, (int (*)(void*, void*))_sort);
 }
 
 void dispDraw(CameraId camId) {

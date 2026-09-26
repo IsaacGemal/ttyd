@@ -4,6 +4,7 @@
 #include "eff/eff_n64.h"
 #include "evt/evt_cmd.h"
 #include <string.h>
+#include "manager/evtmgr_cmd.h"
 
 USER_FUNC(evt_eff) {
 	s32* args = event->args;

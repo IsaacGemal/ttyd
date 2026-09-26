@@ -109,7 +109,6 @@ extern s32 extGetPoseNum(void);
 extern ExtPose* extGetPosePtr(void);
 extern void extPoseDraw(s32 poseId);
 extern void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void));
-extern void qqsort(void* array, s32 num_elements, s32 element_size, s32 (*compare)(void*, void*));
 extern void nannpc_ext_dispent(void);
 extern void nannpc_ext_main(void);
 extern void nannpc_ext_main_sub(void);
@@ -649,7 +648,7 @@ void nannpc_ext_disp(void) {
                 sort[i].field_0x4 = entry[i].position.z;
             }
         }
-        qqsort(work->sortList, work->count, 8, (s32(*)(void*, void*))nannpc_zcompare);
+        qqsort(work->sortList, work->count, 8, (int (*)(void*, void*))nannpc_zcompare);
         for (i = extGetPoseNum() - 1; i >= 0; i--) {
             s32 id = work->sortList[i].field_0x0;
 

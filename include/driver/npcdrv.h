@@ -224,3 +224,8 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId);
 void fbatChangeMode(s16 mode);
 
 NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description);
+
+void npcTuningRy(NpcEntry* npc, f32 angle);
+void npcGetBackItemEntry(NpcEntry* entry);
+void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose);
+s32 npcCalcScore(NpcEntry* entry);

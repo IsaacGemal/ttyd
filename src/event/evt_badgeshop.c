@@ -167,7 +167,7 @@ void badgeShop_bottakuruGeneration(void) {
 		if (dobreak >= 0x10) break;
 	}
 
-	qqsort(table, 0x11, 8, bottakuruComp);
+	qqsort(table, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
 
 	for (i = 0; i < 4; i++) { //only 4 slots
 		for (j = 0; j < 0x11; j++) {

@@ -10,6 +10,9 @@
 #include "party.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "cam_road.h"
+#include "cam_shift.h"
+#include "battle/battle_camera.h"
 
 extern double tan(double arg);
 // NOTE: this is ~roughly 12.5 degrees in radians, ideally it should be MTXDegToRad(12.5) or 5PI/72

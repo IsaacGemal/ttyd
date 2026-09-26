@@ -199,3 +199,5 @@ void SoundEfxSetPan(s32 chan, u8 pan);
 void SoundEfxSetSrndPan(s32 chan, u8 span);
 void SoundEfxSetLPF(s32 chan, s16 freq);
 BOOL SoundEfxCheck(s32 chan);
+
+void SoundSSMain(void);

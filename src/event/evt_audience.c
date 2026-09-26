@@ -2,6 +2,7 @@
 #include "battle/battle_audience.h"
 #include "system.h"
 #include <math.h>
+#include "manager/evtmgr_cmd.h"
 
 //s32* mask
 USER_FUNC(evt_audience_base_flag_on) {
