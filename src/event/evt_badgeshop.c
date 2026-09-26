@@ -147,9 +147,14 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 	return a > b;
 }
 
+// regalloc (r21-r31 vs r23-r31, the target keeps two table pointers) and the compiler
+// CSEs the evtSetValue GSW(118+i) index while the target recomputes it.
+// NONMATCHING (90.9%): table[dobreak] index, count hoisted out of the j loop and the BADGE_MAX - KEY_ITEM_MIN bound are fixed.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
-	int i, j, dobreak;
+	s32 count;
+	int i, j;
+	u32 dobreak;
 
 	for (i = 0; i < 0x11; i++) {
 		table[i][1] = 200;
@@ -157,10 +162,11 @@ void badgeShop_bottakuruGeneration(void) {
 	}
 
 	dobreak = 0;
-	for (i = 0; i < BADGE_MAX; i++) {
-		for (j = 0; j < badgeShop_get(bdsw->bottakuru_table, (s16)(i + 1)); j++) { //inline
-			table[i][1] = irand(100);
-			table[i][0] = i + 1;
+	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
+		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
+		for (j = 0; j < count; j++) {
+			table[dobreak][1] = irand(100);
+			table[dobreak][0] = i + KEY_ITEM_MIN;
 			dobreak += 1;
 			if (dobreak >= 0x10) break;
 		}
@@ -181,7 +187,7 @@ void badgeShop_bottakuruGeneration(void) {
 void badgeShop_bteresaGeneration(void) {
 	s32* ptr;
 
-	if (pouchCheckItem(ITEM_SPECIAL_CARD)) {
+	if ((s32)pouchCheckItem(ITEM_SPECIAL_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(246))) {
 			evtSetValue(NULL, GSWF(246), 1);
 			for (ptr = badge_bteresa_table_card_special; *ptr; ptr++) {
@@ -190,7 +196,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if (pouchCheckItem(ITEM_SILVER_CARD)) {
+	if ((s32)pouchCheckItem(ITEM_SILVER_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(247))) {
 			evtSetValue(NULL, GSWF(247), 1);
 			for (ptr = badge_bteresa_table_card_silver; *ptr; ptr++) {
@@ -199,7 +205,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if (pouchCheckItem(ITEM_GOLD_CARD)) {
+	if ((s32)pouchCheckItem(ITEM_GOLD_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(248))) {
 			evtSetValue(NULL, GSWF(248), 1);
 			for (ptr = badge_bteresa_table_card_gold; *ptr; ptr++) {
@@ -208,7 +214,7 @@ void badgeShop_bteresaGeneration(void) {
 		}
 	}
 
-	if (pouchCheckItem(ITEM_PLATINUM_CARD)) {
+	if ((s32)pouchCheckItem(ITEM_PLATINUM_CARD) != 0) {
 		if (!evtGetValue(NULL, GSWF(249))) {
 			evtSetValue(NULL, GSWF(249), 1);
 			for (ptr = badge_bteresa_table_card_platinum; *ptr; ptr++) {
@@ -218,6 +224,7 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
+// NONMATCHING (69.5%): large function, most diffs are register allocation; not reworked yet.
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
 	s32* ptr;
 	u8 table[0x19];
@@ -345,7 +352,9 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 }
 
-s32 badgeShop_set(u8* table, s16 id, s16 val) { //TODO: regalloc, otherwise 1:1
+// NONMATCHING (98.2%): bound check and clamp now match; the target reuses r6 for
+// `bound = index / 4` (addze r6), we get r7 so mask/shift move to r8/r9.
+s32 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
 	s16 index;
 	u8 mask;
@@ -357,7 +366,7 @@ s32 badgeShop_set(u8* table, s16 id, s16 val) { //TODO: regalloc, otherwise 1:1
 	else {
 		bound = BADGE_MIN;
 	}
-	if (id < bound || id >= BADGE_MAX + 1) return 0;
+	if (id < bound || id >= BADGE_MAX) return 0;
 	index = (s16)(id - bound);
 	switch (index & 3) {
 		case 0:
@@ -381,7 +390,7 @@ s32 badgeShop_set(u8* table, s16 id, s16 val) { //TODO: regalloc, otherwise 1:1
 	if (val < 0) {
 		val = 0;
 	}
-	if (val > 3) {
+	else if (val > 3) {
 		val = 3;
 	}
 	table[bound] = (u8)((u8)(mask & table[bound]) + (u8)(val << shift));
@@ -400,7 +409,7 @@ s32 badgeShop_get(u8* table, s16 id) { //1:1
 	else {
 		bound = BADGE_MIN;
 	}
-	if (id < bound || id >= BADGE_MAX + 1) return 0;
+	if (id < bound || id >= BADGE_MAX) return 0;
 	index = (s16)(id - bound);
 	switch (index & 3) {
 		case 0:
@@ -437,7 +446,7 @@ s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your fa
         bound = BADGE_MIN;
     }
     temp = (s16)id;
-    if (temp < bound || temp >= BADGE_MAX + 1) return 0;
+    if (temp < bound || temp >= BADGE_MAX) return 0;
 
     id = (s16)(temp - bound);
     switch (id & 3) {
@@ -477,21 +486,24 @@ USER_FUNC(badgeShop_getBargainTable) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (88.5%): target keeps the raw evtGetValue result in r31 and does
+// `extsh r4,r31` at each call; we sign-extend once into r31 (CSE).
 USER_FUNC(evt_badgeShop_throw_inc) {
-	s32 value;
+	s16 value;
 
-	value = (s16)evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->bargain_table, (s16)value, 1);
-	badgeShop_add(bdsw->special_table, (s16)value, 1);
+	value = evtGetValue(event, *event->args);
+	badgeShop_add(bdsw->bargain_table, value, 1);
+	badgeShop_add(bdsw->special_table, value, 1);
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (88.5%): same as evt_badgeShop_throw_inc, the shared (s16)value cast is CSE'd.
 USER_FUNC(evt_badgeShop_throw_dec) {
-	s32 value;
+	s16 value;
 
-	value = (s16)evtGetValue(event, *event->args);
-	badgeShop_add(bdsw->bargain_table, (s16)value, -1);
-	badgeShop_add(bdsw->special_table, (s16)value, -1);
+	value = evtGetValue(event, *event->args);
+	badgeShop_add(bdsw->bargain_table, value, -1);
+	badgeShop_add(bdsw->special_table, value, -1);
 	return EVT_RETURN_DONE;
 }
 
@@ -511,6 +523,9 @@ USER_FUNC(evt_badgeShop_starmaniac_dec) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (95.3%): opt_common_subs off stops the GSW(118+i) CSE; only the bdsw load
+// (r6 before mr r30,r3 vs r3 after) still differs.
+#pragma opt_common_subs off // without it the GSW(118+i) index is CSE'd and the target's fresh evtSetValue index is lost
 USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	s32 value;
 	int i;
@@ -518,15 +533,18 @@ USER_FUNC(evt_badgeShop_bottakuru_dec) {
 	value = evtGetValue(event, *event->args);
 	badgeShop_add(bdsw->bottakuru_table, (s16)value, -1);
 	for (i = 0; i < 4; i++) {
-		if (value == badge_bottakuru_table[evtGetValue(event, i + GSW(118))]) {
-			evtSetValue(event, i + GSW(118), (sizeof(badge_bottakuru_table) / sizeof(s32)) - 1); //last entry aka kNullItem
+		if (value == badge_bottakuru_table[evtGetValue(event, GSW(118 + i))]) {
+			evtSetValue(event, GSW(118 + i), (sizeof(badge_bottakuru_table) / sizeof(s32)) - 1); //last entry aka kNullItem
 		}
 	}
 	return EVT_RETURN_DONE;
 }
+#pragma opt_common_subs on
 
 USER_FUNC(evt_badgeShop_throw_get_kind_cnt) {
-	s32 badge, count;
+	s16 badge;
+	s32 count;
+	s32* args = event->args;
 	int i;
 
 	for (count = 0, i = 0; i < 99; i++) {
@@ -535,12 +553,14 @@ USER_FUNC(evt_badgeShop_throw_get_kind_cnt) {
 			count++;
 		}
 	}
-	evtSetValue(event, *event->args, count);
+	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_badgeShop_starmaniac_get_kind_cnt) {
-	s32 badge, count;
+	s16 badge;
+	s32 count;
+	s32* args = event->args;
 	int i;
 
 	for (count = 0, i = 0; i < 99; i++) {
@@ -549,11 +569,12 @@ USER_FUNC(evt_badgeShop_starmaniac_get_kind_cnt) {
 			count++;
 		}
 	}
-	evtSetValue(event, *event->args, count);
+	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_badgeShop_bottakuru_get_kind_cnt) {
+	s32* args = event->args;
 	s32 count;
 	int i;
 
@@ -562,10 +583,12 @@ USER_FUNC(evt_badgeShop_bottakuru_get_kind_cnt) {
 			count++;
 		}
 	}
-	evtSetValue(event, *event->args, count);
+	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (0%): target symbol is U_evt_badgeShop_get_special_zaiko but the header
+// declares evt_badgeShop_get_special_zaiko, so they never pair. Cannot rename (brief).
 USER_FUNC(evt_badgeShop_get_special_zaiko) {
 	s32 badge, count;
 	int i;
@@ -581,22 +604,24 @@ USER_FUNC(evt_badgeShop_get_special_zaiko) {
 }
 
 USER_FUNC(evt_badgeShop_bteresa_get_kind_cnt) {
-	s32 badge, count;
+	s16 badge;
+	s32 count;
+	s32* args = event->args;
 	int i;
 
-	for (count = 0, i = 0; i < BADGE_MAX; i++) {
+	for (count = 0, i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		badge = badgeShop_get(bdsw->bteresa_table, (s16)(i + KEY_ITEM_MIN));
-		if (badge > 0) { //TODO: wonky cntlzw
+		if (badge > 0) {
 			count++;
 		}
 	}
-	evtSetValue(event, *event->args, count);
+	evtSetValue(event, *args, count);
 	return EVT_RETURN_DONE;
 }
 
 s32 badgeShop_ThrowCheck(s32 itemId) {
-	s32 count;
 	int i;
+	s32 count;
 
 	for (count = 0, i = 0; i < bdsw->field_0x10C; i++) {
 		if (itemId == bdsw->field_0xF8[i + bdsw->field_0x10C]) {
@@ -606,6 +631,8 @@ s32 badgeShop_ThrowCheck(s32 itemId) {
 	return count;
 }
 
+// NONMATCHING (0%): target symbol is U_badgeShop_SpecialCheck but the header declares
+// badgeShop_SpecialCheck, so the two are never paired. Cannot rename (brief); logic is correct.
 s32 badgeShop_SpecialCheck(void) {
 	s32 count;
 	int i;
