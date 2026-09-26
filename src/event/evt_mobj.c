@@ -1092,7 +1092,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                     } else {
                         flag = 1;
                     }
-                    *(s32*)((u8*)evt + 0x9C) = flag;
+                    evt->lwData[0] = flag;
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
@@ -1230,7 +1230,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             v.y = 10.0f * data->bboxMax.y;
             v.z = 0.8f * (10.0f * data->bboxMax.z);
             mag = PSVECMag(&v);
-            dist = PSVECDistance(&obj->position, (Vec*)((u8*)marioGetPtr() + 0x8C));
+            dist = PSVECDistance(&obj->position, &marioGetPtr()->position);
             if (dist > mag) {
                 if (!(obj->flags & 8)) {
                     obj->unk1DC = 3;

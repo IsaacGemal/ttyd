@@ -505,7 +505,7 @@ void unk_8014bbc8(PartyEntry* party) {
     if (distABf(party->position.x, party->position.z, mario->position.x, mario->position.z) > 31.0f) {
         partyChgRunMode(party, 2);
     }
-    if (*(u16*)((u8*)mario + 0x2E) == 0xE && !(party->flags & 0x00080000)) {
+    if (mario->currMotionId == 0xE && !(party->flags & 0x00080000)) {
         partyMoveBehindMario(party, 0);
     } else if (*(u8*)((u8*)party + 0x32) == 1) {
         unk_8014b824(party);
@@ -567,7 +567,7 @@ void party_motion_damage(PartyEntry* party) {
         }
         break;
     case 10:
-        if (*(u16*)((u8*)mario + 0x2E) == 0x1F || *(u16*)((u8*)mario + 0x2E) == 0x20) {
+        if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
             break;
         }
         if (--*(s32*)((u8*)party + 0x24) > 0) {
@@ -673,7 +673,7 @@ s32 party_motion_fall(PartyEntry* party) {
         party->position.y = party->position.y + *(f32*)((u8*)party + 0x114);
         if (party->position.y < -2000.0f) {
             party->position.y = -2001.0f;
-            if (*(u16*)((u8*)mario + 0x2E) == 0x1F || *(u16*)((u8*)mario + 0x2E) == 0x20) {
+            if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
                 return 2;
             }
             party->flags = (party->flags & ~0x70);
@@ -681,7 +681,7 @@ s32 party_motion_fall(PartyEntry* party) {
             *(f32*)((u8*)party + 0x11C) = 0.0f;
             *(f32*)((u8*)party + 0x100) = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
             *(f32*)((u8*)party + 0x54) = revise360(180.0f + toMovedir(*(f32*)((u8*)mario + 0x1AC)));
-            partyGetAppearPos4(party, (Vec*)((u8*)party + 0x58));
+            partyGetAppearPos4(party, &party->position);
             party->position.y += 37.0f;
             partyChgMot(party, 0);
             party->flags = (party->flags & ~0x02000000);
@@ -753,8 +753,8 @@ void unk_8014b824(PartyEntry* party) {
         }
     }
     if (mario->airTimer == 0 || mario->baseSpeed != 0.0f) {
-        if (*(u16*)((u8*)mario + 0x2E) == 0x1F || *(u16*)((u8*)mario + 0x2E) == 0x20
-            || *(u16*)((u8*)mario + 0x2E) == 0x10 || *(u16*)((u8*)mario + 0x2E) == 0x11) {
+        if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20
+            || mario->currMotionId == 0x10 || mario->currMotionId == 0x11) {
             flag = 0;
         } else {
             flag = 1;
@@ -859,7 +859,7 @@ void party_motion_jump2(PartyEntry* party) {
         partyChgPoseId(party, 4);
         party->flags = (party->flags | 0x10);
         party->flags = (party->flags & ~0x2);
-        psndSFXOn_3D((const char*)0x927, (Vec*)((u8*)party + 0x58));
+        psndSFXOn_3D((const char*)0x927, &party->position);
         *(u8*)((u8*)party + 0x38) = 0;
     }
     switch (*(u8*)((u8*)party + 0x38)) {

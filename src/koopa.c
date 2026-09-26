@@ -415,7 +415,7 @@ void kpa_jumpNpc(void) {
             mp->flags |= 0x20000;
         }
     }
-    MW_F32(mp, 0x90) += MW_F32(mp, 0x7C);
+    mp->position.y += MW_F32(mp, 0x7C);
     mp->airTimer += 1;
 }
 
@@ -495,7 +495,7 @@ void kpa3DMain(void) {
         MW_U32(mp, 0x1F4) = 0;
         MW_U32(mp, 0x1E0) = 0;
         MW_U32(mp, 0x1DC) = 0;
-        MW_U32(mp, 0x1EC) = 0;
+        mp->hitobjPush = NULL;
         MW_U32(mp, 0x1F0) = 0;
         return;
     }
@@ -589,7 +589,7 @@ void kpa2DMain(void) {
     MW_U32(mp, 0x1F4) = 0;
     MW_U32(mp, 0x1E0) = 0;
     MW_U32(mp, 0x1DC) = 0;
-    MW_U32(mp, 0x1EC) = 0;
+    mp->hitobjPush = NULL;
     MW_U32(mp, 0x1F0) = 0;
     marioItemGetChk();
     kpaFireAttack();
@@ -754,7 +754,7 @@ s32 kpaGetBodyStatus(void) {
         if (mp->position.y > 370.0f) {
             return 0;
         }
-        if (mp->position.y + MW_F32(mp, 0x1B8) < 370.0f) {
+        if (mp->position.y + mp->wPlayerCollisionBox.y < 370.0f) {
             result = 2;
         } else {
             result = 1;

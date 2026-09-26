@@ -528,8 +528,8 @@ USER_FUNC(evt_sub_spline_get_value) {
 	return EVT_RETURN_DONE;
 }
 
-void coingetDisp(void* entry) {
-	s32* param = *(s32**)((u8*)entry + 0x2C);
+void coingetDisp(WinMgrEntry* entry) {
+	s32* param = entry->param;
 	if (param[1] != 0) {
 		char buf[0x400];
 		GXColor color;
@@ -537,7 +537,7 @@ void coingetDisp(void* entry) {
 		FontDrawStart();
 		*(u32*)&color = dat_80419d38;
 		FontDrawColor(&color);
-		FontDrawMessage(-FontGetMessageWidth(buf) / 2, *(s32*)((u8*)entry + 0x1C) - 8, buf);
+		FontDrawMessage(-FontGetMessageWidth(buf) / 2, entry->field_0x1C - 8, buf);
 	}
 }
 
