@@ -152,7 +152,7 @@ void chuchu_init(PartyEntry* party) {
     *(f32*)((u8*)party + 0xF4) = 24.0f;
 }
 
-// NONMATCHING (97%): stack frame and instruction sequence match; the loop prologue only differs in
+// NONMATCHING (97.26%): stack frame and instruction sequence match; the loop prologue only differs in
 // scheduling (`addi r0;mr r31` vs `addi r31`) and `li r29,0;li r28,0` vs `mr r28,r29`.
 // `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) is what reproduces the
 // original's 0x14 scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8.
@@ -214,7 +214,7 @@ USER_FUNC(post_msg) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85%): the item block now builds itemPos via a zero-init `itemTmp` + `itemPos = itemTmp`
+// NONMATCHING (84.64%): the item block now builds itemPos via a zero-init `itemTmp` + `itemPos = itemTmp`
 // (original uses 0x20 scratch then copies to 0x2c; this TU aliases itemPos to 0x8), and callee-saved
 // registers differ (event r24 not r18, party r27 not r19, iteration/found regs shifted). Logic and
 // all call sequences (incl. the item/minDist/revise360/revise360 chain) match.
