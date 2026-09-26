@@ -13,7 +13,6 @@
 #include "pmario_sound.h"
 
 // Prototypes not yet in headers.
-void psndSFXOff(s32 id);
 u16 psndGetFlag(void);
 void mapObjGetPos(const char* name, Vec* pos);
 

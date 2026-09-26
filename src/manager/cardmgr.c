@@ -126,18 +126,18 @@ void cardInit(void) {
 	CARDInit();
 }
 
-void cardED0(void) {
+void unk_800b0ed0(void) {
 	wp->unkE4 = wp->chan;
 	wp->unkEC = 10;
 	wp->flags |= 0x8000;
 }
 
-void cardEAC(void) {
+void unk_800b0eac(void) {
 	wp->flags &= ~0x8000;
 	wp->flags &= ~0xC000;
 }
 
-BOOL cardE80(void) {
+BOOL unk_800b0e80(void) {
     if (wp->flags & 0x8000 && wp->flags & 0x4000) {
         return TRUE;
     }
@@ -409,6 +409,7 @@ void cardWrite(s32 slot) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
+// NONMATCHING (99.43%): 2 missing, 2 extra.
 void write_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -563,6 +564,7 @@ void write_header_main(void) {
 #pragma opt_propagation on
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
+// NONMATCHING (99.27%): 2 missing, 2 extra.
 void read_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -666,6 +668,7 @@ void cardReadAll(void) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
+// NONMATCHING (99.41%): 2 missing, 2 extra.
 void read_all_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -778,6 +781,7 @@ void cardCreate(void) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
+// NONMATCHING (99.26%): 2 missing, 2 extra.
 void create_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;

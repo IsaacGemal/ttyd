@@ -20,12 +20,10 @@
 #include "pmario_sound.h"
 
 // Prototypes not yet in headers.
-s32 mapGrpSetOffScreen(const char* name, const char* offName);
 void mapGrpFlagOn(const char* name, u32 flag);
 void mapGrpFlagOff(const char* name, u32 flag);
 void mapGrpClearOffScreen(const char* name);
 s32 evt_img_alloc_capture(EventEntry* event, BOOL isFirstCall);
-void hitObjFlagOn(const char* name, u32 flag);
 void offscreenDelete(const char* name);
 
 // .rodata

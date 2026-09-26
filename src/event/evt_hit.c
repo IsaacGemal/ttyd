@@ -17,7 +17,6 @@ void hitObjAttrOn(const char* name, s32 attr);
 void hitObjAttrOff(const char* name, s32 attr);
 void hitGrpAttrOn(const char* name, s32 attr);
 void hitGrpAttrOff(const char* name, s32 attr);
-void hitObjFlagOn(const char* name, s32 flag);
 void hitObjFlagOff(const char* name, s32 flag);
 void hitGrpFlagOn(const char* name, s32 flag);
 void hitGrpFlagOff(const char* name, s32 flag);

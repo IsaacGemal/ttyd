@@ -14,13 +14,11 @@
 #include <string.h>
 
 // locals for symbols with no home header (see REPORT.md)
-void psndSFXOff(s32 id);
 f32 marioGetFallSpd(void);
 void marioLandOn(void);
 void* marioChkLandon(f32* pos, f32 spd);
 void marioSetPeakYpos(void);
 void marioCheckWall(f32 a, f32 b);
-void marioMakeJumpPara(void);
 void marioPreJump(void);
 void marioSetFallPara(void);
 void marioBoots(void);

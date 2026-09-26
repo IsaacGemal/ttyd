@@ -6,6 +6,7 @@
 #include "driver/dispdrv.h"
 #include "driver/msgdrv.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_detect.h"
 
 
 //TODO: move into battle/seq/?
@@ -48,6 +49,7 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
 
+// NONMATCHING (19.37%): 116 missing, plus register differences.
 void BattleDrawEnemyHP(CameraId camId, void* param) {
 	BattleWork* wp = param;
 	BattleUnit* unit;
@@ -220,6 +222,7 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 	}
 }
 
+// NONMATCHING (92.50%): 2 instructions differ.
 void BattleCommandDisplay_ActMenuDisp(CameraId camId, BattleWork* wp) {
 	BattleCursor* cursor;
 	s32 idx = 0xE;
@@ -274,6 +277,7 @@ void _commandRestoreRec(void) {
 	}
 }
 
+// NONMATCHING (93.42%): 2 instructions differ, plus register differences.
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
@@ -392,6 +396,7 @@ void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out) {
 	}
 }
 
+// NONMATCHING (52.81%): 3 instructions differ, 15 missing, 14 extra, plus register differences.
 void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
@@ -485,6 +490,7 @@ s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	return 0;
 }
 
+// NONMATCHING (96.54%): 2 missing, 2 extra, plus register differences.
 s32 _check_present_item(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 item = BattleAudience_GetPresentItemNo();
@@ -535,10 +541,7 @@ s32 _check_present_item(void) {
 }
 
 s32 BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
-s32 BattleSamplingEnemy(u8* out, BattleWeapon* weapon, s32 unitId, s32 belong, s32 arg4, s32 arg5, s8 arg6);
 
-// NONMATCHING (73%): logic matches and the 0xaf0 frame is exact; mwcc emits three individual `stw`
-// where the target uses `stmw r29`, and the `belong`/return-value registers differ.
 s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon) {
 	u8 work[0xacc];
 	s32 belong;
@@ -608,7 +611,7 @@ s32 _battleGetPartyIcon(s32 kind) {
 	return 0;
 }
 
-// NONMATCHING (96%): only the prologue `stmw r30` vs two `stw` and the
+// NONMATCHING (98.57%): only the prologue `stmw r30` vs two `stw` and the
 // `unit->flippedTurns == 0` boolean idiom (`srwi` vs `li/cntlzw/rlwnm`) differ.
 BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	BattleUnit* unit;
@@ -653,7 +656,7 @@ BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	return unit->flippedTurns == 0;
 }
 
-// NONMATCHING (43%): logic reconstructed; mwcc uses far fewer callee-saved registers (frame 0x40 vs
+// NONMATCHING (44.54%): logic reconstructed; mwcc uses far fewer callee-saved registers (frame 0x40 vs
 // 0x50, stmw r22 vs stmw r17) because the original keeps more live values in locals/pointers.
 s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
@@ -715,7 +718,7 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (86%): switch and call match; the string pool base/offsets differ by 0x28 (pool order)
+// NONMATCHING (85.74%): switch and call match; the string pool base/offsets differ by 0x28 (pool order)
 // and the `event->args[0]` load is scheduled late instead of before the switch.
 s32 _get_msg(EventEntry* event) {
 	BattleWork* wp = _battleWorkPointer;

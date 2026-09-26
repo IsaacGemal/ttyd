@@ -15,13 +15,6 @@ s32 evt_fade_end_wait(EventEntry* event, BOOL isFirstCall);
 s32 evt_fade_entry(EventEntry* event, BOOL isFirstCall);
 s32 unk_800f2398(EventEntry* event, BOOL isFirstCall);
 
-// cardmgr.c still names these cardEAC/cardE80/cardED0 (TODO: rename), but the
-// original cardmgr.o exports them as unk_800b0eac/unk_800b0e80/unk_800b0ed0.
-// The linker resolves against the original object until cardmgr.c is matched.
-void unk_800b0eac(void);
-BOOL unk_800b0e80(void);
-void unk_800b0ed0(void);
-
 s32 memcard_code(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 code = cardGetCode();

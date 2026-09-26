@@ -8,14 +8,13 @@
 #include "system.h"
 #include "manager/evtmgr.h"
 #include "evt/evt_cmd.h"
+#include "mario/mario_hit.h"
 
 // Locals for symbols with no home header (see REPORT.md so they can move later).
-s32 psndSFXOff(s32 id);
 void camFollowYOn(void);
 void set_damage_root_ypos(f32 y);
 void marioChgMotSub(s32 motion, s32 sub);
 f32 marioGetFallSpd(void);
-void* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 void* marioChkLandon(f32* pos, f32 spd);
 void kpa_hip(void);
 USER_FUNC(evt_cam_shake);

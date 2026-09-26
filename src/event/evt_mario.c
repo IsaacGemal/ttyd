@@ -16,6 +16,7 @@
 #include "system.h"
 
 #include <math.h>
+#include "mario/mario_hit.h"
 
 // Locally declared prototypes (move to headers later).
 extern void mario_plane_cancel(void);
@@ -59,9 +60,7 @@ extern void kpaAttackStart(void);
 extern void kpaChgPose(const char* a, const char* b);
 extern void partyShadowOff(PartyEntry* party);
 extern void quake_kpaHipAttack(void);
-extern s32 marioMakeJumpPara(void);
 extern void marioClearJumpPara(void);
-extern s32 marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 extern s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 
 // .rodata

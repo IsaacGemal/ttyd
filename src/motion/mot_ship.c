@@ -10,7 +10,6 @@
 // Local declarations for symbols that have no home header yet (see REPORT.md).
 void allPartyRideOff(void);
 void allPartyForceRideOn(void);
-void psndSFXOff(s32 id);
 void psndSFX_pos(s32 id, Vec* position);
 EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e);
 extern double sin(double x);

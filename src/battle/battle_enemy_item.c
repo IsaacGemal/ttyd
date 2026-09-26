@@ -2,11 +2,11 @@
 #include "battle/battle_unit.h"
 #include "data/item_data.h"
 #include "system.h"
+#include "battle/battle_detect.h"
+#include "battle/battle_enemy_item.h"
 
 extern ItemData itemDataTable[];
 
-s32 BattleSamplingEnemy(u8* out, BattleWeapon* weapon, s32 unitId, s8 belong, s32 arg4, s32 arg5,
-                        s32 arg6);
 BOOL BtlUnit_CanActStatus(BattleUnit* unit);
 
 void* _check_status_recover_item(BattleUnit* unit);
@@ -15,7 +15,6 @@ void* _check_status_attack_item(BattleUnit* unit);
 void* _check_attack_item(BattleUnit* unit);
 void* _check_fp_recover_item(BattleUnit* unit);
 void* _check_hp_recover_item(BattleUnit* unit);
-void* BattleEnemyUseItemCheck(BattleUnit* unit);
 
 // Keep the local _check_* helpers out of line: the original calls them with `bl` instead of
 // inlining their bodies into BattleEnemyUseItemCheck.

@@ -21,7 +21,6 @@ EffectEntry* effFireEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale);
 EffectEntry* effWhirlwindN64Entry(s32 a, s32 b, s32 c, f32 x);
 EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 a4);
 void psndSFX_pos(s32 id, Vec* position);
-void psndSFXOff(s32 id);
 f32 sinfd(f32 angle);
 f32 cosfd(f32 angle);
 

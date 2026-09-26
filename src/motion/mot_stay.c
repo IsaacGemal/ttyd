@@ -17,7 +17,6 @@ void peach_stay(void);
 void marioClearJumpPara(void);
 void marioChgMot2(s32 motion);
 BOOL marioChkJabara(void);
-void psndSFXOff(s32 id);
 void motSlitCancel(void);
 
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.

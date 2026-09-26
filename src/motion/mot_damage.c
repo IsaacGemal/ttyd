@@ -25,7 +25,6 @@ void marioSetFallPara(void);
 f32 marioGetFallSpd(void);
 void* marioChkLandon(f32* pos, f32 spd);
 void marioUpdateCamPos(void);
-void marioMakeJumpPara(void);
 void npcStopForEvent(void);
 void npcStartForEvent(void);
 void effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale);

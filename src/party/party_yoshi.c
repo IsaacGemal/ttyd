@@ -32,7 +32,6 @@ void inertia(PartyEntry* party);
 f32 marioGetMoveRate(f32 angle);
 HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 void marioSetSplash(s32 a, Vec* pos);
-void psndSFXOff(s32 id);
 void set_damage_root_ypos(f32 y);
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3);
 void party_force_ride_yoshi(PartyEntry* party);

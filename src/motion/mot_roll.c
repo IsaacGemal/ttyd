@@ -228,7 +228,6 @@ void marioSetRollDispDir(void) {
     }
 }
 
-void psndSFXOff(s32 id);
 extern const Vec vec3_802c5d40[];
 extern f32 rollData;
 

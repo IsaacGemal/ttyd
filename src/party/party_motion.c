@@ -30,7 +30,6 @@ void psndSFX_pos(s32 id, Vec* position);
 void psndSFX_vol(s32 id, u8 vol);
 void psndSFX_pit(s32 id, s16 pitch);
 s32 psndSFXChk(u32 id);
-void psndSFXOff(s32 id);
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 s32 psndSFXOn(const char* name);
 void psndBGMScope(s32 id, s32 scope);

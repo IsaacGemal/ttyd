@@ -8,3 +8,4 @@ BOOL marioChkTransform(void);
 
 void marioChgStayMotion(void);
 void marioChgShipMotion(void);
+f32 marioMakeJumpPara(void);
