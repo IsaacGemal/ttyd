@@ -47,25 +47,29 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    field that isn't named yet, list it in your report with its offset and type.
 6. **Raw offsets where the header already names the field.** `*(f32*)((u8*)mario + 0x8C)` is `mario->position.x`.
    Raw offsets are fine only where the header has padding there; list those in your report.
-7. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
+7. **Match-only tricks left unmarked.** Code that exists only to reproduce the original bytes (a fake cast or
+   temporary, an odd expression order, stack padding) goes inside `#ifdef MUST_MATCH`, with the natural form
+   under `#else` where there is one; use `PAD_STACK(n)` from `matching.h` for padding. Unmarked tricks look like
+   real logic to the next reader.
+8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it.
-8. **Wrong constants in functions that don't match yet.** Check every constant against the asm, even when the
+9. **Wrong constants in functions that don't match yet.** Check every constant against the asm, even when the
    function is at 80% and "only registers differ": `oris r0, r0, 0xa1` is `| 0x00a10000`, not `0xa1000000`;
    `rlwinm r0, r0, 0, 16, 11` keeps IBM bits 16-11 (wrapping) and clears IBM bits 12-15, which are value bits
    16-19 (`1<<16` to `1<<19`, mask `0x000F0000`): PowerPC numbers bits from the top, so value bit = 31 - IBM
    bit. Mixing the two numberings is exactly how a wrong flag mask got written. A magic-number division tells
    you the divisor. A wrong constant in a partial function is a real bug that CI can't catch.
-9. **Misreading common idioms.** `subi rX, rX, N; subic rX, rX, 1; subfe rX, rX, rX; and rX, rY, rX` means
+10. **Misreading common idioms.** `subi rX, rX, N; subic rX, rX, 1; subfe rX, rX, rX; and rX, rY, rX` means
    `x == N ? y : 0`, not `x < N`. `fcmpo; cror eq, gt, eq; bne` is a `>=` test. When unsure, write the C, build,
    and compare the instructions with `check.py FUNC`.
-10. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
+11. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
-11. **Calling a function with no prototype.** The build rejects it (`-requireprotos`, as in Melee). Include the
+12. **Calling a function with no prototype.** The build rejects it (`-requireprotos`, as in Melee). Include the
    header that declares it, or add the prototype to the header of the file that defines it, as its definition
    (or the original's calls) say. Not a local declaration that contradicts a header.
-12. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
+13. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
    object (declare it as the original's symbol) instead.
-13. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
+14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
 
 ## Signedness hints from the assembly

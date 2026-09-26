@@ -232,6 +232,10 @@ cflags_base = [
     "-DSDK_REVISION=1",
 ]
 
+# MUST_MATCH marks code that exists only to reproduce the original bytes (see include/matching.h), as in Melee.
+if not args.non_matching:
+    cflags_base.append("-DMUST_MATCH")
+
 # A call to a function with no prototype in scope is an error: C would otherwise assume it returns int and
 # promote float arguments to double, which compiles and can silently change behaviour.
 if args.require_protos:
