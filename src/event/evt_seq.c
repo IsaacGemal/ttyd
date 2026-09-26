@@ -1,6 +1,7 @@
 //1:1, very short, TODO: better header
 #include "evt/evt_seq.h"
 #include "driver/seqdrv.h"
+#include "manager/evtmgr_cmd.h"
 
 USER_FUNC(evt_seq_set_seq) {
 	s32* args = event->args;

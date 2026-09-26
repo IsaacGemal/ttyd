@@ -11,6 +11,7 @@
 #include "sdk/DEMOInit.h"
 #include "seq/seq_demo.h"
 #include <stdlib.h>
+#include "manager/fontmgr.h"
 // #include <stdlib.h>
 
 #pragma pool_data off
@@ -377,7 +378,7 @@ void movie_draw(CameraId cameraId, void* param) {
     if (type == EXI_IS_VIEWER) {
         string = "ここにムービーがながれます";
         FontDrawStart();
-        FontDrawColor((GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+        FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
         FontDrawString(string, (f32)(-FontGetMessageWidth(string) / 2), 0.0f);
         wp->frameNumber++;
     } else {

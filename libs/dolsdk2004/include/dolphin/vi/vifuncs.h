@@ -24,6 +24,7 @@ u32 VIGetRetraceCount(void);
 u32 VIGetNextField(void);
 u32 VIGetCurrentLine(void);
 u32 VIGetTvFormat(void);
+#define VIPadFrameBufferWidth(width) ((u16)(((u16)(width) + 15) & ~15))
 void* VIGetNextFrameBuffer(void);
 void* VIGetCurrentFrameBuffer(void);
 u32 VIGetScanMode(void);

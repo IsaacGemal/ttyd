@@ -53,9 +53,9 @@ def diff_summary(unit, func):
     return ", ".join(parts)
 
 
-def main():
-    unit = sys.argv[1]
-    args = sys.argv[2:]
+def parse_args(argv):
+    """UNIT [--reset FUNC ...] [--note FUNC TEXT ...] -> (unit, reset set, {func: note})."""
+    unit, args = argv[0], list(argv[1:])
     reset, notes = set(), {}
     while args:
         flag = args.pop(0)
@@ -65,6 +65,11 @@ def main():
         elif flag == "--note":
             func = args.pop(0)
             notes[func] = args.pop(0)
+    return unit, reset, notes
+
+
+def main():
+    unit, reset, notes = parse_args(sys.argv[1:])
     path = f"src/{unit}.c"
     report = json.load(open("build/G8MJ01/report.json"))
     u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)

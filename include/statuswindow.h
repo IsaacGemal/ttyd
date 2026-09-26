@@ -39,3 +39,5 @@ typedef struct StatusValue {
 void statusWinInit(void);
 void statusWinReInit(void);
 void statusWinMain(void);
+
+void statusWinForceUpdate(void);

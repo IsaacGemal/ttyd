@@ -129,3 +129,5 @@ s32 partyEntry(s32 memberId);
 s32 partyEntryHello(s32 memberId);
 PartyEntry* anotherPartyGetPtr(s32 index);
 BOOL partyPaperOn(PartyEntry* party, const char* animName);
+
+void partyCtrlOff(void);

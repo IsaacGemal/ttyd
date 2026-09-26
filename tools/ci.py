@@ -7,14 +7,17 @@
     python3 tools/ci.py --init          accept the current build without checks (first run only)
 
 Steps, stopping at the first failure:
+0. Tests: tools/tests (the checks' own unit tests).
 1. Lint the diff: no new inline asm, no new #pragma, no edits to protected paths, and configure.py
-   changes limited to Object(...) lines. Overrides: --allow-pragma, --allow-protected.
+   changes limited to Object(...) lines. Overrides: --allow-pragma, --allow-protected, --allow-configure.
 2. Build: configure + ninja. Ninja fails if a linked module stops hashing to config/*/build.sha1.
 3. Ratchet: compare build/<ver>/report.json with the accepted report (build/ci/accepted.json) using
    objdiff-cli. Any function, unit or total that got worse fails the run, whatever else improved.
-   --allow-regress FUNC excuses a named, not-yet-matched function's fuzzy score (and its unit's and the
-   total's fuzzy score) for deliberate removals of wrong code.
-4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas.
+   --allow-regress NAME excuses a named, not-yet-matched function's fuzzy score (and its unit's and the
+   total's fuzzy score), or every measure of a named unit (e.g. MarioSt/event/evt_eff) and the total's same
+   measure: for deliberate fixes or removals of wrong code that lower a score. Say why in the commit.
+4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas, and a note if any unit is
+   fully matched but not yet linked.
 """
 import argparse
 import json
@@ -33,7 +36,7 @@ OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
 
 PROTECTED = ("config/", "orig/", "tools/", ".github/", "libs/", "assets/")
 ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
-PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b")
+PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b(?!\s+once\b)")
 UNIT_KEYS = ["fuzzy_match_percent", "matched_code_percent", "matched_data_percent",
              "complete_code_percent", "complete_data_percent"]
 FUNC_KEYS = ["fuzzy_match_percent"]
@@ -51,7 +54,7 @@ def fail(step, msg):
     sys.exit(1)
 
 
-def lint(base, allow_pragma, allow_protected):
+def lint(base, allow_pragma, allow_protected, allow_configure):
     names = run(["git", "diff", "--name-only", base]).stdout.split()
     names += run(["git", "ls-files", "--others", "--exclude-standard"]).stdout.split()
     problems = []
@@ -70,8 +73,8 @@ def lint(base, allow_pragma, allow_protected):
             continue
         added = line[1:]
         if current == "configure.py":
-            if added.strip() and "Object(" not in added:
-                problems.append(f"configure.py: only Object(...) lines may change: {added.strip()[:100]}")
+            if added.strip() and "Object(" not in added and not allow_configure:
+                problems.append(f"configure.py: only Object(...) lines may change (pass --allow-configure if intended): {added.strip()[:100]}")
             continue
         code = added.split("//", 1)[0]
         if ASM_RE.search(code):
@@ -115,9 +118,14 @@ def ratchet(allowed=()):
         for fn in unit.get("functions", []):
             cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
     if allowed:
-        units = {n.split(":", 1)[0] for n, _, a, _ in worse if n.split(":")[-1] in allowed and a < 100}
-        excused = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100)
-                   or (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))]
+        # A name is a function (its fuzzy drop, while below 100%, excuses its unit's and the total's fuzzy drop)
+        # or a unit path such as MarioSt/event/evt_eff (any of its measures, and the total's same measure).
+        named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed]
+        units = {n.split(":", 1)[0] for n, _, _, _ in named}
+        keys = {k for n, k, _, _ in named if ":" not in n}
+        excused = named + [w for w in worse if w not in named and (
+            (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))
+            or (w[0] == "TOTAL" and w[1] in keys))]
         for n, k, a, b in excused:
             print(f"     allowed regression: {n} {k.removesuffix('_percent')}: {a:.2f} -> {b:.2f}")
         worse = [w for w in worse if w not in excused]
@@ -125,6 +133,21 @@ def ratchet(allowed=()):
         lines = [f"{n} {k.removesuffix('_percent')}: {a:.2f} -> {b:.2f}" for n, k, a, b in worse[:40]]
         fail("ratchet", f"{len(worse)} regression(s) vs the accepted build:\n  " + "\n  ".join(lines))
     print(f"ok   [ratchet] no regressions; {len(better)} measure(s) improved")
+
+
+def tests():
+    r = run([sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tools" / "tests"), "-q"])
+    if r.returncode:
+        fail("tests", "tools/tests failed:\n" + (r.stderr or r.stdout)[-2000:])
+    print("ok   [tests] tools/tests pass")
+
+
+def unlinked():
+    """Fully matched units still marked NonMatching: tools/autolink.py would try to link them."""
+    r = run([sys.executable, str(ROOT / "tools" / "autolink.py"), "--list"])
+    names = [l for l in r.stdout.splitlines() if l.strip()]
+    if names:
+        print(f"note {len(names)} unit(s) fully matched but not linked (python3 tools/autolink.py --list)")
 
 
 def summary():
@@ -143,9 +166,10 @@ def main():
     ap.add_argument("--init", action="store_true")
     ap.add_argument("--allow-pragma", action="store_true")
     ap.add_argument("--allow-protected", action="store_true")
-    ap.add_argument("--allow-regress", action="append", default=[], metavar="FUNC",
-                    help="a not-yet-matched function whose score may drop, e.g. when removing a wrong partial "
-                         "implementation; repeatable. Only fuzzy scores may drop, never matched or linked.")
+    ap.add_argument("--allow-configure", action="store_true")
+    ap.add_argument("--allow-regress", action="append", default=[], metavar="NAME",
+                    help="a not-yet-matched function, or a unit, whose score may drop when wrong code is fixed or "
+                         "removed; repeatable")
     a = ap.parse_args()
     CI_DIR.mkdir(parents=True, exist_ok=True)
     if a.init:
@@ -155,10 +179,12 @@ def main():
         return
     if not ACCEPTED.exists():
         fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
-    lint(a.base, a.allow_pragma, a.allow_protected)
+    tests()
+    lint(a.base, a.allow_pragma, a.allow_protected, a.allow_configure)
     build()
     ratchet(set(a.allow_regress))
     summary()
+    unlinked()
     if a.accept:
         shutil.copy(BUILD / "report.json", ACCEPTED)
         print("     accepted: this build is the new baseline")

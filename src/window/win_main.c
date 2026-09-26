@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include "evt/evt_yuugijou.h"
 
 extern ItemData itemDataTable[];
 extern int sprintf(char* str, const char* format, ...);
@@ -177,7 +178,7 @@ void winMain(void) {
                 break;
 
             case 401:
-                if (evtYuuWindowEndCheck()) {
+                if (evtYuuWindowEndChk()) {
                     wp->menuState = 3;
                 }
                 break;

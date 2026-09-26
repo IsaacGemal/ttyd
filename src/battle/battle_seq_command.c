@@ -4,6 +4,8 @@
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
+#include "driver/msgdrv.h"
+#include "manager/evtmgr_cmd.h"
 
 
 //TODO: move into battle/seq/?

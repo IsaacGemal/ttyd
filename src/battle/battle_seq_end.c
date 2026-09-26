@@ -14,6 +14,7 @@
 #include "mario/mario_pouch.h"
 #include "system.h"
 #include <string.h>
+#include "battle/battle_sub.h"
 
 // Prototypes for functions that are not declared in a shared header.
 BattleSpotWork* BatSpotGetPtr(void);

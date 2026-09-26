@@ -28,7 +28,7 @@ s32 unk_80418b54;
 PiantaParlorWork yuugijouwork;
 PiantaParlorWork* yuwp;
 
-USER_FUNC(evtYuuWindowEndChk) {
+BOOL evtYuuWindowEndChk(void) {
 	return (yuwp->field_0x0 >> 3) & 1;
 }
 

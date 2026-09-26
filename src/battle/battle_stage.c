@@ -4,6 +4,7 @@
 #include <dolphin/gx.h>
 #include <string.h>
 #include <math.h>
+#include "manager/evtmgr_cmd.h"
 
 //.sbss
 static BattleSpotWork work;

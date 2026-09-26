@@ -3,11 +3,15 @@
 
   python3 check.py UNIT          rebuild, then list UNIT's functions with match % (smallest unmatched first)
   python3 check.py UNIT FUNC     rebuild, then show FUNC's instructions: original (left) vs yours (right)
+  python3 check.py --final UNIT  before you stop: rebuild, then run the merge's checks and list what to fix
 
 UNIT is the source path without src/ and .c, e.g. driver/mapdrv. 100% means byte-identical.
 """
 import json, subprocess, sys
 
+FINAL = sys.argv[1] == "--final"
+if FINAL:
+    sys.argv.pop(1)
 unit_path = sys.argv[1]
 unit = "MarioSt/" + unit_path
 import os
@@ -24,6 +28,26 @@ u = next((x for x in report["units"] if x["name"] == unit), None)
 if u is None:
     sys.exit(f"unit {unit} not in report")
 fns = {f["name"]: f for f in u.get("functions", [])}
+if FINAL:
+    # The same checks the merge runs (tools/lint_patch.py), against the clean copy of the file this workspace was
+    # made from, or /dev/null for a new file.
+    base = os.path.expanduser(f"~/ttyd/src/{unit_path}.c")
+    base = base if os.path.exists(base) else "/dev/null"
+    lint = subprocess.run(["python3", "tools/lint_patch.py", unit_path, base], capture_output=True, text=True)
+    fns = u.get("functions", [])
+    done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
+    print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
+    todo = [l for l in lint.stdout.splitlines() if l.strip()]
+    if not todo:
+        print("Merge checks: nothing to fix.")
+        sys.exit(0)
+    print("Merge checks: fix these before you stop (STUB rejects the whole file; the rest reviewers will flag):")
+    for l in todo:
+        print("  " + l)
+    print("UNLABELLED: add `// NONMATCHING (NN%): what differs` above it. OFFSET: use the header's field if it has one.\n"
+          "EXTERN/STRUCT: a function or struct declared locally should come from its header if one declares it (data\n"
+          "externs such as float constants are fine). PRAGMA: give it a reason or remove it.")
+    sys.exit(1 if lint.returncode else 0)
 if len(sys.argv) == 2:
     rows = sorted(fns.values(), key=lambda f: (f.get("fuzzy_match_percent", 0) >= 100, int(f["size"])))
     done = sum(1 for f in rows if f.get("fuzzy_match_percent", 0) >= 100)

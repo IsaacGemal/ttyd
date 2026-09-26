@@ -127,6 +127,12 @@ parser.add_argument(
     help="how to handle warnings",
 )
 parser.add_argument(
+    "--no-require-protos",
+    dest="require_protos",
+    action="store_false",
+    help="allow calls to functions with no prototype (they are an error by default, as in Melee's CI)",
+)
+parser.add_argument(
     "--no-progress",
     dest="progress",
     action="store_false",
@@ -225,6 +231,15 @@ cflags_base = [
     f"-DVERSION_{config.version}",
     "-DSDK_REVISION=1",
 ]
+
+# MUST_MATCH marks code that exists only to reproduce the original bytes (see include/matching.h), as in Melee.
+if not args.non_matching:
+    cflags_base.append("-DMUST_MATCH")
+
+# A call to a function with no prototype in scope is an error: C would otherwise assume it returns int and
+# promote float arguments to double, which compiles and can silently change behaviour.
+if args.require_protos:
+    cflags_base.append("-requireprotos")
 
 # Debug flags
 if args.debug:

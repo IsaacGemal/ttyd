@@ -114,3 +114,5 @@ void psndSetFlag(s32 flag);
 void psndClearFlag(s32 flag);
 
 void psndSetPosDirListener(Vec* position, f32 direction);
+
+u16 psndGetFlag(void);

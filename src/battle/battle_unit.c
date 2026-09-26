@@ -3,6 +3,7 @@
 #include "battle/battle_disp.h"
 #include "system.h"
 #include <string.h>
+#include "pmario_sound.h"
 
 extern BattleWork* _battleWorkPointer;
 extern u32 _enemy_can_use_item_table[];

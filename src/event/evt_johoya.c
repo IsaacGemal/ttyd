@@ -1,6 +1,7 @@
 #include "evt/evt_johoya.h"
 #include "driver/msgdrv.h"
 #include <string.h>
+#include "manager/evtmgr_cmd.h"
 
 extern int sprintf(char* str, const char* format, ...);
 

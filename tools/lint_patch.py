@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c (working tree vs HEAD), after a build.
+"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c, after a build.
+
+BASE is a git ref (default HEAD) or, where there is no git (an agent's workspace), a path to the file to compare
+against (`/dev/null` for a new file).
 
 The checks reviewers kept flagging, run mechanically so reviews can look for new problems instead:
   STUB       a function the patch left empty or near-empty, below 100%, that wasn't already empty (rejects the file)
@@ -8,22 +11,12 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
   STRUCT     a struct/typedef defined in the .c file by the patch (it may duplicate a header)
   EXTERN     an extern declaration added in the .c file (it may belong in a header)
   PRAGMA     an added `dont_inline on` / `opt_propagation off` / `optimize_for_size on` with no reason comment
-  IMPLICIT   a call to a function with no prototype in scope (C then assumes it returns int and promotes
-             floats), found with clang -Wimplicit-function-declaration; skipped if clang isn't installed
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
 import json
 import re
 import subprocess
 import sys
-
-unit = sys.argv[1]
-base = sys.argv[2:] or []
-path = f"src/{unit}.c"
-diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
-added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
-text = open(path).read()
-lines = text.splitlines()
 
 
 def definitions(text):
@@ -45,51 +38,61 @@ def is_stub(body):
     return code in ("", "return;", "return 0;", "return NULL;", "return FALSE;")
 
 
-funcs = definitions(text)
-head = subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout
-head_funcs = {n: body for n, (_, body) in definitions(head).items()}
 
-# Which functions the patch touched: a hunk's new-file line range intersecting the function.
-touched_lines = set()
-for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M):
-    s, n = int(m.group(1)), int(m.group(2) or 1)
-    touched_lines.update(range(s - 1, s - 1 + max(n, 1)))
-touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
 
-report = json.load(open("build/G8MJ01/report.json"))
-u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
-pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
+def main():
+    unit = sys.argv[1]
+    base = sys.argv[2:] or []
+    path = f"src/{unit}.c"
+    BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
+    if BASE_FILE:
+        diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
+    else:
+        diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
+    added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
+    text = open(path).read()
+    lines = text.splitlines()
 
-stubs, out = [], []
-for n in sorted(touched):
-    s, body = funcs[n]
-    if is_stub(body) and pct.get(n, 100) < 100 and not is_stub(head_funcs.get(n, "x")):
-        stubs.append(n)
-    elif pct.get(n, 100) < 100 and not any("NONMATCHING" in l for l in lines[max(0, s - 3):s + 1]):
-        out.append(f"UNLABELLED {n} ({pct[n]:.1f}%)")
-for l in added:
-    if re.search(r"\*\s*\(\s*\w+\s*\*\s*\)\s*\(\s*\(\s*(u8|s8|char)\s*\*\s*\)", l):
-        out.append("OFFSET     " + l.strip())
-    if re.match(r"\s*(typedef\s+)?struct\s+\w*\s*\{|\s*typedef\s+(struct|union|enum)\b", l):
-        out.append("STRUCT     " + l.strip())
-    if re.match(r"\s*extern\b", l):
-        out.append("EXTERN     " + l.strip())
-for i, l in enumerate(lines):
-    if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
-        if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
-            out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
-CLANG = ["clang", "-fsyntax-only", "-std=gnu89", "-target", "powerpc-unknown-eabi", "-ffreestanding", "-nostdinc",
-         "-Ibuild/G8MJ01/include", "-Iinclude", "-Ilibs/dolsdk2004/include/libc", "-Ilibs/dolsdk2004/include",
-         "-Ilibs/musyx/include", "-D__MWERKS__", "-Wno-everything", "-Wimplicit-function-declaration",
-         "-ferror-limit=0", path]
-INTRINSICS = {"__fabs", "__fabsf", "__frsqrte", "__cntlzw", "__mflr", "__rlwimi"}
-try:
-    warn = subprocess.run(CLANG, capture_output=True, text=True).stderr
-    for name in sorted(set(re.findall(r"implicit declaration of function '(\w+)'", warn)) - INTRINSICS):
-        out.append(f"IMPLICIT   {name}")
-except FileNotFoundError:
-    pass
-for n in stubs:
-    print(f"STUB       {n}")
-print("\n".join(out))
-sys.exit(1 if stubs else 0)
+    funcs = definitions(text)
+    head = (open(BASE_FILE).read() if BASE_FILE else
+            subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout)
+    head_funcs = {n: body for n, (_, body) in definitions(head).items()}
+
+    # Which functions the patch touched: a hunk's new-file line range intersecting the function.
+    touched_lines = set()
+    for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M):
+        s, n = int(m.group(1)), int(m.group(2) or 1)
+        touched_lines.update(range(s - 1, s - 1 + max(n, 1)))
+    touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
+
+    report = json.load(open("build/G8MJ01/report.json"))
+    u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
+    pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
+
+    stubs, out = [], []
+    for n in sorted(touched):
+        s, body = funcs[n]
+        if is_stub(body) and pct.get(n, 100) < 100 and not is_stub(head_funcs.get(n, "x")):
+            stubs.append(n)
+        elif pct.get(n, 100) < 100 and not any("NONMATCHING" in l for l in lines[max(0, s - 3):s + 1]):
+            out.append(f"UNLABELLED {n} ({pct[n]:.1f}%)")
+    for l in added:
+        if re.search(r"\*\s*\(\s*\w+\s*\*\s*\)\s*\(\s*\(\s*(u8|s8|char)\s*\*\s*\)", l):
+            out.append("OFFSET     " + l.strip())
+        if re.match(r"\s*(typedef\s+)?struct\s+\w*\s*\{|\s*typedef\s+(struct|union|enum)\b", l):
+            out.append("STRUCT     " + l.strip())
+        if re.match(r"\s*extern\b", l):
+            out.append("EXTERN     " + l.strip())
+    for i, l in enumerate(lines):
+        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
+            if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
+                out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
+    for n in stubs:
+        print(f"STUB       {n}")
+    print("\n".join(out))
+    sys.exit(1 if stubs else 0)
+
+
+
+if __name__ == "__main__":
+    main()

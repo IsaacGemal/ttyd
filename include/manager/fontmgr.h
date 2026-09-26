@@ -3,6 +3,7 @@
 #include <dolphin/gx.h>
 
 #include <dolphin/types.h>
+#include <dolphin/mtx.h>
 
 typedef enum BinaryFontEncoding {
 	SINGLE_BYTE_ENCODING = 0,
@@ -94,3 +95,5 @@ u16 kanjiSearch(u16 code);
 u16 kanjiGetWidth(u16 code);
 u16 FontGetMessageWidthLine(const char* message, u16* lines);
 u16 FontGetMessageWidth(const char* message);
+
+void FontDrawStringMtx(Mtx mtx, const char* msg);

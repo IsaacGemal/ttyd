@@ -186,6 +186,7 @@ void OSSetSoundMode(u32 mode);
 __declspec(weak) void OSReport(const char* msg, ...);
 __declspec(weak) void OSVReport(const char* msg, va_list list);
 __declspec(weak) void OSPanic(const char* file, int line, const char* msg, ...);
+#define OSHalt(msg) OSPanic(__FILE__, __LINE__, msg)
 void OSFatal(GXColor fg, GXColor bg, const char* msg);
 
 #define OSRoundUp32B(x)   (((u32)(x) + 32 - 1) & ~(32 - 1))
