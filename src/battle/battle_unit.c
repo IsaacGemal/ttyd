@@ -1670,7 +1670,7 @@ extern void psndSFX_pit(s32 id, s32 pitch);
 extern void psndSFX_vol(s32 id, s32 vol);
 extern s32 psndSFX_get_vol(s32 id);
 
-// NONMATCHING (87.75%): register allocation is rotated (target keeps a in r27/val in r30, mine a in r30/val in r29).
+// NONMATCHING (87.75%): register allocation is rotated (target keeps name in r27/val in r30, ours name in r30/val in r29).
 #pragma dont_inline on
 s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;

@@ -437,7 +437,6 @@ BOOL partyPaperOn(PartyEntry* entry, char* anim) {
 
 
 
-// NONMATCHING (0.00%): differs from the original.
 s32 partyEntry2(s32 memberId) {
         PartyEntry* entry;
         MarioWork* player;
@@ -1033,7 +1032,7 @@ s32 partyEntry(s32 memberId) {
 }
 
 // NONMATCHING (99.93%): only the low-HP check's extsb lands in r0 here vs the
-// original's r3 (same mwcc-build difference as partyChgPoseId); the rest matches.
+// original's r3 (the same difference as in partyChgPoseId); the rest matches.
 s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     const Vec* v;
     PartyEntry* party;

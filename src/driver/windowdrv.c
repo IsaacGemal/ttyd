@@ -157,7 +157,7 @@ void windowMain(void) {
 	}
 }
 
-// NONMATCHING (100.00%): only the fog/tev outgoing GXColor argument temps are swapped (ours: fog r1+0x10,
+// NONMATCHING (99.99%): only the fog/tev outgoing GXColor argument temps are swapped (ours: fog r1+0x10,
 // tev copy r1+0x8; original: fog r1+0x8, tev copy r1+0x10). Every other instruction matches.
 void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
@@ -1070,15 +1070,14 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 }
 
 // NONMATCHING (85.00%): float register allocation/literal reloads in the GXPosition/GXTexCoord block;
-// ours emits ~47 extra `lfs` of the 0.0/1.0/0.3333 constants. Header declares gxTexMapID `s16` but the
-// original reads it unsigned (asm `clrlwi`, not `extsh`); `gxTexMapID & 0xFFFF` reproduces it.
-void windowDispGX_Waku_col(s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 height, f32 width, f32 curve) {
+// ours emits ~47 extra `lfs` of the 0.0/1.0/0.3333 constants.
+void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 height, f32 width, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
 	f32 fVar1, fVar2, fVar3, fVar4, fVar5, fVar6; //TODO: rename
 
 	if (unk_804187fc) {
-		if (gxTexMapID & 0xFFFF) {
+		if (gxTexMapID) {
 			gxTexMapID = 0;
 		}
 		GXSetCullMode(GX_CULL_NONE);
@@ -1108,7 +1107,7 @@ void windowDispGX_Waku_col(s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 heig
 		MTXConcat(camera->view, mtx, mtx);
 		GXLoadPosMtxImm(mtx, 0);
 		GXSetCurrentMtx(0);
-		GXLoadTexObj(&wakuTexObj[(u16)gxTexMapID], GX_TEXMAP0);
+		GXLoadTexObj(&wakuTexObj[gxTexMapID], GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0x24);
 
 		fVar1 = x + width;
@@ -1244,15 +1243,14 @@ void windowDispGX_Waku_col(s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 heig
 	}
 }
 
-// NONMATCHING (85.51%): same as windowDispGX_Waku_col; header declares gxTexMapID `s16` but the original
-// reads it unsigned (asm `clrlwi`), so `gxTexMapID & 0xFFFF`.
-void windowDispGX2_Waku_col(Mtx mtx, s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
+// NONMATCHING (85.51%): the same constant reloads as windowDispGX_Waku_col.
+void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx2;
 	f32 fVar1, fVar2, fVar3, fVar4, fVar5, fVar6, dVar9, dVar10; //TODO: rename
 
 	if (unk_804187fc) {
-		if (gxTexMapID & 0xFFFF) {
+		if (gxTexMapID) {
 			gxTexMapID = 0;
 		}
 		GXSetCullMode(GX_CULL_NONE);
@@ -1285,7 +1283,7 @@ void windowDispGX2_Waku_col(Mtx mtx, s16 gxTexMapID, GXColor color, f32 x, f32 y
 		MTXConcat(camera->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, 0);
 		GXSetCurrentMtx(0);
-		GXLoadTexObj(&wakuTexObj[(u16)gxTexMapID], GX_TEXMAP0);
+		GXLoadTexObj(&wakuTexObj[gxTexMapID], GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0x24);
 
 

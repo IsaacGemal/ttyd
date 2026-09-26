@@ -1538,7 +1538,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 }
 
 
-// NONMATCHING (96.63%): register-allocation / scheduling differences. The itemId == -1 branch is
+// NONMATCHING (96.96%): register-allocation / scheduling differences. The itemId == -1 branch is
 // inverted vs the original, and 0x14 folds to a pooled float instead of the int->float conversion.
 void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -1721,7 +1721,7 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 					if (id != -1) {
 						BattleAudienceGetPtr(id);
 						if (member->type != AUDIENCE_PIRANHA_PLANT &&
-						    BattleAudience_GetExist(id) == 1) {
+						    (u8)BattleAudience_GetExist(id) == 1) {
 							BattleAudience_ChangeStatus(index, 3);
 						}
 					}

@@ -665,8 +665,9 @@ BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 
 // Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
-// NONMATCHING (87.02%): instruction stream/logic match; only callee-saved register
-// allocation differs (target wp=r29/unit=r28/weapon=r30/work=r31; ours wp=r26/.../work=r30).
+// NONMATCHING (87.02%): logic matches; callee-saved register allocation differs (target
+// wp=r29/unit=r28/weapon=r30/work=r31; ours wp=r26/.../work=r30), and the original sign-extends the attack
+// direction before BattleSamplingEnemy (`extsb r9,r0`), so battle_detect.h's `s8` may be the wrong width.
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	u8* work = wp->field_428;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
