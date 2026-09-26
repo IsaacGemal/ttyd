@@ -344,7 +344,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_information.c"),
             Object(NonMatching, "battle/battle_mario.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_menu_disp.c"),
-            Object(NonMatching, "battle/battle_party.c"),
+            Object(Matching, "battle/battle_party.c"),
             Object(NonMatching, "battle/battle_pad.c"),
             Object(NonMatching, "battle/battle_seq.c"),
             Object(NonMatching, "battle/battle_seq_command.c", extra_cflags=["-O4,s"]),
