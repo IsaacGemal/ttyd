@@ -48,6 +48,7 @@ void effRecoveryEntry(s32 type, s32 arg, f32 x, f32 y, f32 z);
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
+extern f32 float_5_8041c310;
 
 // NONMATCHING (19.37%): 116 missing, plus register differences.
 void BattleDrawEnemyHP(CameraId camId, void* param) {
@@ -225,9 +226,8 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 // NONMATCHING (92.50%): 2 instructions differ.
 void BattleCommandDisplay_ActMenuDisp(CameraId camId, BattleWork* wp) {
 	BattleCursor* cursor;
-	s32 idx = 0xE;
 
-	_btlcmd_GetCursorPtr(&wp->commandMenu, idx, &cursor);
+	_btlcmd_GetCursorPtr(&wp->commandMenu, 0xE, &cursor);
 	BattleMenuDisp_ActSelect_Disp(wp);
 }
 
@@ -277,13 +277,12 @@ void _commandRestoreRec(void) {
 	}
 }
 
-// NONMATCHING (93.42%): 2 instructions differ, plus register differences.
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp) {
-	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* cmd = (BattleWorkCommand*)&wp->commandMenu;
 	BattleCursor* cursor;
 
-	_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
-	return ((BattleWorkCommand*)cmd)->mWeaponTable[cursor->field_0].mWeaponParams;
+	_btlcmd_GetCursorPtr((BattleCommand*)cmd, *(s32*)&cmd->field_0x540[0], &cursor);
+	return cmd->mWeaponTable[cursor->field_0].mWeaponParams;
 }
 
 BOOL BattleCommandAttackAudienceCheck(void) {
@@ -396,42 +395,49 @@ void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out) {
 	}
 }
 
-// NONMATCHING (52.81%): 3 instructions differ, 15 missing, 14 extra, plus register differences.
 void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
-	BattleWorkCommandWeapon* weapon;
 	BattleCursor* cursor;
 	s32 i;
+	s32 count;
 
 	_btlcmd_GetCursorPtr(&wp->commandMenu, arg, &cursor);
-	for (i = 0; i < cursor->unk8; i++) {
+	count = cursor->unk8;
+	for (i = 0; i < count; i++) {
+		BattleWeapon* params;
 		s32 check;
 
-		weapon = &wcmd->mWeaponTable[i];
-		weapon->field_0x4 = 0;
-		weapon->field_0x18 = 0;
-		if (weapon->mWeaponParams == NULL) {
+		params = wcmd->mWeaponTable[i].mWeaponParams;
+		wcmd->mWeaponTable[i].field_0x4 = 0;
+		wcmd->mWeaponTable[i].field_0x18 = 0;
+		if (params == NULL) {
 			continue;
 		}
-		check = _btlcmd_CheckWeaponTargetNum(wp, unit, weapon->mWeaponParams);
-		if (check > 0) {
-			weapon->field_0x4 = 1;
-			weapon->field_0x18 = 0;
-		} else if (check != 0) {
-			weapon->field_0x18 = (arg == 4) ? 2 : 1;
-		} else {
-			switch (arg) {
-			case 0:
-				weapon->field_0x18 = 4;
-				break;
-			case 1:
-				weapon->field_0x18 = 5;
-				break;
-			default:
-				weapon->field_0x18 = 3;
-				break;
+		check = _btlcmd_CheckWeaponTargetNum(wp, unit, params);
+		if (check <= 0) {
+			if (check == 0) {
+				switch (arg) {
+				case 0:
+					wcmd->mWeaponTable[i].field_0x18 = 4;
+					break;
+				case 1:
+					wcmd->mWeaponTable[i].field_0x18 = 5;
+					break;
+				default:
+					wcmd->mWeaponTable[i].field_0x18 = 3;
+					break;
+				}
+			} else {
+				if (arg != 4) {
+					wcmd->mWeaponTable[i].field_0x18 = 1;
+				} else {
+					wcmd->mWeaponTable[i].field_0x18 = 2;
+				}
 			}
+		} else {
+			wcmd->mWeaponTable[i].field_0x4 = 1;
+			wcmd->mWeaponTable[i].field_0x18 = 0;
 		}
 	}
 }
@@ -490,7 +496,8 @@ s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	return 0;
 }
 
-// NONMATCHING (96.54%): 2 missing, 2 extra, plus register differences.
+// NONMATCHING (96.54%): 2 schedule instructions (BtlUnit_GetPos arg setup) and the pooled
+// `double_to_int_802ef890` reloc name (`@667`, resolves once the pool is complete) differ.
 s32 _check_present_item(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 item = BattleAudience_GetPresentItemNo();
@@ -512,14 +519,14 @@ s32 _check_present_item(void) {
 	case 0x7B:
 		BtlUnit_RecoverHp(unit, 1);
 		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + 5.0f + y;
+		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
 		effRecoveryEntry(0, 1, x, y, z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
 	case 0x7C:
 		BtlUnit_RecoverFp(unit, 1);
 		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + 5.0f + y;
+		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
 		effRecoveryEntry(1, 1, x, y, z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
@@ -579,6 +586,7 @@ CheckPartyTable _checkPartyTable[8] = {
 	{ 0x00E6, "btl_cmd_pt_chuchurina", 0x0161, 0x0000, "btl_hlp_cmd_operation_party7" },
 };
 
+#pragma dont_inline on // prevents _battleGetPartyIcon from being inlined into _btlcmd_MakePartyTable
 s32 _battleGetPartyIcon(s32 kind) {
 	CheckPartyTable* entry;
 	s32 i;
@@ -610,9 +618,8 @@ s32 _battleGetPartyIcon(s32 kind) {
 	}
 	return 0;
 }
+#pragma dont_inline reset
 
-// NONMATCHING (98.57%): only the prologue `stmw r30` vs two `stw` and the
-// `unit->flippedTurns == 0` boolean idiom (`srwi` vs `li/cntlzw/rlwnm`) differ.
 BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	BattleUnit* unit;
 
@@ -653,22 +660,70 @@ BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 	    BtlUnit_CheckStatus(unit, STATUS_FREEZE) || BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
 		return FALSE;
 	}
-	return unit->flippedTurns == 0;
+	return unit->flippedTurns <= 0;
 }
 
-// NONMATCHING (44.54%): logic reconstructed; mwcc uses far fewer callee-saved registers (frame 0x40 vs
-// 0x50, stmw r22 vs stmw r17) because the original keeps more live values in locals/pointers.
+// Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
+// 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
+// NONMATCHING (87.02%): instruction stream/logic match; only callee-saved register
+// allocation differs (target wp=r29/unit=r28/weapon=r30/work=r31; ours wp=r26/.../work=r30).
+s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
+	u8* work = wp->field_428;
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWeapon* weapon;
+	s32 i;
+	s32 selected;
+	s8 belong;
+
+	_btlcmd_MakeSelectWeaponTable(wp, (void*)arg);
+	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
+	belong = (s8)BtlUnit_GetEnemyBelong(unit);
+	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
+	                    *(s32*)&weapon->field_64[4], wp->alliances[unit->mAlliance].attackDirection);
+
+	work[0xAB7] = 0;
+	if (*(s32*)&weapon->field_64[4] & 0x30000000) {
+		s8 ownBelong = BtlUnit_GetBelong(unit);
+
+		selected = -1;
+		for (i = 0; i < *(s8*)&work[0xA6C]; i++) {
+			s32 uid = *(s16*)(work + ((s8)work[0xA6D + i]) * 0x24 + 4);
+
+			if (*(s32*)&weapon->field_64[4] & 0x10000000) {
+				if (ownBelong == BtlUnit_GetBelong(BattleGetUnitPtr(wp, uid))) {
+					selected = i;
+				}
+			} else {
+				if (ownBelong != BtlUnit_GetBelong(BattleGetUnitPtr(wp, uid))) {
+					selected = i;
+					break;
+				}
+			}
+		}
+		if (selected >= 0) {
+			work[0xAB7] = selected;
+		}
+	}
+	return 0;
+}
+
+// Keeping the original `bl _battleGetPartyIcon` needs the dont_inline pragma on that callee.
+// NONMATCHING (98.94%): instruction stream now matches; only callee-saved register
+// allocation differs (target keeps mario/cmd in r25/r24 and the loop counter in r20; ours
+// use r26/r25 and r24).
 s32 _btlcmd_MakePartyTable(BattleWork* wp) {
-	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleUnit* partner = BattleGetPartnerPtr(wp, mario);
+	BattleCommand* cmd = &wp->commandMenu;
+	s32 i = 0;
+	s32 count = 0;
+	s32 select = 0;
 	PouchData* pouch = pouchGetPtr();
 	BattleCursor* cursor;
 	CheckPartyTable* entry;
 	PouchPartyData* party;
-	s32 count = 0;
-	s32 select = 0;
-	s32 i;
+	s32 kind;
+	char* name;
 
 	if (cmd == NULL) {
 		return 0;
@@ -679,28 +734,30 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	_btlcmd_GetCursorPtr(cmd, 0xA, &cursor);
 	for (i = 0; i < 8; i++) {
 		entry = &_checkPartyTable[i];
-		if (entry->kind == 0) {
+		kind = entry->kind;
+		if (kind == 0) {
 			continue;
 		}
-		party = &pouch->partyData[BattleTransPartyId(entry->kind)];
+		party = &pouch->partyData[BattleTransPartyId(kind)];
 		if (!(party->flags & 1)) {
 			continue;
 		}
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mPartyId = entry->kind;
+		((BattleWorkCommand*)cmd)->mPartyTable[count].mPartyId = kind;
 		((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 1;
-		if (entry->kind == 0xE2) {
-			((BattleWorkCommand*)cmd)->mPartyTable[count].mName = pouchGetYoshiName();
+		if (kind == 0xE2) {
+			name = pouchGetYoshiName();
 		} else {
-			((BattleWorkCommand*)cmd)->mPartyTable[count].mName = (char*)msgSearch(entry->name);
+			name = (char*)msgSearch(entry->name);
 		}
-		((BattleWorkCommand*)cmd)->mPartyTable[count].mIcon = _battleGetPartyIcon(entry->kind);
+		((BattleWorkCommand*)cmd)->mPartyTable[count].mName = name;
+		((BattleWorkCommand*)cmd)->mPartyTable[count].mIcon = _battleGetPartyIcon(kind);
 		((BattleWorkCommand*)cmd)->mPartyTable[count].mDescription = entry->help;
 		((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = party->currentHP;
 		((BattleWorkCommand*)cmd)->mPartyTable[count].mMaxHP = party->maximumHP;
-		if (mario->currentKind == entry->kind || BattleGetPartnerPtr(wp, mario)->currentKind == entry->kind) {
+		if (mario->currentKind == kind || BattleGetPartnerPtr(wp, mario)->currentKind == kind) {
 			((BattleWorkCommand*)cmd)->mPartyTable[count].mEnabled = 0;
 			select = count;
-			if (mario->currentKind == entry->kind) {
+			if (mario->currentKind == kind) {
 				((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = mario->currentHp;
 			} else {
 				((BattleWorkCommand*)cmd)->mPartyTable[count].mCurrentHP = partner->currentHp;
@@ -718,11 +775,14 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (85.74%): switch and call match; the string pool base/offsets differ by 0x28 (pool order)
-// and the `event->args[0]` load is scheduled late instead of before the switch.
+// (`str_802EF640` vs local `...rodata.0`, offsets shifted 0x28) and the msg-base/args
+// register swap (target r5/r6, ours r6/r5) differ, both expected to resolve once the
+// file's rodata pool is complete.
+// NONMATCHING (98.44%): instruction sequence now matches; only the pooled string base
 s32 _get_msg(EventEntry* event) {
-	BattleWork* wp = _battleWorkPointer;
 	char* msg = "btl_wn_dummy_noitem";
+	BattleWork* wp = _battleWorkPointer;
+	s32 index = event->args[0];
 
 	switch (*(s32*)&wp->commandMenu.unk560[4]) {
 	case 1:
@@ -744,6 +804,6 @@ s32 _get_msg(EventEntry* event) {
 		msg = "btl_msg_cmderror_no_select_now";
 		break;
 	}
-	evtSetValue(event, event->args[0], (s32)msg);
+	evtSetValue(event, index, (s32)msg);
 	return 2;
 }
