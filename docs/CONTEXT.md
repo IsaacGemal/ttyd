@@ -629,3 +629,16 @@ it need his approval unless it runs in the same permission mode as the orchestra
 reproduced 10 of 2,816 functions exactly (instruction scheduling differs from real 2.6 on the files it does
 compile). Not usable for forensics yet; see "The plan for the hard tail, finalized".
 
+
+## Everything TTYD needs now lives in this repo (2026-09-25, Isaac + Claude Opus 5.5)
+
+Supersedes the "Where the tooling lives" paragraph of the orchestrator chapter and any `scratch/...` paths in
+earlier chapters. The wave tooling had grown up in the orchestrator's scratch folder inside another project;
+it's now here.
+- **Committed, in `tools/`:** `ci.py`, `autolink.py`, `name_offsets.py`, `merge_agent.sh` (merge one agent's
+  result: patch, new file or replaced file; CI, lint, commit, auto-link), `lint_patch.py`, `agent_check.py`
+  (copied into each agent's workspace as `check.py`), `mwcc_rs_compare.py`, and `prune_agents.py` (the tower's
+  cron runs it every 30 minutes over `~/ttyd-agents`, 50 GB cap).
+- **In `scratch/` (gitignored):** each wave's launcher, prompts and results (`scratch/waveN/<agent>/`: REPORT.md,
+  final.c or src.patch, the Pi session log, lint output) and review logs. The launcher stays out of git
+  because it names the inference setup.
