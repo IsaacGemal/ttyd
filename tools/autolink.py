@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Link every file that is fully matched but still marked NonMatching in configure.py.
 
-For each candidate (100% code, and 100% data or no data, in build/G8MJ01/report.json), flip its Object from
-NonMatching to Matching, rebuild, and keep the flip only if the build's checksums still pass. Candidates that
-fail are listed with the reason: the report can show 100% while something it doesn't measure still differs.
+For each candidate (100% code in build/G8MJ01/report.json), flip its Object from NonMatching to Matching,
+rebuild, and keep the flip only if the build's checksums still pass. Candidates that fail are listed with the
+reason: the report can show 100% while something it doesn't measure still differs. Data isn't required to be
+100%: item_data and npc_data linked with byte-identical output while the report scored their data at 41% and
+66%, so the checksums decide.
 
   python3 tools/autolink.py            try every candidate
   python3 tools/autolink.py SRC...     try only these (paths as in configure.py, e.g. driver/swdrv.c)
@@ -34,8 +36,7 @@ def candidates():
         if not u:
             continue
         m = u.get("measures", {})
-        code, data = m.get("matched_code_percent"), m.get("matched_data_percent")
-        if code == 100 and data in (None, 100):
+        if m.get("matched_code_percent") == 100:
             out.append(src)
     return out
 

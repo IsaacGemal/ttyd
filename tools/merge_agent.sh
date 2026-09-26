@@ -13,8 +13,9 @@ set -u
 D=$(cd "$1" && pwd); UNIT=$2
 MODEL=${3:-"Pi + DeepSeek V4.1 Flash"}; TRAILER=${4:-"DeepSeek V4.1 Flash <noreply@deepseek.com>"}
 ORCH=${ORCHESTRATOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
-TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); F=src/$UNIT.c; TOOLS=$(cd "$(dirname "$0")" && pwd)
+TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); TOOLS=$(cd "$(dirname "$0")" && pwd)
 cd "$TOOLS/.."
+F=src/$UNIT.c; [ -e "$F" ] || { R=$(ls rels/*/src/$UNIT.c 2>/dev/null | head -1); [ -n "$R" ] && F=$R; }  # REL modules
 
 [ -z "$(git status --short -- src include)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
 own="Only in src$( [ "$(dirname $UNIT)" = . ] || echo /$(dirname $UNIT)): $(basename $UNIT).c"
@@ -54,6 +55,7 @@ LINT=$(python3 tools/lint_patch.py "$UNIT") || { restore; echo "REJECT $TAG: emp
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
 if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions matched"
+elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 git add "$F" && git commit -q -F - <<MSG
 $SUBJECT

@@ -13,7 +13,9 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
   PRAGMA     an added `dont_inline on` / `opt_propagation off` / `optimize_for_size on` with no reason comment
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
+import glob
 import json
+import os
 import re
 import subprocess
 import sys
@@ -40,10 +42,17 @@ def is_stub(body):
 
 
 
+def source_path(unit):
+    """src/UNIT.c, or the REL module's copy (rels/<rel>/src/UNIT.c) when the unit belongs to a REL."""
+    if os.path.exists(f"src/{unit}.c"):
+        return f"src/{unit}.c"
+    return next(iter(sorted(glob.glob(f"rels/*/src/{unit}.c"))), f"src/{unit}.c")
+
+
 def main():
     unit = sys.argv[1]
     base = sys.argv[2:] or []
-    path = f"src/{unit}.c"
+    path = source_path(unit)
     BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
     if BASE_FILE:
         diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
@@ -66,7 +75,7 @@ def main():
     touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
 
     report = json.load(open("build/G8MJ01/report.json"))
-    u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
+    u = next(x for x in report["units"] if x["name"].split("/", 1)[1] == unit)
     pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
 
     stubs, out = [], []
