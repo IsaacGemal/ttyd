@@ -703,7 +703,7 @@ config.libs = [
             Object(NonMatching, "event/evt_badgeshop.c"),
             Object(NonMatching, "event/evt_johoya.c"),
             Object(NonMatching, "event/evt_uranaisi.c"),
-            Object(NonMatching, "event/evt_window.c"),
+            Object(Matching, "event/evt_window.c"),
             Object(NonMatching, "event/evt_yuugijou.c"),
             Object(NonMatching, "event/evt_urouro.c"),
             Object(NonMatching, "event/evt_lottery.c"),
