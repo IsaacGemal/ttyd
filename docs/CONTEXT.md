@@ -24,7 +24,8 @@ anything worth keeping into a chapter here.
   `orig/G8MJ01/`.
 - Progress (local build, Sep 26 after wave 5, PR #4): 3,780 of 9,770 functions matched, 17.96% of code;
   linked code 8.45%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
-- Nothing in flight. From wave 6 another session orchestrates (see the last chapters).
+- Nothing in flight. From wave 6 another session orchestrates (see the last chapters). Overnight runs are
+  paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Targets: game files with no source yet first (the build already lists them; ~2,200 unmatched functions),
   plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
   build setup before agents can work on them.
