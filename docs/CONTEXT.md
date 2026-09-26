@@ -650,3 +650,17 @@ it's now here.
 - **In `scratch/` (gitignored):** each wave's launcher, prompts and results (`scratch/waveN/<agent>/`: REPORT.md,
   final.c or src.patch, the Pi session log, lint output) and review logs. The launcher stays out of git
   because it names the inference setup.
+
+## Orchestration moves to another session; merge bar, cadence and limits (2026-09-25, Isaac; relayed by the incoming orchestrator, written up by Claude Opus 5.5)
+
+From wave 6, a different Claude session orchestrates (it has more usage), and the session that ran waves 1-5
+becomes the Claude reviewer. Only one session orchestrates at a time.
+- **The orchestrator merges PRs itself,** using its judgement. The bar: `tools/ci.py` passes, then one Codex
+  round and one Claude round, with their findings fixed. The `human-baseline` tag is the reference for "good
+  enough": once two reviews have caught most of the bugs, merge.
+- **Cadence:** one wave every 2 hours, driven by `/loop`.
+- **When a usage limit is hit** (Codex's is expected first): pause the pipeline at the current step and tell
+  Isaac. Don't skip a review, don't switch Codex to a larger model, and don't merge without the reviews.
+- **Stray processes on the tower** (pending Isaac's decision): no new cron job. The launcher's `timeout` stops
+  each agent; after each wave the orchestrator checks the tower for leftover `ninja`, `wibo`, `mwcceppc` or
+  `objdiff-cli` processes under `~/ttyd-agents` and kills them. Revisit if it keeps happening.
