@@ -76,10 +76,12 @@ static const GXColor white_8041c56c = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // Look up an entry by numeric id (formatted as "%06x") or by the string the id
 // points at. Small enough that the original compiler inlined it everywhere.
-static inline NanNpcEntry* nannpcFind(NanNpcWork* work, s32 id) {
+static inline NanNpcEntry* nannpcFind(const char* name) {
     s32 i;
     NanNpcEntry* entry;
-    const char* name = (const char*)id;
+    NanNpcWork* work;
+
+    work = nanNPCWork;
 
     for (i = 0; i < work->count; i++) {
         entry = &work->entries[i];
@@ -131,11 +133,10 @@ USER_FUNC(evt_nannpcwork_flag_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.30%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_color) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->color.r = evtGetValue(event, args[1]);
     entry->color.g = evtGetValue(event, args[2]);
@@ -144,33 +145,30 @@ USER_FUNC(evt_nannpc_set_color) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.20%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_shadow_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->pose->flags |= 0x10;
     entry->pose->field_0x8 = evtGetFloat(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.11%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_func) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->callback = (void (*)(NanNpcEntry*))evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.34%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_ppflag_onoff) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     u16 mask = evtGetValue(event, args[2]);
 
     if (type != 0) {
@@ -181,12 +179,11 @@ USER_FUNC(evt_nannpc_ppflag_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.32%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_flag_onoff) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     u16 mask = evtGetValue(event, args[2]);
 
     if (type != 0) {
@@ -197,22 +194,22 @@ USER_FUNC(evt_nannpc_flag_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.18%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_size) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->width = evtGetFloat(event, args[1]);
     entry->field_0x4C = evtGetFloat(event, args[2]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.65%): nannpcFind work/name swap only.
+// NONMATCHING (99.84%): the elapsed division result stays in r24; the original materialises it
+// in r4 and copies it to r24 just before the first intplGetValue call.
 USER_FUNC(evt_nannpc_jump_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     f32 targetX = (f32)evtGetValue(event, args[1]);
     f32 targetY = (f32)evtGetValue(event, args[2]);
     f32 targetZ = (f32)evtGetValue(event, args[3]);
@@ -244,12 +241,12 @@ USER_FUNC(evt_nannpc_jump_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.07%): callee-saved register numbers differ.
+// NONMATCHING (99.35%): args/work/i callee-saved registers are permuted (orig args=r28, work=r29,
+// i=r30; ours args=r30, work=r28, i=r29).
 USER_FUNC(evt_nannpc_move_position2) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcWork* work = nanNPCWork;
-    NanNpcEntry* entry = nannpcFind(work, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     OSTime time;
     Vec target;
     Vec delta;
@@ -283,42 +280,38 @@ USER_FUNC(evt_nannpc_move_position2) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.20%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_get_work) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     evtSetValue(event, args[2], entry->work[evtGetValue(event, args[1])]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.22%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_work) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     s32 index = evtGetValue(event, args[1]);
 
     entry->work[index] = evtGetValue(event, args[2]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.25%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_dir) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->field_0x60 = (f32)evtGetValue(event, args[1]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.31%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_animtbl) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     s16* table = (s16*)evtGetValue(event, args[1]);
     s16 count = 0;
 
@@ -354,11 +347,10 @@ void evt_nannpc_set_animtbl_sub(NanNpcEntry* entry, s16* table) {
     }
 }
 
-// NONMATCHING (99.25%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_hosei_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     entry->hoseiPosition.x = evtGetFloat(event, args[1]);
     entry->hoseiPosition.y = evtGetFloat(event, args[2]);
@@ -366,11 +358,10 @@ USER_FUNC(evt_nannpc_set_hosei_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.25%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_get_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
 
     evtSetFloat(event, args[1], entry->position.x);
     evtSetFloat(event, args[2], entry->position.y);
@@ -378,11 +369,10 @@ USER_FUNC(evt_nannpc_get_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.29%): nannpcFind is inlined with work/name held in swapped callee-saved registers.
 USER_FUNC(evt_nannpc_set_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
-    NanNpcEntry* entry = nannpcFind(nanNPCWork, id);
+    NanNpcEntry* entry = nannpcFind((const char*)id);
     f32 x;
     f32 y;
     f32 z;
@@ -399,7 +389,8 @@ USER_FUNC(evt_nannpc_set_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (77.20%): nannpcFind work/name swap, vec-constant base hoisting and struct-copy codegen differ.
+// NONMATCHING (89.61%): loop callee-saved registers shifted (orig i=r24, offset=r26, name=r25;
+// ours i=r28, offset=r27, name=r26) and the color/return scheduling differs.
 USER_FUNC(evt_nannpc_entry) {
     Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
@@ -439,8 +430,10 @@ USER_FUNC(evt_nannpc_entry) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (79.22%): register allocation of the entry-init loop and call setup differs.
+// NONMATCHING (93.71%): isFirstCall/args and the extEntry argument registers are shifted by one
+// (orig isFirstCall=r25, args=r24; ours isFirstCall=r24, args=r25).
 USER_FUNC(evt_nannpc_init) {
+    Vec* vec = (Vec*)vec3_802f2ff8;
     s32* args = event->args;
     s32 a0 = evtGetValue(event, args[0]);
     s32 a1 = evtGetValue(event, args[1]);
@@ -448,7 +441,6 @@ USER_FUNC(evt_nannpc_init) {
     s32 a3 = evtGetValue(event, args[3]);
     void (*cb)(void) = nannpc_ext_dispent;
     NanNpcWork* work;
-    Vec* vec = (Vec*)vec3_802f2ff8;
     s32 i;
 
     if (isFirstCall) {
@@ -585,13 +577,14 @@ void nannpc_ext_main_sub(void) {
     }
 }
 
-// NONMATCHING (98.61%): work/entry callee-saved registers are swapped, plus nannpcFind work/name.
 void nannpc_ext_main_sub_fast(void) {
     s32 i;
-    NanNpcWork* work = nanNPCWork;
+    NanNpcEntry* entry;
+    NanNpcWork* work;
 
+    work = nanNPCWork;
     for (i = extGetPoseNum() - 1; i >= 0; i--) {
-        NanNpcEntry* entry = &work->entries[i];
+        entry = &work->entries[i];
 
         if ((s8)entry->name[0] != 0) {
             if (entry->callback != NULL) {
@@ -615,7 +608,8 @@ void nannpc_ext_main_sub_fast(void) {
     }
 }
 
-// NONMATCHING (73.76%): sort-list build loop unrolling/index codegen differs from target.
+// NONMATCHING (99.98%): the GXSetFog and GXSetTevColor GXColor stack temporaries are at swapped
+// frame offsets (orig 0x8/0xc; ours 0xc/0x8).
 void nannpc_ext_disp(void) {
     NanNpcWork* work = nanNPCWork;
 
@@ -639,14 +633,12 @@ void nannpc_ext_disp(void) {
         GXSetNumTexGens(1);
         GXSetNumTevStages(1);
         count = extGetPoseNum();
-        {
-            ExtSortEntry* sort = work->sortList;
-            NanNpcEntry* entry = work->entries;
+        for (i = count - 1; i >= 0; i--) {
+            NanNpcEntry* entry = &work->entries[i];
+            ExtSortEntry* sort = &work->sortList[i];
 
-            for (i = count - 1; i >= 0; i--) {
-                sort[i].field_0x0 = i;
-                sort[i].field_0x4 = entry[i].position.z;
-            }
+            sort->field_0x0 = i;
+            sort->field_0x4 = entry->position.z;
         }
         qqsort(work->sortList, work->count, 8, (int (*)(void*, void*))nannpc_zcompare);
         for (i = extGetPoseNum() - 1; i >= 0; i--) {
