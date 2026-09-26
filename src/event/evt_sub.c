@@ -1,3 +1,4 @@
+#include "mario/mario_pouch.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario.h"
@@ -670,7 +671,6 @@ extern void winMgrOpen(s32 id);
 extern void winMgrSetParam(s32 id, void* param);
 extern void winMgrCloseAutoDelete(s32 id);
 extern BOOL winMgrAction(s32 id);
-extern s16 pouchAddCoin(s16 coins);
 
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;

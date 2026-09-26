@@ -460,7 +460,7 @@ BOOL pouchRemoveKeepItem(s32 id, s32 index) {
 }
 
 //TODO: this function
-BOOL pouchAddKeepItem(s16 id) {
+BOOL pouchAddKeepItem(s32 id) {
 	int i, j;
 
 	for (i = MAX_STORED_ITEMS - 1; i >= 0; i--) {
@@ -537,11 +537,11 @@ f32 pouchGetAudienceNum(void) {
 	return mpp->audienceCount;
 }
 
-s16 pouchGetMaxAP(void) {
+s32 pouchGetMaxAP(void) {
 	return mpp->maximumSP;
 }
 
-void pouchSetAP(s16 points) {
+void pouchSetAP(s32 points) {
 	mpp->currentSP = points;
 	if (mpp->currentSP < 0) {
 		mpp->currentSP = 0;
@@ -570,14 +570,14 @@ void pouchSetMaxFP(s16 points) {
 	mpp->baseMaxFP = mpp->maximumFP;
 }
 
-void pouchSetFP(s16 points) {
+void pouchSetFP(s32 points) {
 	mpp->currentFP = points;
 	if (mpp->currentFP > mpp->maximumFP) {
 		mpp->currentFP = mpp->maximumFP;
 	}
 }
 
-s16 pouchGetMaxFP(void) {
+s32 pouchGetMaxFP(void) {
 	return mpp->maximumFP;
 }
 
@@ -604,18 +604,18 @@ void pouchSetMaxHP(s16 points) {
 	mpp->baseMaxHP = mpp->maximumHP;
 }
 
-void pouchSetHP(s16 points) {
+void pouchSetHP(s32 points) {
 	mpp->currentHP = points;
 	if (mpp->currentHP > mpp->maximumHP) {
 		mpp->currentHP = mpp->maximumHP;
 	}
 }
 
-s16 pouchGetMaxHP(void) {
+s32 pouchGetMaxHP(void) {
 	return mpp->maximumHP;
 }
 
-s16 pouchGetHP(void) {
+s32 pouchGetHP(void) {
 	return mpp->currentHP;
 }
 
@@ -633,25 +633,25 @@ s16 pouchAddHP(s16 points) {
 	return mpp->currentHP;
 }
 
-s16 pouchAddStarPiece(s16 count) {
+s32 pouchAddStarPiece(s32 count) {
 	mpp->mStarPieceCount += count;
 	return mpp->mStarPieceCount;
 }
 
-s16 pouchGetStarPiece(void) {
+s32 pouchGetStarPiece(void) {
 	return mpp->mStarPieceCount;
 }
 
-s16 pouchSetSuperCoin(s16 count) {
+s32 pouchSetSuperCoin(s32 count) {
 	mpp->mShineSpriteCount = count;
 	return mpp->mShineSpriteCount;
 }
 
-s16 pouchGetSuperCoin(void) {
+s32 pouchGetSuperCoin(void) {
 	return mpp->mShineSpriteCount;
 }
 
-s16 pouchSetCoin(s16 coins) {
+s32 pouchSetCoin(s32 coins) {
 	mpp->coins = coins;
 	if (mpp->coins < 0) {
 		mpp->coins = 0;
@@ -662,7 +662,7 @@ s16 pouchSetCoin(s16 coins) {
 	return mpp->coins;
 }
 
-s16 pouchAddCoin(s16 coins) {
+s32 pouchAddCoin(s32 coins) {
 	mpp->coins += coins;
 	if (mpp->coins < 0) {
 		mpp->coins = 0;
@@ -673,7 +673,7 @@ s16 pouchAddCoin(s16 coins) {
 	return mpp->coins;
 }
 
-s16 pouchGetCoin(void) {
+s32 pouchGetCoin(void) {
 	return mpp->coins;
 }
 

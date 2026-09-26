@@ -1,62 +1,12 @@
 /* "evt_pouch" - Pouch-related Event Script Functions
  * Status: In progress.
  */
-// mario_pouch.h declares these accessors with s16 parameters/returns, but the
-// original evt_pouch.c used them through s32, so MWCC must not insert spurious
-// extsh conversions. Hide the header prototypes and redeclare them wider.
-#define pouchGetMaxHP     pouchGetMaxHP_decl
-#define pouchSetHP        pouchSetHP_decl
-#define pouchGetMaxFP     pouchGetMaxFP_decl
-#define pouchSetFP        pouchSetFP_decl
-#define pouchGetMaxAP     pouchGetMaxAP_decl
-#define pouchSetAP        pouchSetAP_decl
-#define pouchGetHP        pouchGetHP_decl
-#define pouchGetStarPiece pouchGetStarPiece_decl
-#define pouchAddStarPiece pouchAddStarPiece_decl
-#define pouchSetSuperCoin pouchSetSuperCoin_decl
-#define pouchGetSuperCoin pouchGetSuperCoin_decl
-#define pouchSetCoin      pouchSetCoin_decl
-#define pouchAddCoin      pouchAddCoin_decl
-#define pouchGetCoin      pouchGetCoin_decl
-#define pouchAddKeepItem  pouchAddKeepItem_decl
-
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario_pouch.h"
 #include "mario/mario_party.h"
 
-#undef pouchGetMaxHP
-#undef pouchSetHP
-#undef pouchGetMaxFP
-#undef pouchSetFP
-#undef pouchGetMaxAP
-#undef pouchSetAP
-#undef pouchGetHP
-#undef pouchGetStarPiece
-#undef pouchAddStarPiece
-#undef pouchSetSuperCoin
-#undef pouchGetSuperCoin
-#undef pouchSetCoin
-#undef pouchAddCoin
-#undef pouchGetCoin
-#undef pouchAddKeepItem
-
-extern s32 pouchGetMaxHP(void);
-extern void pouchSetHP(s32 points);
-extern s32 pouchGetMaxFP(void);
-extern void pouchSetFP(s32 points);
-extern s32 pouchGetMaxAP(void);
-extern void pouchSetAP(s32 points);
-extern s32 pouchGetHP(void);
-extern s32 pouchGetStarPiece(void);
-extern void pouchAddStarPiece(s32 count);
-extern s32 pouchSetSuperCoin(s32 count);
-extern s32 pouchGetSuperCoin(void);
-extern s32 pouchSetCoin(s32 coins);
-extern s32 pouchAddCoin(s32 coins);
-extern s32 pouchGetCoin(void);
-extern s32 pouchAddKeepItem(s32 id);
 
 // Local prototypes not yet in a shared header.
 extern void partyLeft(PartyId partnerId);
