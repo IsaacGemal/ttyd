@@ -871,7 +871,7 @@ config.libs = [
             Object(NonMatching, "database.c"),
             Object(NonMatching, "error_handler.c"),
             Object(NonMatching, "event.c"),
-            Object(NonMatching, "gxsub.c"),
+            Object(Matching, "gxsub.c"),
             Object(NonMatching, "himo.c"),
             Object(NonMatching, "koopa.c"),
             Object(NonMatching, "koopa_hit.c"),
