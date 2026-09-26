@@ -64,6 +64,8 @@ void marioBalloonMain(void) {
     MarioWork* mario = marioGetPtr();
     s32 valid;
     void* hit;
+    // Not set on the item-box path, yet read after it: the original does the same (it compares r29, which
+    // only the hit and NPC paths assign). Kept as is: initializing it would change the code.
     s32 balloonType;
     BOOL ret;
     CaseEntry* ce;
@@ -139,7 +141,7 @@ void marioBalloonMain(void) {
         ret = TRUE;
     }
 
-    hit = (void*)MW_U32(mario, 0x1E4);
+    hit = mario->hitobjStandOn;
     valid = 0;
     if (hit != NULL) {
         attr = hitGetAttr((HitEntry*)hit);

@@ -149,7 +149,7 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 
 // regalloc (r21-r31 vs r23-r31, the target keeps two table pointers) and the compiler
 // CSEs the evtSetValue GSW(118+i) index while the target recomputes it.
-// NONMATCHING (90.9%): table[dobreak] index, count hoisted out of the j loop and the BADGE_MAX - KEY_ITEM_MIN bound are fixed.
+// NONMATCHING (90.89%): table[dobreak] index, count hoisted out of the j loop and the BADGE_MAX - KEY_ITEM_MIN bound are fixed.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
 	s32 count;
@@ -224,7 +224,7 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
-// NONMATCHING (69.5%): large function, most diffs are register allocation; not reworked yet.
+// NONMATCHING (69.49%): large function, most diffs are register allocation; not reworked yet.
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
 	s32* ptr;
 	u8 table[0x19];
@@ -352,7 +352,7 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 }
 
-// NONMATCHING (98.2%): bound check and clamp now match; the target reuses r6 for
+// NONMATCHING (98.20%): bound check and clamp now match; the target reuses r6 for
 // `bound = index / 4` (addze r6), we get r7 so mask/shift move to r8/r9.
 s32 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
@@ -486,7 +486,7 @@ USER_FUNC(badgeShop_getBargainTable) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.5%): target keeps the raw evtGetValue result in r31 and does
+// NONMATCHING (88.48%): target keeps the raw evtGetValue result in r31 and does
 // `extsh r4,r31` at each call; we sign-extend once into r31 (CSE).
 USER_FUNC(evt_badgeShop_throw_inc) {
 	s16 value;
@@ -497,7 +497,7 @@ USER_FUNC(evt_badgeShop_throw_inc) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (88.5%): same as evt_badgeShop_throw_inc, the shared (s16)value cast is CSE'd.
+// NONMATCHING (88.48%): same as evt_badgeShop_throw_inc, the shared (s16)value cast is CSE'd.
 USER_FUNC(evt_badgeShop_throw_dec) {
 	s16 value;
 
@@ -523,7 +523,7 @@ USER_FUNC(evt_badgeShop_starmaniac_dec) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.3%): opt_common_subs off stops the GSW(118+i) CSE; only the bdsw load
+// NONMATCHING (95.33%): opt_common_subs off stops the GSW(118+i) CSE; only the bdsw load
 // (r6 before mr r30,r3 vs r3 after) still differs.
 #pragma opt_common_subs off // without it the GSW(118+i) index is CSE'd and the target's fresh evtSetValue index is lost
 USER_FUNC(evt_badgeShop_bottakuru_dec) {
@@ -587,9 +587,8 @@ USER_FUNC(evt_badgeShop_bottakuru_get_kind_cnt) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (0%): target symbol is U_evt_badgeShop_get_special_zaiko but the header
-// declares evt_badgeShop_get_special_zaiko, so they never pair. Cannot rename (brief).
-USER_FUNC(evt_badgeShop_get_special_zaiko) {
+// NONMATCHING (90.75%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
+USER_FUNC(U_evt_badgeShop_get_special_zaiko) {
 	s32 badge, count;
 	int i;
 
@@ -631,9 +630,7 @@ s32 badgeShop_ThrowCheck(s32 itemId) {
 	return count;
 }
 
-// NONMATCHING (0%): target symbol is U_badgeShop_SpecialCheck but the header declares
-// badgeShop_SpecialCheck, so the two are never paired. Cannot rename (brief); logic is correct.
-s32 badgeShop_SpecialCheck(void) {
+s32 U_badgeShop_SpecialCheck(void) {
 	s32 count;
 	int i;
 

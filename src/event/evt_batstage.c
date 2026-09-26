@@ -77,7 +77,7 @@ s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (0%): first attempt, still being reconstructed.
+// NONMATCHING (81.55%): 18 instructions differ, 16 missing, 17 extra, plus register differences.
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* bw = _battleWorkPointer;
 	s32* args = event->args;

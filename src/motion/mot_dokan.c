@@ -20,7 +20,7 @@ s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z);
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void _partyEntry(s32 arg);
 
-// Raw accessors for MarioWork fields that are not named in include/mario/mario.h.
+// Raw accessors for MarioWork and PartyEntry fields that are not named in their headers.
 #define M_S8(m, off) (*(s8*)((unsigned char*)(m) + (off)))
 #define M_F32(m, off) (*(f32*)((unsigned char*)(m) + (off)))
 #define M_VEC(m, off) (*(Vec*)((unsigned char*)(m) + (off)))
@@ -79,7 +79,7 @@ void mot_dokan(void) {
         mario->dispFlags |= 8;
         mario->dispFlags |= 0x100;
         M_F32(mario, 0x2A4) = float_0_8041cd80;
-        M_F32(mario, 0x2A8) = mario->position.z;
+        mario->wCamVal1 = mario->position.z;
         mario->multiTimer = 0;
         mario->airTimer = 0;
         mario->baseSpeed = float_0_8041cd80;
@@ -125,7 +125,7 @@ void mot_dokan(void) {
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0;
         } else if (M_S8(mario, 0x3E) == 4) {
-            M_VEC(mario, 0xC8) = vec3_802f3db4;
+            mario->scale = vec3_802f3db4;
             M_VEC(mario, 0x98) = vec3_802f3dc0;
             M_VEC(mario, 0xA4) = vec3_802f3dcc;
             M_VEC(mario, 0xBC) = vec3_802f3dd8;
@@ -149,15 +149,15 @@ void mot_dokan(void) {
     switch (mario->currSubMotionId) {
     case 0xA:
         mario->unk1A8 = revise360(mario->unk1A8 + M_F32(mario, 0x2A0));
-        M_F32(mario, 0xC8) += float_neg0p005_8041cd90;
-        if (M_F32(mario, 0xC8) < float_0_8041cd80) {
-            M_F32(mario, 0xC8) = float_0_8041cd80;
+        mario->scale.x += float_neg0p005_8041cd90;
+        if (mario->scale.x < float_0_8041cd80) {
+            mario->scale.x = float_0_8041cd80;
         }
-        M_F32(mario, 0xCC) = M_F32(mario, 0xC8);
-        M_F32(mario, 0xD0) = M_F32(mario, 0xC8);
+        mario->scale.y = mario->scale.x;
+        mario->scale.z = mario->scale.x;
         break;
     case 0x14:
-        M_VEC(mario, 0xC8) = vec3_802f3df0;
+        mario->scale = vec3_802f3df0;
         mario->currSubMotionId = 0x15;
         if (mario->flags & 0x02000000) {
             M_F32(mario, 0xA8) = float_neg2_8041cd94;
@@ -166,19 +166,19 @@ void mot_dokan(void) {
     case 0x15:
         mario->unk1A8 = revise360(mario->unk1A8 + M_F32(mario, 0x2A0));
         if (mario->flags & 0x02000000) {
-            M_F32(mario, 0xC8) += float_0p03_8041cd98;
-            if (M_F32(mario, 0xC8) >= float_1_8041cd9c) {
-                M_F32(mario, 0xC8) = float_1_8041cd9c;
+            mario->scale.x += float_0p03_8041cd98;
+            if (mario->scale.x >= float_1_8041cd9c) {
+                mario->scale.x = float_1_8041cd9c;
             }
-            M_F32(mario, 0xCC) = M_F32(mario, 0xC8);
-            M_F32(mario, 0xD0) = M_F32(mario, 0xC8);
+            mario->scale.y = mario->scale.x;
+            mario->scale.z = mario->scale.x;
         } else {
-            M_F32(mario, 0xC8) += float_0p05_8041cda0;
-            if (M_F32(mario, 0xC8) >= float_1_8041cd9c) {
-                M_F32(mario, 0xC8) = float_1_8041cd9c;
+            mario->scale.x += float_0p05_8041cda0;
+            if (mario->scale.x >= float_1_8041cd9c) {
+                mario->scale.x = float_1_8041cd9c;
             }
-            M_F32(mario, 0xCC) = M_F32(mario, 0xC8);
-            M_F32(mario, 0xD0) = M_F32(mario, 0xC8);
+            mario->scale.y = mario->scale.x;
+            mario->scale.z = mario->scale.x;
         }
         break;
     case 0x1E:
@@ -189,33 +189,33 @@ void mot_dokan(void) {
             break;
         }
         M_F32(mario, 0xBC) += M_F32(mario, 0x2A0);
-        M_F32(mario, 0xC8) += float_neg0p02_8041cda4;
-        if (M_F32(mario, 0xC8) < float_0_8041cd80) {
-            M_F32(mario, 0xC8) = float_0_8041cd80;
+        mario->scale.x += float_neg0p02_8041cda4;
+        if (mario->scale.x < float_0_8041cd80) {
+            mario->scale.x = float_0_8041cd80;
         }
-        M_F32(mario, 0xCC) = M_F32(mario, 0xC8);
-        M_F32(mario, 0xD0) = M_F32(mario, 0xC8);
-        M_F32(mario, 0xB4) = float_16_8041cda8 * M_F32(mario, 0xC8);
+        mario->scale.y = mario->scale.x;
+        mario->scale.z = mario->scale.x;
+        M_F32(mario, 0xB4) = float_16_8041cda8 * mario->scale.x;
         M_F32(mario, 0x9C) = float_16_8041cda8 - M_F32(mario, 0xB4);
         M_F32(mario, 0xA0) = float_neg3_8041cdac;
         break;
     case 0x28:
         M_F32(mario, 0xBC) += M_F32(mario, 0x2A0);
-        M_F32(mario, 0xC8) += float_0p03_8041cd98;
-        if (M_F32(mario, 0xC8) >= float_1_8041cd9c) {
-            M_F32(mario, 0xC8) = float_1_8041cd9c;
+        mario->scale.x += float_0p03_8041cd98;
+        if (mario->scale.x >= float_1_8041cd9c) {
+            mario->scale.x = float_1_8041cd9c;
         }
-        M_F32(mario, 0xCC) = M_F32(mario, 0xC8);
-        M_F32(mario, 0xD0) = M_F32(mario, 0xC8);
-        M_F32(mario, 0xB4) = float_16_8041cda8 * M_F32(mario, 0xC8);
+        mario->scale.y = mario->scale.x;
+        mario->scale.z = mario->scale.x;
+        M_F32(mario, 0xB4) = float_16_8041cda8 * mario->scale.x;
         M_F32(mario, 0x9C) = float_16_8041cda8 - M_F32(mario, 0xB4);
         M_F32(mario, 0xA0) = float_neg3_8041cdac;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            M_F32(party, 0x70) = M_F32(mario, 0xC8);
-            M_F32(party, 0x74) = M_F32(mario, 0xCC);
-            M_F32(party, 0x78) = M_F32(mario, 0xD0);
+            M_F32(party, 0x70) = mario->scale.x;
+            M_F32(party, 0x74) = mario->scale.y;
+            M_F32(party, 0x78) = mario->scale.z;
             M_F32(party, 0x8C) = M_F32(mario, 0xB4);
             M_F32(party, 0x80) = M_F32(mario, 0x9C);
             M_F32(party, 0x84) = M_F32(mario, 0xA0);
@@ -223,14 +223,14 @@ void mot_dokan(void) {
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
             party->position = mario->position;
-            M_F32(party, 0x70) = M_F32(mario, 0xC8);
-            M_F32(party, 0x74) = M_F32(mario, 0xCC);
-            M_F32(party, 0x78) = M_F32(mario, 0xD0);
+            M_F32(party, 0x70) = mario->scale.x;
+            M_F32(party, 0x74) = mario->scale.y;
+            M_F32(party, 0x78) = mario->scale.z;
             M_F32(party, 0x8C) = M_F32(mario, 0xB4);
             M_F32(party, 0x80) = M_F32(mario, 0x9C);
             M_F32(party, 0x84) = M_F32(mario, 0xA0);
         }
-        M_F32(mario, 0xF0) = M_F32(mario, 0x90);
+        mario->field_EC.y = mario->position.y;
         break;
     case 0x64:
         if (M_S8(mario, 0x3E) == 1) {
@@ -253,8 +253,8 @@ void mot_dokan(void) {
         }
         break;
     case 0x65:
-        M_F32(mario, 0x1A8) += M_F32(mario, 0x2A0);
-        if (M_F32(mario, 0x1A8) >= float_540_8041cdb0) {
+        mario->unk1A8 += M_F32(mario, 0x2A0);
+        if (mario->unk1A8 >= float_540_8041cdb0) {
             marioChgPaper(str_802F3E34);
             mario->multiTimer = 0x14;
             mario->currSubMotionId = 0x66;
@@ -274,7 +274,7 @@ void mot_dokan(void) {
         break;
     case 0x67:
         M_VEC(mario, 0xE0) = mario->position;
-        M_VEC(mario, 0xC8) = vec3_802f3dfc;
+        mario->scale = vec3_802f3dfc;
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;
@@ -287,7 +287,7 @@ void mot_dokan(void) {
         M_F32(mario, 0x19C) = mario->directionView;
         if (M_S8(mario, 0x3E) == 4) {
             camFollowYOn();
-            M_F32(mario, 0xF0) = M_F32(mario, 0x90);
+            mario->field_EC.y = mario->position.y;
         }
         mario->flags &= ~0x100;
         break;
@@ -298,15 +298,15 @@ void mot_dokan(void) {
     switch (mario->currSubMotionId) {
     case 0x6E:
         if (!(mario->flags & 0x02000000)) {
-            M_F32(mario, 0xF0) = M_F32(mario, 0x90);
+            mario->field_EC.y = mario->position.y;
         }
         marioUpdateCamPos();
         camFollowYOff();
         mario->currSubMotionId = 0x6F;
         // fallthrough
     case 0x6F:
-        M_F32(mario, 0x1A8) += M_F32(mario, 0x2A0);
-        if (M_F32(mario, 0x1A8) >= float_540_8041cdb0) {
+        mario->unk1A8 += M_F32(mario, 0x2A0);
+        if (mario->unk1A8 >= float_540_8041cdb0) {
             if (!(mario->flags & 0x02000000)) {
                 camFollowYOn();
             }
@@ -329,7 +329,7 @@ void mot_dokan(void) {
         break;
     case 0x71:
         M_VEC(mario, 0xE0) = mario->position;
-        M_VEC(mario, 0xC8) = vec3_802f3e08;
+        mario->scale = vec3_802f3e08;
         marioOfsRotReset();
         mario->dispFlags &= ~0x8;
         mario->dispFlags &= ~0x100;
@@ -403,9 +403,9 @@ void _partyEntry(s32 arg) {
                         angle = MATCH_F32(float_120_8041cdb8);
                     }
                     party->flags2 &= ~1;
-                    M_F32(party, 0x110) = revise360(mario->unk1A8 + angle);
-                    M_F32(party, 0x10C) = mario->unk1A8;
-                    M_F32(party, 0xFC) = M_F32(mario, 0x19C);
+                    party->field_110 = revise360(mario->unk1A8 + angle);
+                    party->field_10C = mario->unk1A8;
+                    party->field_FC = M_F32(mario, 0x19C);
                 }
             }
         } else {
@@ -422,9 +422,9 @@ void _partyEntry(s32 arg) {
                 angle = MATCH_F32(float_neg120_8041cdbc);
             }
             party->flags2 &= ~1;
-            M_F32(party, 0x110) = revise360(mario->unk1A8 + angle);
-            M_F32(party, 0x10C) = mario->unk1A8;
-            M_F32(party, 0xFC) = M_F32(mario, 0x19C);
+            party->field_110 = revise360(mario->unk1A8 + angle);
+            party->field_10C = mario->unk1A8;
+            party->field_FC = M_F32(mario, 0x19C);
         }
     }
 }

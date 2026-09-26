@@ -54,7 +54,6 @@ void _callback_tpl(s32 error, DVDFileInfo* info);
 void _callback_bin(s32 error, DVDFileInfo* info);
 void iconDisp(CameraId camId, void* param);
 void iconGX(Mtx mtx, IconEntry* entry);
-void iconGetWidthHight(u16* width, u16* height, u16 iconId);
 void shadowEntry(f32 x, f32 y, f32 z, f32 size);
 
 // icondrv.h declares IconEntry.flags as s16, but the retail code always loads it

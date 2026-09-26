@@ -15,6 +15,7 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -52,11 +53,17 @@ def source_path(unit):
     return f"src/{unit}.c", f"MarioSt/{unit}"
 
 
+def base_file(base):
+    """BASE is a file when one exists at that path (/dev/null for a new file), otherwise a git ref: refs such as
+    origin/main contain a slash too."""
+    return base if os.path.exists(base) else None
+
+
 def main():
     unit = sys.argv[1]
     base = sys.argv[2:] or []
     path, report_name = source_path(unit)
-    BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
+    BASE_FILE = base_file(base[0]) if base else None
     if BASE_FILE:
         diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
     else:
