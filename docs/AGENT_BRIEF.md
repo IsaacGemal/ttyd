@@ -19,6 +19,10 @@ tricks. A match produced by a trick is thrown away, and the review looks for tri
 - **Write functions in the order the assembly has them.** A file can only be linked (counted as finished) when
   its functions, data and strings come out in exactly the original order. An out-of-order file matches every
   function and still can't link.
+- **Say when your file wants different compiler flags.** If nearly every function in your file only matches
+  with `#pragma optimize_for_size` (or differs only in `stmw`/`lmw` prologues and `divw`), the file is probably
+  built with `-O4,s`. Say so in your report; the orchestrator sets it in `configure.py`. Never add a file-wide
+  pragma instead.
 - **Check your file's compiler flags** in `configure.py` (`extra_cflags`). Some files are built with `-O4,s`.
   If every function in your file seems to want the same pragma, the file probably wants a flag instead: note
   it in your report rather than adding the pragma everywhere.
@@ -51,11 +55,16 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    16-19 (`1<<16` to `1<<19`, mask `0x000F0000`): PowerPC numbers bits from the top, so value bit = 31 - IBM
    bit. Mixing the two numberings is exactly how a wrong flag mask got written. A magic-number division tells
    you the divisor. A wrong constant in a partial function is a real bug that CI can't catch.
-9. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
+9. **Misreading common idioms.** `subi rX, rX, N; subic rX, rX, 1; subfe rX, rX, rX; and rX, rY, rX` means
+   `x == N ? y : 0`, not `x < N`. `fcmpo; cror eq, gt, eq; bne` is a `>=` test. When unsure, write the C, build,
+   and compare the instructions with `check.py FUNC`.
+10. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
-10. **Calling a function with no prototype.** C then assumes it returns int and promotes floats to double.
+11. **Calling a function with no prototype.** C then assumes it returns int and promotes floats to double.
    Include the header, or declare it as its definition says.
-11. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
+12. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
+   object (declare it as the original's symbol) instead.
+13. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
 
 ## Signedness hints from the assembly

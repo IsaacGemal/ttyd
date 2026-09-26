@@ -22,10 +22,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 25 after wave 4, PR #3): 3,503 of 9,770 functions matched, 16.82% of code.
-  Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below).
-  Linked code 8.26% (was 8.12%) after `tools/autolink.py` linked 15 fully matched files.
-- In flight: wave 5 (22 new game files, plus 2 finisher agents making `evt_pouch` and `evt_map` link).
+- Progress (local build, Sep 26 after wave 5, PR #4): 3,780 of 9,770 functions matched, 17.96% of code;
+  linked code 8.45%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Nothing in flight. From wave 6 another session orchestrates (see the last chapters).
 - Targets: game files with no source yet first (the build already lists them; ~2,200 unmatched functions),
   plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
   build setup before agents can work on them.
@@ -664,3 +663,38 @@ becomes the Claude reviewer. Only one session orchestrates at a time.
 - **Stray processes on the tower** (pending Isaac's decision): no new cron job. The launcher's `timeout` stops
   each agent; after each wave the orchestrator checks the tower for leftover `ninja`, `wibo`, `mwcceppc` or
   `objdiff-cli` processes under `~/ttyd-agents` and kills them. Revisit if it keeps happening.
+
+## Wave 5: finishers link two files; a review finds the most bugs yet (2026-09-26, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol and Claude Opus 5.5)
+
+24 agents: 22 wrote new game files, 2 were **finishers** told to make a fully matched file link. First wave with
+`docs/AGENT_BRIEF.md` attached, and first merged with `tools/merge_agent.sh`. **3,503 -> 3,780 functions (+277),
+16.82% -> 17.96% of code, linked 8.26% -> 8.45%.** The new files averaged ~12 functions each, against ~32 in
+wave 4: harder files further down the list, and review found more wrong logic.
+
+**Finishers work.** `evt_pouch` only needed its functions in the original order (all 30 matched, but a linked
+file must match the original's layout). `evt_map` also needed its data reordered, a one-byte script constant
+fixed (no function score showed it), and four globals placed with `#pragma section` (declaring them `const`
+doesn't work; tested). Both link. The brief now tells every agent to write in the original order.
+
+**Free matches from compiler flags.** Three agents noted their file wants `-O4,s`; setting it in `configure.py`
+matched 11 more functions (`battle_mario` 5 -> 14 of 15). The brief now says to report this instead of
+using a file-wide pragma.
+
+**What review found.** Codex: one return value dropped by a `void` definition (`BattlePartyAnimeLoad`), local
+prototypes contradicting headers. Claude (six subagents on per-file logic, cross-file checks in its own context):
+twelve logic bugs in unmatched functions (a flag bit misread with IBM numbering, the `== N` carry idiom read as
+`<` four times, an inverted clamp, a mis-scoped `else`, wrong constants), calls with no prototype reading
+float results from `r3`, and two files (`sac_suki`, parts of `sac_genki`) wrong throughout. Ten functions from
+those two were removed so they return to the queue; the rest were fixed and re-measured.
+
+**New tooling.** `tools/lint_patch.py` now runs clang `-Wimplicit-function-declaration` (flag `IMPLICIT`), which
+catches calls with no prototype. `tools/label_partials.py` keeps `NONMATCHING` labels in step with the build
+(adds missing ones, updates percentages, rewrites false ones, records known issues). Headers gained prototypes
+for a dozen functions defined in `src/` but never declared.
+
+**Open, low severity:** `BtlUnit_snd_se` has three signatures across files (one belongs in `battle_unit.h`);
+`test_kururing_mapdisp` is registered as a display callback but defined taking a `MapObject*` (unclear which is
+right); `evt_sub` reuses `EventEntry`'s 0x88 as a pointer (needs a union); three known issues recorded in labels
+(kinopio `Wait`, `sac_deka` `create_timing`, `party_yoshi` `L_getStick`); 17 local redeclarations of functions
+their headers already declare.
+
