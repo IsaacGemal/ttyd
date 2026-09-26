@@ -7,6 +7,7 @@
 #include "system.h"
 #include "driver/animdrv.h"
 #include <string.h>
+#include "matching.h"
 
 // locals for symbols with no home header (see REPORT.md)
 void peachChgPose(const char* name);
@@ -81,6 +82,7 @@ const char str_80420394[] = "P_Z_8";
 const char str_8042039C[] = "P_S_8";
 const char str_804203A4[] = "P_W_8";
 const char str_804203AC[] = "P_R_8";
+// 4 zero bytes after the last pose string in the original's .sdata2; kept so the file links.
 const char gap_09_804203B4_sdata2[4] = {0, 0, 0, 0};
 
 
@@ -100,8 +102,8 @@ void peachSetStsNormal(void) {
             }
             mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
             npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
-            mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
-            mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+            mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
+            mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
         }
     } else {
         mp->peachFlags &= ~0x7F0;
@@ -283,7 +285,7 @@ void peachTransformOn(void) {
         mp->paperAnimGroupId[0] = animPoseEntry(str_802FC900, 2);
         npcSetMarioAutoTalkPose(str_8042028C, str_80420290);
         {
-            f32 f30 = *(volatile const f32*)&float_30_80420294;
+            f32 f30 = MATCH_F32(float_30_80420294);
             mp->wPlayerCollisionBox.y = f30;
             mp->wPlayerCollisionBox.x = f30;
         }
@@ -304,8 +306,8 @@ void peachTransformOff(void) {
         }
         mp->paperAnimGroupId[0] = animPoseEntry(str_802FC8F8, 2);
         npcSetMarioAutoTalkPose(str_8042026C, str_80420254);
-        mp->wPlayerCollisionBox.y = *(volatile const f32*)&float_47_80420284;
-        mp->wPlayerCollisionBox.x = *(volatile const f32*)&float_20_80420288;
+        mp->wPlayerCollisionBox.y = MATCH_F32(float_47_80420284);
+        mp->wPlayerCollisionBox.x = MATCH_F32(float_20_80420288);
     }
 }
 #pragma opt_propagation on
@@ -396,10 +398,10 @@ void peach_stay(void) {
         mp->currSubMotionId = 0;
         peachChgPose(str_8042026C);
         if (!(mp->flags & 0x20)) {
-            mp->baseSpeed = *(volatile const f32*)&float_0_80420250;
+            mp->baseSpeed = MATCH_F32(float_0_80420250);
         }
     }
-    if (mp->controlStickSensitivity > *(volatile const f32*)&float_0_80420250) {
+    if (mp->controlStickSensitivity > MATCH_F32(float_0_80420250)) {
         marioChgMot(1);
     }
     if ((mp->flags & 0x8) || (mp->dispFlags & 0x40000000)) {
@@ -477,7 +479,7 @@ void peach_walk(void) {
                 u32 snd2;
                 u32 pf = mp2->peachFlags;
                 if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+                    if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                         snd = 0x80c;
                         snd2 = 0x80b;
                     } else {
@@ -498,7 +500,7 @@ void peach_walk(void) {
                 }
                 mp2->multiTimer++;
             }
-            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
+            if (mp->controlStickSensitivity == MATCH_F32(float_0_80420250)) {
                 marioChgMot(0);
             }
         }
@@ -527,7 +529,7 @@ void peach_dash(void) {
         u32 snd;
         u32 pf = mp2->peachFlags;
         if (!(pf & 0x2000)) {
-            if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+            if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                 snd = 0x80c;
                 snd2 = 0x80b;
             } else {
@@ -560,7 +562,7 @@ void peach_dash(void) {
                 u32 snd;
                 u32 pf = mp2->peachFlags;
                 if (!(pf & 0x2000)) {
-                    if ((pf & 0x20) && *(volatile const f32*)&float_0_80420250 == mp2->scale.y) {
+                    if ((pf & 0x20) && MATCH_F32(float_0_80420250) == mp2->scale.y) {
                         snd = 0x80c;
                         snd2 = 0x80b;
                     } else {
@@ -581,7 +583,7 @@ void peach_dash(void) {
                 }
                 mp2->multiTimer++;
             }
-            if (mp->controlStickSensitivity == *(volatile const f32*)&float_0_80420250) {
+            if (mp->controlStickSensitivity == MATCH_F32(float_0_80420250)) {
                 marioChgMot(0);
             }
         }

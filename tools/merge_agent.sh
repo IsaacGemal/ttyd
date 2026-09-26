@@ -54,7 +54,10 @@ git diff -U0 "$F" | grep -q -E '^\+\s*#\s*pragma' && FLAGS="--allow-pragma"
 OUT=$(python3 tools/ci.py $FLAGS 2>&1)
 echo "$OUT" | tail -9
 echo "$OUT" | grep -q '^PASS' || { restore; echo "REJECT $TAG"; exit 1; }
-LINT=$(python3 tools/lint_patch.py "$UNIT") || { restore; echo "REJECT $TAG: empty stubs:"; echo "$LINT"; exit 1; }
+LINT=$(python3 tools/lint_patch.py "$F" 2>&1) || {
+  restore
+  if echo "$LINT" | grep -q '^STUB'; then echo "REJECT $TAG: empty stubs:"; else echo "REJECT $TAG: lint failed:"; fi
+  echo "$LINT"; exit 1; }
 [ -n "$LINT" ] && { echo "$LINT"; echo "$LINT" > "$D/lint.txt"; }
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }

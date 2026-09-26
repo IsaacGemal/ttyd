@@ -10,3 +10,11 @@
         unsigned char _pad[(bytes)];    \
         (void)_pad;                     \
     } while (0)
+
+// Read the f32 constant x through a volatile pointer, so the compiler loads it from its own symbol where the
+// original does instead of folding it or pooling a copy.
+#ifdef MUST_MATCH
+#define MATCH_F32(x) (*(volatile const f32*)&(x))
+#else
+#define MATCH_F32(x) (x)
+#endif

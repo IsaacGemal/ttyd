@@ -59,8 +59,8 @@ void chuchu_use(PartyEntry* party) {
         party->field_FC = angleABf(party->position.x, party->position.z,
                                    *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
         party->dir = party->field_FC;
-        party->field_10C = *(f32*)((u8*)player + 0x1A8);
-        party->field_110 = *(f32*)((u8*)player + 0x1A8);
+        party->field_10C = player->unk1A8;
+        party->field_110 = player->unk1A8;
         party->speed = distABf(party->position.x, party->position.z,
                                *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C))
                        / (f32)*(s32*)((u8*)party + 0x24);

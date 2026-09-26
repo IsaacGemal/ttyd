@@ -6,6 +6,7 @@
 #include "driver/icondrv.h"
 #include "system.h"
 #include <string.h>
+#include "battle/ac/ac_air_gauge.h"
 
 extern void BattleAcDrawGauge(s32, s32, s32, s32, s32, s32, s32, s32, f32);
 extern void BattleAcGaugeSeInit(void);
@@ -36,28 +37,6 @@ const f32 float_0_80420aac = 0.0f;
 extern u8 lbl_803ABCE0[];
 
 static void actionCommandDisp(f32, f32);
-void battleAcDelete_AirGauge(BattleWork* work);
-void battleAcDisp_AirGauge(CameraId camId, void* param);
-s32 battleAcResult_AirGauge(BattleWork* work);
-
-// Air-gauge work area embedded in BattleWork at 0x1F20; not declared in a header yet.
-typedef struct AirGaugeWork {
-	u8 field_0x0[0x0C];  // 0x00
-	s32 field_0xC;       // 0x0C
-	u8 field_0x10[0x04]; // 0x10
-	f32 iconX;           // 0x14
-	f32 iconY;           // 0x18
-	u8 field_0x1C[0x04]; // 0x1C
-	s32 counter;         // 0x20
-	u8 field_0x24[0x04]; // 0x24
-	f32 value;           // 0x28
-	s32 frame;           // 0x2C
-	f32 gaugePercent;    // 0x30
-	s32 field_0x34;      // 0x34
-	s32 field_0x38;      // 0x38
-	s32 flag;            // 0x3C
-	s32 field_0x40;      // 0x40
-} AirGaugeWork;
 
 // The runtime work area of the gauge, at BattleWork+0x1F4C.
 typedef struct AirGaugeDecWork {
@@ -71,11 +50,11 @@ typedef struct AirGaugeDecWork {
 
 // don't_inline: the original keeps actionCommandDisp as its own local function
 #pragma dont_inline on
-// NONMATCHING (74%): the derived work pointer is folded into the BattleWork base and the by-value Vec
+// NONMATCHING (74.31%): the derived work pointer is folded into the BattleWork base and the by-value Vec
 // argument gets an extra copy; float constants also land in the compiler's own pool.
 static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleWork* work = _battleWorkPointer;
-	AirGaugeWork* disp = (AirGaugeWork*)((u8*)work + 0x1f20);
+	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
 	f32 target;
 	f32 value;
@@ -121,10 +100,10 @@ void battleAcDelete_AirGauge(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;
 }
 
-// NONMATCHING (99%): the work pointer is folded into the BattleWork base (`mr r31, r4`) instead of
+// NONMATCHING (98.84%): the work pointer is folded into the BattleWork base (`mr r31, r4`) instead of
 // `addi r31, r4, 0x1f20`.
 void battleAcDisp_AirGauge(CameraId camId, void* param) {
-	AirGaugeWork* ag = (AirGaugeWork*)((u8*)param + 0x1f20);
+	BattleACDispParams* ag = &((BattleWork*)param)->actionCommands.dispParams;
 	s32 state = ((BattleWork*)param)->actionCommands.mAcState;
 
 	switch (state) {
@@ -167,7 +146,7 @@ typedef struct GaugeTableEntry {
 
 f32 _GetGaugeDecValue(void);
 
-// NONMATCHING (93%): register allocation only; the work-area pointer is folded into the BattleWork base
+// NONMATCHING (92.72%): register allocation only; the work-area pointer is folded into the BattleWork base
 // and the base/table registers differ.
 f32 _GetGaugeDecValue(void) {
 	BattleWork* work = _battleWorkPointer;
@@ -228,14 +207,12 @@ f32 _GetGaugeDecValue(void) {
 	return max;
 }
 
-s32 battleAcMain_AirGauge(BattleWork* work);
 
-// NONMATCHING (96%): the derived work pointers use a different base register than the original.
-// optimize_for_size: main matches with -O4,s codegen; if the file gets -O4,s this pragma can go.
+// NONMATCHING (96.12%): 3 instructions differ, 3 missing, 3 extra, plus register differences.
 #pragma optimize_for_size on
 s32 battleAcMain_AirGauge(BattleWork* work) {
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
-	AirGaugeWork* disp = (AirGaugeWork*)((u8*)work + 0x1f20);
+	BattleACDispParams* disp = &work->actionCommands.dispParams;
 
 	switch (work->actionCommands.mAcState) {
 	case 0x63:
@@ -292,9 +269,9 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		// fallthrough
 	case 0x3E8:
 		dec->frame++;
-		if ((s32)BattlePadCheckNow(0x100) > 0) {
+		if (BattlePadCheckNow(0x100)) {
 			work->actionCommands.outputParams[1] = 1;
-			if ((s32)BattlePadCheckTrigger(0x100) > 0) {
+			if (BattlePadCheckTrigger(0x100)) {
 				dec->field_0x8++;
 				dec->value = 0;
 			}

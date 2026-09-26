@@ -9,6 +9,7 @@
 #include "system.h"
 #include "peach.h"
 #include <string.h>
+#include "matching.h"
 
 // Local declarations for functions whose headers don't declare them yet.
 // Listed in REPORT.md so they can move to a header later.
@@ -26,7 +27,7 @@ void motSlitCancel(void);
 #define MWU16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define MWS16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define MWVEC(m, off) (*(Vec*)((u8*)(m) + (off)))
-#define MW_ZERO (*(volatile const f32*)&float_0_8041aef8)
+#define MW_ZERO MATCH_F32(float_0_8041aef8)
 
 // .rodata
 const char str_802C5F28[] = "M_S_1R";

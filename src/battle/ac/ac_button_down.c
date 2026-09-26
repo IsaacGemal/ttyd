@@ -5,13 +5,8 @@
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+#include "battle/ac/ac_button_down.h"
 
-// No header yet for this unit; prototypes are declared locally and listed in REPORT.md so they can
-// move to a header once another file needs them.
-s32 battleAcMain_ButtonDown(BattleWork* work);
-s32 battleAcResult_ButtonDown(BattleWork* work);
-void battleAcDisp_ButtonDown(CameraId camId, void* param);
-void battleAcDelete_ButtonDown(BattleWork* work);
 static void actionCommandDisp(s32 type, f32 x, f32 y);
 
 // Float literals the original unit emitted into .sdata2 (offsets listed in REPORT.md).
@@ -48,16 +43,6 @@ typedef struct ButtonDownWork {
     s32 states[13];  // 0x3C, 0 = waiting, 1 = pressed
     s32 field_0x70;  // 0x70, post-AC timer
 } ButtonDownWork;
-
-// Display parameter block at _battleWorkPointer + 0x1F20. battle_ac.h's BattleACDispParams names
-// 0x14/0x18 but not the countdown at 0x20, so this local view names it.
-typedef struct ButtonDownDisp {
-    u8 pad_0x00[0x14]; // 0x00
-    f32 iconX;         // 0x14
-    f32 iconY;         // 0x18
-    u8 pad_0x1C[0x04]; // 0x1C
-    s32 countdown;     // 0x20
-} ButtonDownDisp;
 
 // The original ac_button_down unit was compiled with -O4,s (optimize for size): the prologues use
 // stmw/lmw, which -O4,p never emits. The file has no per-Object flag in configure.py, so scope the
@@ -190,17 +175,17 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
 // (`addi r4, r4, 0x1f20`) and then uses `0x20(r4)`; ours keeps the BattleWork base and folds it into
 // `0x1f40(r4)`. Functionally identical.
 void battleAcDisp_ButtonDown(CameraId camId, void* param) {
-    ButtonDownDisp* disp = (ButtonDownDisp*)((u8*)param + 0x1F20);
+    BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
     f32 x;
     f32 y;
 
     switch (((BattleWork*)param)->actionCommands.mAcState) {
         case 0:
         case 99:
-            if (disp->countdown > 0) {
-                disp->countdown--;
+            if (disp->counter > 0) {
+                disp->counter--;
             }
-            x = intplGetValue(4, 20 - disp->countdown, 20, float_neg300_804204fc, float_0_80420500);
+            x = intplGetValue(4, 20 - disp->counter, 20, float_neg300_804204fc, float_0_80420500);
             y = float_0_80420500;
             break;
         default:
@@ -222,7 +207,7 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 // instruction that touches a pointer/loop variable differs in its register field.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
     ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
-    ButtonDownDisp* disp = (ButtonDownDisp*)((u8*)work + 0x1F20);
+    BattleACDispParams* disp = &work->actionCommands.dispParams;
     const char* sfx;
     s32 smooth = 0;
     s32 cont;
@@ -241,7 +226,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                 memset(disp, 0, 0x2C);
                 disp->iconX = float_neg300_804204fc;
                 disp->iconY = float_0_80420500;
-                disp->countdown = 0x14;
+                disp->counter = 0x14;
                 memset(bd->buttons, 0, 0x34);
                 memset(bd->states, 1, 0x34);
                 for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {

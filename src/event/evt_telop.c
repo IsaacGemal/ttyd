@@ -17,9 +17,16 @@ extern const GXColor dat_8041e7b8;
 extern const GXColor dat_8041e7bc;
 extern const GXColor dat_8041e7c0;
 extern const GXColorS10 zero_802fa0c4;
+#ifdef MUST_MATCH
+// volatile: telop scores higher with it (95.5% vs 91.9%); see telop's comment.
 extern const volatile f32 float_0_8041e7c4;
 extern const volatile f32 float_0p2_8041e7c8;
 extern const volatile f32 float_1_8041e7cc;
+#else
+extern const f32 float_0_8041e7c4;
+extern const f32 float_0p2_8041e7c8;
+extern const f32 float_1_8041e7cc;
+#endif
 extern const f32 float_neg15_8041e7d0;
 extern const f32 float_neg105_8041e7d4;
 extern const f32 float_100_8041e7d8;
@@ -52,12 +59,11 @@ static const char* msg_tbl[] = {
 // All telop logic matches, but:
 // (1) every aggregate local is allocated 4 bytes lower than the original (texObj at 0x24 vs
 //     0x28, the matrices likewise);
-// (2) the compiler writes an anonymous @288 pool constant for the unsigned int->float
-//     conversions instead of double_to_int_802fa0e0, and emits the signed `stw` conversion
-//     where the original uses `xoris` / 2^52+2^31;
-// (3) float_0_8041e7c4/float_1_8041e7cc reload instead of the original's fmr (declaring them
-//     volatile avoids the extra callee-saved registers).
-// NONMATCHING (93.12%): the three points above.
+// (2) the int->float conversions use compiler-generated pool constants (@288, @291) where the
+//     original uses double_to_int_mask_802fa0d8 and double_to_int_802fa0e0;
+// (3) float_1_8041e7cc and float_0_8041e7c4 are reloaded where the original reuses a register
+//     (fmr). Declaring them volatile (under MUST_MATCH) gets closer than not.
+// NONMATCHING (95.53%): the three points above.
 void telop(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     GXColor color;
@@ -71,7 +77,7 @@ void telop(CameraId cameraId, void* param) {
     f32 width;
     f32 height;
     f32 scale;
-    u32 y;
+    s32 y;
     s32 i;
 
     effGetTexObj(0x81, &texObj);
@@ -88,8 +94,8 @@ void telop(CameraId cameraId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 
     {
-        f32 ty = (f32)(u32)(rand() % 64) / height;
-        f32 tx = (f32)(u32)(rand() % 256) / width;
+        f32 ty = (f32)(rand() % 64) / height;
+        f32 tx = (f32)(rand() % 256) / width;
 
         PSMTXTrans(texTrans, tx, ty, float_0_8041e7c4);
     }

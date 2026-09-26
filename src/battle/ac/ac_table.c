@@ -1,13 +1,10 @@
 #include "battle/ac/ac_table.h"
+#include "battle/ac/ac_timing_a.h"
+#include "battle/ac/ac_button_down.h"
+#include "battle/ac/ac_air_gauge.h"
 
-// Prototypes for the action-command implementation files. They have not been
-// decompiled yet, so there is no header declaring them; the signatures match
+// Prototypes for the action-command files that have no header yet; the signatures match
 // ActionCommandEntry's callback fields.
-s32 battleAcMain_TimingA(BattleWork* work);
-s32 battleAcResult_TimingA(BattleWork* work);
-void battleAcDisp_TimingA(CameraId camId, void* param);
-void battleAcDelete_TimingA(BattleWork* work);
-
 s32 battleAcMain_TimingWide(BattleWork* work);
 s32 battleAcResult_TimingWide(BattleWork* work);
 void battleAcDisp_TimingWide(CameraId camId, void* param);
@@ -48,10 +45,6 @@ s32 battleAcResult_StickRotate(BattleWork* work);
 void battleAcDisp_StickRotate(CameraId camId, void* param);
 void battleAcDelete_StickRotate(BattleWork* work);
 
-s32 battleAcMain_ButtonDown(BattleWork* work);
-s32 battleAcResult_ButtonDown(BattleWork* work);
-void battleAcDisp_ButtonDown(CameraId camId, void* param);
-void battleAcDelete_ButtonDown(BattleWork* work);
 
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work);
 s32 battleAcResult_PendulumCraneTiming(BattleWork* work);
@@ -63,10 +56,6 @@ s32 battleAcResult_CraneTiming(BattleWork* work);
 void battleAcDisp_CraneTiming(CameraId camId, void* param);
 void battleAcDelete_CraneTiming(BattleWork* work);
 
-s32 battleAcMain_AirGauge(BattleWork* work);
-s32 battleAcResult_AirGauge(BattleWork* work);
-void battleAcDisp_AirGauge(CameraId camId, void* param);
-void battleAcDelete_AirGauge(BattleWork* work);
 
 s32 battleAcMain_PowerGauge(BattleWork* work);
 s32 battleAcResult_PowerGauge(BattleWork* work);

@@ -22,21 +22,27 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CONFIGURE = ROOT / "configure.py"
 REPORT = ROOT / "build/G8MJ01/report.json"
-OBJECT = re.compile(r'Object\(NonMatching, "([^"]+)"')
+
+
+def objects():
+    """(module, source path, Matching?) for every Object in configure.py. Objects inside a Rel("name", [...])
+    block belong to that REL module; all others to MarioSt, as in the report's unit names."""
+    text = CONFIGURE.read_text()
+    rels = [(m.start(), m.end(), m.group(1)) for m in
+            re.finditer(r'Rel\(\s*"(\w+)",\s*\[.*?\]\s*,?\s*\)', text, re.S)]
+    out = []
+    for m in re.finditer(r'Object\((NonMatching|Matching), "([^"]+)"', text):
+        module = next((name for a, b, name in rels if a <= m.start() < b), "MarioSt")
+        out.append((module, m.group(2), m.group(1) == "Matching"))
+    return out
 
 
 def candidates():
-    units = json.loads(REPORT.read_text())["units"]
-    by_path = {}
-    for u in units:
-        by_path[u["name"].split("/", 1)[1] if "/" in u["name"] else u["name"]] = u
+    units = {u["name"]: u for u in json.loads(REPORT.read_text())["units"]}
     out = []
-    for src in OBJECT.findall(CONFIGURE.read_text()):
-        u = by_path.get(src.rsplit(".", 1)[0])
-        if not u:
-            continue
-        m = u.get("measures", {})
-        if m.get("matched_code_percent") == 100:
+    for module, src, matching in objects():
+        u = units.get(f"{module}/{src.rsplit('.', 1)[0]}")
+        if not matching and u and u.get("measures", {}).get("matched_code_percent") == 100:
             out.append(src)
     return out
 
@@ -57,6 +63,8 @@ def build():
 def set_matching(src, on):
     text = CONFIGURE.read_text()
     a, b = f'Object(NonMatching, "{src}"', f'Object(Matching, "{src}"'
+    if text.count(f'"{src}"') != 1:
+        sys.exit(f"{src} is listed {text.count(chr(34) + src + chr(34))} times in configure.py; flip it by hand")
     CONFIGURE.write_text(text.replace(a, b, 1) if on else text.replace(b, a, 1))
 
 
