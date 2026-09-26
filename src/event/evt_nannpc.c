@@ -694,7 +694,7 @@ void nannpc_ext_dispent(void) {
     }
 }
 
-// NONMATCHING (69.74%): reconstructed behaviour; stack frame/register allocation and
+// NONMATCHING (71.24%): reconstructed behaviour; stack frame/register allocation and
 // the reflection-branch float orderings still differ from the target.
 void nanNPCOption(void) {
     NanNpcWork* work = nanNPCWork;
@@ -780,6 +780,7 @@ void nanNPCOption(void) {
         }
         entry->work[4] = 0;
         entry->work[5] = 0;
+        hitDist = vlen;
         entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitX, &hitY, &hitZ, &hitDist, &hitNX, &hitNY, &hitNZ,
                                              pos.x, pos.y, pos.z, velNorm.x, velNorm.y, velNorm.z);
         if (entry->work[4] == 0) {

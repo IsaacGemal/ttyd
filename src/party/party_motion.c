@@ -49,8 +49,8 @@ void partyChgMot(PartyEntry* party, s32 mot);
 HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle);
 void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyGetFootmarkId(void);
-void partyNextReadId(void);
+u32 partyGetFootmarkId(u32* flags);
+void partyNextReadId(u32 index);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
 void partySearchFrontWall(PartyEntry* party, Vec* position, f32 a, f32 b);
 void N_partyPlaySfxPartyLanding1(PartyEntry* party);
@@ -636,8 +636,7 @@ s32 party_motion_fall(PartyEntry* party) {
     f32 frontWall;
 
     if (!(party->flags & 0x8)) {
-        partyGetFootmarkId();
-        partyNextReadId();
+        partyNextReadId(partyGetFootmarkId((u32*)party));
     }
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);

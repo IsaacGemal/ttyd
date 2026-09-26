@@ -69,7 +69,7 @@ typedef struct PartyMoveWork {
 } PartyMoveWork;
 
 void partyMoveMain(PartyEntry* party, s32 hosei);
-s32 nokonokoGetStatus(void);
+s32 nokonokoGetStatus(PartyEntry* party);
 void* mobjHitObjPtrToPtr(HitEntry* hit);
 s32 marioChkDeepSleep(void);
 s32 chuchu_searchObject(void);
@@ -598,7 +598,7 @@ f32 unk_800c9f48(s32 id, f32 y) {
         return fabsf(mario->position.y - y);
     }
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
@@ -610,7 +610,7 @@ f32 unk_800c9f48(s32 id, f32 y) {
         marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus() == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
                 flag2 = 1;
             }
         }
@@ -639,7 +639,7 @@ f32 partyGetTargetDistY(s32 id) {
     flag = 0;
     target = anotherPartyGetPtr(id != 0);
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
@@ -663,7 +663,7 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
         return PSVECDistance(&marioGetPtr()->position, pos);
     }
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
@@ -676,7 +676,7 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
         marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus() == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
                 flag2 = 1;
             }
         }
@@ -703,7 +703,7 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
         return distABf(x, z, mario->position.x, mario->position.z);
     }
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
@@ -715,7 +715,7 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
         marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus() == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
                 flag2 = 1;
             }
         }
@@ -737,7 +737,7 @@ f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
 
     target = anotherPartyGetPtr(id != 0);
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
@@ -749,7 +749,7 @@ f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
         marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus() == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
                 flag2 = 1;
             }
         }
@@ -773,7 +773,7 @@ void L_getTargetPos(s32 id, Vec* out) {
     mario2 = marioGetPtr();
     target = anotherPartyGetPtr(id != 0);
     if (target != NULL) {
-        if (nokonokoGetStatus() == 3 || PSVECDistance(&mario2->position, &target->position) >= 150.0f) {
+        if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario2->position, &target->position) >= 150.0f) {
             flag = 1;
         }
     }
