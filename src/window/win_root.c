@@ -875,7 +875,7 @@ void sort_4_3_func(WindowWork* work) {
     WW_S32(work, 0x3F0) = WW_S32(work, 0x3E8) / 8;
 }
 
-// NONMATCHING (96.81%): same bubble sort as sort_4_3 but over the s16 array at
+// NONMATCHING (97.72%): same bubble sort as sort_4_3 but over the s16 array at
 // work+0xeb8 (index +0xF0). Loops/branches match; only MWCC's register assignment
 // differs (it puts pa/i/j/pb/da/db in different volatile vs saved regs).
 void sort_5_3_func(WindowWork* work) {
@@ -941,5 +941,5 @@ void sort_5_3_func(WindowWork* work) {
 
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0xE98) = 0;
-    WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 10;
+    WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
 }

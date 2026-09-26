@@ -245,7 +245,7 @@ USER_FUNC(evt_nannpc_jump_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.75%): nannpcFind swap and callee-saved register numbers.
+// NONMATCHING (99.07%): callee-saved register numbers differ.
 USER_FUNC(evt_nannpc_move_position2) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -274,7 +274,7 @@ USER_FUNC(evt_nannpc_move_position2) {
     }
     PSVECSubtract(&target, &entry->field_0x88, &delta);
     duration = (s32)((1000.0f * PSVECMag(&delta)) / speed);
-    elapsed = (s32)OSTicksToMilliseconds((u64)(time - event->savedTime));
+    elapsed = (s32)OSTicksToMilliseconds((u64)(s32)((s32)time - (s32)event->savedTime));
     PSVECScale(&delta, &move, (f32)elapsed / (f32)duration);
     if (elapsed < duration) {
         PSVECAdd(&entry->field_0x88, &move, &entry->position);

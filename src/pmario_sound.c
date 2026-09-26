@@ -4750,8 +4750,8 @@ void psndSFXOnVol(s32 a, s32 b) {
 	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
-void psndSFXOn_(const char* name) {
-	__psndSFXOn((s32)name, 0xFF, 0xFF, 0, 0, 0, 0x10, 1);
+s32 psndSFXOn_(const char* name) {
+	return __psndSFXOn((s32)name, 0xFF, 0xFF, 0, 0, 0, 0x10, 1);
 }
 
 s32 psndSFXOnEx_3D(const char* name, Vec* position, s32 vol, s32 pan, s32 pitch, s32 flags) {

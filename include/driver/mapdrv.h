@@ -168,3 +168,7 @@ void mapSetMaterialFog(void);
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx);
 
 MapObject* mapGetMapObj(const char* name);
+
+void mapObjScale(const char* name, f32 x, f32 y, f32 z);
+void mapObjTranslate(const char* name, f32 x, f32 y, f32 z);
+void mapObjRotate(const char* name, f32 x, f32 y, f32 z);
