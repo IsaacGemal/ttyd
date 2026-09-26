@@ -345,8 +345,6 @@ USER_FUNC(evt_map_fog_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// Keep the two data[] stores from being merged across the calls.
-#pragma opt_propagation off
 USER_FUNC(evt_map_entry_airport_harbor) {
     s32* args = event->args;
     s32 mode = evtGetValue(event, args[0]);
@@ -387,7 +385,6 @@ USER_FUNC(evt_map_entry_airport_harbor) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
 
 USER_FUNC(evt_mapobj_color) {
     s32* args = event->args;
