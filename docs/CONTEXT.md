@@ -875,3 +875,13 @@ that agree with their definitions still belong in headers (`marioSetFallPara` an
 `BattleDrawEnemyHP`'s label needs a note on what's missing; 10 fully matched files still fail to link
 (`battle.c`, `dispdrv`, `evt_hit`, `evt_msg`, `mot_stay`, five MusyX files), the next finishers' queue.
 
+
+## Latent bugs, and two ways to estimate them, both parked (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+Every PR will ship bugs no review caught, and we don't know what kinds we haven't seen yet (Isaac). The only
+guarantee we fully trust is the checksum of a linked file (`build.sha1` comes from the disc); scores, the
+ratchet and lint are our own tools. Two ways to measure what reviews miss, **shelved for later**:
+- **Bug seeding:** plant a few realistic bugs in a PR, recorded privately, see what share the reviewers
+  catch, and remove them before merging. That share estimates the reviewers' catch rate on real bugs.
+- **Capture-recapture:** two independent reviews of the same PR; estimated total ≈ A's count × B's count ÷ the
+  overlap. Needs reviews run in parallel, against the sequential routine, so it would be a one-PR experiment.
