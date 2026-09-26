@@ -81,147 +81,152 @@ WinMgrDesc coin_desc = {
 // .sdata2
 const GXColor dat_80420958 = {0xFF, 0x00, 0x00, 0xFF};
 const GXColor dat_8042095c = {0xFF, 0xFF, 0xFF, 0xFF};
-const f32 float_neg220_80420960 = -220.0f;
-const f32 float_neg113_80420964 = -113.0f;
-const f32 float_0_80420968 = 0.0f;
-const f32 float_0p7_8042096c = 0.7f;
-const f32 float_neg192_80420970 = -192.0f;
-const f32 float_neg126_80420974 = -126.0f;
 
-USER_FUNC(mainwindow_opendisable) {
-    winOpenDisable();
-    return EVT_RETURN_DONE;
-}
+// NOTE: functions are deliberately written in reverse order. With the build's
+// `-inline auto,deferred`, mwcc emits functions in reverse source order, so
+// this reproduces the original object's .text layout. The float constants of
+// coin_disp are written as literals so the compiler pools them in .sdata2 in
+// the original order instead of emitting extra anonymous copies.
 
-USER_FUNC(mainwindow_openenable) {
-    winOpenEnable();
-    return EVT_RETURN_DONE;
-}
+USER_FUNC(evt_win_item_select) {
+    s32* args = event->args;
+    s32 flag = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
+    WinMgrSelect* select;
+    s32 result;
+    s32 field;
 
-USER_FUNC(evt_win_coin_wait) {
-    WinCoinWork* work = (WinCoinWork*)evtGetValue(event, event->args[0]);
-    s32 pouchCount;
-
-    switch (work->type) {
-    case 0:
-        pouchCount = pouchGetCoin();
-        break;
-    case 1:
-        pouchCount = pouchGetSuperCoin();
-        break;
-    case 2:
-        pouchCount = pouchGetStarPiece();
-        break;
+    if (isFirstCall) {
+        event->userdata[0] = (s32)winMgrSelectEntry(value, 0, 1);
+        marioKeyOff();
     }
-    return (work->count != pouchCount) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_coin_off) {
-    WinCoinWork* work = (WinCoinWork*)evtGetValue(event, event->args[0]);
-    s32 pouchCount;
-
-    switch (work->type) {
-    case 0:
-        pouchCount = pouchGetCoin();
-        break;
-    case 1:
-        pouchCount = pouchGetSuperCoin();
-        break;
-    case 2:
-        pouchCount = pouchGetStarPiece();
-        break;
-    }
-    if (work->count != pouchCount) {
+    select = (WinMgrSelect*)event->userdata[0];
+    result = winMgrSelect(select);
+    if (result == 0) {
         return EVT_RETURN_BLOCK;
     }
-    winMgrCloseAutoDelete(work->id);
-    _mapFree(work);
+    field = unk_80237448(select);
+    winMgrSelectDelete((s32)select);
+    marioKeyOn();
+    evtSetValue(event, args[2], result);
+    if (flag != 0) {
+        evtSetValue(event, args[3], field);
+    }
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_win_coin_on) {
+USER_FUNC(evt_win_other_select) {
+    s32 value = evtGetValue(event, event->args[0]);
+    WinMgrSelect* select;
+    s32 result;
+
+    if (isFirstCall) {
+        event->userdata[0] = (s32)winMgrSelectEntry(value, 0, 1);
+        marioKeyOff();
+    }
+    select = (WinMgrSelect*)event->userdata[0];
+    result = winMgrSelectOther(select, event);
+    if (result == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    winMgrSelectDelete((s32)select);
+    marioKeyOn();
+    if (result == -1) {
+        event->lwData[0] = 0;
+    } else {
+        event->lwData[0] = 1;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_item_maketable) {
     s32* args = event->args;
-    WinCoinWork* work;
-    s32 type;
+    s32* table = (s32*)evtGetValue(event, args[0]);
+    s32* p;
+    s32* out;
+    s32 count;
+    s32 i;
+    s32 n;
 
-    work = (WinCoinWork*)_mapAlloc(0x10);
-    type = evtGetValue(event, args[0]);
-    work->type = type;
-    work->id = winMgrEntry(&coin_desc);
-    work->tick = 0;
-    switch (type) {
-    case 0:
-        work->count = pouchGetCoin();
-        break;
-    case 1:
-        work->count = pouchGetSuperCoin();
-        break;
-    case 2:
-        work->count = pouchGetStarPiece();
-        break;
+    count = 0;
+    p = table;
+loop:
+    if (*p == -1) {
+        goto loop_end;
     }
-    winMgrSetParam(work->id, work);
-    winMgrOpen(work->id);
-    evtSetValue(event, args[1], (s32)work);
+    p++;
+    count++;
+    goto loop;
+loop_end:
+    if (count == 0) {
+        evtSetValue(event, args[1], 0);
+        return EVT_RETURN_DONE;
+    }
+    out = (s32*)_mapAlloc((count + 1) * 4);
+    for (i = 0, n = 0; i < count; i++) {
+        if ((s32)pouchCheckItem(table[i]) != 0) {
+            out[n] = table[i];
+            n++;
+        }
+    }
+    out[n] = -1;
+    if (n == 0) {
+        out = NULL;
+    }
+    evtSetValue(event, args[1], (s32)out);
     return EVT_RETURN_DONE;
 }
 
-void coin_disp(WinMgrEntry* entry) {
-    WinCoinWork* work;
-    s32 pouchCount;
-    s16 iconId;
-    s32 diff;
-    Mtx mtx1;
-    Mtx mtx2;
-    GXColor color;
+USER_FUNC(evt_win_item_desttable) {
+    _mapFree((void*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
+}
 
-    pouchGetPtr();
-    work = (WinCoinWork*)entry->param;
-    if (entry->flags & 4) {
-        return;
+USER_FUNC(evt_win_nameent_on) {
+    s32 type = evtGetValue(event, event->args[0]);
+
+    if (nameEntPrepare() == 0) {
+        return EVT_RETURN_BLOCK;
     }
-    switch (work->type) {
-    case 0:
-        pouchCount = pouchGetCoin();
-        iconId = 0x18B;
-        break;
-    case 1:
-        pouchCount = pouchGetSuperCoin();
-        iconId = 0x102;
-        break;
-    case 2:
-        pouchCount = pouchGetStarPiece();
-        iconId = 0x18D;
-        break;
-    }
-    PSMTXTrans(mtx1, float_neg220_80420960, float_neg113_80420964, float_0_80420968);
-    PSMTXScale(mtx2, float_0p7_8042096c, float_0p7_8042096c, float_0p7_8042096c);
-    PSMTXConcat(mtx1, mtx2, mtx1);
-    iconDispGx2(mtx1, 0x10, iconId);
-    PSMTXTrans(mtx1, float_neg192_80420970, float_neg113_80420964, float_0_80420968);
-    iconDispGx2(mtx1, 0x10, 0x1D6);
-    PSMTXTrans(mtx1, float_neg126_80420974, float_neg113_80420964, float_0_80420968);
-    color = dat_8042095c;
-    iconNumberDispGx(mtx1, work->count, 0, color);
-    diff = pouchCount - work->count;
-    if (diff != 0) {
-        diff /= 10;
-        if (diff == 0) {
-            diff = (pouchCount > work->count) ? 1 : -1;
+    nameEntOn(type);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_nameent_wait) {
+    return nameEntWait() ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_nameent_name) {
+    s32* args = event->args;
+    char* name = nameEntGetName();
+
+    evtSetValue(event, args[0], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_nameent_off) {
+    nameEntOff();
+    return EVT_RETURN_DONE;
+}
+
+void oneMessageDisp(WinMgrEntry* entry) {
+    WinOneMsgWork* work = (WinOneMsgWork*)entry->param;
+    const char* msg;
+
+    if (winMgrAction(work->id) == 0) {
+        GXColor color;
+        u16 width;
+
+        switch (work->field_0x4) {
+        case 0:
+            msg = msgSearch(str_802FDB8C);
+            break;
         }
-        if (work->tick & 1) {
-            work->count += diff;
-            statusWinForceUpdateCoin();
-        }
-        work->tick = work->tick + 1;
-        work->tick %= 1200;
-        if (unk_80418b38 == 0) {
-            psndSFXOn((const char*)0x2005B);
-            unk_80418b38 = 7;
-        }
-    }
-    if (unk_80418b38 > 0) {
-        unk_80418b38--;
+        FontDrawStart();
+        color = dat_80420958;
+        FontDrawColor(&color);
+        width = FontGetMessageWidth(msg);
+        FontDrawMessage(-width / 2, entry->field_0x1C - 8, msg);
     }
 }
 
@@ -275,144 +280,139 @@ USER_FUNC(evt_win_one_message) {
     return EVT_RETURN_BLOCK;
 }
 
-void oneMessageDisp(WinMgrEntry* entry) {
-    WinOneMsgWork* work = (WinOneMsgWork*)entry->param;
-    const char* msg;
+void coin_disp(WinMgrEntry* entry) {
+    WinCoinWork* work;
+    s32 pouchCount;
+    s16 iconId;
+    s32 diff;
+    Mtx mtx1;
+    Mtx mtx2;
+    GXColor color;
 
-    if (winMgrAction(work->id) == 0) {
-        GXColor color;
-        u16 width;
-
-        switch (work->field_0x4) {
-        case 0:
-            msg = msgSearch(str_802FDB8C);
-            break;
+    pouchGetPtr();
+    work = (WinCoinWork*)entry->param;
+    if (entry->flags & 4) {
+        return;
+    }
+    switch (work->type) {
+    case 0:
+        pouchCount = pouchGetCoin();
+        iconId = 0x18B;
+        break;
+    case 1:
+        pouchCount = pouchGetSuperCoin();
+        iconId = 0x102;
+        break;
+    case 2:
+        pouchCount = pouchGetStarPiece();
+        iconId = 0x18D;
+        break;
+    }
+    PSMTXTrans(mtx1, -220.0f, -113.0f, 0.0f);
+    PSMTXScale(mtx2, 0.7f, 0.7f, 0.7f);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    iconDispGx2(mtx1, 0x10, iconId);
+    PSMTXTrans(mtx1, -192.0f, -113.0f, 0.0f);
+    iconDispGx2(mtx1, 0x10, 0x1D6);
+    PSMTXTrans(mtx1, -126.0f, -113.0f, 0.0f);
+    color = dat_8042095c;
+    iconNumberDispGx(mtx1, work->count, 0, color);
+    diff = pouchCount - work->count;
+    if (diff != 0) {
+        diff /= 10;
+        if (diff == 0) {
+            diff = (pouchCount > work->count) ? 1 : -1;
         }
-        FontDrawStart();
-        color = dat_80420958;
-        FontDrawColor(&color);
-        width = FontGetMessageWidth(msg);
-        FontDrawMessage(-width / 2, entry->field_0x1C - 8, msg);
-    }
-}
-
-USER_FUNC(evt_win_nameent_off) {
-    nameEntOff();
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_nameent_name) {
-    s32* args = event->args;
-    char* name = nameEntGetName();
-
-    evtSetValue(event, args[0], (s32)name);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_nameent_wait) {
-    return nameEntWait() ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_nameent_on) {
-    s32 type = evtGetValue(event, event->args[0]);
-
-    if (nameEntPrepare() == 0) {
-        return EVT_RETURN_BLOCK;
-    }
-    nameEntOn(type);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_item_desttable) {
-    _mapFree((void*)evtGetValue(event, event->args[0]));
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_item_maketable) {
-    s32* args = event->args;
-    s32* table = (s32*)evtGetValue(event, args[0]);
-    s32* p;
-    s32* out;
-    s32 count;
-    s32 i;
-    s32 n;
-
-    count = 0;
-    p = table;
-loop:
-    if (*p == -1) {
-        goto loop_end;
-    }
-    p++;
-    count++;
-    goto loop;
-loop_end:
-    if (count == 0) {
-        evtSetValue(event, args[1], 0);
-        return EVT_RETURN_DONE;
-    }
-    out = (s32*)_mapAlloc((count + 1) * 4);
-    for (i = 0, n = 0; i < count; i++) {
-        if ((s32)pouchCheckItem(table[i]) != 0) {
-            out[n] = table[i];
-            n++;
+        if (work->tick & 1) {
+            work->count += diff;
+            statusWinForceUpdateCoin();
+        }
+        work->tick = work->tick + 1;
+        work->tick %= 1200;
+        if (unk_80418b38 == 0) {
+            psndSFXOn((const char*)0x2005B);
+            unk_80418b38 = 7;
         }
     }
-    out[n] = -1;
-    if (n == 0) {
-        out = NULL;
+    if (unk_80418b38 > 0) {
+        unk_80418b38--;
     }
-    evtSetValue(event, args[1], (s32)out);
-    return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_win_other_select) {
-    s32 value = evtGetValue(event, event->args[0]);
-    WinMgrSelect* select;
-    s32 result;
-
-    if (isFirstCall) {
-        event->userdata[0] = (s32)winMgrSelectEntry(value, 0, 1);
-        marioKeyOff();
-    }
-    select = (WinMgrSelect*)event->userdata[0];
-    result = winMgrSelectOther(select, event);
-    if (result == 0) {
-        return EVT_RETURN_BLOCK;
-    }
-    winMgrSelectDelete((s32)select);
-    marioKeyOn();
-    if (result == -1) {
-        event->lwData[0] = 0;
-    } else {
-        event->lwData[0] = 1;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_win_item_select) {
+USER_FUNC(evt_win_coin_on) {
     s32* args = event->args;
-    s32 flag = evtGetValue(event, args[0]);
-    s32 value = evtGetValue(event, args[1]);
-    WinMgrSelect* select;
-    s32 result;
-    s32 field;
+    WinCoinWork* work;
+    s32 type;
 
-    if (isFirstCall) {
-        event->userdata[0] = (s32)winMgrSelectEntry(value, 0, 1);
-        marioKeyOff();
+    work = (WinCoinWork*)_mapAlloc(0x10);
+    type = evtGetValue(event, args[0]);
+    work->type = type;
+    work->id = winMgrEntry(&coin_desc);
+    work->tick = 0;
+    switch (type) {
+    case 0:
+        work->count = pouchGetCoin();
+        break;
+    case 1:
+        work->count = pouchGetSuperCoin();
+        break;
+    case 2:
+        work->count = pouchGetStarPiece();
+        break;
     }
-    select = (WinMgrSelect*)event->userdata[0];
-    result = winMgrSelect(select);
-    if (result == 0) {
+    winMgrSetParam(work->id, work);
+    winMgrOpen(work->id);
+    evtSetValue(event, args[1], (s32)work);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_coin_off) {
+    WinCoinWork* work = (WinCoinWork*)evtGetValue(event, event->args[0]);
+    s32 pouchCount;
+
+    switch (work->type) {
+    case 0:
+        pouchCount = pouchGetCoin();
+        break;
+    case 1:
+        pouchCount = pouchGetSuperCoin();
+        break;
+    case 2:
+        pouchCount = pouchGetStarPiece();
+        break;
+    }
+    if (work->count != pouchCount) {
         return EVT_RETURN_BLOCK;
     }
-    field = unk_80237448(select);
-    winMgrSelectDelete((s32)select);
-    marioKeyOn();
-    evtSetValue(event, args[2], result);
-    if (flag != 0) {
-        evtSetValue(event, args[3], field);
+    winMgrCloseAutoDelete(work->id);
+    _mapFree(work);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_win_coin_wait) {
+    WinCoinWork* work = (WinCoinWork*)evtGetValue(event, event->args[0]);
+    s32 pouchCount;
+
+    switch (work->type) {
+    case 0:
+        pouchCount = pouchGetCoin();
+        break;
+    case 1:
+        pouchCount = pouchGetSuperCoin();
+        break;
+    case 2:
+        pouchCount = pouchGetStarPiece();
+        break;
     }
+    return (work->count != pouchCount) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+USER_FUNC(mainwindow_openenable) {
+    winOpenEnable();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(mainwindow_opendisable) {
+    winOpenDisable();
     return EVT_RETURN_DONE;
 }
