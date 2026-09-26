@@ -22,16 +22,16 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 26 after wave 5, PR #4): 3,780 of 9,770 functions matched, 17.96% of code;
-  linked code 8.45%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
-- Nothing in flight. From wave 6 another session orchestrates (see the last chapters). Overnight runs are
-  paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
+- Progress (local build, Sep 26 after wave 6, PR #6): 3,844 of 9,770 functions matched, 18.38% of code;
+  linked code 9.35%, linked data 4.11%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5). Overnight
+  runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
+- Review routine: three rounds in sequence, each followed by fixes (see "Wave 6"). The third round is another
+  Claude session, asked once by message; that's fine as long as it's one request and one reply.
 - Targets: game files with no source yet first (the build already lists them; ~2,200 unmatched functions),
   plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
   build setup before agents can work on them.
 - Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
-- Sessions don't message each other for now (Isaac, Sep 26): the orchestrator runs reviews itself or Isaac
-  starts them. Next session: see "Ideas for wave 6" at the end.
 - **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** `ci.py`, the ratchet, `lint_patch.py`,
   `label_partials.py`, `autolink.py` and `merge_agent.sh` were all written quickly by models, and
   several have already had silent blind spots. Rare or subtle ones will surface only much later (linking whole
@@ -827,3 +827,51 @@ so `-requireprotos` errors show, then runs the merge's lint against the clean co
 came from (`/dev/null` for a new file) and lists what to fix and how. The wave launcher template asks every
 agent to run it before finishing. Most of what reviews caught mechanically in waves 4 and 5 should now be fixed
 by the agent itself; the next waves will show whether it is.
+
+
+## Wave 6: 19 files link, three review rounds (2026-09-26, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GLM-5.3 Flash, GPT-5.6 Sol and Claude Opus 5.5)
+
+Isaac had this session orchestrate the whole wave, launch to merge. 24 agents for 30 minutes: 11 wrote new files,
+13 were finishers, one for each file that matched fully but failed to link. **3,785 -> 3,844 functions (+59),
+code 18.01% -> 18.38%, linked code 8.45% -> 9.35%, linked data 1.89% -> 4.11%.** (The merge commit's subject
+says 21 files linked; it's 19.)
+
+**Finishers are the cheapest progress we have.** All 13 linked, most in under ten minutes. Causes were
+functions or data out of the original's order, missing data or strings, symbols with the wrong linkage, and a
+REL (`unit_purple_teresa`) that had only its code. One new file (`battle_enemy_item`) linked on arrival.
+**autolink was too strict:** it wanted 100% data in the report, but `item_data` and `npc_data` link with
+byte-identical output while the report scores their data at 41% and 66%. It now tries every file whose code is
+100% and lets the checksums decide, which linked 5 more files, including `event.c`. It also matches configure.py
+objects to report units by module now (60 unit paths exist in more than one REL).
+
+**Three review rounds, each followed by fixes.** Each found things the previous ones missed:
+1. **Four GLM-5.3 Flash agents**, a quarter of the PR each, plus the orchestrator's own cross-file check. GLM
+   covered about 5 of 24 files in 40 minutes and found one real problem. The cross-file check (every local
+   declaration in the PR against headers and other files' definitions) found nine contradictions. Fixing them
+   into headers matched 4 functions: three `cardmgr` functions had been correct all along under the wrong names,
+   and `_btlcmd_CheckWeaponTargetNum` needed `BattleSamplingEnemy`'s bytes declared `s8`.
+2. **Codex:** 3 bugs in the orchestrator's own tool changes (REL support in the merge script and lint could
+   discard an uncommitted file or check the wrong module), an unmarked `goto`, a raw offset, a prototype
+   mismatch, and an unlabelled partial function.
+3. **Claude (another session, one message):** a bug introduced by the Codex fixes (every REL merge was
+   rejected, deleting a new REL file), local struct copies of `BattleACDispParams` (now in `BattleActions`
+   at 0x290), `volatile` float reads left unmarked in a linked file (now `MATCH_F32()` in `matching.h`), and a
+   NONMATCHING comment that blamed the compiler for the source's own unsigned casts (fixing them: 93% -> 95.5%).
+   It found no wrong logic in any partial function.
+
+**Lessons.**
+- Fix commits need review like everything else: round 3 found a high-severity bug that round 2's fixes
+  introduced.
+- The orchestrator's cross-file declaration check is cheap and productive. Run it on every PR before the
+  reviews.
+- Test tool changes on a real case (a REL merge on a throwaway branch) before relying on them.
+- The tower sync must copy every tracked file, not a folder list: stale SDK headers under `libs/` broke the
+  tower's build.
+
+**Open, low severity:** `BattleActions.outputParams` is probably `s32` (compared signed); `MarioWork.multiTimer`
+is read as `s32`; `wCamVal1` (0x2A8) holds an `s32` in `mot_hip` (noted in mario.h); many local prototypes
+that agree with their definitions still belong in headers (`marioSetFallPara` and friends, `partyChgRunMode`,
+`set_damage_root_ypos`, `mapGrpFlagOn/Off`); the OFFSET lint doesn't see raw offsets hidden in macros;
+`BattleDrawEnemyHP`'s label needs a note on what's missing; 10 fully matched files still fail to link
+(`battle.c`, `dispdrv`, `evt_hit`, `evt_msg`, `mot_stay`, five MusyX files), the next finishers' queue.
+
