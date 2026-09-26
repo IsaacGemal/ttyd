@@ -28,14 +28,13 @@ extern const f32 float_neg10_8041a804;
 extern const f32 float_6_8041a88c;
 extern const f32 float_18_8041a850;
 
-// NONMATCHING (99.86%): 1 instruction differs, plus register differences.
 void* marioChkLandon(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
     f32 outY;
     f32 outX;
 
     if (wp->characterId != 2) {
-        if (!(wp->flags & 0x1000000)) {
+        if ((wp->flags & 0x1000000) == 0) {
             return (void*)marioSearchGround(pos, &outY, &outX, spd, spd);
         } else {
             return (void*)marioSearchGroundRoll(pos, &outY, &outX, spd, spd);
@@ -57,10 +56,7 @@ void marioChkToge(void) {
     if (vivianGetStatus() == 1) {
         return;
     }
-    if (vivianGetStatus() == 3) {
-        goto toge_end;
-    }
-    {
+    if (vivianGetStatus() != 3) {
         hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
         if (hit != NULL) {
             attr = hitGetAttr(hit);
@@ -88,9 +84,7 @@ void marioChkToge(void) {
                 marioChgMot(0x20);
             }
         }
-    toge_end:
-    ;
-}
+    }
 }
 
 void marioChkGnd2(void) {
@@ -162,7 +156,6 @@ BOOL marioChkBero(HitEntry* hit) {
     }
     return wp->currMotionId == 0x19;
 }
-
 void clear_hitobj_ride(void) {
     MarioWork* wp = marioGetPtr();
 
@@ -172,8 +165,6 @@ void clear_hitobj_ride(void) {
     }
 }
 
-// NONMATCHING (97.16%): target selection branch is laid out 18.0f-first; original
-// falls through on wPlayerCollisionBox.x. Everything else matches.
 void marioHitCheckWidth(void) {
     MarioWork* wp = marioGetPtr();
 
@@ -181,7 +172,7 @@ void marioHitCheckWidth(void) {
         f32 target;
         f32 z;
 
-        if (!(wp->flags & 0x1000000)) {
+        if ((wp->flags & 0x1000000) == 0) {
             target = wp->wPlayerCollisionBox.x;
         } else {
             target = float_18_8041a850;
@@ -218,11 +209,10 @@ BOOL chkFilterAttr2(HitCheckQuery* query, HitEntry* entry) {
 // strings/rodata with no home header (addressed from the rodata base symbol)
 extern const u8 vec3_802c5730[];
 
-// NONMATCHING (86.77%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
-    MapObject* obj;
+    u8* obj;
 
     if ((attr & 0x80804) != 0 && (attr & 0x800000) == 0) {
         return FALSE;
@@ -230,21 +220,20 @@ BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp((char*)obj + 0x15, (char*)base + 0x274) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x28C) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x2A4) == 0) {
+    obj = (u8*)mobjHitObjPtrToPtr(entry);
+    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
     return TRUE;
 }
 
-// NONMATCHING (87.71%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
-    MapObject* obj;
+    u8* obj;
 
     if ((attr & 0x80) != 0) {
         return TRUE;
@@ -255,21 +244,20 @@ BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp((char*)obj + 0x15, (char*)base + 0x274) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x28C) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x2A4) == 0) {
+    obj = (u8*)mobjHitObjPtrToPtr(entry);
+    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
     return TRUE;
 }
 
-// NONMATCHING (87.71%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
-    MapObject* obj;
+    u8* obj;
 
     if ((attr & 0x80080) != 0) {
         return TRUE;
@@ -280,10 +268,10 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
     if ((attr & 0x80000000) == 0) {
         return TRUE;
     }
-    obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp((char*)obj + 0x15, (char*)base + 0x274) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x28C) == 0 ||
-        strcmp((char*)obj + 0x15, (char*)base + 0x2A4) == 0) {
+    obj = (u8*)mobjHitObjPtrToPtr(entry);
+    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
+        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -296,7 +284,9 @@ void marioSearchFrontWall_staying(f32 a);
 void dou10_yoko_yari(f32* p);
 HitEntry* searchFrontWall(Vec* a, f32* b, f32 c, f32 d, f32 e);
 
-// NONMATCHING (96.02%): 2 instructions differ, 1 missing, 6 extra, plus register differences.
+// NONMATCHING (96.18%): CSEs wp+0x210 into an extra callee-saved register (r30)
+// where the original recomputes addi r3,r31,0x210 per dou10_yoko_yari, dragging
+// r28/r29/r30 through the function.
 void marioCheckWall(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -347,14 +337,14 @@ void marioCheckWall(f32 a, f32 b) {
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
         } else {
-            s8 t;
+            s32 t;
 
             *(f32*)((u8*)wp + 0x210) = f8;
             *(void**)((u8*)wp + 0x1F0) = hit;
-            t = *(s8*)((u8*)wp + 0x3F) + 1;
-            *(s8*)((u8*)wp + 0x3F) = t;
-            if (t >= 0x14) {
-                *(s8*)((u8*)wp + 0x3F) = 0x14;
+            t = wp->field_0x3E[1] + 1;
+            wp->field_0x3E[1] = t;
+            if ((s8)t >= 0x14) {
+                wp->field_0x3E[1] = 0x14;
                 if ((hitGetAttr(hit) & 0x80) == 0) {
                     r = 1;
                 } else {
@@ -446,9 +436,9 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 
     *out = 0;
     a2 = *outY;
+    radius = float_neg23p7_8041a834;
     *outY = float_neg1_8041a7dc;
     y = a2 + a;
-    radius = float_neg23p7_8041a834;
 
     for (i = 0; i < 8; i++) {
         outF = y;
@@ -562,7 +552,8 @@ void PSVECSubtract(const Vec* a, const Vec* b, Vec* a_b);
 void PSVECScale(const Vec* src, Vec* dst, f32 scale);
 f32 PSVECMag(const Vec* v);
 
-// NONMATCHING (99.21%): 1 missing, plus register differences.
+// NONMATCHING (99.35%): float_0/float_1000 are allocated f1/f0 instead of f0/f1,
+// so the `else` reuses f1 (stfs f1,0x1c8) where the original reloads float_0.
 void marioCheckWallShip(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -628,16 +619,16 @@ void marioCheckWallShip(f32 a, f32 b) {
             return;
         } else {
             if (a == float_0_8041a7a4) {
-                *(s8*)((u8*)wp + 0x3F) = 0;
+                wp->field_0x3E[1] = 0;
             } else {
-                s8 t;
+                s32 t;
 
                 *(f32*)((u8*)wp + 0x210) = f8;
                 *(void**)((u8*)wp + 0x1F0) = hit;
-                t = *(s8*)((u8*)wp + 0x3F) + 1;
-                *(s8*)((u8*)wp + 0x3F) = t;
-                if (t >= 0x14) {
-                    *(s8*)((u8*)wp + 0x3F) = 0x14;
+                t = wp->field_0x3E[1] + 1;
+                wp->field_0x3E[1] = t;
+                if ((s8)t >= 0x14) {
+                    wp->field_0x3E[1] = 0x14;
                     if ((hitGetAttr(hit) & 0x80) == 0) {
                         r = 1;
                     } else {
@@ -678,7 +669,9 @@ f32 partyGetHeight(void* party);
 s32 marioGetPartyId(void);
 s32 psndSFXOn_3D(const char* name, Vec* position);
 
-// NONMATCHING (94.64%): 8 instructions differ, 8 missing, 10 extra, plus register differences.
+// NONMATCHING (97.17%): the `beq else; bne then; b join` branch chain after the
+// hit != NULL test is folded to one `beq`; the float->int magic double loads from an
+// anonymous @594 symbol instead of 0x1f0(r30) / double_to_int_802c5920.
 f32 marioChkOverhead(void) {
     const u8* base = vec3_802c5730;
     MarioWork* wp = marioGetPtr();
@@ -718,17 +711,21 @@ f32 marioChkOverhead(void) {
     hit = *(HitEntry**)((u8*)wp + 0x1F4);
     if (hit != NULL) {
         MarioWork* wp2;
-        s32 ok = 0;
+        s32 ok;
 
         if (hitGetAttr(hit) & 0x80000000) {
-            MapObject* obj = mobjHitObjPtrToPtr(hit);
+            u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
 
-            if (strcmp((char*)obj + 0x15, (char*)base + 0x220) == 0 ||
-                strcmp((char*)obj + 0x15, (char*)base + 0x234) == 0 ||
-                strcmp((char*)obj + 0x15, (char*)base + 0x244) == 0 ||
-                strcmp((char*)obj + 0x15, (char*)base + 0x258) == 0) {
+            if (strcmp((const char*)(obj + 0x15), (char*)base + 0x220) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x234) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x244) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x258) == 0) {
                 ok = 1;
+            } else {
+                ok = 0;
             }
+        } else {
+            ok = 0;
         }
         if (ok) {
             *(f32*)((u8*)wp + 0x180) = float_0_8041a7a4;
