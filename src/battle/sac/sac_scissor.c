@@ -73,11 +73,10 @@ s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
 s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy);
 s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy);
 
-// NONMATCHING (90.64%): target uses the `subi 5; subic 1; subfe; and` carry idiom for
-// `(u32)state < 6 ? 2 : 0`; our compiler emits `li 6; subfc`.
+// NONMATCHING (83.93%): 2 instructions differ, 2 extra, plus register differences.
 s32 wait_star_standby(void) {
     ScissorWork* work = GetScissorPtr();
-    return ((u32)work->state < 6) ? 2 : 0;
+    return (work->state == 5) ? 2 : 0;
 }
 
 s32 star_stone_appear(void) {
@@ -130,7 +129,7 @@ void scissor_capture(void) {
     GXPixModeSync();
 }
 
-// NONMATCHING (86.96%): only remaining diff is the prologue `stmw r30` vs two `stw`.
+// NONMATCHING (86.96%): 2 instructions differ, 4 extra, plus register differences.
 s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     ScissorWork* work = GetScissorPtr();
@@ -143,9 +142,7 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (21.08%): point->x/point->y get hoisted into f31 before the
-// GetScissorPtr call (forcing an extra 0x10 stack frame and fp save); the target
-// loads them after the call. Loop math itself is decoded and correct.
+// NONMATCHING (21.08%): 6 instructions differ, 25 missing, 54 extra, plus register differences.
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
@@ -168,8 +165,7 @@ s32 scissor_damage_sub2(Vec* point) {
     return 0;
 }
 
-// NONMATCHING (94.89%): switch(0,5,10,15,20) matches. Remaining diffs are the
-// compiler jump-table label (objdiff can't resolve it) and load scheduling.
+// NONMATCHING (94.89%): 4 instructions differ, 1 missing, 2 extra, plus register differences.
 s32 scissor_timer_main(void) {
     ScissorWork* work = GetScissorPtr();
 
@@ -228,8 +224,7 @@ s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
 }
 
 // Keep star_disp2D_sub out of line: star_disp2D must call (bl) it.
-// NONMATCHING (0%): frame size matches (0x150) but the register save order (stmw vs
-// stw) and the intplGetValue magic-constant pool symbol differ.
+// NONMATCHING (0.00%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
@@ -289,8 +284,7 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (61.86%): the target indexes with an i*4 offset + lwzx; ours
-// strength-reduces to a running pointer. Prologue `stmw` vs individual `stw`.
+// NONMATCHING (61.86%): 2 instructions differ, 3 missing, 18 extra, plus register differences.
 s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     ScissorWork* work = GetScissorPtr();
     s32 i;
@@ -308,7 +302,7 @@ s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     return 0;
 }
 
-// NONMATCHING (88.36%): only remaining diff is the prologue `stmw r30` vs two `stw`.
+// NONMATCHING (88.36%): 2 instructions differ, 4 extra, plus register differences.
 s32 scissor_tess(void) {
     ScissorWork* work = GetScissorPtr();
     f32* points = BattleAlloc(work->field_0x9C << 3);
@@ -347,8 +341,7 @@ s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     return scissor_intersection3(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
 
-// NONMATCHING (94.74%): only the scheduling of `lfs float_0_80421734` against the
-// LR-save `stw` differs; all of the math and branches match.
+// NONMATCHING (94.87%): 1 missing, 2 extra.
 s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 diff = bx - ax;
 
@@ -366,7 +359,7 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
             by += float_1000_804217b0 * slope;
         }
     } else {
-        if (ay <= by) {
+        if (ay >= by) {
             ay = float_1000_804217b0;
             by = float_neg1000_8042179c;
         } else {

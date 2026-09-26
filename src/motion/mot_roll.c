@@ -167,9 +167,7 @@ static f32 rollDispCalcTarget(MarioWork* mario, f32 angle) {
     return revise360(res);
 }
 
-// NONMATCHING (94.25%): logic transcribed from asm. Differences: `fabsf(f31-f30)` is commuted to
-// `f30-f31` by MWCC, and the 135.0f/90.0f constants are CSE'd across inlined copies (original
-// reloads them from sda21). Two `bne`/`beq` inversions remain.
+// NONMATCHING (94.25%): 8 instructions differ, 9 missing, 10 extra, plus register differences.
 void marioSetRollDispDir(void) {
     MarioWork* mario = marioGetPtr();
     f32 f30 = mario->directionView;

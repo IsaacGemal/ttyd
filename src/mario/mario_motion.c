@@ -80,6 +80,7 @@ void* marioChkLandon(f32* pos, f32 spd);
 // Header declares only 3 float args, but the original call passes 4 (f1..f4).
 
 
+// NONMATCHING (62.50%): 11 missing, 20 extra.
 void marioChgStayMotion(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -125,6 +126,7 @@ void marioChgTalkMotion(void) {
     }
 }
 
+// NONMATCHING (42.19%): 19 missing, 36 extra.
 void marioChgGetItemMotion(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -165,6 +167,7 @@ void marioChgRollMotion(void) {
     mario->currMotionId = MARIO_MOTION_ROLL;
 }
 
+// NONMATCHING (96.27%): 4 missing, plus register differences.
 void marioChgJumpStandMotion(f32 arg) {
     MarioWork* mario = marioGetPtr();
 
@@ -243,6 +246,7 @@ void marioChgSmallJumpMotion(void) {
     *(f32*)((u8*)mario + 0x88) = 0.0f;
 }
 
+// NONMATCHING (87.28%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 BOOL marioChkItemGetMotion(void) {
     BOOL result = FALSE;
     MarioWork* mario = marioGetPtr();
@@ -570,6 +574,7 @@ BOOL marioChkTransform(void) {
     return TRUE;
 }
 
+// NONMATCHING (94.70%): 6 missing, plus register differences.
 BOOL marioChkItemMotion(void) {
     MarioWork* mario = marioGetPtr();
     s32 mask;
@@ -630,6 +635,7 @@ s32 L_marioChkRub(void) {
     return 0;
 }
 
+// NONMATCHING (97.83%): 1 instruction differs, 2 missing, plus register differences.
 s32 marioRollChgChk(void) {
     MarioWork* mario = marioGetPtr();
     s32 unk10;
@@ -680,6 +686,7 @@ s32 marioRollChgChk(void) {
     return 0;
 }
 
+// NONMATCHING (96.20%): 2 missing, plus register differences.
 void marioChgMotJump2(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -703,6 +710,7 @@ void marioChgMotJump2(void) {
     }
 }
 
+// NONMATCHING (94.28%): 2 missing, 12 extra, plus register differences.
 void mot_kaze(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -779,6 +787,7 @@ void mot_kaze(void) {
     }
 }
 
+// NONMATCHING (98.64%): 1 instruction differs, 1 missing, plus register differences.
 void mot_shadow(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -878,6 +887,7 @@ void mot_forceReset(void) {
 
 // NOTE: real assembly order has these before many other functions; fixed up at the end.
 
+// NONMATCHING (96.20%): 4 missing, plus register differences.
 void marioBoots(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -939,6 +949,7 @@ void marioBoots(void) {
     }
 }
 
+// NONMATCHING (99.22%): 2 instructions differ.
 void marioChgMoveMotion(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1011,6 +1022,7 @@ void marioChgMoveMotion(void) {
     }
 }
 
+// NONMATCHING (98.55%): 1 missing, plus register differences.
 void mot_talk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* npc;
@@ -1078,6 +1090,7 @@ void mot_talk(void) {
     }
 }
 
+// NONMATCHING (99.33%): 1 instruction differs, 1 missing, plus register differences.
 void marioJump(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1164,6 +1177,7 @@ void marioJump(void) {
     *(f32*)((u8*)mario + 0x90) += *(f32*)((u8*)mario + 0x7C);
 }
 
+// NONMATCHING (97.27%): 3 instructions differ, 3 missing, 10 extra, plus register differences.
 void mot_bottomless(void) {
     f32 landY;
     f32 sx;
@@ -1327,6 +1341,7 @@ void mot_bottomless(void) {
     }
 }
 
+// NONMATCHING (98.33%): 1 missing, 2 extra, plus register differences.
 void marioSetJumpPara(void) {
     MarioWork* mario = marioGetPtr();
     f32* p;
@@ -1402,6 +1417,7 @@ void marioSetJumpPara(void) {
     }
 }
 
+// NONMATCHING (99.82%): same instructions; only register numbers or operands differ.
 void marioFall(void) {
     f32 f31;
     s32 unk14;
@@ -1550,6 +1566,7 @@ void marioFall(void) {
         (m)->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;                       \
     }
 
+// NONMATCHING (99.60%): 1 instruction differs, 1 missing, 2 extra, plus register differences.
 void marioLandOn(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1656,7 +1673,7 @@ void marioLandOn(void) {
             MARIO_CHG_BLOCK(mario2, MARIO_MOTION_STAY);
             return;
         }
-        if (mario->flags & MARIO_FLAG_HAMMER_HIT_WALL) {
+        if (mario->flags & MARIO_FLAG_PAPER_MODE) {
             unk_800a4e40();
         } else if (mario->dispFlags & (1 << 24)) {
             if (marioChkSlitEnd() == 0) {
@@ -1708,7 +1725,7 @@ void marioLandOn(void) {
         }
         return;
     }
-    if (mario->flags & MARIO_FLAG_HAMMER_HIT_WALL) {
+    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
         unk_800a4e40();
     } else if (mario->dispFlags & (1 << 24)) {
         if (marioChkSlitEnd() == 0) {

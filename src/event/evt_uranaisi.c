@@ -215,7 +215,7 @@ s32 uranaisi_ryokin_rtn(s32 idx) {
     return pouchGetPtr()->level * 2;
 }
 
-// NONMATCHING (91%): code is identical in structure; the callee-saved register
+// NONMATCHING (91.46%): code is identical in structure; the callee-saved register
 // assignment is shifted (mine uses r15/r16, target only r17-r31) because the
 // allocator does not coalesce type/tagdata/table or mbbpos/i.
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
@@ -328,7 +328,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (91%): mirror of make_supercoin, same register-allocation shift.
+// NONMATCHING (91.46%): mirror of make_supercoin, same register-allocation shift.
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     UranaiWork* wp = &_udt;
     char label[64];
@@ -439,7 +439,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (93%): logic and string/zero references match; only the callee-saved
+// NONMATCHING (93.99%): logic and string/zero references match; only the callee-saved
 // register assignment (prefix/type/count/storyId/...) differs from the target.
 s32 uranaisi_data_make_next(const char* prefix, s32 type) {
     UranaiWork* wp = &_udt;

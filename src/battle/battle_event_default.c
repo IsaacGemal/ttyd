@@ -1,8 +1,4 @@
 #include "battle/battle.h"
-// NOTE FOR REVIEWERS: every function in this file matches with `-O4,s`
-// (extra_cflags=["-O4,s"] in configure.py). With the default `-O4,p` the
-// prologues use individual stw/lwz instead of stmw/lmw, so nothing matches.
-// This file's entry in configure.py must gain `extra_cflags=["-O4,s"]`.
 #include "battle/battle_information.h"
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"

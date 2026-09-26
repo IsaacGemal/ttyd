@@ -66,7 +66,7 @@ void motSlitCancel3(void) {
     }
 }
 
-// NONMATCHING (71%): the original keeps the constant 0x14 in r31 across the
+// NONMATCHING (71.07%): the original keeps the constant 0x14 in r31 across the
 // marioGetPtr call (a live local); MWCC folds it to r0 here.
 void motSlitContinue(void) {
     MarioWork* mario;
@@ -238,7 +238,7 @@ s32 marioSlitButton(void) {
     return 0;
 }
 
-// NONMATCHING (96%): the GXColor is built in a stack temporary at +0xC and
+// NONMATCHING (96.36%): the GXColor is built in a stack temporary at +0xC and
 // word-copied to +0x8; we build it directly. The controlStickSensitivity
 // compare also loads the constant into f1 instead of the field.
 void marioReInit_slit(void) {
@@ -283,7 +283,7 @@ void marioReInit_slit(void) {
     allPartySlitOn();
 }
 
-// NONMATCHING (97%): emits the default `state = 0` block twice (dispFlags
+// NONMATCHING (97.03%): emits the default `state = 0` block twice (dispFlags
 // branch and final else) instead of sharing one; everything else matches.
 s32 U_marioSlitContinueChk(void) {
     MarioWork* mario = marioGetPtr();
@@ -323,7 +323,7 @@ s32 U_marioSlitContinueChk(void) {
     }
 }
 
-// NONMATCHING (99%): the currMotionId == 8 early return compiles to `beq`
+// NONMATCHING (98.96%): the currMotionId == 8 early return compiles to `beq`
 // where the original has `bne body; b return` (block layout).
 void mot_slit_post(void) {
     MarioWork* mario = marioGetPtr();
@@ -414,10 +414,7 @@ void marioSlitForceCancel(void) {
     }
 }
 
-// NONMATCHING (62%): real reconstruction of the six hit checks. Differs in
-// stack-slot allocation (the original keeps a per-check vec3 temporary at
-// +0x14..+0x50 and A/B/C/D at +0x5C..+0x8C; we have no temps and a smaller
-// frame) and in some operand ordering.
+// NONMATCHING (62.47%): 41 instructions differ, 38 missing, 104 extra, plus register differences.
 BOOL marioCreviceWallChk(Vec* pos) {
     Vec A, B, C, D;
     f32 dist;

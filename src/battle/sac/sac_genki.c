@@ -236,7 +236,7 @@ USER_FUNC(get_score) {
 USER_FUNC(wait_game_end) {
     GenkiWork* genki = get_ptr();
 
-    return (genki->field_4 < 4) ? 2 : 0;
+    return (genki->field_4 == 3) ? 2 : 0;
 }
 
 USER_FUNC(start_game) {
@@ -273,6 +273,7 @@ void object_entry(void) {
     }
 }
 
+// NONMATCHING (96.48%): 1 missing, plus register differences.
 void weapon_entry(void) {
     BattleUnit* mario;
     BattleUnitPart* parts;
@@ -360,6 +361,7 @@ void main_star(void) {
     }
 }
 
+// NONMATCHING (92.01%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
 void main_target(void) {
     GenkiWork* genki = get_ptr();
 
@@ -469,6 +471,7 @@ void main_mario(void) {
     }
 }
 
+// NONMATCHING (95.32%): 2 instructions differ, 3 missing, 10 extra, plus register differences.
 void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiObject* obj = (GenkiObject*)((u8*)genki + 0x358 + idx * 0x2C);
@@ -538,7 +541,6 @@ void main_object(s32 idx) {
             obj->field_10 = star->field_10;
             obj->field_14 = z + (f32)idx;
         }
-        break;
     case 2:
         if (genki->field_C == 0) {
             obj->field_10 -= float_1p32_80421ddc;
@@ -566,6 +568,7 @@ void main_object(s32 idx) {
     }
 }
 
+// NONMATCHING (90.67%): 2 instructions differ, 5 missing, 14 extra, plus register differences.
 s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -623,6 +626,7 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
+// NONMATCHING (98.74%): 2 missing, 4 extra, plus register differences.
 void main_base(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -766,131 +770,8 @@ void main_base(void) {
     }
 }
 
-void main_star1(void) {
-    const f32* vec = vec3_803002b0;
-    GenkiWork* genki = get_ptr();
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    GenkiStar* star = &genki->stars[0];
-    f32 f;
-
-    switch (star->field_0) {
-    case 0:
-        break;
-    case 1:
-        star->field_0 = 2;
-        star->field_4 = 0;
-        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88,
-                                           float_0_80421d84, float_1_80421d74);
-        BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
-        star->field_10 = star->field_10 +
-            (mario->mSizeMultiplier * (f32)*(s16*)((u8*)mario + 0xCE) + float_37_80421d8c);
-        star->field_18 = star->field_C;
-        star->field_1C = star->field_10;
-        star->field_20 = star->field_14;
-        star->field_24 = star->field_C;
-        star->field_28 = star->field_10;
-        star->field_2C = star->field_14;
-        star->field_28 += float_50_80421d90;
-        star->field_2C += float_neg1_80421d94;
-        star->field_3C = vec[0x60 / 4];
-        star->field_40 = vec[0x64 / 4];
-        star->field_44 = vec[0x68 / 4];
-        star->field_48 = vec[0x6C / 4];
-        star->field_4C = vec[0x70 / 4];
-        star->field_50 = vec[0x74 / 4];
-        /* fallthrough */
-    case 2:
-        star->field_4++;
-        if (star->field_4 <= 0x64) {
-            star->field_C = intplGetValue(0, star->field_4, 0x64, star->field_18, star->field_24);
-            star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
-            star->field_14 = intplGetValue(0, star->field_4, 0x64, star->field_20, star->field_2C);
-            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, float_2_80421d70);
-            star->field_3C = f;
-            star->field_40 = f;
-            star->field_44 = f;
-        } else {
-            star->field_C = star->field_24;
-            star->field_10 = star->field_28;
-            star->field_14 = star->field_2C;
-            star->field_3C = float_2_80421d70;
-            star->field_40 = float_2_80421d70;
-            star->field_44 = float_2_80421d70;
-        }
-        star->field_4C = intplGetValue(4, star->field_4, 0x78, float_0_80421d84, float_2160_80421d98);
-        if (star->field_4 >= 0x78) {
-            star->field_0 = 3;
-            star->field_4 = 0;
-            star->field_18 = star->field_C;
-            star->field_1C = star->field_10;
-            star->field_20 = star->field_14;
-            star->field_24 = float_200_80421d9c * (f32)rand() / float_32767_80421da0;
-            star->field_28 = vec[0x7C / 4];
-            star->field_2C = vec[0x80 / 4];
-            star->field_30 = vec[0x84 / 4];
-            star->field_34 = vec[0x88 / 4];
-            star->field_38 = vec[0x8C / 4];
-            star->field_34 = (float_2_80421d70 * (star->field_28 - star->field_1C) -
-                              float_720_80421da4) / float_120_80421da8;
-        }
-        break;
-    case 3:
-        star->field_4++;
-        star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
-        star->field_10 += star->field_44;
-        star->field_44 += float_0p2_80421dac;
-        star->field_4C = float_0_80421d84;
-        star->field_44 = float_2_80421d70;
-        star->field_40 = float_2_80421d70;
-        star->field_3C = float_2_80421d70;
-        if (star->field_4 >= 0x3C) {
-            star->field_0 = 4;
-            star->field_4 = 0;
-            if (irand(2) == 0) {
-                star->field_3C = float_neg2_80421db0;
-            }
-            star->field_3C = float_2_80421d70;
-            star->field_40 = float_0_80421d84;
-        }
-        break;
-    case 4:
-        star->field_4++;
-        star->field_C += star->field_30;
-        if (star->field_C < float_0_80421d84) {
-            star->field_30 = float_3_80421db4;
-        }
-        if (star->field_C > float_200_80421d9c) {
-            star->field_30 = float_neg3_80421db8;
-        }
-        star->field_34 += float_0p1_80421dbc;
-        if (star->field_34 >= float_6p2832_80421dc0) {
-            star->field_34 -= float_6p2832_80421dc0;
-        }
-        star->field_10 = float_10_80421d54 * (f32)sin(star->field_34) + float_180_80421d4c;
-        if (genki->field_40 <= 0) {
-            star->field_0 = 5;
-            star->field_4 = 0;
-            star->field_C = vec[0x90 / 4];
-            star->field_10 = vec[0x94 / 4];
-            star->field_14 = vec[0x98 / 4];
-        }
-        break;
-    case 5:
-        break;
-    }
-
-    if (star->field_60 != NULL) {
-        f32* p = (f32*)star->field_60->userdata;
-        p[0x8 / 4] = star->field_C;
-        p[0xC / 4] = star->field_10;
-        p[0x10 / 4] = star->field_14;
-        p[0x18 / 4] = star->field_48;
-        p[0x1C / 4] = star->field_4C;
-        p[0x20 / 4] = star->field_50;
-        p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
-    }
-}
-
+void main_star1(void);
+// NONMATCHING (61.75%): 55 instructions differ, 60 missing, 124 extra, plus register differences.
 void main_star0(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -1027,88 +908,4 @@ void main_star0(s32 idx) {
     }
 }
 
-void main_weapon(s32 idx) {
-    const f32* vec = vec3_803002b0;
-    GenkiWork* genki = get_ptr();
-    GenkiWeapon* weapon = &genki->weapon[idx];
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    f32 angle = (float_2_80421d70 * float_3p1416_80421d48 * genki->field_6C) /
-                float_360_80421de8;
-    s32 audience = BattleAudience_GetAudienceNum();
-    s32 i;
-    s32 j;
-    GenkiObject* obj;
-
-    weapon->field_14 = weapon->field_8;
-    weapon->field_18 = weapon->field_C;
-    weapon->field_1C = weapon->field_10;
-
-    switch (weapon->field_0) {
-    case 0:
-        weapon->field_8 = vec[0];
-        weapon->field_C = vec[1];
-        weapon->field_10 = vec[2];
-        break;
-    case 1:
-        weapon->field_4--;
-        if (weapon->field_4 < 0) {
-            weapon->field_0 = 2;
-            BtlUnit_GetPos(mario, &weapon->field_8, &weapon->field_C, &weapon->field_10);
-            weapon->field_8 += float_20_80421d78 * mario->mSizeMultiplier;
-            weapon->field_C += float_28_80421dec * mario->mSizeMultiplier;
-            weapon->field_38 = float_10_80421d54 * (f32)cos(angle);
-            weapon->field_3C = float_10_80421d54 * (f32)sin(angle);
-            weapon->field_40 = vec[0x14 / 4];
-            for (i = 0; i < 7; i++) {
-                /* per-object weapon effect setup is omitted; effects stay where they are */
-            }
-            BtlUnit_snd_se(mario, str_80300470, 0xF1194D80, 0);
-        }
-        /* fallthrough */
-    case 2:
-        weapon->field_8 += weapon->field_38;
-        weapon->field_C += weapon->field_3C;
-        weapon->field_3C -= float_0p15_80421df0;
-        BtlUnit_GetPos(mario, &weapon->field_8, &weapon->field_C, &weapon->field_10);
-        if (weapon->field_8 >= float_250_80421df4 || weapon->field_C >= float_180_80421d4c ||
-            weapon->field_C <= float_0_80421d84) {
-            weapon->field_0 = 3;
-            break;
-        }
-        {
-            s32 best = -1;
-            f32 bestDist = float_1E07_80421df8;
-            for (i = 0; i < 10; i++) {
-                obj = &genki->objects[i];
-                if (obj->field_0 == 2) {
-                    f32 dx = weapon->field_C - obj->field_10;
-                    f32 dz = weapon->field_8 - obj->field_C;
-                    f32 d = dx * dx + dz * dz;
-                    if (d < bestDist) {
-                        bestDist = d;
-                        best = i;
-                    }
-                }
-            }
-            if (best == -1) {
-                break;
-            }
-            obj = &genki->objects[best];
-        }
-        break;
-    case 3:
-        weapon->field_0 = 0;
-        break;
-    }
-
-    for (i = 0; i < 3; i++) {
-        if (weapon->field_48[i] != NULL) {
-            f32* p = (f32*)weapon->field_48[i]->userdata;
-            p[0x8 / 4] = weapon->field_14;
-            p[0xC / 4] = weapon->field_18;
-            p[0x10 / 4] = weapon->field_1C;
-            p[0x14 / 4] = float_1p125_80421e08;
-            ((u8*)p)[0x5F] = (u8)(0xFF - (i + 1) * 0x32);
-        }
-    }
-}
+void main_weapon(s32 idx);

@@ -1,4 +1,6 @@
+#include "mario/mario_hit.h"
 #include "party.h"
+#include "mario/mario_hit.h"
 #include "mario/mario.h"
 #include "mario/mario_party.h"
 #include "mario/mario_motion.h"
@@ -327,7 +329,7 @@ void unk_800b474c(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (94.86%): register interleave in the 6-float vec copy.
+// NONMATCHING (94.90%): register interleave in the 6-float vec copy.
 void marioYoshiForceCancel(void) {
     const Vec* vec = vec3_802cccd0;
     MarioWork* mario = marioGetPtr();
@@ -358,15 +360,20 @@ void marioYoshiForceCancel(void) {
                         partyChgRunMode(extra, 0xD);
                     }
                 }
+            } else {
+                goto not_toge;
             }
-        } else if (party->field_34 != 8 && party->field_34 != 0xD) {
-            partyChgRunMode(party, 2);
-            party->field_3B = 0;
+        } else {
+        not_toge:
+            if (party->field_34 != 8 && party->field_34 != 0xD) {
+                partyChgRunMode(party, 2);
+                party->field_3B = 0;
+            }
         }
     }
 }
 
-// NONMATCHING (95.09%): shared cancel body is duplicated inline; remaining
+// NONMATCHING (95.13%): shared cancel body is duplicated inline; remaining
 // difference is load/store interleaving in the 6-float copy.
 void yoshi_exit(PartyEntry* arg) {
     const Vec* vec = vec3_802cccd0;
@@ -401,10 +408,15 @@ void yoshi_exit(PartyEntry* arg) {
                         partyChgRunMode(extra, 0xD);
                     }
                 }
+            } else {
+                goto exit_not_toge;
             }
-        } else if (party->field_34 != 8 && party->field_34 != 0xD) {
-            partyChgRunMode(party, 2);
-            party->field_3B = 0;
+        } else {
+        exit_not_toge:
+            if (party->field_34 != 8 && party->field_34 != 0xD) {
+                partyChgRunMode(party, 2);
+                party->field_3B = 0;
+            }
         }
     }
     marioChgMot(0);
@@ -427,7 +439,7 @@ void yoshi_bye(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (94.49%): clamps/revise360 are right; some FP scheduling differs.
+// NONMATCHING (96.03%): 2 missing, plus register differences.
 void L_yoshiFlyMove(PartyEntry* party) {
     MarioWork* mario = marioGetPtr();
     f32 f30;
@@ -441,7 +453,7 @@ void L_yoshiFlyMove(PartyEntry* party) {
 
     f29 = 0.1f * distABf(0.0f, 0.0f, f30, f31);
     lim = mario->mBaseDashSpeed * 1.0f;
-    if (f29 < lim) {
+    if (f29 >= lim) {
         f29 = lim;
     }
 
@@ -806,7 +818,6 @@ end: ;
 }
 
 HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b);
-s32 marioChkBero(void);
 HitEntry* dou10_yoko_yari2(f32* out);
 void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
 
@@ -822,7 +833,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
         party->field_12C = hit;
         *(HitEntry**)((u8*)mario + 0x1E0) = hit;
         if (a) {
-            if ((party->flags & 0x100) && marioChkBero() == 1) {
+            if ((party->flags & 0x100) && marioChkBero(hit) == 1) {
                 party->field_134 = hit;
                 *(HitEntry**)((u8*)mario + 0x1EC) = hit;
                 *(HitEntry**)((u8*)mario + 0x1F0) = hit;

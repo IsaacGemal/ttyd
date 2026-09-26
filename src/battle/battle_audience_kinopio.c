@@ -323,7 +323,7 @@ void BattleAudienceCtrlProcessKinopioFireSub(s32 index) {
 	}
 }
 
-// NONMATCHING (93.12%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (93.12%): 2 instructions differ, 6 missing, 2 extra, plus register differences.
 void BattleAudienceCtrlProcessKinopioFire(s32 index, u8 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
@@ -1136,7 +1136,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
 				BattleCheckDamage(BattleGetSystemPtr(work), unit, part,
 				    (BattleWeapon*)weapon_teresa_trans, 0x100);
-				BtlUnit_snd_se(unit, str_802F8DB4, 0x114d80, 0);
+				BtlUnit_snd_se(unit, str_802F8DB4, -250000000, 0);
 			}
 		}
 		if (*(s32*)member->field_0x8 >= 0x78) {
@@ -1293,7 +1293,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	}
 }
 
-// NONMATCHING (63.11%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (67.47%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	BattleWork* work = _battleWorkPointer;
 	BattleAudienceMember* member;
@@ -1519,7 +1519,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 
 u8 vec3_802f8c78[0x120];
 
-// NONMATCHING (compiler register/scheduling): structure transcribed from the asm.
+// NONMATCHING (95.53%): 5 instructions differ, 16 missing, 2 extra, plus register differences.
 void BattleAudienceCtrlProcessKinopioWait(s32 index, u8 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);

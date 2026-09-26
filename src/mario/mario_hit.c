@@ -1,4 +1,6 @@
+#include "mario/mario_hit.h"
 #include "driver/hitdrv.h"
+#include "mario/mario_hit.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"
 #include "party/party_vivian.h"
@@ -28,6 +30,7 @@ extern const f32 float_neg10_8041a804;
 extern const f32 float_6_8041a88c;
 extern const f32 float_18_8041a850;
 
+// NONMATCHING (99.86%): 1 instruction differs, plus register differences.
 void* marioChkLandon(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
     f32 outY;
@@ -44,6 +47,7 @@ void* marioChkLandon(f32* pos, f32 spd) {
     }
 }
 
+// NONMATCHING (98.33%): 1 instruction differs, 1 missing.
 void marioChkToge(void) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -170,7 +174,7 @@ void clear_hitobj_ride(void) {
     }
 }
 
-// NONMATCHING (97%): target selection branch is laid out 18.0f-first; original
+// NONMATCHING (97.16%): target selection branch is laid out 18.0f-first; original
 // falls through on wPlayerCollisionBox.x. Everything else matches.
 void marioHitCheckWidth(void) {
     MarioWork* wp = marioGetPtr();
@@ -216,6 +220,7 @@ BOOL chkFilterAttr2(HitCheckQuery* query, HitEntry* entry) {
 // strings/rodata with no home header (addressed from the rodata base symbol)
 extern const u8 vec3_802c5730[];
 
+// NONMATCHING (86.77%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
@@ -237,6 +242,7 @@ BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     return TRUE;
 }
 
+// NONMATCHING (87.71%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
@@ -261,6 +267,7 @@ BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
     return TRUE;
 }
 
+// NONMATCHING (87.71%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
     const u8* base = vec3_802c5730;
@@ -291,6 +298,7 @@ void marioSearchFrontWall_staying(f32 a);
 void dou10_yoko_yari(f32* p);
 HitEntry* searchFrontWall(Vec* a, f32* b, f32 c, f32 d, f32 e);
 
+// NONMATCHING (96.02%): 2 instructions differ, 1 missing, 6 extra, plus register differences.
 void marioCheckWall(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -424,6 +432,7 @@ double sin(double x);
 double cos(double x);
 void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 
+// NONMATCHING (87.30%): 2 instructions differ, 8 missing, 16 extra, plus register differences.
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
@@ -555,6 +564,7 @@ void PSVECSubtract(const Vec* a, const Vec* b, Vec* a_b);
 void PSVECScale(const Vec* src, Vec* dst, f32 scale);
 f32 PSVECMag(const Vec* v);
 
+// NONMATCHING (99.21%): 1 missing, plus register differences.
 void marioCheckWallShip(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -670,6 +680,7 @@ f32 partyGetHeight(void* party);
 s32 marioGetPartyId(void);
 s32 psndSFXOn_3D(const char* name, Vec* position);
 
+// NONMATCHING (94.64%): 8 instructions differ, 8 missing, 10 extra, plus register differences.
 f32 marioChkOverhead(void) {
     const u8* base = vec3_802c5730;
     MarioWork* wp = marioGetPtr();

@@ -198,6 +198,7 @@ s32 star_stone_attack(EventEntry* event, s32 arg) {
 }
 
 // .text:0x98 | 0x80243090 | size: 0xFC
+// NONMATCHING (84.10%): 6 missing, 8 extra, plus register differences.
 s32 get_ride_pos(EventEntry* event) {
     DekaWork* p = get_ptr();
     s32* args = event->args;
@@ -228,8 +229,6 @@ s32 star_stone_appear(EventEntry* event) {
 }
 
 // .text:0x1C0 | 0x802431B8 | size: 0x38
-// NONMATCHING (91.36%): the state test is right, but mwcc emits `subi r3,r3,5; subic r3,r3,1; subfe` here
-// while this source form emits `subi r3,r3,6; srwi r3,r3,31; neg` (same 2*(x<6) value).
 s32 wait_game_end(EventEntry* event) {
     DekaWork* p = get_ptr();
     return (u32)(p->baseState - 5u) <= 0 ? 2 : 0;
@@ -243,7 +242,6 @@ s32 start_game(EventEntry* event) {
 }
 
 // .text:0x224 | 0x8024321C | size: 0x38
-// NONMATCHING (91.36%): same carry-vs-shift boolean difference as wait_game_end.
 s32 wait_star_stone_take_on(EventEntry* event) {
     DekaWork* p = get_ptr();
     return (u32)(p->starState - 4u) <= 0 ? 2 : 0;
@@ -256,6 +254,7 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
+// NONMATCHING (96.25%): 4 instructions differ, 1 missing, plus register differences.
 void create_timing(void) {
     DekaWork* p = get_ptr();
     f32 times[8];
@@ -346,6 +345,7 @@ scan:
 }
 
 // .text:0x5E4 | 0x802435DC | size: 0x230
+// NONMATCHING (95.59%): 3 missing, 6 extra, plus register differences.
 void yuka_disp(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
@@ -393,6 +393,7 @@ void yuka_disp(CameraId cameraId, void* param) {
 }
 
 // .text:0x83C | 0x8024380C | size: 0x28C
+// NONMATCHING (94.56%): 4 instructions differ, 3 missing, 6 extra, plus register differences.
 void yuka_capture(CameraId cameraId) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
@@ -461,6 +462,7 @@ void main_enemy(void) {
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
 #pragma dont_inline reset
 #pragma dont_inline on
+// NONMATCHING (85.22%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
 void main_timing(s32 idx) {
     DekaWork* p = get_ptr();
     DekaTiming* t = &p->timing[idx];
@@ -487,6 +489,7 @@ void main_timing(s32 idx) {
 
 // .text:0x1F98 | 0x80244F90 | size: 0x190
 #pragma dont_inline reset
+// NONMATCHING (95.57%): 4 instructions differ, 1 missing, 2 extra, plus register differences.
 void main_gauge(void) {
     DekaWork* p = get_ptr();
 
