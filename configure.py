@@ -425,10 +425,10 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "data/item_data.c"),
+            Object(Matching, "data/item_data.c"),
             Object(NonMatching, "data/mail_data.c"),
             Object(Matching, "data/mapdata.c"),
-            Object(NonMatching, "data/npc_data.c"),
+            Object(Matching, "data/npc_data.c"),
         ],
     },
     {
