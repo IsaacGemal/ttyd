@@ -30,6 +30,8 @@ anything worth keeping into a chapter here.
   plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
   build setup before agents can work on them.
 - Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
+- Sessions don't message each other for now (Isaac, Sep 26): the orchestrator runs reviews itself or Isaac
+  starts them. Next session: see "Ideas for wave 6" at the end.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 
@@ -708,3 +710,16 @@ PR including those fix commits -> the orchestrator fixes -> merge.** Codex goes 
 out first and it does the broad sweep; Claude goes second because it reads logic against the asm more deeply,
 which is what checking fixes needs. Only the last round's fixes go unreviewed, and there are usually few.
 Wave 5's fix commits (ce5b249..59e9d2f) get this review after the fact.
+
+## Ideas for wave 6: three review rounds, and no cross-session messaging (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+Floated at the end of Sep 25, not decided; settle them when wave 6 starts.
+- **No session-to-session messages for now.** Sessions messaging each other was hard for Isaac to follow.
+  Wave 6 goes back to the earlier pattern: the orchestrator launches the wave, merges, and runs the reviews
+  itself, or Isaac starts a review session by hand.
+- **Three review rounds per PR instead of two.** Every round so far has found real bugs the previous one
+  missed (wave 5: Codex, then Claude, then a Claude review of the fix commits, each with new findings).
+- **A cheaper third round.** Run it on the swarm's own inference, with about 4 agents instead of per-file
+  fan-out, as an independent pass. Slower, but that may be fine.
+- **Pace.** Code matched went from 12.16% to 17.96% in the first day of waves. Melee took about six years, the
+  last two fast. The pace from here depends on compute and on how quickly review can keep up.
