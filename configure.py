@@ -694,7 +694,7 @@ config.libs = [
             Object(NonMatching, "event/evt_nannpc.c"),
             Object(NonMatching, "event/evt_fade.c"),
             Object(NonMatching, "event/evt_light.c"),
-            Object(NonMatching, "event/evt_audience.c"),
+            Object(Matching, "event/evt_audience.c"),
             Object(NonMatching, "event/evt_batstage.c"),
             Object(Matching, "event/evt_seq.c"),
             Object(NonMatching, "event/evt_twoddisp.c"),
