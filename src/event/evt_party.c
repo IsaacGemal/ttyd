@@ -38,8 +38,6 @@ f32 float_50_8041bb38 = 50.0f;
 
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyChgMot(PartyEntry* party, s32 mot);
-void partyChgPose(PartyEntry* party, char* pose);
-char* partyChgPoseId(PartyEntry* party, s32 index);
 void partySetForceMove(PartyEntry* party, s32 unk, f32 x, f32 z);
 void partySetCamId(PartyEntry* party, s32 cameraId);
 void partyInitCamId(PartyEntry* party);

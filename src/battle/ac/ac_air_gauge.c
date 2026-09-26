@@ -362,8 +362,8 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 		work->actionCommands.mAcState = 0x3EA;
 		break;
 	case 0x3E9:
-		*(s32*)((u8*)work + 0x1c98) = *(s32*)((u8*)work + 0x1c98) - 1;
-		if (*(s32*)((u8*)work + 0x1c98) < 0) {
+		work->actionCommands.field_0x8 = work->actionCommands.field_0x8 - 1;
+		if (work->actionCommands.field_0x8 < 0) {
 			if ((s32)work->actionCommands.outputParams[0] > 0) {
 				work->actionCommands.result = 2;
 				work->actionCommands.mResultCount++;

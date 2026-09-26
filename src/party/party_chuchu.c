@@ -17,8 +17,6 @@
 
 // Local declarations: not yet in a header.
 void partyGetAppearPos3(PartyEntry* party, Vec* position);
-char* partyChgPoseId(PartyEntry* party, s32 poseId);
-void partyChgPose(PartyEntry* party, const char* name);
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyChkGnd(PartyEntry* party);
 void partyWalkInit(PartyEntry* party, s32 mode);

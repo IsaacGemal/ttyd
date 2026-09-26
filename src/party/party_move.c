@@ -28,7 +28,6 @@ s32 nokonokoGetStatus(PartyEntry* party);
 void* mobjHitObjPtrToPtr(HitEntry* hit);
 s32 marioChkDeepSleep(void);
 s32 chuchu_searchObject(void);
-char* partyChgPoseId(PartyEntry* party, s32 index);
 void unk_800c90d4(PartyEntry* party, s32 value);
 s32 N_marioGetMovementSpeed(void);
 s32 party_motion_fall(PartyEntry* party);

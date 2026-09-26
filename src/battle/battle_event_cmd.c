@@ -2799,13 +2799,13 @@ USER_FUNC(btlevtcmd_EnemyItemUseCheck) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 id, index, result;
+    s32 id, index;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     index = args[1];
-    result = (s32)BattleEnemyUseItemCheck(unit);
-    evtSetValue(event, index, result);
+    evtSetValue(event, index, (s32)BattleEnemyUseItemCheck(unit));
     return EVT_RETURN_DONE;
 }
 

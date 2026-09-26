@@ -4,6 +4,8 @@
 #
 #   tools/merge_agent.sh RESULTS_DIR UNIT [AGENT_MODEL] [AGENT_TRAILER]
 #
+# UNIT may also be the source file's path, e.g. rels/pik/src/unit/unit_purple_teresa.c: needed for a new file in
+# a REL module, and for a unit that exists in several RELs.
 # RESULTS_DIR is the agent's result folder: final.c (the agent's whole file; used for new files and finishers)
 # or src.patch (a diff against the file on main), plus other_changes.txt (files the agent changed besides its own).
 # UNIT is the source path without src/ and .c, e.g. event/evt_map. The wave name in the commit is RESULTS_DIR's
@@ -15,9 +17,12 @@ MODEL=${3:-"Pi + DeepSeek V4.1 Flash"}; TRAILER=${4:-"DeepSeek V4.1 Flash <norep
 ORCH=${ORCHESTRATOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
 TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); TOOLS=$(cd "$(dirname "$0")" && pwd)
 cd "$TOOLS/.."
-F=src/$UNIT.c; [ -e "$F" ] || { R=$(ls rels/*/src/$UNIT.c 2>/dev/null | head -1); [ -n "$R" ] && F=$R; }  # REL modules
+case $UNIT in
+  *.c) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/)?src/##; s#\.c$##') ;;
+  *) F=src/$UNIT.c ;;
+esac
 
-[ -z "$(git status --short -- src include)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
+[ -z "$(git status --short -- src include rels)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
 own="Only in src$( [ "$(dirname $UNIT)" = . ] || echo /$(dirname $UNIT)): $(basename $UNIT).c"
 if [ -s "$D/other_changes.txt" ] && grep -v -x -F "$own" "$D/other_changes.txt" | grep -q .; then
   echo "REJECT $TAG: touched other files:"; cat "$D/other_changes.txt"; exit 1

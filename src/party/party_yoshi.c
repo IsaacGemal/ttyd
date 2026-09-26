@@ -22,8 +22,6 @@ s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
 
 // Local declarations: not yet in a header.
-void partyChgPose(PartyEntry* party, const char* name);
-char* partyChgPoseId(PartyEntry* party, s32 poseId);
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyChgMot(PartyEntry* party, s32 mot);
 // NONMATCHING (0.00%): not implemented yet (bulk of the file).

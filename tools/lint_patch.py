@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c, after a build.
+"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c, after a build. UNIT may
+also be a source path (rels/<rel>/src/... for REL modules).
 
 BASE is a git ref (default HEAD) or, where there is no git (an agent's workspace), a path to the file to compare
 against (`/dev/null` for a new file).
@@ -13,9 +14,7 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
   PRAGMA     an added `dont_inline on` / `opt_propagation off` / `optimize_for_size on` with no reason comment
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
-import glob
 import json
-import os
 import re
 import subprocess
 import sys
@@ -43,16 +42,20 @@ def is_stub(body):
 
 
 def source_path(unit):
-    """src/UNIT.c, or the REL module's copy (rels/<rel>/src/UNIT.c) when the unit belongs to a REL."""
-    if os.path.exists(f"src/{unit}.c"):
-        return f"src/{unit}.c"
-    return next(iter(sorted(glob.glob(f"rels/*/src/{unit}.c"))), f"src/{unit}.c")
+    """(source path, report unit name) for UNIT: src/UNIT.c in MarioSt, or a path to a .c file, which may be a
+    REL module's source (rels/<rel>/src/UNIT.c, reported as <rel>/UNIT)."""
+    if unit.endswith(".c"):
+        m = re.fullmatch(r"(?:rels/([^/]+)/)?src/(.+)\.c", unit)
+        if not m:
+            sys.exit(f"{unit}: expected src/... or rels/<rel>/src/...")
+        return unit, f"{m.group(1) or 'MarioSt'}/{m.group(2)}"
+    return f"src/{unit}.c", f"MarioSt/{unit}"
 
 
 def main():
     unit = sys.argv[1]
     base = sys.argv[2:] or []
-    path = source_path(unit)
+    path, report_name = source_path(unit)
     BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
     if BASE_FILE:
         diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
@@ -75,7 +78,7 @@ def main():
     touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
 
     report = json.load(open("build/G8MJ01/report.json"))
-    u = next(x for x in report["units"] if x["name"].split("/", 1)[1] == unit)
+    u = next(x for x in report["units"] if x["name"] == report_name)
     pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
 
     stubs, out = [], []

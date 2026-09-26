@@ -129,5 +129,7 @@ s32 partyEntry(s32 memberId);
 s32 partyEntryHello(s32 memberId);
 PartyEntry* anotherPartyGetPtr(s32 index);
 BOOL partyPaperOn(PartyEntry* party, const char* animName);
+char* partyChgPoseId(PartyEntry* party, s32 index);
+void partyChgPose(PartyEntry* party, char* pose);
 
 void partyCtrlOff(void);
