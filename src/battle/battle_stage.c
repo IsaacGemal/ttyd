@@ -133,6 +133,7 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
+// NONMATCHING (76.11%): 7 missing, 6 extra, plus register differences.
 void BattleStageInit(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -183,6 +184,7 @@ void BattleStageInit(void) {
 	batSpotInit();
 }
 
+// NONMATCHING (0.25%): 397 missing.
 void BattleStageMain(void) {
 }
 
@@ -767,7 +769,7 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 }
 #pragma dont_inline off
 
-// NONMATCHING (91.13%): fixed a real bug (calls 1 and 3 had their 3rd/4th
+// NONMATCHING (91.40%): fixed a real bug (calls 1 and 3 had their 3rd/4th
 // DarkBySquare args swapped; original is -640,640,640,-640,105). Still: original
 // materialises r31=&stage->audDark and uses 0x4(r31), ours folds to 0x6ee8(r30).
 void BattleStageDispDark(CameraId camId, void* param) {

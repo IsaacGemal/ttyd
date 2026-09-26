@@ -30,7 +30,6 @@ void disp_maku(CameraId camId, void* param);
 void disp_tec(CameraId camId, void* param);
 void disp_dummy_black(CameraId camId, void* param);
 
-// NONMATCHING (99.89%): same instructions; only register numbers or operands differ.
 void _callback(s32 error, DVDFileInfo* info) {
 	void* userData = info->cb.userData;
 
@@ -39,7 +38,6 @@ void _callback(s32 error, DVDFileInfo* info) {
 	wp->loaded = TRUE;
 }
 
-// NONMATCHING (99.45%): same instructions; only register numbers or operands differ.
 void fadeInit(void) {
 	int i;
 
@@ -68,7 +66,6 @@ void fadeInit(void) {
 	wp->loaded = FALSE;
 }
 
-// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 void fadeTexSetup(void) {
 	DVDEntry* dvd;
 	u32 size;
@@ -143,13 +140,11 @@ void fadeTecOff(void) {
 	wp->flags &= ~0x1000;
 }
 
-// NONMATCHING (99.88%): same instructions; only register numbers or operands differ.
 void fadeTecSoftOn(void) {
 	wp->flags |= 0x1010;
 	wp->field_0x354 = 0.0f;
 }
 
-// NONMATCHING (99.88%): same instructions; only register numbers or operands differ.
 void fadeTecSoftOff(void) {
 	wp->flags |= 0x1020;
 	wp->field_0x354 = 1.0f;
@@ -178,7 +173,6 @@ void fadeSetSpotPos(f32 x, f32 y) {
 	entry->fadeSpotY = y;
 }
 
-// NONMATCHING (99.50%): same instructions; only register numbers or operands differ.
 void fadeSetAnimOfsPos(f32 x, f32 y) {
 	FadeEntry* entry = &wp->entries[1];
 
@@ -186,14 +180,12 @@ void fadeSetAnimOfsPos(f32 x, f32 y) {
 	entry->animOffsetY = y;
 }
 
-// NONMATCHING (99.79%): same instructions; only register numbers or operands differ.
 void fadeSetAnimVirtualPos(f32 x, f32 y, f32 z) {
 	FadeEntry* entry = &wp->entries[1];
 	entry->VirtualPos = (Vec){x, y, z};
 	entry->flags |= 4;
 }
 
-// NONMATCHING (99.50%): same instructions; only register numbers or operands differ.
 void fadeSetOffscreenCallback(OffscreenCallback callback, void* param) {
 	FadeEntry* entry = &wp->entries[3];
 
@@ -211,7 +203,6 @@ void disp_texture(CameraId camId, void* param) {
 	//passed wp, unused
 }
 
-// NONMATCHING (99.97%): same instructions; only register numbers or operands differ.
 f32 z(void) {
 	FadeEntry* entry = &wp->entries[1];
 	CameraEntry* cam;
@@ -344,7 +335,6 @@ void disp_dummy_black(CameraId camId, void* param) {
 	GXSetProjectionv(projv);
 }
 
-// NONMATCHING (99.82%): same instructions; only register numbers or operands differ.
 BOOL fadeIsFinish(void) {
 	FadeEntry* entry;
 
@@ -356,7 +346,6 @@ BOOL fadeIsFinish(void) {
 	return (entry->flags >> 1) & 1;
 }
 
-// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 void fadeReset(s32 id) { //TODO: better param name?
 	FadeEntry* entry;
 
@@ -380,12 +369,10 @@ void fadeReset(s32 id) { //TODO: better param name?
 	entry->field_0x90 = 1.0f;
 }
 
-// NONMATCHING (99.67%): same instructions; only register numbers or operands differ.
 TEXPalette* fadeGetTpl(void) {
 	return wp->texture;
 }
 
-// NONMATCHING (99.60%): same instructions; only register numbers or operands differ.
 void fadeSetNarrowFast(void) {
 	wp->entries[1].flags |= 8;
 }

@@ -587,12 +587,12 @@ USER_FUNC(evt_badgeShop_bottakuru_get_kind_cnt) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (90.75%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
+// NONMATCHING (90.77%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
 USER_FUNC(U_evt_badgeShop_get_special_zaiko) {
 	s32 badge, count;
 	int i;
 
-	for (count = 0, i = 0; i < BADGE_MAX; i++) {
+	for (count = 0, i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		badge = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN));
 		if (badge > 0) { //TODO: wonky cntlzw
 			count++;

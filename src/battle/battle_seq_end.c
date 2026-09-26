@@ -133,6 +133,7 @@ s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// NONMATCHING (96.45%): 1 instruction differs, 1 missing.
 void _audience_Whistle_control(void) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
 
@@ -210,8 +211,7 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.76%): instruction stream matches; the only difference is the .rodata constant base and
-// offsets (orig bases on str_802FDDF0 + 0x1f0), which depend on the whole file's data layout.
+// NONMATCHING (99.76%): same instructions; only register numbers or operands differ.
 s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     PouchData* pouch = pouchGetPtr();
@@ -224,7 +224,7 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     *(Vec*)((u8*)work + 0x274) = (Vec){0.5f, 0.5f, 1.0f};
 
     ((u8*)work)[0x228] = 0;
-    *(GXColor*)((u8*)work + 0x230) = (GXColor){0xFF, 0xFF, 0xFF, 0xC8};
+    *(GXColor*)((u8*)work + 0x230) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
     *(s16*)((u8*)work + 0x224) = pouch->baseMaxHP;
     *(Vec*)((u8*)work + 0x218) = (Vec){0.0f, 0.0f, 0.0f};
     if (*(u16*)((u8*)work + 0x224) >= 0xC8) {
@@ -234,7 +234,7 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     }
 
     ((u8*)work)[0x25C] = 0;
-    *(GXColor*)((u8*)work + 0x264) = (GXColor){0xFF, 0xFF, 0xFF, 0xC8};
+    *(GXColor*)((u8*)work + 0x264) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
     *(s16*)((u8*)work + 0x258) = pouch->baseMaxFP;
     *(Vec*)((u8*)work + 0x24C) = (Vec){0.0f, 0.0f, 0.0f};
     if (*(u16*)((u8*)work + 0x258) >= 0xC8) {
@@ -244,7 +244,7 @@ s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     }
 
     ((u8*)work)[0x290] = 0;
-    *(GXColor*)((u8*)work + 0x298) = (GXColor){0xFF, 0xFF, 0xFF, 0xC8};
+    *(GXColor*)((u8*)work + 0x298) = (GXColor){0xC8, 0xFF, 0xFF, 0xFF};
     *(s16*)((u8*)work + 0x28C) = pouch->maximumBP;
     *(Vec*)((u8*)work + 0x280) = (Vec){0.0f, 0.0f, 0.0f};
     if (*(u16*)((u8*)work + 0x28C) >= 99) {
@@ -316,6 +316,7 @@ s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// NONMATCHING (92.00%): 3 missing, 3 extra, plus register differences.
 s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     s32 selected = *(s32*)((u8*)work + 0x10);
@@ -478,8 +479,7 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
     }
 }
 
-// NONMATCHING (93.40%): first-loop float conversion order differs and mwcc folds the original's `y + 0.0f`
-// (orig keeps an `fadds f2, y, float_0`) although the value is unchanged.
+// NONMATCHING (97.48%): 2 missing, 1 extra, plus register differences.
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
@@ -499,7 +499,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
             *(s32*)((u8*)work + 0xCC + i * 4) += 1;
         }
         *(f32*)((u8*)work + 0x118 + i * 0xC) =
-            (24.0f - 18.0f * (f32)i) + 36.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10);
+            36.0f * (f32)i + (24.0f - 18.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10));
     }
     for (; i < 10; i++) {
         iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
@@ -615,6 +615,7 @@ s32 _lvup_select_obj_disp_on(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// NONMATCHING (91.12%): 2 instructions differ, plus register differences.
 s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -699,6 +700,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     iconDispGx(pos, 0x10, 0x18C, 1.0f);
 }
 
+// NONMATCHING (77.00%): 5 instructions differ, 10 extra, plus register differences.
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -756,6 +758,7 @@ void _ac_help_disp(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (0.21%): 475 missing.
 void _lvup_select_object_disp(CameraId camId, void* param) {
 
 }

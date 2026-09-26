@@ -389,7 +389,7 @@ USER_FUNC(evt_nannpc_set_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.61%): loop callee-saved registers shifted (orig i=r24, offset=r26, name=r25;
+// NONMATCHING (77.20%): loop callee-saved registers shifted (orig i=r24, offset=r26, name=r25;
 // ours i=r28, offset=r27, name=r26) and the color/return scheduling differs.
 USER_FUNC(evt_nannpc_entry) {
     Vec* vec = (Vec*)vec3_802f2ff8;
@@ -430,7 +430,7 @@ USER_FUNC(evt_nannpc_entry) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.71%): isFirstCall/args and the extEntry argument registers are shifted by one
+// NONMATCHING (83.25%): isFirstCall/args and the extEntry argument registers are shifted by one
 // (orig isFirstCall=r25, args=r24; ours isFirstCall=r24, args=r25).
 USER_FUNC(evt_nannpc_init) {
     Vec* vec = (Vec*)vec3_802f2ff8;

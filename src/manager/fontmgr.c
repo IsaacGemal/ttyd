@@ -130,6 +130,7 @@ u32 HSV2RGB(GXColor* hsv) {
 	return *(u32*)&out;
 }
 
+// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	CameraEntry* cam;
 

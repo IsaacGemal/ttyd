@@ -156,7 +156,7 @@ typedef struct BattleStatusChangeMsgWork {
 	u64 field_0x250;                       // 0x250
 } BattleStatusChangeMsgWork;
 
-// NONMATCHING (60.15%): compiler folds 0.0f to fneg and -120.0f to an immediate, changing stack frame, constant pool and scheduling
+// NONMATCHING (60.57%): 7 instructions differ, 16 missing, 10 extra, plus register differences.
 void _st_chg_msg_disp(CameraId camera, void* param) {
 	BattleWork* wp = _battleWorkPointer;
 	u16 lines;
@@ -169,7 +169,7 @@ void _st_chg_msg_disp(CameraId camera, void* param) {
 
 	packed = FontGetMessageWidthLine(msg, &lines);
 	width = packed & 0xFFFF;
-	half = (packed >> 16) & 0x7FFF;
+	half = (packed >> 1) & 0x7FFF;
 	f31 = 0.0f - (f32)half;
 	windowDispGX_Waku_col(0, color, f31 - 20.0f, -117.0f + (f32)(lines * 0x1D), (f32)(width + 0x28),
 	                      (f32)((lines + 1) * 0x1D + 1), 10.0f);

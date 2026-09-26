@@ -126,7 +126,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[6].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(v, 0x10, up, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -160,6 +160,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 		break;
 	case 2:
+	case 3:
 	case 4:
 	case 5:
 	case 6:
@@ -171,7 +172,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[4].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(v, 0x10, up, float_1_80420510);
 			}
 			else {
 				Vec v;

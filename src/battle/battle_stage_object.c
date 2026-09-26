@@ -419,7 +419,7 @@ void BattleStage_DestroyA1(void) {
 	}
 }
 
-// NONMATCHING (89.03%): target materializes the GXColor in a temp at 0x8 then copies it to `color` at 0xc and
+// NONMATCHING (93.59%): target materializes the GXColor in a temp at 0x8 then copies it to `color` at 0xc and
 // references the named `dat_8041ccfc` (=0xFFFFFF00); mwcc builds it in place at 0x8 and emits an anonymous
 // constant (`@345`). Functionally identical. Discovered the data value 0xFFFFFF00 (alpha 0) while trying forms.
 // NONMATCHING (93.59%): the two-local `color`/`c` idiom now produces the temp-then-copy; only instruction
@@ -488,9 +488,7 @@ USER_FUNC(_set_mobj_shake) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (84.71%): baseline. Real bug: target reads event+0x80/+0x84 = `userdata[2]`/`field_84`,
-// not userdata[0]/[1]. Fixing the indices alone drops to 81.27% because the signed int->float constant
-// still needs to relocate to `double_to_int_802f3c30`; reverted for the ratchet, flagged here.
+// NONMATCHING (84.83%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
 USER_FUNC(_fall_frame) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* w = (u8*)wp + 0x20000;
@@ -498,13 +496,13 @@ USER_FUNC(_fall_frame) {
 	BattleStageObject* obj = BattleSearchObjectPtr(str_802F3C7C);
 
 	if (isFirstCall) {
-		event->userdata[0] = 0;
-		event->userdata[1] = (s32)obj->mPosition.y;
+		event->userdata[2] = 0;
+		event->field_84 = (s32)obj->mPosition.y;
 	}
-	event->userdata[0]++;
-	obj->mPosition.y = intpl_sub(2, event->userdata[0] * event->userdata[0] / 0x3C, 0x3C,
-	                             (f32)event->userdata[1], 0.0f);
-	if (event->userdata[0] >= 0x3C) {
+	event->userdata[2]++;
+	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
+	                             (f32)(s32)event->field_84, 0.0f);
+	if (event->userdata[2] >= 0x3C) {
 		evtSetValue(event, layer, *(s32*)(w - 0x7F08));
 		return EVT_RETURN_DONE;
 	}
@@ -737,11 +735,6 @@ USER_FUNC(_bgset_kemuri_effect) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.80%): target materialises each GXColor in a 4-byte temp then copies it to the real slot
-// (temp at color-4), giving a 0x30 frame; mwcc builds it in place (0x20 frame). Every other instruction matches.
-// Fixed by declaring `str_8041CD6{8,C,0,4}` as `[4]` (size <= sdata2 threshold -> `li r3,sym@sda21`),
-// `u8 alpha` (target `clrlwi r30,r3,24`), `s32* args = event->args` (target keeps it in r31), and assigning
-// `color = *(GXColor*)&dat_8041cce8; color.a = alpha;` so the constant relocates to the named symbol.
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;
 	s32 which = evtGetValue(event, args[0]);
@@ -819,6 +812,7 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	return NULL; //if name not found
 }
 
+// NONMATCHING (0.18%): 564 missing.
 void BattleStageObjectInit(void) {
 
 }
@@ -865,6 +859,7 @@ void BattleObjectConfig(void) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (0.37%): 269 missing.
 void BattleStageObjectMain(void) {
 
 }

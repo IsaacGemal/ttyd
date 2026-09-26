@@ -334,9 +334,7 @@ USER_FUNC(evt_bero_get_info) {
 	return EVT_RETURN_DONE;
 }
 
-	// NONMATCHING (86.42%): same as evt_bero_get_info plus the kind/names block: the names[]
-	// template is anonymous instead of jumptable_802C4970 and the switch/ternary branch
-	// layout and several registers (r5/r6/r28/r31) differ from the original.
+// NONMATCHING (87.97%): 7 instructions differ, 12 missing, 6 extra, plus register differences.
 USER_FUNC(evt_bero_get_into_info) {
 	BeroEntry** table = BeroINFOARR;
 	BeroEntry* entry;
@@ -355,6 +353,7 @@ USER_FUNC(evt_bero_get_into_info) {
 		}
 	}
 	if ((gp->flags & 2) && !strcmp(gp->beroEnterName, "")) {
+		entry = BeroINFOARR[0];
 		event->lwData[1] = 0;
 		event->lwData[2] = BeroNUM;
 		event->lwData[3] = (s32)entry->hitName;
@@ -751,9 +750,7 @@ typedef struct CameraParams {
 	Vec at;     // 0x18
 } CameraParams;
 
-	// NONMATCHING (66.58%): the (Vec){0,0,0} templates and the 1.0f constant are emitted as
-	// anonymous .rodata/.sdata2 symbols instead of vec3_802c4990/vec3_802c499c/float_1_8041a404
-	// (whole-file data layout), so the frame and constant relocations differ.
+// NONMATCHING (66.58%): 3 instructions differ, 27 missing, plus register differences.
 USER_FUNC(bero_get_position_pipe2) {
 	s32* args = event->args;
 	s32 a = evtGetValue(event, args[0]);

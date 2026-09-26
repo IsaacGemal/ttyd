@@ -30,6 +30,7 @@ PouchData* pouchGetPtr(void) {
 	return mpp;
 }
 
+// NONMATCHING (62.14%): 2 instructions differ, 29 missing, 83 extra, plus register differences.
 void pouchInit(void) {
 	int i;
 
@@ -164,6 +165,7 @@ s32 pouchGetEmptyKeepItemCnt(void) {
 }
 
 //we have obtained an item, update the appropriate data
+// NONMATCHING (7.44%): 3 instructions differ, 273 missing, plus register differences.
 BOOL pouchGetItem(ItemType type) {
 	s32 id;
 
@@ -244,6 +246,7 @@ void pouchOpenMail(s32 mailId) {
 	mpp->mEmailReadFlags[mailId / 32] |= (1 << (mailId % 32));
 }
 
+// NONMATCHING (92.47%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void pouchReceiveMail(s32 mailId) {
 	int i;
 	s32 count;
@@ -300,6 +303,7 @@ u32 pouchGetKpaScore(void) {
 	return mpp->mSuperBowserScore;
 }
 
+// NONMATCHING (74.29%): 1 instruction differs, 3 missing.
 void pouchAddKpaCoin(u8 coins) {
 	mpp->mSuperBowserCoins += coins;
 	if (mpp->mSuperBowserCoins >= 100) {
@@ -383,10 +387,12 @@ BOOL pouchEquipBadgeIndex(s32 index) {
 	return TRUE;
 }
 
+// NONMATCHING (65.00%): 1 extra, plus register differences.
 u16 pouchGetStarPoint(void) {
 	return mpp->mStarPoints;
 }
 
+// NONMATCHING (91.34%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void pouchRevisePartyParam(void) {
 	PouchPartyData* party;
 	int i, count;
@@ -443,6 +449,7 @@ void pouchReviseMarioParam(void) {
 	}
 }
 
+// NONMATCHING (92.34%): 3 instructions differ, 2 missing, 2 extra, plus register differences.
 BOOL pouchRemoveKeepItem(s32 id, s32 index) {
 	int i, j;
 
@@ -684,7 +691,7 @@ s32 pouchGetCoin(void) {
 
 
 
-// NONMATCHING (91.64%): logic now correct (signed pouchCheckItem test, shift count maximum-1-i, index-based shift loop). Leftover is scheduling: the original hoists the `table1+i`/`table2+i` pointer setup and `temp=0` above the `if (table2)` branch and branches later.
+// NONMATCHING (92.43%): signed pouchCheckItem test, shift count maximum-1-i, index-based shift loop. Leftover is scheduling: the original hoists the `table1+i`/`table2+i` pointer setup and `temp=0` above the `if (table2)` branch and branches later.
 BOOL pouchRemoveItem(ItemType type) {
 	s16* table1, * table2;
 	BOOL valid;
@@ -738,10 +745,10 @@ BOOL pouchRemoveItem(ItemType type) {
 					table1[j + 1] = ITEM_NULL;
 				}
 			}
-			break;
+			return TRUE;
 		}
 	}
-	return TRUE;
+	return FALSE;
 }
 
 
@@ -827,6 +834,7 @@ BOOL N_pouchUnEquipBadgeID(s32 badgeId) {
 	return FALSE;
 }
 
+// NONMATCHING (97.75%): same instructions; only register numbers or operands differ.
 void unk_800d06b4(char* src, char* dst) {
 	u16 c;
 	int i;

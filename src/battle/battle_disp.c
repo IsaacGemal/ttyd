@@ -324,6 +324,7 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	return STATUS_INVALID;
 }
 
+// NONMATCHING (1.93%): 3 instructions differ, 725 missing, plus register differences.
 void btlDispMain(void) {
 	BattleUnit* unit;
 	int i;
@@ -338,6 +339,7 @@ void btlDispMain(void) {
 	}
 }
 
+// NONMATCHING (0.12%): 862 missing.
 void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 
 }
@@ -450,7 +452,7 @@ static void _pose_one_pattern(BattleUnitPart* part) {
 #endif
 }
 
-// NONMATCHING (77.26%): string addresses use the vec3_802eddd0+0x70/0x78/0x80/0x88/0x90 pool in the target; ours fold each extern string into its own @ha/@l. The inner-switch decision tree also differs (target pivots on 5, ours on 6).
+// NONMATCHING (76.61%): 9 instructions differ, 28 missing, 11 extra, plus register differences.
 #pragma dont_inline on
 static void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
@@ -470,7 +472,7 @@ static void _pose_two_pattern(BattleUnitPart* part) {
 			t = sysMsec2Frame(0x898);
 			*(u16*)((char*)part + 0x216) = (irand(4) + 6) * t;
 			break;
-		case 7:
+		case 6:
 			animPoseSetEffect(*(s32*)((char*)part + 0x1c0), str_802EDE38, 1);
 			animPoseSetEffectAnim(*(s32*)((char*)part + 0x1c0), str_802EDE50, 1);
 			*(u16*)((char*)part + 0x216) = (irand(4) + 7) * 0x16;
@@ -494,7 +496,7 @@ static void _pose_two_pattern(BattleUnitPart* part) {
 				*(u16*)((char*)part + 0x216) = 0x16;
 			}
 			break;
-		case 7:
+		case 6:
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
 				*(u8*)((char*)part + 0x214) = 2;
@@ -508,7 +510,7 @@ static void _pose_two_pattern(BattleUnitPart* part) {
 		switch (*(u8*)((char*)part + 0x215)) {
 		case 4:
 		case 5:
-		case 7:
+		case 6:
 			*(u16*)((char*)part + 0x216) -= 1;
 			if (*(u16*)((char*)part + 0x216) == 0) {
 				*(u8*)((char*)part + 0x214) = 0;

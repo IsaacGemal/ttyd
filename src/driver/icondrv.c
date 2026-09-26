@@ -372,7 +372,7 @@ void iconDisp(CameraId camId, void* param) {
     iconGX(mtx, entry);
 }
 
-// NONMATCHING (92.37%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
+// NONMATCHING (96.60%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
 void iconDispGxAlpha(Vec position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
@@ -438,7 +438,7 @@ void iconDispGx(Vec position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// NONMATCHING (84.95%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (93.48%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     CameraEntry* camera;
     IconBinaryEntry* data;
@@ -486,7 +486,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (78.92%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (93.21%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     CameraEntry* camera;
     IconBinaryEntry* data;
@@ -534,7 +534,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (93.22%): `data` lands in r7 in ours vs r4 in retail (the loop temps shift by
+// NONMATCHING (97.54%): `data` lands in r7 in ours vs r4 in retail (the loop temps shift by
 // three registers); the `dummy$651` shown as `dummy_tex` is a local 1-byte .sdata object.
 void iconGetTexObj(GXTexObj* texObj, s16 iconId) {
     u16 tplId;
@@ -575,7 +575,6 @@ void iconGetTexObj(GXTexObj* texObj, s16 iconId) {
                     GX_FALSE, GX_FALSE, GX_ANISO_1);
 }
 
-// retail symbol is spelled "iconGetWidthHight"; the header's "iconGetWidthHeight" is a typo.
 void iconGetWidthHight(u16* width, u16* height, u16 iconId) {
     IconBinaryEntry* entry;
     TEXDescriptor* descriptor;
@@ -658,8 +657,10 @@ void iconSetAlpha(const char* name, u8 alpha) {
     }
 }
 
+// NONMATCHING (0.62%): 160 missing.
 f32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
 }
 
+// NONMATCHING (0.62%): 160 missing.
 f32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
 }
