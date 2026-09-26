@@ -668,7 +668,7 @@ config.libs = [
             Object(NonMatching, "event/evt_door.c"),
             Object(NonMatching, "event/evt_party.c"),
             Object(NonMatching, "event/evt_shop.c"),
-            Object(NonMatching, "event/evt_pouch.c"),
+            Object(Matching, "event/evt_pouch.c"),
             Object(NonMatching, "event/evt_kinopio.c"),
             Object(NonMatching, "event/evt_bg.c"),
             Object(NonMatching, "event/evt_damage.c"),
