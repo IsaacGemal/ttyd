@@ -23,51 +23,6 @@ typedef struct Footmark {
     f32 z;
 } Footmark;
 
-// Local view of the party movement work area. Fields not yet declared in
-// PartyEntry live here and should move into a header later.
-typedef struct PartyMoveWork {
-    u32 flags;                    // 0x0
-    u8 field_4[0x8 - 0x4];
-    u32 field_8;                  // 0x8
-    u8 field_C[0x28 - 0xC];
-    s16 field_28;                 // 0x28
-    u8 field_2A[0x2D - 0x2A];
-    s8 field_2D;                  // 0x2D
-    u8 field_2E[0x32 - 0x2E];
-    u8 field_32;                  // 0x32
-    u8 field_33;                  // 0x33
-    u8 field_34;                  // 0x34
-    u8 field_35;                  // 0x35
-    u8 field_36;                  // 0x36
-    u8 field_37[0x3B - 0x37];
-    u8 field_3B;                  // 0x3B
-    u8 field_3C[0x4C - 0x3C];
-    s8 field_4C;                  // 0x4C
-    u8 field_4D[0x58 - 0x4D];
-    Vec position;                 // 0x58
-    u8 field_64[0xE4 - 0x64];
-    f32 field_E4;                 // 0xE4
-    u8 field_E8[0xFC - 0xE8];
-    f32 field_FC;                 // 0xFC
-    f32 dir;                      // 0x100
-    f32 speed;                    // 0x104
-    f32 speed2;                   // 0x108
-    f32 field_10C;                // 0x10C
-    f32 field_110;                // 0x110
-    f32 jumpPara1;                // 0x114
-    f32 jumpPara2;                // 0x118
-    f32 jumpPara3;                // 0x11C
-    u8 field_120[0x12C - 0x120];
-    void* field_12C;              // 0x12C
-    u8 field_130[0x134 - 0x130];
-    void* field_134;              // 0x134
-    void* field_138;              // 0x138
-    u8 field_13C[0x140 - 0x13C];
-    void* field_140;              // 0x140
-    u8 field_144[0x160 - 0x144];
-    MarioWork* playerPtr;         // 0x160
-} PartyMoveWork;
-
 void partyMoveMain(PartyEntry* party, s32 hosei);
 s32 nokonokoGetStatus(PartyEntry* party);
 void* mobjHitObjPtrToPtr(HitEntry* hit);
@@ -88,12 +43,12 @@ void* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 speed, f32 angle);
 void* partySearchGround(PartyEntry* party, f32 a, f32 b);
 
 void partySetDir(PartyEntry* party, f32 x, f32 z) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     work->dir = angleABf(work->position.x, work->position.z, x, z);
 }
 
 void partyChgMot(PartyEntry* party, u8 mot) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     if (work->field_36 == 3) {
         work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
         work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
@@ -104,7 +59,7 @@ void partyChgMot(PartyEntry* party, u8 mot) {
 }
 
 void partyChgMoveMode(PartyEntry* party, u8 mode) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     s32 oldMode = work->field_3B;
     switch (oldMode) {
     case 4:
@@ -121,7 +76,7 @@ void partyChgMoveMode(PartyEntry* party, u8 mode) {
 }
 
 void unk_800c9398(PartyEntry* party, f32 value) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     f32 speed = value * work->playerPtr->playerGravity;
     f32 scale;
     if (work->flags & 0x80) {
@@ -134,7 +89,7 @@ void unk_800c9398(PartyEntry* party, f32 value) {
 }
 
 void partyClearJumpPara(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
     work->jumpPara1 = 0.0f;
     work->jumpPara2 = 0.0f;
@@ -181,7 +136,7 @@ void partyNextReadId(u32 index) {
 }
 
 f32 unk_800c92c4(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     MarioWork* mario;
     f32 f3;
     f32 f4;
@@ -225,7 +180,7 @@ f32 unk_800c92c4(PartyEntry* party) {
 }
 
 void unk_800c93d0(PartyEntry* party, f32 value) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     MarioWork* mario;
     f32 f5;
     f32 f4;
@@ -337,7 +292,7 @@ s32 unk_800c8dd0(HitEntry* hit) {
 }
 
 void unk_800c90d4(PartyEntry* party, s32 value) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     s32 lo;
     s32 hi;
 
@@ -398,7 +353,7 @@ void unk_800c90d4(PartyEntry* party, s32 value) {
 }
 
 void unk_800c8f24(PartyEntry* party, f32 f1) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     MarioWork* mario;
     f32 f2;
     f32 f3;
@@ -438,7 +393,7 @@ void unk_800c8f24(PartyEntry* party, f32 f1) {
 }
 
 void unk_800c9044(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
 
     if (work->field_34 == 0) {
         return;
@@ -455,7 +410,7 @@ void unk_800c9044(PartyEntry* party) {
 }
 
 void unk_800c8e74(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
@@ -470,7 +425,7 @@ void unk_800c8e74(PartyEntry* party) {
 }
 
 void unk_800c7c98(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     s32 mot;
 
     if (work->field_8 & 0x4) {
@@ -533,7 +488,7 @@ void unk_800c7c98(PartyEntry* party) {
 }
 
 void partyMoveCheckWall(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     Vec pos = party->position;
     f32 angle;
     f32 speed;
@@ -568,7 +523,7 @@ void partyMoveCheckWall(PartyEntry* party) {
 }
 
 void partyChkWall(PartyEntry* party) {
-    PartyMoveWork* work = (PartyMoveWork*)party;
+    PartyEntry* work = party;
     Vec pos = party->position;
     f32 angle;
     f32 speed;
@@ -644,7 +599,7 @@ f32 partyGetTargetDistY(s32 id) {
         }
     }
     if (target != NULL && flag == 0) {
-        return ((PartyMoveWork*)target)->speed;
+        return (target)->speed;
     }
     mario = marioGetPtr();
     if (mario->baseSpeed > 0.0f) {

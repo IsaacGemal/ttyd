@@ -409,7 +409,7 @@ USER_FUNC(L_evt_party_dokan) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    mode = P8(party, 0x34);
+    mode = party->field_34;
     arg = args[1];
     if (mode == 0xB || mode == 0xC) {
         value = 0;
@@ -529,7 +529,7 @@ USER_FUNC(evt_party_jump_pos) {
         if (!party) {
             return EVT_RETURN_DONE;
         }
-        if (P8(party, 0x34) == 0xB) {
+        if (party->field_34 == 0xB) {
             return EVT_RETURN_DONE;
         }
         event->userdata[3] = 0;
@@ -553,10 +553,10 @@ USER_FUNC(evt_party_jump_pos) {
         case 0:
             P32(party, 0x13C) = P32(party, 0x138);
             P32(party, 0x138) = 0;
-            PF32(party, 0x104) = distABf(party->position.x, party->position.z, tx, tz) / frames;
-            PF32(party, 0x100) = angleABf(party->position.x, party->position.z, tx, tz);
+            party->speed = distABf(party->position.x, party->position.z, tx, tz) / frames;
+            party->dir = angleABf(party->position.x, party->position.z, tx, tz);
             if (flag == 0) {
-                PF32(party, 0xFC) = PF32(party, 0x100);
+                party->field_FC = party->dir;
             }
             partyChgPoseId(party, 4);
             dy = ty - party->position.y;
@@ -569,49 +569,49 @@ USER_FUNC(evt_party_jump_pos) {
                 dy = d;
             }
             dy = (dy + dy) / (tmp * tmp - tmp);
-            PF32(party, 0x114) = dy * tmp;
+            party->jumpPara1 = dy * tmp;
             PF32(party, 0x174) = -dy;
             event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
             event->userdata[3] = 1;
             /* fallthrough */
         case 1:
-            movePos(&party->position.x, &party->position.z, PF32(party, 0x104), PF32(party, 0x100));
-            party->position.y += PF32(party, 0x114);
-            PF32(party, 0x114) += PF32(party, 0x174);
+            movePos(&party->position.x, &party->position.z, party->speed, party->dir);
+            party->position.y += party->jumpPara1;
+            party->jumpPara1 += PF32(party, 0x174);
             if (--event->userdata[2] <= 0) {
                 tmp = float_0p5_8041bb14 * frames;
-                PF32(party, 0x114) = float_0_8041bb1c;
+                party->jumpPara1 = float_0_8041bb1c;
                 dy = ty - party->position.y;
                 PF32(party, 0x174) = (dy + dy) / (tmp * tmp - tmp);
-                PF32(party, 0x11C) = float_0_8041bb1c;
+                party->jumpPara3 = float_0_8041bb1c;
                 event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
                 event->userdata[3] = 2;
             }
             break;
         case 2:
-            movePos(&party->position.x, &party->position.z, PF32(party, 0x104), PF32(party, 0x100));
-            PF32(party, 0x114) += PF32(party, 0x174);
-            frames = PF32(party, 0x114);
+            movePos(&party->position.x, &party->position.z, party->speed, party->dir);
+            party->jumpPara1 += PF32(party, 0x174);
+            frames = party->jumpPara1;
             grounded = 0;
             hit = partySearchGround(party, __fabsf(frames), __fabsf(frames));
             if (hit) {
-                if (party->position.y + frames <= PF32(party, 0xE4)) {
+                if (party->position.y + frames <= party->field_E4) {
                     P32(party, 0x138) = (u32)hit;
                     grounded = 1;
-                    party->position.y = PF32(party, 0xE4);
+                    party->position.y = party->field_E4;
                     party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
                 }
             }
             if (grounded) {
                 event->userdata[2] = 0;
             } else {
-                party->position.y += PF32(party, 0x114);
+                party->position.y += party->jumpPara1;
             }
             if (--event->userdata[2] <= 0) {
                 partyChgPoseId(party, 1);
-                PF32(party, 0x11C) = float_0_8041bb1c;
+                party->jumpPara3 = float_0_8041bb1c;
                 PF32(party, 0x174) = float_0_8041bb1c;
-                PF32(party, 0x104) = float_0_8041bb1c;
+                party->speed = float_0_8041bb1c;
                 unk_800ba2dc(party);
                 return 1;
             }
@@ -652,7 +652,7 @@ USER_FUNC(evt_party_move_pos2) {
         return EVT_RETURN_DONE;
     }
     if (event->userdata[2] == 0) {
-        breed = P8(party, 0x34);
+        breed = party->field_34;
         if (breed != 0 && (u8)(breed - 1) > 1) {
             return 0;
         }
@@ -661,12 +661,12 @@ USER_FUNC(evt_party_move_pos2) {
         z = evtGetFloat(event, args[2]);
         len = evtGetFloat(event, args[3]);
         dist = distABf(party->position.x, party->position.z, x, z);
-        PF32(party, 0x100) = angleABf(party->position.x, party->position.z, x, z);
+        party->dir = angleABf(party->position.x, party->position.z, x, z);
         frames = (s32)((f32)gp->framerate * (dist / len));
         spd = len / (f32)gp->framerate;
-        partySetForceMove(party, frames, PF32(party, 0x100), spd);
+        partySetForceMove(party, frames, party->dir, spd);
     }
-    if (P16(party, 0x28) == 0) {
+    if (party->field_28 == 0) {
         return EVT_RETURN_DONE;
     }
     return 0;
@@ -687,7 +687,7 @@ USER_FUNC(evt_party_move_pos) {
         return EVT_RETURN_DONE;
     }
     if (event->userdata[2] == 0) {
-        breed = P8(party, 0x34);
+        breed = party->field_34;
         if (breed != 0 && (u8)(breed - 1) > 1) {
             return 0;
         }
@@ -695,14 +695,14 @@ USER_FUNC(evt_party_move_pos) {
         x = evtGetFloat(event, args[1]);
         z = evtGetFloat(event, args[2]);
         event->userdata[1] = sysMsec2Frame(evtGetValue(event, args[3]));
-        PF32(party, 0x100) = angleABf(party->position.x, party->position.z, x, z);
+        party->dir = angleABf(party->position.x, party->position.z, x, z);
         if (event->userdata[1] == 0) {
-            event->userdata[1] = (s32)(distABf(party->position.x, party->position.z, x, z) / PF32(party, 0x104));
-            spd = PF32(party, 0x104);
+            event->userdata[1] = (s32)(distABf(party->position.x, party->position.z, x, z) / party->speed);
+            spd = party->speed;
         } else {
             spd = distABf(party->position.x, party->position.z, x, z) / (f32)event->userdata[1];
         }
-        partySetForceMove(party, event->userdata[1], PF32(party, 0x100), spd);
+        partySetForceMove(party, event->userdata[1], party->dir, spd);
     }
     if (--event->userdata[1] < 0) {
         return 1;
@@ -740,8 +740,8 @@ USER_FUNC(evt_party_set_dispdir) {
     if (!party) {
         return EVT_RETURN_DONE;
     }
-    PF32(party, 0x110) = reviseAngle(evtGetFloat(event, args[1]));
-    PF32(party, 0x10C) = PF32(party, 0x110);
+    party->field_110 = reviseAngle(evtGetFloat(event, args[1]));
+    party->field_10C = party->field_110;
     return EVT_RETURN_DONE;
 }
 
@@ -753,7 +753,7 @@ USER_FUNC(evt_party_get_dispdir) {
     if (!party) {
         evtSetFloat(event, args[1], 0.0f);
     } else {
-        evtSetFloat(event, args[1], PF32(party, 0x10C));
+        evtSetFloat(event, args[1], party->field_10C);
     }
     return EVT_RETURN_DONE;
 }
@@ -929,8 +929,8 @@ USER_FUNC(evt_party_set_dir_pos) {
     yaw = camera->viewYaw;
     angle = angleABf(party->position.x, party->position.z, x, z);
     delta = revise360(angle - yaw);
-    PF32(party, 0x110) = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
-    PF32(party, 0x100) = delta;
+    party->field_110 = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
+    party->dir = delta;
     return EVT_RETURN_DONE;
 }
 
@@ -952,14 +952,14 @@ USER_FUNC(evt_party_set_dir_npc) {
         if (!npc) {
             return EVT_RETURN_DONE;
         }
-        x = PF32(npc, 0x8C);
-        z = PF32(npc, 0x94);
+        x = npc->position.x;
+        z = npc->position.z;
         camera = camGetPtr(CAMERA_3D);
         yaw = camera->viewYaw;
         angle = angleABf(party->position.x, party->position.z, x, z);
         delta = revise360(angle - yaw);
-        PF32(party, 0x110) = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
-        PF32(party, 0x100) = delta;
+        party->field_110 = (delta < float_180_8041bb28) ? float_180_8041bb28 : float_0_8041bb1c;
+        party->dir = delta;
     }
     return EVT_RETURN_DONE;
 }
@@ -979,7 +979,7 @@ USER_FUNC(evt_party_set_dir) {
             return EVT_RETURN_DONE;
         }
         event->userdata[2] = 0;
-        event->userdataf[1] = PF32(party, 0x10C);
+        event->userdataf[1] = party->field_10C;
     } else {
         args += 1;
     }
@@ -998,20 +998,20 @@ USER_FUNC(evt_party_set_dir) {
         dest = revise360(float_270_8041bb2c - target);
         step = (dest - event->userdataf[1]) * ((f32)event->userdata[2] / (f32)frames);
         next = revise360(event->userdataf[1] + step);
-        PF32(party, 0x10C) = next;
-        PF32(party, 0x110) = PF32(party, 0x10C);
-        PF32(party, 0x100) = toMovedirSimple(PF32(party, 0x110));
+        party->field_10C = next;
+        party->field_110 = party->field_10C;
+        party->dir = toMovedirSimple(party->field_110);
         return (++event->userdata[2] > frames) ? 1 : 0;
     }
     if (frames < 0) {
         next = revise360(float_270_8041bb2c - target);
-        PF32(party, 0x110) = next;
-        PF32(party, 0x100) = toMovedirSimple(PF32(party, 0x110));
+        party->field_110 = next;
+        party->dir = toMovedirSimple(party->field_110);
     } else if (frames == 0) {
         next = revise360(float_270_8041bb2c - target);
-        PF32(party, 0x10C) = next;
-        PF32(party, 0x110) = PF32(party, 0x10C);
-        PF32(party, 0x100) = toMovedirSimple(PF32(party, 0x110));
+        party->field_10C = next;
+        party->field_110 = party->field_10C;
+        party->dir = toMovedirSimple(party->field_110);
     }
     return EVT_RETURN_DONE;
 }

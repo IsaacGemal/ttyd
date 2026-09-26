@@ -210,7 +210,7 @@ s32 kpa_score_to_str(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-s32 mobj_koopa_stone_blk_evt(EventEntry* event, BOOL isFirstCall) {
+s32 mobj_koopa_stone_blk_evt(MapObjectEntry* obj) {
     return 0;
 }
 
