@@ -22,11 +22,11 @@ tricks. A match produced by a trick is thrown away, and the review looks for tri
 
 ## Mistakes that got past the build and were caught in review
 
-Each of these compiled to the right bytes and was still wrong. Don't do them.
+Each of these compiled to the right bytes, or looked close enough, and was still wrong. Don't do them.
 
-1. **Calling a function without the arguments it takes,** relying on the value already sitting in `r3`.
-   If the original loads `r3` before a `bl`, your C passes that value. Declare the callee with its real
-   parameters (check its definition in `src/` or its header).
+1. **Calling a function without the arguments it takes,** relying on the value already sitting in a register
+   (`r3`-`r10`, or `f1`-`f8` for floats). If the original loads a register before a `bl`, your C passes that
+   value. Declare the callee with its real parameters (check its definition in `src/` or its header).
 2. **Ignoring a return value the original uses,** or declaring a function `void` that returns something. If
    the caller uses `r3` after the call, the function returns a value; if its header says `void`, the header is
    probably wrong: say so in your report.
@@ -42,7 +42,15 @@ Each of these compiled to the right bytes and was still wrong. Don't do them.
    Raw offsets are fine only where the header has padding there; list those in your report.
 7. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it.
-8. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
+8. **Wrong constants in functions that don't match yet.** Check every constant against the asm, even when the
+   function is at 80% and "only registers differ": `oris r0, r0, 0xa1` is `| 0x00a10000`, not `0xa1000000`;
+   `rlwinm r0, r0, 0, 16, 11` clears bits 12-15 (mask `~0x000F0000`), and a magic-number division tells you the
+   divisor. A wrong constant in a partial function is a real bug that CI can't catch.
+9. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
+   register to your C.
+10. **Calling a function with no prototype.** C then assumes it returns int and promotes floats to double.
+   Include the header, or declare it as its definition says.
+11. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
 
 ## Signedness hints from the assembly

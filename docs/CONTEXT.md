@@ -18,9 +18,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 25 after wave 3, PR #2): 3,114 of 9,770 functions matched. Before the fork's
-  first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below). Linked code
-  8.26% (was 8.12%) after `tools/autolink.py` linked 15 fully matched files.
+- Progress (local build, Sep 25 after wave 4, PR #3): 3,503 of 9,770 functions matched, 16.82% of code.
+  Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below).
+  Linked code 8.26% (was 8.12%) after `tools/autolink.py` linked 15 fully matched files.
 - The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
@@ -588,3 +588,44 @@ the brief, and add a lint check where one is possible. The launcher's own prompt
    2026-09-25 it compiled 14 of 124 TTYD files and reproduced 10 of 2,816 functions). Consider offering TTYD to
    mwcc-rs as a reference project.
 4. **Only if the tail stalls:** a swarm project to reverse-engineer the 2.6 register allocator itself.
+
+## Wave 4: new files, and a Claude reviewer alongside Codex (2026-09-25, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol and Claude Opus 5.5)
+
+12 Pi agents each wrote a game source file that didn't exist yet (the build already lists these files; only the
+`.c` was missing), 30-minute cap, with a new-file prompt (start from the file's asm, look up types in
+`include/` first, build after one small function). All 12 merged: **3,114 -> 3,503 functions (+389), 15.50% ->
+16.82% of code**, about 32 functions per agent against 17 in wave 3. `evt_pouch` (30/30) and `evt_map` (29/29)
+are complete; auto-link tried `evt_pouch` and its data doesn't match yet. Unlike wave 3's files, most unmatched
+functions left in the game are in files with no source yet (2,208 in game files, 2,764 in area modules), so this
+is where the easy work is.
+
+Merge fixes: `configure.py` must be rerun when a source file first appears (the agents' `check.py` and the merge
+script do it), and the "touched other files" check must ignore the agent's own new file.
+
+**Three review passes, each finding different things:**
+- Codex round 1: calls relying on values left in registers (footmark calls, `nokonokoGetStatus`), an
+  uninitialized ray distance, a struct overlay (`MapObjectTail`), an unneeded pragma, raw offsets.
+- Codex round 2 (after a usage-limit pause): more register-carried arguments, two of them in code that was
+  on `main` before this PR (`psndBGM_rate`, `partyEntry`), a signed/unsigned division, prototypes
+  contradicting headers.
+- **Claude** (a session on Isaac's work account, with six subagents): bugs in the *logic of unmatched
+  functions*, which CI can't see and neither Codex round caught. Five flag constants shifted a byte too far
+  (`oris 0xa1` read as `0xa1000000`), a landing path clearing the wrong Mario flags, a matrix concat into the
+  wrong destination, a divide by 10 that should be 28, functions called with no prototype, and a half-right
+  earlier fix. It also confirmed the header changes against every caller. Its independence was partial: it
+  had read Codex's logs before the request arrived.
+
+**Headers were often the problem, not the agents.** `mario_pouch.h` (19 accessors declared s16 where the original
+uses int), `psndSFXOn`/`psndSFXOn_` (return values), `marioChgMot` (the MarioMotion enum's 0xFFFF sentinel makes it
+16-bit), `psndBGMOff_f_d`, `marioSetForceMove`, `PartyEntry` (25 fields moved in from a local overlay). Each
+change was checked by rebuilding every caller; two `#define` workarounds for the pouch header are gone.
+
+**Review routine from now on (Isaac):** one Codex round and one Claude round per PR, rather than two Codex
+rounds. They complement each other: Codex on patterns and call boundaries, Claude on the semantics of
+unmatched functions against the asm. Claude reviews run in a session on Isaac's work account; messages to
+it need his approval unless it runs in the same permission mode as the orchestrator.
+
+**mwcc-rs, measured:** compiling all 124 TTYD source files with both compilers, mwcc-rs declined 110 and
+reproduced 10 of 2,816 functions exactly (instruction scheduling differs from real 2.6 on the files it does
+compile). Not usable for forensics yet; see "The plan for the hard tail, finalized".
+
