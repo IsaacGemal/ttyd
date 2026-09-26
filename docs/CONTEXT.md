@@ -13,7 +13,11 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
-- New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first.
+- New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first, then the
+  chapters after it. Later chapters supersede its recipe in three places: the review routine is one Codex round
+  plus one Claude round per PR ("Wave 4" chapter); the agents' rules live in `docs/AGENT_BRIEF.md`, attached
+  to every prompt ("The plan for the hard tail, finalized"); the tooling lives in this repo ("Everything TTYD
+  needs now lives in this repo").
 - Fork of [doldecomp/ttyd](https://github.com/doldecomp/ttyd) at `2df569d` (Jul 5, 2026), private at
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
@@ -21,7 +25,11 @@ anything worth keeping into a chapter here.
 - Progress (local build, Sep 25 after wave 4, PR #3): 3,503 of 9,770 functions matched, 16.82% of code.
   Before the fork's first wave: 12.16%, 2,065 (decomp.dev shows 2,027 because of the filename-case bug below).
   Linked code 8.26% (was 8.12%) after `tools/autolink.py` linked 15 fully matched files.
-- The build and objdiff run on the tower (`pop-os`) from `main`. Next step: break down the unmatched functions by unit, size and kind before designing the queue.
+- In flight: wave 5 (22 new game files, plus 2 finisher agents making `evt_pouch` and `evt_map` link).
+- Targets: game files with no source yet first (the build already lists them; ~2,200 unmatched functions),
+  plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
+  build setup before agents can work on them.
+- Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 

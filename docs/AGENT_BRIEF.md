@@ -47,8 +47,10 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    still matches without it, remove it.
 8. **Wrong constants in functions that don't match yet.** Check every constant against the asm, even when the
    function is at 80% and "only registers differ": `oris r0, r0, 0xa1` is `| 0x00a10000`, not `0xa1000000`;
-   `rlwinm r0, r0, 0, 16, 11` clears bits 12-15 (mask `~0x000F0000`), and a magic-number division tells you the
-   divisor. A wrong constant in a partial function is a real bug that CI can't catch.
+   `rlwinm r0, r0, 0, 16, 11` keeps IBM bits 16-11 (wrapping) and clears IBM bits 12-15, which are value bits
+   16-19 (`1<<16` to `1<<19`, mask `0x000F0000`): PowerPC numbers bits from the top, so value bit = 31 - IBM
+   bit. Mixing the two numberings is exactly how a wrong flag mask got written. A magic-number division tells
+   you the divisor. A wrong constant in a partial function is a real bug that CI can't catch.
 9. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
 10. **Calling a function with no prototype.** C then assumes it returns int and promotes floats to double.
