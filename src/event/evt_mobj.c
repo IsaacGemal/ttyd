@@ -607,8 +607,8 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, "MOBJ_Signboard");
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f1, f2, f3);
-    obj->unk1D0 = (s32)mobj_signboard;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_signboard;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x24;
     obj->flags |= 0x40000;
     obj->unk1E4 = unk1E4;
@@ -621,7 +621,7 @@ s32 mobj_signboard(MapObjectEntry* obj) {
         case 0:
             if (obj->flags & 8) {
                 marioKeyOff();
-                mobjRunEvent(obj, (s32*)obj->unk1D4);
+                mobjRunEvent(obj, obj->unk1D4);
                 obj->unk1DC++;
             }
             break;
@@ -658,8 +658,8 @@ s32 evt_mobj_lock_unlock(EventEntry* event, BOOL isFirstCall) {
     if (strcmp(obj->animName, "MOBJ_Lock") != 0) {
         return 2;
     }
-    if ((u32)obj->unk1D0 == 0) {
-        obj->unk1D0 = (s32)mobj_lock;
+    if (obj->unk1D0 == NULL) {
+        obj->unk1D0 = mobj_lock;
     }
     obj->flags |= 8;
     marioKeyOff();
@@ -673,7 +673,7 @@ s32 mobj_switch_red(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
-                mobjRunEvent(obj, (s32*)obj->unk1D4);
+                mobjRunEvent(obj, obj->unk1D4);
                 if (obj->unk1E0 == 0x200000 || obj->unk1E0 == 0x1000000) {
                     marioChgMot(5);
                 }
@@ -706,7 +706,7 @@ s32 mobj_switch_blue(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
-                mobjRunEvent(obj, (s32*)obj->unk1D4);
+                mobjRunEvent(obj, obj->unk1D4);
                 if (obj->unk1E0 == 0x200000 || obj->unk1E0 == 0x1000000) {
                     marioChgMot(5);
                 }
@@ -761,8 +761,8 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, x, y, z);
-    obj->unk1D0 = (s32)mobj_switch_red;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_switch_red;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 4;
     obj->flags |= 0x400000;
     obj->unk1E4 = unk1E4;
@@ -802,8 +802,8 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, x, y, z);
-    obj->unk1D0 = (s32)mobj_switch_red;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_switch_red;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
     obj->flags |= 0xa1000000;
     obj->unk1E4 = unk1E4;
@@ -839,8 +839,8 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, x, y, z);
-    obj->unk1D0 = (s32)mobj_switch_blue;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_switch_blue;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 4;
     obj->flags |= 0x1000000;
     obj->unk1E4 = unk1E4;
@@ -879,8 +879,8 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, x, y, z);
-    obj->unk1D0 = (s32)mobj_switch_blue;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_switch_blue;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 4;
     obj->flags |= 0x400000;
     obj->unk1E4 = unk1E4;
@@ -923,8 +923,8 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, x, y, z);
-    obj->unk1D0 = (s32)mobj_switch_blue;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_switch_blue;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
     obj->flags |= 0xa1000000;
     obj->unk1E4 = unk1E4;
@@ -964,8 +964,8 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f30, f29, f28);
-    obj->unk1D0 = (s32)mobj_jumpstand_blue;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_jumpstand_blue;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
     obj->flags |= 0x20000000;
     obj->unk1E4 = unk1E4;
@@ -982,7 +982,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
         case 0:
             if (obj->flags & 8) {
                 gp->systemLevelFlags |= 0x10;
-                mobjRunEvent(obj, (s32*)obj->unk1D4);
+                mobjRunEvent(obj, obj->unk1D4);
                 if (obj->unk1E0 == 0x200000) {
                     marioChgJumpStandMotion(*(f32*)((u8*)obj + 0x1AC));
                 }
@@ -1060,8 +1060,8 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f31, f30, f29);
-    obj->unk1D0 = (s32)mobj_jumpstand_red;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_jumpstand_red;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 0x44;
     obj->flags |= 0x20000000;
     obj->unk1E4 = unk1E4;
@@ -1080,7 +1080,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
             if (obj->flags & 8) {
                 EventEntry* evt;
                 gp->systemLevelFlags |= 0x10;
-                evt = mobjRunEvent(obj, (s32*)obj->unk1D4);
+                evt = mobjRunEvent(obj, obj->unk1D4);
                 if (evt != NULL) {
                     s32 flag;
                     if (*(f32*)((u8*)mario + 0xD8) < mario->position.y) {
@@ -1177,9 +1177,9 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     obj->scale2.x *= 0.8f;
     obj->scale2.z *= 0.8f;
     mobjSetPosition(name, f31, f30, f29);
-    obj->unk1D0 = (s32)mobj_rideswitch_lightblue;
-    obj->unk1D4 = unk1D4;
-    obj->unk1D8 = unk1D8;
+    obj->unk1D0 = mobj_rideswitch_lightblue;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = (s32*)unk1D8;
     obj->flags |= 4;
     obj->flags |= 0x20000000;
     obj->unk1E4 = unk1E4;
@@ -1194,7 +1194,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
-                mobjRunEvent(obj, (s32*)obj->unk1D4);
+                mobjRunEvent(obj, obj->unk1D4);
                 psndSFXOn_3D(0x1d3, &obj->position);
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->unk1DC = 1;
@@ -1235,7 +1235,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
                     obj->unk1DC = 3;
                     animPoseSetAnim(obj->poseId, "A_2", 1);
                     psndSFXOn_3D(0x1d4, &obj->position);
-                    mobjRunEvent(obj, (s32*)obj->unk1D8);
+                    mobjRunEvent(obj, obj->unk1D8);
                 } else {
                     obj->flags &= ~8;
                 }
@@ -1281,8 +1281,8 @@ s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, "MOBJ_Block");
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f31, f30, f29);
-    obj->unk1D0 = (s32)mobj_koopa_blk;
-    obj->unk1D4 = unk1D4;
+    obj->unk1D0 = mobj_koopa_blk;
+    obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 4;
     obj->flags |= 0x3c000000;
     obj->unk1E4 = unk1E4;
@@ -1310,7 +1310,7 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
                 if (flag == 0) {
                     obj->flags &= ~8;
                 } else {
-                    mobjRunEvent(obj, (s32*)obj->unk1D4);
+                    mobjRunEvent(obj, obj->unk1D4);
                     evtSetValue(NULL, obj->unk1E4, 1);
                     if (obj->unk1E0 == 0x4000000) {
                         npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);

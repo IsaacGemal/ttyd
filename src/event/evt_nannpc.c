@@ -245,7 +245,7 @@ USER_FUNC(evt_nannpc_jump_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.75%): nannpcFind swap; time-savedTime uses a 64-bit __div2i vs target 32-bit __div2u.
+// NONMATCHING (97.75%): nannpcFind swap and callee-saved register numbers.
 USER_FUNC(evt_nannpc_move_position2) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -274,7 +274,7 @@ USER_FUNC(evt_nannpc_move_position2) {
     }
     PSVECSubtract(&target, &entry->field_0x88, &delta);
     duration = (s32)((1000.0f * PSVECMag(&delta)) / speed);
-    elapsed = (s32)OSTicksToMilliseconds(time - event->savedTime);
+    elapsed = (s32)OSTicksToMilliseconds((u64)(time - event->savedTime));
     PSVECScale(&delta, &move, (f32)elapsed / (f32)duration);
     if (elapsed < duration) {
         PSVECAdd(&entry->field_0x88, &move, &entry->position);

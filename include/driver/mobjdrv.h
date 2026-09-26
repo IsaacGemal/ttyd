@@ -31,9 +31,9 @@ typedef struct MapObjectEntry {
     s32 offscreenId;             // 0x19C
     u8 unk1A0[0x1CC - 0x1A0];    // 0x1A0
     s32 eventId;                 // 0x1CC
-    s32 unk1D0;                  // 0x1D0
-    s32 unk1D4;                  // 0x1D4
-    s32 unk1D8;                  // 0x1D8
+    s32 (*unk1D0)(struct MapObjectEntry*); // 0x1D0, per-type update callback
+    s32* unk1D4;                 // 0x1D4, event script
+    s32* unk1D8;                 // 0x1D8, event script
     s32 unk1DC;                  // 0x1DC
     s32 unk1E0;                  // 0x1E0
     s32 unk1E4;                  // 0x1E4
