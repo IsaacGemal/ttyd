@@ -34,7 +34,6 @@ void BattleAudience_Case_MarioPinch(void);
 BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
 void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2);
 void BtlUnit_HpGaugeInit(BattleUnit* unit);
-s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos);
 
 // Local field overlays for regions the shared header leaves unnamed.
 typedef struct BattleUnitAnimFields {
@@ -1656,11 +1655,11 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
-s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c) {
+s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     Vec pos;
 
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    return BtlUnit_snd_se_pos(unit, a, b, c, &pos);
+    return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
 
 extern void psndSFX_pit(s32 id, s32 pitch);
@@ -1669,7 +1668,7 @@ extern s32 psndSFX_get_vol(s32 id);
 
 // NONMATCHING (87%): register allocation is rotated (target keeps a in r27/val in r30, mine a in r30/val in r29).
 #pragma dont_inline on
-s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
+s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;
     s32 val = 0;
     s8 turns, strength;
@@ -1683,7 +1682,7 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
         val = (s16)(((s8)strength * 2 + 1) * -341);
     }
     val = (s16)((c + val) + (irand(0x29) - 0x14));
-    handle = psndSFXOn_3D((const char*)a, pos);
+    handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);
     if ((u32)(b - 0xF1190000) < 0x4D80) {
         psndSFX_vol(handle, psndSFX_get_vol(handle));

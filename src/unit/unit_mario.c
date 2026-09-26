@@ -9,7 +9,6 @@
 
 //local prototypes inherited from headers that do not declare these yet
 void mapSetTevCallback(s32 idx, void* cb);
-s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 a, s16 b);
 
 //strings and constants are defined with the rest of the file's .rodata/.sdata2
 extern const char str_802F3780[];

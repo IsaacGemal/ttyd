@@ -1188,8 +1188,23 @@ void marioJump(void) {
     mario->position.y += *(f32*)((u8*)mario + 0x7C);
 }
 
+#ifdef MUST_MATCH
+// The original addresses the zero Vec and the three map names from one pooled base pointer.
+#define BOTTOMLESS_BASE const char* s = (const char*)&vec3_802c59f0;
+#define BOTTOMLESS_ZERO (*(const Vec*)s)
+#define BOTTOMLESS_WIN_03 (s + 0xC)
+#define BOTTOMLESS_WIN_01 (s + 0x14)
+#define BOTTOMLESS_TIK_01 (s + 0x1C)
+#else
+#define BOTTOMLESS_BASE
+#define BOTTOMLESS_ZERO vec3_802c59f0
+#define BOTTOMLESS_WIN_03 str_802C59FC
+#define BOTTOMLESS_WIN_01 str_802C5A04
+#define BOTTOMLESS_TIK_01 str_802C5A0C
+#endif
+
 void mot_bottomless(void) {
-    const char* s = (const char*)&vec3_802c59f0;
+    BOTTOMLESS_BASE
     f32 landY;
     f32 sx;
     f32 sy;
@@ -1210,15 +1225,15 @@ void mot_bottomless(void) {
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         if (*(f32*)((u8*)mario + 0xE4) < -2000.0f) {
-            if (strcmp(gp->currentMapName, s + 0xC) == 0) {
+            if (strcmp(gp->currentMapName, BOTTOMLESS_WIN_03) == 0) {
                 f31 = 250.0f;
                 landY = 13.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, s + 0x14) == 0) {
+            } else if (strcmp(gp->currentMapName, BOTTOMLESS_WIN_01) == 0) {
                 f31 = 220.0f;
                 landY = 1.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, s + 0x1C) == 0) {
+            } else if (strcmp(gp->currentMapName, BOTTOMLESS_TIK_01) == 0) {
                 f31 = 100.0f;
                 landY = 120.0f;
                 f29 = mario->position.z;
@@ -1228,7 +1243,7 @@ void mot_bottomless(void) {
             landY = *(f32*)((u8*)mario + 0xE4);
             f29 = *(f32*)((u8*)mario + 0xE8);
         }
-        pos = *(const Vec*)s;
+        pos = BOTTOMLESS_ZERO;
         pos.x = f31;
         pos.y = 300.0f + landY;
         pos.z = f29;

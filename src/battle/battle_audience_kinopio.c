@@ -36,7 +36,6 @@ extern f64 sqrt(f64 x);
 extern f64 sin(f64 x);
 extern EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z);
 extern s32 BtlUnit_CheckShadowGuard(BattleUnit* unit);
-extern s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 a, s16 b);
 extern u8 weapon_teresa_trans[];
 extern void btl_camera_set_mode(s32 id, s32 mode);
 extern void btl_camera_set_moveSpeedLv(s32 id, s32 lv);

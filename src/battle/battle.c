@@ -1142,7 +1142,9 @@ void battleMain(void) {
 
 // Global switch tables that the split assigned to this translation unit. They belong logically to
 // switches in other files (battle_damage.c, battle_sub.c, ...) but live in this object's .data region,
-// so the linked image needs them here with these exact names and bytes.
+// so the linked image needs them here with these exact names and bytes. Known issue: the six names below
+// are functions, declared as byte arrays only so the tables can hold addresses inside them. The real fix
+// is to move these tables to their own files in config/G8MJ01/splits.txt.
 extern u8 BattleCheckCounter[];
 extern u8 BattleSetStatusDamage[];
 extern u8 BattleSetStatusDamageFromWeapon[];

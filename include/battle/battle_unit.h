@@ -624,6 +624,8 @@ s32 BtlUnit_GetUnitId(BattleUnit* unit);
 BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum);
 s32 BtlUnit_GetBodyPartsId(BattleUnit* unit);
 void BtlUnit_GetPos(BattleUnit* unit, f32* x, f32* y, f32* z);
+s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c);
+s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos);
 void BtlUnit_SetPos(BattleUnit* unit, f32 x, f32 y, f32 z);
 void BtlUnit_AddPos(BattleUnit* unit, f32 x, f32 y, f32 z);
 void BtlUnit_GetPartsPos(BattleUnitPart* part, f32* x, f32* y, f32* z);

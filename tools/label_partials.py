@@ -68,6 +68,27 @@ def parse_args(argv):
     return unit, reset, notes
 
 
+def label_block(lines, at):
+    """(top, label, at) for the function starting at line `at`: the comment block directly above it and the
+    index of its NONMATCHING line (None if there is none). A NONMATCHING comment separated from the function by
+    one blank line counts too: the blank line is removed (moving the function up a line, hence the new `at`),
+    so the label ends up directly above it instead of being duplicated."""
+    top = at
+    while top > 0 and lines[top - 1].lstrip().startswith(("//", "#pragma")):
+        top -= 1
+    label = next((i for i in range(top, at) if "NONMATCHING" in lines[i]), None)
+    if label is None and top == at and top > 1 and not lines[top - 1].strip() \
+            and lines[top - 2].lstrip().startswith("//"):
+        above = top - 1
+        while above > 0 and lines[above - 1].lstrip().startswith("//"):
+            above -= 1
+        found = next((i for i in range(above, top - 1) if "NONMATCHING" in lines[i]), None)
+        if found is not None:
+            del lines[top - 1]
+            return above, found, at - 1
+    return top, label, at
+
+
 def main():
     unit, reset, notes = parse_args(sys.argv[1:])
     path = f"src/{unit}.c"
@@ -81,12 +102,7 @@ def main():
         m = re.search(DEF.format(name=re.escape(name)), text, re.M)
         if not m:
             continue
-        at = text.count("\n", 0, m.start())
-        # an existing label: NONMATCHING comment lines directly above (possibly with following // lines)
-        top = at
-        while top > 0 and lines[top - 1].lstrip().startswith(("//", "#pragma")):
-            top -= 1
-        label = next((i for i in range(top, at) if "NONMATCHING" in lines[i]), None)
+        top, label, at = label_block(lines, text.count("\n", 0, m.start()))
         if p >= 100:
             if label is not None:
                 end = label + 1

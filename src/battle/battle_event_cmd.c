@@ -1721,7 +1721,7 @@ USER_FUNC(btlevtcmd_AddUnitWork) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (68.68%): 2 instructions differ, 1 missing, 8 extra, plus register differences.
+// NONMATCHING (98.82%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetUnitWorkFloat) {
     s32* args = event->args;
     s32 btlId, id, i, index;
@@ -1732,11 +1732,10 @@ USER_FUNC(btlevtcmd_GetUnitWorkFloat) {
     i = evtGetValue(event, args[1]);
     index = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    evtSetFloat(event, index, (f32)unit->work[i]);
+    evtSetFloat(event, index, *(f32*)&unit->work[i]);
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (0.00%): 1 instruction differs, 20 missing, 20 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetUnitWorkFloat) {
     s32* args = event->args;
     s32 btlId, id, index;
@@ -1746,7 +1745,7 @@ USER_FUNC(btlevtcmd_SetUnitWorkFloat) {
     id = BattleTransID(event, btlId);
     index = evtGetValue(event, args[1]);
     value = evtGetFloat(event, args[2]);
-    BattleGetUnitPtr(_battleWorkPointer, id)->work[index] = (s32)value;
+    *(f32*)&BattleGetUnitPtr(_battleWorkPointer, id)->work[index] = value;
     return EVT_RETURN_DONE;
 }
 
@@ -1844,7 +1843,7 @@ USER_FUNC(btlevtcmd_CheckDamageCode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (80.00%): 3 instructions differ, 5 missing, 5 extra, plus register differences.
+// NONMATCHING (82.76%): 2 instructions differ, 4 missing, 5 extra, plus register differences.
 USER_FUNC(btlevtcmd_StartAvoid) {
     s32* args = event->args;
     s32 btlId, id, damageCode;
@@ -1856,7 +1855,7 @@ USER_FUNC(btlevtcmd_StartAvoid) {
     id = BattleTransID(event, btlId);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     damageCode = args[1] | 0x100;
-    if (damageCode == 0x26) {
+    if ((u8)damageCode == 0x26) {
         BtlUnit_GetPos(unit, &x, &y, &z);
         if (y >= 85.0f) {
             y += -50.0f;
@@ -3209,7 +3208,6 @@ USER_FUNC(btlevtcmd_SetupAC) {
     return EVT_RETURN_DONE;
 }
 
-s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c);
 
 //s32* battleId, s32* a, s32* b, s32* c, s32* d, s32* e
 USER_FUNC(btlevtcmd_SetRunSound) {
@@ -3291,7 +3289,7 @@ USER_FUNC(btlevtcmd_snd_se) {
     v2 = evtGetValue(event, args[2]);
     v3 = evtGetValue(event, args[3]);
     v4 = args[4];
-    ret = BtlUnit_snd_se(unit, v1, v2, (s16)v3);
+    ret = BtlUnit_snd_se(unit, (const char*)v1, v2, (s16)v3);
     if (v4 != EVTDAT_POINTER_MAX) {
         evtSetValue(event, v4, ret);
     }
