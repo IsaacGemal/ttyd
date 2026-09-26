@@ -578,8 +578,8 @@ void sort_1_1_func(WindowWork* work) {
 // constant name (double_to_int_802f44d0 vs a local @460; resolves once
 // winRootMain is written) and two fmadds operand orders differ.
 void winSortMain(WindowWork* work) {
-    u32 trg = WW_U32(work, 0x4);
-    u32 rep = WW_U32(work, 0x10);
+    u32 trg = work->buttonTrg;
+    u32 rep = work->dirRep;
 
     if (WW_S32(work, 0x17C) == 0) {
         trg = 0;
