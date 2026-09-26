@@ -673,7 +673,7 @@ config.libs = [
             Object(NonMatching, "event/evt_case.c"),
             Object(Matching, "event/evt_img.c"),
             Object(NonMatching, "event/evt_offscreen.c"),
-            Object(NonMatching, "event/evt_hit.c"),
+            Object(Matching, "event/evt_hit.c"),
             Object(NonMatching, "event/evt_bero.c"),
             Object(NonMatching, "event/evt_cam.c"),
             Object(NonMatching, "event/evt_item.c"),
