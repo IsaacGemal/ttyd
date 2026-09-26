@@ -1,3 +1,4 @@
+#include "eff/eff_kemuri.h"
 #include "dolphin/types.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"
@@ -77,7 +78,6 @@ void marioDmgRetQuakeOn(void);
 void marioUpdateCamPos(void);
 void* marioChkLandon(f32* pos, f32 spd);
 // Header declares only 3 float args, but the original call passes 4 (f1..f4).
-void effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6);
 
 
 void marioChgStayMotion(void) {

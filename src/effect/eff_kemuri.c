@@ -23,7 +23,7 @@ typedef struct effKemuriData {
 	s32 field_0x88; //0x88
 } effKemuriData;
 
-EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5) {
+EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6) {
 	effKemuriData* data;
 	s32 numEffects, i;
 	

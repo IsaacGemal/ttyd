@@ -16,7 +16,6 @@
 //=== added by agent: local prototypes for undeclared externals ===
 void BattleAcHelpSetHelp(const char* help);
 void BattleAcHelpSetDispType(s32 type);
-s32 BattlePartyAnimeLoad(BattleUnitType partyId);
 EffectEntry* effFireEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
 void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 arg2, s32 arg3, s32 arg4,
                         s32 arg5, s32 arg6, s32 arg7);
