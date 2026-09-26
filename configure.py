@@ -273,6 +273,10 @@ cflags_static = [
     "-DMUSY_VERSION_PATCH=3",
 ]
 
+# DOL flags without deferred inlining: with `deferred`, MWCC emits functions in reverse source order and all of
+# a file's .data before its jump tables. battle.c and dispdrv.c were built without it.
+cflags_static_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" for f in cflags_static]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -332,7 +336,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "battle/battle.c", cflags=[*cflags_static, "-O4,s", "-inline off"]),
+            Object(Matching, "battle/battle.c", cflags=[*cflags_static_nodefer, "-O4,s", "-inline off"]),
             Object(Matching, "battle/battle_evt_cmd.c"),
             Object(NonMatching, "battle/battle_ac.c"),
             Object(NonMatching, "battle/battle_damage.c"),
@@ -439,7 +443,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "driver/bgdrv.c"),
             Object(Matching, "driver/camdrv.c"),
-            Object(NonMatching, "driver/dispdrv.c"),
+            Object(Matching, "driver/dispdrv.c", cflags=cflags_static_nodefer),
             Object(NonMatching, "driver/fadedrv.c"),
             Object(NonMatching, "driver/hitdrv.c"),
             Object(NonMatching, "driver/icondrv.c"),
