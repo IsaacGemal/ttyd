@@ -27,7 +27,6 @@ EffectEntry* effMajinaiEntry(s32 a1, f32 x, f32 y, f32 z);
 void npcGroupDead(NpcEntry* entry, s32 type);
 s32 kpaMutekiCheck(void);
 void kpaAddScorePos(s32 score, Vec* pos);
-char* partyChgPoseId(PartyEntry* party, s32 index);
 f32 cloudGetBreathPower(f32 param_1, Vec* param_2);
 
 int __float_nan[];

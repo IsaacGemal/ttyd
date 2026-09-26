@@ -13,6 +13,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
 #include <stdlib.h>
+#include "pmario_sound.h"
+#include "battle/battle_enemy_item.h"
 
 // The original unit was built for size; without this the neg/or/srawi mask and
 // the /60 reciprocal-multiply codegen differ from the target (verified with the
@@ -2748,7 +2750,6 @@ USER_FUNC(btlevtcmd_InviteApInfoReport) {
     return EVT_RETURN_DONE;
 }
 
-s32 BattleEnemyUseItemCheck(BattleUnit* unit);
 s32 BtlUnit_GetExp(BattleUnit* unit);
 s32 BtlUnit_GetCoin(BattleUnit* unit);
 
@@ -2798,13 +2799,13 @@ USER_FUNC(btlevtcmd_EnemyItemUseCheck) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 id, index, result;
+    s32 id, index;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(wp, id);
     index = args[1];
-    result = BattleEnemyUseItemCheck(unit);
-    evtSetValue(event, index, result);
+    evtSetValue(event, index, (s32)BattleEnemyUseItemCheck(unit));
     return EVT_RETURN_DONE;
 }
 
@@ -2844,7 +2845,6 @@ USER_FUNC(btlevtcmd_GetCoin) {
 
 void _MoveSoundControlEndCore(void* a, u32* work);
 void _MoveSoundControlCore(BattleUnit* unit, void* work, void* owner, f32 x, f32 y, f32 z);
-void psndSFXOff(s32 id);
 s32 BattleRunWaitEvent(BattleUnit* unit);
 
 // Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.

@@ -70,6 +70,7 @@ HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z, 
 HitEntry* hitNameToPtr(const char* name);
 void hitObjGetPos(const char* name, Vec* position);
 void hitObjGetNormal(const char* name, Vec* normal);
+void hitObjFlagOn(const char* name, u32 mask);
 const char* hitGetName(HitEntry* hit);
 s32 hitGetAttr(HitEntry* hit);
 void hitGrpDamageReturnSet(const char* name, HitDamageReturn* damage);

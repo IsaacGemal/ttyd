@@ -38,7 +38,6 @@ extern EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z);
 extern s32 BtlUnit_CheckShadowGuard(BattleUnit* unit);
 extern s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 a, s16 b);
 extern u8 weapon_teresa_trans[];
-extern void psndSFXOff(s32 id);
 extern void btl_camera_set_mode(s32 id, s32 mode);
 extern void btl_camera_set_moveSpeedLv(s32 id, s32 lv);
 extern void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,

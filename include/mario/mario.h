@@ -197,7 +197,7 @@ typedef struct MarioWork {
 	u8 field_0x250[0x288 - 0x250]; // 0x250
     void* motStruct;               // 0x288, motion userdata, TODO rename?
     u8 field_0x28C[0x2A8 - 0x28C]; // 0x28C
-    f32 wCamVal1;                  // 0x2A8, TODO: double check
+    f32 wCamVal1;                  // 0x2A8, TODO: double check. mot_hip keeps an s32 SFX id here (per-motion scratch?)
     u8 field_0x2AC[0x2CC - 0x2AC]; // 0x2AC
     Vec bottomlessResetPosition;   // 0x2CC JP, 0x2E4 US
     u8 field_0x2D8[0x2E0 - 0x2D8]; // 0x2D8

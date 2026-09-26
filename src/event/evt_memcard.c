@@ -15,10 +15,47 @@ s32 evt_fade_end_wait(EventEntry* event, BOOL isFirstCall);
 s32 evt_fade_entry(EventEntry* event, BOOL isFirstCall);
 s32 unk_800f2398(EventEntry* event, BOOL isFirstCall);
 
-s32 memcard_write(EventEntry* event, BOOL isFirstCall) {
-    // gp->0x11D0 is the save slot to write; not named in GlobalWork yet.
+s32 memcard_code(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 code = cardGetCode();
+
+    if (cardIsExec()) {
+        return EVT_RETURN_BLOCK;
+    }
+    evtSetValue(event, args[0], code);
+    return EVT_RETURN_DONE;
+}
+
+s32 unk_802564b4(EventEntry* event, BOOL isFirstCall) {
+    cardBufReset();
+    return EVT_RETURN_DONE;
+}
+
+s32 unk_80256490(EventEntry* event, BOOL isFirstCall) {
+    unk_800b0ed0();
+    return EVT_RETURN_DONE;
+}
+
+s32 unk_80256428(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+
+    if (unk_800b0e80()) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+s32 unk_80256404(EventEntry* event, BOOL isFirstCall) {
+    unk_800b0eac();
+    return EVT_RETURN_DONE;
+}
+
+s32 memcard_load(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
-        cardWrite(*(s32*)((u8*)gp + 0x11D0));
+        cardBufReset();
+        cardReadAll();
     }
     if (cardIsExec()) {
         return EVT_RETURN_BLOCK;
@@ -26,28 +63,31 @@ s32 memcard_write(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 memcard_file_existance(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 slot = evtGetValue(event, args[0]) - 1;
-    CardData* card = cardGetFilePtr();
-    CardSaveSlot* save = &card->saves[slot];
-
-    if (save->data.flags & 1) {
-        evtSetValue(event, args[1], 0);
-    } else {
-        evtSetValue(event, args[1], 1);
+s32 memcard_format(EventEntry* event, BOOL isFirstCall) {
+    if (isFirstCall) {
+        cardFormat();
+    }
+    if (cardIsExec()) {
+        return EVT_RETURN_BLOCK;
     }
     return EVT_RETURN_DONE;
 }
 
-s32 memcard_ipl(EventEntry* event, BOOL isFirstCall) {
-    gp->resetType = 2;
-    return EVT_RETURN_BLOCK;
+s32 memcard_create(EventEntry* event, BOOL isFirstCall) {
+    if (isFirstCall) {
+        cardCreate();
+    }
+    if (cardIsExec()) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
 }
 
-s32 memcard_header_write(EventEntry* event, BOOL isFirstCall) {
+s32 memcard_delete(EventEntry* event, BOOL isFirstCall) {
+    s32 slot = evtGetValue(event, event->args[0]) - 1;
+
     if (isFirstCall) {
-        cardWriteHeader();
+        cardErase(slot);
     }
     if (cardIsExec()) {
         return EVT_RETURN_BLOCK;
@@ -69,11 +109,9 @@ s32 memcard_copy(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 memcard_delete(EventEntry* event, BOOL isFirstCall) {
-    s32 slot = evtGetValue(event, event->args[0]) - 1;
-
+s32 memcard_header_write(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
-        cardErase(slot);
+        cardWriteHeader();
     }
     if (cardIsExec()) {
         return EVT_RETURN_BLOCK;
@@ -81,71 +119,34 @@ s32 memcard_delete(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-s32 memcard_create(EventEntry* event, BOOL isFirstCall) {
-    if (isFirstCall) {
-        cardCreate();
-    }
-    if (cardIsExec()) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
+s32 memcard_ipl(EventEntry* event, BOOL isFirstCall) {
+    gp->resetType = 2;
+    return EVT_RETURN_BLOCK;
 }
 
-s32 memcard_format(EventEntry* event, BOOL isFirstCall) {
-    if (isFirstCall) {
-        cardFormat();
-    }
-    if (cardIsExec()) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-s32 memcard_load(EventEntry* event, BOOL isFirstCall) {
-    if (isFirstCall) {
-        cardBufReset();
-        cardReadAll();
-    }
-    if (cardIsExec()) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-s32 unk_80256404(EventEntry* event, BOOL isFirstCall) {
-    cardEAC();
-    return EVT_RETURN_DONE;
-}
-
-s32 unk_80256428(EventEntry* event, BOOL isFirstCall) {
+s32 memcard_file_existance(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
+    s32 slot = evtGetValue(event, args[0]) - 1;
+    CardData* card = cardGetFilePtr();
+    CardSaveSlot* save = &card->saves[slot];
 
-    if (cardE80()) {
-        evtSetValue(event, args[0], 1);
+    if (save->data.flags & 1) {
+        evtSetValue(event, args[1], 0);
     } else {
-        evtSetValue(event, args[0], 0);
+        evtSetValue(event, args[1], 1);
     }
     return EVT_RETURN_DONE;
 }
 
-s32 unk_80256490(EventEntry* event, BOOL isFirstCall) {
-    cardED0();
-    return EVT_RETURN_DONE;
-}
-
-s32 unk_802564b4(EventEntry* event, BOOL isFirstCall) {
-    cardBufReset();
-    return EVT_RETURN_DONE;
-}
-
-s32 memcard_code(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 code = cardGetCode();
-
+s32 memcard_write(EventEntry* event, BOOL isFirstCall) {
+    // The save slot sits in GlobalWork's padding at 0x11D0; the header names the
+    // enclosing hole as field_0x11BC but not the field itself.
+    if (isFirstCall) {
+        cardWrite(*(s32*)(gp->field_0x11BC + (0x11D0 - 0x11BC)));
+    }
     if (cardIsExec()) {
         return EVT_RETURN_BLOCK;
     }
-    evtSetValue(event, args[0], code);
     return EVT_RETURN_DONE;
 }
 
@@ -1297,10 +1298,8 @@ s32 evt_memcard_save[] = {
     (s32)evt_msg_continue,
     0x00000002,
     0x00000001,
-};
-
-// -sdata 48 would move these two small objects to .sdata; the original has them in .data.
-__declspec(section ".data") s32 gap_05_803B70B4_data[] = {
+    // 12-byte zero gap (0x803B70B4) that would otherwise be dropped as an
+    // unreferenced all-zero object; folded into the save script.
     0x00000000,
     0x00000000,
     0x00000000,

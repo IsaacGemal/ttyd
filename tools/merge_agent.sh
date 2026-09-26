@@ -4,6 +4,8 @@
 #
 #   tools/merge_agent.sh RESULTS_DIR UNIT [AGENT_MODEL] [AGENT_TRAILER]
 #
+# UNIT may also be the source file's path, e.g. rels/pik/src/unit/unit_purple_teresa.c: needed for a new file in
+# a REL module, and for a unit that exists in several RELs.
 # RESULTS_DIR is the agent's result folder: final.c (the agent's whole file; used for new files and finishers)
 # or src.patch (a diff against the file on main), plus other_changes.txt (files the agent changed besides its own).
 # UNIT is the source path without src/ and .c, e.g. event/evt_map. The wave name in the commit is RESULTS_DIR's
@@ -13,10 +15,14 @@ set -u
 D=$(cd "$1" && pwd); UNIT=$2
 MODEL=${3:-"Pi + DeepSeek V4.1 Flash"}; TRAILER=${4:-"DeepSeek V4.1 Flash <noreply@deepseek.com>"}
 ORCH=${ORCHESTRATOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
-TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); F=src/$UNIT.c; TOOLS=$(cd "$(dirname "$0")" && pwd)
+TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); TOOLS=$(cd "$(dirname "$0")" && pwd)
 cd "$TOOLS/.."
+case $UNIT in
+  *.c) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/)?src/##; s#\.c$##') ;;
+  *) F=src/$UNIT.c ;;
+esac
 
-[ -z "$(git status --short -- src include)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
+[ -z "$(git status --short -- src include rels)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
 own="Only in src$( [ "$(dirname $UNIT)" = . ] || echo /$(dirname $UNIT)): $(basename $UNIT).c"
 if [ -s "$D/other_changes.txt" ] && grep -v -x -F "$own" "$D/other_changes.txt" | grep -q .; then
   echo "REJECT $TAG: touched other files:"; cat "$D/other_changes.txt"; exit 1
@@ -48,12 +54,16 @@ git diff -U0 "$F" | grep -q -E '^\+\s*#\s*pragma' && FLAGS="--allow-pragma"
 OUT=$(python3 tools/ci.py $FLAGS 2>&1)
 echo "$OUT" | tail -9
 echo "$OUT" | grep -q '^PASS' || { restore; echo "REJECT $TAG"; exit 1; }
-LINT=$(python3 tools/lint_patch.py "$UNIT") || { restore; echo "REJECT $TAG: empty stubs:"; echo "$LINT"; exit 1; }
+LINT=$(python3 tools/lint_patch.py "$F" 2>&1) || {
+  restore
+  if echo "$LINT" | grep -q '^STUB'; then echo "REJECT $TAG: empty stubs:"; else echo "REJECT $TAG: lint failed:"; fi
+  echo "$LINT"; exit 1; }
 [ -n "$LINT" ] && { echo "$LINT"; echo "$LINT" > "$D/lint.txt"; }
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
 if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions matched"
+elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 git add "$F" && git commit -q -F - <<MSG
 $SUBJECT

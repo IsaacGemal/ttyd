@@ -38,7 +38,6 @@ void mapGrpSetColor(const char* name, GXColor* color);
 void mapObjClearOffScreen(const char* name);
 void mapObjSetOffScreen(const char* name, const char* offName);
 void mapGrpClearOffScreen(const char* name);
-void mapGrpSetOffScreen(const char* name, const char* offName);
 void mapSetTevCallback(s32 idx, void* cb);
 void mapSetPlayRate(const char* name, f32 rate);
 void mapReStartAnimation(const char* name);

@@ -5,6 +5,7 @@
 #include "mario/mario_pouch.h"
 #include "system.h"
 #include <string.h>
+#include "pmario_sound.h"
 
 #pragma optimize_for_size on
 
@@ -151,7 +152,6 @@ void BattleAudienceNoiseMain(void);
 extern s32 psndSFXOn(const char* name);
 extern s32 psndSFXOn_3D(const char* name, Vec* pos);
 extern s32 psndSFX_get_vol(s32 id);
-extern void psndSFXOff(s32 id);
 extern void psndSFX_vol(s32 id, s32 vol);
 extern s32 psndSFX_pit(s32 id, s32 pit);
 extern void BattleStatusWindowAPRecoveryOn(void);

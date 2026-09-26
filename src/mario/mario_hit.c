@@ -15,7 +15,6 @@ s32 kpaCamFollow(void);
 void quake_kpaLandOn(void);
 void camFollowYOn(void);
 void set_damage_root_ypos(f32 y);
-s32 marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 void* marioLandonChk_old(f32* pos, f32 spd);
 

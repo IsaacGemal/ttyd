@@ -12,10 +12,15 @@ typedef s32 (*BattleACResultCallback)(BattleWork* work);
 typedef void (*BattleACDeleteCallback)(BattleWork* work);
 
 typedef struct BattleACDispParams {
-    u8 field_0x0[0x14 - 0x0];   // 0x0
+    u8 field_0x0[0xC - 0x0];    // 0x0
+    s32 field_0xC;              // 0xC
+    u8 field_0x10[0x14 - 0x10]; // 0x10
     f32 iconX;                  // 0x14, see actionCommandDisp
     f32 iconY;                  // 0x18, see actionCommandDisp
-    u8 field_0x1C[0x2C - 0x1C]; // 0x1C
+    u8 field_0x1C[0x20 - 0x1C]; // 0x1C
+    s32 counter;                // 0x20, counts down (ac_button_down) or up (ac_air_gauge)
+    u8 field_0x24[0x28 - 0x24]; // 0x24
+    f32 value;                  // 0x28, ac_air_gauge's gauge value
 } BattleACDispParams;
 
 typedef struct BattleActions {
@@ -39,7 +44,9 @@ typedef struct BattleActions {
     u8 field_78[0x8C - 0x78];        // 0x78
     BattleWorkPad pad;               // 0x8C
     s32 field_0x288;                 // 0x288
-    u8 field_0x28C[0x30C - 0x28C];   // 0x28C
+    u8 field_0x28C[0x290 - 0x28C];   // 0x28C
+    BattleACDispParams dispParams;   // 0x290 (BattleWork+0x1F20), used by ac_button_down and ac_air_gauge
+    u8 field_0x2BC[0x30C - 0x2BC];   // 0x2BC
 } BattleActions;
 // NB: 0x308 is as far as I can pin to this struct (0x1F98 in battleAcMain_PendulumCraneTiming, TODO?)
 

@@ -3,32 +3,25 @@
 #include "manager/evtmgr_cmd.h"
 #include "driver/imgdrv.h"
 #include "driver/animdrv.h"
+#include "driver/offscreendrv.h"
 #include "mario/mariost.h"
 #include "sdk/DEMOInit.h"
 #include <dolphin/types.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// Prototypes not in a header.
-extern s32 offscreenNameToId(const char* name);
-
-// .sbss2 zero initializer used for the event color.
-GXColor unk_80422fd0;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool
+// templates, so pair it with a small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80422fd0;
 
 extern const Vec vec3_802c47f8;
 extern const f32 float_1_8041a270;
 
-USER_FUNC(N_evt_img_set_z) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	f32 z = evtGetFloat(event, args[1]);
-
-	imgNameToPtr((const char*)name, gp->inBattle != 0)->order = z;
-	return EVT_RETURN_DONE;
-}
-
-static GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = {0, 0, 0, 0};
+// Inlined into their callers; `inline` keeps the compiler from emitting a
+// standalone copy (the original object has no such symbols).
+static inline GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor color = unk_80422fd0;
 	color.r = r;
 	color.g = g;
 	color.b = b;
@@ -36,73 +29,7 @@ static GXColor makeColor(u8 r, u8 g, u8 b, u8 a) {
 	return color;
 }
 
-USER_FUNC(evt_img_set_color) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	u8 r = evtGetValue(event, args[1]);
-	u8 g = evtGetValue(event, args[2]);
-	u8 b = evtGetValue(event, args[3]);
-	u8 a = evtGetValue(event, args[4]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-	animPoseSetMaterialEvtColor(entry->poseId, makeColor(r, g, b, a));
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_img_set_paper_timerate) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	f32 rate = evtGetFloat(event, args[1]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	animPoseSetLocalTimeRate(entry->poseId, rate);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_img_set_shadow) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	s32 shadowId = evtGetValue(event, args[1]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	imgSetShadow(entry, shadowId);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_img_wait_animend) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	if (isFirstCall) {
-		return EVT_RETURN_BLOCK;
-	}
-	if (entry->field_0x118 < float_1_8041a270) {
-		return EVT_RETURN_BLOCK;
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_img_release) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	imgRelease(entry, gp->inBattle != 0);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_img_clear_virtual_point) {
-	s32* args = event->args;
-	s32 name = evtGetValue(event, args[0]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-
-	imgClearVirtualPoint(entry);
-	return EVT_RETURN_DONE;
-}
-
-static Vec makeVec(f32 x, f32 y, f32 z) {
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
 	Vec point = vec3_802c47f8;
 	point.x = x;
 	point.y = y;
@@ -110,41 +37,47 @@ static Vec makeVec(f32 x, f32 y, f32 z) {
 	return point;
 }
 
-USER_FUNC(evt_img_set_virtual_point) {
+USER_FUNC(evt_img_entry) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+
+	imgEntry((const char*)name, gp->inBattle != 0);
+	return EVT_RETURN_DONE;
+}
+USER_FUNC(evt_img_set_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
 	f32 x = evtGetFloat(event, args[1]);
 	f32 y = evtGetFloat(event, args[2]);
-	f32 z = evtGetFloat(event, args[3]);
 	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
-	Vec point = makeVec(x, y, z);
 
-	imgSetVirtualPoint(entry, &point);
+	entry->field_0xE8 = x;
+	entry->field_0xEC = y;
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_onoff) {
+USER_FUNC(evt_img_set_paper) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 on = evtGetValue(event, args[1]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+	s32 anim = evtGetValue(event, args[1]);
+	s32 type = gp->inBattle != 0;
+	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
-	if (on) {
-		entry->flags &= ~2;
-	}
-	else {
-		entry->flags |= 2;
-	}
+	entry->poseId = animPaperPoseGetId((const char*)anim, type);
+	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
+	animPoseSetMaterialFlagOn(entry->poseId, 0x1800);
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_free_capture) {
+USER_FUNC(evt_img_set_paper_anim) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 shadowId = evtGetValue(event, args[1]);
-	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+	s32 anim = evtGetValue(event, args[1]);
+	s32 type = gp->inBattle != 0;
+	ImageEntry* entry = imgNameToPtr((const char*)name, type);
 
-	imgFreeCapture(entry, shadowId);
+	entry->field_0x108 = anim;
+	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
 	return EVT_RETURN_DONE;
 }
 
@@ -231,50 +164,119 @@ USER_FUNC(evt_img_alloc_capture) {
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_set_paper_anim) {
+USER_FUNC(evt_img_free_capture) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 anim = evtGetValue(event, args[1]);
-	s32 type = gp->inBattle != 0;
-	ImageEntry* entry = imgNameToPtr((const char*)name, type);
+	s32 shadowId = evtGetValue(event, args[1]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
 
-	entry->field_0x108 = anim;
-	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
+	imgFreeCapture(entry, shadowId);
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_set_paper) {
+USER_FUNC(evt_img_onoff) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
-	s32 anim = evtGetValue(event, args[1]);
-	s32 type = gp->inBattle != 0;
-	ImageEntry* entry = imgNameToPtr((const char*)name, type);
+	s32 on = evtGetValue(event, args[1]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
 
-	entry->poseId = animPaperPoseGetId((const char*)anim, type);
-	*(OSTime*)((u8*)entry + 0x110) = animTimeGetTime(type);
-	animPoseSetMaterialFlagOn(entry->poseId, 0x1800);
+	if (on) {
+		entry->flags &= ~2;
+	}
+	else {
+		entry->flags |= 2;
+	}
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_set_position) {
+USER_FUNC(evt_img_set_virtual_point) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
 	f32 x = evtGetFloat(event, args[1]);
 	f32 y = evtGetFloat(event, args[2]);
+	f32 z = evtGetFloat(event, args[3]);
 	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+	Vec point = makeVec(x, y, z);
 
-	entry->field_0xE8 = x;
-	entry->field_0xEC = y;
+	imgSetVirtualPoint(entry, &point);
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_img_entry) {
+USER_FUNC(evt_img_clear_virtual_point) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
 
-	imgEntry((const char*)name, gp->inBattle != 0);
+	imgClearVirtualPoint(entry);
 	return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_img_release) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+
+	imgRelease(entry, gp->inBattle != 0);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_img_wait_animend) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+
+	if (isFirstCall) {
+		return EVT_RETURN_BLOCK;
+	}
+	if (entry->field_0x118 < float_1_8041a270) {
+		return EVT_RETURN_BLOCK;
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_img_set_shadow) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	s32 shadowId = evtGetValue(event, args[1]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+
+	imgSetShadow(entry, shadowId);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_img_set_paper_timerate) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	f32 rate = evtGetFloat(event, args[1]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+
+	animPoseSetLocalTimeRate(entry->poseId, rate);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_img_set_color) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	u8 r = evtGetValue(event, args[1]);
+	u8 g = evtGetValue(event, args[2]);
+	u8 b = evtGetValue(event, args[3]);
+	u8 a = evtGetValue(event, args[4]);
+	ImageEntry* entry = imgNameToPtr((const char*)name, gp->inBattle != 0);
+
+	animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+	animPoseSetMaterialEvtColor(entry->poseId, makeColor(r, g, b, a));
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(N_evt_img_set_z) {
+	s32* args = event->args;
+	s32 name = evtGetValue(event, args[0]);
+	f32 z = evtGetFloat(event, args[1]);
+
+	imgNameToPtr((const char*)name, gp->inBattle != 0)->order = z;
+	return EVT_RETURN_DONE;
+}
+
 
 // .rodata
 const Vec vec3_802c47f8 = {0.0f, 0.0f, 0.0f};
