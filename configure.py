@@ -380,7 +380,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "battle/ac/ac_table.c"),
+            Object(Matching, "battle/ac/ac_table.c"),
             Object(NonMatching, "battle/ac/ac_stick_keep_left.c"),
             Object(NonMatching, "battle/ac/ac_timing_a.c"),
             Object(NonMatching, "battle/ac/ac_repeatedly.c"),
