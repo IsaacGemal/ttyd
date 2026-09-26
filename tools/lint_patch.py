@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c (working tree vs HEAD), after a build.
+"""tools/lint_patch.py UNIT [BASE]: review checks on an agent's change to src/UNIT.c, after a build.
+
+BASE is a git ref (default HEAD) or, where there is no git (an agent's workspace), a path to the file to compare
+against (`/dev/null` for a new file).
 
 The checks reviewers kept flagging, run mechanically so reviews can look for new problems instead:
   STUB       a function the patch left empty or near-empty, below 100%, that wasn't already empty (rejects the file)
@@ -18,7 +21,11 @@ import sys
 unit = sys.argv[1]
 base = sys.argv[2:] or []
 path = f"src/{unit}.c"
-diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
+BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
+if BASE_FILE:
+    diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
+else:
+    diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
 added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
 text = open(path).read()
 lines = text.splitlines()
@@ -44,7 +51,8 @@ def is_stub(body):
 
 
 funcs = definitions(text)
-head = subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout
+head = (open(BASE_FILE).read() if BASE_FILE else
+        subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout)
 head_funcs = {n: body for n, (_, body) in definitions(head).items()}
 
 # Which functions the patch touched: a hunk's new-file line range intersecting the function.
