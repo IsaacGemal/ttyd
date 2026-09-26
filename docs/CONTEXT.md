@@ -803,3 +803,27 @@ as behaviour (Aug 2026: "fix inverted scale copy in non-matching builds", "fix i
 builds"). A homegrown heuristic that Melee never needed shouldn't sit in the merge path. `lint_patch.py` no
 longer calls it; its `USER_FUNC` fixes stay. Revisit `semdiff` only if the runnable build can't be made to
 work, or as a comparison against it.
+
+## Melee's workflow adopted, and agents run the merge's checks themselves (2026-09-26, Isaac; another Claude Opus 5.5 session surveyed ~/melee and started it, Claude Opus 5.5 finished it)
+
+From a survey of `~/melee` (Melee reached 100% and is the reference):
+- **`-requireprotos` by default** (as in Melee's CI): a call with no prototype is a build error, not a lint
+  warning. Turning it on found five real bugs (a call to a function that doesn't exist, a result read from a
+  leftover register, a struct passed by value to a pointer parameter, an `f32` result read as an int, SDK
+  macros called as functions) and put 30 missing prototypes in headers. 3,780 -> 3,785 functions.
+- **`MUST_MATCH`** is defined in matching builds (not with `--non-matching`); code that exists only to reproduce
+  the original bytes goes inside `#ifdef MUST_MATCH`. **`PAD_STACK(n)`** is in `include/matching.h` (not
+  `macros.h`: the SDK already has one its sources include as `<macros.h>`).
+- **`tools/tests/`** tests the checks themselves, starting with the three bugs found in them; `ci.py` runs them
+  first. `ci.py` also ends with a note when units are fully matched but not linked.
+- `ci.py`: non-`Object` edits to `configure.py` need `--allow-configure` (no longer implied by
+  `--allow-protected`); `#pragma once` isn't a "new pragma"; `--allow-regress` also takes a unit path, for when
+  fixing wrong code lowers a data score.
+- Not done: Melee's `--linkable` build (building every complete unit into a runnable game). Few TTYD units
+  are complete yet; revisit when finishers have completed more.
+
+**Agents check their own work before stopping.** `check.py --final UNIT` (from `tools/agent_check.py`) rebuilds,
+so `-requireprotos` errors show, then runs the merge's lint against the clean copy of the file the workspace
+came from (`/dev/null` for a new file) and lists what to fix and how. The wave launcher template asks every
+agent to run it before finishing. Most of what reviews caught mechanically in waves 4 and 5 should now be fixed
+by the agent itself; the next waves will show whether it is.
