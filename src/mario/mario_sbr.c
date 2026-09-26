@@ -155,7 +155,7 @@ void marioForceMoveMain(void) {
     }
 }
 
-void marioSetForceMove(s16 timer, f32 direction, f32 speed) {
+void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
     MarioWork* p = marioGetPtr();
 
     p->flags |= MARIO_FLAG_FORCED_MOVEMENT;

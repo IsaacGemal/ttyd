@@ -75,23 +75,57 @@ typedef struct PartyEntry {
     char* field_18;              // 0x18
     u32 field_1C;                // 0x1C, unsigned
     u16 field_20;                // 0x20
-    u8 field_22[0x2F - 0x22];    // 0x22
+    u8 field_22[0x28 - 0x22];    // 0x22
+    s16 field_28;                // 0x28
+    u8 field_2A[0x2D - 0x2A];    // 0x2A
+    s8 field_2D;                 // 0x2D
+    u8 field_2E;                 // 0x2E
     s8 currentSlotId;            // 0x2F
     u8 field_30;                 // 0x30
     s8 currentMemberId;          // 0x31, PartyMembers
-    u8 field_32[0x39 - 0x32];    // 0x32
+    u8 field_32;                 // 0x32
+    u8 field_33;                 // 0x33
+    u8 field_34;                 // 0x34
+    u8 field_35;                 // 0x35
+    u8 field_36;                 // 0x36
+    u8 field_37[0x39 - 0x37];    // 0x37
     u8 useMotionId;              // 0x39
-    u8 field_3A[0x58 - 0x3A];    // 0x3A
+    u8 field_3A;                 // 0x3A
+    u8 field_3B;                 // 0x3B
+    u8 field_3C[0x4C - 0x3C];    // 0x3C
+    s8 field_4C;                 // 0x4C
+    u8 field_4D[0x58 - 0x4D];    // 0x4D
     Vec position;                // 0x58
-    u8 field_64[0x160 - 0x64];   // 0x64
+    u8 field_64[0xE4 - 0x64];    // 0x64
+    f32 field_E4;                // 0xE4
+    u8 field_E8[0xFC - 0xE8];    // 0xE8
+    f32 field_FC;                // 0xFC
+    f32 dir;                     // 0x100
+    f32 speed;                   // 0x104
+    f32 speed2;                  // 0x108
+    f32 field_10C;               // 0x10C
+    f32 field_110;               // 0x110
+    f32 jumpPara1;               // 0x114
+    f32 jumpPara2;               // 0x118
+    f32 jumpPara3;               // 0x11C
+    u8 field_120[0x12C - 0x120]; // 0x120
+    void* field_12C;             // 0x12C
+    u8 field_130[0x134 - 0x130]; // 0x130
+    void* field_134;             // 0x134
+    void* field_138;             // 0x138
+    u8 field_13C[0x140 - 0x13C]; // 0x13C
+    void* field_140;             // 0x140
+    u8 field_144[0x160 - 0x144]; // 0x144
     MarioWork* playerPtr;        // 0x160
     s32 camId;                   // 0x164
     s32 yoshiPsndSFXId;          // 0x168
     s32 unk16C;                  // 0x16C
     void* useStruct;             // 0x170
-    u8 field_168[0x188 - 0x174]; // 0x174
+    u8 field_174[0x188 - 0x174]; // 0x174
 } PartyEntry;
 
 PartyEntry* partyGetPtr(s32 index);
+s32 partyEntry(s32 memberId);
+s32 partyEntryHello(s32 memberId);
 PartyEntry* anotherPartyGetPtr(s32 index);
 BOOL partyPaperOn(PartyEntry* party, const char* animName);

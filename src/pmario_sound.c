@@ -4333,7 +4333,7 @@ BOOL psndENVOn_f_d(s32, s32, s32, s32);
 BOOL psndENVOff_f_d(s32, s32, s32);
 s32 __psndSFXOn(s32, s32, s32, s32, Vec*, s32, s32, s32);
 s32 SoundSSCheck(s32);
-void SoundSSSetPlayFreqCh(s32);
+void SoundSSSetPlayFreqCh(s32 chan, u16 freq);
 void SoundSSStopCh(s32);
 
 // psbgmlist is defined in another unit; only field_0x4 is read here
@@ -4582,11 +4582,11 @@ void psndSFXAllOff(void) {
 }
 
 
-void psndSFXOn(const char* sfx_name) {
-	__psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
+s32 psndSFXOn(const char* sfx_name) {
+	return __psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
-BOOL psndBGMOff_f_d(s32 flags, u16 fadetime, BOOL someswitch) {
+BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch) {
 
 }
 
@@ -4662,7 +4662,8 @@ void psndBGMScope(s32 id, s32 scope) {
 	}
 }
 
-void psndBGM_rate(s32 id) {
+// NONMATCHING (98.00%): same instructions, different register numbers.
+void psndBGM_rate(s32 id, u16 rate) {
 	s32 idx = id & 0xF;
 	PaperSoundBGM* bgm = &psbgm[idx];
 	s32 bgmid = bgm->unk0;
@@ -4673,7 +4674,7 @@ void psndBGM_rate(s32 id) {
 	if (!(psbgmlist[bgmid].field_0x4 & 0x80000000)) {
 		return;
 	}
-	SoundSSSetPlayFreqCh(bgm->streamId);
+	SoundSSSetPlayFreqCh(bgm->streamId, rate);
 }
 
 s32 psndSFXChk(u32 id) {
@@ -4749,8 +4750,8 @@ void psndSFXOnVol(s32 a, s32 b) {
 	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
-void psndSFXOn_(const char* name) {
-	__psndSFXOn((s32)name, 0xFF, 0xFF, 0, 0, 0, 0x10, 1);
+s32 psndSFXOn_(const char* name) {
+	return __psndSFXOn((s32)name, 0xFF, 0xFF, 0, 0, 0, 0x10, 1);
 }
 
 s32 psndSFXOnEx_3D(const char* name, Vec* position, s32 vol, s32 pan, s32 pitch, s32 flags) {

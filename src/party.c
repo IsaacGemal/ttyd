@@ -15,7 +15,7 @@ double cos(double x);
 
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyChgMot(PartyEntry* party, s32 mot);
-s32 partyEntryMain(void);
+s32 partyEntryMain(s32 memberId);
 s32 partyGetHp(void);
 void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
@@ -587,8 +587,8 @@ void partySetForceMove(PartyEntry* party, s16 unk, f32 x, f32 z) {
     partyChgMot(party, 1);
 }
 
-s32 partyEntryHello(void) {
-    s32 ret = partyEntryMain();
+s32 partyEntryHello(s32 memberId) {
+    s32 ret = partyEntryMain(memberId);
 
     partyChgRunMode(partyGetPtr(ret), 4);
     return ret;
@@ -980,14 +980,14 @@ void getRidePos(PartyEntry* party, Vec* pos) {
 
 // NONMATCHING (97%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
 // low-HP `extsb r3,r0` vs our `extsb r0,r0`.
-s32 partyEntry(void) {
+s32 partyEntry(s32 memberId) {
     PartyEntry* party;
     s32 index;
     char* pose;
     s32 ret;
     s32 lowHp;
 
-    ret = partyEntryMain();
+    ret = partyEntryMain(memberId);
     party = partyGetPtr(ret);
     *(Vec*)((u8*)party + 0x70) = *(const Vec*)vec3_802ccd30;
     P8(party, 0x38) = 0xa;

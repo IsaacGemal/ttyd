@@ -1,3 +1,4 @@
+#include "pmario_sound.h"
 #include "statuswindow.h"
 #include "battle/battle.h"
 #include "driver/icondrv.h"
@@ -70,7 +71,6 @@ s32 marioGetParty(void);
 s32 valueCheck(void);
 void valueUpdate(void);
 void statusWinDisp(CameraId camId, void* param);
-void psndSFXOn();
 
 void statusWinInit(void) {
     wp = __memAlloc(HEAP_DEFAULT, sizeof(StatusWindowWork));
@@ -154,14 +154,14 @@ void statusWinMain(void) {
                             wp->field_0x4 &= ~0xA;
                             wp->field_0x4 |= 5;
                             wp->field_0x78 = gp->framerate * 10;
-                            psndSFXOn(0x2A);
+                            psndSFXOn((const char*)0x2A);
                             wp->field_0x4 |= 0x100;
                         } else {
                             wp->field_0x4 |= 0xA;
                             wp->field_0x4 &= ~5;
                             wp->field_0x78 = gp->framerate * 10;
                             wp->field_0x7C = 1;
-                            psndSFXOn(0x2B);
+                            psndSFXOn((const char*)0x2B);
                         }
                     }
                     if (valueCheck() != 0) {
