@@ -751,7 +751,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "motion/mot_walk.c"),
+            Object(Matching, "motion/mot_walk.c"),
             Object(NonMatching, "motion/mot_hammer.c"),
             Object(NonMatching, "motion/mot_jabara.c"),
             Object(NonMatching, "motion/mot_jump.c"),
