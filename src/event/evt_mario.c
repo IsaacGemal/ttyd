@@ -1132,7 +1132,7 @@ USER_FUNC(evt_mario_dokan_end) {
     MarioWork* mario = marioGetPtr();
 
     if (isFirstCall && mario->currMotionId == MARIO_MOTION_DOKAN) {
-        *(s32*)((u8*)mario + 0x44) = 100;
+        mario->currSubMotionId = 100;
         return EVT_RETURN_BLOCK;
     }
     if (mario->currMotionId == MARIO_MOTION_DOKAN) {
