@@ -7,26 +7,41 @@
 
 UNIT is the source path without src/ and .c, e.g. party/party_yoshi. Run after a build.
 
-A partial function's score says how close it is, not whether its logic is right: a wrong flag mask, an inverted
-test or a missing call can sit at 95%. This compares the *meaning-bearing* parts of each function as multisets,
-ignoring register numbers, stack offsets and instruction order:
-  imm    integer constants (li/lis/addi/subi/mulli/srawi...): constants, divisors, == N tests
-  logic  ori/oris/xori/xoris/andi./andis. immediates: flags set, toggled or tested
-  mask   rlwinm-family masks, as the value mask (`rlwinm 0,15,13` -> 0xFFFDFFFF): bit tests and clears
-  mem    loads/stores off a non-stack base, as (width and signedness, offset): which field, read how
-  cmp    signed or unsigned compare; cror (>= / <= tests)
-  call   called functions
-  ref    data a function references, by content (so `@633` and `float_0_8041b020` compare equal)
-  op     a few opcodes that change meaning: divw/divwu, mulhw/mulhwu, extsb/extsh, fabs, fctiwz, neg, fneg
-Masks, logic immediates, compares, the opcodes above and calls are compared by count (each is an operation, so
-one more or fewer means different code). Constants, data refs and field offsets are compared by presence only,
-since the compiler loads a constant once or several times as it likes. Each line is a lead for a reviewer, not proof of a bug.
+A partial function's score says how close its bytes are, not whether its logic is right: a wrong flag mask, an
+inverted test or a missing call can sit at 95%. This compares the parts of each function that carry meaning, as
+multisets, ignoring register numbers, stack offsets and instruction order:
+  imm     integer constants (li/lis/addi/subi/mulli/srawi...): constants, divisors, `== N` tests
+  logic   ori/oris/xori/xoris and non-contiguous andi./andis. immediates: flags set, toggled or tested
+  mask    rlwinm/rlwnm masks and contiguous andi./andis., as the value mask (`rlwinm 0,15,13` -> 0xfffdffff);
+          a trailing "." means the result also sets CR0 (a test)
+  insert  rlwimi (bit-field insert), as the mask and rotation
+  cmp     signed or unsigned compare (with its immediate); cror (the >= and <= tests)
+  call    a called function; `tail` a tail call (b); `call <indirect>` a bctrl/blrl through a pointer
+  load    what a load off a non-stack base reads: a field (width, signedness, offset), or data by identity
+  store   what a store writes to, the same way
+  addr    the address of data taken (addi x@l, or a block address plus an offset)
+  op      opcodes that change meaning: divw/divwu, mulhw/mulhwu, extsb/extsh, fabs, fctiwz, neg, fneg
+Data is identified by contents if it's read-only or has a made-up name (constants, strings, tables, jump
+tables, including what their pointers point to), so an anonymous `@633` and the original's
+`float_0_8041b020` compare equal; and by name and offset if it's a named writable variable, so using the
+wrong global shows up.
+
+Operations (mask, logic, insert, cmp, call, tail, store, op) are compared by count: one more or fewer is
+different code. Constants, loads and addresses are compared by presence only, since the compiler loads a
+value once or several times as it likes; so a missing *second* use of a constant is not caught.
+
+What this does not see: branch conditions and block structure (beq/bne flip with layout, so they're left out),
+which registers feed a compare, arguments passed as stack addresses, and anything in a function that matches.
+No flags means nothing on this list differs, not that the function is right. Each line is a lead for review.
 """
+import hashlib
 import json
+import os
 import re
 import struct
 import subprocess
 import sys
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -35,93 +50,127 @@ OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
 OPS = {"divw", "divwu", "mulhw", "mulhwu", "extsb", "extsh", "fabs", "fnabs", "fctiwz", "neg", "fneg"}
 IMM_OPS = {"li", "lis", "addi", "subi", "addis", "subis", "ori", "oris", "xori", "xoris", "andi.", "andis.",
            "mulli", "subfic", "addic", "addic.", "subic", "subic.", "srawi", "srawi."}
-# Token kinds whose count matters (each is an operation); for the rest (constants the compiler may load once
-# or twice, data refs, field offsets) only presence on one side and absence on the other is reported.
-COUNTED = {"mask", "logic", "cmp", "op", "call"}
+COUNTED = {"mask", "logic", "insert", "cmp", "call", "tail", "store", "op"}
 VOLATILE = {"r0"} | {f"r{i}" for i in range(3, 13)}
 CMP_OPS = {"cmpw": "s", "cmpwi": "s", "cmplw": "u", "cmplwi": "u"}
+NO_DEST = ("st", "cmp", "fcmp", "b", "mt", "psq_st", "dcb", "icb", "sync", "isync", "tw", "cror", "crxor",
+           "crclr", "crset", "crnot", "crand", "creqv", "crnor", "crorc", "crandc", "mcrf")
+# Names the compiler or the splitter made up (pools, jump tables, templates): compared by contents wherever
+# they live, since agents often redeclare the original's constants as ordinary globals.
+AUTO_NAME = re.compile(r"^(@|\.\.\.|jumptable_|lbl_|float_|double_|str_|vec3_|dat_|unk_|zero_|string_)")
+READ_ONLY = (".rodata", ".sdata2", ".sbss2", ".text", ".ctors", ".dtors")
+KIND_SIZE = {"f32": 4, "f64": 8, "i4": 4, "s2": 2, "u2": 2, "s1": 1, "u1": 1}
 
 
-# --- data references, resolved to their contents -------------------------------------------------
+# --- data: what a reference means ----------------------------------------------------------------
 
-def elf_symbols(path):
-    """name -> (section bytes, offset, size) for every defined data symbol in an ELF32 big-endian object.
-    Section bytes are None for .bss/.sbss (all zeros)."""
-    data = Path(path).read_bytes()
-    shoff, = struct.unpack_from(">I", data, 0x20)
-    shentsize, shnum, shstrndx = struct.unpack_from(">HHH", data, 0x2E)
-    secs = [struct.unpack_from(">IIIIIIIIII", data, shoff + i * shentsize) for i in range(shnum)]
-    shstr = secs[shstrndx][4]
-    out = {}
-    for s in secs:  # whole sections too, for references through a local section symbol ("...rodata.0")
-        name = data[shstr + s[0]:data.index(b"\0", shstr + s[0])].decode(errors="replace")
-        if name and s[5] and s[1] in (1, 8):  # PROGBITS / NOBITS
-            out.setdefault("section:" + name, (None if s[1] == 8 else data[s[4]:s[4] + s[5]], 0, s[5]))
-    for s in secs:
-        if s[1] != 2:  # SHT_SYMTAB
-            continue
-        strtab = secs[s[6]]
-        for off in range(s[4], s[4] + s[5], 16):
-            name_i, value, size, info, other, shndx = struct.unpack_from(">IIIBBH", data, off)
-            if shndx == 0 or shndx >= 0xFF00 or size == 0 or (info & 0xF) != 1:  # defined objects only
+class Obj:
+    """The symbols, sections and data relocations of one ELF32 big-endian relocatable object."""
+
+    def __init__(self, path):
+        data = self.data = Path(path).read_bytes()
+        shoff, = struct.unpack_from(">I", data, 0x20)
+        shentsize, shnum, shstrndx = struct.unpack_from(">HHH", data, 0x2E)
+        secs = [struct.unpack_from(">IIIIIIIIII", data, shoff + i * shentsize) for i in range(shnum)]
+        cstr = lambda base, i: data[base + i:data.index(b"\0", base + i)].decode(errors="replace")
+        self.secs = [{"name": cstr(secs[shstrndx][4], s[0]), "type": s[1], "off": s[4], "size": s[5]} for s in secs]
+        self.syms = []   # by index: (name, section index, value, size, type)
+        self.by_name = {}
+        for s in secs:
+            if s[1] != 2:  # SHT_SYMTAB
                 continue
-            name = data[strtab[4] + name_i:data.index(b"\0", strtab[4] + name_i)].decode(errors="replace")
-            sec = secs[shndx]
-            body = None if sec[1] == 8 else data[sec[4]:sec[4] + sec[5]]  # SHT_NOBITS: zeros
-            out[name] = (body, value, size)
-    return out
+            for off in range(s[4], s[4] + s[5], 16):
+                name_i, value, size, info, _, shndx = struct.unpack_from(">IIIBBH", data, off)
+                name = cstr(secs[s[6]][4], name_i)
+                self.syms.append((name, shndx, value, size, info & 0xF))
+                if name and 0 < shndx < 0xFF00:
+                    self.by_name.setdefault(name, (shndx, value, size, info & 0xF))
+        self.relocs = {}  # section index -> {offset: (symbol index, addend)}
+        for s in secs:
+            if s[1] == 4:  # SHT_RELA
+                tgt = self.relocs.setdefault(s[7], {})
+                for off in range(s[4], s[4] + s[5], 12):
+                    r_off, r_info, addend = struct.unpack_from(">IIi", data, off)
+                    tgt[r_off] = (r_info >> 8, addend)
+
+    def section_named(self, name):
+        return next((i for i, s in enumerate(self.secs) if s["name"] == name), None)
+
+    def read(self, shndx, off, n):
+        s = self.secs[shndx]
+        if s["type"] == 8:  # NOBITS
+            return b"\0" * n
+        return self.data[s["off"] + off:s["off"] + min(off + n, s["size"])]
 
 
 class Data:
-    """Reads what a symbol (plus an offset) holds, from our object first, then the original's."""
+    """Resolves a reference (symbol + offset, read as `kind`) to a key that means the same in both objects."""
 
     def __init__(self, own, other):
         self.own, self.other = own, other
 
-    def read(self, name, off=0, n=None):
+    def locate(self, name):
+        """(object, section index, value, size) for a symbol, ours first; section symbols by section name."""
         if name.startswith("..."):  # objdiff's name for a section symbol: ".." + section name + "." + index
-            e = self.own.get("section:" + name[2:].rsplit(".", 1)[0])
-            if e is None:
-                return None
-            body, value, size = e
-            n = n or 32
-            return b"\0" * n if body is None else body[off:off + n]
-        e = self.own.get(name) or self.other.get(name)
-        if e is None:
-            return None
-        body, value, size = e
-        n = n or (size - off if off < size else 32)  # past the symbol's end: whatever the block holds there
-        if body is None:
-            return b"\0" * n
-        return body[value + off:value + off + n]
+            i = self.own.section_named(name[2:].rsplit(".", 1)[0])
+            return (self.own, i, 0, self.own.secs[i]["size"]) if i is not None else None
+        for o in (self.own, self.other):
+            e = o.by_name.get(name)
+            if e:
+                return (o, e[0], e[1], e[2])
+        return None
 
-    def key(self, name, off=0, kind=None):
-        """A symbol's contents as a comparable key; `kind` is how an instruction reads it (f32/f64/i4/...)."""
-        if kind:
-            b = self.read(name, off, {"f32": 4, "f64": 8, "i4": 4, "i2": 2, "i1": 1}[kind])
-            if b is None or len(b) < {"f32": 4, "f64": 8, "i4": 4, "i2": 2, "i1": 1}[kind]:
-                return f"{name}+{off:#x}"
-            if kind == "f32":
-                return f"f32:{struct.unpack('>f', b)[0]:g}"
-            if kind == "f64":
-                return f"f64:{struct.unpack('>d', b)[0]:g}"
-            return f"{kind}:{int.from_bytes(b, 'big'):#x}"
-        b = self.read(name, off)
-        return content_key(b) if b is not None else f"{name}+{off:#x}"
+    def key(self, name, off=0, kind=None, depth=0):
+        loc = self.locate(name)
+        ident = re.sub(r"\$\d+$", "", name) + (f"+{off:#x}" if off else "")
+        if loc is None:
+            return ident  # undefined on both sides: compare by name
+        o, shndx, value, size = loc
+        sec = o.secs[shndx]["name"]
+        if not sec.startswith(READ_ONLY) and not AUTO_NAME.match(name):
+            return "var " + ident  # a named variable: which one is what matters
+        # read-only: contents, including where its pointers point
+        n = KIND_SIZE[kind] if kind else (size - off if off < size else 32)
+        start = value + off
+        blob = o.read(shndx, start, n)
+        ptrs = []
+        for r_off in sorted(k for k in o.relocs.get(shndx, {}) if start <= k < start + len(blob)):
+            sym_i, addend = o.relocs[shndx][r_off]
+            tname, t_shndx, _, _, t_type = o.syms[sym_i]
+            t_sec = o.secs[t_shndx]["name"] if 0 < t_shndx < len(o.secs) else ""
+            if t_sec.startswith(".text") and (t_type == 3 or AUTO_NAME.match(tname) or not tname or addend):
+                target = "code"  # a jump-table entry (function + offset) or a label; a function pointer keeps its name
+            elif t_type == 3 or AUTO_NAME.match(tname):  # an anonymous constant or string: its contents
+                if t_type == 3:
+                    tname = ".." + t_sec + ".0"
+                target = self.key(tname, addend, None, depth + 1) if depth < 1 else "data"
+            else:
+                target = re.sub(r"\$\d+$", "", tname) + (f"+{addend:#x}" if addend else "")
+            ptrs.append(target)
+        if ptrs and all(p == "code" for p in ptrs):
+            return f"table of {len(ptrs)} code pointers"
+        return typed_key(blob, kind) + (" -> [" + ", ".join(ptrs) + "]" if ptrs else "")
 
 
-def content_key(blob):
+def typed_key(blob, kind=None):
+    if kind == "f32" and len(blob) == 4:
+        v = struct.unpack(">f", blob)[0]
+        return f"f32:{v!r}" if v == v else f"f32:nan{blob.hex()}"
+    if kind == "f64" and len(blob) == 8:
+        v = struct.unpack(">d", blob)[0]
+        return f"f64:{v!r}" if v == v else f"f64:nan{blob.hex()}"
+    if kind and kind in KIND_SIZE:
+        return f"{kind}:{int.from_bytes(blob, 'big'):#x}"
     if not blob.strip(b"\0"):
-        return "zeros"
-    b = blob[:24]
-    if len(blob) in (4, 8) and not (b.rstrip(b"\0").isascii() and b[:1].isalpha()):
-        if len(blob) == 4:
-            return f"f32:{struct.unpack('>f', blob)[0]:g}"
-        return f"f64:{struct.unpack('>d', blob)[0]:g}"
-    s = b.split(b"\0")[0]
+        return "zeros"  # any length: pools of zeros are laid out differently
+    s = blob.split(b"\0")[0]
     if len(s) >= 3 and all(32 <= c < 127 for c in s):
         return f'str:"{s.decode()}"'
-    return "bytes:" + b.hex()
+    if len(blob) == 4:
+        return typed_key(blob, "f32")
+    if len(blob) == 8:
+        return typed_key(blob, "f64")
+    return f"bytes[{len(blob)}]:{blob[:12].hex()}..{hashlib.sha1(blob).hexdigest()[:8]}"
 
 
 # --- instruction tokens --------------------------------------------------------------------------
@@ -135,83 +184,144 @@ def rlw_mask(mb, me):
 
 
 def rlw(op, n):
-    """(sh, mb, me) for rlwinm and its simplified mnemonics, from their numeric args."""
-    if op.startswith("rlwinm"):
+    """(sh, mb, me) for rlwinm/rlwimi and their simplified mnemonics, from their numeric args."""
+    op = op.rstrip(".")
+    if op in ("rlwinm", "rlwimi") and len(n) >= 3:
         return n[0], n[1], n[2]
+    if not n:
+        return None
     a = n[0]
     b = n[1] if len(n) > 1 else 0
     return {"slwi": (a, 0, 31 - a), "srwi": ((32 - a) % 32, a, 31), "clrlwi": (0, a, 31),
             "clrrwi": (0, 0, 31 - a), "rotlwi": (a, 0, 31), "rotrwi": ((32 - a) % 32, 0, 31),
-            "extrwi": ((b + a) % 32, 32 - a, 31), "extlwi": (b, 0, a - 1),
-            "clrlslwi": (b, a - b, 31 - b)}.get(op.rstrip("."))
+            "extrwi": ((b + a) % 32, 32 - a, 31), "extlwi": (b, 0, a - 1), "clrlslwi": (b, a - b, 31 - b),
+            "inslwi": ((32 - b) % 32, b, b + a - 1), "insrwi": ((32 - (b + a)) % 32, b, b + a - 1)}.get(op)
 
 
-LOAD_KIND = {"lfs": "f32", "lfsu": "f32", "lfd": "f64", "lfdu": "f64", "lwz": "i4", "lwzu": "i4", "lha": "i2",
-             "lhz": "i2", "lbz": "i1", "stfs": "f32", "stfd": "f64", "stw": "i4", "sth": "i2", "stb": "i1"}
+def contiguous(m):
+    """(mb, me) if m is one run of ones in IBM numbering (possibly wrapping), else None."""
+    for mb in range(32):
+        for me in range(32):
+            if rlw_mask(mb, me) == m:
+                return mb, me
+    return None
+
+
+MEM = re.compile(r"^(l|st)(w|h|b|f[sd])(a|z)?(u)?(x)?$")
+LOAD_KIND = {("w", None): "i4", ("h", "a"): "s2", ("h", "z"): "u2", ("b", "z"): "u1", ("fs", None): "f32",
+             ("fd", None): "f64", ("h", None): "u2", ("b", None): "u1", ("w", "z"): "i4"}
+
+
+def decode(ins):
+    parts = ins["parts"]
+    op = parts[0]["opcode"]["mnemonic"]
+    args = [p["arg"] for p in parts[1:] if "arg" in p]
+    nums = [int(a.get("signed", a.get("unsigned"))) for a in args if "signed" in a or "unsigned" in a]
+    nums += [int(a["opaque"]) for a in args if a.get("opaque", "").isdigit()]  # rlwinm's sh/mb/me come as text
+    regs = [a["opaque"] for a in args if "opaque" in a and not a["opaque"].isdigit()]
+    return op, nums, regs
+
+
+def written(op, regs):
+    """Registers an instruction writes (general-purpose ones; enough for tracking data addresses)."""
+    if op in ("lmw",) and regs:
+        return [f"r{i}" for i in range(int(regs[0][1:]), 32)]
+    w = []
+    if regs and not op.startswith(NO_DEST) and not op.startswith("psq_st"):
+        w.append(regs[0])
+    m = MEM.match(op)
+    if m and m.group(4) and len(regs) >= 2:  # update form also writes its base
+        w.append(regs[1] if m.group(5) else regs[-1])
+    return w
 
 
 def tokens(sym, data):
-    """Meaning-bearing tokens of one function. `data` resolves referenced data to its contents."""
+    """Meaning-bearing tokens of one function. `data` resolves referenced data."""
+    rows = [r["instruction"] for r in sym.get("instructions", []) if r.get("instruction")]
+    targets = {int(i["branch_dest"]) for i in rows if "branch_dest" in i}
+    writes = Counter()
+    for ins in rows:
+        op, _, regs = decode(ins)
+        if op.startswith("l") and regs[-1:] == ["r1"]:
+            continue  # restoring a saved register from the stack isn't a new value for this count
+        writes.update(written(op, regs))
     out = Counter()
     base = {}  # register -> (symbol, offset) while it holds a data address
-    for row in sym.get("instructions", []):
-        ins = row.get("instruction")
-        if not ins:
-            continue
-        parts = ins["parts"]
-        op = parts[0]["opcode"]["mnemonic"]
-        args = [p["arg"] for p in parts[1:] if "arg" in p]
+    for ins in rows:
+        op, nums, regs = decode(ins)
         text = ins["formatted"]
-        nums = [int(a.get("signed", a.get("unsigned"))) for a in args if "signed" in a or "unsigned" in a]
-        nums += [int(a["opaque"]) for a in args if a.get("opaque", "").isdigit()]  # rlwinm's sh/mb/me
-        regs = [a["opaque"] for a in args if "opaque" in a and not a["opaque"].isdigit()]
+        if int(ins.get("address", -1)) in targets:  # a join point: keep only bases that can't have been reassigned
+            base = {r: v for r, v in base.items() if writes[r] <= 1}
         m = re.search(r"([\w@$.]+)@(ha|h|l|sda21|sda2i16)\b", text)
         reloc, rkind = (m.group(1), m.group(2)) if m else (None, None)
-        dest = regs[0] if regs and not op.startswith(("st", "cmp", "fcmp", "b", "mt")) else None
+        wr = written(op, regs)
 
-        if op == "bl" or (op == "b" and "relocation" in ins):
-            out[("call", text.split()[-1])] += 1
-            for r in [r for r in base if r in VOLATILE]:
-                del base[r]  # a call clobbers the volatile registers
+        if op in ("bl", "bctrl", "blrl") or (op == "b" and "relocation" in ins):
+            if op == "bl":
+                out[("call", text.split()[-1])] += 1
+            elif op == "b":
+                out[("tail", text.split()[-1])] += 1
+            else:
+                out[("call", "<indirect>")] += 1
+            base = {r: v for r, v in base.items() if r not in VOLATILE}  # a call clobbers the volatile registers
             continue
-        mem = re.match(r"^(l|st)(w|h|b|f[sd])(a|z)?(u)?(x)?$", op)
-        if mem and not mem.group(5) and len(nums) == 1 and len(regs) >= 2 and not reloc:
-            b = regs[-1]
-            if b in base:  # a load/store through a data address: compare what it reads
-                sname, soff = base[b]
-                out[("ref", data.key(sname, soff + nums[0], LOAD_KIND.get(op.rstrip("u"))))] += 1
-            elif b != "r1":
+
+        mem = MEM.match(op)
+        if mem or op.startswith("psq_") or op in ("lmw", "stmw"):
+            load = op.startswith(("l", "psq_l"))
+            role = "load" if load else "store"
+            if mem:
                 width = {"w": 4, "h": 2, "b": 1, "fs": 4, "fd": 8}[mem.group(2)]
-                kind = "s" if mem.group(1) == "l" and mem.group(3) == "a" else ""
-                out[("mem", f"{'ld' if mem.group(1) == 'l' else 'st'}{width}{kind} {nums[0]:#x}")] += 1
-            if dest and mem.group(1) == "l":
-                base.pop(dest, None)
+                kind = LOAD_KIND.get((mem.group(2), mem.group(3))) if load else \
+                    {"w": "i4", "h": "u2", "b": "u1", "fs": "f32", "fd": "f64"}[mem.group(2)]
+                sign = "s" if load and mem.group(3) == "a" else ""
+                desc = f"{width}{sign}"
+            else:
+                kind, desc = None, op
+            b_reg = regs[1] if (mem and mem.group(5)) else (regs[-1] if len(regs) >= 2 else None)
+            if reloc:  # lfs f1, x@sda21 / lwz r3, x@l(r4)
+                out[(role, data.key(reloc, 0, kind))] += 1
+            elif mem and mem.group(5):  # indexed: base + register
+                if b_reg in base:
+                    out[(role, f"{desc} [{data.key(base[b_reg][0], base[b_reg][1])} + index]")] += 1
+                else:
+                    out[(role, f"{desc} [index]")] += 1
+            elif b_reg in base and nums:
+                sname, soff = base[b_reg]
+                out[(role, data.key(sname, soff + nums[0], kind))] += 1
+            elif b_reg and b_reg != "r1" and nums:
+                extra = f" w{nums[1]} q{nums[2]}" if op.startswith("psq_") and len(nums) >= 3 else ""
+                out[(role, f"{desc} {nums[0]:#x}{extra}")] += 1
+            if mem and mem.group(4) and b_reg in base and nums:  # update form: the base moves
+                base[b_reg] = (base[b_reg][0], base[b_reg][1] + nums[0])
+                wr = [r for r in wr if r != b_reg]
+            for r in wr:
+                base.pop(r, None)
             continue
+
         if reloc:
-            if rkind == "ha" or rkind == "h":
-                base[dest] = (reloc, 0)
+            if rkind in ("ha", "h"):
+                base[regs[0]] = (reloc, 0)
                 continue
             if rkind == "l" and op in ("addi", "ori"):
-                base[dest] = (reloc, 0)
-                out[("ref", data.key(reloc))] += 1
+                base[regs[0]] = (reloc, 0)
+                out[("addr", data.key(reloc))] += 1
                 continue
-            if mem:  # lfs f1, x@sda21 / lwz r3, x@l(r4)
-                out[("ref", data.key(reloc, 0, LOAD_KIND.get(op.rstrip("u"))))] += 1
-            else:
-                out[("ref", data.key(reloc))] += 1
-            if dest:
-                base.pop(dest, None)
+            out[("addr", data.key(reloc))] += 1
+            for r in wr:
+                base.pop(r, None)
             continue
-        if op == "addi" and len(regs) >= 2 and regs[1] in base and nums:  # address of something inside a block
+        if op in ("addi", "subi") and len(regs) >= 2 and regs[1] in base and nums:
             sname, soff = base[regs[1]]
-            base[dest] = (sname, soff + nums[-1])
-            out[("ref", data.key(sname, soff + nums[-1]))] += 1
+            soff += nums[-1] if op == "addi" else -nums[-1]
+            base[regs[0]] = (sname, soff)
+            out[("addr", data.key(sname, soff))] += 1
             continue
         if op == "mr" and len(regs) == 2 and regs[1] in base:
-            base[dest] = base[regs[1]]
+            base[regs[0]] = base[regs[1]]
             continue
-        if dest:
-            base.pop(dest, None)
+        for r in wr:
+            base.pop(r, None)
 
         if op in CMP_OPS:
             out[("cmp", CMP_OPS[op] + (f" {nums[-1]:#x}" if op.endswith("i") and nums else ""))] += 1
@@ -221,41 +331,58 @@ def tokens(sym, data):
             continue
         if op.rstrip(".") in OPS:
             out[("op", op.rstrip("."))] += 1
+        if op in ("andi.", "andis.") and nums:
+            v = (nums[-1] & 0xFFFF) << (16 if op == "andis." else 0)
+            c = contiguous(v) if v else None
+            if c:  # the same test rlwinm. would do; the compiler picks either
+                out[("mask", f"{v:#010x}.")] += 1
+            else:
+                out[("logic", f"and. {v:#x}")] += 1
+            continue
         if op in IMM_OPS and nums:
             if op in ("addi", "subi", "addic", "subic") and regs[1:2] == ["r1"]:
-                continue  # stack address
+                continue  # a stack address
             v = nums[-1]
             if op in ("subi", "subic", "subic.", "subis"):
                 v = -v
-            if op in ("lis", "addis", "subis", "oris", "xoris", "andis."):
+            if op in ("lis", "addis", "subis", "oris", "xoris"):
                 v = (v & 0xFFFF) << 16
-            logic = op in ("ori", "oris", "xori", "xoris", "andi.", "andis.")
-            hexy = logic or op == "lis"
-            out[("logic" if logic else "imm", f"{v & 0xFFFFFFFF:#x}" if hexy else str(v))] += 1
+            logic = op in ("ori", "oris", "xori", "xoris")
+            if logic:
+                out[("logic", f"{'xor' if op.startswith('x') else 'or'} {v & 0xFFFFFFFF:#x}")] += 1
+            else:
+                out[("imm", f"{v & 0xFFFFFFFF:#x}" if op == "lis" else str(v))] += 1
             continue
-        if op.startswith(("rlwinm", "slwi", "srwi", "clrlwi", "clrrwi", "rotlwi", "rotrwi", "extrwi", "extlwi",
-                          "clrlslwi")) and nums:
-            r = rlw(op, nums)
-            if r:
-                sh, mb, me = r
-                out[("mask", f"{rlw_mask(mb, me):#010x}" + (f" rot{sh}" if sh else ""))] += 1
+        if op.rstrip(".") in ("rlwnm", "rotlw") and nums:
+            mb, me = (nums[-2], nums[-1]) if op.startswith("rlwnm") else (0, 31)
+            out[("mask", f"{rlw_mask(mb, me):#010x} rot-by-register" + ("." if op.endswith(".") else ""))] += 1
+            continue
+        r = rlw(op, nums)
+        if r and op.rstrip(".") in ("rlwinm", "rlwimi", "slwi", "srwi", "clrlwi", "clrrwi", "rotlwi", "rotrwi",
+                                    "extrwi", "extlwi", "clrlslwi", "inslwi", "insrwi"):
+            sh, mb, me = r
+            kind = "insert" if op.rstrip(".") in ("rlwimi", "inslwi", "insrwi") else "mask"
+            out[(kind, f"{rlw_mask(mb, me):#010x}" + (f" rot{sh}" if sh else "") + ("." if op.endswith(".") else ""))] += 1
     return out
 
 
 # --- driver --------------------------------------------------------------------------------------
 
 def run_objdiff(args):
-    tmp = ROOT / "build" / "_semdiff.json"
-    r = subprocess.run([str(OBJDIFF), "diff", *args, "-o", str(tmp), "--format", "json"], capture_output=True,
-                       text=True, cwd=ROOT)
-    if r.returncode:
-        sys.exit("objdiff-cli failed: " + r.stderr[-1000:])
-    return json.loads(tmp.read_text())
+    fd, tmp = tempfile.mkstemp(prefix="semdiff_", suffix=".json", dir=ROOT / "build")
+    os.close(fd)
+    try:
+        r = subprocess.run([str(OBJDIFF), "diff", *args, "-o", tmp, "--format", "json"], capture_output=True,
+                           text=True, cwd=ROOT)
+        if r.returncode:
+            sys.exit("objdiff-cli failed: " + r.stderr[-1000:])
+        return json.loads(Path(tmp).read_text())
+    finally:
+        os.unlink(tmp)
 
 
 def compare(orig_o, ours_o, diff, funcs=None, include_matched=False):
-    orig_data, ours_data = elf_symbols(orig_o), elf_symbols(ours_o)
-
+    orig, ours = Obj(orig_o), Obj(ours_o)
     left = {s["name"]: s for s in diff["left"]["symbols"] if s.get("kind") == "SYMBOL_FUNCTION"}
     right = {s["name"]: s for s in diff["right"]["symbols"] if s.get("kind") == "SYMBOL_FUNCTION"}
     results = []
@@ -263,12 +390,10 @@ def compare(orig_o, ours_o, diff, funcs=None, include_matched=False):
         if name not in left or name not in right:
             continue
         pct = right[name].get("match_percent")
-        if pct is None:
+        if pct is None or (pct >= 100 and not include_matched):
             continue
-        if pct >= 100 and not include_matched:
-            continue
-        a = tokens(left[name], Data(orig_data, ours_data))
-        b = tokens(right[name], Data(ours_data, orig_data))
+        a = tokens(left[name], Data(orig, ours))
+        b = tokens(right[name], Data(ours, orig))
         missing, extra = [], []
         for k in sorted(set(a) | set(b)):
             na, nb = a[k], b[k]
@@ -307,7 +432,7 @@ def main():
             print(f"    original only: {t}")
         for t in r["extra"]:
             print(f"    ours only:     {t}")
-    print(f"{len(flagged)} of {len(results)} functions flagged")
+    print(f"{len(flagged)} of {len(results)} functions flagged (no flags is not proof a function is right)")
 
 
 if __name__ == "__main__":

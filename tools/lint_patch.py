@@ -31,7 +31,7 @@ lines = text.splitlines()
 def definitions(text):
     """Function definitions: name -> (start line, body text)."""
     funcs = {}
-    for m in re.finditer(r"^(?:USER_FUNC\(\s*(\w+)\s*\)|[A-Za-z_][\w \*]*?\b(\w+)\s*\([^;{)]*\))\s*\{", text,
+    for m in re.finditer(r"^(?:(?:static\s+)?USER_FUNC\(\s*(\w+)\s*\)|[A-Za-z_][\w \*]*?\b(\w+)\s*\([^;{)]*\))\s*\{", text,
                          re.M):
         name, start, depth, i = m.group(1) or m.group(2), m.end(), 1, m.end()
         while depth and i < len(text):

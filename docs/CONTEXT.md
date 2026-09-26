@@ -32,6 +32,11 @@ anything worth keeping into a chapter here.
 - Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
 - Sessions don't message each other for now (Isaac, Sep 26): the orchestrator runs reviews itself or Isaac
   starts them. Next session: see "Ideas for wave 6" at the end.
+- **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** `ci.py`, the ratchet, `lint_patch.py`,
+  `semdiff.py`, `label_partials.py`, `autolink.py` and `merge_agent.sh` were all written quickly by models, and
+  several have already had silent blind spots. Rare or subtle ones will surface only much later (linking whole
+  files, the RELs, the hard tail). When a result surprises you, suspect the tool first. See the chapter "Our
+  tools will have bugs".
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 
@@ -755,3 +760,56 @@ flags; a case passes if the expected token is flagged before and gone after.
   partials were never reviewed for logic. A backlog for a review or finisher pass.
 
 Add a case to the back-test whenever a review finds a bug in a partial function.
+
+## Our tools will have bugs, and some will only show up late (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+**Assume it.** Every tool in `tools/` was written fast, by models, against the cases in front of us. The ones
+found so far were silent, not crashes, and each let things through for a while:
+- `label_partials.py` never saw `USER_FUNC(name)` definitions, counted every "extra" instruction twice, and
+  swapped the function name and text of every `--note` (so no note was ever written).
+- `lint_patch.py`'s STUB and UNLABELLED checks never saw `USER_FUNC(name)` (event functions) through wave 5,
+  and then missed `static USER_FUNC(name)`.
+- `semdiff.py`'s first version read no rlwinm masks at all (objdiff gives their operands as text), and its
+  Codex review found 13 more issues (below).
+These are the easy ones, found because a reviewer looked. The rare ones will appear when the project reaches
+situations nobody has tested: whole files linking, data and scripts, the area modules (RELs), the last hard
+functions, a new compiler flag, a file layout objdiff reports differently.
+
+**What to do about it:**
+- **The build's checksums are the only oracle that can't be wrong in our favour.** A linked file hashing to
+  `build.sha1` is proof. Everything else (scores, the ratchet, lint, semdiff, labels) is a tool that can have a
+  blind spot. Weigh conclusions that rest on them accordingly.
+- **When something is surprising, suspect the tool before the code or the agent.** A clean lint on a file
+  that feels wrong, a score that doesn't move, a check that never fires.
+- **Every tool gets a back-test on real past cases** (like `tools/semdiff_backtest.py`), and a new case whenever
+  a bug is found in or by it.
+- **When a tool bug is found, ask what it let through before now,** and re-run the fixed tool over earlier
+  waves. E.g. the USER_FUNC blind spot means waves 1-5's event functions were never STUB- or
+  UNLABELLED-checked.
+- **Tool changes get reviewed like game code**, and each bug found in a tool goes in this ledger with what it
+  may have let through.
+- **No flag is not evidence of correctness.** Tools print that where it matters (`semdiff` does).
+
+## `semdiff.py` after its Codex review (2026-09-26, Claude Opus 5.5; review GPT-5.6 Sol)
+
+Codex reviewed `05871ba` (13 findings, 3 critical). Fixed:
+- loads and stores now distinguished, with signedness (`lha` vs `lhz`); stores counted, since a missing store
+  is a missing operation;
+- data resolved by full contents, including ELF relocations (a pointer table now says what it points to, so
+  the red and blue string tables in `evt_mobj` no longer compare equal); exact float values; no truncation;
+- named writable variables compared by name and offset, so the wrong global shows up; made-up names (`@N`,
+  `jumptable_`, `float_`, ...) by contents, since agents often redeclare the original's constants as globals;
+  jump-table entries reduced to "code";
+- indexed, `lmw`/`stmw` and paired-single accesses; update forms move the tracked base; `subi` on a base;
+  `bctrl`/`blrl` counted as indirect calls; tail calls (`b`) separate from calls; `rlwimi` and `rlwnm`;
+  the record bit (`rlwinm.` is a test); contiguous `andi.` treated as the mask it is;
+- a tracked data address survives a branch target only if its register is assigned once in the function;
+- a unique temp file per run; `static USER_FUNC(name)` in `lint_patch.py` and `label_partials.py`;
+- the back-test checks `config/` is unchanged since each case's commit (it borrows the current split) and
+  includes the hold-out cases as before-only cases.
+Documented as limits, not fixed: branch conditions (layout flips them), which registers a compare reads,
+presence-only comparison of constants and loads (a missing second use isn't caught).
+
+After the fixes: back-test 24 of 24 pass (17 fixed-bug cases, 7 before-only), 4 known limits; 17 of the 79
+reviewer-approved partial functions flagged, nearly all with real code differences; 505 of 1,025 partial
+functions flagged across all AI-era files.

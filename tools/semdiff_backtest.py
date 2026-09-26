@@ -8,7 +8,9 @@
 Each case names a function, the commit before its fix (bug present) and the fix commit. For both commits the
 file is compiled as it was then (a scratch git worktree under build/semdiff_bt, with that commit's configure.py
 flags) and compared with the original object. A case passes when semdiff flags the expected token before the
-fix and no longer flags it after. Cases marked `limit` are bugs semdiff isn't expected to catch (control flow,
+fix and no longer flags it after (or, for a function that was removed instead of fixed, when it's flagged
+before). The token is one symptom chosen by hand: a pass shows semdiff sees the bug, not that the fixed function
+has no other differences. Cases marked `limit` are bugs semdiff isn't expected to catch (control flow,
 stack arguments, matched functions); they're run and reported so a change to semdiff that starts catching them
 shows up. Exit 1 if any expected detection fails.
 """
@@ -28,9 +30,9 @@ WT = ROOT / "build" / "semdiff_bt"
 # The token is matched as a substring of semdiff's "original only: ..." / "ours only: ..." lines.
 CASES = [
     # wave 4, fixed in b2a5087 and 16f68b2
-    ("event/evt_mobj", "evt_mobj_switch_red", "b2a5087^", "b2a5087", "original only: logic 0xa10000",
+    ("event/evt_mobj", "evt_mobj_switch_red", "b2a5087^", "b2a5087", "original only: logic or 0xa10000",
      "flag ORed 8 bits too far"),
-    ("event/evt_mobj", "evt_mobj_jumpstand_blue", "b2a5087^", "b2a5087", "original only: logic 0x200000", ""),
+    ("event/evt_mobj", "evt_mobj_jumpstand_blue", "b2a5087^", "b2a5087", "original only: logic or 0x200000", ""),
     ("event/evt_mario", "evt_koopa_hip_attack", "b2a5087^", "b2a5087", "original only: mask 0xfff0ffff",
      "clears bits 12-15 instead of 16-19"),
     ("koopa", "kpaFireMain", "b2a5087^", "b2a5087", "limit", "PSMTXConcat destination is a stack address"),
@@ -40,10 +42,10 @@ CASES = [
     ("party/party_motion", "party_motion_jump2", "d14958f^", "d14958f", "limit",
      "0.0f argument left in f1 by luck: same constant used elsewhere in the function"),
     # wave 5, fixed in 828803d, ccc4c8b and eea503a
-    ("battle/sac/sac_deka", "yuka_capture", "828803d^", "828803d", "ours only: logic 0x80000000",
+    ("battle/sac/sac_deka", "yuka_capture", "828803d^", "828803d", "ours only: logic xor 0x80000000",
      "tan() with no prototype: result read from r3 as an int"),
     ("battle/battle_audience_kinopio", "BattleAudienceCtrlProcessKinopioIntrude", "828803d^", "828803d",
-     "ours only: logic 0x80000000", "fabs() with no prototype: int result converted to double"),
+     "ours only: logic xor 0x80000000", "fabs() with no prototype: int result converted to double"),
     ("battle/battle_audience_kinopio", "BattleAudienceCtrlProcessKinopioIntrude", "eea503a^", "eea503a",
      "original only: op fabs", "fabs called as a function; the original uses the instruction"),
     ("mario/mario_motion", "marioLandOn", "ccc4c8b^", "ccc4c8b", "original only: mask 0x00100000",
@@ -63,7 +65,17 @@ CASES = [
      "ay <= by instead of >="),
     ("battle/sac/sac_genki", "main_object", "ccc4c8b^", "ccc4c8b", "limit", "missing case fall-through"),
     ("battle/battle_audience_kinopio", "BattleAudienceCtrlProcessKinopioIntrude", "eea503a^", "eea503a",
-     "original only: ref f64:450", "thresholds read from a zeroed stand-in array"),
+     "original only: load f64:450.0", "thresholds read from a zeroed stand-in array"),
+    # Held out while semdiff was first built (tokens chosen afterwards, from the wave 5 review's descriptions);
+    # from now on they're regression cases like the rest. Removed in ccc4c8b rather than fixed, so no "after".
+    ("battle/sac/sac_suki", "star_stone_attack", "ccc4c8b^", None, "original only: imm 2", "returns 2; ours void"),
+    ("battle/sac/sac_suki", "set_tev", "ccc4c8b^", None, "0xff", "alpha 0xFF in the wrong byte"),
+    ("battle/sac/sac_suki", "main_base", "ccc4c8b^", None, 'str:"SFX_BTL_SAC_SUKKIRI2"', "wrong SFX strings"),
+    ("battle/sac/sac_suki", "main_base", "ccc4c8b^", None, "original only: mask 0x00000f00", "mask 0xF00"),
+    ("battle/sac/sac_genki", "main_star1", "ccc4c8b^", None, "ours only: store", "writes the wrong fields"),
+    ("battle/sac/sac_genki", "main_weapon", "ccc4c8b^", None, "original only: call effHitEntry",
+     "hit resolution missing"),
+    ("party/party_yoshi", "L_getStick", "ccc4c8b^", None, "op extsb", "negate then truncate to s8 (not fixed)"),
 ]
 
 
@@ -120,7 +132,13 @@ def main():
     commits = {}
     for unit, _, bad, good, _, _ in CASES:
         commits.setdefault(bad, set()).add(unit)
-        commits.setdefault(good, set()).add(unit)
+        if good:
+            commits.setdefault(good, set()).add(unit)
+    # The worktree borrows the current build's split (config.json), generated headers and original objects, which
+    # is only valid if the split configuration hasn't changed since each commit.
+    for commit in commits:
+        if sh(["git", "diff", "--quiet", commit, "HEAD", "--", "config/"], check=False).returncode:
+            sys.exit(f"config/ changed between {commit} and HEAD: the borrowed split doesn't apply to that commit")
     objs = {}
     for commit, units in commits.items():
         for unit, path in build_at(commit, sorted(units)).items():
@@ -128,8 +146,14 @@ def main():
     passed = failed = 0
     for unit, func, bad, good, expect, note in CASES:
         pb, fb = flags(unit, objs[(bad, unit)], func)
-        pg, fg = flags(unit, objs[(good, unit)], func)
-        if expect == "limit":
+        pg, fg = flags(unit, objs[(good, unit)], func) if good else (None, [])
+        if good is None:
+            ok = any(expect in f for f in fb)
+            status = "PASS" if ok else "FAIL"
+            passed += ok
+            failed += not ok
+            detail = f"before fix: {'flagged' if ok else 'NOT flagged'} (no fix commit: function removed)"
+        elif expect == "limit":
             status = "limit"
             detail = "(not expected to be caught)"
         else:

@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 
-DEF = r"^(?:USER_FUNC\(\s*{name}\s*\)|[A-Za-z_][\w \*]*?\b{name}\s*\([^;{{)]*\))\s*\{{"
+DEF = r"^(?:(?:static\s+)?USER_FUNC\(\s*{name}\s*\)|[A-Za-z_][\w \*]*?\b{name}\s*\([^;{{)]*\))\s*\{{"
 
 
 def diff_summary(unit, func):
