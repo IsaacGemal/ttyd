@@ -562,3 +562,29 @@ Cheap now, expensive later, so do soon:
   just the agent's final file.
 - **Start the idioms file:** fold each wave's "compiler idioms" report sections into one shared file.
 - Keep fixing types in review and linking continuously, so those problems don't all arrive at the end.
+
+## The plan for the hard tail, finalized, and the agent brief (2026-09-25, Isaac + Claude Opus 5.5)
+
+Supersedes the "do soon" list in "Preparing for the hard tail". We have the real compiler (every check runs
+`mwcceppc.exe`), but not its insides, so the plan is to understand it from outside and keep the tail small.
+
+**Agents learn from past waves through `docs/AGENT_BRIEF.md`,** attached to every agent's prompt by the
+launcher. It holds the rules and every mistake that compiled correctly but was caught in review (calls relying
+on leftover registers, uninitialized variables, local declarations and struct copies that contradict headers,
+unneeded pragmas, how to read signedness from the asm). When a review finds a new kind of mistake, add it to
+the brief, and add a lint check where one is possible. The launcher's own prompt stays about the task.
+
+**In order:**
+1. **Now (small, compounding):**
+   - A **probe tool**: compile a C snippet with a given file's exact flags and print the asm, so an agent (or
+     the orchestrator) can run controlled experiments on the real compiler.
+   - A **per-file compiler-flag sweep** (wrong flags make functions look impossible).
+   - **Keep every attempt**: for functions that end below 100%, the best version reached and what was tried.
+   - An **idioms file**, folded from each wave's reports, and headers fixed as reports and reviews find
+     problems.
+2. **Around 60-80%:** set up decomp-permuter against this build (it supports MWCC; the tower can run it
+   overnight on the hardest near-misses) and fold in Melee's written knowledge of the compiler.
+3. **Throughout:** rerun the mwcc-rs comparison every few months (`scratch/mwcc_rs_test/compare.py`; on
+   2026-09-25 it compiled 14 of 124 TTYD files and reproduced 10 of 2,816 functions). Consider offering TTYD to
+   mwcc-rs as a reference project.
+4. **Only if the tail stalls:** a swarm project to reverse-engineer the 2.6 register allocator itself.
