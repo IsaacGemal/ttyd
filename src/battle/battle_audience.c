@@ -13,6 +13,52 @@ const char str_802F9578[] = "btl_msg_audience_puni_escape";
 const char str_802F9598[] = "btl_msg_audience_puni_meeting";
 const char str_802F95B8[] = "btl_msg_audience_pansy_sleep";
 const char str_802F95D8[] = "btl_msg_audience_heavybomb_dynamite";
+
+const f32 R_audience_delta_multiplier[] = {
+	8.0f, 11.0f, 14.0f, 17.0f, 20.0f, 23.0f, 26.0f, 29.0f, 32.0f, 35.0f, 38.0f, 41.0f, 44.0f,
+	47.0f, 50.0f, 53.0f, 56.0f, 59.0f, 62.0f, 65.0f, 68.0f, 71.0f, 74.0f, 77.0f, 80.0f, 83.0f,
+	86.0f, 89.0f, 92.0f, 95.0f, 98.0f, 101.0f, 104.0f, 107.0f, 110.0f, 113.0f, 116.0f, 119.0f,
+	122.0f, 125.0f, 128.0f, 131.0f, 134.0f, 137.0f, 140.0f, 143.0f, 146.0f, 149.0f, 152.0f, 155.0f,
+	158.0f, 161.0f, 164.0f, 167.0f, 170.0f, 173.0f, 176.0f, 179.0f, 182.0f, 185.0f, 188.0f, 191.0f,
+	194.0f, 197.0f, 200.0f,
+};
+
+const s32 R_num_audience_type_weights[] = { 20, 40, 20, 5, 3, 2, 1, 1, 1, 1, 1 };
+
+const Vec vec3_802f972c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9738 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
+const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
+const Vec vec3_802f975c = { -96.0f, 106.0f, 0.0f };
+const Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
+const f32 dat_802f9774[] = {
+	0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+	1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+	0.0f, 1.075f, 0.0f, 0.075f, 1.0f, 0.075f, 1.0f, 1.075f,
+	0.0f, 0.075f, 0.0f, 1.075f, 1.0f, 1.075f, 0.0f, 1.075f,
+};
+const Vec vec3_802f97f4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9800 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f980c = { 0.0f, 0.0f, -1.0f };
+const Vec vec3_802f9818 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9824 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9830 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802f983c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802f9848 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9854 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f9860 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f986c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802f9878 = { 0.0f, 0.0f, 0.0f };
+const s32 dat_802f9884[] = { 10000, 1000, 100, 10, 5, 2, 1, 1, 1, 1 };
+const s32 dat_802f98ac[] = { 1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1 };
+const s32 dat_802f98fc[] = { -1, 1, 0, 1, 1, 1, -1, 0, 1, 0, -1, -1, 0, -1, 1, -1 };
+const s32 dat_802f993c[] = {
+	0, 3, -1, 2, 0, 2, 1, 2, -2, 1, -1, 1, 0, 1, 1, 1, 2, 1, -3, 0, -2, 0, -1, 0, 1, 0, 2, 0, 3, 0, -2, -1,
+	-1, -1, 0, -1, 1, -1, 2, -1, -1, -2, 0, -2, 1, -2, 0, -3,
+};
+const f64 double_to_int_802f9a00 = 4503601774854144.0;
+const f64 double_to_int_mask_802f9a08 = 4503599627370496.0;
+
 const char str_802F9A10[] = "SFX_AUDIENCE_PAKU_EAT1";
 const char str_802F9A28[] = "SFX_AUDIENCE_BOMB_BURST1";
 const char str_802F9A44[] = "SFX_AUDIENCE_BOMB_READY1";
@@ -87,7 +133,7 @@ extern int sprintf(char* str, const char* format, ...);
 
 //local prototypes
 FileEntry* tplRead(const char* path);
-BOOL check_exe_phase_evt_status(s32 index, AudienceMemberType type);
+BOOL check_exe_phase_evt_status(s32 index, s32 type);
 void BattleAudienceSettingAudience(void);
 void BattleAudienceGuestTPLRead(s32 index, AudienceMemberType member, const char* tplName);
 void BattleAudienceCtrlProcess(void);
@@ -196,6 +242,8 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (77.73%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
+// dropped); the resulting liveness difference also shifts the loop registers.
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -220,7 +268,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j + 10;
-			if ((u8)BattleAudience_GetExist(index)) { //TODO: u8 needed?
+			if ((u8)BattleAudience_GetExist(index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountRight++;
@@ -232,7 +280,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j;
-			if ((u8)BattleAudience_GetExist(index)) { //TODO: u8 needed?
+			if ((u8)BattleAudience_GetExist(index) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountLeft++;
@@ -249,6 +297,7 @@ void BattleAudience_Init(void) {
 	BattleAudienceNumToTarget();
 }
 
+// NONMATCHING (94.29%): 2 missing, plus register differences.
 void BattleAudience_Main(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -283,6 +332,7 @@ void BattleAudience_ActInit(void) {
 	audience->flags &= ~0x1000;
 }
 
+// NONMATCHING (3.28%): 1 instruction differs, 263 missing, plus register differences.
 void BattleAudience_PerAct(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	pouchGetPtr();
@@ -303,17 +353,14 @@ BOOL BattleAudience_CheckReaction(void) {
 	return FALSE;
 }
 
-// NONMATCHING (97.55%): MWCC's value-range analysis truncates the `type` operand to a byte
-// (`clrlwi r0,r30,24` + `cmpw`) where the original compares the full 32-bit parameter (`cmpw r0,r30`).
-// No source form of the comparison (`(s32)type`, local temp, reversed operands) suppresses it.
-BOOL check_exe_phase_evt_status(s32 index, AudienceMemberType type) {
+BOOL check_exe_phase_evt_status(s32 index, s32 type) {
 	BattleAudienceMember* member;
 
 	member = BattleAudienceGetPtr(index);
 	if ((u8)BattleAudience_GetSysCtrl(index) == 0) {
 		return FALSE;
 	}
-	if (member->type != (s32)type) {
+	if ((s32)member->type != (s32)type) {
 		return FALSE;
 	}
 	if (member->status == 13) {
@@ -344,7 +391,7 @@ void BattleAudience_PerPhase(u32 value) {
 	if (value == 0x4000002 && !(audience->flags & 0x40000)) {
 		for (i = 0; i < 200; i++) {
 			member = BattleAudienceGetPtr(i);
-			if (BattleAudience_GetExist(i) && member->status == 7) {
+			if ((u8)BattleAudience_GetExist(i) == 1 && member->status == 7) {
 				itemId = member->itemId;
 				if (itemId != -1) {
 					BattleAudienceItemGetPtr(itemId)->flags = 0;
@@ -367,6 +414,7 @@ void BattleAudience_PerPhase(u32 value) {
 }
 
 //TODO: add evt support and then uncomment message scripts
+// NONMATCHING (13.15%): 21 instructions differ, 852 missing, 1 extra, plus register differences.
 BOOL BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -508,10 +556,13 @@ void BattleAudience_End(void) {
 	}
 }
 
+// NONMATCHING (0.15%): 658 missing.
 void BattleAudienceSettingAudience(void) {
 	//TODO: very long and terrible
 }
 
+// needs dont_inline: BattleAudience_Init must emit a call to this function, not inline it
+#pragma dont_inline on
 void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* path) {
 	char full_path[256];
 
@@ -522,12 +573,15 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 		audience->guestType[id] = member;
 	}
 }
+#pragma dont_inline reset
 
+// NONMATCHING (0.43%): 233 missing.
 void BattleAudienceCtrlProcess(void) {
 	//TODO: very long and terrible
 }
 
 #pragma dont_inline on
+// NONMATCHING (1.10%): 1 instruction differs, 125 missing.
 BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
 	return FALSE;
 }
@@ -551,58 +605,72 @@ void BattleAudienceSetThrowItemMax(void) {
 	*(s32*)((u8*)audience + 0x137F8) = 0;
 }
 
+// NONMATCHING (2.59%): 1 instruction differs, 52 missing.
 BattleUnit* BattleAudienceDetectTargetAll(void) {
 	return NULL;
 }
 
+// NONMATCHING (2.69%): 1 instruction differs, 50 missing.
 BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 	return NULL;
 }
 
+// NONMATCHING (0.17%): 597 missing.
 void BattleAudienceItemCtrlProcess(void) {
 
 }
 
+// NONMATCHING (0.29%): 348 missing.
 void BattleAudienceApSrcCtrlProcess(void) {
 
 }
 
+// NONMATCHING (0.97%): 1 instruction differs, 143 missing.
 BOOL BattleAudienceApSrcEntry(void) {
 	return FALSE;
 }
 
+// NONMATCHING (0.83%): 120 missing.
 void BattleAudienceWinCtrlProcess(void) {
 
 }
 
+// NONMATCHING (1.11%): 89 missing.
 void BattleAudienceGXInit(void) {
 
 }
 
+// NONMATCHING (0.83%): 120 missing.
 void BattleAudienceAnimProcess(void) {
 
 }
 
+// NONMATCHING (0.17%): 586 missing.
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.52%): 65 missing.
 void BattleAudienceDispItem(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.35%): 73 missing.
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.61%): 61 missing.
 void BattleAudienceDispWin(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.21%): 1 instruction differs, 114 missing.
 BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return FALSE;
 }
 
+// NONMATCHING (0.67%): 149 missing.
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 
 }
@@ -712,46 +780,47 @@ void BattleAudience_GetItemOn(s32* memberId, f32* x, f32* y, f32* z, ItemType* i
 	int i;
 
 	audience = BattleAudienceBaseGetPtr();
-	for (i = 0; i < 200; i++) {
-		member = BattleAudienceGetPtr(i); //TODO: get (0) out of loop and ++?
+	i = 0;
+	member = BattleAudienceGetPtr(0);
+	for (; i < 200; i++, member++) {
 		//TODO: invert this to multiple break; checks?
 		if ((member->flags & 1) && !(member->flags & 0x100) && !(member->flags & 2)) {
 			if (member->itemId != -1) {
 				item = BattleAudienceItemGetPtr(member->itemId);
 				if (item->state <= 4 || item->state == 7) {
-					break; //TODO: better way to handle this compare?
-				}
-				if (memberId) {
-					audience->mItemOnMemberId = i;
-					*memberId = i;
-				}
-				audience->mItemOnMemberPos.x = member->position.x;
-				audience->mItemOnMemberPos.y = member->position.y;
-				audience->mItemOnMemberPos.z = member->position.z + 3.0f;
-
-				if (x) {
-					*x = audience->mItemOnMemberPos.x;
-				}
-				if (y) {
-					*y = audience->mItemOnMemberPos.y;
-				}
-				if (z) {
-					*z = audience->mItemOnMemberPos.z;
-				}
-
-				if (itemType) {
-					if (member->itemId >= 0) {
-						*itemType = audience->items[member->itemId].mItemType;
+					if (memberId) {
+						audience->mItemOnMemberId = i;
+						*memberId = i;
 					}
-					else {
-						*itemType = ITEM_NULL;
+					audience->mItemOnMemberPos.x = member->position.x;
+					audience->mItemOnMemberPos.y = member->position.y;
+					audience->mItemOnMemberPos.z = member->position.z + 3.0f;
+
+					if (x) {
+						*x = audience->mItemOnMemberPos.x;
 					}
+					if (y) {
+						*y = audience->mItemOnMemberPos.y;
+					}
+					if (z) {
+						*z = audience->mItemOnMemberPos.z;
+					}
+
+					if (itemType) {
+						if (member->itemId < 0) {
+							*itemType = ITEM_NULL;
+						}
+						else {
+							*itemType = audience->items[member->itemId].mItemType;
+						}
+					}
+					//has to pass the 4 checks up top, otherwise we keep looking at all 200 members
+					return;
 				}
-				//has to pass the 4 checks up top, otherwise we keep looking at all 200 members
-				return;
 			}
 		}
 	}
+	*memberId = -1;
 }
 
 //might be inlined, 1 above has additional assignments
@@ -808,23 +877,25 @@ void BattleAudience_Attack(s32 index) {
 	BattleAudienceGetPtr(index)->flags |= 0x40;
 }
 
-// NONMATCHING (99.21%): only the f0/f1 register assignment of the dot product differs. The original
-// puts the y-difference in f1 and m94 in f0 (`fsubs f1,f1,f0`, `lfs f0,0x94`, `fmadds f1,f2,f1,f0`); MWCC
-// here puts them the other way and swaps the fmadds operands. Source permutations don't change it.
 BOOL BattleAudience_GetFront(s32 index) {
 	BattleAudienceMember* member;
 	CameraEntry* cam;
+	f32 dx, dy, dz;
 
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(index);
 	cam = camGetPtr(CAMERA_3D);
-	return !((cam->cameraAt.x - cam->cameraPos.x) * *(f32*)((u8*)member + 0x90) +
-	             (cam->cameraAt.y - cam->cameraPos.y) * *(f32*)((u8*)member + 0x94) +
-	             (cam->cameraAt.z - cam->cameraPos.z) * *(f32*)((u8*)member + 0x98) >=
+	dx = cam->cameraAt.x - cam->cameraPos.x;
+	dy = cam->cameraAt.y - cam->cameraPos.y;
+	dz = cam->cameraAt.z - cam->cameraPos.z;
+	return !(dx * *(f32*)((u8*)member + 0x90) +
+	         dy * *(f32*)((u8*)member + 0x94) +
+	         dz * *(f32*)((u8*)member + 0x98) >=
 	         float_0_8041e618);
 }
 
 #pragma dont_inline on
+// NONMATCHING (1.54%): 64 missing.
 void BattleAudience_ChangeStatus(s32 index, s32 status) {
 
 }
@@ -882,14 +953,31 @@ BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
 	if (audience->flags & 0x4000) {
 		return FALSE;
 	}
-	if (!BattleAudience_GetSysCtrl(index)) {
+	if (!(u8)BattleAudience_GetSysCtrl(index)) {
 		return FALSE;
 	}
 	if (member->flags & 0x200) {
 		return FALSE;
 	}
-	if (member->status == 13 || member->status == 17 || member->status == 18 ||
-			member->status == 14 || member->status == 15 || member->status == 21 || member->status == 22) {
+	if (member->status == 13) {
+		return FALSE;
+	}
+	if (member->status == 17) {
+		return FALSE;
+	}
+	if (member->status == 18) {
+		return FALSE;
+	}
+	if (member->status == 14) {
+		return FALSE;
+	}
+	if (member->status == 15) {
+		return FALSE;
+	}
+	if (member->status == 21) {
+		return FALSE;
+	}
+	if (member->status == 22) {
 		return FALSE;
 	}
 	return member->status != 12;
@@ -961,6 +1049,7 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 	}
 	return -1;
 }
+// NONMATCHING (1.09%): 1 instruction differs, 126 missing.
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	return 0;
 }
@@ -1102,6 +1191,8 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 
 
 //1:1
+// keep AddTargetNumSub out of AddTargetNum (original has a `bl`)
+#pragma dont_inline on
 void BattleAudienceAddTargetNumSub(f32 value) {
 	f32 subtract;
 	s32 skew;
@@ -1125,7 +1216,7 @@ void BattleAudienceAddTargetNumSub(f32 value) {
 		}
 		if (subtract > 0.0f) {
 			skew = (s32)(((audience->mTargetAudienceCount / audience->mAudienceDeltaMultiplier) - 1.0f) / 0.25f);
-			if (skew <= 1) {
+			if (skew >= 1) {
 				audience->mTargetAudienceCount += subtract / (skew + 1);
 				continue;
 			}
@@ -1141,6 +1232,45 @@ void BattleAudienceAddTargetNumSub(f32 value) {
 	}
 }
 
+void BattleAudienceAddTargetNum(f32 value, f32 delta) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+
+	audience->mAddedAudienceCount += delta;
+	if (audience->mAddedAudienceCount > 0.0f && value < 0.0f) {
+		audience->mAddedAudienceCount += value;
+		if (audience->mAddedAudienceCount < 0.0f) {
+			value = audience->mAddedAudienceCount;
+			audience->mAddedAudienceCount = 0.0f;
+		}
+		else {
+			value = 0.0f;
+		}
+	}
+	else if (audience->mAddedAudienceCount < 0.0f && value > 0.0f) {
+		audience->mAddedAudienceCount += value;
+		if (audience->mAddedAudienceCount > 0.0f) {
+			value = audience->mAddedAudienceCount;
+			audience->mAddedAudienceCount = 0.0f;
+		}
+		else {
+			value = 0.0f;
+		}
+	}
+	BattleAudienceAddTargetNumSub(value);
+	if (audience->mTargetAudienceCount < 0.0f) {
+		audience->mTargetAudienceCount = 0.0f;
+	}
+	if (audience->mTargetAudienceCount > (f32)audience->mMaxAudience) {
+		audience->mTargetAudienceCount = (f32)audience->mMaxAudience;
+	}
+	if (audience->mAddedAudienceCount < -1000.0f) {
+		audience->mAddedAudienceCount = -1000.0f;
+	}
+	if (audience->mAddedAudienceCount > 1000.0f) {
+		audience->mAddedAudienceCount = 1000.0f;
+	}
+}
+#pragma dont_inline reset
 
 
 
@@ -1154,11 +1284,14 @@ void BattleAudienceAddTargetNumSub(f32 value) {
 
 
 
+
+// NONMATCHING (0.82%): 121 missing.
 void BattleAudienceSoundMain(void) {
 
 }
 
 
+// NONMATCHING (1.12%): 88 missing.
 void BattleAudienceSoundNoiseAlways(void) {
 
 }
@@ -1373,6 +1506,25 @@ void BattleAudienceSoundGetInfo2(s32 index, Vec* pos) {
 	pos->x = member->position.x;
 	pos->y = member->position.y;
 	pos->z = member->position.z;
+}
+
+void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
+	s32 sum = a + b;
+
+	if (sum == 0) {
+		*c = 0;
+	}
+	else {
+		*c = (u8)(s32)(float_100_8041e64c + float_26_8041e650 * (f32)sum / float_200_8041e648);
+	}
+	if (b == 0 || sum == 0) {
+		d->x = float_250_8041e654;
+	}
+	else {
+		d->x = (f32)(u8)(s32)((f32)(a - b) * float_250_8041e654 / (f32)sum);
+	}
+	d->y = 0.0f;
+	d->z = 0.0f;
 }
 
 void BattleAudienceSoundSetVolAll(u8 a2, s32 a3) {
@@ -1691,6 +1843,8 @@ void BattleAudience_Case_ActionCommandBad(void* arg) {
 	audience->flags |= 0x20;
 }
 
+// NONMATCHING (91.10%): MWCC caches audience + 0x10000 in a third callee-saved register
+// (frame 0x20); the original recomputes addis r3,r31,1 at each access and only saves r30/r31.
 void BattleAudienceCheer(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	if (*(s32*)((u8*)audience + 0x137C4) > 0x320) {
@@ -1702,8 +1856,8 @@ void BattleAudienceCheer(s32 a) {
 		}
 		else {
 			audience->flags |= 2;
-			BattleAudienceJoy(a);
 		}
+		BattleAudienceJoy(a);
 		if (*(s32*)((u8*)audience + 0x137C4) != 0) {
 			BattleStatusWindowAPRecoveryOn();
 		}
@@ -1791,11 +1945,11 @@ void BattleAudienceSoundCallKind(s32 kind) {
 	l = BattleAudience_GetPPAudienceNum_L();
 	BattleAudienceSoundStop(8);
 	switch (kind) {
-	case 2:
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
-		break;
 	case 1:
 		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
+		break;
+	case 2:
+		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
 		break;
 	}
 	if (AUD_SOUND_ID(sound) != -1) {
@@ -1805,6 +1959,8 @@ void BattleAudienceSoundCallKind(s32 kind) {
 	}
 }
 
+// NONMATCHING (98.51%): logic matches; the vol=0/if(total!=0) region is laid out
+// beq-tail + fall-through compute instead of the original bne-compute; b-tail; compute.
 void BattleAudienceSoundHandBeat(void) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -1824,21 +1980,26 @@ void BattleAudienceSoundHandBeat(void) {
 		sound->mFadeoutTime = 0;
 		sound->mForceFadeLength = 0;
 		sound->mForceFadeTimer = 0;
+		vol = 0;
 		if (total != 0) {
 			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
-			psndSFX_vol(AUD_SOUND_ID(sound), vol);
-			sound->mCurrentBaseSfxVolume = vol;
-			sound->mBaseSfxVolume = vol;
 		}
+		else {
+			vol = 0;
+		}		psndSFX_vol(AUD_SOUND_ID(sound), vol);
+		sound->mCurrentBaseSfxVolume = vol;
+		sound->mBaseSfxVolume = vol;
 		sound->mVolumeMultiplier = 100;
 	}
 }
 
+// NONMATCHING (69.52%): loop body matches (mtctr/bdnz); the prologue computes the biased
+// base/count/i in a different order and the tail folds the final address differently.
 void BattleAudienceAddPhaseEvtList(s32 evtId) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 i = 0;
 	s32 count = *(s32*)((u8*)audience + 0x13904);
-	s32 i;
-	for (i = 0; i < count; i++) {
+	for (; i < count; i++) {
 		if (*(s32*)((u8*)audience + 0x138CC + i * 4) == evtId) {
 			return;
 		}
@@ -1905,7 +2066,7 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 	s32 l;
 	s32 total;
 	s32 vol;
-	char name[0x4c];
+	char name[0x3c];
 	BattleAudienceBaseGetPtr();
 	sound = BattleAudienceSoundGetPtr(1);
 	r = BattleAudience_GetPPAudienceNum_R();
@@ -1943,7 +2104,7 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 	s32 r;
 	s32 l;
 	s32 vol;
-	char name[0x44];
+	char name[0x34];
 	BattleAudienceBaseGetPtr();
 	sound = BattleAudienceSoundGetPtr(0);
 	r = BattleAudience_GetPPAudienceNum_R();
@@ -1989,13 +2150,15 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 	}
 }
 
+// NONMATCHING (94.63%): uses r26-r31 (frame 0x20) where the original uses r25-r31 (frame 0x30);
+// the compiler keeps one fewer value live across the BattleAudience_ChangeStatus calls.
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	BattleAudienceMember* member = BattleAudienceGetPtr(0);
 	s32 sum = a + b + c;
-	s32 i;
+	s32 i = 0;
+	BattleAudienceMember* member = BattleAudienceGetPtr(0);
 	s32 r;
-	for (i = 0; i < 200; i++, member++) {
+	for (; i < 200; i++, member++) {
 		if ((u8)BattleAudience_GetWaiting(i)) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
@@ -2028,6 +2191,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	}
 }
 
+// NONMATCHING (97.58%): 2 missing, plus register differences.
 void BattleAudienceJoy(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	switch (a) {

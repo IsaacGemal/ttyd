@@ -82,13 +82,13 @@ void party_motion_upstairs(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (92.24%): register allocation differs - original keeps party/attr/hit in r29/r30/r31,
+// NONMATCHING (93.99%): register allocation differs - original keeps party/attr/hit in r29/r30/r31,
 // mine only r30/r31 (attr not held in a callee-saved reg).
 void unk_8014ba3c(PartyEntry* party) {
-    Vec position = party->position;
-    f32 angle = *(f32*)((u8*)party + 0xF0);
     HitEntry* hit;
     s32 attr;
+    Vec position = party->position;
+    f32 angle = *(f32*)((u8*)party + 0xF0);
 
     hit = partySearchHead(party, &position, &angle, party->field_10C);
     if (hit != NULL) {
@@ -99,7 +99,6 @@ void unk_8014ba3c(PartyEntry* party) {
     }
     party->flags = (party->flags & ~0x80);
     hit = partySearchGround(party, 15.0f, -15.0f);
-    attr = 0;
     if (hit != NULL) {
         attr = hitGetAttr(hit);
         if (attr & 0x200) {
@@ -477,7 +476,6 @@ USER_FUNC(evt_snd_sfxon_3d_ex) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.98%): switch dispatch tree compares cases in the other order (orig 1 then 3).
 void unk_8014bbc8(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
@@ -522,6 +520,11 @@ void unk_8014bbc8(PartyEntry* party) {
                         party->useMotionId = 0;
                     }
                     break;
+#ifdef MUST_MATCH
+                // `case 0` is redundant with `default` but is what makes mwcc
+                // build the 3-entry {0,1,2} search tree the original has.
+                case 0:
+#endif
                 default:
                     partyChgPose(party, "PCH_A2_1");
                     party->useMotionId = 1;
@@ -533,8 +536,9 @@ void unk_8014bbc8(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (96.44%): hitGetAttr boolean materialisation uses a callee-saved reg in mine;
-// original keeps it in r0. Everything else matches.
+// NONMATCHING (96.44%): the `hitGetAttr` boolean materialisation lands in r30
+// in mine; the original keeps it in r0 with a dead `li r0,0` after the
+// short-circuit branch. Logic and remaining instructions match.
 void party_motion_damage(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 x, y, z;
@@ -723,11 +727,13 @@ s32 party_motion_fall(PartyEntry* party) {
     return 3;
 }
 
-// NONMATCHING (86.63%): register allocation (orig party/mario/hit = r31/r29/r30),
-// flag-condition branch shape, and one fsubs dest register differ.
+// The `f3 = 0.1f` reloads in each arm and the repeated `f2 = mario->position.y`
+// are needed to reproduce the original scheduler. Remaining: the final
+// `position.y += f2 * 0.05f` emits `fmadds f0,f1,f2,f0`, not `f0,f2,f1` (operand order).
+// NONMATCHING (99.93%): operand order of the final fmadds.
 void unk_8014b824(PartyEntry* party) {
-    HitEntry* hit;
     MarioWork* mario = party->playerPtr;
+    HitEntry* hit;
     s32 flag;
     s32 attr;
     f32 f1, f2, f3, f0;
@@ -748,28 +754,31 @@ void unk_8014b824(PartyEntry* party) {
             party->flags = (party->flags & ~0x80);
         }
     }
-    if (mario->airTimer == 0 || mario->baseSpeed != 0.0f) {
-        if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20
-            || mario->currMotionId == 0x10 || mario->currMotionId == 0x11) {
+    if (party->playerPtr->airTimer != 0 && party->playerPtr->baseSpeed == 0.0f) {
+        flag = 0;
+    } else {
+        if (party->playerPtr->currMotionId == 0x1F || party->playerPtr->currMotionId == 0x20
+            || party->playerPtr->currMotionId == 0x10 || party->playerPtr->currMotionId == 0x11) {
             flag = 0;
         } else {
             flag = 1;
         }
-    } else {
-        flag = 0;
     }
     if (flag != 0) {
-        f1 = party->field_E4;
         f3 = 0.05f;
         if (hit != NULL) {
-            f3 = 0.1f;
-            if (mario->position.y > f1) {
-                f2 = mario->position.y;
+            f0 = mario->position.y;
+            f1 = party->field_E4;
+            if (f0 > f1) {
+                f2 = f0;
+                f3 = 0.1f;
             } else {
                 f2 = f1;
+                f3 = 0.1f;
             }
             if (party->position.y < f1) {
                 f2 = 18.5f + f1;
+                f3 = 0.1f;
             }
         } else {
             f2 = mario->position.y;
@@ -786,10 +795,12 @@ void unk_8014b824(PartyEntry* party) {
             party->position.y += f1 * f3;
         }
     } else {
-        f1 = party->field_E4;
         if (hit != NULL) {
             f2 = mario->position.y;
-            if (mario->position.y <= f1) {
+            f1 = party->field_E4;
+            if (f2 > f1) {
+                f2 = mario->position.y;
+            } else {
                 f2 = f1;
             }
             if (party->position.y < f1) {
@@ -812,8 +823,6 @@ void unk_8014b824(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (98.50%): remaining diff is float register allocation in the
-// ratio/diff/frames block (orig ratio in f1, mine f2) and one mr r3,r30 position.
 void party_motion_jump2(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 d;
@@ -843,7 +852,7 @@ void party_motion_jump2(PartyEntry* party) {
             *(s32*)((u8*)party + 0x24) = frames;
             ff = (f32)frames;
         }
-        party->speed = mario->playerGravity * (d / ff);
+        party->speed = mario->playerGravity * (*(f32*)((u8*)party + 0x128) / ff);
         party->jumpPara1 = (0.5f * (ff * (ff * fabsf(party->jumpPara3))) + diff) / ff;
         party->jumpPara1 = party->jumpPara1 * mario->playerGravity;
         if (party->jumpPara1 > 20.0f) {
@@ -890,8 +899,7 @@ void party_motion_jump2(PartyEntry* party) {
                 party->flags = (party->flags & ~0x70);
                 party->flags = (party->flags | 0x2);
                 party->jumpPara1 = 0.0f;
-                d = distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
-                partyChgMot(party, (d < 5.0f) ? 0 : 1);
+                partyChgMot(party, (distABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C)) < 5.0f) ? 0 : 1);
             }
         }
         break;
@@ -906,12 +914,15 @@ void party_motion_jump2(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (77.76%): register rotation vec/ret/party (orig r31/r30/r29) and a few
-// constant-register/scheduling differences remain.
+// Register rotation vec/ret/party (orig r31/r30/r29, mine r29/r31/r30) and the
+// `next = 0.1f * (target - cur) + cur` block (orig emits fsubs/fmuls/fadds, mine
+// emits fmadds) remain. Duplicating the target computation into each arm of the
+// `dir < 180` test fixed most of the block-level differences.
+// NONMATCHING (86.22%): see above.
 s32 party_roll(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
-    s32 ret = 1;
     u8* vec = vec3_802f3e40;
+    s32 ret = 1;
     f32 target;
     f32 cur;
     f32 next;
@@ -974,17 +985,25 @@ s32 party_roll(PartyEntry* party) {
         if (*(s32*)((u8*)party + 0x24) > 0) {
             if (party->dir < 180.0f) {
                 target = 90.0f;
+                cur = party->field_10C;
+                next = 0.1f * (target - cur) + cur;
+                cond = (target - next < 1.0f);
+                if (fabsf(cond) != 0.0f) {
+                    next = target;
+                }
+                party->field_10C = next;
+                party->field_110 = next;
             } else {
                 target = 270.0f;
+                cur = party->field_10C;
+                next = 0.1f * (target - cur) + cur;
+                cond = (target - next < 1.0f);
+                if (fabsf(cond) != 0.0f) {
+                    next = target;
+                }
+                party->field_10C = next;
+                party->field_110 = next;
             }
-            cur = party->field_10C;
-            next = 0.1f * (target - cur) + cur;
-            cond = (target - next < 1.0f);
-            if (fabsf(cond) != 0.0f) {
-                next = target;
-            }
-            party->field_10C = next;
-            party->field_110 = next;
             break;
         }
         ret = 1;

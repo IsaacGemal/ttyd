@@ -131,5 +131,6 @@ PartyEntry* anotherPartyGetPtr(s32 index);
 BOOL partyPaperOn(PartyEntry* party, const char* animName);
 char* partyChgPoseId(PartyEntry* party, s32 index);
 void partyChgPose(PartyEntry* party, char* pose);
+void party_set_behind_dir(PartyEntry* party, f32 dir);
 
 void partyCtrlOff(void);

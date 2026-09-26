@@ -22,15 +22,16 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 26 after wave 6, PR #6): 3,844 of 9,770 functions matched, 18.38% of code;
-  linked code 9.35%, linked data 4.11%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
-- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5). Overnight
+- Progress (local build, Sep 26 after wave 7, PR #8): 4,024 of 9,770 functions matched, 19.74% of code;
+  linked code 9.78%, linked data 4.15%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
-- Review routine: three rounds in sequence, each followed by fixes (see "Wave 6"). The third round is another
-  Claude session, asked once by message; that's fine as long as it's one request and one reply.
-- Targets: game files with no source yet first (the build already lists them; ~2,200 unmatched functions),
-  plus a few finishers on files that match fully but don't link. Area modules (RELs, ~2,760 functions) need
-  build setup before agents can work on them.
+- Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
+  or Codex twice; no GLM). Before round 1 the orchestrator checks every declaration the PR adds against headers
+  and definitions. See "Wave 7".
+- Targets: near-misses and missing functions in files that already have source are the biggest cheap pool
+  (wave 7's focus); plus a few new files and finishers. Area modules (RELs, ~2,760 functions, 24% of code) are
+  configured on branch `rel-setup` (not merged yet); the launcher still needs REL paths.
 - Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
 - **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** `ci.py`, the ratchet, `lint_patch.py`,
   `label_partials.py`, `autolink.py` and `merge_agent.sh` were all written quickly by models, and
@@ -885,3 +886,60 @@ ratchet and lint are our own tools. Two ways to measure what reviews miss, **she
   catch, and remove them before merging. That share estimates the reviewers' catch rate on real bugs.
 - **Capture-recapture:** two independent reviews of the same PR; estimated total ≈ A's count × B's count ÷ the
   overlap. Needs reviews run in parallel, against the sequential routine, so it would be a one-PR experiment.
+
+
+## Wave 7: near-misses in existing files, and the biggest code gain yet (2026-09-26, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol and Claude Opus 5.5)
+
+Orchestrated end to end by the work-account session, by Isaac's choice. Before launching, the unmatched code was
+broken down: 24% in RELs, 24% in game files with no source, and 32% in files that already have source, of which
+functions at 80% or more were 7% of all code and unwritten functions 17%. New files had been getting harder (32
+functions per agent in wave 4, 12 in wave 5). So the wave was reworked (Isaac approved): **14 agents on existing
+files, told to finish near-misses first and then write missing functions** (a new prompt), 5 new files, 5 finishers.
+
+**3,844 -> 4,024 functions (+180); code matched 18.38% -> 19.74% (+1.36, the largest gain of any wave); linked
+code 9.35% -> 9.78%.** Existing files gave +146 (battle_event_cmd +66, mario_motion +13, evt_mario and
+battle_audience +12 each); the 5 new files are fully matched (33 functions); all 5 finishers link.
+
+**Findings from linking and merging.**
+- `battle.c` and `dispdrv.c` were built without deferred inlining: with `-inline auto,deferred` MWCC emits
+  functions in reverse source order and a file's .data before its jump tables. The finishers used
+  `#pragma defer_codegen off`; configure.py now has `cflags_static_nodefer` for them instead. (evt_hit and
+  mot_stay linked by reversing the source's function order, which is what the original source looked like.)
+- Linking battle.c showed a switch with its cases mapped wrong at 100%: **objdiff doesn't compare jump-table
+  data**, so switches in files that don't link can be wrong at any score.
+- battle.c's `.data` split contains eleven jump tables of other files' switches; six functions are declared
+  `extern u8 name[]` so the tables can point inside them. Known issue: the fix is moving those tables to their
+  files in splits.txt.
+- An agent cut off by the time limit left `mot_talk` subtracting `camYaw` twice (the ratchet caught the score
+  drop); main's version was kept. Cut-off agents' partial functions need the closest review.
+- The `.comment` section of the split objects (`build/G8MJ01/obj`) is written by dtk, not the original
+  compiler: every object says the same version. It is no evidence about the original's compiler build.
+- autolink listed units with no source file as link candidates: data-only units (and two MusyX data files) count
+  as 100% code. On rel-setup it now requires a source file.
+
+**Reviews: Codex, then two fresh Claude subagents**, each round followed by fixes, after the orchestrator's own
+declaration check (which found a float argument passed through a leftover register in `partyMoveBehindMario3`).
+- Codex: 8 findings, 5 real (StartAvoid compared the whole damage code instead of its low byte, so its effect
+  never showed; the unit-work float commands converted numbers instead of copying float bits; five
+  contradictory `BtlUnit_snd_se` prototypes), 1 false positive (a macro that already contains the comparison).
+- Claude round 2: 3 High, all real and missed by Codex (both footmark clears wiped both party slots' buffers; a
+  known bug in KinopioWait, one variable used as both period and step, whose "Known issue" note an agent had
+  replaced with a false label), a linked file reading one past a table's end, file-wide pragmas instead of
+  configure.py flags, labels.
+- Claude round 3: no High or Medium. It checked every change in the fix commits against the asm and callers,
+  and found two bugs in label_partials.py (a label for a function inside a comment; 99.996% written as 100.00%).
+- label_partials.py itself had a bug the reviews exposed: a label one blank line above its function was missed
+  and a second one added (nine in evt_mobj). All three are fixed, with tests.
+
+**Lessons.**
+- Near-misses in existing files are where progress is: the best code gain per wave, and finishing them removes
+  the partial functions where every logic bug so far has been.
+- Claude and Codex find different bugs: round 2 found three highs that round 1 didn't. Keep three rounds.
+- A reviewer's suggested fix can be wrong in ways the reviewer didn't check (the macro case); verify every
+  finding against the asm and definitions before changing code.
+- Tools run between reviews (label_partials.py) need the same scrutiny as agent code.
+
+**Open, low severity:** some match-only code not yet under MUST_MATCH (`unk_8014b824`, `party_roll`, two
+Kinopio functions); `BattleSamplingEnemy`'s `s8 attackDirection` may be the wrong width; `BattleAudience_GetExist`
+probably returns `u8`; windowdrv's two `unk_` names replaced descriptive ones; the three MusyX files that match
+but don't link live under libs/musyx/src, which the launcher and merge script don't handle; the REL launcher.

@@ -34,7 +34,6 @@ void BattleAudience_Case_MarioPinch(void);
 BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
 void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2);
 void BtlUnit_HpGaugeInit(BattleUnit* unit);
-s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos);
 
 // Local field overlays for regions the shared header leaves unnamed.
 typedef struct BattleUnitAnimFields {
@@ -195,7 +194,7 @@ void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     }
 }
 
-// NONMATCHING (96%): target reads the gauge type with `lhz` + `cmpwi`; the then/else block layout also differs.
+// NONMATCHING (96.14%): target reads the gauge type with `lhz` + `cmpwi`; the then/else block layout also differs.
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
     f32 ratio;
@@ -253,7 +252,7 @@ void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName) {
 
 // Keep BtlUnit_SetAnimType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (96%): tail `type < 0x1F && type >= 0x1D` compiles to `bge body; b skip`, mine `blt skip`.
+// NONMATCHING (96.56%): tail `type < 0x1F && type >= 0x1D` compiles to `bge body; b skip`, mine `blt skip`.
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type) {
     const char* animName = BtlUnit_GetPoseNameFromType(part, type);
 
@@ -306,6 +305,7 @@ BOOL BtlUnit_Init(void) {
     return TRUE;
 }
 
+// NONMATCHING (11.91%): 376 missing, 1 extra, plus register differences.
 BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
@@ -337,10 +337,12 @@ BattleUnit* BtlUnit_Entry(BattleUnitSetup* setup) {
     return NULL;
 }
 
+// NONMATCHING (1.19%): 1 instruction differs, 116 missing.
 BOOL BtlUnit_Delete(BattleUnit* unit) {
     return FALSE;
 }
 
+// NONMATCHING (2.41%): 1 instruction differs, 56 missing.
 BattleUnit* BtlUnit_Spawn(BattleUnitSetup* setup, s32 flags) {
     return NULL;
 }
@@ -351,7 +353,7 @@ s32 BtlUnit_GetUnitId(BattleUnit* unit) {
 
 // Keep BtlUnit_GetPartsPtr, BtlUnit_GetBodyPartsId out of line: the original calls them rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (87%): target entry test is `bne loop; blr`, mine the inverse `beqlr; b loop`.
+// NONMATCHING (87.19%): target entry test is `bne loop; blr`, mine the inverse `beqlr; b loop`.
 BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
     BattleUnitPart* part = unit->mParts;
 
@@ -1052,7 +1054,7 @@ void BtlUnit_GetStatus(BattleUnit* unit, StatusEffectType type, s8* turns, s8* s
     }
 }
 
-// NONMATCHING (82%): HUGE/TINY and DEFENSE_UP/DOWN branch trees differ; target also `extsb`s type before the switch.
+// NONMATCHING (82.06%): HUGE/TINY and DEFENSE_UP/DOWN branch trees differ; target also `extsb`s type before the switch.
 BOOL BtlUnit_SetStatus(BattleUnit* unit, StatusEffectType type, s8 turns, s8 strength) {
     switch (type) {
         case STATUS_SLEEP:
@@ -1253,7 +1255,7 @@ void BtlUnit_ClearStatus(BattleUnit* unit) {
     BattleStatusChangeInfoWorkInit(unit);
 }
 
-// NONMATCHING (76%): case bodies/branches in the recovery switch still differ (HP/FP regen, defense).
+// NONMATCHING (75.80%): case bodies/branches in the recovery switch still differ (HP/FP regen, defense).
 BOOL BtlUnit_CheckRecoveryStatus(BattleUnit* unit, StatusEffectType type) {
     s8 turns, strength;
 
@@ -1416,7 +1418,7 @@ void BtlUnit_OffUnitFlag(BattleUnit* unit, s32 flags) {
 
 // Keep BtlUnit_GetPoseNameFromType out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (87%): target uses `beq found` for the second poseId compare, mine `bne skip`, plus one dead `b`.
+// NONMATCHING (87.19%): target uses `beq found` for the second poseId compare, mine `bne skip`, plus one dead `b`.
 char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
     BattleDispPose* pose = part->poseTable;
     s32 bound;
@@ -1454,6 +1456,7 @@ char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type) {
 
 
 
+// NONMATCHING (1.89%): 52 missing.
 void BtlUnit_SetParamToPouch(BattleUnit* unit) {
 
 }
@@ -1561,7 +1564,7 @@ void BtlUnit_RecoverHp(BattleUnit* unit, s32 value) {
     }
 }
 
-// NONMATCHING (94%): two callee-save register-assignment instructions differ.
+// NONMATCHING (94.32%): two callee-save register-assignment instructions differ.
 void BtlUnit_RecoverFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
@@ -1656,20 +1659,20 @@ void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16
     se->field_0x18 = -1;
 }
 
-s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c) {
+s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     Vec pos;
 
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    return BtlUnit_snd_se_pos(unit, a, b, c, &pos);
+    return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
 
 extern void psndSFX_pit(s32 id, s32 pitch);
 extern void psndSFX_vol(s32 id, s32 vol);
 extern s32 psndSFX_get_vol(s32 id);
 
-// NONMATCHING (87%): register allocation is rotated (target keeps a in r27/val in r30, mine a in r30/val in r29).
+// NONMATCHING (87.75%): register allocation is rotated (target keeps name in r27/val in r30, ours name in r30/val in r29).
 #pragma dont_inline on
-s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
+s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* pos) {
     s32 handle;
     s32 val = 0;
     s8 turns, strength;
@@ -1683,7 +1686,7 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
         val = (s16)(((s8)strength * 2 + 1) * -341);
     }
     val = (s16)((c + val) + (irand(0x29) - 0x14));
-    handle = psndSFXOn_3D((const char*)a, pos);
+    handle = psndSFXOn_3D(name, pos);
     psndSFX_pit(handle, val);
     if ((u32)(b - 0xF1190000) < 0x4D80) {
         psndSFX_vol(handle, psndSFX_get_vol(handle));
@@ -1694,7 +1697,7 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, s32 a, s32 b, s16 c, Vec* pos) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (84%): switch compare tree roots at 3 instead of 4; info pointer kept in a callee-save
+// NONMATCHING (84.68%): switch compare tree roots at 3 instead of 4; info pointer kept in a callee-save
 // register instead of a temp; double_to_int constant uses a local symbol. Semantics are identical.
 s32 BtlUnit_GetExp(BattleUnit* unit) {
     BattleWork* wp = _battleWorkPointer;
@@ -1736,7 +1739,7 @@ extern s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 extern void BtlActRec_AddPoint(void* p, s32 value);
 extern void BtlActRec_AddCount(void* p);
 
-// NONMATCHING (98%): pouchAddAP(s16) forces an extra extsh on the computed AP delta.
+// NONMATCHING (97.77%): pouchAddAP(s16) forces an extra extsh on the computed AP delta.
 void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     BattleWork* wp = _battleWorkPointer;
     s32 fp;
@@ -1755,7 +1758,7 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
 }
 
-// NONMATCHING (95%): pouchGetAP is declared s16 in the header, so an extra extsh is emitted; the
+// NONMATCHING (95.19%): pouchGetAP is declared s16 in the header, so an extra extsh is emitted; the
 // target used a 32-bit-return declaration. Semantics identical.
 BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     s32 fp = BtlUnit_GetFp(unit);
@@ -1767,7 +1770,7 @@ BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     return pouchGetAP() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
 }
 
-// NONMATCHING (98%): compiler pool constants are anonymous (@1121/@1123) vs the target's named
+// NONMATCHING (98.43%): compiler pool constants are anonymous (@1121/@1123) vs the target's named
 // double_to_int_802efab8 / double_2_802efad0; one address-materialization sequence differs.
 #pragma dont_inline on
 s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {

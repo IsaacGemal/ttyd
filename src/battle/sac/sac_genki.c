@@ -71,7 +71,6 @@ extern f32 float_250_80421df4;
 extern f32 float_1E07_80421df8;
 extern f32 float_1p125_80421e08;
 extern char str_80300470[];
-void BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 a, s32 b);
 void main_star0(s32 idx);
 void main_star1(void);
 EffectEntry* effRecoveryEntry(s32 type, s32 arg, f32 x, f32 y, f32 z);

@@ -43,8 +43,6 @@ USER_FUNC(btlevtcmd_ftomsec) {
 }
 
 //s32* eventId
-// NONMATCHING (85.33%): target materialises the truth mask with `subfic/subfe`
-// (equality/boolean form); our build emits `neg/or/srawi`. Body is otherwise identical.
 USER_FUNC(btlevtcmd_WaitEventEnd) {
     s32 id;
 
@@ -53,6 +51,7 @@ USER_FUNC(btlevtcmd_WaitEventEnd) {
 }
 
 //s32 retIndex, s32 battleFlags
+// NONMATCHING (98.25%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_check_battleflag) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -68,6 +67,7 @@ USER_FUNC(btlevtcmd_check_battleflag) {
 }
 
 //BOOL* onoff, s32 flags
+// NONMATCHING (72.67%): 2 instructions differ, 2 missing, 3 extra, plus register differences.
 USER_FUNC(btlevtcmd_onoff_battleflag) {
     s32* args = event->args;
     s32 flags = args[1];
@@ -103,12 +103,12 @@ USER_FUNC(btlevtcmd_reset_move_color_lv_all) {
 USER_FUNC(btlevtcmd_CheckPhase) {
     s32* args = event->args;
     s32 index = args[0];
-    s32 seq = args[1];
-    if (seq == BattleGetSeq(_battleWorkPointer, SEQ_PHASE)) {
-        evtSetValue(event, index, TRUE);
+    u32 seq = args[1];
+    if (seq != BattleGetSeq(_battleWorkPointer, SEQ_PHASE)) {
+        evtSetValue(event, index, FALSE);
     }
     else {
-        evtSetValue(event, index, FALSE);
+        evtSetValue(event, index, TRUE);
     }
     return EVT_RETURN_DONE;
 }
@@ -121,7 +121,8 @@ USER_FUNC(btlevtcmd_GetPos) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     indexX = args[1];
     indexY = args[2];
@@ -148,7 +149,8 @@ USER_FUNC(btlevtcmd_GetPosFloat) {
     s32 id;
 
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     indexX = args[1];
     indexY = args[2];
@@ -178,6 +180,7 @@ USER_FUNC(btlevtcmd_GetRandomValue) {
 }
 
 //s32 retIndex, s32 countIndex, s32 sizeIndex[]
+// NONMATCHING (90.24%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 USER_FUNC(btlevtcmd_DrawLots) {
     s32* args = event->args;
     s32 *alloc, *args2;
@@ -210,6 +213,7 @@ USER_FUNC(btlevtcmd_DrawLots) {
 }
 
 //s32 retIndex for unitId, BattleUnitSetup** setup, s32 spawnFlags
+// NONMATCHING (75.31%): 1 instruction differs, 4 missing, 3 extra, plus register differences.
 USER_FUNC(btlevtcmd_SpawnUnit) {
     s32* args = event->args;
     BattleUnitSetup* setup;
@@ -234,7 +238,8 @@ USER_FUNC(btlevtcmd_KillUnit) {
     BattleUnit* unit;
     s32 id, flags;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     flags = args[1];
     if (!unit) {
@@ -256,6 +261,7 @@ USER_FUNC(btlevtcmd_KillUnit) {
 }
 
 //s32* battleId, s32* copyToPartId, BattleUnitKindPart* kind, s32* copyFromPartId
+// NONMATCHING (89.87%): 2 instructions differ, 4 missing, 2 extra, plus register differences.
 USER_FUNC(btlevtcmd_ReplaceParts) {
     s32* args = event->args;
     s32 id, transId, lookupPart, partNum;
@@ -309,13 +315,15 @@ USER_FUNC(btlevtcmd_ChangeParty) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to set current)
+// NONMATCHING (98.63%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetPos) {
     f32 x, y, z, currX, currY, currZ;
     s32 indexX, indexY, indexZ, id;
     s32* args = event->args;
     BattleUnit* unit;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     indexX = args[1];
     x = (f32)evtGetValue(event, indexX);
     indexY = args[2];
@@ -345,7 +353,8 @@ USER_FUNC(btlevtcmd_AddPos) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -362,7 +371,8 @@ USER_FUNC(btlevtcmd_GetPartsPos) {
     f32 currX, currY, currZ;
     BattleUnitPart* part;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     BattleGetUnitPtr(_battleWorkPointer, id);
     part = BattleGetUnitPartsPtr(id, partId);
@@ -383,6 +393,7 @@ USER_FUNC(btlevtcmd_GetPartsPos) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (96.59%): 3 missing, plus register differences.
 USER_FUNC(btlevtcmd_SetPartsPos) {
     s32* args = event->args;
     f32 x, y, z, currX, currY, currZ;
@@ -390,7 +401,8 @@ USER_FUNC(btlevtcmd_SetPartsPos) {
     BattleUnit* unit;
     s32 id, partId;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
     y = (f32)evtGetValue(event, args[3]);
@@ -414,7 +426,8 @@ USER_FUNC(btlevtcmd_AddPartsPos) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
     y = (f32)evtGetValue(event, args[3]);
@@ -436,7 +449,8 @@ USER_FUNC(btlevtcmd_SetDispOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -453,7 +467,8 @@ USER_FUNC(btlevtcmd_SetPartsDispOffset) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
     y = (f32)evtGetValue(event, args[3]);
@@ -472,7 +487,8 @@ USER_FUNC(btlevtcmd_AddPartsDispOffset) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
     y = (f32)evtGetValue(event, args[3]);
@@ -490,7 +506,8 @@ USER_FUNC(btlevtcmd_SetTogeOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
@@ -515,7 +532,8 @@ USER_FUNC(btlevtcmd_GetHomePos) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     indexX = args[1];
     indexY = args[2];
@@ -534,7 +552,8 @@ USER_FUNC(btlevtcmd_SetHomePos) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -550,7 +569,8 @@ USER_FUNC(btlevtcmd_AddHomePos) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -560,13 +580,15 @@ USER_FUNC(btlevtcmd_AddHomePos) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (17.61%): 9 instructions differ, 10 missing, 31 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetPartsHomePos) {
     s32* args = event->args;
     BattleUnitPart* part;
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
     y = (f32)evtGetValue(event, args[3]);
@@ -577,15 +599,17 @@ USER_FUNC(btlevtcmd_SetPartsHomePos) {
 }
 
 //s32* battleId, s32* partId, s32 indexX, s32 indexY, s32 indexZ
+// NONMATCHING (99.44%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetHitPos) {
     s32* args = event->args;
     s32 indexX, indexY, indexZ;
-    BattleUnitPart* part;
     BattleUnit* unit;
+    BattleUnitPart* part;
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BattleGetUnitPartsPtr(id, partId);
@@ -606,6 +630,7 @@ USER_FUNC(btlevtcmd_GetHitPos) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (17.13%): 7 instructions differ, 13 missing, 34 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetHitOffset) {
     s32* args = event->args;
     BattleUnitPart* part;
@@ -613,7 +638,8 @@ USER_FUNC(btlevtcmd_SetHitOffset) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
@@ -625,6 +651,7 @@ USER_FUNC(btlevtcmd_SetHitOffset) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (17.13%): 7 instructions differ, 13 missing, 34 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetHitCursorOffset) {
     s32* args = event->args;
     BattleUnitPart* part;
@@ -632,7 +659,8 @@ USER_FUNC(btlevtcmd_SetHitCursorOffset) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     partId = evtGetValue(event, args[1]);
     x = (f32)evtGetValue(event, args[2]);
@@ -644,6 +672,7 @@ USER_FUNC(btlevtcmd_SetHitCursorOffset) {
 }
 
 //s32* battleId, s32 retIndex
+// NONMATCHING (83.18%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetWidth) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -659,6 +688,7 @@ USER_FUNC(btlevtcmd_GetWidth) {
 }
 
 //s32* battleId, s32 retIndex
+// NONMATCHING (83.18%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetHeight) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -674,6 +704,7 @@ USER_FUNC(btlevtcmd_GetHeight) {
 }
 
 //s32* battleId, s16* height
+// NONMATCHING (39.39%): 1 instruction differs, 8 missing, 8 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetHeight) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -689,6 +720,7 @@ USER_FUNC(btlevtcmd_SetHeight) {
 }
 
 //s32* battleId, s32 retIndex
+// NONMATCHING (88.67%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetStatusMg) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -703,6 +735,7 @@ USER_FUNC(btlevtcmd_GetStatusMg) {
 }
 
 //s32* battleId, s32* xpos, s32* ypos (can be EVTDAT_POINTER_MAX to not store)
+// NONMATCHING (91.66%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetStatusIconOffset) {
     s32* args = event->args;
     s32 id, btlId, xpos, ypos;
@@ -723,6 +756,7 @@ USER_FUNC(btlevtcmd_SetStatusIconOffset) {
 }
 
 //s32* battleId, s32* xpos, s32* ypos (can be EVTDAT_POINTER_MAX to not store)
+// NONMATCHING (91.66%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetHpGaugeOffset) {
     s32* args = event->args;
     s32 id, btlId, xpos, ypos;
@@ -743,6 +777,7 @@ USER_FUNC(btlevtcmd_SetHpGaugeOffset) {
 }
 
 //s32* battleId, s32 retX, s32 retY
+// NONMATCHING (67.34%): 3 instructions differ, 8 missing, 2 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetHpGaugeOffset) {
     s32* args = event->args;
     s32 id, btlId, indexX, indexY;
@@ -759,6 +794,7 @@ USER_FUNC(btlevtcmd_GetHpGaugeOffset) {
 }
 
 //s32* battleId, s32* partId, u8* alpha
+// NONMATCHING (97.41%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_SetAlpha) {
     s32* args = event->args;
     s32 id, btlId, partId;
@@ -773,11 +809,12 @@ USER_FUNC(btlevtcmd_SetAlpha) {
 }
 
 //s32* battleId, s32* partId, u8* redIndex, u8* greenIndex, u8* blueIndex
+// NONMATCHING (98.12%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetRGB) {
     s32* args = event->args;
     s32 indexR, indexG, indexB;
-    BattleUnitPart* part;
     s32 btlId, partId;
+    BattleUnitPart* part;
 
     btlId = evtGetValue(event, args[0]);
     partId = evtGetValue(event, args[1]);
@@ -792,6 +829,7 @@ USER_FUNC(btlevtcmd_GetRGB) {
 }
 
 //s32* battleId, s32* partId, u8* red, u8* green, u8* blue
+// NONMATCHING (89.87%): 2 instructions differ, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetRGB) {
     s32* args = event->args;
     BattleUnitPart* part;
@@ -819,7 +857,8 @@ USER_FUNC(btlevtcmd_GetRotate) {
     BattleUnit* unit;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     indexX = args[1];
     indexY = args[2];
@@ -838,13 +877,15 @@ USER_FUNC(btlevtcmd_GetRotate) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
+// NONMATCHING (98.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetRotate) {
     s32* args = event->args;
     s32 id, indexX, indexY, indexZ;
     f32 x, y, z, currX, currY, currZ;
     BattleUnit* unit;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     indexX = args[1];
     x = (f32)evtGetValue(event, indexX);
     indexY = args[2];
@@ -873,7 +914,8 @@ USER_FUNC(btlevtcmd_AddRotate) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -889,7 +931,8 @@ USER_FUNC(btlevtcmd_GetPartsRotate) {
     BattleUnitPart* part;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
     indexX = args[2];
@@ -937,13 +980,15 @@ USER_FUNC(btlevtcmd_AddPartsRotate) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
+// NONMATCHING (98.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetBaseRotate) {
     s32* args = event->args;
     s32 id, indexX, indexY, indexZ;
     f32 x, y, z, currX, currY, currZ;
     BattleUnit* unit;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     indexX = args[1];
     x = (f32)evtGetValue(event, indexX);
     indexY = args[2];
@@ -973,7 +1018,8 @@ USER_FUNC(btlevtcmd_SetPartsBaseRotate) {
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     x = evtGetFloat(event, args[2]);
     y = evtGetFloat(event, args[3]);
@@ -1000,7 +1046,8 @@ USER_FUNC(btlevtcmd_SetRotateOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -1046,10 +1093,10 @@ USER_FUNC(btlevtcmd_AddPartsRotateOffset) {
 //s32* battleId
 USER_FUNC(btlevtcmd_SetRotateOffsetFromCenterOffset) {
     BattleUnit* unit;
-    s32 id;
+    s32 btlId;
 
-    id = BattleTransID(event, evtGetValue(event, *event->args));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    btlId = evtGetValue(event, *event->args);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     BtlUnit_SetRotateOffset(unit, unit->offsetCenter.x, unit->offsetCenter.y, unit->offsetCenter.z);
     return EVT_RETURN_DONE;
 }
@@ -1061,7 +1108,8 @@ USER_FUNC(btlevtcmd_SetCutBaseOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -1079,7 +1127,8 @@ USER_FUNC(btlevtcmd_SetBintaHitOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -1097,7 +1146,8 @@ USER_FUNC(btlevtcmd_SetKissHitOffset) {
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
@@ -1109,36 +1159,42 @@ USER_FUNC(btlevtcmd_SetKissHitOffset) {
 }
 
 //s32* battleId, f32* value
+// NONMATCHING (52.29%): 6 missing, 10 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetCutWidth) {
     s32* args = event->args;
     f32 value;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     value = (f32)evtGetValue(event, args[1]);
     BattleGetUnitPtr(_battleWorkPointer, id)->cutWidth = value;
     return EVT_RETURN_DONE;
 }
 
 //s32* battleId, f32* value
+// NONMATCHING (52.29%): 6 missing, 10 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetCutHeight) {
     s32* args = event->args;
     f32 value;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     value = (f32)evtGetValue(event, args[1]);
     BattleGetUnitPtr(_battleWorkPointer, id)->cutHeight = value;
     return EVT_RETURN_DONE;
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
+// NONMATCHING (94.93%): 1 instruction differs, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetPossessionItemOffset) {
     s32* args = event->args;
     s32 id, x, y, z, indexX, indexY, indexZ;
     BattleUnit* unit;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     indexX = args[1];
     x = evtGetValue(event, indexX);
@@ -1161,15 +1217,17 @@ USER_FUNC(btlevtcmd_SetPossessionItemOffset) {
 //s32* battleId, f32* x, f32* y, f32* z
 USER_FUNC(btlevtcmd_SetBaseScale) {
     s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id == -1) { //TODO: un-hardcode?
         return EVT_RETURN_DONE;
     }
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(wp, id);
     x = evtGetFloat(event, args[1]);
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
@@ -1180,13 +1238,15 @@ USER_FUNC(btlevtcmd_SetBaseScale) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (89.81%): 1 instruction differs, 4 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_SetPartsBaseScale) {
     s32* args = event->args;
     BattleUnitPart* part;
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id != -1) { //TODO: un-hardcode?
         part = BattleGetUnitPartsPtr(id, evtGetValue(event, args[1]));
         x = evtGetFloat(event, args[2]);
@@ -1200,15 +1260,17 @@ USER_FUNC(btlevtcmd_SetPartsBaseScale) {
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
 USER_FUNC(btlevtcmd_GetScale) {
     s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
     s32 id, indexX, indexY, indexZ;
     BattleUnit* unit;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id == -1) {
         return EVT_RETURN_DONE;
     }
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(wp, id);
     indexX = args[1];
     indexY = args[2];
     indexZ = args[3];
@@ -1226,13 +1288,15 @@ USER_FUNC(btlevtcmd_GetScale) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z
+// NONMATCHING (86.88%): 3 instructions differ, 4 missing, 1 extra.
 USER_FUNC(btlevtcmd_SetScale) {
     s32* args = event->args;
     BattleUnit* unit;
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id != -1) { //TODO: un-hardcode?
         unit = BattleGetUnitPtr(_battleWorkPointer, id);
         x = evtGetFloat(event, args[1]);
@@ -1244,13 +1308,15 @@ USER_FUNC(btlevtcmd_SetScale) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z
+// NONMATCHING (86.88%): 3 instructions differ, 4 missing, 1 extra.
 USER_FUNC(btlevtcmd_AddScale) {
     s32* args = event->args;
     BattleUnit* unit;
     f32 x, y, z;
     s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id != -1) { //TODO: un-hardcode?
         unit = BattleGetUnitPtr(_battleWorkPointer, id);
         x = evtGetFloat(event, args[1]);
@@ -1262,13 +1328,15 @@ USER_FUNC(btlevtcmd_AddScale) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (92.12%): 1 instruction differs, 3 missing, 1 extra.
 USER_FUNC(btlevtcmd_SetPartsScale) {
     s32* args = event->args;
     BattleUnitPart* part;
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id != -1) { //TODO: un-hardcode?
         partId = evtGetValue(event, args[1]);
         part = BattleGetUnitPartsPtr(id, partId);
@@ -1281,13 +1349,15 @@ USER_FUNC(btlevtcmd_SetPartsScale) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z
+// NONMATCHING (92.12%): 1 instruction differs, 3 missing, 1 extra.
 USER_FUNC(btlevtcmd_AddPartsScale) {
     s32* args = event->args;
     BattleUnitPart* part;
     s32 id, partId;
     f32 x, y, z;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     if (id != -1) { //TODO: un-hardcode?
         partId = evtGetValue(event, args[1]);
         part = BattleGetUnitPartsPtr(id, partId);
@@ -1428,13 +1498,11 @@ USER_FUNC(btlevtcmd_SetSwallowParam) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 btlId, id;
-    s8 value;
+    s32 btlId, value;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
-    value = (s8)evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    value = evtGetValue(event, args[1]);
     if (unit) {
         unit->swallowRate = value;
     }
@@ -1445,13 +1513,12 @@ USER_FUNC(btlevtcmd_SetSwallowAttribute) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 btlId, id;
-    s8 value;
+    s32 btlId;
+    u8 value;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
-    value = (s8)evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    value = (u8)evtGetValue(event, args[1]);
     if (unit) {
         unit->swallowAttribute = value;
     }
@@ -1463,7 +1530,6 @@ USER_FUNC(btlevtcmd_SetMaxMoveCount) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32 btlId, id;
-    s8 max;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -1472,9 +1538,8 @@ USER_FUNC(btlevtcmd_SetMaxMoveCount) {
     }
     unit = BattleGetUnitPtr(wp, id);
     unit->maxMoveCount = (s8)evtGetValue(event, args[1]);
-    max = unit->maxMoveCount;
-    if (unit->movesRemaining > max) {
-        unit->movesRemaining = max;
+    if (unit->movesRemaining > unit->maxMoveCount) {
+        unit->movesRemaining = unit->maxMoveCount;
     }
     return EVT_RETURN_DONE;
 }
@@ -1602,6 +1667,7 @@ USER_FUNC(btlevtcmd_GetOverTurnCount) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (96.11%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_SetOverTurnCount) {
     s32* args = event->args;
     s32 btlId, id;
@@ -1616,11 +1682,11 @@ USER_FUNC(btlevtcmd_SetOverTurnCount) {
 
 USER_FUNC(btlevtcmd_GetUnitWork) {
     s32* args = event->args;
-    s32 btlId, id, i, index;
+    s32 id, i, index;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     i = evtGetValue(event, args[1]);
     index = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -1631,15 +1697,18 @@ USER_FUNC(btlevtcmd_GetUnitWork) {
 USER_FUNC(btlevtcmd_SetUnitWork) {
     s32* args = event->args;
     s32 btlId, id, value, index;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     index = evtGetValue(event, args[1]);
     value = evtGetValue(event, args[2]);
-    BattleGetUnitPtr(_battleWorkPointer, id)->work[index] = value;
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit->work[index] = value;
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (82.29%): 3 missing, 3 extra, plus register differences.
 USER_FUNC(btlevtcmd_AddUnitWork) {
     s32* args = event->args;
     s32 btlId, id, value, index;
@@ -1652,6 +1721,7 @@ USER_FUNC(btlevtcmd_AddUnitWork) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (98.82%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetUnitWorkFloat) {
     s32* args = event->args;
     s32 btlId, id, i, index;
@@ -1662,7 +1732,7 @@ USER_FUNC(btlevtcmd_GetUnitWorkFloat) {
     i = evtGetValue(event, args[1]);
     index = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    evtSetFloat(event, index, (f32)unit->work[i]);
+    evtSetFloat(event, index, *(f32*)&unit->work[i]);
     return EVT_RETURN_DONE;
 }
 
@@ -1675,18 +1745,18 @@ USER_FUNC(btlevtcmd_SetUnitWorkFloat) {
     id = BattleTransID(event, btlId);
     index = evtGetValue(event, args[1]);
     value = evtGetFloat(event, args[2]);
-    BattleGetUnitPtr(_battleWorkPointer, id)->work[index] = (s32)value;
+    *(f32*)&BattleGetUnitPtr(_battleWorkPointer, id)->work[index] = value;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(btlevtcmd_GetPartsWork) {
     s32* args = event->args;
-    s32 btlId, id, partId, i, index;
+    s32 id, partId, i, index;
     BattleUnitPart* part;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     i = evtGetValue(event, args[2]);
     index = args[3];
@@ -1700,6 +1770,7 @@ USER_FUNC(btlevtcmd_SetPartsWork) {
     s32* args = event->args;
     s32 btlId, id, partId, index, value;
     BattleUnit* unit;
+    BattleUnitPart* part;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -1707,38 +1778,35 @@ USER_FUNC(btlevtcmd_SetPartsWork) {
     index = evtGetValue(event, args[2]);
     value = evtGetValue(event, args[3]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    BtlUnit_GetPartsPtr(unit, partId)->work[index] = value;
+    part = BtlUnit_GetPartsPtr(unit, partId);
+    part->work[index] = value;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(btlevtcmd_GetDamage) {
     s32* args = event->args;
-    s32 btlId, id, index, value;
+    s32 btlId, index;
     BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     index = args[1];
     if (unit) {
-        value = BtlUnit_GetHitDamage(unit);
-        evtSetValue(event, index, value);
+        evtSetValue(event, index, BtlUnit_GetHitDamage(unit));
     }
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(btlevtcmd_GetTotalDamage) {
     s32* args = event->args;
-    s32 btlId, id, index, value;
+    s32 btlId, index;
     BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     index = args[1];
     if (unit) {
-        value = BtlUnit_GetTotalHitDamage(unit);
-        evtSetValue(event, index, value);
+        evtSetValue(event, index, BtlUnit_GetTotalHitDamage(unit));
     }
     return EVT_RETURN_DONE;
 }
@@ -1759,12 +1827,14 @@ USER_FUNC(btlevtcmd_GetDamageCode) {
 USER_FUNC(btlevtcmd_CheckDamageCode) {
     s32* args = event->args;
     s32 btlId, id, mask, index;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     mask = args[1];
     index = args[2];
-    if ((BattleGetUnitPtr(_battleWorkPointer, id)->damageCode & mask)) {
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if ((unit->damageCode & mask)) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -1773,6 +1843,7 @@ USER_FUNC(btlevtcmd_CheckDamageCode) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (82.76%): 2 instructions differ, 4 missing, 5 extra, plus register differences.
 USER_FUNC(btlevtcmd_StartAvoid) {
     s32* args = event->args;
     s32 btlId, id, damageCode;
@@ -1784,7 +1855,7 @@ USER_FUNC(btlevtcmd_StartAvoid) {
     id = BattleTransID(event, btlId);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     damageCode = args[1] | 0x100;
-    if (damageCode == 0x26) {
+    if ((u8)damageCode == 0x26) {
         BtlUnit_GetPos(unit, &x, &y, &z);
         if (y >= 85.0f) {
             y += -50.0f;
@@ -1803,13 +1874,13 @@ USER_FUNC(btlevtcmd_StartAvoid) {
 
 USER_FUNC(btlevtcmd_RunHitEventDirect) {
     s32* args = event->args;
-    s32 btlId, id, damageCode;
+    s32 btlId;
     BattleUnit* unit;
+    s32 damageCode;
     void* code;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     damageCode = args[1];
     code = (void*)evtGetValue(event, args[2]);
     unit->damagePattern = evtGetValue(event, args[3]);
@@ -1819,13 +1890,16 @@ USER_FUNC(btlevtcmd_RunHitEventDirect) {
 
 USER_FUNC(btlevtcmd_CheckDamagePattern) {
     s32* args = event->args;
-    s32 btlId, id, pattern, index;
+    s32 btlId, id, index;
+    u32 pattern;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     pattern = args[1];
     index = args[2];
-    if (BattleGetUnitPtr(_battleWorkPointer, id)->damagePattern == pattern) {
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (unit->damagePattern == pattern) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -1834,6 +1908,7 @@ USER_FUNC(btlevtcmd_CheckDamagePattern) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (83.92%): 1 instruction differs, 8 missing, 8 extra, plus register differences.
 USER_FUNC(btlevtcmd_CheckSpace) { //TODO: probably wrong
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -1971,11 +2046,11 @@ USER_FUNC(btlevtcmd_GetMarioId) {
             break;
         }
     }
-    if (i < 64) {
-        evtSetValue(event, index, unit->unitId);
+    if (i >= 64) {
+        evtSetValue(event, index, -1);
     }
     else {
-        evtSetValue(event, index, -1);
+        evtSetValue(event, index, unit->unitId);
     }
     return EVT_RETURN_DONE;
 }
@@ -1995,16 +2070,16 @@ USER_FUNC(btlevtcmd_GetPartyId) {
         unit = BattleGetUnitPtr(wp, i);
         if (unit && unit->mAlliance == alliance) {
             kind = unit->currentKind;
-            if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MIN) {
+            if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
                 break;
             }
         }
     }
-    if (i < 64) {
-        evtSetValue(event, index, unit->unitId);
+    if (i >= 64) {
+        evtSetValue(event, index, -1);
     }
     else {
-        evtSetValue(event, index, -1);
+        evtSetValue(event, index, unit->unitId);
     }
     return EVT_RETURN_DONE;
 }
@@ -2034,7 +2109,7 @@ USER_FUNC(btlevtcmd_GetUnitId) {
     id = BattleTransID(event, btlId);
     index = args[1];
     unit = BattleGetUnitPtr(wp, id);
-    if (unit && unit->flags < 0) {
+    if (unit && (unit->flags & 0x80000000)) {
         unit = NULL;
     }
     if (unit) {
@@ -2046,6 +2121,7 @@ USER_FUNC(btlevtcmd_GetUnitId) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (96.71%): 2 instructions differ, plus register differences.
 USER_FUNC(btlevtcmd_GetPartyTechLv) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -2065,6 +2141,7 @@ USER_FUNC(btlevtcmd_GetPartyTechLv) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (91.89%): 4 instructions differ, 4 missing, 7 extra, plus register differences.
 USER_FUNC(btlevtcmd_CalculateFaceDirection) {
     BattleUnitPart* thisPart = NULL;
     BattleUnitPart* targetPart = NULL;
@@ -2196,6 +2273,7 @@ USER_FUNC(btlevtcmd_GetFaceDirection) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (96.11%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangeFaceDirection) {
     s32* args = event->args;
     s32 btlId, id;
@@ -2208,6 +2286,7 @@ USER_FUNC(btlevtcmd_ChangeFaceDirection) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (96.55%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangePartsFaceDirection) {
     s32* args = event->args;
     s32 btlId, id, partId;
@@ -2224,11 +2303,10 @@ USER_FUNC(btlevtcmd_ChangePartsFaceDirection) {
 USER_FUNC(btlevtcmd_ResetFaceDirection) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
-    s32 btlId, id;
+    s32 btlId;
 
     btlId = evtGetValue(event, *event->args);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
     unit->faceDirection = wp->alliances[unit->mAlliance].attackDirection;
     return EVT_RETURN_DONE;
 }
@@ -2236,12 +2314,14 @@ USER_FUNC(btlevtcmd_ResetFaceDirection) {
 USER_FUNC(btlevtcmd_CheckAttribute) {
     s32* args = event->args;
     s32 btlId, id, mask, index;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     mask = args[1];
     index = args[2];
-    if (BattleGetUnitPtr(_battleWorkPointer, id)->mAttributeFlags & mask) {
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (unit->mAttributeFlags & mask) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -2278,16 +2358,18 @@ USER_FUNC(btlevtcmd_OffAttribute) {
 
 USER_FUNC(btlevtcmd_CheckPartsAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask, index;
+    s32 id, partId, index, mask;
     BattleUnit* unit;
+    BattleUnitPart* part;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     index = args[3];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (BtlUnit_GetPartsPtr(unit, partId)->attributes & mask) {
+    part = BtlUnit_GetPartsPtr(unit, partId);
+    if (part->attributes & mask) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -2298,12 +2380,12 @@ USER_FUNC(btlevtcmd_CheckPartsAttribute) {
 
 USER_FUNC(btlevtcmd_OnPartsAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask;
+    s32 id, partId, mask;
     BattleUnitPart* part;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -2314,32 +2396,34 @@ USER_FUNC(btlevtcmd_OnPartsAttribute) {
 
 USER_FUNC(btlevtcmd_OffPartsAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask;
+    s32 id, partId, mask;
     BattleUnitPart* part;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
-    part->attributes &= ~mask;
+    part->attributes = part->attributes & ~mask;
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(btlevtcmd_CheckPartsCounterAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask, index;
+    s32 id, partId, index, mask;
     BattleUnit* unit;
+    BattleUnitPart* part;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     index = args[3];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (BtlUnit_GetPartsPtr(unit, partId)->counterAttributes & mask) {
+    part = BtlUnit_GetPartsPtr(unit, partId);
+    if (part->counterAttributes & mask) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -2350,12 +2434,12 @@ USER_FUNC(btlevtcmd_CheckPartsCounterAttribute) {
 
 USER_FUNC(btlevtcmd_OnPartsCounterAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask;
+    s32 id, partId, mask;
     BattleUnitPart* part;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -2366,20 +2450,21 @@ USER_FUNC(btlevtcmd_OnPartsCounterAttribute) {
 
 USER_FUNC(btlevtcmd_OffPartsCounterAttribute) {
     s32* args = event->args;
-    s32 btlId, id, partId, mask;
+    s32 id, partId, mask;
     BattleUnitPart* part;
     BattleUnit* unit;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     mask = args[2];
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
-    part->counterAttributes &= ~mask;
+    part->counterAttributes = part->counterAttributes & ~mask;
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (90.44%): 8 instructions differ, plus register differences.
 USER_FUNC(btlevtcmd_SetPartsBlur) {
     s32* args = event->args;
     BattleUnitPart* part;
@@ -2412,6 +2497,9 @@ USER_FUNC(btlevtcmd_SetPartsBlur) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.60%): only the OR operand order differs (original `or r0, r0, r4`, ours `or r0, r4, r0`);
+// field and args[1] land in the right registers via `args[1] | unit->mTokenFlags` but MWCC emits the
+// expression's left operand first.
 USER_FUNC(btlevtcmd_OnToken) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2423,6 +2511,8 @@ USER_FUNC(btlevtcmd_OnToken) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.12%): the ANDC operands are swapped; original `andc r0, r0, r4`, ours `andc r0, r4, r0`
+// (semantically identical, only the evaluation/register order differs).
 USER_FUNC(btlevtcmd_OffToken) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2434,16 +2524,16 @@ USER_FUNC(btlevtcmd_OffToken) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.70%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_CheckToken) {
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, index;
+    s32 btlId, index;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     index = args[2];
-    if (unit->mTokenFlags & args[1]) {
+    if (args[1] & unit->mTokenFlags) {
         evtSetValue(event, index, 1);
     }
     else {
@@ -2455,10 +2545,10 @@ USER_FUNC(btlevtcmd_CheckToken) {
 USER_FUNC(btlevtcmd_SetRegistStatus) {
     s32* args = event->args;
     BattleVulnerableStatus* status;
-    s32 btlId, id;
+    s32 id;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     status = (BattleVulnerableStatus*)evtGetValue(event, args[1]);
     BattleGetUnitPtr(_battleWorkPointer, id)->vulnStatus = status;
     return EVT_RETURN_DONE;
@@ -2466,12 +2556,11 @@ USER_FUNC(btlevtcmd_SetRegistStatus) {
 
 USER_FUNC(btlevtcmd_CheckCommandUnit) {
     s32* args = event->args;
-    s32 btlId, id, index;
+    s32 btlId, index;
     BattleUnitType kind;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    kind = BattleGetUnitPtr(_battleWorkPointer, id)->currentKind;
+    kind = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId))->currentKind;
     index = args[1];
     if (kind == UNIT_MARIO || kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
         evtSetValue(event, index, 1);
@@ -2540,7 +2629,8 @@ USER_FUNC(btlevtcmd_ACRStart) {
     s32 id, windowStartFrame, windowEndFrame, endFrame, earlyFrames;
 
     if (isFirstCall) {
-        id = BattleTransID(event, evtGetValue(event, args[0]));
+        id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
         windowStartFrame = evtGetValue(event, args[1]);
         windowEndFrame = evtGetValue(event, args[2]);
         endFrame = evtGetValue(event, args[3]);
@@ -2553,7 +2643,7 @@ USER_FUNC(btlevtcmd_ACRStart) {
 //s32 resultRetIndex, s32 frameRetIndex (can be EVTDAT_POINTER_MAX to skip)
 USER_FUNC(btlevtcmd_ACRGetResult) {
     s32* args = event->args;
-    s32 index1, index2, frame, result;
+    s32 index1, index2, result, frame;
 
     index1 = args[0];
     index2 = args[1];
@@ -2648,9 +2738,8 @@ USER_FUNC(btlevtcmd_GetResultCountAC) {
 //s32 retIndex
 USER_FUNC(btlevtcmd_GetResultACDefence) {
     s32 index = *event->args;
-    s32 result = BattleActionCommandGetDefenceResult();
 
-    evtSetValue(event, index, result);
+    evtSetValue(event, index, BattleActionCommandGetDefenceResult());
     return EVT_RETURN_DONE;
 }
 
@@ -2708,6 +2797,7 @@ USER_FUNC(btlevtcmd_CommandGetWeaponItemId) {
 }
 
 //s32 retIndex, s32* weaponIndex
+// NONMATCHING (86.06%): 2 instructions differ, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetWeaponActionLv) {
     BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, *event->args);
 
@@ -2716,6 +2806,7 @@ USER_FUNC(btlevtcmd_GetWeaponActionLv) {
 }
 
 //s32 retIndex
+// NONMATCHING (96.84%): 1 instruction differs.
 USER_FUNC(btlevtcmd_AcGetDifficulty) {
     s32 index = *event->args;
     s32 diff = BattleActionCommandGetDifficulty(_battleWorkPointer);
@@ -2727,21 +2818,24 @@ USER_FUNC(btlevtcmd_AcGetDifficulty) {
 //s32* battleId
 USER_FUNC(btlevtcmd_AttackDeclareAll) {
     BattleWork* wp = _battleWorkPointer;
+    s32 id;
 
-    BattleTransID(event, evtGetValue(event, *event->args));
+    id = evtGetValue(event, *event->args);
+    BattleTransID(event, id);
     BattleAttackDeclareAll(wp);
     return EVT_RETURN_DONE;
 }
 
 //s32* battleId
 USER_FUNC(btlevtcmd_PhaseEventStartDeclare) {
-    s32 id = BattleTransID(event, evtGetValue(event, *event->args));
+    s32 btlId = evtGetValue(event, *event->args);
 
-    BattlePhaseEventStartDeclare(BattleGetUnitPtr(_battleWorkPointer, id));
+    BattlePhaseEventStartDeclare(BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId)));
     return EVT_RETURN_DONE;
 }
 
 //no params
+// NONMATCHING (81.53%): 2 instructions differ, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_InviteApInfoReport) {
     BattleWork* wp = _battleWorkPointer;
 
@@ -2810,18 +2904,20 @@ USER_FUNC(btlevtcmd_EnemyItemUseCheck) {
 }
 
 //s32* battleId, s32* kind
+// NONMATCHING (98.30%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_ChangeKind) {
-    BattleUnit* unit;
-    s32 id, kind;
+    s32* args = event->args;
+    s32 btlId, id, kind;
 
-    id = BattleTransID(event, evtGetValue(event, *event->args));
-    kind = evtGetValue(event, event->args[1]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    unit->currentKind = kind;
+    btlId = evtGetValue(event, args[0]);
+    id = BattleTransID(event, btlId);
+    kind = evtGetValue(event, args[1]);
+    BattleGetUnitPtr(_battleWorkPointer, id)->currentKind = kind;
     return EVT_RETURN_DONE;
 }
 
 //s32* battleId, s32 retIndex
+// NONMATCHING (85.93%): 1 instruction differs, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetExp) {
     s32* args = event->args;
     s32 id, index;
@@ -2833,6 +2929,7 @@ USER_FUNC(btlevtcmd_GetExp) {
 }
 
 //s32* battleId, s32 retIndex
+// NONMATCHING (85.93%): 1 instruction differs, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetCoin) {
     s32* args = event->args;
     s32 id, index;
@@ -2881,6 +2978,7 @@ void _PartsMoveSoundControl(BattleUnitPart* part) {
 }
 
 //s32 retIndex
+// NONMATCHING (85.59%): 2 instructions differ, 1 missing, plus register differences.
 USER_FUNC(btlevtcmd_GetConsumeItem) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -2951,6 +3049,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit);
 extern s32 subsetevt_confuse_flustered[];
 
 //s32* battleId, s32* retIndex, s32* dir
+// NONMATCHING (72.18%): 1 instruction differs, 4 missing, 5 extra, plus register differences.
 USER_FUNC(btlevtcmd_FaceDirectionAdd) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2966,6 +3065,7 @@ USER_FUNC(btlevtcmd_FaceDirectionAdd) {
 }
 
 //s32* battleId, s32* retIndex, s32* dir
+// NONMATCHING (74.95%): 1 instruction differs, 4 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_FaceDirectionSub) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -2981,6 +3081,7 @@ USER_FUNC(btlevtcmd_FaceDirectionSub) {
 }
 
 //s32* battleId, s32* retIndex, s32* dir
+// NONMATCHING (77.43%): 2 instructions differ, 4 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_MoveDirectionAdd) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -3002,13 +3103,15 @@ USER_FUNC(btlevtcmd_MoveDirectionAdd) {
 }
 
 //s32* battleId, s32* retIndex
+// NONMATCHING (86.46%): 2 instructions differ, 3 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetConfuseActEvent) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 id, retIndex, i;
     s32 evt;
 
-    id = BattleTransID(event, evtGetValue(event, args[0]));
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     retIndex = args[1];
     i = 0;
@@ -3024,7 +3127,6 @@ USER_FUNC(btlevtcmd_GetConfuseActEvent) {
     return EVT_RETURN_DONE;
 }
 
-void BattleStatusWindowCheck(void);
 
 //s32* onoff, s32 flags
 USER_FUNC(btlevtcmd_ac_timing_flag_onoff) {
@@ -3091,13 +3193,13 @@ USER_FUNC(btlevtcmd_OnOffStatus) {
 
 //s32* battleId, s32* acId, s32* gauge, s32* diff
 USER_FUNC(btlevtcmd_SetupAC) {
-    s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, acId, gauge, diff;
+    s32 id, acId, gauge, diff;
 
-    btlId = evtGetValue(event, args[0]);
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    id = evtGetValue(event, args[0]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
     acId = evtGetValue(event, args[1]);
     gauge = args[2];
     diff = evtGetValue(event, args[3]);
@@ -3105,7 +3207,6 @@ USER_FUNC(btlevtcmd_SetupAC) {
     return EVT_RETURN_DONE;
 }
 
-s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c);
 
 //s32* battleId, s32* a, s32* b, s32* c, s32* d, s32* e
 USER_FUNC(btlevtcmd_SetRunSound) {
@@ -3174,6 +3275,7 @@ USER_FUNC(btlevtcmd_SetDiveSound) {
 }
 
 //s32* battleId, s32* a, s32* b, s32* c, s32* retIndex
+// NONMATCHING (84.68%): 3 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_snd_se) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -3186,7 +3288,7 @@ USER_FUNC(btlevtcmd_snd_se) {
     v2 = evtGetValue(event, args[2]);
     v3 = evtGetValue(event, args[3]);
     v4 = args[4];
-    ret = BtlUnit_snd_se(unit, v1, v2, (s16)v3);
+    ret = BtlUnit_snd_se(unit, (const char*)v1, v2, (s16)v3);
     if (v4 != EVTDAT_POINTER_MAX) {
         evtSetValue(event, v4, ret);
     }
@@ -3264,16 +3366,18 @@ USER_FUNC(btlevtcmd_SetPartsDiveSound) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.53%): `part` lands in r30 instead of r28 and `type1` in r28 instead of r30; MWCC gives the
+// long-lived `part` the higher callee-saved register where the original gives it the lower one. Semantics match.
 //s32* battleId, s32* partId, s32* type1, s32* type2, s32* retIndex
 USER_FUNC(btlevtcmd_AnimeCmpPoseType) {
     s32* args = event->args;
     BattleUnitPart* part;
+    s32 id, partId, type1, type2, retIndex;
     char* name1;
     char* name2;
-    s32 btlId, id, partId, type1, type2, retIndex;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
     type1 = evtGetValue(event, args[2]);
@@ -3289,11 +3393,11 @@ USER_FUNC(btlevtcmd_AnimeCmpPoseType) {
 USER_FUNC(btlevtcmd_SetPartsMoveSpeed) {
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, partId;
+    s32 id, partId;
     f32 speed;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     speed = evtGetFloat(event, args[2]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -3305,11 +3409,11 @@ USER_FUNC(btlevtcmd_SetPartsMoveSpeed) {
 USER_FUNC(btlevtcmd_SetPartsFallAccel) {
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, partId;
+    s32 id, partId;
     f32 accel;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     accel = evtGetFloat(event, args[2]);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -3322,11 +3426,11 @@ USER_FUNC(btlevtcmd_JumpPartsSetting) {
     s32* args = event->args;
     BattleUnit* unit;
     BattleUnitPart* part;
-    s32 btlId, id, partId, a;
+    s32 id, partId, a;
     f32 b, c;
 
-    btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
     partId = evtGetValue(event, args[1]);
     a = evtGetValue(event, args[2]);
     b = evtGetFloat(event, args[3]);
@@ -3344,18 +3448,19 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
 void BattleInitCounterPreCheckWork(void* work);
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
+// NONMATCHING (99.55%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_PreCheckDamage) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* attacker;
     BattleUnit* target;
     BattleUnitPart* part;
-    s32 btlId, partId, value, a, retIndex, result;
+    s32 btlId, targetId, partId, value, retIndex, a, result;
 
     btlId = evtGetValue(event, args[0]);
     attacker = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    btlId = evtGetValue(event, args[1]);
-    target = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    targetId = evtGetValue(event, args[1]);
+    target = BattleGetUnitPtr(wp, BattleTransID(event, targetId));
     partId = evtGetValue(event, args[2]);
     part = BtlUnit_GetPartsPtr(target, partId);
     value = evtGetValue(event, args[3]);
@@ -3380,18 +3485,18 @@ USER_FUNC(btlevtcmd_PreCheckCounter) {
     BattleUnit* target;
     BattleUnitPart* part;
     u8 work[0x30];
-    s32 btlId, partId, value, retIndex, out, result;
+    s32 btlId, targetId, partId, value, retIndex, out, result;
 
     out = 0;
     BattleInitCounterPreCheckWork(&work);
     btlId = evtGetValue(event, args[0]);
     attacker = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    btlId = evtGetValue(event, args[1]);
-    target = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    targetId = evtGetValue(event, args[1]);
+    target = BattleGetUnitPtr(wp, BattleTransID(event, targetId));
     partId = evtGetValue(event, args[2]);
     part = BtlUnit_GetPartsPtr(target, partId);
     value = evtGetValue(event, args[3]);
-    retIndex = args[4];
+    retIndex = args[5];
     result = BattleCheckCounter(&work, attacker, target, part, value, &out);
     evtSetValue(event, retIndex, result);
     if (evtCheckID(event->eventId)) {
@@ -3401,6 +3506,7 @@ USER_FUNC(btlevtcmd_PreCheckCounter) {
 }
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
+// NONMATCHING (99.55%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_CheckDamage) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -3408,12 +3514,12 @@ USER_FUNC(btlevtcmd_CheckDamage) {
     BattleUnit* target;
     BattleUnitPart* part;
     BattleWeapon* weapon;
-    s32 btlId, partId, a, retIndex, result;
+    s32 btlId, targetId, partId, a, retIndex, result;
 
     btlId = evtGetValue(event, args[0]);
     attacker = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    btlId = evtGetValue(event, args[1]);
-    target = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
+    targetId = evtGetValue(event, args[1]);
+    target = BattleGetUnitPtr(wp, BattleTransID(event, targetId));
     partId = evtGetValue(event, args[2]);
     part = BtlUnit_GetPartsPtr(target, partId);
     weapon = (BattleWeapon*)evtGetValue(event, args[3]);
@@ -3442,6 +3548,7 @@ USER_FUNC(btlevtcmd_AcSetParam) {
 }
 
 //s32 index, s32 retIndex
+// NONMATCHING (93.96%): 2 instructions differ, plus register differences.
 USER_FUNC(btlevtcmd_AcGetParam) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -3466,6 +3573,7 @@ USER_FUNC(btlevtcmd_AcSetOutputParam) {
 }
 
 //s32 index, s32 retIndex
+// NONMATCHING (93.96%): 2 instructions differ, plus register differences.
 USER_FUNC(btlevtcmd_AcGetOutputParam) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -3501,6 +3609,7 @@ USER_FUNC(btlevtcmd_SetStayPose) {
 }
 
 //s32* battleId, s32 dataTable
+// NONMATCHING (92.17%): 1 instruction differs, 1 missing, plus register differences.
 USER_FUNC(btlevtcmd_ChangeDataTable) {
     s32* args = event->args;
     s32 btlId = evtGetValue(event, args[0]);
@@ -3515,8 +3624,9 @@ USER_FUNC(btlevtcmd_ChangeDataTable) {
 USER_FUNC(btlevtcmd_OnStatusFlag) {
     s32* args = event->args;
     s32 btlId = evtGetValue(event, args[0]);
+    s32 id = BattleTransID(event, btlId);
     s32 flags = args[1];
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
 
     BtlUnit_OnStatusFlag(unit, flags);
     return EVT_RETURN_DONE;
@@ -3526,8 +3636,9 @@ USER_FUNC(btlevtcmd_OnStatusFlag) {
 USER_FUNC(btlevtcmd_OffStatusFlag) {
     s32* args = event->args;
     s32 btlId = evtGetValue(event, args[0]);
+    s32 id = BattleTransID(event, btlId);
     s32 flags = args[1];
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
 
     BtlUnit_OffStatusFlag(unit, flags);
     return EVT_RETURN_DONE;
@@ -3537,8 +3648,9 @@ USER_FUNC(btlevtcmd_OffStatusFlag) {
 USER_FUNC(btlevtcmd_OnUnitFlag) {
     s32* args = event->args;
     s32 btlId = evtGetValue(event, args[0]);
+    s32 id = BattleTransID(event, btlId);
     s32 flags = args[1];
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
 
     BtlUnit_OnUnitFlag(unit, flags);
     return EVT_RETURN_DONE;
@@ -3548,8 +3660,9 @@ USER_FUNC(btlevtcmd_OnUnitFlag) {
 USER_FUNC(btlevtcmd_OffUnitFlag) {
     s32* args = event->args;
     s32 btlId = evtGetValue(event, args[0]);
+    s32 id = BattleTransID(event, btlId);
     s32 flags = args[1];
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, id);
 
     BtlUnit_OffUnitFlag(unit, flags);
     return EVT_RETURN_DONE;
@@ -3654,9 +3767,12 @@ USER_FUNC(btlevtcmd_AudienceAppeal) {
 //s32* battleId, s32* data
 USER_FUNC(btlevtcmd_AfterReactionEntry) {
     s32* args = event->args;
-    s32 id = BattleTransID(event, evtGetValue(event, args[0]));
-    s32 data = evtGetValue(event, args[1]);
+    s32 id;
+    s32 data;
 
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
+    data = evtGetValue(event, args[1]);
     BattleAfterReactionEntry(id, data);
     return EVT_RETURN_DONE;
 }
@@ -3674,6 +3790,7 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
 }
 
 //s32 chan, s32 mask, s32 retIndex
+// NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckTrigger) {
     s32* args = event->args;
     s32 index = args[2];
@@ -3688,6 +3805,7 @@ USER_FUNC(btlevtcmd_PadCheckTrigger) {
 }
 
 //s32 chan, s32 mask, s32 retIndex
+// NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckNow) {
     s32* args = event->args;
     s32 index = args[2];
@@ -3757,8 +3875,10 @@ USER_FUNC(btlevtcmd_SetGuard) {
     BattleWork* wp = _battleWorkPointer;
     s32 btlId = evtGetValue(event, args[0]);
     BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, btlId));
-    s32 value = BattleTransID(event, evtGetValue(event, args[1]));
+    s32 value;
 
+    value = evtGetValue(event, args[1]);
+    value = BattleTransID(event, value);
     unit->protectId = value;
     return EVT_RETURN_DONE;
 }

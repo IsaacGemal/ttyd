@@ -94,7 +94,7 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapGrpFlagOff(name, 0x40);
 }
 
-// NONMATCHING (98.45%): register allocation of the first inlined search and error body
+// NONMATCHING (98.89%): register allocation of the first inlined search and error body
 void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;
@@ -112,8 +112,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-// NONMATCHING (95.71%): the "|" literal lands at a different .sdata2 offset than str_8041986C
-void mapSearchDmdJoint(void* a, char* b) {
+void mapSearchDmdJoint(void* a, s8* b) {
 	if (*b != 0x7C) {
 		mapSearchDmdJointSub(a, b);
 	}
@@ -325,7 +324,6 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 	}
 }
 
-// NONMATCHING (99.35%): register allocation inside the inlined mapErrorEntry error body
 void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -479,11 +477,10 @@ void makeDisplayList(BOOL group);
 void _mapLoad(MapWork* wp, BOOL group, const char* map);
 
 void mapErrorEntry(s32 arg0, const char* arg1) { //1:1
-	MapError* error = error_data;
-
-	error += error_count;
-	error->field_0x20 = arg0;
-	strncpy(error->field_0x0, arg1, sizeof(error->field_0x0) - 1);
+	// Indexing error_data directly (rather than a saved base pointer) is what makes MWCC's inlined copies
+	// of this function allocate the index to r0; the saved-pointer form does not inline to the target code.
+	error_data[error_count].field_0x20 = arg0;
+	strncpy(error_data[error_count].field_0x0, arg1, sizeof(error_data[0].field_0x0) - 1);
 	error_flag = TRUE;
 	error_count++;
 	error_count %= 32;
@@ -616,7 +613,6 @@ void mapGrpFlushOn(const char* name) {
 
 // Keep mapGrpFlagOff, mapGrpFlagOn out of line: the original calls them rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (99.29%): register allocation inside the inlined mapErrorEntry error body
 void mapGrpFlagOff(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -628,7 +624,6 @@ void mapGrpFlagOff(const char* name, u32 flag) {
 	}
 }
 
-// NONMATCHING (99.29%): register allocation inside the inlined mapErrorEntry error body
 void mapGrpFlagOn(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -641,7 +636,6 @@ void mapGrpFlagOn(const char* name, u32 flag) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.28%): register allocation inside the inlined mapErrorEntry error body
 void mapObjFlagOff(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -653,7 +647,6 @@ void mapObjFlagOff(const char* name, u32 flag) {
 	}
 }
 
-// NONMATCHING (99.32%): register allocation inside the inlined mapErrorEntry error body
 void mapObjFlagOn(const char* name, u32 flag) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -665,7 +658,6 @@ void mapObjFlagOn(const char* name, u32 flag) {
 	}
 }
 
-// NONMATCHING (99.26%): register allocation inside the inlined mapErrorEntry error body
 void mapObjFlushOff(const char* name) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -677,7 +669,6 @@ void mapObjFlushOff(const char* name) {
 	}
 }
 
-// NONMATCHING (99.26%): register allocation inside the inlined mapErrorEntry error body
 void mapObjFlushOn(const char* name) {
 	MapObject* obj = mapGetMapObjSub(name);
 
@@ -1050,14 +1041,18 @@ extern void* aramMgrToAram(void* data, u32 size);
 extern void arcDelete(s32 id);
 extern f32 float_0_804198cc;
 
-// NONMATCHING (96.94%): entry vs i register swap (target r29=entry, r30=i)
+// NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches
 void mapUnLoad(void) {
 	MapEntry* entry;
 	s32 i;
 	MapWork* wp;
 
 	sysWaitDrawSync();
+#ifdef MUST_MATCH
+	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load mapWork into wp's home register r31
+#else
 	wp = mapWork;
+#endif
 	activeGroup = 0;
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
@@ -1111,12 +1106,15 @@ BOOL mapPreLoad(void) {
 	return TRUE; //do nothing
 }
 
-// NONMATCHING (99.42%): wp kept in r31 but the load/move order differs from target
 void mapLoad(const char* map) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
+#ifdef MUST_MATCH
+	wp = (MapWork*)mapWork; // redundant cast: makes MWCC load into r31 (wp's home) instead of the memset arg r3
+#else
 	wp = mapWork;
+#endif
 	activeGroup = 0;
 	memset(wp, 0, sizeof(MapWork));
 	_mapLoad(wp, 0, map);

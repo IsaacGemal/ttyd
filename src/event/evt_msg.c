@@ -12,7 +12,6 @@
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
 #include <string.h>
-#include <math.h>
 
 extern int sprintf(char* str, const char* format, ...);
 
@@ -52,9 +51,9 @@ typedef struct EventVec {
 // .rodata
 
 // .bss
-char partyLabel_590[0x40];
-char partyLabel_582[0x40];
 char partyLabel_578[0x40];
+char partyLabel_582[0x40];
+char partyLabel_590[0x40];
 
 // .sdata
 const char* partyMsgStr[11] = {
@@ -63,257 +62,10 @@ const char* partyMsgStr[11] = {
 const char* battlePartyMsgStr[7] = {
     "_kur", "_nok", "_yos", "_win", "_viv", "_bom", "_chu"
 };
+__declspec(export) u8 gap_07_804106A8_sdata[0x18] = {0};
 
-USER_FUNC(evt_msg_npc) {
-    const char* name = (const char*)evtGetValue(event, *event->args);
-    WindowEntry* window = windowGetPointer(event->printWindowId);
-    strcpy(((MsgWindowWork*)window->userdata->address)->text, name);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_pri) {
-    event->msgPriority = evtGetValue(event, *event->args);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_togelr) {
-    s32 value = evtGetValue(event, *event->args);
-
-    event->printWindowFlags |= 0x80000000;
-    switch (value) {
-    case 0:
-        break;
-    case 1:
-        event->printWindowFlags |= 0x40000000;
-        break;
-    case 2:
-        event->printWindowFlags |= 0x20000000;
-        break;
-    case 3:
-        event->printWindowFlags |= 0x60000000;
-        break;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_toge) {
-    s32* args = event->args;
-
-    s32 value = evtGetValue(event, *args++);
-
-    event->printWindowFlags &= 0xE1000000;
-    event->printWindowFlags |= value;
-    event->unk184.field_0x0 = evtGetFloat(event, *args++);
-    event->unk184.field_0x4 = evtGetFloat(event, *args++);
-    *(f32*)&event->unk18C = evtGetFloat(event, *args++);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_select) {
-    s32* args = event->args;
-    s32 flag = evtGetValue(event, *args++);
-    const char* msg = (const char*)evtGetValue(event, *args);
-    const char* message;
-
-    if (isFirstCall) {
-        if (!(flag & 1)) {
-            message = msgSearch(msg);
-        }
-        else {
-            message = msg;
-            msg = "DIRECT";
-        }
-        event->selectWindowId = msgWindow_Entry(message, 0, 0x14);
-        ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x0 = msg;
-    }
-    if (windowCheckID(event->selectWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    event->lwData[0] = ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x7A43;
-    windowDeleteID(event->selectWindowId);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_close) {
-    msgWindow_ForceClose(evtGetValue(event, *event->args));
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_repeat) {
-    if (isFirstCall) {
-        msgWindow_Repeat(event->printWindowId);
-    }
-    if (windowCheckID(event->printWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_continue) {
-    if (isFirstCall) {
-        msgWindow_Continue(event->printWindowId);
-    }
-    if (windowCheckID(event->printWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_print_add) {
-    s32* args = event->args;
-    s32 flag = evtGetValue(event, *args++);
-    s32 msg = evtGetValue(event, *args);
-
-    if (isFirstCall) {
-        if (!(flag & 1)) {
-            msgWindow_Add(msgSearch((const char*)msg), event->printWindowId);
-        }
-        else {
-            msgWindow_Add((const char*)msg, event->printWindowId);
-        }
-    }
-    if (windowCheckID(event->printWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_print) {
-    s32* args = event->args;
-    s32 a0 = evtGetValue(event, *args++);
-    s32 a1 = evtGetValue(event, *args++);
-    s32 a2 = evtGetValue(event, *args++);
-    s32 a3 = evtGetValue(event, *args++);
-    return _evt_msg_print(event, isFirstCall, a0, (const char*)a1, a2, (const char*)a3);
-}
-
-USER_FUNC(evt_msg_print_party) {
-    s32* args = event->args;
-    s32 member;
-    s32 msg = evtGetValue(event, *args);
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-    if (party) {
-        member = party->currentMemberId;
-    }
-    else {
-        member = 0;
-    }
-    strcpy(partyLabel_578, (const char*)msg);
-    strcat(partyLabel_578, partyMsgStr[member]);
-    return _evt_msg_print(event, isFirstCall, 0, partyLabel_578, 0, "party");
-}
-
-USER_FUNC(evt_msg_print_party_add) {
-    s32* args = event->args;
-    s32 member;
-    s32 msg = evtGetValue(event, *args);
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-    if (party) {
-        member = party->currentMemberId;
-    }
-    else {
-        member = 0;
-    }
-    if (isFirstCall) {
-        strcpy(partyLabel_582, (const char*)msg);
-        strcat(partyLabel_582, partyMsgStr[member]);
-        msgWindow_Add(msgSearch(partyLabel_582), event->printWindowId);
-    }
-    if (windowCheckID(event->printWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_print_battle_party) {
-    s32* args = event->args;
-    s32 msg = evtGetValue(event, *args);
-    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -4));
-
-    if (!unit) {
-        return EVT_RETURN_DONE;
-    }
-    strcpy(partyLabel_590, (const char*)msg);
-    strcat(partyLabel_590, battlePartyMsgStr[unit->currentKind - UNIT_GOOMBELLA]);
-    return _evt_msg_print(event, isFirstCall, 2, partyLabel_590, 0, (const char*)-4);
-}
-
-USER_FUNC(evt_msg_print_add_insert) {
-    s32* args = event->args;
-    s32 varargCount = (event->args[-2] >> 16) - 3;
-    s32 a0 = evtGetValue(event, *args++);
-    s32 a1 = evtGetValue(event, *args++);
-    s32 values[4];
-    char buf[0x500];
-    s32 i;
-
-    for (i = 0; i < varargCount; i++) {
-        values[i] = evtGetValue(event, *args++);
-    }
-    if (isFirstCall) {
-        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
-
-        switch (varargCount) {
-        case 0:
-            break;
-        case 1:
-            sprintf(buf, fmt, values[0]);
-            break;
-        case 2:
-            sprintf(buf, fmt, values[0], values[1]);
-            break;
-        case 3:
-            sprintf(buf, fmt, values[0], values[1], values[2]);
-            break;
-        case 4:
-            sprintf(buf, fmt, values[0], values[1], values[2], values[3]);
-            break;
-        }
-        msgWindow_Add(buf, event->printWindowId);
-    }
-    if (windowCheckID(event->printWindowId)) {
-        return EVT_RETURN_BLOCK;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_msg_print_insert) {
-    s32* args = event->args;
-    s32 varargCount = (event->args[-2] >> 16) - 5;
-    s32 a0 = evtGetValue(event, *args++);
-    s32 a1 = evtGetValue(event, *args++);
-    s32 a2 = evtGetValue(event, *args++);
-    s32 a3 = evtGetValue(event, *args++);
-    s32 values[4];
-    char buf[0x500];
-    s32 i;
-
-    for (i = 0; i < varargCount; i++) {
-        values[i] = evtGetValue(event, *args++);
-    }
-    if (isFirstCall) {
-        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
-
-        switch (varargCount) {
-        case 0:
-            break;
-        case 1:
-            sprintf(buf, fmt, values[0]);
-            break;
-        case 2:
-            sprintf(buf, fmt, values[0], values[1]);
-            break;
-        case 3:
-            sprintf(buf, fmt, values[0], values[1], values[2]);
-            break;
-        case 4:
-            sprintf(buf, fmt, values[0], values[1], values[2], values[3]);
-            break;
-        }
-    }
-    return _evt_msg_print(event, isFirstCall, a0 | 1, buf, a2, (const char*)a3);
+void evt_msg_init(void) {
+	//stubbed in retail
 }
 
 #define MSGWORK(w) ((MsgWindowWork*)(w)->userdata->address)
@@ -411,7 +163,7 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
                 if (window->type == 1) {
                     window->field_0x2C = 7;
                 }
-                else if (fabsf(sp14.x) >= 300.0f) {
+                else if (__fabsf(sp14.x) >= 300.0f) {
                     window->field_0x2C = 2;
                 }
                 else {
@@ -458,6 +210,254 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
     return EVT_RETURN_DONE;
 }
 
-void evt_msg_init(void) {
-	//stubbed in retail
+USER_FUNC(evt_msg_print) {
+    s32* args = event->args;
+    s32 a0 = evtGetValue(event, *args++);
+    s32 a1 = evtGetValue(event, *args++);
+    s32 a2 = evtGetValue(event, *args++);
+    s32 a3 = evtGetValue(event, *args++);
+    return _evt_msg_print(event, isFirstCall, a0, (const char*)a1, a2, (const char*)a3);
+}
+
+USER_FUNC(evt_msg_print_party) {
+    s32* args = event->args;
+    s32 member;
+    s32 msg = evtGetValue(event, *args);
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        member = party->currentMemberId;
+    }
+    else {
+        member = 0;
+    }
+    strcpy(partyLabel_578, (const char*)msg);
+    strcat(partyLabel_578, partyMsgStr[member]);
+    return _evt_msg_print(event, isFirstCall, 0, partyLabel_578, 0, "party");
+}
+
+USER_FUNC(evt_msg_print_party_add) {
+    s32* args = event->args;
+    s32 member;
+    s32 msg = evtGetValue(event, *args);
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party) {
+        member = party->currentMemberId;
+    }
+    else {
+        member = 0;
+    }
+    if (isFirstCall) {
+        strcpy(partyLabel_582, (const char*)msg);
+        strcat(partyLabel_582, partyMsgStr[member]);
+        msgWindow_Add(msgSearch(partyLabel_582), event->printWindowId);
+    }
+    if (windowCheckID(event->printWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_print_battle_party) {
+    s32* args = event->args;
+    s32 msg = evtGetValue(event, *args);
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -4));
+
+    if (!unit) {
+        return EVT_RETURN_DONE;
+    }
+    strcpy(partyLabel_590, (const char*)msg);
+    strcat(partyLabel_590, battlePartyMsgStr[unit->currentKind - UNIT_GOOMBELLA]);
+    return _evt_msg_print(event, isFirstCall, 2, partyLabel_590, 0, (const char*)-4);
+}
+
+USER_FUNC(evt_msg_print_insert) {
+    s32* args = event->args;
+    s32 varargCount = (event->args[-2] >> 16) - 5;
+    s32 a0 = evtGetValue(event, *args++);
+    s32 a1 = evtGetValue(event, *args++);
+    s32 a2 = evtGetValue(event, *args++);
+    s32 a3 = evtGetValue(event, *args++);
+    s32 values[4];
+    char buf[0x500];
+    s32 i;
+
+    for (i = 0; i < varargCount; i++) {
+        values[i] = evtGetValue(event, *args++);
+    }
+    if (isFirstCall) {
+        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
+
+        switch (varargCount) {
+        case 0:
+            break;
+        case 1:
+            sprintf(buf, fmt, values[0]);
+            break;
+        case 2:
+            sprintf(buf, fmt, values[0], values[1]);
+            break;
+        case 3:
+            sprintf(buf, fmt, values[0], values[1], values[2]);
+            break;
+        case 4:
+            sprintf(buf, fmt, values[0], values[1], values[2], values[3]);
+            break;
+        }
+    }
+    return _evt_msg_print(event, isFirstCall, a0 | 1, buf, a2, (const char*)a3);
+}
+
+USER_FUNC(evt_msg_print_add) {
+    s32* args = event->args;
+    s32 flag = evtGetValue(event, *args++);
+    s32 msg = evtGetValue(event, *args);
+
+    if (isFirstCall) {
+        if (!(flag & 1)) {
+            msgWindow_Add(msgSearch((const char*)msg), event->printWindowId);
+        }
+        else {
+            msgWindow_Add((const char*)msg, event->printWindowId);
+        }
+    }
+    if (windowCheckID(event->printWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_print_add_insert) {
+    s32* args = event->args;
+    s32 varargCount = (event->args[-2] >> 16) - 3;
+    s32 a0 = evtGetValue(event, *args++);
+    s32 a1 = evtGetValue(event, *args++);
+    s32 values[4];
+    char buf[0x500];
+    s32 i;
+
+    for (i = 0; i < varargCount; i++) {
+        values[i] = evtGetValue(event, *args++);
+    }
+    if (isFirstCall) {
+        char* fmt = (a0 & 1) ? (char*)a1 : (char*)msgSearch((const char*)a1);
+
+        switch (varargCount) {
+        case 0:
+            break;
+        case 1:
+            sprintf(buf, fmt, values[0]);
+            break;
+        case 2:
+            sprintf(buf, fmt, values[0], values[1]);
+            break;
+        case 3:
+            sprintf(buf, fmt, values[0], values[1], values[2]);
+            break;
+        case 4:
+            sprintf(buf, fmt, values[0], values[1], values[2], values[3]);
+            break;
+        }
+        msgWindow_Add(buf, event->printWindowId);
+    }
+    if (windowCheckID(event->printWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_continue) {
+    if (isFirstCall) {
+        msgWindow_Continue(event->printWindowId);
+    }
+    if (windowCheckID(event->printWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_repeat) {
+    if (isFirstCall) {
+        msgWindow_Repeat(event->printWindowId);
+    }
+    if (windowCheckID(event->printWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_close) {
+    msgWindow_ForceClose(evtGetValue(event, *event->args));
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_select) {
+    s32* args = event->args;
+    s32 flag = evtGetValue(event, *args++);
+    const char* msg = (const char*)evtGetValue(event, *args);
+    const char* message;
+
+    if (isFirstCall) {
+        if (!(flag & 1)) {
+            message = msgSearch(msg);
+        }
+        else {
+            message = msg;
+            msg = "DIRECT";
+        }
+        event->selectWindowId = msgWindow_Entry(message, 0, 0x14);
+        ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x0 = msg;
+    }
+    if (windowCheckID(event->selectWindowId)) {
+        return EVT_RETURN_BLOCK;
+    }
+    event->lwData[0] = ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x7A43;
+    windowDeleteID(event->selectWindowId);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_toge) {
+    s32* args = event->args;
+
+    s32 value = evtGetValue(event, *args++);
+
+    event->printWindowFlags &= 0xE1000000;
+    event->printWindowFlags |= value;
+    event->unk184.field_0x0 = evtGetFloat(event, *args++);
+    event->unk184.field_0x4 = evtGetFloat(event, *args++);
+    *(f32*)&event->unk18C = evtGetFloat(event, *args++);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_togelr) {
+    s32 value = evtGetValue(event, *event->args);
+
+    event->printWindowFlags |= 0x80000000;
+    switch (value) {
+    case 0:
+        break;
+    case 1:
+        event->printWindowFlags |= 0x40000000;
+        break;
+    case 2:
+        event->printWindowFlags |= 0x20000000;
+        break;
+    case 3:
+        event->printWindowFlags |= 0x60000000;
+        break;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_pri) {
+    event->msgPriority = evtGetValue(event, *event->args);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_msg_npc) {
+    const char* name = (const char*)evtGetValue(event, *event->args);
+    WindowEntry* window = windowGetPointer(event->printWindowId);
+    strcpy(((MsgWindowWork*)window->userdata->address)->text, name);
+    return EVT_RETURN_DONE;
 }

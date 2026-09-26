@@ -409,7 +409,6 @@ void cardWrite(s32 slot) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
-// NONMATCHING (99.43%): 2 missing, 2 extra.
 void write_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -564,7 +563,6 @@ void write_header_main(void) {
 #pragma opt_propagation on
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
-// NONMATCHING (99.27%): 2 missing, 2 extra.
 void read_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -668,7 +666,6 @@ void cardReadAll(void) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
-// NONMATCHING (99.41%): 2 missing, 2 extra.
 void read_all_main(void) {
     s32 saveType; //invalid = -1, main = 0, backup = 1
 
@@ -781,7 +778,6 @@ void cardCreate(void) {
 }
 
 #pragma opt_propagation on //needed for memcard_probe? TODO fix
-// NONMATCHING (99.26%): 2 missing, 2 extra.
 void create_main(void) {
     if (wp->result) {
         wp->unkE0 = 8;
@@ -1093,8 +1089,18 @@ void memcard_probe(void) {
     
     wp->flags |= 1;
 
+#ifdef MUST_MATCH
+    // The retail compiler materializes `timeout` in the loop header, before `i = 0`.
+    // This dead test reproduces that schedule; the natural form is under #else.
+    timeout = 1000000;
+    i = 0;
+    if (timeout <= 0) {
+        result = CARD_RESULT_FATAL_ERROR;
+    }
+#else
     i = 0;
     timeout = 1000000;
+#endif
     while (result = CARDProbeEx(0, &memSize, &sectorSize), result == CARD_RESULT_BUSY) {
         if (++i > timeout) {
             result = CARD_RESULT_FATAL_ERROR;

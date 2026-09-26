@@ -273,6 +273,10 @@ cflags_static = [
     "-DMUSY_VERSION_PATCH=3",
 ]
 
+# DOL flags without deferred inlining: with `deferred`, MWCC emits functions in reverse source order and all of
+# a file's .data before its jump tables. battle.c and dispdrv.c were built without it.
+cflags_static_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" for f in cflags_static]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -332,7 +336,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "battle/battle.c", cflags=[*cflags_static, "-O4,s", "-inline off"]),
+            Object(Matching, "battle/battle.c", cflags=[*cflags_static_nodefer, "-O4,s", "-inline off"]),
             Object(Matching, "battle/battle_evt_cmd.c"),
             Object(NonMatching, "battle/battle_ac.c"),
             Object(NonMatching, "battle/battle_damage.c"),
@@ -340,7 +344,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_disp.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_event_cmd.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_event_default.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_event_subset.c"),
+            Object(NonMatching, "battle/battle_event_subset.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_information.c"),
             Object(NonMatching, "battle/battle_mario.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_menu_disp.c"),
@@ -413,7 +417,7 @@ config.libs = [
             Object(NonMatching, "battle/sac/sac_scissor.c"),
             Object(NonMatching, "battle/sac/sac_zubastar.c"),
             Object(NonMatching, "battle/sac/sac_genki.c"),
-            Object(NonMatching, "battle/sac/sac_common.c"),
+            Object(NonMatching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_deka.c"),
             Object(NonMatching, "battle/sac/sac_muki.c"),
             Object(NonMatching, "battle/sac/sac_suki.c"),
@@ -439,7 +443,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "driver/bgdrv.c"),
             Object(Matching, "driver/camdrv.c"),
-            Object(NonMatching, "driver/dispdrv.c"),
+            Object(Matching, "driver/dispdrv.c", cflags=cflags_static_nodefer),
             Object(NonMatching, "driver/fadedrv.c"),
             Object(NonMatching, "driver/hitdrv.c"),
             Object(NonMatching, "driver/icondrv.c"),
@@ -673,11 +677,11 @@ config.libs = [
             Object(NonMatching, "event/evt_case.c"),
             Object(Matching, "event/evt_img.c"),
             Object(NonMatching, "event/evt_offscreen.c"),
-            Object(NonMatching, "event/evt_hit.c"),
+            Object(Matching, "event/evt_hit.c"),
             Object(NonMatching, "event/evt_bero.c"),
             Object(NonMatching, "event/evt_cam.c"),
             Object(NonMatching, "event/evt_item.c"),
-            Object(NonMatching, "event/evt_msg.c"),
+            Object(Matching, "event/evt_msg.c"),
             Object(NonMatching, "event/evt_ext.c"),
             Object(NonMatching, "event/evt_mario.c"),
             Object(NonMatching, "event/evt_door.c"),
@@ -759,7 +763,7 @@ config.libs = [
             Object(NonMatching, "motion/mot_roll.c"),
             Object(NonMatching, "motion/mot_ship.c"),
             Object(NonMatching, "motion/mot_slit.c"),
-            Object(NonMatching, "motion/mot_stay.c"),
+            Object(Matching, "motion/mot_stay.c"),
             Object(NonMatching, "motion/mot_damage.c"),
             Object(NonMatching, "motion/mot_yoshi.c"),
             Object(NonMatching, "motion/mot_dokan.c"),

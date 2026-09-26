@@ -108,9 +108,10 @@ f32 float_0p1_8041b920 = 0.1f;
 
 USER_FUNC(evt_mario_paper_plane) {
     s32 first = isFirstCall;
+    s32 arg;
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
-    s32 arg = args[0];
+    arg = args[0];
 
     if (first) {
         if (arg == 0) {
@@ -293,16 +294,19 @@ USER_FUNC(evt_mario_goodbye_party) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (97.62%): `s8 prev` sign-extension lands in r0 (`extsb. r0,r3`) where the original extends r3 in
+// place (`extsb. r3,r3`), so both partyEntry*Pos calls need an extra `extsb r3,r3`.
 USER_FUNC(evt_mario_set_prev_party_pos) {
     s32* args = event->args;
-    s32 slot = args[0];
     s32 first = isFirstCall;
-    MarioWork* mario = marioGetPtr();
+    s8 prev;
+    s32 slot;
     f32 x;
     f32 y;
     f32 z;
-    s8 prev;
     s32 ret;
+    MarioWork* mario = marioGetPtr();
+    slot = args[0];
 
     if (first) {
         if (mario->currPartySlotId[slot] >= 0) {
@@ -331,15 +335,16 @@ USER_FUNC(evt_mario_set_prev_party_pos) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (95.80%): same `extsb r0` vs `extsb r3` sign-extension issue as set_prev_party_pos.
 USER_FUNC(evt_mario_set_prev_party) {
-    s32 first = isFirstCall;
+    s32 slot;
     s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 slot = args[0];
     s8 prev;
     s32 ret;
+    MarioWork* mario = marioGetPtr();
+    slot = args[0];
 
-    if (first) {
+    if (isFirstCall) {
         if (mario->currPartySlotId[slot] >= 0) {
             return EVT_RETURN_DONE;
         }
@@ -591,18 +596,18 @@ USER_FUNC(evt_mario_set_mode) {
 
 USER_FUNC(evt_mario_get_mode) {
     s32 arg = event->args[0];
-    MarioWork* mario = marioGetPtr();
-    s8 value = mario->characterId;
+    s8 value = marioGetPtr()->characterId;
 
     evtSetValue(event, arg, value);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_mario_get_state) {
+    s32 arg;
     s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 arg = args[0];
     s32 state;
+    MarioWork* mario = marioGetPtr();
+    arg = args[0];
 
     if (marioChkSlitThrouhEnd()) {
         evtSetValue(event, arg, 2);
@@ -749,9 +754,8 @@ USER_FUNC(evt_mario_get_dir) {
 
 USER_FUNC(evt_mario_get_mov_spd) {
     s32 arg = event->args[0];
-    MarioWork* mario = marioGetPtr();
 
-    evtSetFloat(event, arg, mario->baseSpeed * (f32)gp->framerate);
+    evtSetFloat(event, arg, marioGetPtr()->baseSpeed * (f32)gp->framerate);
     return EVT_RETURN_DONE;
 }
 
@@ -801,6 +805,8 @@ USER_FUNC(evt_mario_get_pos) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (94.42%): register rotation (event/first/args/mario) and `fmadds` where the original emits
+// separate `fmuls`+`fadds`.
 USER_FUNC(evt_mario_set_dir) {
     s32* args = event->args;
     s32 first = isFirstCall;
@@ -856,16 +862,17 @@ USER_FUNC(evt_mario_mov_pos) {
     if (first) {
         f32 x = evtGetFloat(event, args[0]);
         f32 z = evtGetFloat(event, args[1]);
+        f32 speed;
 
         event->userdata[0] = sysMsec2Frame(evtGetValue(event, args[2]));
         mario->directionView = angleABf(mario->position.x, mario->position.z, x, z);
         if (event->userdata[0] == 0) {
             event->userdata[0] = (s32)(distABf(mario->position.x, mario->position.z, x, z) / mario->baseSpeed);
-            marioSetForceMove(event->userdata[0], mario->directionView, mario->baseSpeed);
+            speed = mario->baseSpeed;
         } else {
-            marioSetForceMove(event->userdata[0], mario->directionView,
-                              distABf(mario->position.x, mario->position.z, x, z) / (f32)event->userdata[0]);
+            speed = distABf(mario->position.x, mario->position.z, x, z) / (f32)event->userdata[0];
         }
+        marioSetForceMove(event->userdata[0], mario->directionView, speed);
     }
     if (--event->userdata[0] < 0) {
         return 1;
@@ -904,17 +911,17 @@ USER_FUNC(evt_mario_mov_pos2) {
 }
 
 USER_FUNC(evt_mario_set_party_pos) {
-    s32 first = isFirstCall;
+    s32 member;
+    s32 slot;
     s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 slot = args[0];
     f32 x;
     f32 y;
     f32 z;
-    s32 member;
     s32 ret;
+    MarioWork* mario = marioGetPtr();
+    slot = args[0];
 
-    if (first) {
+    if (isFirstCall) {
         if (mario->currPartySlotId[slot] >= 0) {
             return EVT_RETURN_DONE;
         }
@@ -936,11 +943,12 @@ USER_FUNC(evt_mario_set_party_pos) {
 }
 
 USER_FUNC(evt_mario_set_party) {
+    s32 slot;
     s32* args = event->args;
-    MarioWork* mario = marioGetPtr();
-    s32 slot = args[0];
     s32 member;
     s32 ret;
+    MarioWork* mario = marioGetPtr();
+    slot = args[0];
 
     if (isFirstCall) {
         if (mario->currPartySlotId[slot] >= 0) {
@@ -965,12 +973,12 @@ USER_FUNC(evt_mario_set_party) {
 }
 
 USER_FUNC(evt_mario_hello_exparty_pos) {
+    s32 member;
     s32 first = isFirstCall;
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
 
     if (first) {
-        s32 member;
         s32 ret;
 
         if (mario->currPartySlotId[1] >= 0) {
@@ -994,18 +1002,19 @@ USER_FUNC(evt_mario_hello_exparty_pos) {
         if (party == NULL) {
             return EVT_RETURN_DONE;
         }
-        if (party->flags & PARTY_FLAG_IS_ACTIVE && ((u8*)party)[0x34] == 1) {
-            return EVT_RETURN_DONE;
+        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->field_34 != 1) {
+            return EVT_RETURN_BLOCK;
         }
-        return EVT_RETURN_BLOCK;
+        return EVT_RETURN_DONE;
     }
 }
 
 USER_FUNC(evt_mario_hello_party) {
+    s32 slot;
     s32* args = event->args;
     s32 first = isFirstCall;
     MarioWork* mario = marioGetPtr();
-    s32 slot = args[0];
+    slot = args[0];
 
     if (first) {
         s32 member;
@@ -1033,13 +1042,14 @@ USER_FUNC(evt_mario_hello_party) {
         if (party == NULL) {
             return EVT_RETURN_DONE;
         }
-        if (party->flags & PARTY_FLAG_IS_ACTIVE && ((u8*)party)[0x34] == 1) {
-            return EVT_RETURN_DONE;
+        if ((party->flags & PARTY_FLAG_IS_ACTIVE) == 0 || party->field_34 != 1) {
+            return EVT_RETURN_BLOCK;
         }
-        return EVT_RETURN_BLOCK;
+        return EVT_RETURN_DONE;
     }
 }
 
+// NONMATCHING (80.71%): `extsb` destination, branch layout, and Vec copy scheduling.
 USER_FUNC(evt_mario_set_prev_party_dokan) {
     s32 first = isFirstCall;
     s32* args = event->args;
@@ -1143,18 +1153,20 @@ USER_FUNC(evt_mario_check_landon) {
 
     if (marioGetPtr()->hitobjStandOn != NULL) {
         MarioWork* mario = marioGetPtr();
-        s32 landed = 0;
+        s32 landed;
 
-        if (mario->currMotionId <= MARIO_MOTION_WALK || mario->currMotionId == MARIO_MOTION_DASH) {
+        if (mario->currMotionId <= MARIO_MOTION_WALK || (s32)mario->currMotionId == MARIO_MOTION_DASH) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_YOSHI) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_YOSHI) {
             landed = 1;
+        } else {
+            landed = 0;
         }
 
         if (landed) {
@@ -1169,18 +1181,20 @@ USER_FUNC(evt_mario_check_landon) {
 USER_FUNC(evt_mario_wait_rideon) {
     if (marioGetPtr()->hitobjStandOn != NULL) {
         MarioWork* mario = marioGetPtr();
-        s32 landed = 0;
+        s32 landed;
 
-        if (mario->currMotionId <= MARIO_MOTION_WALK || mario->currMotionId == MARIO_MOTION_DASH) {
+        if (mario->currMotionId <= MARIO_MOTION_WALK || (s32)mario->currMotionId == MARIO_MOTION_DASH) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_YOSHI) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_YOSHI) {
             landed = 1;
+        } else {
+            landed = 0;
         }
 
         if (landed) {
@@ -1193,18 +1207,20 @@ USER_FUNC(evt_mario_wait_rideon) {
 USER_FUNC(evt_mario_wait_landon) {
     if (marioGetPtr()->hitobjStandOn != NULL) {
         MarioWork* mario = marioGetPtr();
-        s32 landed = 0;
+        s32 landed;
 
-        if (mario->currMotionId <= MARIO_MOTION_WALK || mario->currMotionId == MARIO_MOTION_DASH) {
+        if (mario->currMotionId <= MARIO_MOTION_WALK || (s32)mario->currMotionId == MARIO_MOTION_DASH) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_ROLL && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SLIT && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_SHIP && mario->airTimer == 0) {
             landed = 1;
-        } else if (mario->currMotionId == MARIO_MOTION_YOSHI) {
+        } else if ((s32)mario->currMotionId == MARIO_MOTION_YOSHI) {
             landed = 1;
+        } else {
+            landed = 0;
         }
 
         if (landed) {
@@ -1247,6 +1263,7 @@ USER_FUNC(evt_mario_set_dir_npc) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (98.10%): our compiler folds the original's redundant `beq dec; b final` into `bne final`.
 USER_FUNC(evt_koopa_fire) {
     s32 first = isFirstCall;
     s32* args = event->args;
@@ -1259,18 +1276,17 @@ USER_FUNC(evt_koopa_fire) {
         marioChgMot(0);
     }
 
-    if (event->userdata[0] != 0) {
-        *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 0;
-        return EVT_RETURN_YIELD;
-    }
-    if (--event->userdata[2] != 0) {
-        *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 1;
-        return EVT_RETURN_BLOCK;
+    if (event->userdata[0] == 0) {
+        if (--event->userdata[2] != 0) {
+            *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 1;
+            return EVT_RETURN_BLOCK;
+        }
     }
     *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 0;
     return EVT_RETURN_YIELD;
 }
 
+// NONMATCHING (92.78%): Vec copy load/store scheduling (`mario->scale = vecs[0]` and the two 0x70 copies).
 USER_FUNC(evt_mario_dokan_prepare) {
     s32* args = event->args;
     const Vec* vecs = vec3_802e5730;

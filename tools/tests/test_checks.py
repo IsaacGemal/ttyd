@@ -57,5 +57,32 @@ class LabelDefinitions(unittest.TestCase):
         self.assertIsNone(self.find("foo", "    foo(1);\n"))
 
 
+class LabelBlock(unittest.TestCase):
+    def test_label_separated_by_a_blank_line_is_found(self):
+        # Bug found in wave 7: a label one blank line above its function was missed, and a second label added.
+        lines = ["// NONMATCHING (94%): digits differ.", "", "s32 f(void) {", "}"]
+        top, label, at = label_partials.label_block(lines, 2)
+        self.assertEqual((top, label, at), (0, 0, 1))
+        self.assertEqual(lines, ["// NONMATCHING (94%): digits differ.", "s32 f(void) {", "}"])
+
+    def test_unrelated_comment_after_a_blank_line_is_left_alone(self):
+        lines = ["// helpers", "", "s32 f(void) {", "}"]
+        self.assertEqual(label_partials.label_block(lines, 2), (2, None, 2))
+        self.assertEqual(len(lines), 4)
+
+
+class LabelText(unittest.TestCase):
+    def test_a_near_match_is_not_labelled_100(self):
+        # Bug found in wave 7: 99.996% was written as "NONMATCHING (100.00%)".
+        self.assertEqual(label_partials.pct_text(99.996086), "99.99")
+        self.assertEqual(label_partials.pct_text(63.224), "63.22")
+
+    def test_definitions_inside_block_comments_are_skipped(self):
+        # Bug found in wave 7: a commented-out partyEntry2 got a 0.00% label.
+        text = "/*\ns32 f(void) {\n}\n*/\ns32 g(void) {\n}\n"
+        self.assertTrue(label_partials.in_block_comment(text, text.index("s32 f")))
+        self.assertFalse(label_partials.in_block_comment(text, text.index("s32 g")))
+
+
 if __name__ == "__main__":
     unittest.main()

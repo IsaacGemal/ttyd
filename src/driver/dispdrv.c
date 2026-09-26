@@ -15,11 +15,14 @@
 #define DISP_MAX_ENTRIES 1024
 
 //.sdata
-f32 offset_tbl[] = {
+static f32 offset_tbl[] = {
 	400000.0f, 400000.0f, 600000.0f, 100000.0f, 100000.0f, 
-	300000.0f, 900000.0f, 1100000.0f, 1000000.0f, 500000.0f, 
-	700000.0f //700K new in retail
+	300000.0f, 900000.0f, 1100000.0f, 1000000.0f, 500000.0f,
+	700000.0f // 700K new in retail
 };
+
+// .sdata: 0x1C bytes of zeros after offset_tbl in the original (dtk's lbl_8040F340 starts at the 700K entry)
+__declspec(export) f32 lbl_8040F344[7] = { 0.0f };
 
 //.sbss
 DispEntry* currentWorkPtr;
@@ -30,60 +33,26 @@ DispEntry* pDispWork;
 //local prototypes
 s32 _sort(const void** sortA, const void** sortB);
 
-void dispInit(void) {
-	pDispWork = __memAlloc(HEAP_DEFAULT, sizeof(DispEntry) * DISP_MAX_ENTRIES);
-	pSortWork = __memAlloc(HEAP_DEFAULT, sizeof(DispEntry*) * DISP_MAX_ENTRIES);
-	memset(pDispWork, 0, sizeof(DispEntry) * DISP_MAX_ENTRIES);
-	memset(pSortWork, 0, sizeof(DispEntry*) * DISP_MAX_ENTRIES);
-	entry_n = 0;
+DispEntry* dispGetCurWork(void) {
+	return currentWorkPtr;
 }
 
-void dispReInit(void) {
-	entry_n = 0;
-}
+f32 dispCalcZ(Vec* input) {
+	CameraEntry* camera;
+	Vec output;
+	f32 calc;
 
-void dispEntry(CameraId camId, f32 order, s32 renderMode, DispCallback callback, void* param) {
-	DispEntry* entry = &pDispWork[entry_n];
-
-	if (order != order) return;
-	entry->cameraId = camId;
-	entry->renderMode = (u8)renderMode;
-	entry->callback = callback;
-	entry->param = param;
-
-	switch (renderMode) {
-		case 2:
-		case 5:
-		case 9:
-		case 10:
-			entry->order = offset_tbl[renderMode] + order;
-			break;
-		default:
-			entry->order = offset_tbl[renderMode] - order;
-			break;
+	camera = camGetPtr(CAMERA_3D);
+	MTXMultVec(camera->view, input, &output);
+	MTX44MultVec(camera->projection, &output, &output);
+	calc = (5000.0f * output.z) + 5000.0f;
+	if (calc < 0.0f) {
+		calc = 0.0f;
+	} else if (calc > 10000.0f) {
+		calc = 10000.0f;
 	}
-
-	pSortWork[entry_n] = entry;
-	entry_n++;
-}
-
-s32 _sort(const void** sortA, const void** sortB) {
-	f32 temp_f0;
-	f32 temp_f1;
-
-	temp_f1 = (*(DispEntry**)sortA)->order;
-	temp_f0 = (*(DispEntry**)sortB)->order;
-	if (temp_f1 > temp_f0) {
-		return 1;
-	}
-	if (temp_f1 < temp_f0) {
-		return -1;
-	}
-	return 0;
-}
-
-void dispSort(void) {
-	qqsort(pSortWork, entry_n, 4, (int (*)(void*, void*))_sort);
+	calc *= -1.0f;
+	return calc;
 }
 
 void dispDraw(CameraId camId) {
@@ -146,24 +115,61 @@ void dispDraw(CameraId camId) {
 	}
 }
 
-f32 dispCalcZ(Vec* input) {
-	CameraEntry* camera;
-	Vec output;
-	f32 calc;
+// .data: padding after the dispDraw switch table (see the original object)
+__declspec(section ".data") __declspec(export) u32 gap_05_80302ECC_data[5] = { 0, 0, 0, 0, 0 };
 
-	camera = camGetPtr(CAMERA_3D);
-	MTXMultVec(camera->view, input, &output);
-	MTX44MultVec(camera->projection, &output, &output);
-	calc = (5000.0f * output.z) + 5000.0f;
-	if (calc < 0.0f) {
-		calc = 0.0f;
-	} else if (calc > 10000.0f) {
-		calc = 10000.0f;
-	}
-	calc *= -1.0f;
-	return calc;
+void dispSort(void) {
+	qqsort(pSortWork, entry_n, 4, (int (*)(void*, void*))_sort);
 }
 
-DispEntry* dispGetCurWork(void) {
-	return currentWorkPtr;
+s32 _sort(const void** sortA, const void** sortB) {
+	f32 temp_f0;
+	f32 temp_f1;
+
+	temp_f1 = (*(DispEntry**)sortA)->order;
+	temp_f0 = (*(DispEntry**)sortB)->order;
+	if (temp_f1 > temp_f0) {
+		return 1;
+	}
+	if (temp_f1 < temp_f0) {
+		return -1;
+	}
+	return 0;
+}
+
+void dispEntry(CameraId camId, f32 order, s32 renderMode, DispCallback callback, void* param) {
+	DispEntry* entry = &pDispWork[entry_n];
+
+	if (order != order) return;
+	entry->cameraId = camId;
+	entry->renderMode = (u8)renderMode;
+	entry->callback = callback;
+	entry->param = param;
+
+	switch (renderMode) {
+		case 2:
+		case 5:
+		case 9:
+		case 10:
+			entry->order = offset_tbl[renderMode] + order;
+			break;
+		default:
+			entry->order = offset_tbl[renderMode] - order;
+			break;
+	}
+
+	pSortWork[entry_n] = entry;
+	entry_n++;
+}
+
+void dispReInit(void) {
+	entry_n = 0;
+}
+
+void dispInit(void) {
+	pDispWork = __memAlloc(HEAP_DEFAULT, sizeof(DispEntry) * DISP_MAX_ENTRIES);
+	pSortWork = __memAlloc(HEAP_DEFAULT, sizeof(DispEntry*) * DISP_MAX_ENTRIES);
+	memset(pDispWork, 0, sizeof(DispEntry) * DISP_MAX_ENTRIES);
+	memset(pSortWork, 0, sizeof(DispEntry*) * DISP_MAX_ENTRIES);
+	entry_n = 0;
 }

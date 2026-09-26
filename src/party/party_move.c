@@ -17,7 +17,8 @@ extern u8 footmarkBuf[0xA00];
 
 // Layout of a footmark record (0x10 bytes) inside footmarkBuf.
 typedef struct Footmark {
-    u32 field_0;
+    u8 field_0;
+    u8 pad[3];
     f32 x;
     f32 y;
     f32 z;
@@ -30,7 +31,14 @@ s32 marioChkDeepSleep(void);
 s32 chuchu_searchObject(void);
 void unk_800c90d4(PartyEntry* party, s32 value);
 s32 N_marioGetMovementSpeed(void);
+void partySetDir(PartyEntry* party, f32 x, f32 z);
 s32 party_motion_fall(PartyEntry* party);
+void party_motion_beside_mario(PartyEntry* party);
+void party_motion_jump2(PartyEntry* party);
+void party_motion_upstairs(PartyEntry* party);
+void party_motion_damage(PartyEntry* party);
+void party_motion_behind_mario(PartyEntry* party);
+void party_motion_behind_mario_fly(PartyEntry* party);
 void unk_8014bbc8(PartyEntry* party);
 void unk_801820d0(PartyEntry* party);
 void unk_8018206c(PartyEntry* party);
@@ -57,6 +65,7 @@ void partyChgMot(PartyEntry* party, u8 mot) {
     work->field_8 |= 2;
 }
 
+// NONMATCHING (86.67%): 2 missing.
 void partyChgMoveMode(PartyEntry* party, u8 mode) {
     PartyEntry* work = party;
     s32 oldMode = work->field_3B;
@@ -74,6 +83,119 @@ void partyChgMoveMode(PartyEntry* party, u8 mode) {
     work->field_8 |= 4;
 }
 
+// NONMATCHING (95.00%): the inlined partyChgMoveMode switch is missing the original's redundant
+// `cmpwi r0,4; bge` range test for the empty case 4/5 group (same blocker as partyChgMoveMode).
+void partyMoveBesideMario(PartyEntry* party, s32 mode) {
+    if (party->currentMemberId == 4 && party->field_34 == 3) {
+        return;
+    }
+    party->field_3C[1] = mode;
+    partyChgMoveMode(party, 3);
+    partyChgMot(party, 1);
+}
+
+// NONMATCHING (95.00%): same inlined partyChgMoveMode range-test mismatch as partyMoveBesideMario.
+void partyMoveBehindMario(PartyEntry* party, s32 mode) {
+    if (party->currentMemberId == 4 && party->field_34 == 3) {
+        return;
+    }
+    party->field_3C[1] = mode;
+    partyChgMoveMode(party, 2);
+    partyChgMot(party, 1);
+}
+
+// NONMATCHING (96.67%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
+// case 4/5 group in the field_3B switch; this compiler folds it (same blocker as partyChgMoveMode).
+void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
+    if (party->currentMemberId == 4 && party->field_34 == 3) {
+        return;
+    }
+    party->field_8 |= 0x100000;
+    party->field_8 |= 0x40000;
+    party_set_behind_dir(party, dir);
+    party->field_3C[1] = mode;
+    switch (party->field_3B) {
+    case 4:
+    case 5:
+        break;
+    case 6:
+        party->flags &= ~0x8000;
+        break;
+    }
+    party->field_3B = 2;
+    party->field_8 |= 0x4;
+    if (party->field_36 == 3) {
+        party->flags &= ~0x70;
+        party->flags &= ~0x3000000;
+        party->flags &= ~0x4000000;
+    }
+    party->field_36 = 1;
+    party->field_8 |= 0x2;
+}
+
+void party_move_mode_beside_mario(PartyEntry* party) {
+    PartyEntry* work = party;
+
+    if (work->field_8 & 0x4) {
+        work->field_8 &= ~0x4;
+    }
+    switch (work->field_36) {
+    case 0:
+    case 1:
+        party_motion_beside_mario(party);
+        break;
+    case 2:
+        party_motion_jump2(party);
+        break;
+    case 3:
+        party_motion_fall(party);
+        break;
+    case 6:
+        party_motion_upstairs(party);
+        break;
+    case 7:
+        party_motion_damage(party);
+        break;
+    default:
+        break;
+    }
+    work->field_FC = work->dir;
+}
+
+void party_move_mode_behind_mario(PartyEntry* party) {
+    PartyEntry* work = party;
+
+    if (work->field_8 & 0x4) {
+        work->field_8 &= ~0x4;
+    }
+    switch (work->field_36) {
+    case 0:
+    case 1:
+        if (work->field_32 == 0) {
+            party_motion_behind_mario(party);
+        } else {
+            party_motion_behind_mario_fly(party);
+        }
+        break;
+    case 2:
+        party_motion_jump2(party);
+        break;
+    case 3:
+        party_motion_fall(party);
+        break;
+    case 6:
+        party_motion_upstairs(party);
+        break;
+    case 7:
+        party_motion_damage(party);
+        break;
+    default:
+        break;
+    }
+    work->field_FC = work->dir;
+}
+
+// NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
 void unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     f32 speed = value * work->playerPtr->playerGravity;
@@ -134,6 +256,65 @@ void partyNextReadId(u32 index) {
     }
 }
 
+// Each clears one party slot's buffer: 0x50 records (0x500 bytes) of footmarkBuf.
+#ifdef MUST_MATCH
+// NONMATCHING (63.22%): the `u32` copy makes the compiler emit the original's `stw` stores (the plain
+// field form below gives `stfs`); the unrolled loop and buffer register still differ.
+void partyClearFootmark(void) {
+    MarioWork* mario = marioGetPtr();
+    Vec pos = mario->position;
+    u32* src = (u32*)&pos;
+    Footmark* f = (Footmark*)footmarkBuf;
+    s32 i;
+
+    for (i = 0; i < 0x50; i++) {
+        f[i].field_0 = 0;
+        ((u32*)&f[i].x)[0] = src[0];
+        ((u32*)&f[i].x)[1] = src[1];
+        ((u32*)&f[i].x)[2] = src[2];
+    }
+    writeId[0] = 0;
+    readId[0] = 0;
+}
+#else
+void partyClearFootmark(void) {
+    Vec pos = marioGetPtr()->position;
+    s32 i;
+
+    for (i = 0; i < 0x50; i++) {
+        ((Footmark*)footmarkBuf)[i].field_0 = 0;
+        ((Footmark*)footmarkBuf)[i].x = pos.x;
+        ((Footmark*)footmarkBuf)[i].y = pos.y;
+        ((Footmark*)footmarkBuf)[i].z = pos.z;
+    }
+    writeId[0] = 0;
+    readId[0] = 0;
+}
+#endif
+
+// NONMATCHING (66.98%): the clear loop's stores and unrolling differ, as in partyClearFootmark.
+void partyClearFootmark2(void) {
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* target = partyGetPtr(marioGetPartyId());
+    Vec pos;
+    s32 i;
+
+    if (target != NULL && nokonokoGetStatus(target) != 3
+        && PSVECDistance(&mario->position, &target->position) < 150.0f) {
+        pos = target->position;
+    } else {
+        pos = mario->position;
+    }
+    for (i = 0; i < 0x50; i++) {
+        ((Footmark*)(footmarkBuf + 0x500))[i].field_0 = 0;
+        ((Footmark*)(footmarkBuf + 0x500))[i].x = pos.x;
+        ((Footmark*)(footmarkBuf + 0x500))[i].y = pos.y;
+        ((Footmark*)(footmarkBuf + 0x500))[i].z = pos.z;
+    }
+    writeId[1] = 0;
+    readId[1] = 0;
+}
+
 f32 unk_800c92c4(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario;
@@ -178,6 +359,7 @@ f32 unk_800c92c4(PartyEntry* party) {
     }
 }
 
+// NONMATCHING (97.46%): same instructions; only register numbers or operands differ.
 void unk_800c93d0(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
@@ -364,17 +546,9 @@ void unk_800c8f24(PartyEntry* party, f32 f1) {
     }
     mario = work->playerPtr;
     f3 = mario->playerGravity;
-    if (f3 == 1.0f) {
-        f2 = 1.65f;
-    } else {
-        f2 = 2.0f;
-    }
-    if (f3 == 1.0f) {
-        f3 = 0.8f;
-    } else {
-        f3 = 0.0f;
-    }
-    if (f1 > f2 - f3 && f1 < f1 + f3) {
+    f2 = f3 == 1.0f ? 1.65f : 2.0f;
+    f3 = f3 == 1.0f ? 0.8f : 0.0f;
+    if (f2 - f3 < f1 && f1 < f1 + f3) {
         if (N_marioGetMovementSpeed() == 1) {
             partyChgPoseId(party, 2);
             unk_800c90d4(party, 0);
@@ -399,22 +573,28 @@ void unk_800c9044(PartyEntry* party) {
     }
     if (marioChkDeepSleep() == 1 || (party->flags & 0x400000)) {
         partyChgPoseId(party, 6);
-    } else if (party->currentMemberId == 7) {
-        if (chuchu_searchObject() == 0) {
-            partyChgPoseId(party, 1);
-        }
-    } else {
+    } else if (party->currentMemberId != 7) {
+        partyChgPoseId(party, 1);
+    } else if (chuchu_searchObject() == 0) {
         partyChgPoseId(party, 1);
     }
 }
 
+// NONMATCHING (99.77%): the multiply-free add needs `fadds f0, f0, f1` (constant first);
+// this compiler emits the operands in source order, so one operand order stays swapped.
 void unk_800c8e74(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario = work->playerPtr;
     f32 angle = angleABf(party->position.x, party->position.z, mario->position.x, mario->position.z);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+    /* The named temp makes the compiler load cam->viewYaw into f1 before 270.0f into f0. */
     f32 viewYaw = cam->viewYaw;
-    f32 result = revise360(viewYaw + 270.0f - angle);
+    f32 t = 270.0f;
+    f32 result = revise360(viewYaw + t - angle);
+#else
+    f32 result = revise360(cam->viewYaw + 270.0f - angle);
+#endif
     s32 flag = 0;
 
     if (result >= 90.0f && result <= 270.0f) {
@@ -467,12 +647,8 @@ void unk_800c7c98(PartyEntry* party) {
         }
         work->field_4C = 0x14;
     }
-    {
-        s8 timer = work->field_4C - 1;
-        work->field_4C = timer;
-        if (timer < 0) {
-            work->field_4C = 0;
-        }
+    if (--work->field_4C < 0) {
+        work->field_4C = 0;
     }
     if (work->field_34 != 0x0D) {
         if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
@@ -498,7 +674,7 @@ void partyMoveCheckWall(PartyEntry* party) {
     wall = partySearchFrontWall(party, &pos, angle, speed);
     if (wall != NULL) {
         work->field_12C = wall;
-        if (work->speed != 0.0f) {
+        if (work->speed) {
             work->field_134 = wall;
         }
     }
@@ -533,7 +709,7 @@ void partyChkWall(PartyEntry* party) {
     wall = partySearchFrontWall(party, &pos, angle, speed);
     if (wall != NULL) {
         work->field_12C = wall;
-        if (work->speed != 0.0f) {
+        if (work->speed) {
             work->field_134 = wall;
         }
     }
@@ -541,13 +717,17 @@ void partyChkWall(PartyEntry* party) {
     party->position.z = pos.z;
 }
 
+// NONMATCHING (95.62%): compiler CSEs `id != 0` into r29 across the marioGetPtr calls, so `id`
+// lands in r30 instead of r29 and the second anotherPartyGetPtr reuses the value instead of
+// recomputing it (`srwi r3` vs `mr r3,r29`).
 f32 unk_800c9f48(s32 id, f32 y) {
     MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
     PartyEntry* target;
+    PartyEntry* target2;
     s32 flag = 0;
-    s32 isTarget = id != 0;
 
-    target = anotherPartyGetPtr(isTarget);
+    target = anotherPartyGetPtr(id != 0);
     if (id == 0) {
         return fabsf(mario->position.y - y);
     }
@@ -557,24 +737,25 @@ f32 unk_800c9f48(s32 id, f32 y) {
         }
     }
     if (target != NULL && flag == 0) {
-        MarioWork* mario2 = marioGetPtr();
-        PartyEntry* target2;
-        s32 flag2 = 0;
-
-        marioGetPtr();
+        f32 v;
+        mario2 = marioGetPtr();
+        flag = 0;
+        mario = marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
-                flag2 = 1;
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario->position, &target2->position) >= 150.0f) {
+                flag = 1;
             }
         }
-        if (flag2) {
+        if (flag) {
             target2 = NULL;
         }
         if (target2 != NULL) {
-            return fabsf(target2->position.y - y);
+            v = target2->position.y;
+        } else {
+            v = mario2->position.y;
         }
-        return fabsf(mario2->position.y - y);
+        return fabsf(v - y);
     }
     return fabsf(mario->position.y - y);
 }
@@ -607,9 +788,47 @@ f32 partyGetTargetDistY(s32 id) {
     return mario->mBaseDashSpeed;
 }
 
+f32 partyGetTargetMovespd2(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+
+    if (!(party->flags & 0x8)) {
+        if (mario->baseSpeed > 0.0f) {
+            return mario->baseSpeed;
+        }
+        return mario->mBaseDashSpeed;
+    }
+    if (party->field_8 & 0x20000) {
+        if (mario->baseSpeed > 0.0f) {
+            return mario->baseSpeed;
+        }
+        return mario->mBaseDashSpeed;
+    }
+    {
+        PartyEntry* target;
+        s32 flag = 0;
+
+        target = partyGetPtr(marioGetPartyId());
+        if (target != NULL) {
+            if (nokonokoGetStatus(target) == 3 || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+                flag = 1;
+            }
+        }
+        if (target != NULL && flag == 0) {
+            return target->speed;
+        }
+    }
+        if (mario->baseSpeed > 0.0f) {
+            return mario->baseSpeed;
+        }
+        return mario->mBaseDashSpeed;
+}
+
+// NONMATCHING (95.77%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
     PartyEntry* target;
+    PartyEntry* target2;
     s32 flag = 0;
 
     target = anotherPartyGetPtr(id != 0);
@@ -622,34 +841,39 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
         }
     }
     if (target != NULL && flag == 0) {
-        MarioWork* mario2 = marioGetPtr();
-        PartyEntry* target2;
         Vec local;
-        s32 flag2 = 0;
-
-        marioGetPtr();
+        mario2 = marioGetPtr();
+        flag = 0;
+        mario = marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
-                flag2 = 1;
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario->position, &target2->position) >= 150.0f) {
+                flag = 1;
             }
         }
-        if (flag2) {
+        if (flag) {
             target2 = NULL;
         }
         if (target2 != NULL) {
-            local = target2->position;
+            local.x = target2->position.x;
+            local.y = target2->position.y;
+            local.z = target2->position.z;
         } else {
-            local = mario2->position;
+            local.x = mario2->position.x;
+            local.y = mario2->position.y;
+            local.z = mario2->position.z;
         }
         return PSVECDistance(&local, pos);
     }
     return PSVECDistance(&marioGetPtr()->position, pos);
 }
 
+// NONMATCHING (96.15%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
     PartyEntry* target;
+    PartyEntry* target2;
     s32 flag = 0;
 
     target = anotherPartyGetPtr(id != 0);
@@ -662,31 +886,38 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
         }
     }
     if (target != NULL && flag == 0) {
-        MarioWork* mario2 = marioGetPtr();
-        PartyEntry* target2;
-        s32 flag2 = 0;
-
-        marioGetPtr();
+        f32 vx;
+        f32 vz;
+        mario2 = marioGetPtr();
+        flag = 0;
+        mario = marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
-                flag2 = 1;
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario->position, &target2->position) >= 150.0f) {
+                flag = 1;
             }
         }
-        if (flag2) {
+        if (flag) {
             target2 = NULL;
         }
         if (target2 != NULL) {
-            return distABf(x, z, target2->position.x, target2->position.z);
+            vx = target2->position.x;
+            vz = target2->position.z;
+        } else {
+            vx = mario2->position.x;
+            vz = mario2->position.z;
         }
-        return distABf(x, z, mario2->position.x, mario2->position.z);
+        return distABf(x, z, vx, vz);
     }
     return distABf(x, z, mario->position.x, mario->position.z);
 }
 
+// NONMATCHING (95.82%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
     PartyEntry* target;
+    PartyEntry* target2;
     s32 flag = 0;
 
     target = anotherPartyGetPtr(id != 0);
@@ -696,24 +927,28 @@ f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
         }
     }
     if (target != NULL && flag == 0) {
-        MarioWork* mario2 = marioGetPtr();
-        PartyEntry* target2;
-        s32 flag2 = 0;
-
-        marioGetPtr();
+        f32 vx;
+        f32 vz;
+        mario2 = marioGetPtr();
+        flag = 0;
+        mario = marioGetPtr();
         target2 = anotherPartyGetPtr(id != 0);
         if (target2 != NULL) {
-            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario2->position, &target2->position) >= 150.0f) {
-                flag2 = 1;
+            if (nokonokoGetStatus(target2) == 3 || PSVECDistance(&mario->position, &target2->position) >= 150.0f) {
+                flag = 1;
             }
         }
-        if (flag2) {
+        if (flag) {
             target2 = NULL;
         }
         if (target2 != NULL) {
-            return angleABf(x, z, target2->position.x, target2->position.z);
+            vx = target2->position.x;
+            vz = target2->position.z;
+        } else {
+            vx = mario2->position.x;
+            vz = mario2->position.z;
         }
-        return angleABf(x, z, mario2->position.x, mario2->position.z);
+        return angleABf(x, z, vx, vz);
     }
     return angleABf(x, z, mario->position.x, mario->position.z);
 }

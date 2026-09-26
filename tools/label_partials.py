@@ -68,6 +68,38 @@ def parse_args(argv):
     return unit, reset, notes
 
 
+def in_block_comment(text, pos):
+    """True if `pos` falls inside a /* ... */ comment (code kept there isn't compiled, so it gets no label)."""
+    start = text.rfind("/*", 0, pos)
+    return start != -1 and text.rfind("*/", 0, pos) < start
+
+
+def pct_text(p):
+    """The score for a label, never rounded up to 100.00 (99.996% is still a partial function)."""
+    return f"{min(p, 99.99):.2f}"
+
+
+def label_block(lines, at):
+    """(top, label, at) for the function starting at line `at`: the comment block directly above it and the
+    index of its NONMATCHING line (None if there is none). A NONMATCHING comment separated from the function by
+    one blank line counts too: the blank line is removed (moving the function up a line, hence the new `at`),
+    so the label ends up directly above it instead of being duplicated."""
+    top = at
+    while top > 0 and lines[top - 1].lstrip().startswith(("//", "#pragma")):
+        top -= 1
+    label = next((i for i in range(top, at) if "NONMATCHING" in lines[i]), None)
+    if label is None and top == at and top > 1 and not lines[top - 1].strip() \
+            and lines[top - 2].lstrip().startswith("//"):
+        above = top - 1
+        while above > 0 and lines[above - 1].lstrip().startswith("//"):
+            above -= 1
+        found = next((i for i in range(above, top - 1) if "NONMATCHING" in lines[i]), None)
+        if found is not None:
+            del lines[top - 1]
+            return above, found, at - 1
+    return top, label, at
+
+
 def main():
     unit, reset, notes = parse_args(sys.argv[1:])
     path = f"src/{unit}.c"
@@ -79,14 +111,9 @@ def main():
     for name, p in sorted(pct.items()):
         text = "\n".join(lines)
         m = re.search(DEF.format(name=re.escape(name)), text, re.M)
-        if not m:
+        if not m or in_block_comment(text, m.start()):
             continue
-        at = text.count("\n", 0, m.start())
-        # an existing label: NONMATCHING comment lines directly above (possibly with following // lines)
-        top = at
-        while top > 0 and lines[top - 1].lstrip().startswith(("//", "#pragma")):
-            top -= 1
-        label = next((i for i in range(top, at) if "NONMATCHING" in lines[i]), None)
+        top, label, at = label_block(lines, text.count("\n", 0, m.start()))
         if p >= 100:
             if label is not None:
                 end = label + 1
@@ -107,10 +134,10 @@ def main():
                 del lines[label:end]
                 at -= end - label
                 top = label
-            new = f"// NONMATCHING ({p:.2f}%): {diff_summary(unit, name)}.{note}"
+            new = f"// NONMATCHING ({pct_text(p)}%): {diff_summary(unit, name)}.{note}"
             lines.insert(top if label is not None else at, new)
         else:
-            lines[label] = re.sub(r"NONMATCHING \([^)]*\)", f"NONMATCHING ({p:.2f}%)", lines[label]) + note
+            lines[label] = re.sub(r"NONMATCHING \([^)]*\)", f"NONMATCHING ({pct_text(p)}%)", lines[label]) + note
         changed += 1
     open(path, "w").write("\n".join(lines))
     print(f"{path}: {changed} labels written")

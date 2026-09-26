@@ -28,7 +28,6 @@
 void test_kururing_mapdisp(CameraId cameraId);
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
 void psndSFX_pit(s32 id, s16 pitch);
-s32 BtlUnit_snd_se(BattleUnit* unit, s32 a, s32 b, s16 c);
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
 void* effStarStoneEntry(s32 a, f32 x, f32 y, f32 z, f32 scale);
 void mapGrpFlagOn(const char* name, u32 flag);

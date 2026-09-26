@@ -191,6 +191,7 @@ PartyEntry* anotherPartyGetPtr(s32 index) {
     return *(partyPtrTbl + ((index + 1) & 1));
 }
 
+// NONMATCHING (96.60%): 1 missing, 1 extra, plus register differences.
 BOOL partyPaperOn(PartyEntry* party, const char* animGroup) {
     BOOL v4;
     BOOL v5;
@@ -233,8 +234,9 @@ void partyPaperLightOff(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
 }
 
-// NONMATCHING (99.9%): low-HP check sign-extension lands in r0 instead of the
-// original's r3 (`extsb r3,r0`/`cmpwi r3,8`). Tried temps, s8/s32 locals, no change.
+// NONMATCHING (99.89%): the low-HP check's sign-extension lands in r0 instead of
+// the original's r3 (`extsb r3,r0`/`cmpwi r3,8`).  Tried temps, s8/s32 locals,
+// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -512,7 +514,7 @@ void partyStop(PartyEntry* party) {
 }
 
 void partyRun(PartyEntry* party) {
-    if (P8(party, 0x34) == 0) {
+    if (party->field_34 == 0) {
         partyChgRunMode(party, 1);
     }
 }
@@ -573,7 +575,7 @@ s32 partyRideChk(PartyEntry* party) {
     if (party == NULL) {
         return 0;
     }
-    if (P8(party, 0x34) == 11) {
+    if (party->field_34 == 11) {
         result = 1;
         if (P8(party, 0x38) >= 2) {
             result = 2;
@@ -610,7 +612,7 @@ s32 partyGoodbye(s32 index) {
 void partyUsePost(PartyEntry* party) {
     typedef void (*PartyFunc)(PartyEntry*);
 
-    if (party && P8(party, 0x34) == 3) {
+    if (party && party->field_34 == 3) {
         PartyFunc post = (PartyFunc)partyDataTbl[party->currentMemberId].post_func;
 
         if (post) {
@@ -621,13 +623,13 @@ void partyUsePost(PartyEntry* party) {
 
 // Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (88%): only the N__partyChgRunMode argument setup order differs
-// (`lbz r4,0x34; mr r3,r30; mr r5` vs ours `mr r5; lbz r4`).
+// NONMATCHING (88.52%): ours drops the original's redundant `mr r3,r30`
+// before the call; scheduling/peephole/opt_propagation and local forms don't restore it.
 void partyChgRunMode(PartyEntry* party, s32 mode) {
-    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
-        P8(party, 0x35) = P8(party, 0x34);
-        N__partyChgRunMode(party, P8(party, 0x34), mode);
-        P8(party, 0x34) = mode;
+    if (party->field_34 != 9 && party->field_34 != 3) {
+        party->field_35 = party->field_34;
+        N__partyChgRunMode(party, party->field_34, mode);
+        party->field_34 = mode;
         party->field_8 |= 8;
     }
 }
@@ -662,12 +664,13 @@ void partyChgPose(PartyEntry* party, char* pose) {
 
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (90%): same argument-setup ordering difference as partyChgRunMode.
+// NONMATCHING (90.00%): same missing redundant `mr r3,r29` / arg-load order as
+// partyChgRunMode (ours drops the move the original keeps).
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
-    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
-        P8(party, 0x35) = P8(party, 0x34);
-        N__partyChgRunMode(party, P8(party, 0x34), mode);
-        P8(party, 0x34) = mode;
+    if (party->field_34 != 9 && party->field_34 != 3) {
+        party->field_35 = party->field_34;
+        N__partyChgRunMode(party, party->field_34, mode);
+        party->field_34 = mode;
         party->field_8 &= ~8;
         P8(party, 0x38) = unk;
     }
@@ -719,11 +722,11 @@ void allPartyRidePlane(void) {
 void allPartyRideOff(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    if (party && P8(party, 0x34) == 0xb) {
+    if (party && party->field_34 == 0xb) {
         P8(party, 0x38) = 0x64;
     }
     party = partyGetPtr(marioGetExtraPartyId());
-    if (party && P8(party, 0x34) == 0xb) {
+    if (party && party->field_34 == 0xb) {
         P8(party, 0x38) = 0x64;
     }
 }
@@ -731,11 +734,11 @@ void allPartyRideOff(void) {
 void allPartyRideOff2(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-    if (party && P8(party, 0x34) == 0xb) {
+    if (party && party->field_34 == 0xb) {
         P8(party, 0x38) = 0x65;
     }
     party = partyGetPtr(marioGetExtraPartyId());
-    if (party && P8(party, 0x34) == 0xb) {
+    if (party && party->field_34 == 0xb) {
         P8(party, 0x38) = 0x65;
     }
 }
@@ -829,7 +832,7 @@ s32 partyDoWork(void) {
     if (!party) {
         return 0;
     }
-    if (P8(party, 0x34) != 0 && P8(party, 0x34) != 1 && P8(party, 0x34) != 2) {
+    if (party->field_34 != 0 && party->field_34 != 1 && party->field_34 != 2) {
         return 0;
     }
     speed = 0.0f;
@@ -852,6 +855,7 @@ s32 partyGetNum(void) {
     return num;
 }
 
+// NONMATCHING (77.37%): 2 instructions differ, 6 missing, 6 extra, plus register differences.
 void partyMain(void) {
     s32 num;
     s32 i;
@@ -873,7 +877,7 @@ void partyMain(void) {
 void partyDokanEnd(s32 index, s32 unk) {
     PartyEntry* party = partyGetPtr(index);
 
-    if (party && P8(party, 0x34) == 0xa) {
+    if (party && party->field_34 == 0xa) {
         P8(party, 0x38) = 0x64;
         P8(party, 0x2E) = unk;
         party->flags2 &= ~8;
@@ -898,24 +902,24 @@ void partyHello(PartyEntry* party) {
         mario = party->playerPtr;
         if (P16(mario, 0x2E) == 0x16 || P16(mario, 0x2E) == 0x18 || P16(mario, 0x2E) == 0x19) {
             P8(party, 0x38) = 0x1e;
-        } else if (P8(party, 0x34) == 4 || P8(party, 0x34) == 5) {
+        } else if (party->field_34 == 4 || party->field_34 == 5) {
             party->flags2 |= 0x10;
             *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 54);
             P8(party, 0x38) = 0;
-            PF32(party, 0x110) = PF32(mario, 0x1A8);
-            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+            party->field_110 = mario->unk1A8;
+            party->field_10C = mario->unk1A8;
             party->position = *(Vec*)((u8*)mario + 0x8C);
             *(Vec*)((u8*)party + 0xB8) = party->position;
-        } else if (P8(party, 0x34) == 7) {
+        } else if (party->field_34 == 7) {
             *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 57);
             P8(party, 0x38) = 0x14;
-            PF32(party, 0x110) = PF32(mario, 0x1A8);
-            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+            party->field_110 = mario->unk1A8;
+            party->field_10C = mario->unk1A8;
         } else {
             *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 60);
             P8(party, 0x38) = 0xa;
-            PF32(party, 0x110) = PF32(mario, 0x1A8);
-            PF32(party, 0x10C) = PF32(mario, 0x1A8);
+            party->field_110 = mario->unk1A8;
+            party->field_10C = mario->unk1A8;
             party->position = *(Vec*)((u8*)mario + 0x8C);
             *(Vec*)((u8*)party + 0xB8) = party->position;
         }
@@ -981,7 +985,7 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     }
 }
 
-// NONMATCHING (97%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
+// NONMATCHING (97.91%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
 // low-HP `extsb r3,r0` vs our `extsb r0,r0`.
 s32 partyEntry(s32 memberId) {
     PartyEntry* party;
@@ -996,8 +1000,8 @@ s32 partyEntry(s32 memberId) {
     P8(party, 0x38) = 0xa;
     {
         MarioWork* mario = party->playerPtr;
-        PF32(party, 0x110) = PF32(mario, 0x1A8);
-        PF32(party, 0x10C) = PF32(mario, 0x1A8);
+        party->field_110 = mario->unk1A8;
+        party->field_10C = mario->unk1A8;
     }
     partyGetAppearPos2(party, &party->position);
     *(Vec*)((u8*)party + 0xB8) = party->position;
@@ -1023,12 +1027,67 @@ s32 partyEntry(s32 memberId) {
             party->field_8 |= 0x2000;
         }
     }
-    P8(party, 0x34) = 1;
+    party->field_34 = 1;
     return ret;
 }
 
-// NONMATCHING (89%): partyChgPoseId is inlined but mwcc does not constant-fold
-// the `index == 1` branch for the literal argument 1, leaving an extra cmpwi chain.
+// NONMATCHING (99.93%): only the low-HP check's extsb lands in r0 here vs the
+// original's r3 (the same difference as in partyChgPoseId); the rest matches.
+s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
+    const Vec* v;
+    PartyEntry* party;
+    s32 index;
+    s32 ret;
+    s32 lowHp;
+    char* pose;
+    char* prev;
+    Vec pos;
+
+    v = (const Vec*)vec3_802ccd30;
+    ret = partyEntryMain(memberId);
+    party = partyGetPtr(ret);
+    index = 1;
+    *(Vec*)&party->field_64[0xC] = v[1];
+    pos = v[2];
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    party->position = pos;
+    {
+        MarioWork* mario = party->playerPtr;
+        *(Vec*)&party->field_64[0xC] = v[3];
+        party->field_110 = mario->unk1A8;
+        party->field_10C = mario->unk1A8;
+    }
+    if (!(party->flags2 & 2)) {
+        lowHp = 0;
+        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+            lowHp = 1;
+        }
+        if (lowHp == 1) {
+            index = 12;
+        }
+        if (!(party->flags2 & 0x8000)) {
+            pose = partyPoseTbl[party->currentMemberId][index];
+        } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+            pose = partyDotPoseTbl[party->currentMemberId][index];
+        } else {
+            pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTY_MEMBER_YOSHI)][index];
+        }
+        prev = party->field_18;
+        if (!(prev && !strcmp(prev, pose))) {
+            party->field_18 = pose;
+            party->field_20 = 0;
+            party->field_8 |= 0x2000;
+        }
+    }
+    party->field_34 = 0;
+    return ret;
+}
+
+// NONMATCHING (89.84%): partyChgPoseId is inlined but ours does not
+// constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
+// inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
 void party_force_ride_yoshi(PartyEntry* party) {
     Vec pos;
 
@@ -1079,7 +1138,7 @@ s32 partyKill(s32 index) {
     }
     player = party->playerPtr;
     party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
-    if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
+    if (party_dp->exit_func && party->field_34 != 0xb) {
         ((PartyFunc)party_dp->exit_func)(party);
     }
     if (partyGetPtr(player->currPartySlotId[index])) {
@@ -1104,7 +1163,7 @@ s32 partyKill2(s32 index) {
     }
     player = party->playerPtr;
     party_dp = &partyDataTbl[partyGetPtr(player->currPartySlotId[index])->currentMemberId];
-    if (party_dp->exit_func && P8(party, 0x34) != 0xb) {
+    if (party_dp->exit_func && party->field_34 != 0xb) {
         ((PartyFunc)party_dp->exit_func)(party);
     }
     player->prevPartyMemberId[index] = 0;

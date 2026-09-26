@@ -42,46 +42,33 @@ const char str_8041AF0C[] = "M_I_Y";
 const char str_8041AF14[] = "M_U_2";
 const char str_8041AF1C[] = "M_I_5";
 
-void mot_stay_post(void) {
+void marioVoiceGlareOn(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (mario->currMotionId != MARIO_MOTION_HAMMER_2 && mario->currMotionId != MARIO_MOTION_JABARA) {
-        mario = marioGetPtr();
-        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x278));
-            MW(mario, 0x278) = 0xFFFFFFFFu;
-        }
-        mario = marioGetPtr();
-        if (MW(mario, 0x27c) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x27c));
-            MW(mario, 0x27c) = 0xFFFFFFFFu;
-        }
-    } else {
-        mario = marioGetPtr();
-        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
-            psndSFXOff(MW(mario, 0x278));
-            MW(mario, 0x278) = 0xFFFFFFFFu;
-        }
+    if (MW(mario, 0x27C) == 0xFFFFFFFFu) {
+        MW(mario, 0x27C) = psndSFXOn_3D((const char*)0xDC, &mario->position);
     }
 }
 
-void marioChgMotAuto(void) {
+void marioVoiceGlareOff(void) {
     MarioWork* mario = marioGetPtr();
-    s8* stick = (s8*)&mario->wStickDir1;
 
-    if (stick[0] == 0 && stick[1] == 0) {
-        marioChgMot(MARIO_MOTION_STAY);
-        return;
+    if (MW(mario, 0x27C) != 0xFFFFFFFFu) {
+        psndSFXOff(MW(mario, 0x27C));
+        MW(mario, 0x27C) = 0xFFFFFFFFu;
     }
-    if ((stick[0] * stick[0]) + (stick[1] * stick[1]) > 0xBD1) {
-        if (!pouchEquipCheckBadge(0x143)) {
-            marioChgMot(MARIO_MOTION_DASH);
-        } else {
-            marioChgMot(MARIO_MOTION_WALK);
+}
+
+BOOL marioChkDeepSleep(void) {
+    BOOL ret = FALSE;
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->currMotionId == MARIO_MOTION_STAY) {
+        if (MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
+            ret = TRUE;
         }
-    } else {
-        marioChgMot(MARIO_MOTION_WALK);
     }
+    return ret;
 }
 
 void mot_stay(void) {
@@ -345,31 +332,44 @@ void mot_stay(void) {
     }
 }
 
-BOOL marioChkDeepSleep(void) {
-    BOOL ret = FALSE;
+void marioChgMotAuto(void) {
     MarioWork* mario = marioGetPtr();
+    s8* stick = (s8*)&mario->wStickDir1;
 
-    if (mario->currMotionId == MARIO_MOTION_STAY) {
-        if (MWS32(mario, 0x2B4) >= sysMsec2Frame(0x2710)) {
-            ret = TRUE;
+    if (stick[0] == 0 && stick[1] == 0) {
+        marioChgMot(MARIO_MOTION_STAY);
+        return;
+    }
+    if ((stick[0] * stick[0]) + (stick[1] * stick[1]) > 0xBD1) {
+        if (!pouchEquipCheckBadge(0x143)) {
+            marioChgMot(MARIO_MOTION_DASH);
+        } else {
+            marioChgMot(MARIO_MOTION_WALK);
         }
-    }
-    return ret;
-}
-
-void marioVoiceGlareOff(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (MW(mario, 0x27C) != 0xFFFFFFFFu) {
-        psndSFXOff(MW(mario, 0x27C));
-        MW(mario, 0x27C) = 0xFFFFFFFFu;
+    } else {
+        marioChgMot(MARIO_MOTION_WALK);
     }
 }
 
-void marioVoiceGlareOn(void) {
+void mot_stay_post(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (MW(mario, 0x27C) == 0xFFFFFFFFu) {
-        MW(mario, 0x27C) = psndSFXOn_3D((const char*)0xDC, &mario->position);
+    if (mario->currMotionId != MARIO_MOTION_HAMMER_2 && mario->currMotionId != MARIO_MOTION_JABARA) {
+        mario = marioGetPtr();
+        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
+            psndSFXOff(MW(mario, 0x278));
+            MW(mario, 0x278) = 0xFFFFFFFFu;
+        }
+        mario = marioGetPtr();
+        if (MW(mario, 0x27c) != 0xFFFFFFFFu) {
+            psndSFXOff(MW(mario, 0x27c));
+            MW(mario, 0x27c) = 0xFFFFFFFFu;
+        }
+    } else {
+        mario = marioGetPtr();
+        if (MW(mario, 0x278) != 0xFFFFFFFFu) {
+            psndSFXOff(MW(mario, 0x278));
+            MW(mario, 0x278) = 0xFFFFFFFFu;
+        }
     }
 }
