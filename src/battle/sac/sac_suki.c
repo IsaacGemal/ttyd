@@ -80,8 +80,8 @@ static SukiWork* get_ptr(void);
 static void main_base(void);
 static void main_star(void);
 static void disp_2D(CameraId camera, void* param);
-static void set_weapon(EventEntry* event);
-static void star_stone_attack(EventEntry* event);
+static s32 set_weapon(EventEntry* event, BOOL isFirstCall);
+static s32 star_stone_attack(EventEntry* event, BOOL isFirstCall);
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
 static s32 wait_game_end(EventEntry* event, BOOL isFirstCall);
 static s32 start_game(EventEntry* event, BOOL isFirstCall);
@@ -186,7 +186,6 @@ s32 aud_set_draw(EventEntry* event) {
     return EVT_RETURN_DONE;
 }
 
-static void set_weapon(EventEntry* event);
 // .text:0x3E4 | 0x80249D04 | size: 0x38
 // NONMATCHING (83.93%): the original tests == N with subic/subfe; ours emits subfic/nor/srawi for the same test.
 s32 wait_star_stone_attack_end(EventEntry* event, BOOL isFirstCall) {
@@ -195,7 +194,6 @@ s32 wait_star_stone_attack_end(EventEntry* event, BOOL isFirstCall) {
     return (work->starState == 8) ? 2 : 0;
 }
 
-static void star_stone_attack(EventEntry* event);
 // .text:0x4E8 | 0x80249E08 | size: 0x84
 // NONMATCHING (71.61%): 2 instructions differ, 1 missing, 14 extra, plus register differences.
 s32 star_stone_get_attack_point(EventEntry* event) {

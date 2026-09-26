@@ -254,7 +254,7 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// NONMATCHING (96.25%): 4 instructions differ, 1 missing, plus register differences.
+// NONMATCHING (96.25%): 4 instructions differ, 1 missing, plus register differences. Known issue: tries is not reset after each outer pass (the original has li r26,0 at sac_deka.s:350).
 void create_timing(void) {
     DekaWork* p = get_ptr();
     f32 times[8];

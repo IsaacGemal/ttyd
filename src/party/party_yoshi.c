@@ -1,6 +1,5 @@
 #include "mario/mario_hit.h"
 #include "party.h"
-#include "mario/mario_hit.h"
 #include "mario/mario.h"
 #include "mario/mario_party.h"
 #include "mario/mario_motion.h"
@@ -92,8 +91,7 @@ static const f32 float_neg10 = -10.0f;
 static const f32 float_26 = 26.0f;
 static const f32 float_20 = 20.0f;
 
-// NONMATCHING (85.25%): callee-saved register assignment shifted (compiler
-// reuses the y negation) and the `dist == 0` test needs a materialized bool.
+// NONMATCHING (85.25%): 2 instructions differ, 9 missing, 6 extra, plus register differences. Known issue: negates then truncates to s8; the original sign-extends first (differs only for -128).
 void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
     MarioWork* mario = party->playerPtr;
 

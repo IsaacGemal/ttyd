@@ -165,6 +165,7 @@ USER_FUNC(evt_sub_countdown_start) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (82.45%): 3 instructions differ, 1 missing, 1 extra, plus register differences.
 USER_FUNC(evt_sub_animgroup_async) {
 	s32* args = event->args;
 	const char* name = (const char*)evtGetValue(event, args[0]);
@@ -469,6 +470,7 @@ USER_FUNC(evt_sub_spline_init) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (85.72%): 2 instructions differ, 5 missing, 6 extra, plus register differences.
 USER_FUNC(evt_sub_spline_get_value_manual) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -491,6 +493,7 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -671,6 +674,7 @@ extern void winMgrSetParam(s32 id, void* param);
 extern void winMgrCloseAutoDelete(s32 id);
 extern BOOL winMgrAction(s32 id);
 
+// NONMATCHING (82.55%): 5 instructions differ, 19 missing, 24 extra, plus register differences.
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
@@ -846,6 +850,7 @@ USER_FUNC(evt_sub_get_coin) {
 	}
 }
 
+// NONMATCHING (98.25%): same instructions; only register numbers or operands differ.
 USER_FUNC(evt_sub_check_intersect) {
 	s32* args = event->args;
 	f32 a, b, c, d, e, f, g, h;

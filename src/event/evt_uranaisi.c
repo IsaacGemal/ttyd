@@ -687,7 +687,7 @@ USER_FUNC(uranaisi_data_free) {
     return 2;
 }
 
-// NONMATCHING (84%): switch logic and stores match; the target keeps `wp` in r31
+// NONMATCHING (84.41%): switch logic and stores match; the target keeps `wp` in r31
 // and uses r30 as a rematerialised &_udt for type/prefix, while GCC assigns `wp`
 // to r30 and the temp to r31 (and fails to forward the default-case count store).
 USER_FUNC(uranaisi_data_alloc) {

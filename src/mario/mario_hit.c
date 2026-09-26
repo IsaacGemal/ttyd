@@ -1,6 +1,5 @@
 #include "mario/mario_hit.h"
 #include "driver/hitdrv.h"
-#include "mario/mario_hit.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"
 #include "party/party_vivian.h"

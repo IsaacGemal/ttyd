@@ -1,4 +1,3 @@
-double fabs(double x);
 #include "battle/battle_audience.h"
 #include "battle/battle.h"
 #include "battle/battle_stage.h"
@@ -48,7 +47,11 @@ extern void* effSmallStarEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 f4, f32 f5
 extern s32 BattleStage_ObjectFallCheck(void);
 extern void BattleStage_NozzleWorkCheck(s32 flag);
 extern s32 BattleBreakSlot_GetBreakTurn(void);
-extern u8 vec3_802f8c78[];
+extern const Vec vec3_802f8c84;
+extern const Vec vec3_802f8c90;
+extern const char str_802F8D68[];
+extern const f64 double_450_802f8d88;
+extern const f64 double_300_802f8d90;
 static s32 intrudeSound;
 
 const char str_802F8D98[] = "SFX_AUDIENCE_TELESA_MOVE1";
@@ -1292,7 +1295,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	}
 }
 
-// NONMATCHING (67.47%): register-allocation / scheduling / symbol-name differences only.
+// NONMATCHING (67.22%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	BattleWork* work = _battleWorkPointer;
 	BattleAudienceMember* member;
@@ -1330,7 +1333,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
 		*(f32*)((u8*)member + 0x88) = float_0_8041e178;
 		*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
-		intrudeSound = psndSFXOn((char*)(vec3_802f8c78 + 0xf0));
+		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
 	case 5:
@@ -1362,17 +1365,17 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			btl_camera_set_moveto(0, 0x1e, 4, float_698_8041e1c4 * dir,
 			    float_100_8041e1a8, float_0_8041e178, float_0_8041e178,
 			    float_60_8041e184, float_0_8041e178);
-			intrudeSound = psndSFXOn((char*)(vec3_802f8c78 + 0xf0));
+			intrudeSound = psndSFXOn(str_802F8D68);
 		}
 		break;
 	case 0xf:
 		member->mRotation.y = *(f32*)((u8*)camGetPtr(4) + 0x114);
-		if (fabs(member->position.x) >= *(f64*)(vec3_802f8c78 + 0x110)) {
+		if (__fabs(member->position.x) >= double_450_802f8d88) {
 			member->field_0x4 = 0x10;
 			*(s32*)member->field_0x8 = 0x23;
-			*(u32*)((u8*)member + 0x78) = *(u32*)(vec3_802f8c78 + 0xc);
-			*(u32*)((u8*)member + 0x7c) = *(u32*)(vec3_802f8c78 + 0x10);
-			*(u32*)((u8*)member + 0x80) = *(u32*)(vec3_802f8c78 + 0x14);
+			*(u32*)((u8*)member + 0x78) = *(u32*)&vec3_802f8c84.x;
+			*(u32*)((u8*)member + 0x7c) = *(u32*)&vec3_802f8c84.y;
+			*(u32*)((u8*)member + 0x80) = *(u32*)&vec3_802f8c84.z;
 		}
 		break;
 	case 0x10:
@@ -1428,7 +1431,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 		*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
 		*(f32*)((u8*)member + 0x88) = float_0_8041e178;
 		*(f32*)((u8*)member + 0x80) = float_5_8041e1a0 * (dz / len);
-		intrudeSound = psndSFXOn((char*)(vec3_802f8c78 + 0xf0));
+		intrudeSound = psndSFXOn(str_802F8D68);
 	}
 		// fallthrough
 	case 0x37:
@@ -1452,7 +1455,7 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 			*(f32*)((u8*)member + 0x7c) = float_0_8041e178;
 			*(f32*)((u8*)member + 0x88) = float_0_8041e178;
 			*(f32*)((u8*)member + 0x80) = float_0_8041e178;
-			intrudeSound = psndSFXOn((char*)(vec3_802f8c78 + 0xf0));
+			intrudeSound = psndSFXOn(str_802F8D68);
 		}
 		break;
 	case 0x41:
@@ -1497,11 +1500,11 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	}
 		break;
 	case 0x4b:
-		if (fabs(member->position.x) >= *(f64*)(vec3_802f8c78 + 0x118)) {
+		if (__fabs(member->position.x) >= double_300_802f8d90) {
 			member->field_0x4 = 0x50;
-			*(u32*)((u8*)member + 0x78) = *(u32*)(vec3_802f8c78 + 0x18);
-			*(u32*)((u8*)member + 0x7c) = *(u32*)(vec3_802f8c78 + 0x1c);
-			*(u32*)((u8*)member + 0x80) = *(u32*)(vec3_802f8c78 + 0x20);
+			*(u32*)((u8*)member + 0x78) = *(u32*)&vec3_802f8c90.x;
+			*(u32*)((u8*)member + 0x7c) = *(u32*)&vec3_802f8c90.y;
+			*(u32*)((u8*)member + 0x80) = *(u32*)&vec3_802f8c90.z;
 			psndSFXOff(intrudeSound);
 		}
 		break;
@@ -1516,9 +1519,8 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 	}
 }
 
-u8 vec3_802f8c78[0x120];
 
-// NONMATCHING (95.53%): 5 instructions differ, 16 missing, 2 extra, plus register differences.
+// NONMATCHING (95.53%): 5 instructions differ, 16 missing, 2 extra, plus register differences. Known issue: the period (1, 2, 4) and the step rate (1, .5, .25, 0) share one variable, so steps are x2/x4 where the original uses x0.5/x0.25.
 void BattleAudienceCtrlProcessKinopioWait(s32 index, u8 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);

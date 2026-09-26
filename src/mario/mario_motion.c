@@ -77,7 +77,6 @@ void motSlitCancel(void);
 void marioDmgRetQuakeOn(void);
 void marioUpdateCamPos(void);
 void* marioChkLandon(f32* pos, f32 spd);
-// Header declares only 3 float args, but the original call passes 4 (f1..f4).
 
 
 // NONMATCHING (62.50%): 11 missing, 20 extra.

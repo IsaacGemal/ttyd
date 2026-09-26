@@ -207,6 +207,7 @@ BattleUnitPart* BattleGetUnitPartsPtr(s32 index, s32 partNum);
 void BattleSetUnitPtr(BattleWork* wp, s32 index, BattleUnit* unit);
 BattleUnit* BattleGetUnitPtr(BattleWork* wp, s32 index);
 void BattleFree(void* ptr);
+BOOL BattlePartyAnimeLoad(BattleUnitType partyId);
 void* BattleAlloc(u32 size);
 void BattleIncSeq(BattleWork* wp, BattleSequence seq);
 s32 BattleGetSeq(BattleWork* wp, BattleSequence seq);

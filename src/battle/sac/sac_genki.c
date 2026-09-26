@@ -312,6 +312,7 @@ void disp_3D_alpha(CameraId camera, void* param) {
 void disp_2D(CameraId camera, void* param) {
 }
 
+// NONMATCHING (96.46%): same instructions; only register numbers or operands differ.
 USER_FUNC(end_genki) {
     GenkiWork* genki = get_ptr();
     s32 i;

@@ -22,7 +22,7 @@ const f32 float_1_8041c014 = 1.0f;
 const f32 float_0p4_8041c018 = 0.4f;
 const f32 float_1p6_8041c01c = 1.6f;
 
-// NONMATCHING (99.10% with -O4,s): body is identical except the two argument
+// NONMATCHING (99.10%): body is identical except the two argument
 // loads are emitted in the opposite order (target loads args[0] into r4 then
 // args[1] into r30; our build hoists the callee-saved args[1] load first).
 USER_FUNC(_get_flower_suitoru_point) {
@@ -44,7 +44,7 @@ USER_FUNC(_get_flower_suitoru_point) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.10% with -O4,s): same argument-load ordering difference as
+// NONMATCHING (99.10%): same argument-load ordering difference as
 // _get_flower_suitoru_point; reads HpDrain (0x2F5) instead of FpDrain.
 USER_FUNC(_get_heart_suitoru_point) {
     BattleWork* wp = _battleWorkPointer;
@@ -140,7 +140,7 @@ static s32 _anime_load(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.04% with -O4,s): transId gets r31 in the target but is
+// NONMATCHING (97.04%): transId gets r31 in the target but is
 // rematerialised through r0 in ours, and the float/2^52 literals resolve to
 // unnamed pool symbols because this file's .sdata2/.rodata layout (zero_8041c010
 // and the event-script data) is not reproduced yet.
