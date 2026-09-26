@@ -1201,7 +1201,7 @@ config.libs = [
     Rel(
         "pik",
         [
-            Object(NonMatching, "unit/unit_purple_teresa.c"),
+            Object(Matching, "unit/unit_purple_teresa.c"),
         ]
     )
 ]
