@@ -649,7 +649,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "event/evt_map.c"),
+            Object(Matching, "event/evt_map.c"),
             Object(NonMatching, "event/evt_npc.c"),
             Object(NonMatching, "event/evt_sub.c"),
             Object(NonMatching, "event/evt_mobj.c"),
