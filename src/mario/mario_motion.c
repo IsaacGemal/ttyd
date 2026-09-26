@@ -1174,7 +1174,7 @@ void marioJump(void) {
             mario->flags |= MARIO_FLAG_IS_FALLING;
         }
     }
-    *(f32*)((u8*)mario + 0x90) += *(f32*)((u8*)mario + 0x7C);
+    mario->position.y += *(f32*)((u8*)mario + 0x7C);
 }
 
 // NONMATCHING (97.27%): 3 instructions differ, 3 missing, 10 extra, plus register differences.
@@ -1262,7 +1262,7 @@ void mot_bottomless(void) {
         }
         break;
     case 2:
-        *(void**)((u8*)mario + 0x1E4) = NULL;
+        mario->hitobjStandOn = NULL;
         mario2 = marioGetPtr();
         *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88);
         if (*(f32*)((u8*)mario2 + 0x84) > 0.0f) {
@@ -1288,11 +1288,11 @@ void mot_bottomless(void) {
             marioChgPose("M_D_2");
             psndSFXOn_3D((const char*)0x197, &mario->position);
             marioDmgRetQuakeOn();
-            *(void**)((u8*)mario + 0x1E4) = hit;
-            *(void**)((u8*)mario + 0x1E8) = NULL;
+            mario->hitobjStandOn = hit;
+            mario->hitobjJumpFrom = NULL;
             mario->position.y = landY;
         }
-        if (*(void**)((u8*)mario + 0x1E4) == NULL) {
+        if (mario->hitobjStandOn == NULL) {
             break;
         }
         // fall through
@@ -1430,7 +1430,7 @@ void marioFall(void) {
     s32 rub;
 
     if (strcmp(gp->currentMapName, "kpa_03") == 0 && mario->characterId == 2) {
-        *(void**)((u8*)mario + 0x1E4) = NULL;
+        mario->hitobjStandOn = NULL;
         kpaClearHitobjRide();
         mario2 = marioGetPtr();
         *(f32*)((u8*)mario2 + 0x84) += *(f32*)((u8*)mario2 + 0x88);
@@ -1448,13 +1448,13 @@ void marioFall(void) {
         f31 = *(f32*)((u8*)mario2 + 0x7C);
         hit = marioChkLandon(&landY, f31);
         if (hit != NULL) {
-            *(void**)((u8*)mario + 0x1E4) = hit;
-            *(void**)((u8*)mario + 0x1E8) = NULL;
+            mario->hitobjStandOn = hit;
+            mario->hitobjJumpFrom = NULL;
             mario->position.y = landY;
         } else {
             mario->position.y += f31;
         }
-        if (*(void**)((u8*)mario + 0x1E4) != NULL) {
+        if (mario->hitobjStandOn != NULL) {
             marioLandOn();
         }
         return;
@@ -1481,7 +1481,7 @@ void marioFall(void) {
             mario->baseSpeed = f3;
         }
     }
-    *(void**)((u8*)mario + 0x1E4) = NULL;
+    mario->hitobjStandOn = NULL;
     if (mario->characterId == 2) {
         kpaClearHitobjRide();
     }
@@ -1506,8 +1506,8 @@ void marioFall(void) {
     f31 = *(f32*)((u8*)mario2 + 0x7C);
     hit = marioChkLandon(&landY, f31);
     if (hit != NULL) {
-        *(void**)((u8*)mario + 0x1E4) = hit;
-        *(void**)((u8*)mario + 0x1E8) = NULL;
+        mario->hitobjStandOn = hit;
+        mario->hitobjJumpFrom = NULL;
         if (hitGetAttr((HitEntry*)hit) & (1 << 9)) {
             mario->position.y += f31;
         } else {
@@ -1538,7 +1538,7 @@ void marioFall(void) {
         mario->position.y += f31;
     }
     if (mario->characterId != 2) {
-        if (*(void**)((u8*)mario + 0x1E4) != NULL) {
+        if (mario->hitobjStandOn != NULL) {
             marioLandOn();
         }
     } else {
@@ -1616,7 +1616,7 @@ void marioLandOn(void) {
     }
     if (mario->flags & MARIO_FLAG_TUBE_MODE) {
         mario->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING);
-        *(void**)((u8*)mario + 0x1E8) = NULL;
+        mario->hitobjJumpFrom = NULL;
         return;
     }
     *(f32*)((u8*)mario + 0x2B0) =
@@ -1682,7 +1682,7 @@ void marioLandOn(void) {
         }
         return;
     }
-    if (*(f32*)((u8*)mario + 0x190) > 0.0f && !(mario->flags & MARIO_FLAG_FORCED_MOVEMENT)) {
+    if (mario->controlStickSensitivity > 0.0f && !(mario->flags & MARIO_FLAG_FORCED_MOVEMENT)) {
         if (mario->characterId == 2) {
             if (kpaFireAttackCheck() != 0) {
                 mario2 = marioGetPtr();

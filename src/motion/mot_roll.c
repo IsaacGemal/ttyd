@@ -105,9 +105,9 @@ void marioReInit_roll(void) {
     *(f32*)((u8*)mario + 0xB4) = 6.0f;
     *(f32*)((u8*)mario + 0x98) = 6.0f;
     *(f32*)((u8*)mario + 0x9C) = 0.0f;
-    *(f32*)((u8*)mario + 0xC8) = 1.0f;
-    *(f32*)((u8*)mario + 0xCC) = 1.0f;
-    *(f32*)((u8*)mario + 0xD0) = 1.0f;
+    mario->scale.x = 1.0f;
+    mario->scale.y = 1.0f;
+    mario->scale.z = 1.0f;
     *(f32*)((u8*)mario + 0x130) = 1.0f;
     allPartyForceRideOn();
 }
@@ -209,7 +209,7 @@ void marioSetRollDispDir(void) {
     }
     f31 = revise360(1.2f * (f30 - f31) + f31);
     {
-        f32 a = toMovedir(*(f32*)((u8*)mario + 0x1A8));
+        f32 a = toMovedir(mario->unk1A8);
 
         if (*(s8*)((u8*)mario + 0x43) != 0) {
             a = revise360(180.0f + a);
@@ -219,12 +219,12 @@ void marioSetRollDispDir(void) {
                 (*(s8*)((u8*)mario + 0x43) + 1) & 1;
         }
     }
-    *(f32*)((u8*)mario + 0x1A8) = rollDispCalcTarget(mario, f31);
-    if (*(f32*)((u8*)mario + 0x1A8) >= 200.0f) {
-        *(f32*)((u8*)mario + 0x1A8) = rollDispCalcTarget(mario, f31);
+    mario->unk1A8 = rollDispCalcTarget(mario, f31);
+    if (mario->unk1A8 >= 200.0f) {
+        mario->unk1A8 = rollDispCalcTarget(mario, f31);
     }
-    if (*(f32*)((u8*)mario + 0x1A8) < 170.0f) {
-        *(f32*)((u8*)mario + 0x1A8) = rollDispCalcTarget(mario, f31);
+    if (mario->unk1A8 < 170.0f) {
+        mario->unk1A8 = rollDispCalcTarget(mario, f31);
     }
 }
 
