@@ -33,6 +33,9 @@ extern MotTblEntry marioMotTbl[];
 // .sdata jump parameter tables, defined in this unit's reference assembly.
 f32 marioJumpData[10] = { 8.0f, -0.84f, 0.08f, -0.02f, -0.1f, -0.2f, 0.024f, -0.004f, 32.0f, -18.0f };
 const Vec vec3_802c59f0 = { 0.0f, 0.0f, 0.0f };
+const char str_802C59FC[] = "win_03";
+const char str_802C5A04[] = "win_01";
+const char str_802C5A0C[] = "tik_01";
 extern f32 marioJumpSwData[];
 
 // From other units not decompiled yet: no header declares them.
@@ -79,12 +82,12 @@ void marioUpdateCamPos(void);
 void* marioChkLandon(f32* pos, f32 spd);
 
 
-// NONMATCHING (62.50%): 11 missing, 20 extra.
 void marioChgStayMotion(void) {
     MarioWork* mario = marioGetPtr();
 
     if (mario->currMotionId != MARIO_MOTION_SHIP && mario->currMotionId != MARIO_MOTION_YOSHI &&
         mario->currMotionId != MARIO_MOTION_SLIT && mario->currMotionId != MARIO_MOTION_ROLL) {
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -125,7 +128,6 @@ void marioChgTalkMotion(void) {
     }
 }
 
-// NONMATCHING (42.19%): 19 missing, 36 extra.
 void marioChgGetItemMotion(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -136,6 +138,7 @@ void marioChgGetItemMotion(void) {
     } else if (mario->currMotionId == MARIO_MOTION_SHIP) {
         mario->baseSpeed = 0.0f;
     } else if (mario->currMotionId != MARIO_MOTION_YOSHI) {
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -166,7 +169,6 @@ void marioChgRollMotion(void) {
     mario->currMotionId = MARIO_MOTION_ROLL;
 }
 
-// NONMATCHING (96.27%): 4 missing, plus register differences.
 void marioChgJumpStandMotion(f32 arg) {
     MarioWork* mario = marioGetPtr();
 
@@ -174,6 +176,7 @@ void marioChgJumpStandMotion(f32 arg) {
     if (marioChkSts(0x10)) {
         *(f32*)((u8*)mario + 0x2B8) = arg;
         effKemuriEntry(0, mario->position.x, mario->position.y, mario->position.z, 0.0f);
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -195,6 +198,7 @@ void marioChgJumpStandMotion(f32 arg) {
         yoshi_jumpStand();
     } else {
         *(f32*)((u8*)mario + 0x2B8) = arg;
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -245,13 +249,13 @@ void marioChgSmallJumpMotion(void) {
     *(f32*)((u8*)mario + 0x88) = 0.0f;
 }
 
-// NONMATCHING (87.28%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 BOOL marioChkItemGetMotion(void) {
     BOOL result = FALSE;
     MarioWork* mario = marioGetPtr();
     u32 motion = mario->currMotionId;
 
-    if (motion == MARIO_MOTION_STAY || (motion >= MARIO_MOTION_WALK && motion <= MARIO_MOTION_DASH) ||
+    if (motion == MARIO_MOTION_STAY ||
+        (u16)(motion - MARIO_MOTION_WALK) <= (MARIO_MOTION_DASH - MARIO_MOTION_WALK) ||
         motion == MARIO_MOTION_YOSHI || motion == MARIO_MOTION_ROLL || motion == MARIO_MOTION_SLIT) {
         if (!(mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION)) {
             result = TRUE;
@@ -573,10 +577,8 @@ BOOL marioChkTransform(void) {
     return TRUE;
 }
 
-// NONMATCHING (94.70%): 6 missing, plus register differences.
 BOOL marioChkItemMotion(void) {
     MarioWork* mario = marioGetPtr();
-    s32 mask;
 
     if (mario->flags & MARIO_FLAG_IS_8_BIT) {
         return FALSE;
@@ -585,6 +587,7 @@ BOOL marioChkItemMotion(void) {
         return FALSE;
     }
     if (marioChkHammer2() != 0) {
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -603,11 +606,13 @@ BOOL marioChkItemMotion(void) {
         }
         return TRUE;
     }
-    mask = *(u16*)((u8*)mario + 0x248) & (1 << 9);
-    if (mask == 0) {
+    if ((*(u16*)((u8*)mario + 0x248) & (1 << 9)) == 0) {
         return FALSE;
     }
     if (mario->flags & (MARIO_FLAG_TUBE_MODE | MARIO_FLAG_PAPER_MODE)) {
+        return FALSE;
+    }
+    if ((u32)(*(u16*)((u8*)mario + 0x248) & (1 << 9)) == 0) {
         return FALSE;
     }
     mario = marioGetPtr();
@@ -634,7 +639,6 @@ s32 L_marioChkRub(void) {
     return 0;
 }
 
-// NONMATCHING (97.83%): 1 instruction differs, 2 missing, plus register differences.
 s32 marioRollChgChk(void) {
     MarioWork* mario = marioGetPtr();
     s32 unk10;
@@ -657,39 +661,52 @@ s32 marioRollChgChk(void) {
     if ((s32)pouchCheckItem(3) == 0) {
         return 0;
     }
-    if (marioSlitChkWallAround() == 0) {
+    if (marioSlitChkWallAround() != 0) {
+#ifdef MUST_MATCH
+        // Original shares this failure with the crevice check's return-0 block; only a direct
+        // jump at that label gets mwcc to emit the single shared block.
+        goto fail;
+#else
+        return 0;
+#endif
+    }
+    {
         pos = mario->position;
-        if (marioCreviceWallChk(&pos) == 0) {
-            if (*(u16*)((u8*)mario + 0x246) & (1 << 5)) {
-                mario = marioGetPtr();
-                if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
-                    if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
-                        if (mario->dispFlags & (1 << 27)) {
-                            mario->dispFlags &= ~(1 << 27);
-                        }
-                        if (mario->dispFlags & (1 << 2)) {
-                            mario->dispFlags &= ~(1 << 2);
-                        }
+        if (marioCreviceWallChk(&pos) != 0) {
+#ifdef MUST_MATCH
+fail:
+#endif
+            return 0;
+        }
+        if (*(u16*)((u8*)mario + 0x246) & (1 << 5)) {
+            mario = marioGetPtr();
+            if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
+                if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
+                    if (mario->dispFlags & (1 << 27)) {
+                        mario->dispFlags &= ~(1 << 27);
                     }
-                    mario->prevMotionId = mario->currMotionId;
-                    mario->currMotionId = MARIO_MOTION_ROLL;
-                    if (marioMotTbl[mario->prevMotionId].unk8 != NULL) {
-                        marioMotTbl[mario->prevMotionId].unk8();
+                    if (mario->dispFlags & (1 << 2)) {
+                        mario->dispFlags &= ~(1 << 2);
                     }
-                    mario->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
                 }
-                return MARIO_MOTION_ROLL;
+                mario->prevMotionId = mario->currMotionId;
+                mario->currMotionId = MARIO_MOTION_ROLL;
+                if (marioMotTbl[mario->prevMotionId].unk8 != NULL) {
+                    marioMotTbl[mario->prevMotionId].unk8();
+                }
+                mario->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
             }
+            return MARIO_MOTION_ROLL;
         }
     }
     return 0;
 }
 
-// NONMATCHING (96.20%): 2 missing, plus register differences.
 void marioChgMotJump2(void) {
     MarioWork* mario = marioGetPtr();
 
     if (kpaGetBodyStatus() != 2 && mario->currMotionId != MARIO_MOTION_ROLL) {
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -709,7 +726,6 @@ void marioChgMotJump2(void) {
     }
 }
 
-// NONMATCHING (94.28%): 2 missing, 12 extra, plus register differences.
 void mot_kaze(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -734,16 +750,11 @@ void mot_kaze(void) {
         }
         mario->unk1A8 = revise360(mario->unk1A8 + *(f32*)((u8*)mario + 0x2A0));
         if (!(*(u16*)((u8*)mario + 0x246) & (1 << 4))) {
+            flag = FALSE;
             if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
                 flag = TRUE;
-            } else {
-                flag = FALSE;
             }
-            if (flag) {
-                *(f32*)((u8*)mario + 0x1AC) = 180.0f;
-            } else {
-                *(f32*)((u8*)mario + 0x1AC) = 0.0f;
-            }
+            *(f32*)((u8*)mario + 0x1AC) = flag ? 180.0f : 0.0f;
             mario->currSubMotionId = 100;
             mario->multiTimer = 10;
         }
@@ -772,21 +783,15 @@ void mot_kaze(void) {
             }
         }
         mario->unk1A8 = revise360(mario->unk1A8 + *(f32*)((u8*)mario + 0x2A0));
+        flag = FALSE;
         if (mario->unk1A8 > 90.0f && mario->unk1A8 < 270.0f) {
             flag = TRUE;
-        } else {
-            flag = FALSE;
         }
-        if (flag) {
-            *(f32*)((u8*)mario + 0x1AC) = 180.0f;
-        } else {
-            *(f32*)((u8*)mario + 0x1AC) = 0.0f;
-        }
+        *(f32*)((u8*)mario + 0x1AC) = flag ? 180.0f : 0.0f;
         break;
     }
 }
 
-// NONMATCHING (98.64%): 1 instruction differs, 1 missing, plus register differences.
 void mot_shadow(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -801,7 +806,10 @@ void mot_shadow(void) {
         *(f32*)((u8*)mario + 0xC0) = 0.0f;
         *(f32*)((u8*)mario + 0xC4) = 0.0f;
     }
-    if ((s32)mario->currSubMotionId != 0) {
+    switch (mario->currSubMotionId) {
+    case 0:
+        break;
+    default:
         return;
     }
     if (!(*(u16*)((u8*)mario + 0x248) & (1 << 9))) {
@@ -886,7 +894,6 @@ void mot_forceReset(void) {
 
 // NOTE: real assembly order has these before many other functions; fixed up at the end.
 
-// NONMATCHING (96.20%): 4 missing, plus register differences.
 void marioBoots(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -906,6 +913,7 @@ void marioBoots(void) {
         if (!(*(u16*)((u8*)mario + 0x248) & (1 << 8))) {
             return;
         }
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -929,6 +937,7 @@ void marioBoots(void) {
         if (marioChkHipAttack() == 0) {
             return;
         }
+        mario = marioGetPtr();
         if (!(mario->flags & MARIO_FLAG_CHG_MOT_DISABLED)) {
             if (mario->prevMotionId == MARIO_MOTION_HIP || mario->prevMotionId == MARIO_MOTION_HIP_2) {
                 if (mario->dispFlags & (1 << 27)) {
@@ -948,7 +957,6 @@ void marioBoots(void) {
     }
 }
 
-// NONMATCHING (99.22%): 2 instructions differ.
 void marioChgMoveMotion(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -958,7 +966,7 @@ void marioChgMoveMotion(void) {
     } else if (mario->currMotionId == MARIO_MOTION_ROLL) {
         allPartyForceRideOn();
     } else if (mario->currMotionId != MARIO_MOTION_YOSHI) {
-        if (0.0f == mario->baseSpeed) {
+        if (!mario->baseSpeed) {
             mario2 = marioGetPtr();
             if (mario2->currMotionId != MARIO_MOTION_SHIP && mario2->currMotionId != MARIO_MOTION_YOSHI &&
                 mario2->currMotionId != MARIO_MOTION_SLIT && mario2->currMotionId != MARIO_MOTION_ROLL) {
@@ -1089,7 +1097,11 @@ void mot_talk(void) {
     }
 }
 
-// NONMATCHING (99.33%): 1 instruction differs, 1 missing, plus register differences.
+// NONMATCHING (99.41%): the range guard over currMotionId emits the original's branch shape
+// (`beq body; blt body; bge body; b return`) only if the compiler does not invert the last test;
+// every source order tried (&& early return, !OR, goto, two ifs, a local copy, OR-form positive)
+// gives `blt return` + fallthrough instead. Register differences elsewhere were fixed by reading
+// the if-block through `mario` instead of `mario2` (same pointer, original keeps it in r30).
 void marioJump(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1116,12 +1128,12 @@ void marioJump(void) {
     *(f32*)((u8*)mario2 + 0x80) += *(f32*)((u8*)mario2 + 0x84) / grav;
     *(f32*)((u8*)mario2 + 0x7C) += *(f32*)((u8*)mario2 + 0x80) / grav;
 
-    if (*(f32*)((u8*)mario2 + 0x7C) > 0.0f) {
+    if (*(f32*)((u8*)mario + 0x7C) > 0.0f) {
         if (mario->airTimer >= 4 && !(*(u16*)((u8*)mario + 0x246) & (1 << 8))) {
-            *(f32*)((u8*)mario2 + 0x7C) += -0.526f;
+            *(f32*)((u8*)mario + 0x7C) += -0.526f;
         }
     }
-    if (*(f32*)((u8*)mario2 + 0x7C) <= 0.0f) {
+    if (*(f32*)((u8*)mario + 0x7C) <= 0.0f) {
         if (oldVy > 0.0f) {
             *(s16*)((u8*)mario + 0x52) = mario->airTimer;
         }
@@ -1176,15 +1188,15 @@ void marioJump(void) {
     mario->position.y += *(f32*)((u8*)mario + 0x7C);
 }
 
-// NONMATCHING (97.27%): 3 instructions differ, 3 missing, 10 extra, plus register differences.
 void mot_bottomless(void) {
+    const char* s = (const char*)&vec3_802c59f0;
     f32 landY;
     f32 sx;
     f32 sy;
     f32 sz;
     f32 f31;
-    f32 f29;
     f32 f30;
+    f32 f29;
     Vec vec2;
     Vec pos;
     MarioWork* mario = marioGetPtr();
@@ -1198,15 +1210,15 @@ void mot_bottomless(void) {
         mario->airTimer = 0;
         mario->currSubMotionId = 0;
         if (*(f32*)((u8*)mario + 0xE4) < -2000.0f) {
-            if (strcmp(gp->currentMapName, "win_03") == 0) {
+            if (strcmp(gp->currentMapName, s + 0xC) == 0) {
                 f31 = 250.0f;
                 landY = 13.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, "win_01") == 0) {
+            } else if (strcmp(gp->currentMapName, s + 0x14) == 0) {
                 f31 = 220.0f;
                 landY = 1.0f;
                 f29 = mario->position.z;
-            } else if (strcmp(gp->currentMapName, "tik_01") == 0) {
+            } else if (strcmp(gp->currentMapName, s + 0x1C) == 0) {
                 f31 = 100.0f;
                 landY = 120.0f;
                 f29 = mario->position.z;
@@ -1216,7 +1228,7 @@ void mot_bottomless(void) {
             landY = *(f32*)((u8*)mario + 0xE4);
             f29 = *(f32*)((u8*)mario + 0xE8);
         }
-        pos = vec3_802c59f0;
+        pos = *(const Vec*)s;
         pos.x = f31;
         pos.y = 300.0f + landY;
         pos.z = f29;
@@ -1275,9 +1287,12 @@ void mot_bottomless(void) {
             *(f32*)((u8*)mario2 + 0x84) = 0.0f;
             *(f32*)((u8*)mario2 + 0x88) = 0.0f;
         }
-        f30 = *(f32*)((u8*)mario2 + 0x7C);
-        if (f30 < -10.0f) {
-            f30 = -10.0f;
+        {
+            f32 x = *(f32*)((u8*)mario2 + 0x7C);
+            f30 = x;
+            if (x < -10.0f) {
+                f30 = -10.0f;
+            }
         }
         hit = marioChkLandon(&landY, f30);
         if (hit == NULL) {
@@ -1416,7 +1431,11 @@ void marioSetJumpPara(void) {
     }
 }
 
-// NONMATCHING (99.82%): same instructions; only register numbers or operands differ.
+// NONMATCHING (99.82%): only float register numbers differ. The 0.1f speed block puts the
+// constant in f1 and baseSpeed in f2; the original has them swapped. The 0.01f block's result
+// lands in f1 instead of f3. Source order (0.0f/0.1f on either side, temp locals, scope of the
+// local) does not move them; every variant either keeps the same registers or hoists the load
+// before the flag OR (worse score).
 void marioFall(void) {
     f32 f31;
     s32 unk14;
@@ -1565,12 +1584,11 @@ void marioFall(void) {
         (m)->trigFlags |= MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;                       \
     }
 
-// NONMATCHING (99.60%): 1 instruction differs, 1 missing, 2 extra, plus register differences.
 void marioLandOn(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
     Vec pos;
-    void* obj;
+    char* obj;
     void* stand;
     s32 attr;
     s32 action;
@@ -1636,13 +1654,13 @@ void marioLandOn(void) {
     }
     attr = hitGetAttr((HitEntry*)mario->hitobjStandOn);
     if ((u32)attr & (1 << 31)) {
-        obj = mobjHitObjPtrToPtr((HitEntry*)mario->hitobjStandOn);
-        if (strcmp((const char*)obj + 0x15, "MOBJ_RedSwitch") == 0) {
+        obj = (char*)mobjHitObjPtrToPtr((HitEntry*)mario->hitobjStandOn);
+        if (strcmp(obj + 0x15, "MOBJ_RedSwitch") == 0) {
             mario2 = marioGetPtr();
             MARIO_CHG_BLOCK(mario2, MARIO_MOTION_JUMP_SW);
             return;
         }
-        if (strcmp((const char*)obj + 0x15, "MOBJ_BlueJumpStand") == 0) {
+        if (strcmp(obj + 0x15, "MOBJ_BlueJumpStand") == 0) {
             mario = marioGetPtr();
             camFollowYOn();
             if (marioChkSts(MARIO_MOTION_HIP) != 0) {
