@@ -723,3 +723,35 @@ Floated at the end of Sep 25, not decided; settle them when wave 6 starts.
   fan-out, as an independent pass. Slower, but that may be fine.
 - **Pace.** Code matched went from 12.16% to 17.96% in the first day of waves. Melee took about six years, the
   last two fast. The pace from here depends on compute and on how quickly review can keep up.
+
+## `tools/semdiff.py`: logic differences in partial functions, back-tested on past bugs (2026-09-26, Isaac; built by Claude Opus 5.5)
+
+Most bugs reviews found in waves 4-5 were in functions that don't match yet, where the score says how close
+the bytes are, not whether the logic is right. `tools/semdiff.py UNIT` compares each partial function with
+the original as multisets of meaning-bearing tokens, ignoring register numbers, stack offsets and order:
+constants, flag masks (rlwinm read as the value mask), logic immediates, signed or unsigned compares and
+`cror`, calls, field offsets with width and signedness, a few meaning-changing opcodes (`divw`, `extsb`,
+`fabs`, ...), and referenced data resolved to its contents, so an anonymous `@633` and `float_0_8041b020`
+compare equal. Operations are compared by count; constants and data by presence, since the compiler loads
+constants once or repeatedly as it likes. `tools/lint_patch.py` now reports its output as `SEMDIFF` leads
+(not rejections), and also sees `USER_FUNC(name)` definitions, which its STUB and UNLABELLED checks had missed.
+
+**Back-test** (`tools/semdiff_backtest.py`, ~12 s): 21 cases from wave 4 and 5 reviews. For each, the file is
+compiled as it was at the commit before the fix and at the fix, in a scratch worktree with that commit's
+flags; a case passes if the expected token is flagged before and gone after.
+- 17 of 17 expected detections pass: flags ORed a byte too far, the hip-attack and paper-mode masks, `/10` for
+  `/28`, `__div2i` for `__div2u`, `tan`/`fabs` with no prototype (int-to-double conversion of r3), the inverted
+  clamp, three `== N` read as `<`, `0x1C000` for `0x20000`, `0x114d80` for -250000000, `<=` for `>=`, the
+  zeroed stand-in array, `fabs` as a call rather than the instruction.
+- 4 known limits, not expected to be caught: a wrong matrix destination (a stack address), an `else` on the
+  wrong `if`, a missing case fall-through, and an argument left in a register by luck in a matched function.
+- Hold-out, bugs not looked at while building it: 11 of 11 flagged with a relevant token (e.g. a missing
+  `return 2`, a wrong field offset, alpha stored in the wrong byte, the 0xF00 mask, wrong SFX strings).
+  Functions wrong throughout (sac_suki, main_weapon) show dozens of differences.
+- Noise: on 79 partial functions wave 5's reviewers had checked and called correct, 13 are flagged, most
+  with real code differences (the re-fetched `marioGetPtr`, and `fabsf` called where the original uses the
+  instruction in `marioCreviceWallChk`, which no review caught).
+- Over all 72 files the waves touched: 418 of 1,025 partial functions flagged, mostly from waves 1-3, whose
+  partials were never reviewed for logic. A backlog for a review or finisher pass.
+
+Add a case to the back-test whenever a review finds a bug in a partial function.
