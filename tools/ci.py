@@ -7,6 +7,7 @@
     python3 tools/ci.py --init          accept the current build without checks (first run only)
 
 Steps, stopping at the first failure:
+0. Tests: tools/tests (the checks' own unit tests).
 1. Lint the diff: no new inline asm, no new #pragma, no edits to protected paths, and configure.py
    changes limited to Object(...) lines. Overrides: --allow-pragma, --allow-protected, --allow-configure.
 2. Build: configure + ninja. Ninja fails if a linked module stops hashing to config/*/build.sha1.
@@ -15,7 +16,8 @@ Steps, stopping at the first failure:
    --allow-regress NAME excuses a named, not-yet-matched function's fuzzy score (and its unit's and the
    total's fuzzy score), or every measure of a named unit (e.g. MarioSt/event/evt_eff) and the total's same
    measure: for deliberate fixes or removals of wrong code that lower a score. Say why in the commit.
-4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas.
+4. Summary: code fuzzy / matched / linked and data matched / linked, with deltas, and a note if any unit is
+   fully matched but not yet linked.
 """
 import argparse
 import json
@@ -133,6 +135,21 @@ def ratchet(allowed=()):
     print(f"ok   [ratchet] no regressions; {len(better)} measure(s) improved")
 
 
+def tests():
+    r = run([sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tools" / "tests"), "-q"])
+    if r.returncode:
+        fail("tests", "tools/tests failed:\n" + (r.stderr or r.stdout)[-2000:])
+    print("ok   [tests] tools/tests pass")
+
+
+def unlinked():
+    """Fully matched units still marked NonMatching: tools/autolink.py would try to link them."""
+    r = run([sys.executable, str(ROOT / "tools" / "autolink.py"), "--list"])
+    names = [l for l in r.stdout.splitlines() if l.strip()]
+    if names:
+        print(f"note {len(names)} unit(s) fully matched but not linked (python3 tools/autolink.py --list)")
+
+
 def summary():
     now = json.loads((BUILD / "report.json").read_text())["measures"]
     before = json.loads(ACCEPTED.read_text())["measures"]
@@ -151,8 +168,8 @@ def main():
     ap.add_argument("--allow-protected", action="store_true")
     ap.add_argument("--allow-configure", action="store_true")
     ap.add_argument("--allow-regress", action="append", default=[], metavar="NAME",
-                    help="a not-yet-matched function whose score may drop, e.g. when removing a wrong partial "
-                         "implementation; repeatable. Only fuzzy scores may drop, never matched or linked.")
+                    help="a not-yet-matched function, or a unit, whose score may drop when wrong code is fixed or "
+                         "removed; repeatable")
     a = ap.parse_args()
     CI_DIR.mkdir(parents=True, exist_ok=True)
     if a.init:
@@ -162,10 +179,12 @@ def main():
         return
     if not ACCEPTED.exists():
         fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
+    tests()
     lint(a.base, a.allow_pragma, a.allow_protected, a.allow_configure)
     build()
     ratchet(set(a.allow_regress))
     summary()
+    unlinked()
     if a.accept:
         shutil.copy(BUILD / "report.json", ACCEPTED)
         print("     accepted: this build is the new baseline")

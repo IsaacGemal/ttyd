@@ -18,18 +18,6 @@ import re
 import subprocess
 import sys
 
-unit = sys.argv[1]
-base = sys.argv[2:] or []
-path = f"src/{unit}.c"
-BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
-if BASE_FILE:
-    diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
-else:
-    diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
-added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
-text = open(path).read()
-lines = text.splitlines()
-
 
 def definitions(text):
     """Function definitions: name -> (start line, body text)."""
@@ -50,41 +38,61 @@ def is_stub(body):
     return code in ("", "return;", "return 0;", "return NULL;", "return FALSE;")
 
 
-funcs = definitions(text)
-head = (open(BASE_FILE).read() if BASE_FILE else
-        subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout)
-head_funcs = {n: body for n, (_, body) in definitions(head).items()}
 
-# Which functions the patch touched: a hunk's new-file line range intersecting the function.
-touched_lines = set()
-for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M):
-    s, n = int(m.group(1)), int(m.group(2) or 1)
-    touched_lines.update(range(s - 1, s - 1 + max(n, 1)))
-touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
 
-report = json.load(open("build/G8MJ01/report.json"))
-u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
-pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
+def main():
+    unit = sys.argv[1]
+    base = sys.argv[2:] or []
+    path = f"src/{unit}.c"
+    BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
+    if BASE_FILE:
+        diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
+    else:
+        diff = subprocess.run(["git", "diff", "-U0", *base, "--", path], capture_output=True, text=True).stdout
+    added = [l[1:] for l in diff.splitlines() if l.startswith("+") and not l.startswith("+++")]
+    text = open(path).read()
+    lines = text.splitlines()
 
-stubs, out = [], []
-for n in sorted(touched):
-    s, body = funcs[n]
-    if is_stub(body) and pct.get(n, 100) < 100 and not is_stub(head_funcs.get(n, "x")):
-        stubs.append(n)
-    elif pct.get(n, 100) < 100 and not any("NONMATCHING" in l for l in lines[max(0, s - 3):s + 1]):
-        out.append(f"UNLABELLED {n} ({pct[n]:.1f}%)")
-for l in added:
-    if re.search(r"\*\s*\(\s*\w+\s*\*\s*\)\s*\(\s*\(\s*(u8|s8|char)\s*\*\s*\)", l):
-        out.append("OFFSET     " + l.strip())
-    if re.match(r"\s*(typedef\s+)?struct\s+\w*\s*\{|\s*typedef\s+(struct|union|enum)\b", l):
-        out.append("STRUCT     " + l.strip())
-    if re.match(r"\s*extern\b", l):
-        out.append("EXTERN     " + l.strip())
-for i, l in enumerate(lines):
-    if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
-        if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
-            out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
-for n in stubs:
-    print(f"STUB       {n}")
-print("\n".join(out))
-sys.exit(1 if stubs else 0)
+    funcs = definitions(text)
+    head = (open(BASE_FILE).read() if BASE_FILE else
+            subprocess.run(["git", "show", f"{(base or ['HEAD'])[0]}:{path}"], capture_output=True, text=True).stdout)
+    head_funcs = {n: body for n, (_, body) in definitions(head).items()}
+
+    # Which functions the patch touched: a hunk's new-file line range intersecting the function.
+    touched_lines = set()
+    for m in re.finditer(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@", diff, re.M):
+        s, n = int(m.group(1)), int(m.group(2) or 1)
+        touched_lines.update(range(s - 1, s - 1 + max(n, 1)))
+    touched = {n for n, (s, body) in funcs.items() if touched_lines & set(range(s, s + body.count("\n") + 2))}
+
+    report = json.load(open("build/G8MJ01/report.json"))
+    u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
+    pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}
+
+    stubs, out = [], []
+    for n in sorted(touched):
+        s, body = funcs[n]
+        if is_stub(body) and pct.get(n, 100) < 100 and not is_stub(head_funcs.get(n, "x")):
+            stubs.append(n)
+        elif pct.get(n, 100) < 100 and not any("NONMATCHING" in l for l in lines[max(0, s - 3):s + 1]):
+            out.append(f"UNLABELLED {n} ({pct[n]:.1f}%)")
+    for l in added:
+        if re.search(r"\*\s*\(\s*\w+\s*\*\s*\)\s*\(\s*\(\s*(u8|s8|char)\s*\*\s*\)", l):
+            out.append("OFFSET     " + l.strip())
+        if re.match(r"\s*(typedef\s+)?struct\s+\w*\s*\{|\s*typedef\s+(struct|union|enum)\b", l):
+            out.append("STRUCT     " + l.strip())
+        if re.match(r"\s*extern\b", l):
+            out.append("EXTERN     " + l.strip())
+    for i, l in enumerate(lines):
+        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
+            if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
+                out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
+    for n in stubs:
+        print(f"STUB       {n}")
+    print("\n".join(out))
+    sys.exit(1 if stubs else 0)
+
+
+
+if __name__ == "__main__":
+    main()
