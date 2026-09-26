@@ -707,4 +707,4 @@ own fixes unreviewed. Per PR: **Codex reviews -> the orchestrator fixes and comm
 PR including those fix commits -> the orchestrator fixes -> merge.** Codex goes first because its usage runs
 out first and it does the broad sweep; Claude goes second because it reads logic against the asm more deeply,
 which is what checking fixes needs. Only the last round's fixes go unreviewed, and there are usually few.
-Wave 5's fix commits (ce5b249..59e9d2f) were reviewed after the fact.
+Wave 5's fix commits (ce5b249..59e9d2f) get this review after the fact.
