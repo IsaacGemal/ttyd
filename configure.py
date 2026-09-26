@@ -708,7 +708,7 @@ config.libs = [
             Object(NonMatching, "event/evt_urouro.c"),
             Object(NonMatching, "event/evt_lottery.c"),
             Object(NonMatching, "event/evt_lecture.c"),
-            Object(NonMatching, "event/evt_memcard.c"),
+            Object(Matching, "event/evt_memcard.c"),
         ],
     },
     {
