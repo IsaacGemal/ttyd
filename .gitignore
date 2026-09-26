@@ -72,3 +72,6 @@ docs/CONTEXT.private.md
 
 # Local archives (old agent logs)
 archive/
+
+# Orchestrator working files: wave launchers, agent results, review logs
+scratch/
