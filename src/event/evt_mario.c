@@ -1,5 +1,7 @@
+#include "mario/mario_motion.h"
 #include "evt/evt_cmd.h"
 
+#include "mario/mario_motion.h"
 #include "driver/camdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/npcdrv.h"
@@ -52,9 +54,7 @@ extern void peachSetStsOrdinary(void);
 extern void peachSetStsCarry(void);
 extern s32 marioChkSlitThrouhEnd(void);
 extern void unk_8009f9c8(void);
-extern void marioChgMot(s32 motion);
 extern f32 toMovedirSimple(f32 angle);
-extern void marioSetForceMove(s32 frames, f32 angle, f32 speed);
 extern void kpaAttackStart(void);
 extern void kpaChgPose(const char* a, const char* b);
 extern void partyShadowOff(PartyEntry* party);

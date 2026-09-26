@@ -1,3 +1,8 @@
+#include "mario/mario_motion.h"
+#include "party.h"
+#include "mario/mario_motion.h"
+#include "pmario_sound.h"
+#include "party.h"
 #include "driver/mobjdrv.h"
 #include "driver/animdrv.h"
 #include "driver/hitdrv.h"
@@ -48,18 +53,14 @@ s32 mobj_switch_blue(MapObjectEntry* obj);
 
 // Prototypes missing from mario/party/sound headers (to move later)
 extern void partyKeyOff(void);
-extern void marioChgMot(s32 motion);
-extern s32 psndSFXOn_3D(s32 id, Vec* pos);
 extern void mobjCalcMtx(MapObjectEntry* entry);
 extern void* effSmallStarEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 f4, f32 f5, f32 f6);
 extern void effSmallStarCamChg(void* entry, s32 camId);
 extern void marioChgJumpStandMotion(f32 a);
 extern s32 irand(s32 max);
-extern void psndSFXOn(s32 id);
 s32 mobj_jumpstand_blue(MapObjectEntry* obj);
 s32 mobj_jumpstand_red(MapObjectEntry* obj);
 extern s32 marioGetPartyId(void);
-extern void* partyGetPtr(s32 index);
 extern void mobjCalcMtx2(MapObjectEntry* entry);
 extern f32 PSVECMag(const Vec* v);
 extern f32 PSVECDistance(const Vec* a, const Vec* b);
@@ -677,14 +678,14 @@ s32 mobj_switch_red(MapObjectEntry* obj) {
                 if (obj->unk1E0 == 0x200000 || obj->unk1E0 == 0x1000000) {
                     marioChgMot(5);
                 }
-                psndSFXOn_3D(0x1d2, &obj->position);
+                psndSFXOn_3D((const char*)0x1d2, &obj->position);
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->flags &= ~8;
             }
             break;
         case 1:
             if (obj->flags & 8) {
-                psndSFXOn_3D(0x1d2, &obj->position);
+                psndSFXOn_3D((const char*)0x1d2, &obj->position);
                 if (obj->unk1E0 == 0x200000) {
                     marioChgMot(5);
                 }
@@ -710,7 +711,7 @@ s32 mobj_switch_blue(MapObjectEntry* obj) {
                 if (obj->unk1E0 == 0x200000 || obj->unk1E0 == 0x1000000) {
                     marioChgMot(5);
                 }
-                psndSFXOn_3D(0x1d2, &obj->position);
+                psndSFXOn_3D((const char*)0x1d2, &obj->position);
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->unk1DC++;
             }
@@ -988,31 +989,31 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
-                        psndSFXOn_3D(0x1eb, &obj->position);
+                        psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
-                        psndSFXOn_3D(0x1ec, &obj->position);
+                        psndSFXOn_3D((const char*)0x1ec, &obj->position);
                     }
                     switch (irand(4)) {
                         case 0:
-                            psndSFXOn_3D(0xab, &obj->position);
+                            psndSFXOn_3D((const char*)0xab, &obj->position);
                             break;
                         case 1:
-                            psndSFXOn_3D(0xac, &obj->position);
+                            psndSFXOn_3D((const char*)0xac, &obj->position);
                             break;
                         case 2:
-                            psndSFXOn_3D(0xad, &obj->position);
+                            psndSFXOn_3D((const char*)0xad, &obj->position);
                             break;
                         case 3:
-                            psndSFXOn_3D(0xae, &obj->position);
+                            psndSFXOn_3D((const char*)0xae, &obj->position);
                             break;
                         case 4:
-                            psndSFXOn_3D(0xaf, &obj->position);
+                            psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
                 } else if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
-                    psndSFXOn(0x1eb);
+                    psndSFXOn((const char*)0x1eb);
                 } else {
-                    psndSFXOn(0x1ec);
+                    psndSFXOn((const char*)0x1ec);
                 }
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->flags &= ~8;
@@ -1095,31 +1096,31 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                 }
                 if (mario->characterId != 2) {
                     if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
-                        psndSFXOn_3D(0x1eb, &obj->position);
+                        psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
-                        psndSFXOn_3D(0x1ec, &obj->position);
+                        psndSFXOn_3D((const char*)0x1ec, &obj->position);
                     }
                     switch (irand(4)) {
                         case 0:
-                            psndSFXOn_3D(0xab, &obj->position);
+                            psndSFXOn_3D((const char*)0xab, &obj->position);
                             break;
                         case 1:
-                            psndSFXOn_3D(0xac, &obj->position);
+                            psndSFXOn_3D((const char*)0xac, &obj->position);
                             break;
                         case 2:
-                            psndSFXOn_3D(0xad, &obj->position);
+                            psndSFXOn_3D((const char*)0xad, &obj->position);
                             break;
                         case 3:
-                            psndSFXOn_3D(0xae, &obj->position);
+                            psndSFXOn_3D((const char*)0xae, &obj->position);
                             break;
                         case 4:
-                            psndSFXOn_3D(0xaf, &obj->position);
+                            psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
                 } else if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
-                    psndSFXOn(0x1eb);
+                    psndSFXOn((const char*)0x1eb);
                 } else {
-                    psndSFXOn(0x1ec);
+                    psndSFXOn((const char*)0x1ec);
                 }
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->flags &= ~8;
@@ -1195,7 +1196,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         case 0:
             if (obj->flags & 8) {
                 mobjRunEvent(obj, obj->unk1D4);
-                psndSFXOn_3D(0x1d3, &obj->position);
+                psndSFXOn_3D((const char*)0x1d3, &obj->position);
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 obj->unk1DC = 1;
             }
@@ -1234,7 +1235,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
                 if (!(obj->flags & 8)) {
                     obj->unk1DC = 3;
                     animPoseSetAnim(obj->poseId, "A_2", 1);
-                    psndSFXOn_3D(0x1d4, &obj->position);
+                    psndSFXOn_3D((const char*)0x1d4, &obj->position);
                     mobjRunEvent(obj, obj->unk1D8);
                 } else {
                     obj->flags &= ~8;
@@ -1324,7 +1325,7 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
             }
             break;
         case 0xa:
-            psndSFXOn_3D(0x1b8, &obj->position);
+            psndSFXOn_3D((const char*)0x1b8, &obj->position);
             effMObjBrokenEntry(2, obj->position.x, obj->position.y + 12.5f, obj->position.z + 12.5f);
             obj->unk1DC = 0x63;
             /* fall through */

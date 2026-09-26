@@ -52,6 +52,8 @@ void partyMoveBehindMario(PartyEntry* party, s32 unk);
 void partyClearFootmark(void);
 void unk_800ba2dc(PartyEntry* party);
 s32 nokonokoGetStatus(PartyEntry* party);
+// party_cloud.h declares cloudGetStatus as returning u8 (its definition masks the result), but the original
+// evt_party_cloud_breathout uses the result unmasked, as if this file saw it declared int.
 s32 cloudGetStatus(void);
 void nokotaro_hold_cancel(PartyEntry* party);
 s32 bomheiGetStatus(void);

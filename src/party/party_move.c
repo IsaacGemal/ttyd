@@ -76,7 +76,7 @@ s32 chuchu_searchObject(void);
 char* partyChgPoseId(PartyEntry* party, s32 index);
 void unk_800c90d4(PartyEntry* party, s32 value);
 s32 N_marioGetMovementSpeed(void);
-void* party_motion_fall(PartyEntry* party);
+s32 party_motion_fall(PartyEntry* party);
 void unk_8014bbc8(PartyEntry* party);
 void unk_801820d0(PartyEntry* party);
 void unk_8018206c(PartyEntry* party);

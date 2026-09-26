@@ -1,3 +1,4 @@
+#include "pmario_sound.h"
 #include "party.h"
 #include "mario/mario.h"
 #include "mario/mario_party.h"
@@ -35,7 +36,6 @@ s32 psndSFXOn(const char* name);
 s32 psndSFXOn_(const char* name);
 void psndBGMScope(s32 id, s32 scope);
 void psndBGM_rate(s32 id, u16 rate);
-s32 psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch);
 BOOL psndBGMOff(s32 flags);
 BOOL psndENVOn(s32 a, s32 b);
 s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e);
@@ -44,7 +44,7 @@ BOOL psndBGMOn(u32 r3, char* bgm_name);
 void partyPaperOff(PartyEntry* party);
 void partyChgPaper(PartyEntry* party, void* paper);
 void partyPaperLightOff(PartyEntry* party);
-void partyChgPoseId(PartyEntry* party, s32 poseId);
+char* partyChgPoseId(PartyEntry* party, s32 poseId);
 void partyChgMot(PartyEntry* party, s32 mot);
 HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle);

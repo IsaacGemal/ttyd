@@ -1,3 +1,4 @@
+#include "pmario_sound.h"
 #include "win/win_main.h"
 #include "data/item_data.h"
 #include "driver/camdrv.h"
@@ -30,7 +31,6 @@ extern const f32 float_neg600_8041d0fc;
 extern const f32 float_30_8041d100;
 extern const f32 float_40_8041d0e8;
 extern const f32 float_0p125_8041d104;
-extern void psndSFXOn(u32 id);
 extern ItemData itemDataTable[];
 extern void unk_800d06b4(char* src, char* dst);
 extern void* mailGetPtr(s32 id);
@@ -587,23 +587,23 @@ void winSortMain(WindowWork* work) {
     }
 
     if (trg & 0x200) {
-        psndSFXOn(0x20013);
+        psndSFXOn((const char*)0x20013);
         WW_S32(work, 0x17C) = 0;
         WW_F32(work, 0x16C) = float_neg600_8041d0fc;
     } else if (rep & 0x1000) {
-        psndSFXOn(0x20005);
+        psndSFXOn((const char*)0x20005);
         WW_S32(work, 0x174) = WW_S32(work, 0x174) - 1;
         if (WW_S32(work, 0x174) < 0) {
             WW_S32(work, 0x174) = WW_S32(work, 0x178) - 1;
         }
     } else if (rep & 0x2000) {
-        psndSFXOn(0x20005);
+        psndSFXOn((const char*)0x20005);
         WW_S32(work, 0x174) = WW_S32(work, 0x174) + 1;
         if (WW_S32(work, 0x174) >= WW_S32(work, 0x178)) {
             WW_S32(work, 0x174) = 0;
         }
     } else if (trg & 0x100) {
-        psndSFXOn(0x20012);
+        psndSFXOn((const char*)0x20012);
         sort_data[WW_S32(work, 0x184)][WW_S32(work, 0x174)].func(work);
     } else if (trg & 0x1000) {
         WW_S32(work, 0x17C) = 0;
@@ -670,12 +670,12 @@ void winMsgMain(WindowWork* work) {
                 if (WW_S32(work, 0x148) < 0) {
                     WW_S32(work, 0x148) = 0;
                 } else {
-                    psndSFXOn(0x20006);
+                    psndSFXOn((const char*)0x20006);
                 }
             } else if (keyGetDirTrg(0) & 0x200) {
                 if (WW_S32(work, 0x148) / 2 < (WW_S32(work, 0x14C) + 1) / 2 - 1) {
                     WW_S32(work, 0x148) = WW_S32(work, 0x148) + 2;
-                    psndSFXOn(0x20006);
+                    psndSFXOn((const char*)0x20006);
                 }
             }
             break;
