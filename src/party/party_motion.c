@@ -51,7 +51,6 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyGetFootmarkId(void);
 void partyNextReadId(void);
-f32 toMovedir(f32);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
 void partySearchFrontWall(PartyEntry* party, Vec* position, f32 a, f32 b);
 void N_partyPlaySfxPartyLanding1(PartyEntry* party);

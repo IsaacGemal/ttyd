@@ -4582,8 +4582,8 @@ void psndSFXAllOff(void) {
 }
 
 
-void psndSFXOn(const char* sfx_name) {
-	__psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
+s32 psndSFXOn(const char* sfx_name) {
+	return __psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
 BOOL psndBGMOff_f_d(s32 flags, u16 fadetime, BOOL someswitch) {
