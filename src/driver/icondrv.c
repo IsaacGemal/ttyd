@@ -174,7 +174,7 @@ void iconMain(void) {
     }
 }
 
-void iconEntry(const char* name, s16 iconId) {
+void iconEntry(const char* name, u16 iconId) {
     IconWork* wp = iconGetWork();
     IconEntry* entry = iconNameToPtr(name); // inline
     IconBinaryEntry* data;
@@ -272,7 +272,7 @@ void iconDelete(const char* name) {
     }
 }
 
-void iconChange(const char* name, s16 iconId) {
+void iconChange(const char* name, u16 iconId) {
     IconEntry* entry = iconNameToPtr(name); // inline
     IconBinaryEntry* data;
 

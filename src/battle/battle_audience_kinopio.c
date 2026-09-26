@@ -1,3 +1,4 @@
+double fabs(double x);
 #include "battle/battle_audience.h"
 #include "battle/battle.h"
 #include "battle/battle_stage.h"

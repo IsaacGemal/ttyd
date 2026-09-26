@@ -39,7 +39,6 @@ s32 kpaGetBodyStatus(void);
 s32 marioGetHammerLevel(void);
 s32 marioChkHammer2(void);
 s32 marioSlitChkWallAround(void);
-s32 marioCreviceWallChk(Vec* pos);
 s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3);
 s32 marioShipChanging(void);
 void camFollowYOn(void);

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "battle/battle.h"
 #include "battle/battle_audience.h"
 #include "battle/battle_unit.h"

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <dolphin/gx.h>
+
 #include <dolphin/types.h>
 
 typedef enum BinaryFontEncoding {
@@ -80,6 +82,10 @@ void fontmgrInit(void);
 void fontmgrTexSetup(void);
 void FontDrawStart(void);
 void FontDrawStart_alpha(u8 alpha);
+void FontDrawEdge(void);
+void FontDrawEdgeOff(void);
+void FontDrawColor(GXColor* color);
+void FontDrawString(const char* str, f32 x, f32 y);
 
 
 

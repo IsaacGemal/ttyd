@@ -172,3 +172,5 @@ MapObject* mapGetMapObj(const char* name);
 void mapObjScale(const char* name, f32 x, f32 y, f32 z);
 void mapObjTranslate(const char* name, f32 x, f32 y, f32 z);
 void mapObjRotate(const char* name, f32 x, f32 y, f32 z);
+void mapObjGetPos(const char* name, Vec* pos);
+void mapObjFlagOn(const char* name, u32 flag);

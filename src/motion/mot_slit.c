@@ -1,3 +1,4 @@
+#include "mot/mot_slit.h"
 #include "dolphin/types.h"
 #include "dolphin/mtx.h"
 #include "driver/mapdrv.h"

@@ -1,3 +1,4 @@
+#include "driver/icondrv.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
@@ -21,15 +22,6 @@
 // evt_unitwin_disp_func is a display callback, not an event command.
 void evt_unitwin_disp_func(CameraId cameraId, void* param);
 
-// icondrv.h declares iconId as s16, but the original loads the icon id with lhz
-// (an unsigned 16-bit load). Declared locally as u16 so the load matches.
-extern void iconChange(const char* name, u16 iconId);
-extern void iconDelete(const char* name);
-extern void iconEntry2D(const char* name, s16 iconId);
-extern void iconEntry(const char* name, u16 iconId);
-extern void iconSetPos(const char* name, f32 x, f32 y, f32 z);
-extern void iconFlagOn(const char* name, s16 flags);
-extern void iconFlagOff(const char* name, s16 flags);
 extern void mapObjFlagOff(const char* name, u32 flag);
 const char str_802F6894[] = "yubicursor_2";
 extern s32 winGhostDiaryChk(void);
