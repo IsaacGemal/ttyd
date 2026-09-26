@@ -34,7 +34,7 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u
 s32 psndSFXOn(const char* name);
 s32 psndSFXOn_(const char* name);
 void psndBGMScope(s32 id, s32 scope);
-void psndBGM_rate(s32 id, s32 rate);
+void psndBGM_rate(s32 id, u16 rate);
 s32 psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch);
 BOOL psndBGMOff(s32 flags);
 BOOL psndENVOn(s32 a, s32 b);
@@ -70,7 +70,7 @@ s32 marioChkDeepSleep(void);
 s32 chuchu_searchObject(void);
 void partyGetReturnPos(Vec* position);
 void partyMove(PartyEntry* party);
-void unk_800c9398(PartyEntry* party);
+void unk_800c9398(PartyEntry* party, f32 value);
 
 void party_motion_upstairs(PartyEntry* party) {
     if (party->field_8 & 0x2) {
@@ -582,7 +582,7 @@ void party_motion_damage(PartyEntry* party) {
         }
         *(f32*)((u8*)party + 0x114) = 0.0f;
         *(f32*)((u8*)party + 0x118) = -1.0f;
-        unk_800c9398(party);
+        unk_800c9398(party, 0.0f);
         party->flags = (party->flags | 0x20);
         party->flags = (party->flags | 0x02000000);
         *(u8*)((u8*)party + 0x38) = 0xB;
@@ -935,7 +935,7 @@ s32 party_roll(PartyEntry* party) {
         *(f32*)((u8*)party + 0x80) = 2.0f;
         *(s32*)((u8*)party + 0x24) = 0x41;
         *(u8*)((u8*)party + 0x3A) = 0;
-        unk_800c9398(party);
+        unk_800c9398(party, 0.0f);
     }
     switch (*(u8*)((u8*)party + 0x3A)) {
     case 0:
