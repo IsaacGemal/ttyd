@@ -661,7 +661,6 @@ USER_FUNC(irai_mail_check) {
 
 extern WinMgrDesc coinget_window_desc;
 extern BOOL psndBGMOff(s32 flags);
-extern void iconEntry(const char* name, s16 iconId);
 extern void iconSetPos(const char* name, f32 x, f32 y, f32 z);
 extern void iconFlagOn(const char* name, s16 flags);
 extern void iconFlagOff(const char* name, s16 mask);

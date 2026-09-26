@@ -790,9 +790,9 @@ BattleUnit* BattleGetSystemPtr(BattleWork* wp) {
     return NULL;
 }
 
-void BattlePartyAnimeLoad(BattleUnitType partyId) {
+BOOL BattlePartyAnimeLoad(BattleUnitType partyId) {
     BattleUnitSetup* setup = &entryunit_party[partyId - 0xE0];
-    animEffectAsync(setup->mUnitKindParams->mParts->partName, 1);
+    return animEffectAsync(setup->mUnitKindParams->mParts->partName, 1);
 }
 
 void BattleMajinaiEndCheck(void) {

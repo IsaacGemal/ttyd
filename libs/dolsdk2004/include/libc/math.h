@@ -10,6 +10,7 @@
 double fabs(double x);
 double sin(double x);
 double cos(double x);
+double tan(double x);
 
 float sinf(float x);
 float cosf(float x);

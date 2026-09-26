@@ -203,3 +203,6 @@ BOOL BattleAudience_GetSysCtrl(s32 index);
 BOOL BattleAudience_GetWaiting(s32 index);
 s32 BattleAudience_HaitiRandForFallObject(void);
 s32 BattleAudience_GetAudienceNum(void);
+void BattleAudience_Case_Escape(void);
+void BattleAudience_Case_Escape_Bad(void);
+void BattleAudience_Case_Escape_Good(void);
