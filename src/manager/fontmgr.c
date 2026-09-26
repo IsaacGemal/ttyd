@@ -55,8 +55,8 @@ void FontDrawScale(f32 scale) {
 	fontScale.z = scale;
 }
 
-void FontDrawScaleVec(Vec* scale) {
-	fontScale = *scale;
+void FontDrawScaleVec(Vec scale) {
+	fontScale = scale;
 }
 
 void FontDrawRainbowColorOff(void) {
@@ -178,6 +178,8 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
+// NONMATCHING (83.60%): retail loads `color->a` before the whole-word `*color`; ours loads the word first
+// and hoists the GXSetTevColor argument-copy address. Same multiset, different schedule.
 void FontDrawColor(GXColor* color) {
 	fontColor = *color;
 	color->a = (color->a * fontAlpha) / 255;
@@ -269,12 +271,13 @@ void fontmgrTexSetup(void) {
 			GX_FALSE,
 			GX_ANISO_1);
 
-		*(u8*)((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)) + 1) = 7;
-		*(u8*)((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)) + 1) = 9;
+		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)))[1] = 7;
+		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)))[1] = 9;
 	}
 }
 
-// NONMATCHING (97.99%): width-lookup pointer held in r6 instead of retail r5; sdata2/rodata label names.
+// NONMATCHING (98.66%): only the OSRoundUp32B() evaluation before __memAlloc differs (orig keeps len in r4
+// across `li r3,0`; ours folds it into r0 before the clear) plus sdata2/rodata label names.
 void JUTFontSetup(u16 idx) {
 	u32 size;
 	DVDEntry* dvd;
@@ -324,52 +327,8 @@ void JUTFontSetup(u16 idx) {
 			GX_FALSE,
 			GX_FALSE,
 			GX_ANISO_1);
-		{
-			BinaryFontWidth* width;
-			u16 code;
-			u32 blockcount;
-
-			code = JUTFont_CodeToGlyph(0x20);
-			width = (BinaryFontWidth*)(pfh + 1);
-			blockcount = pfh->blockcount;
-			for (i = 0; i < blockcount; i++) {
-				switch (width->magic) {
-					case 'WID1':
-						if (code >= width->firstcode && code <= width->lastcode) {
-							width = (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
-							goto done1;
-						}
-						break;
-				}
-				width = (BinaryFontWidth*)((u32)width + width->size);
-			}
-			width = NULL;
-		done1:
-			*(u8*)((u8*)width + 1) = 7;
-		}
-		{
-			BinaryFontWidth* width;
-			u16 code;
-			u32 blockcount;
-
-			code = JUTFont_CodeToGlyph(0x8140);
-			width = (BinaryFontWidth*)(pfh + 1);
-			blockcount = pfh->blockcount;
-			for (i = 0; i < blockcount; i++) {
-				switch (width->magic) {
-					case 'WID1':
-						if (code >= width->firstcode && code <= width->lastcode) {
-							width = (BinaryFontWidth*)((u8*)width + (code - width->firstcode) * 2 + 0xc);
-							goto done2;
-						}
-						break;
-				}
-				width = (BinaryFontWidth*)((u32)width + width->size);
-			}
-			width = NULL;
-		done2:
-			*(u8*)((u8*)width + 1) = 9;
-		}
+		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x20)))[1] = 7;
+		((u8*)FontGetWidthPtr(JUTFont_CodeToGlyph(0x8140)))[1] = 9;
 	}
 }
 
@@ -451,6 +410,8 @@ u16 hankakuSearch(s8 code) {
 	return JUTFont_CodeToGlyph(code);
 }
 
+// NONMATCHING (87.50%): the header types `code` as u16, forcing a `clrlwi r3,r3,16` before the
+// JUTFont_CodeToGlyph(u32) call; retail has no extension, so the real parameter is u32/int.
 u16 kanjiSearch(u16 code) {
 	return JUTFont_CodeToGlyph(code);
 }
