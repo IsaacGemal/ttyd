@@ -10,38 +10,33 @@
 
 extern GlobalWork* gp;
 
-//Local Saved Work ---------------------------------------------
-s32 _swByteGet(s32 index) {
-	return gp->mLSW[index];
+void swInit(void) {
+	memset(gp->mGSFW, 0, sizeof(gp->mGSFW));
+	memset(gp->mGSW, 0, sizeof(gp->mGSW));
+	memset(gp->mLSWF, 0, sizeof(gp->mLSWF));
+	memset(gp->mLSW, 0, sizeof(gp->mLSW));
+	gp->mGSW0 = 0;
 }
 
-void _swByteSet(s32 index, u8 value) {
-	gp->mLSW[index] = value;
+void swReInit(void) {
+	memset(gp->mLSWF, 0, sizeof(gp->mLSWF));
+	memset(gp->mLSW, 0, sizeof(gp->mLSW));
 }
 
-//Local Saved Work Flags ---------------------------------------
-void _swClear(s32 index) { //clear specific bit
-	gp->mLSWF[index / 32] &= ~(1 << (index % 32));
+//Global Saved Work Flags --------------------------------------
+void swSet(s32 index) { //set specific bit
+	gp->mGSFW[index / 32] |= (1 << (index % 32));
 }
 
-BOOL _swGet(s32 index) { //get specific bit
-	return (gp->mLSWF[index / 32] & (1 << (index % 32))) != 0;
+BOOL swGet(s32 index) { //get specific bit
+	return (gp->mGSFW[index / 32] & (1 << (index % 32))) != 0;
 }
 
-void _swSet(s32 index) { //set specific bit
-	gp->mLSWF[index / 32] |= (1 << (index % 32));
+void swClear(s32 index) { //clear specific bit
+	gp->mGSFW[index / 32] &= ~(1 << (index % 32));
 }
 
 //Global Saved Work --------------------------------------------
-s32 swByteGet(s32 index) {
-	if (index == 0) {
-		return gp->mGSW0;
-	}
-	else {
-		return gp->mGSW[index];
-	}
-}
-
 void swByteSet(s32 index, s32 value) {
 	if (index == 0) {
 		gp->mGSW0 = value;
@@ -51,28 +46,33 @@ void swByteSet(s32 index, s32 value) {
 	}
 }
 
-//Global Saved Work Flags --------------------------------------
-void swClear(s32 index) { //clear specific bit
-	gp->mGSFW[index / 32] &= ~(1 << (index % 32));
+s32 swByteGet(s32 index) {
+	if (index == 0) {
+		return gp->mGSW0;
+	}
+	else {
+		return gp->mGSW[index];
+	}
 }
 
-BOOL swGet(s32 index) { //get specific bit
-	return (gp->mGSFW[index / 32] & (1 << (index % 32))) != 0;
+//Local Saved Work Flags ---------------------------------------
+void _swSet(s32 index) { //set specific bit
+	gp->mLSWF[index / 32] |= (1 << (index % 32));
 }
 
-void swSet(s32 index) { //set specific bit
-	gp->mGSFW[index / 32] |= (1 << (index % 32));
+BOOL _swGet(s32 index) { //get specific bit
+	return (gp->mLSWF[index / 32] & (1 << (index % 32))) != 0;
 }
 
-void swReInit(void) {
-	memset(gp->mLSWF, 0, sizeof(gp->mLSWF));
-	memset(gp->mLSW, 0, sizeof(gp->mLSW));
+void _swClear(s32 index) { //clear specific bit
+	gp->mLSWF[index / 32] &= ~(1 << (index % 32));
 }
 
-void swInit(void) {
-	memset(gp->mGSFW, 0, sizeof(gp->mGSFW));
-	memset(gp->mGSW, 0, sizeof(gp->mGSW));
-	memset(gp->mLSWF, 0, sizeof(gp->mLSWF));
-	memset(gp->mLSW, 0, sizeof(gp->mLSW));
-	gp->mGSW0 = 0;
+//Local Saved Work ---------------------------------------------
+void _swByteSet(s32 index, u8 value) {
+	gp->mLSW[index] = value;
+}
+
+s32 _swByteGet(s32 index) {
+	return gp->mLSW[index];
 }
