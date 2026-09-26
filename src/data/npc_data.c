@@ -1,13 +1,6 @@
 #include "data/npc_data.h"
 #include "driver/npcdrv.h"
 
-NpcTerritoryInfo npc_define_territory_type[] = {
-	{"NPC_TERRITORY_TYPE_NOTHING", NPC_TERRITORY_TYPE_NOTHING},
-	{"NPC_TERRITORY_TYPE_CIRCLE", NPC_TERRITORY_TYPE_CIRCLE},
-	{"NPC_TERRITORY_TYPE_SQUARE", NPC_TERRITORY_TYPE_SQUARE},
-	{0}
-};
-
 NpcTribeInfo npcTribe[] = {
 	{/*"クリスチーヌ"*/"\x83\x4E\x83\x8A\x83\x58\x83\x60\x81\x5B\x83\x6B", "c_pkr", "PKR_S_1", "PKR_Z_1", "PKR_S_1", "PKR_T_1", "PKR_W_1", "PKR_R_1", "PKR_D_1", "PKR_D_1", 20.0f, 27.0f, 0.0f, 0.0f, 0.0f, 20.0f, "SFX_FLD_NPC_PARTY_MOVE1L", "SFX_FLD_NPC_PARTY_MOVE1R", 12000, "SFX_FLD_NPC_PARTY_JUMP1", "SFX_FLD_NPC_PARTY_LANDING1"},
 	{/*"ノコノコ"*/"\x83\x6D\x83\x52\x83\x6D\x83\x52", "c_nokonoko", "NOK_S_1", "NOK_Z_1", "NOK_S_1", "NOK_T_1", "NOK_W_1", "NOK_R_1", "NOK_S_1", "NOK_S_1", 30.0f, 35.0f, 0.0f, 0.0f, 0.0f, 50.0f, "SFX_FLD_NPC_NOKO_MOVE1L", "SFX_FLD_NPC_NOKO_MOVE1R", 12000, "SFX_FLD_NPC_JUMP1", "SFX_FLD_NPC_LANDING1"},
@@ -337,4 +330,284 @@ NpcTribeInfo npcTribe[] = {
 	{/*"ゾンババ"*/"\x83\x5D\x83\x93\x83\x6F\x83\x6F", "c_gonbaba_z", "GNB_S_1", "GNB_Z_1", "GNB_S_1", "GNB_T_1", "GNB_S_1", "GNB_S_1", "GNB_S_1", "GNB_S_1", 450.0f, 20.0f, 0.0f, 0.0f, -50.0f, 50.0f, NULL, NULL, 0, NULL, NULL},
 	{/*"パラシュートボム"*/"\x83\x70\x83\x89\x83\x56\x83\x85\x81\x5B\x83\x67\x83\x7B\x83\x80", "c_bom_sen", "S_2", "S_2", "S_2", "S_2", "S_2", "S_2", "S_2", "S_2", 450.0f, 20.0f, 0.0f, 0.0f, -50.0f, 50.0f, NULL, NULL, 0, NULL, NULL},
 	{NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, 0, NULL, NULL}
+};
+
+// Script arrays used by npc_ai_type_table. No header declares them yet, so they are declared here;
+// they are data (s32[]) not functions, so they cannot conflict with a prototype.
+extern s32 barriern2_move_event[];
+extern s32 barriern_blow_event[];
+extern s32 barriern_dead_event[];
+extern s32 barriern_find_event[];
+extern s32 barriern_init_event[];
+extern s32 barriern_lost_event[];
+extern s32 barriern_move_event[];
+extern s32 barriern_return_event[];
+extern s32 basabasa2_dead_event[];
+extern s32 basabasa2_find_event[];
+extern s32 basabasa2_init_event[];
+extern s32 basabasa2_lost_event[];
+extern s32 basabasa2_move_event[];
+extern s32 basabasa2_return_event[];
+extern s32 basabasa_dead_event[];
+extern s32 basabasa_find_event[];
+extern s32 basabasa_init_event[];
+extern s32 basabasa_lost_event[];
+extern s32 basabasa_move_event[];
+extern s32 basabasa_return_event[];
+extern s32 bubble_find_event[];
+extern s32 bubble_init_event[];
+extern s32 bubble_lost_event[];
+extern s32 bubble_move_event[];
+extern s32 bubble_return_event[];
+extern s32 chorobon_find_event[];
+extern s32 chorobon_init_event[];
+extern s32 chorobon_lost_event[];
+extern s32 chorobon_move_event[];
+extern s32 chorobon_return_event[];
+extern s32 dokan2D_init_event[];
+extern s32 dokan2D_regl_event[];
+extern s32 dokugassun_find_event[];
+extern s32 dokugassun_init_event[];
+extern s32 dokugassun_lost_event[];
+extern s32 dokugassun_move_event[];
+extern s32 dokugassun_return_event[];
+extern s32 enemy_2d_common_dead_event[];
+extern s32 enemy_common_blow_event[];
+extern s32 enemy_common_dead_event[];
+extern s32 fall2D_init_event[];
+extern s32 fall2D_regl_event[];
+extern s32 gesso2D_init_event[];
+extern s32 gesso2D_move_event[];
+extern s32 hannya_find_event[];
+extern s32 hannya_init_event[];
+extern s32 hannya_lost_event[];
+extern s32 hannya_move_event[];
+extern s32 hannya_return_event[];
+extern s32 hbom_find_event[];
+extern s32 hbom_init_event[];
+extern s32 hbom_lost_event[];
+extern s32 hbom_move_event[];
+extern s32 hbom_return_event[];
+extern s32 hbross_blow_event[];
+extern s32 hbross_dead_event[];
+extern s32 hbross_find_event[];
+extern s32 hbross_init_event[];
+extern s32 hbross_lost_event[];
+extern s32 hbross_move_event[];
+extern s32 hbross_return_event[];
+extern s32 honenoko2_find_event[];
+extern s32 honenoko2_init_event[];
+extern s32 honenoko2_lost_event[];
+extern s32 honenoko2_move_event[];
+extern s32 honenoko2_return_event[];
+extern s32 kamec2_blow_event[];
+extern s32 kamec2_dead_event[];
+extern s32 kamec2_find_event[];
+extern s32 kamec2_init_event[];
+extern s32 kamec2_lost_event[];
+extern s32 kamec2_move_event[];
+extern s32 kamec2_return_event[];
+extern s32 kamec_blow_event[];
+extern s32 kamec_dead_event[];
+extern s32 kamec_find_event[];
+extern s32 kamec_init_event[];
+extern s32 kamec_lost_event[];
+extern s32 kamec_move_event[];
+extern s32 kamec_return_event[];
+extern s32 karon_blow_event[];
+extern s32 karon_dead_event[];
+extern s32 karon_find_event[];
+extern s32 karon_init_event[];
+extern s32 karon_lost_event[];
+extern s32 karon_move_event[];
+extern s32 karon_return_event[];
+extern s32 killer_cannon_init_event[];
+extern s32 killer_cannon_move_event[];
+extern s32 killer_dead_event[];
+extern s32 killer_init_event[];
+extern s32 kuriboo2D_find_event[];
+extern s32 kuriboo2D_init_event[];
+extern s32 kuriboo2D_move_event[];
+extern s32 kuriboo_find_event[];
+extern s32 kuriboo_init_event[];
+extern s32 kuriboo_lost_event[];
+extern s32 kuriboo_move_event[];
+extern s32 kuriboo_return_event[];
+extern s32 mahoon_dead_event[];
+extern s32 mahoon_find_event[];
+extern s32 mahoon_init_event[];
+extern s32 mahoon_lost_event[];
+extern s32 mahoon_move_event[];
+extern s32 mahoon_return_event[];
+extern s32 met_find_event[];
+extern s32 met_init_event[];
+extern s32 met_init_event_ceil[];
+extern s32 met_lost_event[];
+extern s32 met_move_event[];
+extern s32 met_return_event[];
+extern s32 nokonoko_find_event[];
+extern s32 nokonoko_init_event[];
+extern s32 nokonoko_lost_event[];
+extern s32 nokonoko_move_event[];
+extern s32 nokonoko_return_event[];
+extern s32 npc_init_evt[];
+extern s32 npc_urouro_init_event[];
+extern s32 npc_urouro_move_event[];
+extern s32 pakkun_find_event[];
+extern s32 pakkun_init_event[];
+extern s32 pakkun_move_event[];
+extern s32 pakkun_return_event[];
+extern s32 pansy_find_event[];
+extern s32 pansy_init_event[];
+extern s32 pansy_lost_event[];
+extern s32 pansy_move_event[];
+extern s32 pansy_return_event[];
+extern s32 patakuri_find_event[];
+extern s32 patakuri_init_event[];
+extern s32 patakuri_lost_event[];
+extern s32 patakuri_move_event[];
+extern s32 patakuri_return_event[];
+extern s32 patamet_find_event[];
+extern s32 patamet_init_event[];
+extern s32 patamet_lost_event[];
+extern s32 patamet_move_event[];
+extern s32 patamet_return_event[];
+extern s32 patapata_find_event[];
+extern s32 patapata_init_event[];
+extern s32 patapata_lost_event[];
+extern s32 patapata_move_event[];
+extern s32 patapata_return_event[];
+extern s32 piders_blow_event[];
+extern s32 piders_find_event[];
+extern s32 piders_init_event[];
+extern s32 piders_move_event[];
+extern s32 sambo_find_event[];
+extern s32 sambo_init_event[];
+extern s32 sambo_lost_event[];
+extern s32 sambo_move_event[];
+extern s32 sambo_return_event[];
+extern s32 sinemon_find_event[];
+extern s32 sinemon_init_event[];
+extern s32 sinemon_lost_event[];
+extern s32 sinemon_move_event[];
+extern s32 sinemon_return_event[];
+extern s32 sinnosuke_find_event[];
+extern s32 sinnosuke_init_event[];
+extern s32 sinnosuke_lost_event[];
+extern s32 sinnosuke_move_event[];
+extern s32 sinnosuke_return_event[];
+extern s32 teresa_dead_event[];
+extern s32 teresa_find_event[];
+extern s32 teresa_init_event[];
+extern s32 teresa_lost_event[];
+extern s32 teresa_move_event[];
+extern s32 teresa_return_event[];
+extern s32 testenemynpc_init_event[];
+extern s32 togedaruma_find_event[];
+extern s32 togedaruma_init_event[];
+extern s32 togedaruma_lost_event[];
+extern s32 togedaruma_move_event[];
+extern s32 togedaruma_return_event[];
+extern s32 togemet_init_event[];
+extern s32 togemet_init_event_ceil[];
+extern s32 togenoko_find_event[];
+extern s32 togenoko_init_event[];
+extern s32 togenoko_lost_event[];
+extern s32 togenoko_move_event[];
+extern s32 togenoko_return_event[];
+extern s32 twinkling_pansy_find_event[];
+extern s32 twinkling_pansy_init_event[];
+extern s32 twinkling_pansy_lost_event[];
+extern s32 twinkling_pansy_move_event[];
+extern s32 twinkling_pansy_return_event[];
+extern s32 unk_evt_8033d458[];
+extern s32 unk_evt_803497e8[];
+extern s32 wanwan_find_event[];
+extern s32 wanwan_init_event[];
+extern s32 wanwan_move_event[];
+extern s32 zako2D_find_event[];
+extern s32 zako2D_init_event[];
+extern s32 zako2D_move_event[];
+extern s32 zakoM2D_dead_event[];
+extern s32 zakoM2D_init_event[];
+extern s32 zakoM2D_move_event[];
+extern s32 zakowiz_blow_event[];
+extern s32 zakowiz_dead_event[];
+extern s32 zakowiz_find_event[];
+extern s32 zakowiz_init_event[];
+extern s32 zakowiz_lost_event[];
+extern s32 zakowiz_move_event[];
+extern s32 zakowiz_return_event[];
+
+NpcAiInfo npc_ai_type_table[] = {
+    {"\202\310\202\265", 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+    {"\225s\223\256\203L\203\203\203\211\224\304\227p", 0, npc_init_evt, NULL, NULL, NULL, NULL, NULL, NULL},
+    {"\203C\203x\203\223\203g\227p\225s\223\256\225\307\223\226\202\275\202\350\202\310\202\265", 0x40000600, NULL, NULL, NULL, NULL, NULL, NULL, NULL},
+    {"\225s\223\256\203e\203X\203g\223G\203L\203\203\203\211\224\304\227p", 0, testenemynpc_init_event, unk_evt_8033d458, enemy_common_dead_event, NULL, NULL, NULL, enemy_common_blow_event},
+    {"\203N\203\212\203{\201[", 0, kuriboo_init_event, kuriboo_move_event, enemy_common_dead_event, kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, enemy_common_blow_event},
+    {"\203g\203Q\203N\203\212", 0, kuriboo_init_event, kuriboo_move_event, enemy_common_dead_event, kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, enemy_common_blow_event},
+    {"\203p\203^\203N\203\212", 0, patakuri_init_event, patakuri_move_event, enemy_common_dead_event, patakuri_find_event, patakuri_lost_event, patakuri_return_event, enemy_common_blow_event},
+    {"\203m\203R\203m\203R", 0, nokonoko_init_event, nokonoko_move_event, enemy_common_dead_event, nokonoko_find_event, nokonoko_lost_event, nokonoko_return_event, enemy_common_blow_event},
+    {"\203p\203^\203p\203^", 0, patapata_init_event, patapata_move_event, enemy_common_dead_event, patapata_find_event, patapata_lost_event, patapata_return_event, enemy_common_blow_event},
+    {"\203\201\203b\203g", 0, met_init_event, met_move_event, enemy_common_dead_event, met_find_event, met_lost_event, met_return_event, enemy_common_blow_event},
+    {"\223V\210\344\203\201\203b\203g", 0, met_init_event_ceil, met_move_event, enemy_common_dead_event, met_find_event, met_lost_event, met_return_event, enemy_common_blow_event},
+    {"\203g\203Q\203\201\203b\203g", 0, togemet_init_event, met_move_event, enemy_common_dead_event, met_find_event, met_lost_event, met_return_event, enemy_common_blow_event},
+    {"\223V\210\344\203g\203Q\203\201\203b\203g", 0, togemet_init_event_ceil, met_move_event, enemy_common_dead_event, met_find_event, met_lost_event, met_return_event, enemy_common_blow_event},
+    {"\203p\203^\203\201\203b\203g", 0, patamet_init_event, patamet_move_event, enemy_common_dead_event, patamet_find_event, patamet_lost_event, patamet_return_event, enemy_common_blow_event},
+    {"\203z\203l\203m\203R(\225\340\215s)", 0, honenoko2_init_event, honenoko2_move_event, enemy_common_dead_event, honenoko2_find_event, honenoko2_lost_event, honenoko2_return_event, enemy_common_blow_event},
+    {"\203J\203\215\203\223(\215\234\223\212\202\260)", 0, karon_init_event, karon_move_event, karon_dead_event, karon_find_event, karon_lost_event, karon_return_event, karon_blow_event},
+    {"\203`\203\207\203\215\203{\203\223", 0, chorobon_init_event, chorobon_move_event, enemy_common_dead_event, chorobon_find_event, chorobon_lost_event, chorobon_return_event, enemy_common_blow_event},
+    {"\203S\201[\203\213\203h\203`\203\207\203\215\203{\203\223", 0, NULL, NULL, enemy_common_dead_event, NULL, NULL, NULL, NULL},
+    {"\203L\203\211\201[\221\345\226C", 0, killer_cannon_init_event, killer_cannon_move_event, enemy_common_dead_event, NULL, NULL, NULL, enemy_common_blow_event},
+    {"\203L\203\211\201[", 0, killer_init_event, NULL, killer_dead_event, NULL, NULL, NULL, enemy_common_blow_event},
+    {"\203T\203\223\203{", 0, sambo_init_event, sambo_move_event, enemy_common_dead_event, sambo_find_event, sambo_lost_event, sambo_return_event, enemy_common_blow_event},
+    {"\203V\203\223\203m\203X\203P", 0, sinnosuke_init_event, sinnosuke_move_event, enemy_common_dead_event, sinnosuke_find_event, sinnosuke_lost_event, sinnosuke_return_event, enemy_common_blow_event},
+    {"\203V\203\223\203G\203\202\203\223", 0, sinemon_init_event, sinemon_move_event, enemy_common_dead_event, sinemon_find_event, sinemon_lost_event, sinemon_return_event, enemy_common_blow_event},
+    {"\203g\203Q\203_\203\213\203}\201[", 0, togedaruma_init_event, togedaruma_move_event, enemy_common_dead_event, togedaruma_find_event, togedaruma_lost_event, togedaruma_return_event, enemy_common_blow_event},
+    {"\214R\222c\203U\203R", 0, kuriboo_init_event, kuriboo_move_event, enemy_common_dead_event, kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, enemy_common_blow_event},
+    {"\203o\203\212\203A\201[\203\223", 0, barriern_init_event, barriern_move_event, barriern_dead_event, barriern_find_event, barriern_lost_event, barriern_return_event, barriern_blow_event},
+    {"\203o\203\212\203A\201[\203\223\203J\203X\203^\203\200", 0, barriern_init_event, barriern2_move_event, barriern_dead_event, barriern_find_event, barriern_lost_event, barriern_return_event, barriern_blow_event},
+    {"\203p\203C\203_\201[\203X", 0, piders_init_event, piders_move_event, enemy_common_dead_event, piders_find_event, NULL, NULL, piders_blow_event},
+    {"\203p\203b\203N\203\223\203t\203\211\203\217\201[", 0, pakkun_init_event, pakkun_move_event, enemy_common_dead_event, pakkun_find_event, NULL, pakkun_return_event, enemy_common_blow_event},
+    {"\203h\203N\203K\203b\203X\203\223", 0, dokugassun_init_event, dokugassun_move_event, enemy_common_dead_event, dokugassun_find_event, dokugassun_lost_event, dokugassun_return_event, enemy_common_blow_event},
+    {"\203{\203\215\203h\201[", 0, kuriboo_init_event, kuriboo_move_event, enemy_common_dead_event, kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, enemy_common_blow_event},
+    {"\203o\203T\203o\203T\201i\223V\210\344\201j", 0, basabasa_init_event, basabasa_move_event, basabasa_dead_event, basabasa_find_event, basabasa_lost_event, basabasa_return_event, enemy_common_blow_event},
+    {"\203o\203T\203o\203T\201i\213\363\222\206\201j", 0, basabasa2_init_event, basabasa2_move_event, basabasa2_dead_event, basabasa2_find_event, basabasa2_lost_event, basabasa2_return_event, enemy_common_blow_event},
+    {"\203e\203\214\203T", 0, teresa_init_event, teresa_move_event, teresa_dead_event, teresa_find_event, teresa_lost_event, teresa_return_event, enemy_common_blow_event},
+    {"\203p\203\223\203W\201[\202\263\202\361", 0, pansy_init_event, pansy_move_event, enemy_common_dead_event, pansy_find_event, pansy_lost_event, pansy_return_event, enemy_common_blow_event},
+    {"\202\253\202\347\202\337\202\255\203p\203\223\203W\201[\202\263\202\361", 0, twinkling_pansy_init_event, twinkling_pansy_move_event, enemy_common_dead_event, twinkling_pansy_find_event, twinkling_pansy_lost_event, twinkling_pansy_return_event, enemy_common_blow_event},
+    {"\203o\203u\203\213", 0, bubble_init_event, bubble_move_event, enemy_common_dead_event, bubble_find_event, bubble_lost_event, bubble_return_event, enemy_common_blow_event},
+    {"\203w\203r\201[\203{\203\200", 0, hbom_init_event, hbom_move_event, enemy_common_dead_event, hbom_find_event, hbom_lost_event, hbom_return_event, enemy_common_blow_event},
+    {"\203}\203z\201[\203\223", 0, mahoon_init_event, mahoon_move_event, mahoon_dead_event, mahoon_find_event, mahoon_lost_event, mahoon_return_event, enemy_common_blow_event},
+    {"\214R\222c\203U\203R\226\202\226@\216g\202\242", 0, zakowiz_init_event, zakowiz_move_event, zakowiz_dead_event, zakowiz_find_event, zakowiz_lost_event, zakowiz_return_event, zakowiz_blow_event},
+    {"\203n\203\223\203j\203\203\201[", 0, hannya_init_event, hannya_move_event, enemy_common_dead_event, hannya_find_event, hannya_lost_event, hannya_return_event, enemy_common_blow_event},
+    {"\203J\203\201\203b\203N\201i\213\363\222\206\201j", 0, kamec_init_event, kamec_move_event, kamec_dead_event, kamec_find_event, kamec_lost_event, kamec_return_event, kamec_blow_event},
+    {"\203J\203\201\203b\203N\201i\222n\217\343\201j", 0, kamec2_init_event, kamec2_move_event, kamec2_dead_event, kamec2_find_event, kamec2_lost_event, kamec2_return_event, kamec2_blow_event},
+    {"\203n\203\223\203}\201[\203u\203\215\203X", 0, hbross_init_event, hbross_move_event, hbross_dead_event, hbross_find_event, hbross_lost_event, hbross_return_event, hbross_blow_event},
+    {"\203\217\203\223\203\217\203\223", 0, wanwan_init_event, wanwan_move_event, enemy_common_dead_event, wanwan_find_event, NULL, NULL, enemy_common_blow_event},
+    {"\203g\203Q\203m\203R", 0, togenoko_init_event, togenoko_move_event, enemy_common_dead_event, togenoko_find_event, togenoko_lost_event, togenoko_return_event, enemy_common_blow_event},
+    {"2D\225s\223\256\203L\203\203\203\211\224\304\227p", 0x8000000, testenemynpc_init_event, unk_evt_8033d458, enemy_2d_common_dead_event, NULL, NULL, NULL, NULL},
+    {"2D\203N\203\212\203{\201[", 0x8000000, kuriboo2D_init_event, kuriboo2D_move_event, enemy_2d_common_dead_event, kuriboo2D_find_event, NULL, NULL, NULL},
+    {"2D\214R\222c\203U\203R", 0x8000000, zako2D_init_event, zako2D_move_event, enemy_2d_common_dead_event, zako2D_find_event, NULL, NULL, NULL},
+    {"2D\214R\222c\203U\203R\223y\212\307", 0x8000000, zako2D_init_event, zako2D_move_event, enemy_2d_common_dead_event, zako2D_find_event, NULL, NULL, NULL},
+    {"2D\214R\222c\202\252\202\305\202\351\203U\203R\223y\212\307", 0x8000000, dokan2D_init_event, dokan2D_regl_event, NULL, NULL, NULL, NULL, NULL},
+    {"\202Q\202c\214R\222c\203U\203R\215~\211\272", 0x8000000, zako2D_init_event, zako2D_move_event, enemy_2d_common_dead_event, zako2D_find_event, NULL, NULL, NULL},
+    {"\202Q\202c\214R\222c\203U\203R\215~\211\272\222n\223_", 0x8000000, fall2D_init_event, fall2D_regl_event, NULL, NULL, NULL, NULL, NULL},
+    {"\202Q\202c\203Q\203b\203\\\201[", 0x8000000, gesso2D_init_event, gesso2D_move_event, enemy_2d_common_dead_event, NULL, NULL, NULL, NULL},
+    {"2D\214R\222c\203U\203R\214\244\213\206\210\365", 0x8000000, zakoM2D_init_event, zakoM2D_move_event, zakoM2D_dead_event, unk_evt_803497e8, NULL, NULL, NULL},
+    {"\203C\203x\203\223\203g\227p\224\304\227p\202\244\202\353\202\244\202\353", 0, npc_urouro_init_event, npc_urouro_move_event, NULL, NULL, NULL, NULL, NULL},
+    {NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL}
+};
+
+// -sdata 48 would move the 4-byte gap to .sdata; the original has it in .data.
+__declspec(section ".data") s32 gap_05_80336F14_data[] = { 0x00000000 };
+
+// -sdata2 6 would place this 4-byte object as a string; the original has it in .sdata2.
+const char gap_09_8041BB0C_sdata2[4] = {0, 0, 0, 0};
+
+NpcTerritoryInfo npc_define_territory_type[] = {
+	{"NPC_TERRITORY_TYPE_NOTHING", NPC_TERRITORY_TYPE_NOTHING},
+	{"NPC_TERRITORY_TYPE_CIRCLE", NPC_TERRITORY_TYPE_CIRCLE},
+	{"NPC_TERRITORY_TYPE_SQUARE", NPC_TERRITORY_TYPE_SQUARE},
+	{0}
 };
