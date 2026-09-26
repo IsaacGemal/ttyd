@@ -7,11 +7,6 @@
 #include "manager/evtmgr_cmd.h"
 #include "evt/evt_cmd.h"
 
-// The original translation unit is built with -O4,s; without this every
-// function here differs only in the stmw/lmw prologue. It should instead get
-// extra_cflags=["-O4,s"] in configure.py and this pragma removed.
-#pragma optimize_for_size on
-
 //=== added by agent: local prototypes for undeclared externals ===
 EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4);
 

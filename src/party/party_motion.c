@@ -82,7 +82,7 @@ void party_motion_upstairs(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (92.24%): register allocation differs - original keeps party/attr/hit in r29/r30/r31,
+// NONMATCHING (93.99%): register allocation differs - original keeps party/attr/hit in r29/r30/r31,
 // mine only r30/r31 (attr not held in a callee-saved reg).
 void unk_8014ba3c(PartyEntry* party) {
     HitEntry* hit;

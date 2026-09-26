@@ -1538,12 +1538,13 @@ void BattleAudienceCtrlProcessKinopioIntrude(s32 index) {
 }
 
 
-// NONMATCHING (95.53%): register-allocation / scheduling differences. The itemId == -1 branch is
+// NONMATCHING (96.63%): register-allocation / scheduling differences. The itemId == -1 branch is
 // inverted vs the original, and 0x14 folds to a pooled float instead of the int->float conversion.
 void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 	f32 level;
+	f32 step;
 	f32 rangeA;
 	f32 rangeB;
 	f32 ratio;
@@ -1557,17 +1558,22 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	}
 	ratio = (audience->mTargetAudienceCount + audience->mAddedAudienceCount) /
 	        audience->mAudienceDeltaMultiplier;
+	// The period (level) and the step per frame (step) come from the same ladder. The original leaves the
+	// period unset in the last case, where the step is 0.
 	if (ratio >= float_0p75_8041e218) {
 		level = float_1_8041e188;
+		step = float_1_8041e188;
 	}
 	else if (ratio >= float_0p5_8041e21c) {
 		level = float_2_8041e1ec;
+		step = float_0p5_8041e21c;
 	}
 	else if (ratio >= float_0p25_8041e220) {
 		level = float_4_8041e204;
+		step = float_0p25_8041e220;
 	}
 	else {
-		level = float_0_8041e178;
+		step = float_0_8041e178;
 	}
 	if (ratio >= float_1p75_8041e224) {
 		rangeA = float_10_8041e1b4;
@@ -1593,27 +1599,27 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	case 4:
 		if (*(s32*)((u8*)member + 0x30) > 0xb4) {
 			if (*(s32*)((u8*)member + 0x30) <= 0xbc) {
-				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * step;
 			}
 			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
 			         float_8_8041e1f4 * level + float_188_8041e230) {
-				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * step;
 			}
 			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
 			         float_16_8041e234 * level + float_188_8041e230) {
-				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * step;
 			}
 			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
 			         float_24_8041e238 * level + float_188_8041e230) {
-				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * step;
 			}
 			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
 			         float_32_8041e23c * level + float_188_8041e230) {
-				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) += float_0p005_8041e22c * step;
 			}
 			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
 			         float_40_8041e1d0 * level + float_188_8041e230) {
-				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * level;
+				*(f32*)((u8*)member + 0x64) -= float_0p005_8041e22c * step;
 			}
 			else {
 				*(f32*)((u8*)member + 0x64) = float_1_8041e188;
@@ -1628,10 +1634,10 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 			*(s32*)((u8*)member + 0x30) = 0;
 		}
 		if ((f32)(*(s32*)((u8*)member + 0x30)) <= float_17_8041e244 * level) {
-			*(f32*)((u8*)member + 0x64) += float_0p00175_8041e248 * level;
+			*(f32*)((u8*)member + 0x64) += float_0p00175_8041e248 * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= float_0p00175_8041e248 * level;
+			*(f32*)((u8*)member + 0x64) -= float_0p00175_8041e248 * step;
 		}
 		(*(s32*)((u8*)member + 0x30))++;
 		break;
@@ -1641,10 +1647,10 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 			*(s32*)((u8*)member + 0x30) = 0;
 		}
 		if ((f32)(*(s32*)((u8*)member + 0x30)) <= float_10_8041e1b4 * level) {
-			*(f32*)((u8*)member + 0x64) += float_0p00375_8041e250 * level;
+			*(f32*)((u8*)member + 0x64) += float_0p00375_8041e250 * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= float_0p00375_8041e250 * level;
+			*(f32*)((u8*)member + 0x64) -= float_0p00375_8041e250 * step;
 		}
 		(*(s32*)((u8*)member + 0x30))++;
 		break;
@@ -1654,10 +1660,10 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 			*(s32*)((u8*)member + 0x30) = 0;
 		}
 		if ((f32)(*(s32*)((u8*)member + 0x30)) <= float_31_8041e258 * level) {
-			*(f32*)((u8*)member + 0x64) += float_0p00125_8041e25c * level;
+			*(f32*)((u8*)member + 0x64) += float_0p00125_8041e25c * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= float_0p00125_8041e25c * level;
+			*(f32*)((u8*)member + 0x64) -= float_0p00125_8041e25c * step;
 		}
 		(*(s32*)((u8*)member + 0x30))++;
 		break;
@@ -1669,10 +1675,10 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 			*(s32*)((u8*)member + 0x30) = 0;
 		}
 		if ((f32)(*(s32*)((u8*)member + 0x30)) <= float_15_8041e1d8 * level) {
-			*(f32*)((u8*)member + 0x64) += float_0p0025_8041e1dc * level;
+			*(f32*)((u8*)member + 0x64) += float_0p0025_8041e1dc * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= float_0p0025_8041e1dc * level;
+			*(f32*)((u8*)member + 0x64) -= float_0p0025_8041e1dc * step;
 		}
 		(*(s32*)((u8*)member + 0x30))++;
 		break;

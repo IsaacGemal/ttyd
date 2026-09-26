@@ -7,7 +7,7 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 
-// Not yet in a header (defined in driver/casedrv.c).
+// Not yet in a header, and not decompiled yet (casedrv.s).
 CaseEntry* caseIdToPtr(s32 caseId);
 
 USER_FUNC(evt_set_case_wrk) {

@@ -94,7 +94,7 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapGrpFlagOff(name, 0x40);
 }
 
-// NONMATCHING (98.45%): register allocation of the first inlined search and error body
+// NONMATCHING (98.89%): register allocation of the first inlined search and error body
 void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;

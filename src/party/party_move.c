@@ -256,11 +256,10 @@ void partyNextReadId(u32 index) {
     }
 }
 
-// NONMATCHING (63.2%): the `u32` copy makes the compiler emit the original's `stw` stores, but it
-// still unrolls 8 records (20 iterations) instead of the original's 16 (10 iterations) and picks a
-// different buffer register. The plain field form below only reaches 41.6% (`stfs` vs `stw`).
+// Each clears one party slot's buffer: 0x50 records (0x500 bytes) of footmarkBuf.
 #ifdef MUST_MATCH
-// NONMATCHING (63.22%): 6 missing, 12 extra, plus register differences.
+// NONMATCHING (63.22%): the `u32` copy makes the compiler emit the original's `stw` stores (the plain
+// field form below gives `stfs`); the unrolled loop and buffer register still differ.
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
@@ -268,7 +267,7 @@ void partyClearFootmark(void) {
     Footmark* f = (Footmark*)footmarkBuf;
     s32 i;
 
-    for (i = 0; i < 0xA0; i++) {
+    for (i = 0; i < 0x50; i++) {
         f[i].field_0 = 0;
         ((u32*)&f[i].x)[0] = src[0];
         ((u32*)&f[i].x)[1] = src[1];
@@ -282,7 +281,7 @@ void partyClearFootmark(void) {
     Vec pos = marioGetPtr()->position;
     s32 i;
 
-    for (i = 0; i < 0xA0; i++) {
+    for (i = 0; i < 0x50; i++) {
         ((Footmark*)footmarkBuf)[i].field_0 = 0;
         ((Footmark*)footmarkBuf)[i].x = pos.x;
         ((Footmark*)footmarkBuf)[i].y = pos.y;
@@ -293,8 +292,7 @@ void partyClearFootmark(void) {
 }
 #endif
 
-// NONMATCHING (65.96%): same word-store/unroll mismatch as partyClearFootmark; the position selection
-// (target when close, else Mario) matches, only the clear loop differs.
+// NONMATCHING (66.98%): the clear loop's stores and unrolling differ, as in partyClearFootmark.
 void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target = partyGetPtr(marioGetPartyId());
@@ -307,11 +305,11 @@ void partyClearFootmark2(void) {
     } else {
         pos = mario->position;
     }
-    for (i = 0; i < 0xA0; i++) {
-        ((Footmark*)footmarkBuf)[i].field_0 = 0;
-        ((Footmark*)footmarkBuf)[i].x = pos.x;
-        ((Footmark*)footmarkBuf)[i].y = pos.y;
-        ((Footmark*)footmarkBuf)[i].z = pos.z;
+    for (i = 0; i < 0x50; i++) {
+        ((Footmark*)(footmarkBuf + 0x500))[i].field_0 = 0;
+        ((Footmark*)(footmarkBuf + 0x500))[i].x = pos.x;
+        ((Footmark*)(footmarkBuf + 0x500))[i].y = pos.y;
+        ((Footmark*)(footmarkBuf + 0x500))[i].z = pos.z;
     }
     writeId[1] = 0;
     readId[1] = 0;

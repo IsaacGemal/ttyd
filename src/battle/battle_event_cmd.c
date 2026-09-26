@@ -3127,7 +3127,6 @@ USER_FUNC(btlevtcmd_GetConfuseActEvent) {
     return EVT_RETURN_DONE;
 }
 
-void BattleStatusWindowCheck(void);
 
 //s32* onoff, s32 flags
 USER_FUNC(btlevtcmd_ac_timing_flag_onoff) {

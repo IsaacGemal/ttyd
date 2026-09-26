@@ -79,7 +79,6 @@ void BattleStatusWindowEventOn(void);
 void BattleStatusWindowSystemOn(void);
 void BattleStatusWindowEventOff(void);
 void BattleStatusWindowSystemOff(void);
-BOOL BattleStatusWindowCheck(void);
 void BattleConsumeReserveItem(void);
 
 extern BattleUnitSetup entryunit_party[7];

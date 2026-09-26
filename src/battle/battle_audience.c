@@ -297,6 +297,7 @@ void BattleAudience_Init(void) {
 	BattleAudienceNumToTarget();
 }
 
+// NONMATCHING (94.29%): 2 missing, plus register differences.
 void BattleAudience_Main(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -331,6 +332,7 @@ void BattleAudience_ActInit(void) {
 	audience->flags &= ~0x1000;
 }
 
+// NONMATCHING (3.28%): 1 instruction differs, 263 missing, plus register differences.
 void BattleAudience_PerAct(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	pouchGetPtr();
@@ -351,9 +353,6 @@ BOOL BattleAudience_CheckReaction(void) {
 	return FALSE;
 }
 
-// NONMATCHING (97.55%): MWCC's value-range analysis truncates the `type` operand to a byte
-// (`clrlwi r0,r30,24` + `cmpw`) where the original compares the full 32-bit parameter (`cmpw r0,r30`).
-// No source form of the comparison (`(s32)type`, local temp, reversed operands) suppresses it.
 BOOL check_exe_phase_evt_status(s32 index, s32 type) {
 	BattleAudienceMember* member;
 
@@ -415,6 +414,7 @@ void BattleAudience_PerPhase(u32 value) {
 }
 
 //TODO: add evt support and then uncomment message scripts
+// NONMATCHING (13.15%): 21 instructions differ, 852 missing, 1 extra, plus register differences.
 BOOL BattleAudience_CheckReactionPerPhase(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -556,6 +556,7 @@ void BattleAudience_End(void) {
 	}
 }
 
+// NONMATCHING (0.15%): 658 missing.
 void BattleAudienceSettingAudience(void) {
 	//TODO: very long and terrible
 }
@@ -574,11 +575,13 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 }
 #pragma dont_inline reset
 
+// NONMATCHING (0.43%): 233 missing.
 void BattleAudienceCtrlProcess(void) {
 	//TODO: very long and terrible
 }
 
 #pragma dont_inline on
+// NONMATCHING (1.10%): 1 instruction differs, 125 missing.
 BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
 	return FALSE;
 }
@@ -602,58 +605,72 @@ void BattleAudienceSetThrowItemMax(void) {
 	*(s32*)((u8*)audience + 0x137F8) = 0;
 }
 
+// NONMATCHING (2.59%): 1 instruction differs, 52 missing.
 BattleUnit* BattleAudienceDetectTargetAll(void) {
 	return NULL;
 }
 
+// NONMATCHING (2.69%): 1 instruction differs, 50 missing.
 BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 	return NULL;
 }
 
+// NONMATCHING (0.17%): 597 missing.
 void BattleAudienceItemCtrlProcess(void) {
 
 }
 
+// NONMATCHING (0.29%): 348 missing.
 void BattleAudienceApSrcCtrlProcess(void) {
 
 }
 
+// NONMATCHING (0.97%): 1 instruction differs, 143 missing.
 BOOL BattleAudienceApSrcEntry(void) {
 	return FALSE;
 }
 
+// NONMATCHING (0.83%): 120 missing.
 void BattleAudienceWinCtrlProcess(void) {
 
 }
 
+// NONMATCHING (1.11%): 89 missing.
 void BattleAudienceGXInit(void) {
 
 }
 
+// NONMATCHING (0.83%): 120 missing.
 void BattleAudienceAnimProcess(void) {
 
 }
 
+// NONMATCHING (0.17%): 586 missing.
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.52%): 65 missing.
 void BattleAudienceDispItem(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.35%): 73 missing.
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.61%): 61 missing.
 void BattleAudienceDispWin(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (1.21%): 1 instruction differs, 114 missing.
 BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return FALSE;
 }
 
+// NONMATCHING (0.67%): 149 missing.
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 
 }
@@ -860,9 +877,6 @@ void BattleAudience_Attack(s32 index) {
 	BattleAudienceGetPtr(index)->flags |= 0x40;
 }
 
-// NONMATCHING (99.21%): only the f0/f1 register assignment of the dot product differs. The original
-// puts the y-difference in f1 and m94 in f0 (`fsubs f1,f1,f0`, `lfs f0,0x94`, `fmadds f1,f2,f1,f0`); MWCC
-// here puts them the other way and swaps the fmadds operands. Source permutations don't change it.
 BOOL BattleAudience_GetFront(s32 index) {
 	BattleAudienceMember* member;
 	CameraEntry* cam;
@@ -881,6 +895,7 @@ BOOL BattleAudience_GetFront(s32 index) {
 }
 
 #pragma dont_inline on
+// NONMATCHING (1.54%): 64 missing.
 void BattleAudience_ChangeStatus(s32 index, s32 status) {
 
 }
@@ -1034,6 +1049,7 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 	}
 	return -1;
 }
+// NONMATCHING (1.09%): 1 instruction differs, 126 missing.
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	return 0;
 }
@@ -1269,11 +1285,13 @@ void BattleAudienceAddTargetNum(f32 value, f32 delta) {
 
 
 
+// NONMATCHING (0.82%): 121 missing.
 void BattleAudienceSoundMain(void) {
 
 }
 
 
+// NONMATCHING (1.12%): 88 missing.
 void BattleAudienceSoundNoiseAlways(void) {
 
 }
@@ -2173,6 +2191,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	}
 }
 
+// NONMATCHING (97.58%): 2 missing, plus register differences.
 void BattleAudienceJoy(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	switch (a) {

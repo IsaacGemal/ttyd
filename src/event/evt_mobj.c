@@ -890,9 +890,6 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (70%): register mapping now matches; the switch/string-address block is scheduled a few
-// instructions earlier than retail (retail evaluates gp->inBattle and loads args[6] first).
-
 s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

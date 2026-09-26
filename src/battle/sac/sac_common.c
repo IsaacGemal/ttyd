@@ -7,11 +7,6 @@
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
 
-// The sac_common unit was built with -O4,s (optimize for size): prologues emit
-// stmw/lmw, which -O4,p never produces. configure.py should carry
-// extra_cflags=["-O4,s"] for this object (see REPORT.md).
-#pragma optimize_for_size on
-
 // ---- local prototypes (no header declares these yet) ----
 void BattleAcHelpSetDispType(s32 type);
 BOOL BattleAudienceSoundCheck(s32 index);
@@ -148,19 +143,19 @@ s32 sac_mario_item_on_end_evt[] = {
     0x00000002, 0x00000001,
 };
 // .text:0x0 | 0x80242B84 | size: 0x28
-s32 sac_ac_help_off(void) {
+USER_FUNC(sac_ac_help_off) {
     BattleAcHelpSetDispType(0);
     return 2;
 }
 
 // .text:0x28 | 0x80242BAC | size: 0x28
-s32 sac_ac_help_on(void) {
+USER_FUNC(sac_ac_help_on) {
     BattleAcHelpSetDispType(2);
     return 2;
 }
 
 // .text:0x50 | 0x80242BD4 | size: 0x78
-s32 sac_enemy_slide_return(void) {
+USER_FUNC(sac_enemy_slide_return) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
 
@@ -175,7 +170,7 @@ s32 sac_enemy_slide_return(void) {
 }
 
 // .text:0xC8 | 0x80242C4C | size: 0x78
-s32 sac_enemy_slide_go(void) {
+USER_FUNC(sac_enemy_slide_go) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
 
@@ -190,7 +185,7 @@ s32 sac_enemy_slide_go(void) {
 }
 
 // .text:0x140 | 0x80242CC4 | size: 0x10
-s32 sac_cheer_end(void) {
+USER_FUNC(sac_cheer_end) {
     cheerEnable = 0;
     return 2;
 }
@@ -240,7 +235,7 @@ s32 sac_cheer(EventEntry* event, BOOL isFirstCall) {
 }
 
 // .text:0x2AC | 0x80242E30 | size: 0x10
-s32 sac_handbeat_end(void) {
+USER_FUNC(sac_handbeat_end) {
     handBeatEnable = 0;
     return 2;
 }
@@ -286,7 +281,7 @@ s32 sac_handbeat(EventEntry* event, BOOL isFirstCall) {
 }
 
 // .text:0x3F8 | 0x80242F7C | size: 0x7C
-s32 sac_wao(void) {
+USER_FUNC(sac_wao) {
     s32 num = BattleAudience_GetAudienceNum();
 
     BattleAudienceSoundClap(0x78, 0x78);

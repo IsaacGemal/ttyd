@@ -775,10 +775,10 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
+// NONMATCHING (98.44%): instruction sequence now matches; only the pooled string base
 // (`str_802EF640` vs local `...rodata.0`, offsets shifted 0x28) and the msg-base/args
 // register swap (target r5/r6, ours r6/r5) differ, both expected to resolve once the
 // file's rodata pool is complete.
-// NONMATCHING (98.44%): instruction sequence now matches; only the pooled string base
 s32 _get_msg(EventEntry* event) {
 	char* msg = "btl_wn_dummy_noitem";
 	BattleWork* wp = _battleWorkPointer;

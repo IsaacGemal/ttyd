@@ -17,11 +17,12 @@
 //.sdata
 static f32 offset_tbl[] = {
 	400000.0f, 400000.0f, 600000.0f, 100000.0f, 100000.0f, 
-	300000.0f, 900000.0f, 1100000.0f, 1000000.0f, 500000.0f
+	300000.0f, 900000.0f, 1100000.0f, 1000000.0f, 500000.0f,
+	700000.0f // 700K new in retail
 };
 
-// .sdata: follows offset_tbl; the retail table's 700K entry
-__declspec(export) f32 lbl_8040F340[8] = { 700000.0f };
+// .sdata: 0x1C bytes of zeros after offset_tbl in the original (dtk's lbl_8040F340 starts at the 700K entry)
+__declspec(export) f32 lbl_8040F344[7] = { 0.0f };
 
 //.sbss
 DispEntry* currentWorkPtr;
