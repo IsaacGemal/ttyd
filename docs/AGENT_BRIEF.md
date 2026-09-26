@@ -16,6 +16,9 @@ tricks. A match produced by a trick is thrown away, and the review looks for tri
   review finding.
 - **Read the original assembly for the whole function** (`build/G8MJ01/asm/<path>.s`) before writing C. Note
   every argument passed in `r3`-`r10` and `f1`-`f8`, and every value used after a call returns in `r3`/`f1`.
+- **Write functions in the order the assembly has them.** A file can only be linked (counted as finished) when
+  its functions, data and strings come out in exactly the original order. An out-of-order file matches every
+  function and still can't link.
 - **Check your file's compiler flags** in `configure.py` (`extra_cflags`). Some files are built with `-O4,s`.
   If every function in your file seems to want the same pragma, the file probably wants a flag instead: note
   it in your report rather than adding the pragma everywhere.
