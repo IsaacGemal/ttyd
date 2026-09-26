@@ -65,6 +65,7 @@ void partyChgMot(PartyEntry* party, u8 mot) {
     work->field_8 |= 2;
 }
 
+// NONMATCHING (86.67%): 2 missing.
 void partyChgMoveMode(PartyEntry* party, u8 mode) {
     PartyEntry* work = party;
     s32 oldMode = work->field_3B;
@@ -82,7 +83,7 @@ void partyChgMoveMode(PartyEntry* party, u8 mode) {
     work->field_8 |= 4;
 }
 
-// NONMATCHING (95%): the inlined partyChgMoveMode switch is missing the original's redundant
+// NONMATCHING (95.00%): the inlined partyChgMoveMode switch is missing the original's redundant
 // `cmpwi r0,4; bge` range test for the empty case 4/5 group (same blocker as partyChgMoveMode).
 void partyMoveBesideMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
@@ -93,7 +94,7 @@ void partyMoveBesideMario(PartyEntry* party, s32 mode) {
     partyChgMot(party, 1);
 }
 
-// NONMATCHING (95%): same inlined partyChgMoveMode range-test mismatch as partyMoveBesideMario.
+// NONMATCHING (95.00%): same inlined partyChgMoveMode range-test mismatch as partyMoveBesideMario.
 void partyMoveBehindMario(PartyEntry* party, s32 mode) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
         return;
@@ -103,17 +104,16 @@ void partyMoveBehindMario(PartyEntry* party, s32 mode) {
     partyChgMot(party, 1);
 }
 
-void party_set_behind_dir(PartyEntry* party);
-// NONMATCHING (96.7%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
+// NONMATCHING (96.67%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
 // case 4/5 group in the field_3B switch; this compiler folds it (same blocker as partyChgMoveMode).
-void partyMoveBehindMario3(PartyEntry* party, s32 dir) {
+void partyMoveBehindMario3(PartyEntry* party, s32 mode, f32 dir) {
     if (party->currentMemberId == 4 && party->field_34 == 3) {
         return;
     }
     party->field_8 |= 0x100000;
     party->field_8 |= 0x40000;
-    party_set_behind_dir(party);
-    party->field_3C[1] = dir;
+    party_set_behind_dir(party, dir);
+    party->field_3C[1] = mode;
     switch (party->field_3B) {
     case 4:
     case 5:
@@ -195,6 +195,7 @@ void party_move_mode_behind_mario(PartyEntry* party) {
     work->field_FC = work->dir;
 }
 
+// NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
 void unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     f32 speed = value * work->playerPtr->playerGravity;
@@ -259,6 +260,7 @@ void partyNextReadId(u32 index) {
 // still unrolls 8 records (20 iterations) instead of the original's 16 (10 iterations) and picks a
 // different buffer register. The plain field form below only reaches 41.6% (`stfs` vs `stw`).
 #ifdef MUST_MATCH
+// NONMATCHING (63.22%): 6 missing, 12 extra, plus register differences.
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
@@ -291,7 +293,7 @@ void partyClearFootmark(void) {
 }
 #endif
 
-// NONMATCHING (66.0%): same word-store/unroll mismatch as partyClearFootmark; the position selection
+// NONMATCHING (65.96%): same word-store/unroll mismatch as partyClearFootmark; the position selection
 // (target when close, else Mario) matches, only the clear loop differs.
 void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
@@ -359,6 +361,7 @@ f32 unk_800c92c4(PartyEntry* party) {
     }
 }
 
+// NONMATCHING (97.46%): same instructions; only register numbers or operands differ.
 void unk_800c93d0(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
@@ -716,7 +719,7 @@ void partyChkWall(PartyEntry* party) {
     party->position.z = pos.z;
 }
 
-// NONMATCHING (95.6%): compiler CSEs `id != 0` into r29 across the marioGetPtr calls, so `id`
+// NONMATCHING (95.62%): compiler CSEs `id != 0` into r29 across the marioGetPtr calls, so `id`
 // lands in r30 instead of r29 and the second anotherPartyGetPtr reuses the value instead of
 // recomputing it (`srwi r3` vs `mr r3,r29`).
 f32 unk_800c9f48(s32 id, f32 y) {
@@ -822,7 +825,7 @@ f32 partyGetTargetMovespd2(PartyEntry* party) {
         return mario->mBaseDashSpeed;
 }
 
-// NONMATCHING (95.8%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+// NONMATCHING (95.77%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -867,7 +870,7 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     return PSVECDistance(&marioGetPtr()->position, pos);
 }
 
-// NONMATCHING (96.2%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+// NONMATCHING (96.15%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -911,7 +914,7 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     return distABf(x, z, mario->position.x, mario->position.z);
 }
 
-// NONMATCHING (95.8%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+// NONMATCHING (95.82%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
 f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;

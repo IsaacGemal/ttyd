@@ -192,6 +192,7 @@ void kpa_disp_pole_score(CameraId camera, void* param) {
 
 // NONMATCHING (94%): register allocation of the 4 extracted digits differs.
 
+// NONMATCHING (94.37%): 2 instructions differ, 3 missing, plus register differences.
 s32 kpa_score_to_str(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);
     s32 i = 0;
@@ -292,6 +293,7 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
     return 0;
 }
 
+// NONMATCHING (87.88%): 4 missing, 6 extra, plus register differences.
 s32 fire_func(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     f32 f31 = evtGetFloat(event, args[0]);
@@ -701,6 +703,7 @@ s32 evt_mobj_delete(EventEntry* event, BOOL isFirstCall) {
 // NONMATCHING (97%): retail schedules the `unk1E4 = args[5]` load two instructions later (after the
 // string address is materialised); otherwise byte-identical.
 
+// NONMATCHING (97.14%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -854,6 +857,7 @@ s32 mobj_switch_blue(MapObjectEntry* obj) {
 
 // NONMATCHING (95%): one extra callee-saved register (register-allocation mismatch)
 
+// NONMATCHING (95.54%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -943,6 +947,7 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
 
 // NONMATCHING (95%): one extra callee-saved register (register-allocation mismatch)
 
+// NONMATCHING (95.54%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -983,6 +988,7 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
 
 // NONMATCHING (95%): one extra callee-saved register (register-allocation mismatch)
 
+// NONMATCHING (95.54%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -1023,6 +1029,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
 
 // NONMATCHING (75.04%): switch dispatch and the MOBJ_* pool addresses are laid out differently
 
+// NONMATCHING (99.03%): 1 missing, plus register differences.
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1071,6 +1078,7 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
 
 // NONMATCHING (93.34%): register allocation (r28/r30 swapped) around the local jumptable
 
+// NONMATCHING (93.34%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1168,6 +1176,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
 
 // NONMATCHING (91.16%): register allocation around the local jumptable
 
+// NONMATCHING (91.16%): 1 instruction differs, 3 missing, 3 extra, plus register differences.
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1279,6 +1288,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
 
 // NONMATCHING (96.42%): one extra callee-saved register
 
+// NONMATCHING (96.42%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -1321,6 +1331,7 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
 // NONMATCHING (84%): case 2's bbox float computation is scheduled with different FP registers
 // (and the .sdata2/rodata constant symbols are anonymous @NNN here).
 
+// NONMATCHING (84.10%): 7 instructions differ, 14 missing, 8 extra, plus register differences.
 s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     Vec* vec = vec3_802c3dc8;
 

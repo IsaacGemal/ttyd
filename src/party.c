@@ -235,9 +235,7 @@ void partyPaperLightOff(PartyEntry* party) {
 
 // NONMATCHING (99.9%): the low-HP check's sign-extension lands in r0 instead of
 // the original's r3 (`extsb r3,r0`/`cmpwi r3,8`).  Tried temps, s8/s32 locals,
-// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size;
-// the current mwcc build always coalesces the extsb with the lbz (r0) here, the
-// original object (older build, see .comment) did not.
+// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -624,7 +622,7 @@ void partyUsePost(PartyEntry* party) {
 
 // Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (88%): this mwcc build drops the original's redundant `mr r3,r30`
+// NONMATCHING (88%): ours drops the original's redundant `mr r3,r30`
 // before the call; scheduling/peephole/opt_propagation and local forms don't restore it.
 void partyChgRunMode(PartyEntry* party, s32 mode) {
     if (party->field_34 != 9 && party->field_34 != 3) {
@@ -666,7 +664,7 @@ void partyChgPose(PartyEntry* party, char* pose) {
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 // NONMATCHING (90%): same missing redundant `mr r3,r29` / arg-load order as
-// partyChgRunMode (this mwcc build drops the move it kept).
+// partyChgRunMode (ours drops the move the original keeps).
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
     if (party->field_34 != 9 && party->field_34 != 3) {
         party->field_35 = party->field_34;
@@ -1085,7 +1083,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     return ret;
 }
 
-// NONMATCHING (89%): partyChgPoseId is inlined but this mwcc build does not
+// NONMATCHING (89%): partyChgPoseId is inlined but ours does not
 // constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
 // inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
 void party_force_ride_yoshi(PartyEntry* party) {
