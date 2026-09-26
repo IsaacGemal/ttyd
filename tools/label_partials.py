@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 
-DEF = r"^[A-Za-z_][\w \*]*?\b{name}\s*\([^;{{)]*\)\s*\{{"
+DEF = r"^(?:USER_FUNC\(\s*{name}\s*\)|[A-Za-z_][\w \*]*?\b{name}\s*\([^;{{)]*\))\s*\{{"
 
 
 def diff_summary(unit, func):
@@ -34,7 +34,7 @@ def diff_summary(unit, func):
                 continue
             for ins in sym.get("instructions", []):
                 k = ins.get("diff_kind")
-                if k and side == "left" or k == "DIFF_INSERT":
+                if k and side == "left":
                     kinds[k] = kinds.get(k, 0) + 1
     if not kinds:
         return "differs from the original"
@@ -63,7 +63,8 @@ def main():
             while args and not args[0].startswith("--"):
                 reset.add(args.pop(0))
         elif flag == "--note":
-            notes[args.pop(0)] = args.pop(0)
+            func = args.pop(0)
+            notes[func] = args.pop(0)
     path = f"src/{unit}.c"
     report = json.load(open("build/G8MJ01/report.json"))
     u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
@@ -91,6 +92,8 @@ def main():
                 changed += 1
             continue
         note = f" Known issue: {notes[name]}" if name in notes else ""
+        if note and label is not None and name not in reset and "Known issue:" in lines[label]:
+            note = ""
         if label is None or name in reset:
             if label is not None:
                 end = label + 1
