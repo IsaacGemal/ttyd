@@ -233,8 +233,11 @@ void partyPaperLightOff(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
 }
 
-// NONMATCHING (99.9%): low-HP check sign-extension lands in r0 instead of the
-// original's r3 (`extsb r3,r0`/`cmpwi r3,8`). Tried temps, s8/s32 locals, no change.
+// NONMATCHING (99.9%): the low-HP check's sign-extension lands in r0 instead of
+// the original's r3 (`extsb r3,r0`/`cmpwi r3,8`).  Tried temps, s8/s32 locals,
+// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size;
+// the current mwcc build always coalesces the extsb with the lbz (r0) here, the
+// original object (older build, see .comment) did not.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -621,13 +624,13 @@ void partyUsePost(PartyEntry* party) {
 
 // Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (88%): only the N__partyChgRunMode argument setup order differs
-// (`lbz r4,0x34; mr r3,r30; mr r5` vs ours `mr r5; lbz r4`).
+// NONMATCHING (88%): this mwcc build drops the original's redundant `mr r3,r30`
+// before the call; scheduling/peephole/opt_propagation and local forms don't restore it.
 void partyChgRunMode(PartyEntry* party, s32 mode) {
-    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
-        P8(party, 0x35) = P8(party, 0x34);
-        N__partyChgRunMode(party, P8(party, 0x34), mode);
-        P8(party, 0x34) = mode;
+    if (party->field_34 != 9 && party->field_34 != 3) {
+        party->field_35 = party->field_34;
+        N__partyChgRunMode(party, party->field_34, mode);
+        party->field_34 = mode;
         party->field_8 |= 8;
     }
 }
@@ -662,12 +665,13 @@ void partyChgPose(PartyEntry* party, char* pose) {
 
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (90%): same argument-setup ordering difference as partyChgRunMode.
+// NONMATCHING (90%): same missing redundant `mr r3,r29` / arg-load order as
+// partyChgRunMode (this mwcc build drops the move it kept).
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
-    if (P8(party, 0x34) != 9 && P8(party, 0x34) != 3) {
-        P8(party, 0x35) = P8(party, 0x34);
-        N__partyChgRunMode(party, P8(party, 0x34), mode);
-        P8(party, 0x34) = mode;
+    if (party->field_34 != 9 && party->field_34 != 3) {
+        party->field_35 = party->field_34;
+        N__partyChgRunMode(party, party->field_34, mode);
+        party->field_34 = mode;
         party->field_8 &= ~8;
         P8(party, 0x38) = unk;
     }
@@ -1027,8 +1031,63 @@ s32 partyEntry(s32 memberId) {
     return ret;
 }
 
-// NONMATCHING (89%): partyChgPoseId is inlined but mwcc does not constant-fold
-// the `index == 1` branch for the literal argument 1, leaving an extra cmpwi chain.
+// NONMATCHING (99%): only the low-HP check's extsb lands in r0 here vs the
+// original's r3 (same mwcc-build difference as partyChgPoseId); the rest matches.
+s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
+    const Vec* v;
+    PartyEntry* party;
+    s32 index;
+    s32 ret;
+    s32 lowHp;
+    char* pose;
+    char* prev;
+    Vec pos;
+
+    v = (const Vec*)vec3_802ccd30;
+    ret = partyEntryMain(memberId);
+    party = partyGetPtr(ret);
+    index = 1;
+    *(Vec*)&party->field_64[0xC] = v[1];
+    pos = v[2];
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    party->position = pos;
+    {
+        MarioWork* mario = party->playerPtr;
+        *(Vec*)&party->field_64[0xC] = v[3];
+        PF32(party, 0x110) = PF32(mario, 0x1A8);
+        PF32(party, 0x10C) = PF32(mario, 0x1A8);
+    }
+    if (!(party->flags2 & 2)) {
+        lowHp = 0;
+        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+            lowHp = 1;
+        }
+        if (lowHp == 1) {
+            index = 12;
+        }
+        if (!(party->flags2 & 0x8000)) {
+            pose = partyPoseTbl[party->currentMemberId][index];
+        } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+            pose = partyDotPoseTbl[party->currentMemberId][index];
+        } else {
+            pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTY_MEMBER_YOSHI)][index];
+        }
+        prev = party->field_18;
+        if (!(prev && !strcmp(prev, pose))) {
+            party->field_18 = pose;
+            party->field_20 = 0;
+            party->field_8 |= 0x2000;
+        }
+    }
+    P8(party, 0x34) = 0;
+    return ret;
+}
+
+// NONMATCHING (89%): partyChgPoseId is inlined but this mwcc build does not
+// constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
+// inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
 void party_force_ride_yoshi(PartyEntry* party) {
     Vec pos;
 
