@@ -1216,3 +1216,53 @@ covered least. Every finding was checked against the asm before fixing:
 autolink on a checksum (finisher work); battle_break_slot's .sdata2 constants stay writable (const: 68% -> 64%);
 sac_bakugame's static weapon data is a `void*` array until BattleWeapon names enough fields; the BattleWork
 +0x1F2C byte view; vivian_init_801809C0's name; fontmgr and evt_fade go back in the queue.
+
+## Wave 12: the Metrowerks runtime libraries (2026-09-27, Claude Opus 5.5; agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5 x3)
+
+Ran alongside wave 11. The three libraries every GameCube game links (TRK_MINNOW_DOLPHIN.a, MSL_C.PPCEABI.bare.H.a,
+Runtime.PPCEABI.H.a: 91 files in TTYD's splits) were never started, and ac-decomp (CC0) has most of them.
+**4,298 -> 4,530 (+232) on the branch; 4,481 -> 4,713 on main after wave 11 landed first (PR #14, merged second).**
+- **Import, no agents: +131.** configure.py got three library blocks (GC/2.6 with ac-decomp's flags, include paths
+  and `-DFIX_SQRT_LINKAGE` only there, so no game unit's flags change). ac-decomp's 63 same-named sources were
+  copied into libs/metrowerks/src/ and the 63 headers they include into libs/metrowerks/include/; autolink.py
+  linked 36 files.
+- **24 agents, 45 minutes, on the files that still differed: +100.** 15 merged on the first pass (targimpl +12,
+  dolphin_trk_glue +10, most +1 to +5) and six new files after merge_agent.sh learned to recognise an agent's own
+  new file under libs/ (CircleBuffer +14, main +9, UDP_Stubs +9, alloc, math_ppc, critical_regions). msghndlr made
+  no change; MWCriticalSection_gc wrote a .cpp beside its .c and was rejected; ansi_fp's +5 was dropped (below).
+  About 4.2 functions per agent.
+- **Reviews: +1 net** (ansi_fp -5, then +3, +2, +1 from fixes). 46 library files are linked; 14 fully matched ones
+  fail the checksum or the link (listed in a8165a1), several from the CircleBuffer/main split disagreement.
+
+**Harness.** check.py now builds only the agent's object (`ninja -j2 <object>`) and scores it with a one-unit copy
+of objdiff.json, the same scoring as the full report (review 3 compared 109 units) at about a tenth of the CPU:
+48 agents re-diffing the whole project was most of the tower's load. It takes the unit's source from objdiff.json
+(libraries, `FILE_POS.C`). Each agent's temp files go to its own `./tmp` (`TMPDIR`), pruned with the workspace.
+
+**Agents on the network.** Nothing stopped agents fetching, and five did: tww, tp, bfbb, sms, pikmin, SFA-Decomp,
+Melee, Prime. 21 of ansi_fp's lines came only from PrimeDecomp/prime, which has no license; the file went back to
+ac-decomp's version and the branch was rewritten without those commits. Isaac's rule (brief rule 16): reuse from
+CC0/MIT decomps is fine if the report names the source, downloads stay in the workspace, and no unlicensed project
+or machine-wide search. `tools/provenance.py` lists every fetch, clone and path outside the workspace from the
+transcript; the launcher saves it and merge_agent.sh puts it in the commit. Review 3 scored every library function
+against 8 CC0 and 3 unlicensed projects: nothing on main follows an unlicensed one (scanf.c is bfbb/mkdd's; the
+Melee URL the scanf agent tried was a 404).
+
+**What the three reviews found** (every finding checked against the asm or by compiling):
+- Review 1: fwrite missing its critical region, `__write_console`'s console-type test, an ARAM constant, the TRKEvent
+  type, and the ansi_fp licensing.
+- Review 2: provenance.py missed most fetch and search forms, with a test that tested nothing; two TRK functions
+  one to four lines from 100% (TRK_main's MWTRACE, TTYD's 3-line TRKMessageSend); stale labels; three wrong claims
+  in the wave 9 chapter.
+- Review 3: more provenance.py holes (`git clone --depth 1 git@...` named the repository "1"; an empty transcript
+  read as clean); ddh_cc_write matched only by indexing past one string array into the next, and the plain form is
+  100%; the tools missed the upper-case `FILE_POS.C`; merge_agent.sh would have committed a stray `src/` copy of a
+  library file.
+
+**Wave 11 vs wave 12.** Both 24 agents for 45 minutes on DeepSeek V4.1 Flash. Wave 11 (missing functions in game
+files): +183, about 7.4 per agent. Wave 12's agents: +100, about 4.2 per agent, on files the import had already
+taken the easy functions from; the import itself (+131) took no agent time.
+
+**Open:** the CircleBuffer/main split (main.c and CircleBuffer.c fail to link); the two ARAM functions (tp's CC0
+version reaches about 97% with two one-line asm dcbi); `__cvt_sll_flt` (hand-written asm); float.c's link error;
+the 14 unlinked library files; 16 small MSL and 4 TRK files never started.
