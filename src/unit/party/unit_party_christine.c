@@ -127,6 +127,11 @@ USER_FUNC(btlevtcmd_get_monosiri_msg_no) {
 // Christine weapons off it; naming each weapon symbol makes MWCC emit four separate lis/addi pairs.
 extern u8 unk_evt_80390b30[];
 
+extern BattleWeapon partyWeapon_ChristineNormalAttack;
+extern BattleWeapon partyWeapon_ChristineMonosiri;
+extern BattleWeapon partyWeapon_ChristineRenzokuAttack;
+extern BattleWeapon partyWeapon_ChristineKiss;
+
 #define TECH_MENU_ENTRY(table)                                                             \
     cmd->mWeaponTable[*count].mIndex = -1;                                                 \
     cmd->mWeaponTable[*count].mItem = 0;                                                   \

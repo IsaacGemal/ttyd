@@ -2853,18 +2853,18 @@ USER_FUNC(btlevtcmd_GetResultACDefence) {
     return EVT_RETURN_DONE;
 }
 
-//s32* battleId, s32 acResult
+//s32* battleId, BattleWeapon* weapon
 USER_FUNC(btlevtcmd_ResultACDefence) {
     s32* args = event->args;
     BattleUnit* unit;
     s32 id;
-    s32 data;
+    BattleWeapon* weapon;
 
     id = evtGetValue(event, args[0]);
     id = BattleTransID(event, id);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    data = evtGetValue(event, args[1]);
-    BattleActionCommandCheckDefence(unit, data);
+    weapon = (BattleWeapon*)evtGetValue(event, args[1]);
+    BattleActionCommandCheckDefence(unit, weapon);
     return EVT_RETURN_DONE;
 }
 

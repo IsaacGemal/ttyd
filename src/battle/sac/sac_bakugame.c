@@ -81,7 +81,7 @@ struct BakuGameWork {
     u8 field_0x230[0xC];              // 0x230
     Vec field_0x23C;                  // 0x23C
     Vec field_0x248;                  // 0x248
-    void* starStone;                  // 0x254
+    EffectEntry* starStone;           // 0x254
 };
 
 // Original .rodata layout for this translation unit (order matters for address matching).
@@ -367,10 +367,10 @@ void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
             case 0xE1:
                 BtlUnit_SetBodyAnim(party, str_802FECEC);
                 break;
-            case 0xE2:
+            case 0xE3:
                 BtlUnit_SetBodyAnim(party, str_802FECF4);
                 break;
-            case 0xE3:
+            case 0xE2:
                 BtlUnit_SetBodyAnim(party, str_802FECFC);
                 break;
             case 0xE4:
@@ -601,10 +601,9 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
 
 s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
-    void* p = baku->starStone;
-    void* q = *(void**)((u8*)p + 0x0C);
+    void* q = baku->starStone->userdata;
     effDelete(*(EffectEntry**)((u8*)q + 0x34));
-    effDelete((EffectEntry*)baku->starStone);
+    effDelete(baku->starStone);
     return EVT_RETURN_DONE;
 }
 
@@ -669,7 +668,7 @@ static USER_FUNC(main_star) {
             break;
     }
     if (baku->starStone != NULL) {
-        f32* e = *(f32**)((u8*)baku->starStone + 0x0C);
+        f32* e = baku->starStone->userdata;
 
         e[2] = baku->field_0x20C.x;
         e[3] = baku->field_0x20C.y;

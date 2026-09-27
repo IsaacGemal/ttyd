@@ -206,7 +206,9 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (95.60%): see above. The sfx-id and BattlePadCheckTrigger tests both use `cmpwi` (via a
+// NONMATCHING (95.60%): the implicit int->float magic double compiles to a local `@343`/`@346` symbol instead
+// of the named `double_to_int_802fdbb8`/`double_to_int_mask_802fdbd8`; the L/R-trigger clamp keeps 1.0f in f4
+// instead of reusing f0; a few state-0 loads are scheduled differently. The sfx-id and BattlePadCheckTrigger tests both use `cmpwi` (via a
 // `(u32)`/`(s32)` cast) to match the original's `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	BattleACDispParams* disp = &work->actionCommands.dispParams;

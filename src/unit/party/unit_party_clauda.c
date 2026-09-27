@@ -21,7 +21,7 @@ extern const f32 float_neg10_8041dd14;
 extern const f32 float_25_8041dd18;
 extern const f32 float_2_8041dd1c;
 
-f64 double_to_int_802f6f30 = 4503601774854144.0;
+const f64 double_to_int_802f6f30 = 4503601774854144.0;
 
 typedef struct ClaudaBreathEffectData {
     u8 pad_0x0[0x18];
@@ -75,7 +75,8 @@ USER_FUNC(_make_kumoguard_weapon) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (75.23%): only the callee-saved register allocation and the 0x40 vs 0x50 frame differ.
+// NONMATCHING (75.23%): the callee-saved register allocation and the 0x40 vs 0x50 frame differ, and the
+// target rounds one position value with an `frsp` that ours omits.
 // Target: event=r27, work=r31, args=r25, id=r26/r24, out=r30/r29/r28, position spills at 0x14/0x18/0x1C.
 // Ours: event=r30, work=r31, args=r25, id=r28/r29, out=r27/r26/r25, position at 0x8/0xC/0x10.
 USER_FUNC(_get_clauda_kiss_hit_position) {

@@ -176,7 +176,10 @@ s32 marioPartyEntry(s32 memberId) {
             }
         }
 #else
-        marioPartyKill();
+        if (wp->currPartySlotId[0] >= 0) {
+            partyKill(wp->currPartySlotId[0]);
+            wp->currPartySlotId[0] = -1;
+        }
 #endif
         id = partyEntry(memberId);
         if (id >= 0) {
@@ -193,7 +196,10 @@ s32 marioPartyEntry(s32 memberId) {
             }
         }
 #else
-        marioPartyKill();
+        if (wp->currPartySlotId[1] >= 0) {
+            partyKill(wp->currPartySlotId[1]);
+            wp->currPartySlotId[1] = -1;
+        }
 #endif
         id = partyEntry2(memberId);
         if (id >= 0) {
