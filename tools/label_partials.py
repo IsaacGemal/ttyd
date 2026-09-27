@@ -102,7 +102,10 @@ def label_block(lines, at):
 
 def main():
     unit, reset, notes = parse_args(sys.argv[1:])
+    import glob, os
     path = f"src/{unit}.c"
+    if not os.path.exists(path):  # a library's source: libs/<lib>/src/UNIT.c
+        path = next(iter(glob.glob(f"libs/*/src/{unit}.c")), path)
     report = json.load(open("build/G8MJ01/report.json"))
     u = next(x for x in report["units"] if x["name"] == "MarioSt/" + unit)
     pct = {f["name"]: f.get("fuzzy_match_percent", 0) for f in u.get("functions", [])}

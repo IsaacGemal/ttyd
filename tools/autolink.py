@@ -39,10 +39,15 @@ def objects():
 
 def candidates():
     units = {u["name"]: u for u in json.loads(REPORT.read_text())["units"]}
+    # a unit is only a candidate if it's compiled from our source: one with no source (or no functions) scores 100%
+    # and "links" by using the original object
+    compiled = {e["name"] for e in json.loads((ROOT / "objdiff.json").read_text())["units"]
+                if e.get("base_path") and (ROOT / e["base_path"]).exists()}
     out = []
     for module, src, matching in objects():
-        u = units.get(f"{module}/{src.rsplit('.', 1)[0]}")
-        if not matching and u and u.get("measures", {}).get("matched_code_percent") == 100:
+        name = f"{module}/{src.rsplit('.', 1)[0]}"
+        u = units.get(name)
+        if not matching and u and name in compiled and u.get("measures", {}).get("matched_code_percent") == 100:
             out.append(src)
     return out
 

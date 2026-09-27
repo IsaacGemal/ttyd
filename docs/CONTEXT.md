@@ -1094,6 +1094,42 @@ Review 3 (a fresh Claude) found:
   agent added header lines and prints any findings as a warning to check by hand.
 
 
+## Wave 9: the other half of the first parallel pair (2026-09-27, Claude Opus 5.5; agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+Ran alongside wave 10 (TTYD Claude #2) from the same tower sync, in its own worktree (`~/ttyd-wave9`), units claimed
+through `tools/claims.py`. 24 agents, 30 minutes, 15:21-15:51: 18 on the existing files with the most near-misses
+that wave 8 hadn't touched, 6 new files (five small effects, one action command). All 24 merged. **4,155 -> 4,217
+functions (+62), three new effect files linked.** PR #12, landed first (16:45); wave 10 merged onto it cleanly.
+
+**Merging.** 19 of 24 merged on the first pass, about 6 s each. The four new effect files were rejected because
+their agents created `include/eff/<effect>.h` holding the effect's work struct, which the declarations-only header
+rule refused, although 19 of the 29 existing effect headers do exactly that. `tools/header_patch.py` (4c54563) now lets a
+header the patch creates define types (struct/union/enum bodies, fields, enum members); reviews 2 and 3 (8c1acfa,
+1077950) added the brace tracking, so a created header still can't define global data, function bodies or macros.
+Lines added to existing headers stay declarations only. npcdrv's agent put a data extern in `npcdrv.h`; moved into the .c by hand.
+
+**What the three reviews found** (every finding checked against the asm or the build before acting):
+- Review 1 (fresh Claude): `animPoseSetAnim`/`animPoseSetEffectAnim` clamped an out-of-range index only on the
+  string path (the original clamps both). Wave 9's own agent introduced it in ed09e9a, which added the numeric path. **Two of its "the named field compiles
+  identically" claims were false**: the build dropped `btlevtcmd_GetPartyTechLv` 100 -> 96.71% and
+  `psndMapChange` 98.86 -> 96.17%. The raw-offset forms went under `#ifdef MUST_MATCH` instead. An agent's `memcpy`
+  (a call the original doesn't make) was reverted to the Vec assignment at a deliberate 89.57 -> 85.22%.
+- Review 2 (Codex): **review 1's own fix had a bug**: `p = (u8*)&psnd;` went inside `#ifdef MUST_MATCH` while the
+  function's tail uses `p` in both builds, so a `--non-matching` build would write through an uninitialized
+  pointer. CI builds only the matching configuration and couldn't see it.
+- Review 3 (fresh Claude, asked to compile every changed file without `-DMUST_MATCH`): the `#else` sides are all
+  valid; one MUST_MATCH block had become unnecessary after review 2's fix (confirmed by CI, removed).
+
+**The day's parallel-wave lessons** (waves 9 and 10 together):
+- `check.py`'s plain `ninja` ran 18 jobs per agent; 48 agents took the 16-core tower to a load of ~550. `ninja -j2`
+  dropped runnable processes from ~690 to ~110 within a minute of patching the running workspaces.
+- The launcher runs under `nohup`, so nothing told the orchestrator wave 9 had finished; it sat done for 10
+  minutes. The launch recipe now starts a tracked background wait on `launch.log`'s "all done".
+- Landing was undramatic: the waves shared no headers, git merged the two common files, and the second PR's CI on
+  top of the first came out at exactly the sum (4,217 + 81 = 4,298).
+- **Near-miss files are running out.** Per near-miss agent: wave 8 about 5.9 functions (its total less review fixes), waves 9 and 10 about 2.5 (from the merge commits);
+  new files did as well or better even when tiny. Waves 11 and 12 moved to missing functions and library ports.
+
 ## Wave 10: the first wave run in parallel with another (2026-09-27, Claude Opus 5.5 ("TTYD Claude #2"); agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
 
 Ran alongside wave 9 (the other orchestrator): its own worktree (`~/ttyd-wave10`), its own inference key, units

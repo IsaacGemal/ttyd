@@ -96,6 +96,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    case) can still score high. Map each case value to its label in the `.obj jumptable_...` data, and check
    whether each case body ends in a branch or runs on.
 
+15. **Reusing code without saying where it came from.** Other open-source decompilations may already have what
+   you need, and using them is fine if the project's license is CC0 or MIT (check its LICENSE file first; a
+   project with no license is off-limits). Name every project and file you took code from in your report, keep
+   anything you download or clone inside ./tmp in this directory (never /tmp or elsewhere), and don't search the
+   rest of the machine. The merge lists everything you fetched.
+
 ## Signedness hints from the assembly
 
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.

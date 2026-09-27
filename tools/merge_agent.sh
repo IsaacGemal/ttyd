@@ -4,7 +4,8 @@
 #
 #   tools/merge_agent.sh RESULTS_DIR UNIT [AGENT_MODEL] [AGENT_TRAILER]
 #
-# UNIT may also be the source file's path, e.g. rels/pik/src/unit/unit_purple_teresa.c: needed for a new file in
+# UNIT may also be the source file's path, e.g. rels/pik/src/unit/unit_purple_teresa.c or a library's
+# libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/printf.c: needed for a new file in
 # a REL module, and for a unit that exists in several RELs.
 # RESULTS_DIR is the agent's result folder: final.c (the agent's whole file; used for new files and finishers)
 # or src.patch (a diff against the file on main), plus other_changes.txt (source files the agent changed besides
@@ -14,18 +15,22 @@
 # parent folder name. ORCHESTRATOR (env) names the model doing the merge in the commit trailer.
 # Prints MERGED, REJECT or SKIP. Run on a clean tree.
 set -u
-D=$(cd "$1" && pwd); UNIT=$2
+D=$(cd "$1" && pwd); UNIT=${2#./}
 MODEL=${3:-"Pi + DeepSeek V4.1 Flash"}; TRAILER=${4:-"DeepSeek V4.1 Flash <noreply@deepseek.com>"}
 ORCH=${ORCHESTRATOR:-"Claude Opus 5.5 <noreply@anthropic.com>"}
 TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); TOOLS=$(cd "$(dirname "$0")" && pwd)
 cd "$TOOLS/.."
+case $UNIT in /*) UNIT=${UNIT#"$PWD/"} ;; esac
 case $UNIT in
-  *.c) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/)?src/##; s#\.c$##') ;;
-  *) F=src/$UNIT.c ;;
+  *.c|*.C) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/|libs/[^/]+/)?src/##; s#\.[cC]$##') ;;
+  *) F=src/$UNIT.c
+     [ -e "$F" ] || for c in libs/*/src/$UNIT.[cC] rels/*/src/$UNIT.c; do [ -e "$c" ] && F=$c; done ;;
 esac
 
-[ -z "$(git status --short -- src include rels)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
-own="Only in src$( [ "$(dirname $UNIT)" = . ] || echo /$(dirname $UNIT)): $(basename $UNIT).c"
+[ -z "$(git status --short -- src include rels libs)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
+# how `diff -rq` lists the agent's own new file: under its nearest folder that already exists
+top=$F; while [ ! -d "$(dirname "$top")" ]; do top=$(dirname "$top"); done
+own="Only in $(dirname "$top"): $(basename "$top")"
 if [ -s "$D/other_changes.txt" ] && grep -v -x -F "$own" "$D/other_changes.txt" | grep -q .; then
   echo "REJECT $TAG: touched other files:"; cat "$D/other_changes.txt"; exit 1
 fi
@@ -35,7 +40,7 @@ if [ -s "$D/src.patch" ]; then
   patch -s -p0 "$F" < "$D/src.patch" || { git checkout -q "$F"; echo "REJECT $TAG: patch failed"; exit 1; }
 elif [ -s "$D/final.c" ]; then
   [ -e "$F" ] || NEW=1
-  cp "$D/final.c" "$F"
+  mkdir -p "$(dirname "$F")"; cp "$D/final.c" "$F"
   [ $NEW = 1 ] && git add -N "$F"
 else
   echo "REJECT $TAG: no changes"; exit 1
@@ -84,6 +89,12 @@ n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched
 if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions matched"
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
+PROV=""  # what the agent fetched or looked at outside its workspace (tools/provenance.py, run by the launcher)
+if [ ! -f "$D/provenance.txt" ]; then echo "WARN $TAG: no provenance.txt; run tools/provenance.py on its events.jsonl by hand"
+elif [ -s "$D/provenance.txt" ]; then echo "WARN $TAG: fetched or looked outside its workspace (check licenses):"; cat "$D/provenance.txt"
+  PROV="Outside its workspace (tools/provenance.py):
+$(head -40 "$D/provenance.txt")"; [ $(grep -c . "$D/provenance.txt") -gt 40 ] && PROV="$PROV
+... $(( $(grep -c . "$D/provenance.txt") - 40 )) more lines"; fi
 HDRNOTE=""
 [ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG
@@ -91,6 +102,7 @@ $SUBJECT
 
 tools/ci.py${FLAGS:+ $FLAGS}: PASS, no regressions; $n0 -> $n1 functions matched.
 $HDRNOTE
+$PROV
 
 Agent: $MODEL, TTYD $WAVE; verified and merged by the orchestrator.
 
