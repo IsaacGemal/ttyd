@@ -46,3 +46,10 @@ void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags
 
 
 
+LightEntry* lightNumberToPtr(s32 number);
+s32 lightGetEntryNum(void);
+LightEntry* lightGetPaperCraft(void);
+LightEntry* lightGetPaper(void);
+s32 lightCheckCharaLight(void);
+LightEntry* lightGetCharaAmbient(void);
+LightEntry* lightGetAmbient(void);

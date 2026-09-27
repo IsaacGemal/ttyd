@@ -2,6 +2,7 @@
 #include "driver/camdrv.h"
 #include "driver/mapdrv.h"
 #include "memory.h"
+#include "system.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -171,23 +172,156 @@ LightEntry* lightNameToPtr(const char* name) {
 	return NULL;
 }
 
-//TODO: cleanup?
-// NONMATCHING (69.36%): 1 instruction differs, 3 extra, plus register differences.
-s32 _sort(const void* a, const void* b) {
-	f32 value1, value2;
+typedef struct LightNearObj {
+	LightEntry* entry;
+	f32 distance;
+} LightNearObj;
 
-	value1 = *(f32*)(*(u32*)a + 4);
-	value2 = *(f32*)(*(u32*)b + 4);
+s32 _sort(const void* a, const void* b) {
+#ifdef MUST_MATCH
+	f32 value2, value1; // declaration order controls float-register allocation
+#else
+	f32 value1, value2;
+#endif
+
+	value1 = ((const LightNearObj*)a)->distance;
+	value2 = ((const LightNearObj*)b)->distance;
+
 	if (value1 > value2) {
 		return 1;
-	}
-	if (value1 >= value2) {
+	} else if (value1 < value2) {
+		return -1;
+	} else {
 		return 0;
 	}
-	return -1;
 }
 
-// NONMATCHING (0.79%): empty placeholder, not decompiled yet.
+// NONMATCHING (97.44%): output-loop register numbering only; the real header type differs, see REPORT.md.
 void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags flags) {
+	LightWork* wp = lightGetWork();
+	LightNearObj near[32];
+	LightEntry* p;
+	s32 num;
+	s32 i;
+	s32 n;
 
+	if (lightGetEntryNum() > 8) {
+		p = wp->entries;
+		num = 0;
+		for (i = 0; i < wp->count; i++, p++) {
+			if (p->flags & LIGHT_ENABLED) {
+				near[num].entry = p;
+				near[num].distance = PSVECDistance(&position, &p->position);
+				num++;
+			}
+		}
+		qqsort(near, num, sizeof(LightNearObj), (int (*)(void*, void*))_sort);
+	} else {
+		p = wp->entries;
+		num = 0;
+		for (i = 0; i < wp->count; i++, p++) {
+			if (p->flags & LIGHT_ENABLED) {
+				near[num].entry = p;
+				num++;
+			}
+		}
+	}
+
+	n = 0;
+	for (i = 0; i < num; i++) {
+		p = near[i].entry;
+		if (p->flags & LIGHT_AMBIENT) {
+			continue;
+		}
+		if (flags != 0 && !(flags & p->flags)) {
+			continue;
+		}
+		((LightEntry**)entry)[n] = p; // cast works around the wrong header type (should be LightEntry**)
+		n++;
+		if (n >= count) {
+			break;
+		}
+	}
+	for (i = n; i < count; i++) {
+		((LightEntry**)entry)[i] = NULL;
+	}
+}
+
+LightEntry* lightGetAmbient(void) {
+	LightWork* wp = lightGetWork();
+	LightEntry* entry = wp->entries;
+	s32 i;
+
+	for (i = 0; i < wp->count; i++, entry++) {
+		if ((entry->flags & LIGHT_ENABLED) && !(entry->flags & LIGHT_CHARA) && (entry->flags & LIGHT_AMBIENT)) {
+			return entry;
+		}
+	}
+	return NULL;
+}
+
+LightEntry* lightGetCharaAmbient(void) {
+	LightWork* wp = lightGetWork();
+	LightEntry* entry = wp->entries;
+	s32 i;
+
+	for (i = 0; i < wp->count; i++, entry++) {
+		if ((entry->flags & LIGHT_ENABLED) && (entry->flags & LIGHT_CHARA) && (entry->flags & LIGHT_AMBIENT)) {
+			return entry;
+		}
+	}
+	return NULL;
+}
+
+s32 lightCheckCharaLight(void) {
+	LightWork* wp = lightGetWork();
+	LightEntry* entry = wp->entries;
+	s32 i;
+
+	for (i = 0; i < wp->count; i++, entry++) {
+		if ((entry->flags & LIGHT_ENABLED) && (entry->flags & LIGHT_CHARA)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+LightEntry* lightGetPaper(void) {
+	s32 cam = camGetCurNo();
+
+	if (cam == 4) {
+		return &paperLight3D;
+	}
+	if (cam == 6) {
+		return &paperLight3DImg;
+	}
+	return &paperLight3DImg;
+}
+
+LightEntry* lightGetPaperCraft(void) {
+	return &paperCraft;
+}
+
+s32 lightGetEntryNum(void) {
+	LightWork* wp = lightGetWork();
+	LightEntry* entry = wp->entries;
+	s32 i;
+	s32 count = 0;
+
+	for (i = 0; i < wp->count; i++, entry++) {
+		if (entry->flags & LIGHT_ENABLED) {
+			count++;
+		}
+	}
+	return count;
+}
+
+LightEntry* lightNumberToPtr(s32 number) {
+	LightWork* wp = lightGetWork();
+	LightEntry* entry = &wp->entries[number];
+
+	if (entry->flags & LIGHT_ENABLED) {
+		return entry;
+	}
+	return NULL;
 }
