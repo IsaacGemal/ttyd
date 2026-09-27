@@ -986,6 +986,7 @@ config.libs = [
             "-i libs/metrowerks/include",
             "-i libs/metrowerks/include/dolphin",
             "-i libs/metrowerks/include/libc",
+            "-DFIX_SQRT_LINKAGE",  # ac-decomp's w_math.h otherwise emits Animal Crossing's sqrtf into every object
             "-O4,p",
             "-sdata 0",
             "-sdata2 0",
@@ -1047,6 +1048,7 @@ config.libs = [
             "-i libs/metrowerks/include",
             "-i libs/metrowerks/include/dolphin",
             "-i libs/metrowerks/include/libc",
+            "-DFIX_SQRT_LINKAGE",  # ac-decomp's w_math.h otherwise emits Animal Crossing's sqrtf into every object
             "-O4,p",
             "-inline all",
             "-inline auto,deferred",
@@ -1136,6 +1138,7 @@ config.libs = [
             "-i libs/metrowerks/include",
             "-i libs/metrowerks/include/dolphin",
             "-i libs/metrowerks/include/libc",
+            "-DFIX_SQRT_LINKAGE",  # ac-decomp's w_math.h otherwise emits Animal Crossing's sqrtf into every object
             "-O4,p",
             "-inline all",
             "-inline auto,deferred",

@@ -1,7 +1,6 @@
 // w_math.h's weak-extern inline sqrtf (pulled in through trk.h -> ppc_reg.h ->
 // types.h) turns off data pooling for the whole TU, which the original build did
 // not have. FIX_SQRT_LINKAGE makes it static, restoring pooling.
-#define FIX_SQRT_LINKAGE
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 #include "_mem.h"
 
