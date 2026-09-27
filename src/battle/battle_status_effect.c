@@ -579,6 +579,7 @@ void BSE_FireDelete(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// dont_inline: without it BattleStatusEffectMain inlines BSE_Fire; the original calls it.
 #pragma dont_inline on
 void BSE_Fire(BattleUnit* unit) {
 	BattleUnitEffectFields* fields = (BattleUnitEffectFields*)unit;
@@ -642,12 +643,12 @@ void BSE_Biribiri(BattleUnit* unit) {
 	}
 	if (active) {
 		if (((BattleUnitEffectFields*)unit)->mBiribiriEff == NULL) {
-			((BattleUnitEffectFields*)unit)->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(((s32(*)(BattleUnit*))BtlUnit_GetWidth)(unit) / 2));
+			((BattleUnitEffectFields*)unit)->mBiribiriEff = effSparkEntry(0, 10, -1000.0f, -1000.0f, -1000.0f, (f32)(BtlUnit_GetWidth(unit) / 2));
 		}
 		work = ((BattleUnitEffectFields*)unit)->mBiribiriEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		heightScale = (f32)(((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) / 2) * unit->mSizeMultiplier;
+		heightScale = (f32)(BtlUnit_GetHeight(unit) / 2) * unit->mSizeMultiplier;
 		if (unit->mAttributeFlags & kCeiling) {
 			heightScale = 0.0f;
 		}
@@ -674,6 +675,7 @@ void BSE_SleepDelete(BattleUnit* unit) {
 }
 #pragma dont_inline reset
 
+// dont_inline: without it BattleStatusEffectMain inlines BSE_Sleep; the original calls it.
 #pragma dont_inline on
 void BSE_Sleep(BattleUnit* unit) {
 	BattleEffectPosScale* work;
@@ -693,8 +695,8 @@ void BSE_Sleep(BattleUnit* unit) {
 		work = ((BattleUnitEffectFields*)unit)->mSleepEff->userdata;
 		part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
 		BtlUnit_GetPartsWorldPos(part, &x, &y, &z);
-		scale = 0.5f * (unit->mSizeMultiplier * (f32)((s32(*)(BattleUnit*))BtlUnit_GetWidth)(unit));
-		heightScale = 0.95f * (unit->mSizeMultiplier * (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit));
+		scale = 0.5f * (unit->mSizeMultiplier * (f32)BtlUnit_GetWidth(unit));
+		heightScale = 0.95f * (unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit));
 		if (unit->mAttributeFlags & kCeiling) {
 			heightScale = 0.0f;
 		}

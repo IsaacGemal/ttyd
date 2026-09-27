@@ -723,7 +723,7 @@ void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {
 	s32 itemId = unit->heldItem;
 
 	BtlUnit_GetPos(unit, &v.x, &v.y, &v.z);
-	v.y += unit->mSizeMultiplier * (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) + float_5_8041bf6c;
+	v.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit) + float_5_8041bf6c;
 	iconDispGx(v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
 }
 
@@ -750,7 +750,7 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	Vec v;
 	s32 item;
 
-	(f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit);
+	(f32)BtlUnit_GetHeight(unit);
 	item = BtlUnit_EnemyItemCanUseCheck(unit->heldItem);
 	if ((wp->flags & 0x20000) && item == 0) {
 		item = 0x94;

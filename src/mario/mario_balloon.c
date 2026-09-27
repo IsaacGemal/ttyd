@@ -19,8 +19,6 @@ EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc);
 //   0x1DC, 0x1E0: two unnamed HitEntry* fields before hitobjStandOn (0x1E4).
 //   0x260: EffectEntry* for the balloon effect.
 //   0x264: NpcEntry* the balloon is attached to.
-// NpcEntry::balloonType (0x317) is declared u8 in driver/npcdrv.h but the original sign-extends it
-// (`lbz; extsb`), so it is really s8; the direct field access is used as a raw s8 load to keep that.
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 
 // Strings referenced by the two itembox checks.
@@ -65,8 +63,13 @@ void marioBalloonMain(void) {
     s32 valid;
     void* hit;
     // Not set on the item-box path, yet read after it: the original does the same (it compares r29, which
-    // only the hit and NPC paths assign). Kept as is: initializing it would change the code.
+    // only the hit and NPC paths assign). Initializing it changes the code, so only the matching build
+    // leaves it unset.
+#ifdef MUST_MATCH
     s32 balloonType;
+#else
+    s32 balloonType = 0;
+#endif
     BOOL ret;
     CaseEntry* ce;
     MapObjectEntry* obj;
@@ -215,7 +218,7 @@ void marioBalloonMain(void) {
     hit = fbatNpcTalkCheck();
     if (hit != NULL) {
         if (!(((NpcEntry*)hit)->flags & 0x80000000)) {
-            balloonType = *(s8*)((u8*)hit + 0x317);
+            balloonType = ((NpcEntry*)hit)->balloonType;
             ret = TRUE;
         }
         if (MW_U32(mario, 0x264) != (u32)hit) {

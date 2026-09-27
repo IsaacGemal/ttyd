@@ -56,16 +56,6 @@ void iconDisp(CameraId camId, void* param);
 void iconGX(Mtx mtx, IconEntry* entry);
 void shadowEntry(f32 x, f32 y, f32 z, f32 size);
 
-// icondrv.h declares IconEntry.flags as s16, but the retail code always loads it
-// zero-extended (lhz) and does 16-bit read-modify-writes on it, so the field is
-// really u16. Reinterpret the field for MUST_MATCH; report this header bug.
-#ifdef MUST_MATCH
-#define ICON_FLAGS(e) (*(u16*)&(e)->flags)
-#define ICON_ID(e) (*(u16*)&(e)->iconId)
-#else
-#define ICON_FLAGS(e) ((u16)(e)->flags)
-#define ICON_ID(e) ((u16)(e)->iconId)
-#endif
 
 // TODO: inline function? I see nothing in the symbol map
 #define iconGetWork() (gp->inBattle ? &work[1] : &work[0])
@@ -77,7 +67,7 @@ inline IconEntry* iconGetEntry(const char* name) {
     int i;
 
     for (i = 0; i < wp->count; i++, entry++) {
-        if (ICON_FLAGS(entry) & 1 && !strcmp(entry->name, name)) {
+        if (entry->flags & 1 && !strcmp(entry->name, name)) {
             return entry;
         }
     }
@@ -155,9 +145,9 @@ void iconMain(void) {
         return;
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
-        if (ICON_FLAGS(entry) & 1) {
-            if (ICON_FLAGS(entry) & 0x2000) {
-                entry->flags = ICON_FLAGS(entry) & ~0x2000;
+        if (entry->flags & 1) {
+            if (entry->flags & 0x2000) {
+                entry->flags = entry->flags & ~0x2000;
                 // warning: data may be invalid
                 entry->width = data->width;
                 entry->height = data->height;
@@ -166,10 +156,10 @@ void iconMain(void) {
                 entry->tplId = data->tplId;
                 entry->frameDelay = data->frameDelay;
                 if (data->type & 1) {
-                    entry->flags = ICON_FLAGS(entry) | 0x1000;
+                    entry->flags = entry->flags | 0x1000;
                 }
             }
-            if (ICON_FLAGS(entry) & 0x1000) {
+            if (entry->flags & 0x1000) {
                 if (entry->frameDelay) {
                     entry->frameDelay--;
                 }
@@ -179,7 +169,7 @@ void iconMain(void) {
                         entry->currIcon = 0;
                     }
                     {
-                        u16 id = ICON_ID(entry);
+                        u16 id = entry->iconId;
                         IconBinary* bin = icon_bin;
                         IconBinaryEntry* tmp;
                         if (!icon_tpl_ok || !icon_bin_ok) {
@@ -193,13 +183,13 @@ void iconMain(void) {
                     entry->frameDelay = ((IconFrame*)data)[entry->currIcon + 2].frameDelay;
                 }
             }
-            if (!(ICON_FLAGS(entry) & 2)) {
-                if (ICON_FLAGS(entry) & 0x10) {
+            if (!(entry->flags & 2)) {
+                if (entry->flags & 0x10) {
                     dispEntry(CAMERA_2D, float_200_804197c8, 1, iconDisp, entry);
-                } else if (ICON_FLAGS(entry) & 0x100) {
+                } else if (entry->flags & 0x100) {
                     shadowEntry(entry->position.x, entry->position.y, entry->position.z, float_10_80419794);
                     dispEntry(CAMERA_3D_EFFECTA, dispCalcZ(&entry->position), 1, iconDisp, entry);
-                } else if (ICON_FLAGS(entry) & 0x200) {
+                } else if (entry->flags & 0x200) {
                     shadowEntry(entry->position.x, entry->position.y, entry->position.z, float_10_80419794);
                     dispEntry(CAMERA_3D_EFFECTB, dispCalcZ(&entry->position), 1, iconDisp, entry);
                 } else {
@@ -222,12 +212,12 @@ void iconEntry(const char* name, u16 iconId) {
     int i;
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
-        if ((ICON_FLAGS(entry) & 1) && !strcmp(entry->name, name)) {
+        if ((entry->flags & 1) && !strcmp(entry->name, name)) {
             break;
         }
     }
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
-        if (!(ICON_FLAGS(entry) & 1)) { // looking for unused entry to allocate
+        if (!(entry->flags & 1)) { // looking for unused entry to allocate
             break;
         }
     }
@@ -239,7 +229,7 @@ void iconEntry(const char* name, u16 iconId) {
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
-        u16 id = ICON_ID(entry);
+        u16 id = entry->iconId;
         IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
@@ -255,17 +245,17 @@ void iconEntry(const char* name, u16 iconId) {
         entry->tplId = data->tplId;
         entry->frameDelay = data->frameDelay;
         if (data->type & 1) {
-            entry->flags = ICON_FLAGS(entry) | 0x1000;
+            entry->flags = entry->flags | 0x1000;
         }
     } else {
-        entry->flags = ICON_FLAGS(entry) | 0x2000;
+        entry->flags = entry->flags | 0x2000;
     }
-    entry->flags = ICON_FLAGS(entry) | 1;
+    entry->flags = entry->flags | 1;
     if (mapGetWork()->entries[0].flags & 2) {
         if (!strncmp(gp->currentMapName, "aji", 3) && evtGetValue(0, GSW(0)) == 0x178) {
-            entry->flags = ICON_FLAGS(entry) & ~0x40;
+            entry->flags = entry->flags & ~0x40;
         } else {
-            entry->flags = ICON_FLAGS(entry) | 0x40;
+            entry->flags = entry->flags | 0x40;
         }
     }
 }
@@ -277,12 +267,12 @@ void iconEntry2D(const char* name, s16 iconId) {
     int i;
 
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
-        if ((ICON_FLAGS(entry) & 1) && !strcmp(entry->name, name)) {
+        if ((entry->flags & 1) && !strcmp(entry->name, name)) {
             break;
         }
     }
     for (entry = wp->entries, i = 0; i < wp->count; i++, entry++) {
-        if (!(ICON_FLAGS(entry) & 1)) { // looking for unused entry to allocate
+        if (!(entry->flags & 1)) { // looking for unused entry to allocate
             break;
         }
     }
@@ -294,7 +284,7 @@ void iconEntry2D(const char* name, s16 iconId) {
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
-        u16 id = ICON_ID(entry);
+        u16 id = entry->iconId;
         IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
@@ -310,12 +300,12 @@ void iconEntry2D(const char* name, s16 iconId) {
         entry->tplId = data->tplId;
         entry->frameDelay = data->frameDelay;
         if (data->type & 1) {
-            entry->flags = ICON_FLAGS(entry) | 0x1000;
+            entry->flags = entry->flags | 0x1000;
         }
     } else {
-        entry->flags = ICON_FLAGS(entry) | 0x2000;
+        entry->flags = entry->flags | 0x2000;
     }
-    entry->flags = ICON_FLAGS(entry) | 0x11;
+    entry->flags = entry->flags | 0x11;
 }
 
 void iconDelete(const char* name) {
@@ -324,8 +314,8 @@ void iconDelete(const char* name) {
     int i;
 
     for (i = 0; i < wp->count; i++, entry++) {
-        if (ICON_FLAGS(entry) & 1 && !strcmp(entry->name, name)) {
-            entry->flags = ICON_FLAGS(entry) & 0xFFFE; // no longer in use
+        if (entry->flags & 1 && !strcmp(entry->name, name)) {
+            entry->flags = entry->flags & 0xFFFE; // no longer in use
             break;
         }
     }
@@ -337,7 +327,7 @@ void iconChange(const char* name, u16 iconId) {
 
     entry->iconId = iconId;
     {
-        u16 id = ICON_ID(entry);
+        u16 id = entry->iconId;
         IconBinary* bin = icon_bin;
         if (!icon_tpl_ok || !icon_bin_ok) {
             data = NULL;
@@ -352,9 +342,9 @@ void iconChange(const char* name, u16 iconId) {
     entry->tplId = data->tplId;
     entry->frameDelay = data->frameDelay;
     if (data->type & 1) {
-        entry->flags = ICON_FLAGS(entry) | 0x1000;
+        entry->flags = entry->flags | 0x1000;
     }
-    entry->flags = ICON_FLAGS(entry) | 1;
+    entry->flags = entry->flags | 1;
 }
 
 void iconDisp(CameraId camId, void* param) {
@@ -486,7 +476,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (93.21%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (92.88%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     CameraEntry* camera;
     IconBinaryEntry* data;
@@ -607,7 +597,7 @@ IconEntry* iconNameToPtr(const char* name) {
     int i;
 
     for (i = 0; i < wp->count; i++, entry++) {
-        if ((ICON_FLAGS(entry) & 1) && !strcmp(entry->name, name)) {
+        if ((entry->flags & 1) && !strcmp(entry->name, name)) {
             return entry;
         }
     }
@@ -630,14 +620,14 @@ void iconSetPos(const char* name, f32 x, f32 y, f32 z) {
 void iconFlagOn(const char* name, s16 flags) {
     IconEntry* entry = iconNameToPtr(name); // inline
     if (entry) {
-        entry->flags = ICON_FLAGS(entry) | flags;
+        entry->flags = entry->flags | flags;
     }
 }
 
 void iconFlagOff(const char* name, s16 mask) {
     IconEntry* entry = iconNameToPtr(name); // inline
     if (entry) {
-        entry->flags = ICON_FLAGS(entry) & ~mask;
+        entry->flags = entry->flags & ~mask;
     }
 }
 

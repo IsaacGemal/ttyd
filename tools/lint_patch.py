@@ -54,9 +54,15 @@ def source_path(unit):
 
 
 def base_file(base):
-    """BASE is a file when one exists at that path (/dev/null for a new file), otherwise a git ref: refs such as
-    origin/main contain a slash too."""
-    return base if os.path.exists(base) else None
+    """BASE is a git ref when git knows it (refs such as origin/main contain a slash too), otherwise a file
+    (/dev/null for a new file)."""
+    is_ref = subprocess.run(["git", "rev-parse", "--verify", "--quiet", base + "^{commit}"],
+                            capture_output=True).returncode == 0
+    if is_ref:
+        return None
+    if not os.path.exists(base):
+        sys.exit(f"{base}: neither a git ref nor a file")
+    return base
 
 
 def main():
@@ -103,7 +109,7 @@ def main():
         if re.match(r"\s*extern\b", l):
             out.append("EXTERN     " + l.strip())
     for i, l in enumerate(lines):
-        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
+        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|opt_common_subs\s+off|optimize_for_size\s+on)", l):
             if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
                 out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
     for n in stubs:

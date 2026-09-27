@@ -519,14 +519,14 @@ s32 _check_present_item(void) {
 	case 0x7B:
 		BtlUnit_RecoverHp(unit, 1);
 		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
+		y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
 		effRecoveryEntry(0, 1, x, y, z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
 	case 0x7C:
 		BtlUnit_RecoverFp(unit, 1);
 		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
+		y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
 		effRecoveryEntry(1, 1, x, y, z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;

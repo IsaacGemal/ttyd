@@ -151,7 +151,7 @@ typedef struct NpcEntry {
     u8 field_314;                   // 0x314
     u8 btlCoinDropCount;            // 0x315
     u8 field_316;                   // 0x316
-    u8 balloonType;                 // 0x317
+    s8 balloonType;                 // 0x317, s8: mario_balloon loads it with lbz; extsb
     u8 field_318[0x31C - 0x318];    // 0x318
     u16 koopaEncounterType;         // 0x31C
     u8 field_31E[0x320 - 0x31E];    // 0x31E
