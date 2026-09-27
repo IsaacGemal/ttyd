@@ -9,3 +9,4 @@ s32 battleAcMain_MonosiriTarget(BattleWork* work);
 s32 battleAcResult_MonosiriTarget(BattleWork* work);
 void battleAcDisp_MonosiriTarget(CameraId camId, void* param);
 void battleAcDelete_MonosiriTarget(BattleWork* work);
+s32 _getmaxcount(void);
