@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import label_partials  # noqa: E402
 import lint_patch  # noqa: E402
+import name_offsets  # noqa: E402
 
 
 class LintDefinitions(unittest.TestCase):
@@ -43,6 +44,27 @@ class LintBase(unittest.TestCase):
 
     def test_an_existing_path_is_a_file(self):
         self.assertEqual(lint_patch.base_file("/dev/null"), "/dev/null")
+
+
+class OffsetStructs(unittest.TestCase):
+    HEADER = (
+        "typedef struct A {\n    u32 chunkCount; // 0x0\n} A;\n\n"
+        "typedef struct B {\n    s16 x; // 0x0\n    struct {\n        s32 inner; // 0x0\n    } sub; // 0x4\n} B;\n"
+    )
+
+    def test_body_is_only_the_named_struct(self):
+        # found in the cleanup pass: a lazy regex from the first `typedef struct` in the header made MapObject's
+        # fields include the structs defined above it, and named offsets after fields MapObject doesn't have
+        body = "\n".join(name_offsets.struct_body(self.HEADER, "B"))
+        self.assertNotIn("chunkCount", body)
+        self.assertIn("s16 x;", body)
+
+    def test_nested_members_are_not_top_level_fields(self):
+        body = "\n".join(name_offsets.struct_body(self.HEADER, "B"))
+        self.assertNotIn("inner", body)
+
+    def test_missing_struct(self):
+        self.assertIsNone(name_offsets.struct_body(self.HEADER, "C"))
 
 
 class LabelArguments(unittest.TestCase):

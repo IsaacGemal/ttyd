@@ -96,7 +96,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
 
     if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
         *outDist = 0.0f;
-        *outAngle = *(f32*)((u8*)party + 0xFC);
+        *outAngle = party->field_FC;
         return;
     }
 
@@ -111,7 +111,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
         }
         ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
         if (dist == 0.0f) {
-            ang = *(f32*)((u8*)party + 0xFC);
+            ang = party->field_FC;
         }
         ang = revise360(ang + *(f32*)((u8*)party + 0xF8));
         *outAngle = ang;
@@ -875,11 +875,11 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
     } else {
         if (!a) {
             pos = party->position;
-            hit = partySearchWallFront(party, &pos, a, *(f32*)((u8*)party + 0x100));
+            hit = partySearchWallFront(party, &pos, a, party->dir);
             party->field_12C = hit;
             *(HitEntry**)((u8*)mario + 0x1E0) = hit;
             if (hit == NULL) {
-                f32 dir = toMovedir(*(f32*)((u8*)party + 0x10C));
+                f32 dir = toMovedir(party->field_10C);
 
                 pos = party->position;
                 hit = partySearchWallFront(party, &pos, a, dir);
@@ -890,7 +890,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                 HitEntry* h;
 
                 pos = party->position;
-                h = partySearchWallFront(party, &pos, a, *(f32*)((u8*)party + 0x100));
+                h = partySearchWallFront(party, &pos, a, party->dir);
                 if (h == NULL) {
                     *(HitEntry**)((u8*)party + 0x130) = h;
                     *(HitEntry**)((u8*)mario + 0x1DC) = h;
@@ -960,7 +960,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
         }
     }
 
-    marioChkWallAround(&pos, 1, a, b, *(f32*)((u8*)party + 0xF4), *(f32*)((u8*)mario + 0x1B8));
+    marioChkWallAround(&pos, 1, a, b, *(f32*)((u8*)party + 0xF4), mario->wPlayerCollisionBox.y);
     party->position.x = pos.x;
     party->position.z = pos.z;
 

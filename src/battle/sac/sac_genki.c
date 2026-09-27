@@ -790,7 +790,7 @@ void main_star0(s32 idx) {
                                            float_0_80421d84, float_1_80421d74);
         BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
         star->field_10 = star->field_10 +
-            (mario->mSizeMultiplier * (f32)*(s16*)((u8*)mario + 0xCE) + float_37_80421d8c);
+            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421d8c);
         star->field_18 = star->field_C;
         star->field_1C = star->field_10;
         star->field_20 = star->field_14;

@@ -908,7 +908,7 @@ void partyHello(PartyEntry* party) {
             P8(party, 0x38) = 0;
             party->field_110 = mario->unk1A8;
             party->field_10C = mario->unk1A8;
-            party->position = *(Vec*)((u8*)mario + 0x8C);
+            party->position = mario->position;
             *(Vec*)((u8*)party + 0xB8) = party->position;
         } else if (party->field_34 == 7) {
             *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 57);
@@ -920,7 +920,7 @@ void partyHello(PartyEntry* party) {
             P8(party, 0x38) = 0xa;
             party->field_110 = mario->unk1A8;
             party->field_10C = mario->unk1A8;
-            party->position = *(Vec*)((u8*)mario + 0x8C);
+            party->position = mario->position;
             *(Vec*)((u8*)party + 0xB8) = party->position;
         }
         party->flags &= ~0x100;

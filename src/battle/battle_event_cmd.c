@@ -3438,8 +3438,8 @@ USER_FUNC(btlevtcmd_JumpPartsSetting) {
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
     part = BtlUnit_GetPartsPtr(unit, partId);
     *(s32*)((u8*)part + 0xA0) = a;
-    *(f32*)((u8*)part + 0xA4) = b;
-    *(f32*)((u8*)part + 0xA8) = c;
+    part->mMoveSpeedXZ = b;
+    part->mFallAccel = c;
     return EVT_RETURN_DONE;
 }
 

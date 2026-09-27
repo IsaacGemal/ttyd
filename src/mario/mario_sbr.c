@@ -592,8 +592,8 @@ void marioUpdateKeyData(void) {
         }
     }
     if ((p->flags & 0x0E) || !marioChkKey()) {
-        *(u8*)((u8*)p + 0x24E) = 0;
-        *(u8*)((u8*)p + 0x24F) = 0;
+        p->wStickDir1 = 0;
+        p->wStickDir2 = 0;
         *(u8*)((u8*)p + 0x250) = 0;
         *(u8*)((u8*)p + 0x251) = 0;
         *(u8*)((u8*)p + 0x252) = 0;

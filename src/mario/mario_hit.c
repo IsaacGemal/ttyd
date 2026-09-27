@@ -332,7 +332,7 @@ void marioCheckWall(f32 a, f32 b) {
         }
         if (marioChkBero(hit)) {
             if (a != float_0_8041a7a4) {
-                *(void**)((u8*)wp + 0x1EC) = hit;
+                wp->hitobjPush = hit;
                 *(void**)((u8*)wp + 0x1F0) = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
@@ -353,7 +353,7 @@ void marioCheckWall(f32 a, f32 b) {
                     r = wp2->currMotionId == 0x19;
                 }
                 if (r != 0) {
-                    *(void**)((u8*)wp + 0x1EC) = hit;
+                    wp->hitobjPush = hit;
                 }
             }
             wp->position = v;
@@ -500,7 +500,7 @@ void marioSearchFrontWall_staying(f32 a) {
     }
 
     if (hit == NULL) {
-        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+        angle = toMovedir(wp->unk1A8);
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, angle, wp->wPlayerCollisionBox.z);
         if (wp->currMotionId != 0x13) {
@@ -511,7 +511,7 @@ void marioSearchFrontWall_staying(f32 a) {
     } else {
         if (strcmp((char*)(gp + 0x12C), str_802C5940) == 0) {
             if (vivianGetStatus() != 2 && vivianGetStatus() != 1 && vivianGetStatus() != 3) {
-                angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+                angle = toMovedir(wp->unk1A8);
                 v = wp->position;
                 movePos(&v.x, &v.z, float_0p5_8041a7c4 * wp->wPlayerCollisionBox.x, angle);
                 angle = angle + float_180_8041a7cc;
@@ -611,7 +611,7 @@ void marioCheckWallShip(f32 a, f32 b) {
         }
         if (r != 0) {
             if (a != float_0_8041a7a4) {
-                *(void**)((u8*)wp + 0x1EC) = hit;
+                wp->hitobjPush = hit;
                 *(void**)((u8*)wp + 0x1F0) = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
@@ -637,7 +637,7 @@ void marioCheckWallShip(f32 a, f32 b) {
                         r = (wp3->currMotionId == 0x19);
                     }
                     if (r != 0) {
-                        *(void**)((u8*)wp + 0x1EC) = hit;
+                        wp->hitobjPush = hit;
                     }
                 }
             }
@@ -728,7 +728,7 @@ f32 marioChkOverhead(void) {
             ok = 0;
         }
         if (ok) {
-            *(f32*)((u8*)wp + 0x180) = float_0_8041a7a4;
+            wp->baseSpeed = float_0_8041a7a4;
             wp->flags |= 0x80;
         }
         wp->flags |= 0x08000000;
@@ -753,12 +753,12 @@ f32 marioChkOverhead(void) {
             if (!(wp->flags & 0x1000000) && wp->currMotionId != 0x19 &&
                 wp->currMotionId != 0x18 && wp->currMotionId != 0x1C &&
                 wp->characterId != 2 && marioChkSlitEnd() == 0) {
-                if (float_0_8041a7a4 == *(f32*)((u8*)wp + 0x180)) {
+                if (float_0_8041a7a4 == wp->baseSpeed) {
                     if (wp->currMotionId != 0) {
                         marioChgStayMotion();
                     }
                 } else {
-                    marioChgMot(*(f32*)((u8*)wp + 0x180) > *(f32*)((u8*)wp + 0x184) ? 2 : 1);
+                    marioChgMot(wp->baseSpeed > wp->mBaseWalkSpeed ? 2 : 1);
                 }
             }
         }
