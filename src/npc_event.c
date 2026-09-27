@@ -114,15 +114,13 @@ USER_FUNC(piders_draw_yawn) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.58%): Vec temp stack slots shifted by 4 bytes and base2/pos2 copies partly merged; GX calls identical.
 static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     NpcEntry* npc = param;
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-    GXColor color = { 0xFF, 0xFF, 0xFF, 0xFF };
-    Vec base = { 0.0f, 0.0f, 0.0f };
-    Vec pos = { 0.0f, 0.0f, 0.0f };
     Vec base2;
     Vec pos2;
+    Vec base = { 0.0f, 0.0f, 0.0f };
+    Vec pos = { 0.0f, 0.0f, 0.0f };
 
     base.x = npc->territoryBase.x;
     base.y = npc->territoryBase.y + 30.0f;
@@ -140,7 +138,7 @@ static void piders_draw_yarn_sub(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetNumChans(1);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetChanMatColor(GX_COLOR0A0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -317,7 +315,8 @@ USER_FUNC(kamec_fire_magic) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (82.82%): zero-Vec aggregate init optimized away (direct field copies), rodata pool base offsets differ.
+// NONMATCHING (99.88%): instruction sequence identical; only the shared string-pool/rodata base offsets differ
+// (the zero-Vec constant loads and string literals resolve to different offsets in the original link).
 USER_FUNC(zakoEntryFall) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     char names[3][16];
@@ -346,20 +345,19 @@ USER_FUNC(zakoEntryFall) {
         NpcEntry* target = npcNameToPtr_NoAssert(names[i]);
 
         if (target != NULL && target->position.y <= -75.0f) {
-            Vec pos = { 0.0f, 0.0f, 0.0f };
+            Vec pos;
 
             target->flags |= 0x20410;
             target->flags &= ~0x20;
             target->jumpFlags |= 0x1002;
             target->jumpFlags &= 0xEF8FFFFB;
 
+            pos = (Vec){ 0.0f, 0.0f, 0.0f };
             pos.x = npc->position.x;
             pos.y = npc->position.y;
             pos.z = npc->position.z;
             target->position = pos;
-            target->rotation.x = 0.0f;
-            target->rotation.y = 0.0f;
-            target->rotation.z = 0.0f;
+            target->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
             target->unitWork[0] = (void*)2;
 
             if (target->moveEvent != NULL) {
@@ -379,10 +377,11 @@ USER_FUNC(zakoEntryFall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85.70%): frame 0x80 vs 0x90 and zero-Vec/rodata pool offsets; no instruction-logic difference.
+// NONMATCHING (99.90%): instruction sequence identical; only the shared string-pool/rodata base offsets differ
+// (the zero-Vec constant loads and string literals resolve to different offsets in the original link).
 USER_FUNC(zakoEntryDokan) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
-    char mobName[16];
+    char mobName[32];
     char names[3][16];
     const char* hit;
     s32 i;
@@ -419,20 +418,19 @@ USER_FUNC(zakoEntryDokan) {
         NpcEntry* target = npcNameToPtr(names[i]);
 
         if (target->position.y <= -75.0f) {
-            Vec pos = { 0.0f, 0.0f, 0.0f };
+            Vec pos;
 
             target->flags |= 0x20410;
             target->flags &= ~0x20;
             target->jumpFlags |= 0x1002;
             target->jumpFlags &= 0xEFAFFFFB;
 
+            pos = (Vec){ 0.0f, 0.0f, 0.0f };
             pos.x = npc->position.x;
             pos.y = npc->position.y - 35.0f;
             pos.z = npc->position.z;
             target->position = pos;
-            target->rotation.x = 0.0f;
-            target->rotation.y = 0.0f;
-            target->rotation.z = 0.0f;
+            target->rotation = (Vec){ 0.0f, 0.0f, 0.0f };
             target->unitWork[0] = (void*)1;
 
             if (target->moveEvent != NULL) {
@@ -482,7 +480,10 @@ USER_FUNC(unk_800ece0c) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (70.15%): float temp register allocation shifted (scale lands in f30 not f31) and stack Vec slots differ; logic correct.
+// Still differs: every float temp is coloured one register low (orig scale=f31, ratio=f30, ...;
+// ours scale=f30, ratio=f29, ...), the first block evaluates the x difference before the y difference, and the
+// shared rodata/string pool offsets differ. The dead `pos = {0,0,0}` rodata init now matches.
+// NONMATCHING (89.31%): instruction sequence and logic match apart from float register colouring.
 USER_FUNC(chain_main) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     NpcEntry* ref;
@@ -514,7 +515,7 @@ USER_FUNC(chain_main) {
     f30 = 300.0f / (f31 * f31);
 
     {
-        Vec pos = { 0.0f, 0.0f, 0.0f };
+        Vec pos;
         NpcEntry* s = npc->slaves[0];
 
         f29 = s->position.y - f30;
@@ -531,6 +532,7 @@ USER_FUNC(chain_main) {
         if (f29 < npc->territoryBase.y) {
             f29 = npc->territoryBase.y;
         }
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
         pos.x = f26;
         pos.y = f29;
         pos.z = f24;
@@ -538,7 +540,7 @@ USER_FUNC(chain_main) {
     }
 
     for (i = 0; i < 2; i++) {
-        Vec pos = { 0.0f, 0.0f, 0.0f };
+        Vec pos;
 
         ref = npc->slaves[i];
         cur = npc->slaves[i + 1];
@@ -556,6 +558,7 @@ USER_FUNC(chain_main) {
         if (f23 < npc->territoryBase.y) {
             f23 = npc->territoryBase.y;
         }
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
         pos.x = f26;
         pos.y = f23;
         pos.z = f24;
@@ -563,7 +566,7 @@ USER_FUNC(chain_main) {
     }
 
     for (i = 2; i >= 0; i--) {
-        Vec pos = { 0.0f, 0.0f, 0.0f };
+        Vec pos;
 
         cur = npc->slaves[i];
         ref = npc->slaves[i + 1];
@@ -581,6 +584,7 @@ USER_FUNC(chain_main) {
         if (f23 < npc->territoryBase.y) {
             f23 = npc->territoryBase.y;
         }
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
         pos.x = f26;
         pos.y = f23;
         pos.z = f24;
@@ -589,7 +593,10 @@ USER_FUNC(chain_main) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (87.94%): original keeps a dead magnitude compare before angleABf and has different frame/reg allocation; logic correct.
+// Still differs: every float local is coloured one register too high (orig x=f31,y=f24,z=f25,ratio=f30,...;
+// ours x=f24,y=f25,z=f26,ratio=f31,...), the original keeps a dead `diff.x*diff.x+diff.z*diff.z` compare
+// before angleABf that our expression omits, and the float-constant pool offsets differ.
+// NONMATCHING (88.22%): fabs now uses the `__fabs` intrinsic (double abs + double divide + frsp, matches).
 USER_FUNC(_2d_dead_jump) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -636,7 +643,7 @@ USER_FUNC(_2d_dead_jump) {
         PSVECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &diff);
         npc->moveDir = angleABf(0.0f, 0.0f, diff.x, diff.z);
         if (f30 > 0.0f) {
-            npc->moveSpeed = (f32)(fabs(f31 - npc->position.x) / f30);
+            npc->moveSpeed = (f32)(__fabs(f31 - npc->position.x) / f30);
         } else {
             npc->moveSpeed = f26;
         }
