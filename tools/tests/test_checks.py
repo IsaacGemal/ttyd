@@ -343,15 +343,30 @@ class Provenance(unittest.TestCase):
                         "git clone https://github.com/x/z.git tmp/z", "gh repo clone doldecomp/melee tmp/m",
                         "wget github.com/doldecomp/melee/raw/master/src/scanf.c")
         self.assertIn("fetch  https://raw.githubusercontent.com/x/y/main/a.c", out)
-        self.assertIn("clone  https://github.com/x/z.git", out)
-        self.assertIn("clone  doldecomp/melee", out)
+        self.assertIn("clone  https://github.com/x/z.git tmp/z", out)
+        self.assertIn("clone  doldecomp/melee tmp/m", out)
         self.assertIn("fetch  github.com/doldecomp/melee/raw/master/src/scanf.c", out)
 
     def test_paths_outside_the_workspace_are_listed_by_area(self):
         out = "\n".join(self.bash("grep -rn foo /home/other/src", "find /tmp -name printf.c", "cat /tmp/sfa/src/a.c",
                                    "find /home/isaac/ws2 -name x", "rg scanf ~/SFA-Decomp", "cp -r ../ws3/src tmp/"))
-        for area in ("/home/other/src", "/tmp ", "/tmp/sfa", "/home/isaac/ws2", "/SFA-Decomp", "/home/isaac/ws3"):
+        for area in ("/home/other/src", "path   /tmp: /tmp", "/tmp/sfa/src/a.c", "/home/isaac/ws2",
+                     "/home/isaac/SFA-Decomp", "/home/isaac/ws3"):
             self.assertIn(area, out)
+
+    def test_the_forms_review_3_found(self):
+        out = "\n".join(self.bash(
+            "git clone --depth 1 git@github.com:doldecomp/melee.git", "R=https://raw.githubusercontent.com; curl $R/o/melee/a.c",
+            "cat $HOME/melee/x.c", "diff a.c /tmp/sfa/a.c|head", "cat</tmp/in.c", "cat /tmp/q/{support,trk}.c",
+            'cat "/tmp/with space/x.c"', "cp -r /opt/melee/src .", "cat /usr/local/src/melee/printf.c",
+            "curl HTTPS://GITHUB.COM/doldecomp/melee", "sed -e '/a/p' -e '/b/,/c/d' x.s"))
+        for want in ("clone  --depth 1 git@github.com:doldecomp/melee.git", "fetch  https://raw.githubusercontent.com/o/melee/a.c",
+                     "/home/isaac/melee/x.c", "/tmp/sfa/a.c", "/tmp/in.c", "/tmp/q/support.c", "/tmp/q/trk.c",
+                     "/tmp/with space/x.c", "/opt/melee/src", "/usr/local/src/melee/printf.c",
+                     "fetch  HTTPS://GITHUB.COM/doldecomp/melee"):
+            self.assertIn(want, out)
+        self.assertNotIn("/a/p", out)
+        self.assertNotIn("/b/", out)
 
     def test_the_workspace_system_paths_and_sed_addresses_are_not(self):
         self.assertEqual(self.bash("grep -rn foo /home/isaac/ws/src", "ls src > /dev/null", "ls /usr/bin/zstd",
@@ -360,12 +375,17 @@ class Provenance(unittest.TestCase):
     def test_other_tools_paths_are_checked(self):
         out = self.run_on([{"type": "tool_execution_start", "toolName": "read", "args": {"path": "/home/isaac/melee/a.c"}},
                            {"type": "tool_execution_start", "toolName": "edit", "args": {"path": "src/a.c"}}])
-        self.assertEqual(out, ["path   /home/isaac/melee  (1 path, e.g. /home/isaac/melee/a.c)"])
+        self.assertEqual(out, ["path   /home/isaac/melee: /home/isaac/melee/a.c"])
+        out = self.run_on([{"type": "tool_execution_start", "toolName": "fetch", "args": {"url": "https://github.com/doldecomp/melee"}},
+                           {"type": "tool_execution_start", "toolName": "read", "args": {"file_path": "/tmp/m/a.c"}}])
+        self.assertEqual(out, ["fetch  https://github.com/doldecomp/melee", "path   /tmp/m: /tmp/m/a.c"])
 
-    def test_an_unreadable_transcript_is_an_error(self):
+    def test_an_unreadable_or_empty_transcript_is_an_error(self):
         import provenance
         with self.assertRaises(OSError):
             provenance.findings("/nonexistent/events.jsonl.zst", "/home/isaac/ws")
+        with self.assertRaises(OSError):
+            self.run_on([{"type": "message_end"}])
 
 
 if __name__ == "__main__":

@@ -15,8 +15,10 @@ if FINAL:
 unit_path = sys.argv[1]
 unit = "MarioSt/" + unit_path
 import glob, os
-# the unit's source: src/UNIT.c, or a library's libs/<lib>/src/UNIT.c
-src = next(iter(glob.glob(f"libs/*/src/{unit_path}.c")), None) if not os.path.exists(f"src/{unit_path}.c") else None
+# the unit's source, as objdiff.json names it (libs/<lib>/src/..., any extension); else src/UNIT.c or a library's
+src = next((u.get("metadata", {}).get("source_path") for u in json.load(open("objdiff.json"))["units"]
+            if u["name"] == unit), None) if os.path.exists("objdiff.json") else None
+src = src or next(iter(glob.glob(f"libs/*/src/{unit_path}.[cC]")), None) if not os.path.exists(f"src/{unit_path}.c") else src
 src = src or f"src/{unit_path}.c"
 if os.path.exists(src) and src not in open("build.ninja").read():
     subprocess.run(["python3", "configure.py"], capture_output=True)  # a new source file needs a build rule

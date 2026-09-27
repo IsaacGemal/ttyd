@@ -22,8 +22,9 @@ TAG=$(basename "$D"); WAVE=$(basename "$(dirname "$D")"); TOOLS=$(cd "$(dirname 
 cd "$TOOLS/.."
 case $UNIT in /*) UNIT=${UNIT#"$PWD/"} ;; esac
 case $UNIT in
-  *.c) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/|libs/[^/]+/)?src/##; s#\.c$##') ;;
-  *) F=src/$UNIT.c ;;
+  *.c|*.C) F=$UNIT; UNIT=$(echo "$F" | sed -E 's#^(rels/[^/]+/|libs/[^/]+/)?src/##; s#\.[cC]$##') ;;
+  *) F=src/$UNIT.c
+     [ -e "$F" ] || for c in libs/*/src/$UNIT.[cC] rels/*/src/$UNIT.c; do [ -e "$c" ] && F=$c; done ;;
 esac
 
 [ -z "$(git status --short -- src include rels libs)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }

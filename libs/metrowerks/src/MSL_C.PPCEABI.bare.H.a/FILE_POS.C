@@ -35,6 +35,7 @@ int _ftell(FILE* file) {
 	return (position);
 }
 
+// NONMATCHING (44.30%)
 int ftell(FILE* stream) {
 	int retval;
 
@@ -42,6 +43,7 @@ int ftell(FILE* stream) {
 	return retval;
 }
 
+// NONMATCHING (91.41%)
 int _fseek(FILE* file, u32 offset, int whence) {
     int adjust;
     u32 state;
@@ -110,6 +112,7 @@ int _fseek(FILE* file, u32 offset, int whence) {
     return 0;
 }
 
+// NONMATCHING (29.33%)
 int fseek(FILE* stream, u32 offset, int whence) {
 	int code;
 

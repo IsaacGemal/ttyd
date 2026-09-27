@@ -1,7 +1,3 @@
-// The MetroTRK umbrella header (trk.h -> ppc_reg.h -> types.h -> MSL_C/w_math.h) and the
-// `string.h` that resolves on this include path (dolphin/string.h -> types.h) both pull in
-// an inlined sqrtf whose static constants disable this translation unit's .rodata pooling.
-// The original object has no .rodata, so it used lighter headers; do the same here.
 #include "dolphin/types.h"
 #include "dolphin/os/OSInterrupt.h"
 
@@ -49,10 +45,6 @@ void MWInitializeCriticalSection(u32* section);
 void MWEnterCriticalSection(u32* section);
 void MWExitCriticalSection(u32* section);
 
-// Declared here rather than including OdemuExi2/odemuexi/DebuggerDriver.h: that header
-// pulls in dolphin/os.h -> types.h -> MSL_C/w_math.h, whose inlined sqrtf carries static
-// constants and disables this translation unit's .rodata pooling (the original object has
-// no .rodata for exactly that reason).
 void DBInitComm(volatile u8** param_1, __OSInterruptHandler param_2);
 void DBInitInterrupts(void);
 u32 DBQueryData(void);

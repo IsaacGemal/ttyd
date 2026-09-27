@@ -75,8 +75,6 @@ int ddh_cc_post_stop();
 int ddh_cc_peek();
 int ddh_cc_initinterrupts();
 
-const u8 EndofProgramInstruction[4] = { 0x00, 'E', 'N', 'D' };
-
 u8 TRK_Use_BBA;
 s32 _MetroTRK_Has_Framing;
 
@@ -301,6 +299,7 @@ void TRK_board_display(char* str)
  */
 void InitializeProgramEndTrap(void)
 {
+	static const u8 EndofProgramInstruction[4] = { 0x00, 'E', 'N', 'D' };
 	u32* halt = (u32*)PPCHalt;
 
 	TRK_memcpy(halt + 1, EndofProgramInstruction, 4);

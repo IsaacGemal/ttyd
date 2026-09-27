@@ -3,8 +3,7 @@
 
 #define DDH_BUF_SIZE 0x800
 
-// CircleBuffer lives in CircleBuffer.c (only listed in configure.py, not present in this
-// tree) and has no header here. TTYD's copy is 0x1C bytes: the six pointer/count fields
+// CircleBuffer lives in CircleBuffer.c and has no header here. TTYD's copy is 0x1C bytes: the six pointer/count fields
 // followed by a 4-byte critical section at 0x18 (CircleBuffer.c calls
 // MWInitializeCriticalSection on offset 0x18). We only ever pass its address, so declare
 // the callees with an opaque pointer and keep the buffer as raw bytes.
@@ -60,29 +59,23 @@ int ddh_cc_pre_continue(void) {
     return 0;
 }
 
-// NONMATCHING (98.75%): GC/2.6 folds the first `base + 0` access to `mr r4, r31`;
-// TTYD's compiler emitted `addi r4, r31, 0x0`. Everything else matches. The three
-// cc_write messages are contiguous in .rodata (base, +0x14, +0x40).
 int ddh_cc_write(const u8* bytes, int length) {
     int exi2Len;
     int nCopy;
     u32 bytesAddr;
-    // The three cc_write messages are contiguous in .rodata; the original keeps their
-    // common base in r31 and indexes it (see the NONMATCHING note above).
-    char* msgs = (char*)ddh_cc_write_not_initialized;
 
     bytesAddr = (u32)bytes;
     nCopy = length;
 
     if (gIsInitialized == FALSE) {
-        MWTRACE(8, msgs);
+        MWTRACE(8, (char*)ddh_cc_write_not_initialized);
         return DDH_ERR_NOT_INITIALIZED;
     }
 
-    MWTRACE(8, msgs + 0x14, bytes, length);
+    MWTRACE(8, (char*)ddh_cc_write_output_data, bytes, length);
 
     while (nCopy > 0) {
-        MWTRACE(1, msgs + 0x40, nCopy);
+        MWTRACE(1, (char*)ddh_cc_write_sending, nCopy);
         exi2Len = EXI2_WriteN((const void*)bytesAddr, nCopy);
 
         if (exi2Len == AMC_EXI_NO_ERROR) {
