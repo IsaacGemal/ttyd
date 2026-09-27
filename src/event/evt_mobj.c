@@ -984,7 +984,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.03%): 1 missing, plus register differences.
+// NONMATCHING (99.97%): 1 missing, plus register differences.
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1005,6 +1005,7 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
         case 1:
             asyncName = "MOBJ_BlackSwitch";
             break;
+        case 2:
         default:
             asyncName = "HOBJ_BlueSwitch";
             break;
@@ -1433,4 +1434,344 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
             break;
     }
     return 0;
+}
+
+s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f30 = evtGetFloat(event, args[1]);
+    f32 f29 = evtGetFloat(event, args[2]);
+    f32 f28 = evtGetFloat(event, args[3]);
+    s32 unk1D4 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[5];
+    f32 f31 = evtGetFloat(event, args[6]);
+    const char* asyncName = "MOBJ_PowerUpBlock";
+    MapObjectEntry* obj;
+
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f30, f29, f28);
+    obj->unk1D0 = mobj_powerupblk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0xc10000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    obj->rotation.y = f31;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x5a;
+        animPoseSetAnim(obj->poseId, "A_2", 1);
+    }
+    return 2;
+}
+
+extern s32 mobj_save_blk_sysevt[];
+
+s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 unk1D4 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[5];
+    const char* asyncName = "MOBJ_SaveBlock";
+    MapObjectEntry* obj;
+    BOOL inBattle = gp->inBattle != 0;
+
+    if (gp->flags & 0x20) {
+        return 2;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_save_blk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = mobj_save_blk_sysevt;
+    obj->flags |= 0x84;
+    obj->flags |= 0x400000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    return 2;
+}
+
+extern Vec vec3_802c40a0[];
+
+s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f31 = evtGetFloat(event, args[3]);
+    s32 unk1D4 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[5];
+    const char* asyncName = (const char*)evtGetValue(event, args[6]);
+    MapObjectEntry* obj;
+    Vec pos;
+
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    obj->flags |= 4;
+    pos = vec3_802c40a0[0];
+    pos.x = f29;
+    pos.y = f30;
+    pos.z = f31;
+    obj->position = pos;
+    obj->unk1D0 = mobj_koopa_ojama_blk_evt;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = 0;
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x63;
+    }
+    return 2;
+}
+
+// NONMATCHING (97.78%): gp materialised in r4/string in r5 (retail uses r5/r4) and args[6] loaded
+// one instruction earlier than retail; otherwise identical.
+s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 unk1A0 = evtGetValue(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[5]);
+    s32 unk1E4 = args[6];
+    const char* asyncName = "MOBJ_HatenaBlock";
+    MapObjectEntry* obj;
+
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_koopa_badgeblk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    *(s32*)obj->unk1A0 = unk1A0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x5a;
+        animPoseSetAnim(obj->poseId, "S_2", 1);
+    }
+    return 2;
+}
+
+// NONMATCHING (88.34%): register allocation for args[6]/args[7] is swapped (retail r28=args[7],
+// r29=args[6]) and the two `?:` name selections are scheduled differently.
+s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 unk1A0 = evtGetValue(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[5]);
+    s32 unk1E4 = args[6];
+    s32 var = args[7];
+    const char* asyncName;
+    const char* animName;
+    MapObjectEntry* obj;
+
+    asyncName = (var == 0) ? "MOBJ_HatenaBlock" : "MOBJ_BadgeBlock";
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_badgeblk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0xc10000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    *(s32*)obj->unk1A0 = unk1A0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x5a;
+        animPoseSetAnim(obj->poseId, "S_2", 1);
+        animName = (var == 0) ? "MOBJ_Block" : "MOBJ_PinkBlock";
+        strcpy(obj->animName, animName);
+    }
+    return 2;
+}
+
+extern Vec vec3_802c3ef4[];
+
+s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f31 = evtGetFloat(event, args[3]);
+    s32 unk1D4 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[5];
+    const char* asyncName = (const char*)evtGetValue(event, args[6]);
+    MapObjectEntry* obj;
+    Vec pos;
+    BOOL inBattle = gp->inBattle != 0;
+
+    if (evtGetValue(event, unk1E4) != 0) {
+        return 2;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    if (!animGroupBaseAsync("P_box_y", inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    obj->flags |= 0x44;
+    pos = vec3_802c3ef4[0];
+    pos.x = f29;
+    pos.y = f30;
+    pos.z = f31;
+    obj->position = pos;
+    obj->unk1D0 = mobj_lv_blk_evt;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = 0;
+    obj->flags |= 0x10000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    return 2;
+}
+
+s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 unk1A0 = evtGetValue(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    f32 f28 = evtGetFloat(event, args[4]);
+    f32 f31 = evtGetFloat(event, args[5]);
+    s32 unk1D4 = evtGetValue(event, args[6]);
+    s32 unk1D8 = evtGetValue(event, args[7]);
+    s32 unk1E4 = args[8];
+    BOOL inBattle = gp->inBattle != 0;
+    MapObjectEntry* obj;
+    const char* asyncName = "MOBJ_Lock";
+
+    if (evtGetValue(event, unk1E4) != 0) {
+        return 2;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjHitEntry(obj, 2);
+    *(s32*)obj->unk1A0 = unk1A0;
+    mobjSetPosition(name, f30, f29, f28);
+    obj->rotation.y = f31;
+    obj->unk1D0 = mobj_lock;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = (s32*)unk1D8;
+    obj->flags |= 0x26;
+    obj->flags |= 0x40000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "Z_1", 1);
+    return 2;
+}
+
+// NONMATCHING (87.23%): correct registers, but MWCC evaluates the asyncName `?:` before loading gp
+// (retail interleaves the gp/args[6] loads between the two string materialisations).
+s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 type = evtGetValue(event, args[1]);
+    f32 f31 = evtGetFloat(event, args[2]);
+    f32 f30 = evtGetFloat(event, args[3]);
+    f32 f29 = evtGetFloat(event, args[4]);
+    s32 unk1E4;
+    const char* asyncName;
+    MapObjectEntry* obj;
+
+    evtGetValue(event, args[5]);
+    unk1E4 = args[6];
+    asyncName = (type == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    *(s32*)((u8*)obj + 0x1A4) = type;
+    mobjSetPosition(name, f31, f30, f29);
+    obj->flags |= 4;
+    obj->unk1D0 = mobj_recovery_blk;
+    obj->unk1D4 = 0;
+    obj->unk1D8 = 0;
+    obj->flags |= 4;
+    obj->flags |= 0x400000;
+    obj->unk1E4 = unk1E4;
+    if (type == 0) {
+        obj->unk1DC = 0;
+    } else {
+        obj->unk1DC = -1;
+    }
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    return 2;
+}
+
+// NONMATCHING (97.90%): 1 missing, 1 extra, plus register differences.
+s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 unk1A0 = evtGetValue(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[6]);
+    s32 unk1E4 = args[7];
+    const char* asyncName = "MOBJ_HiddenHatenaBlock";
+    MapObjectEntry* obj;
+
+    if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->flags |= 0x800;
+    mobjHitEntry(obj, 1);
+    obj->unk1D0 = mobj_koopa_badgeblk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    *(s32*)obj->unk1A0 = unk1A0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x5a;
+        animPoseSetAnim(obj->poseId, "S_2", 1);
+    }
+    return 2;
 }

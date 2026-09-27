@@ -193,7 +193,6 @@ s32 star_stone_attack(EventEntry* event, s32 arg) {
 }
 
 // .text:0x98 | 0x80243090 | size: 0xFC
-// NONMATCHING (84.10%): 6 missing, 8 extra, plus register differences.
 s32 get_ride_pos(EventEntry* event) {
     DekaWork* p = get_ptr();
     s32* args = event->args;
@@ -201,14 +200,17 @@ s32 get_ride_pos(EventEntry* event) {
     f32 f;
 
     if (flag == 0) {
+        s32 a = args[1];
+        args += 2;
         f = p->starScale.x * float_64_80421e5c * float_0p25_80421e58;
-        evtSetFloat(event, args[1], float_0p5_80421e54 * f + p->starPos.x);
+        evtSetFloat(event, a, float_0p5_80421e54 * f + p->starPos.x);
     }
     else {
+        s32 a = args[1];
+        args += 2;
         f = p->starScale.x * float_64_80421e5c * float_0p25_80421e58;
-        evtSetFloat(event, args[1], p->starPos.x - float_0p5_80421e54 * f);
+        evtSetFloat(event, a, p->starPos.x - float_0p5_80421e54 * f);
     }
-    args += 2;
 
     f = float_0p25_80421e58 * (p->starScale.y * float_64_80421e5c);
     evtSetFloat(event, args[0], float_0p25_80421e58 * f + p->starPos.y);
@@ -249,11 +251,12 @@ s32 weaponGetPower_Deka(void) {
 }
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// NONMATCHING (96.25%): 4 instructions differ, 1 missing, plus register differences. Known issue: tries is not reset after each outer pass (the original has li r26,0 at sac_deka.s:350).
+// NONMATCHING (97.93%): only register-allocation differences remain (i/t-pointer r26/r27, tries, f30/f31).
+// The arrays are idx[8]/times[8] (frame 0xC0) and tries resets at the bottom of each outer pass; both fixed here.
 void create_timing(void) {
     DekaWork* p = get_ptr();
+    s32 idx[8];
     f32 times[8];
-    s32 idx[12];
     s32 i, j, m, n;
     s32 tries;
     f32 f;
@@ -314,6 +317,7 @@ scan:
                 goto scan;
             }
         }
+        tries = 0;
     }
 
     for (i = 0; i < n; i++) {
@@ -333,7 +337,7 @@ scan:
         }
     }
 
-    p->timing[idx[n - 1]].time = p->beatPeriod - (float_7_80421e78 + float_2_80421e7c);
+    p->timing[idx[n - 1]].time = p->beatPeriod - float_7_80421e78 - float_2_80421e7c;
     if (p->timing[idx[0]].time > float_70_80421e80) {
         p->timing[idx[0]].time = float_70_80421e80;
     }

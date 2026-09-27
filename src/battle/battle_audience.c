@@ -951,25 +951,30 @@ s32 BattleAudience_HaitiRandForFallObject(void) {
 	return ret + r * 20;
 }
 
-// NONMATCHING (96.97%): same instructions, different callee-saved register numbers (r22-r31).
 s32 BattleAudience_NoUsedHaitiRand(void) {
 	extern s32 haiti_data[][10];
-	s32 count, i, j, start, memberId;
 	s32 stack[200];
 	s32* haiti;
+	s32 memberId;
+	s32 count;
+	s32 i;
+	s32 j;
+	s32 start;
 
 	BattleAudienceBaseGetPtr();
 	haiti = haiti_data[pouchGetPtr()->rank];
 	count = 0;
 	for (i = 0; i < 10; i++) {
 		start = (20 - haiti[i]) / 2;
-		for (j = 0; j < haiti[i]; j++) {
+		j = 0;
+		while (j < haiti[i]) {
 			memberId = start + i * 20;
 			if (!(BattleAudienceGetPtr(memberId)->flags & 1) &&
 			    !(BattleAudienceGetPtr(memberId)->flags & 0x100)) {
 				stack[count] = memberId;
 				count++;
 			}
+			j++;
 			start++;
 		}
 	}
@@ -1888,8 +1893,6 @@ void BattleAudienceSoundCallKind(s32 kind) {
 	}
 }
 
-// NONMATCHING (98.51%): logic matches; the vol=0/if(total!=0) region is laid out
-// beq-tail + fall-through compute instead of the original bne-compute; b-tail; compute.
 void BattleAudienceSoundHandBeat(void) {
 	BattleAudienceSound* sound;
 	s32 r;
@@ -1910,12 +1913,21 @@ void BattleAudienceSoundHandBeat(void) {
 		sound->mForceFadeLength = 0;
 		sound->mForceFadeTimer = 0;
 		vol = 0;
+// MUST_MATCH: writing the guard as total==0 (else compute) is what makes MWCC lay the
+// compute block out-of-line (bne+b); the equivalent total!=0 form picks the beq layout.
+#ifdef MUST_MATCH
+		if (total == 0) {
+			vol = 0;
+		}
+		else {
+			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
+		}
+#else
 		if (total != 0) {
 			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
 		}
-		else {
-			vol = 0;
-		}		psndSFX_vol(AUD_SOUND_ID(sound), vol);
+#endif
+		psndSFX_vol(AUD_SOUND_ID(sound), vol);
 		sound->mCurrentBaseSfxVolume = vol;
 		sound->mBaseSfxVolume = vol;
 		sound->mVolumeMultiplier = 100;
@@ -2120,7 +2132,6 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	}
 }
 
-// NONMATCHING (97.58%): 2 missing, plus register differences.
 void BattleAudienceJoy(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	switch (a) {
@@ -2134,7 +2145,7 @@ void BattleAudienceJoy(s32 a) {
 			BattleAudienceJoy_Sub(0x46, 0x1e, 0, a);
 			break;
 		case 3:
-		switch (*(s32*)((u8*)audience + 0x1390c)) {
+		switch (*(s32*)audience->field_1390C) {
 			case 0:
 				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
 				break;
@@ -2154,9 +2165,9 @@ void BattleAudienceJoy(s32 a) {
 				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
 				break;
 		}
-		(*(s32*)((u8*)audience + 0x1390c))++;
-		if (*(s32*)((u8*)audience + 0x1390c) > 4) {
-			*(s32*)((u8*)audience + 0x1390c) = 4;
+		(*(s32*)audience->field_1390C)++;
+		if (*(s32*)audience->field_1390C > 4) {
+			*(s32*)audience->field_1390C = 4;
 		}
 			break;
 	}
