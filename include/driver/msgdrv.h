@@ -61,3 +61,14 @@ s32 msgWindow_Repeat(s32 id);
 s32 msgWindow_Continue(s32 id);
 s32 msgWindow_Entry(const char* msg, s32 a, s32 b);
 s32 msgWindow_Add(const char* msg, s32 id);
+#include "driver/camdrv.h"
+MessageWork* L_msgGetWork(void);
+void msgWindow_Delete(WindowEntry* window);
+void msgAnalize(smartEntry* smart, const char* msg);
+void msgWindow_Main(WindowEntry* window);
+void msgWindow_Clear_Main(WindowEntry* window);
+void selectWindow_Main(WindowEntry* window);
+void selectWindow_Disp(CameraId camId, void* param);
+void msgWindow_Disp(CameraId camId, void* param);
+s32 msgMain(smartEntry* smart);
+char* msgGetCommand(char* str, char* arg1, char* arg2);
