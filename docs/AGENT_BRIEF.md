@@ -34,6 +34,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 1. **Calling a function without the arguments it takes,** relying on the value already sitting in a register
    (`r3`-`r10`, or `f1`-`f8` for floats). If the original loads a register before a `bl`, your C passes that
    value. Declare the callee with its real parameters (check its definition in `src/` or its header).
+   Real case: `win_main.c` declared `effRecoveryEntry(s32 type, f32 x, f32 y, f32 z)` locally, leaving out
+   `s32 count`, and called it without the count. The original loads `item->hp_restored` into `r4` before
+   the call (`lbz r4, 0x1d(r29)`); it did so anyway for a zero test, so the function scored 99.8% and the
+   missing argument went unnoticed through several reviews. A local prototype hides this: the compiler only
+   checks your call against your own copy. Before writing any prototype, find the function's definition or
+   the original's callee and count its parameters.
 2. **Ignoring a return value the original uses,** or declaring a function `void` that returns something. If
    the caller uses `r3` after the call, the function returns a value; if its header says `void`, the header is
    probably wrong: say so in your report.

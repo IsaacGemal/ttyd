@@ -986,3 +986,35 @@ the earlier one lands.
 - `ac_power_gauge_lv`, `ac_timing_wide` and `mot_dokan` are written in the original's function order, but
   under `-inline auto,deferred` they must be reversed to link.
 
+
+
+## Local prototypes moved to headers; CI now rejects new ones (2026-09-26, Codex / GPT-6 Sol; finished by Claude Opus 5.5)
+
+Isaac had Codex start with a batch of 100 and then continue; it ran until its usage limit. Result: the ~1,700
+function prototypes that .c files declared for themselves are in the headers of the files that define them
+(94 new headers), and the local copies are gone. 17 remain, listed with reasons in
+`tools/local_prototype_exceptions.json`: they are cases where the original's own files disagree (the
+psndSFX_* argument widths three ways, psndSFXOnEx_3D, cloudGetStatus, BattleCheckCounter,
+windowDispGX_Waku_col), a name collision (fadedrv's `z` against the dig REL's), and two SDK stats functions.
+`tools/local_prototypes.py` (run by `tools/ci.py`) fails on any other non-static function declaration in
+src/ or rels/, and on an exception whose declaration changed or no longer exists. CI passed after every batch
+with all measures unchanged (4,153 functions); an independent count finds exactly the 17 exceptions.
+
+**Before the next wave:** the agent prompts say "don't edit headers; declare what you need locally", which CI
+now rejects. Either let agents add prototypes to the definer's header (the merge script and launcher would
+have to collect and apply header diffs; preferred, because it makes agents find the definition), or have the
+orchestrator move agents' local prototypes into headers at merge.
+
+
+## Bug pattern: a local prototype hiding a missing argument (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+`win_main.c`'s `itemUseFunc` declared `effRecoveryEntry` locally without its `s32 count` parameter and called
+it without the count (how many heart particles to show). The compiler accepted it, because it only checks a
+call against the prototype it can see, and the file's own copy agreed with the call. The score was 99.8%
+because the original happened to have the value in `r4` already (it loads `item->hp_restored` there for a
+zero test), so only a register name differed. Found by the cross-file declaration check; with the prototype
+in a header the defining file also includes, the build would have refused it. Fixed in 59abc86 (the function
+now matches). This is why local prototypes are moving into headers and why the agent brief's mistake 1 now
+carries this example. A near-match whose only differences are argument registers deserves a look for a
+missing argument.
+
