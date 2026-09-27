@@ -92,10 +92,11 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
 
-15. **Using code from outside this workspace.** Work only from the files here: the original's assembly, this
-   repository, and any reference files your task gives you. Don't download code or search the internet for it
-   (other projects' licenses may not allow it), and don't search the rest of the machine. If you need something
-   you don't have, say so in your report.
+15. **Reusing code without saying where it came from.** Other open-source decompilations may already have what
+   you need, and using them is fine if the project's license is CC0 or MIT (check its LICENSE file first; a
+   project with no license is off-limits). Name every project and file you took code from in your report, keep
+   anything you download or clone inside ./tmp in this directory (never /tmp or elsewhere), and don't search the
+   rest of the machine. The merge lists everything you fetched.
 
 ## Signedness hints from the assembly
 

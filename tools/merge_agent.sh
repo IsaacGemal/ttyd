@@ -85,6 +85,9 @@ n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched
 if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions matched"
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
+PROV=""  # what the agent fetched or searched outside its workspace (tools/provenance.py, run by the launcher)
+[ -s "$D/provenance.txt" ] && { echo "WARN $TAG: fetched or searched outside its workspace (check licenses):"; cat "$D/provenance.txt";
+  PROV="Outside its workspace (tools/provenance.py): $(grep -c . "$D/provenance.txt") fetch/clone/search line(s); see the wave's $TAG/provenance.txt."; }
 HDRNOTE=""
 [ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG
@@ -92,6 +95,7 @@ $SUBJECT
 
 tools/ci.py${FLAGS:+ $FLAGS}: PASS, no regressions; $n0 -> $n1 functions matched.
 $HDRNOTE
+$PROV
 
 Agent: $MODEL, TTYD $WAVE; verified and merged by the orchestrator.
 

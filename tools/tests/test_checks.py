@@ -325,5 +325,22 @@ class LibrarySources(unittest.TestCase):
         self.assertEqual(lint_patch.source_path("rels/pik/src/unit/x.c"), ("rels/pik/src/unit/x.c", "pik/unit/x"))
 
 
+
+class Provenance(unittest.TestCase):
+    def test_fetches_clones_and_outside_searches_are_listed(self):
+        import json, tempfile, provenance
+        ev = [{"type": "tool_execution_start", "args": {"command": c}} for c in (
+            "curl -s https://raw.githubusercontent.com/x/y/main/a.c -o tmp/a.c",
+            "git clone https://github.com/x/z.git tmp/z",
+            "find / -name scanf.c", "grep -rn foo /home/isaac/ws/src", "ls tmp")]
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as f:
+            f.write("\n".join(json.dumps(e) for e in ev))
+        out = provenance.findings(f.name, "/home/isaac/ws")
+        self.assertIn("fetch  https://raw.githubusercontent.com/x/y/main/a.c", out)
+        self.assertIn("clone  https://github.com/x/z.git", out)
+        self.assertIn("search /", out)
+        self.assertFalse(any("/home/isaac/ws" in l for l in out))
+
+
 if __name__ == "__main__":
     unittest.main()
