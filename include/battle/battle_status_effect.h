@@ -1,5 +1,11 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
+typedef struct BattleWork BattleWork;
+
+typedef struct BattleUnit BattleUnit;
+
 #include <dolphin/types.h>
 
 //battle_status_effect
@@ -50,3 +56,21 @@ void BattleStatusChangeInfoWorkInit(struct BattleUnit* unit);
 
 
 void BattleStatusChangeMsgWorkInit(void);
+s32 _get_pri(s8 type);
+void BSE_Sleep(BattleUnit* unit);
+void BSE_SleepDelete(BattleUnit* unit);
+void BSE_Biribiri(BattleUnit* unit);
+void BSE_BiribiriDelete(BattleUnit* unit);
+void BSE_Fire(BattleUnit* unit);
+void BSE_FireDelete(BattleUnit* unit);
+void BSE_Freeze(BattleUnit* unit);
+void BSE_FreezeDelete(BattleUnit* unit);
+void BSE_Kagegakure(BattleUnit* unit);
+void BSE_KagegakureDelete(BattleUnit* unit);
+void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2);
+void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg);
+void BattleStatusChangeMsgAdjust(BattleWork* wp);
+BOOL BattleStatusChangeMsgMain(BattleWork* wp);
+BOOL BattleStatusChangeAnnouceMain(BattleWork* wp);
+BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit);
+void _st_chg_msg_disp(CameraId camera, void* param);

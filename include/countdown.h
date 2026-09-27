@@ -15,3 +15,9 @@ void countDownSaveReStart(void);
 
 
 void countDownMain(void);
+s32 countDownGetStatus(void);
+void countDownEnd(void);
+void countDownSetRestartTime(s32 time);
+void countDownFlagOn(u16 flag);
+void countDownFlagOff(u16 flag);
+void countDownStart(s32 type, s32 time);

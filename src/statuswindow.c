@@ -9,6 +9,7 @@
 #include "memory.h"
 #include <math.h>
 #include <string.h>
+#include "mario/mario_party.h"
 
 extern GlobalWork* gp;
 
@@ -65,12 +66,7 @@ typedef struct StatusWindowValue {
 } StatusWindowValue;
 
 // local prototypes
-void gaugeDisp(s32 a1, f32 x, f32 y);
-void statusGetValue(StatusWindowValue* values);
-s32 marioGetParty(void);
-s32 valueCheck(void);
-void valueUpdate(void);
-void statusWinDisp(CameraId camId, void* param);
+
 
 void statusWinInit(void) {
     wp = __memAlloc(HEAP_DEFAULT, sizeof(StatusWindowWork));

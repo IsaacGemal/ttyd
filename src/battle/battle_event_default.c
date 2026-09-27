@@ -1,3 +1,4 @@
+#include "battle/battle_event_default.h"
 #include "battle/battle.h"
 #include "battle/battle_information.h"
 #include "battle/battle_sub.h"
@@ -9,13 +10,10 @@
 #include "manager/evtmgr_cmd.h"
 #include "evt/evt_cmd.h"
 #include "battle/battle_ac_help.h"
+#include "battle/battle_damage.h"
+#include "eff/eff_fire.h"
 
 //=== added by agent: local prototypes for undeclared externals ===
-void BattleAcHelpSetDispType(s32 type);
-EffectEntry* effFireEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
-void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 arg2, s32 arg3, s32 arg4,
-                        s32 arg5, s32 arg6, s32 arg7);
-f32 sinfd(f32 deg);
 
 const f32 zero_8041c010 = 0.0f;
 const f32 float_1_8041c014 = 1.0f;

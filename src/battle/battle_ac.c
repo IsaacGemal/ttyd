@@ -7,7 +7,6 @@ extern ActionCommandEntry ActionCommandList[];
 extern BattleWork* _battleWorkPointer;
 
 //local prototypes
-u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
 
 
 void BattleActionCommandManagerInit(BattleWork* wp) {

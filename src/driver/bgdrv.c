@@ -9,18 +9,17 @@
 #include "texPalette.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 #define PI 3.14159265358979323846264338327950288419716939937510
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021
 
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
 
 //.bss
 static BackgroundWork work[2];
 
 //local prototypes
-void bgDisp(CameraId camId, void* param);
 
 //TODO: inline function? I see nothing in the symbol map
 #define bgGetWork() (gp->inBattle ? &work[1] : &work[0])

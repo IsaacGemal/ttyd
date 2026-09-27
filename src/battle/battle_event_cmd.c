@@ -17,6 +17,16 @@
 #include "battle/battle_enemy_item.h"
 #include "battle/battle_ac_help.h"
 #include "battle/battle_stage_object.h"
+#include "battle/battle.h"
+#include "battle/battle_seq.h"
+#include "battle/ac/ac_timing_a.h"
+#include "battle/battle_seq_command.h"
+#include "battle/battle_damage.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_ac.h"
+
+// LOCAL_PROTO(BattleCheckCounter): battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts.
+s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32* out);
 
 // The original unit was built for size; without this the neg/or/srawi mask and
 // the /60 reciprocal-multiply codegen differ from the target (verified with the
@@ -2660,14 +2670,6 @@ USER_FUNC(btlevtcmd_ACRGetResult) {
 }
 
 //=== added by agent: local prototypes for undeclared externals ===
-void BattleStoreExp(BattleWork* wp, s32 exp);
-void BattleStoreCoin(BattleWork* wp, s32 coin);
-void battleSortPhaseMoveTable(BattleWork* wp, s32 mode);
-void BattleAcHelpSetDispType(s32 type);
-s32 battleAcTimingA_GetSuccessFrame(BattleWork* wp);
-BattleWeapon* BattleGetSelectWeapon(BattleWork* wp);
-void BattleAttackDeclareAll(BattleWork* wp);
-void BattleAudience_ApRecoveryBuild(StarPowerInfo* info);
 
 #define BTLW_OFF(wp, off) ((u8*)(wp) + (off))
 
@@ -2844,8 +2846,6 @@ USER_FUNC(btlevtcmd_InviteApInfoReport) {
     return EVT_RETURN_DONE;
 }
 
-s32 BtlUnit_GetExp(BattleUnit* unit);
-s32 BtlUnit_GetCoin(BattleUnit* unit);
 
 //s32* battleId, s32 talkBodyId
 USER_FUNC(btlevtcmd_SetTalkBodyId) {
@@ -2940,9 +2940,6 @@ USER_FUNC(btlevtcmd_GetCoin) {
     return EVT_RETURN_DONE;
 }
 
-void _MoveSoundControlEndCore(void* a, u32* work);
-void _MoveSoundControlCore(BattleUnit* unit, void* work, void* owner, f32 x, f32 y, f32 z);
-s32 BattleRunWaitEvent(BattleUnit* unit);
 
 // Keep _MoveSoundControlEndCore out of line: the original calls it rather than inlining.
 #pragma dont_inline on
@@ -3045,7 +3042,6 @@ USER_FUNC(btlevtcmd_InterruptStop) {
     return EVT_RETURN_DONE;
 }
 
-void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit);
 extern s32 subsetevt_confuse_flustered[];
 
 //s32* battleId, s32* retIndex, s32* dir
@@ -3166,7 +3162,6 @@ USER_FUNC(btlevtcmd_StatusWindowOnOff) {
     return EVT_RETURN_DONE;
 }
 
-void BattleActionCommandSetup(BattleWork* wp, s32 acId, BattleUnit* unit, s32 gauge, s32 diff);
 
 //s32* battleId, s32 status, s32* turns, s32* strength, s32* onoff
 USER_FUNC(btlevtcmd_OnOffStatus) {
@@ -3295,7 +3290,6 @@ USER_FUNC(btlevtcmd_snd_se) {
     return EVT_RETURN_DONE;
 }
 
-char* BtlUnit_GetPoseNameFromType(BattleUnitPart* part, s32 type);
 
 //s32* battleId, s32* partId, s32* a, s32* b, s32* c, s32* d, s32* e
 USER_FUNC(btlevtcmd_SetPartsRunSound) {
@@ -3443,9 +3437,6 @@ USER_FUNC(btlevtcmd_JumpPartsSetting) {
     return EVT_RETURN_DONE;
 }
 
-s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32 a);
-s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32* out);
-void BattleInitCounterPreCheckWork(void* work);
 
 //s32* attackerId, s32* targetId, s32* partId, s32* a, s32* b, s32* retIndex
 // NONMATCHING (99.55%): same instructions; only register numbers or operands differ.
@@ -3749,8 +3740,6 @@ USER_FUNC(btlevtcmd_SetEventCeilFall) {
     return EVT_RETURN_DONE;
 }
 
-void BattleAfterReactionEntry(s32 id, s32 data);
-void BattleAudience_Case_Appeal(BattleUnit* unit);
 
 //s32* battleId
 USER_FUNC(btlevtcmd_AudienceAppeal) {
@@ -3831,7 +3820,6 @@ USER_FUNC(btlevtcmd_StartAC) {
     return EVT_RETURN_DONE;
 }
 
-void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 difficulty);
 
 //s32* battleId, f32* speed
 USER_FUNC(btlevtcmd_SetMoveSpeed) {
@@ -3945,10 +3933,6 @@ USER_FUNC(btlevtcmd_CheckStatus) {
     return EVT_RETURN_DONE;
 }
 
-void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
-void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void BtlUnit_PoseSoundInit(BattleUnitPart* part);
-void btlDispPoseAnime(BattleUnitPart* part);
 
 //s32* battleId, s32* partId, s32 anime
 USER_FUNC(btlevtcmd_AnimeChangePaperAnime) {

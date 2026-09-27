@@ -1,3 +1,4 @@
+#include "evt/evt_mario.h"
 #include "mario/mario_motion.h"
 #include "evt/evt_cmd.h"
 
@@ -19,49 +20,14 @@
 #include "mario/mario_hit.h"
 #include "koopa.h"
 #include "motion/mot_roll.h"
+#include "mario/mario_cam.h"
+#include "peach.h"
+#include "motion/mot_plane.h"
+#include "mario/mario_balloon.h"
+#include "koopa_motion.h"
+#include "motion/mot_slit.h"
 
 // Locally declared prototypes (move to headers later).
-extern void mario_plane_cancel(void);
-extern s32 marioGetPlaneStatus(void);
-extern void marioChgTalkMotion(void);
-extern void marioSetCamId(CameraId camId);
-extern void marioInitCamId(void);
-extern void marioUpdateCamPos(void);
-extern void marioNoUpdateCamPos(void);
-extern void camFollowYOn(void);
-extern void camFollowYOff(void);
-extern s32 partyKill(s32 memberId);
-extern s32 partyKill2(s32 memberId);
-extern s32 partyGoodbye(s32 memberId);
-extern s32 partyEntry2(s32 memberId);
-extern s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z);
-extern s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z);
-extern s32 partyEntry2Hello(s32 memberId);
-extern s32 partyChkJoin(s32 memberId);
-extern void partyChgRunMode(PartyEntry* party, s32 mode);
-extern void partyKeyOn(void);
-extern void partyKeyOff(void);
-extern void marioBalloonOn(s32 type);
-extern void marioBalloonOff(void);
-extern void kpaSetLevel(s32 level);
-extern s32 kpaGetLevel(void);
-extern void peachTransformOn(void);
-extern void peachTransformOff(void);
-extern void peachSetStsNormal(void);
-extern void peachSetStsAftershower(void);
-extern void peachSetStsInvisible(void);
-extern void peachSetStsHappy(void);
-extern void peachSetStsUneasy(void);
-extern void peachSetStsAngry(void);
-extern void peachSetStsOrdinary(void);
-extern void peachSetStsCarry(void);
-extern s32 marioChkSlitThrouhEnd(void);
-extern f32 toMovedirSimple(f32 angle);
-extern void kpaAttackStart(void);
-extern void partyShadowOff(PartyEntry* party);
-extern void quake_kpaHipAttack(void);
-extern void marioClearJumpPara(void);
-extern s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 
 // .rodata
 const char str_802E58F4[] = "M_N_5B";

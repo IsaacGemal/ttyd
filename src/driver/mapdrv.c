@@ -9,10 +9,14 @@
 #include "texPalette.h"
 #include <math.h>
 #include <string.h>
+#include "driver/hitdrv.h"
+#include "driver/lightdrv.h"
+#include "driver/envdrv.h"
+#include "manager/arammgr.h"
+#include <stdio.h>
 
 extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
 
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021f
 
@@ -60,25 +64,6 @@ s32 fog_type[5] = {2, 4, 5, 6, 7};
 
 //forward decls for functions defined later in this file
 static MapObject* mapGetMapObjSub(const char* name);
-void mapGrpFlagOff(const char* name, u32 flag);
-void mapGrpFlagOn(const char* name, u32 flag);
-void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
-void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
-void setColor(MapObject* obj, GXColor* color, s32 a3);
-void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
-void _mapDispMapGrp(MapObject* obj, void* a2);
-void _mapDispMapObj(CameraId camId, MapObject* obj);
-void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2);
-void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj);
-void mapDispMapObj_bbox(s32 camId, MapObject* obj);
-void _setOffScrnId(MapObject* obj, s32 id, s32 a3);
-s32 offscreenNameToId(const char* name);
-void mapSearchDmdJointSub(void* a, void* b);
-void mapSearchDmdJointSub2(void* a, void* b, const char* c);
-void mapGrpSetColor(const char* name, GXColor* color);
-void mapObjFlagOff(const char* name, u32 flag);
-void mapObjFlagOn(const char* name, u32 flag);
-void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* scale, void* a4);
 
 void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor c;
@@ -466,15 +451,7 @@ found:
 }
 
 //local prototypes
-void mapGetJointsSub(MapFileJoint* joint, s32* numJoints);
-void mapGetBoundingBox(Vec min, Vec max);
-void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table);
-MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index);
-MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isRoot, s32 index);
-MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);
-void makeDisplayList(BOOL group);
 //anim functions?
-void _mapLoad(MapWork* wp, BOOL group, const char* map);
 
 void mapErrorEntry(s32 arg0, const char* arg1) { //1:1
 	// Indexing error_data directly (rather than a saved base pointer) is what makes MWCC's inlined copies
@@ -1030,15 +1007,6 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 }
 
-extern void _mapFree(void* alloc);
-extern void hitReInit(void);
-extern void lightReInit(void);
-extern void envReInit(void);
-extern void camUnLoadRoad(CameraId cameraId);
-extern void camSetTypePersp(CameraId cameraId);
-extern BOOL arcDataCheck(void* data);
-extern void* aramMgrToAram(void* data, u32 size);
-extern void arcDelete(s32 id);
 extern f32 float_0_804198cc;
 
 // NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches

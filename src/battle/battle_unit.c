@@ -4,14 +4,22 @@
 #include "system.h"
 #include <string.h>
 #include "pmario_sound.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_actrecord.h"
+#include "math_ext.h"
 
-extern void psndSFX_pit(s32 id, s32 pitch);
-extern void psndSFX_vol(s32 id, s32 vol);
+// LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
 extern s32 psndSFX_get_vol(s32 id);
+
+// LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
+extern void psndSFX_pit(s32 id, s32 pitch);
+
+// LOCAL_PROTO(psndSFX_vol): retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers.
+extern void psndSFX_vol(s32 id, s32 vol);
+
 
 extern BattleWork* _battleWorkPointer;
 extern u32 _enemy_can_use_item_table[];
-extern f64 pow(f64 x, f64 y);
 
 const f32 float_1_8041c3c0 = 1.0f;
 f32 float_1p1_8041c3cc = 1.1f;
@@ -21,23 +29,6 @@ f32 float_0p5_8041c3d8 = 0.5f;
 
 
 //local prototypes
-void _CheckMoveCount(BattleUnit* unit);
-BOOL BtlUnit_CanActStatus(BattleUnit* unit);
-void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
-void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void BtlUnit_ChangeStayAnim(s32 unitId);
-void BtlUnit_ChangeTalkAnim(s32 unitId);
-void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName);
-void BtlUnit_SetBodyAnimType(BattleUnit* unit, s32 type);
-void BtlUnit_PoseSoundInit(BattleUnitPart* part);
-s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
-BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit);
-void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset);
-void BattleAudience_Case_MarioDanger(void);
-void BattleAudience_Case_MarioPinch(void);
-BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
-void BtlUnit_CheckPinchStatus(BattleUnit* unit, BOOL a2);
-void BtlUnit_HpGaugeInit(BattleUnit* unit);
 
 // Local field overlays for regions the shared header leaves unnamed.
 typedef struct BattleUnitAnimFields {
@@ -1736,9 +1727,6 @@ typedef struct BattleWeaponFields {
     u8 field_0x12; // 0x12
 } BattleWeaponFields;
 
-extern s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
-extern void BtlActRec_AddPoint(void* p, s32 value);
-extern void BtlActRec_AddCount(void* p);
 
 // NONMATCHING (97.77%): pouchAddAP(s16) forces an extra extsh on the computed AP delta.
 void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {

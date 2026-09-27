@@ -58,8 +58,8 @@
 #include <dolphin/vi.h>
 #include <string.h>
 #include <dolphin/os.h>
+#include <demo/DEMOPad.h>
 
-extern void DEMOPadInit(void);
 extern BOOL g_bFirstSmartAlloc;
 
 //.bss
@@ -155,10 +155,6 @@ GXRenderModeObj sRMObjHReso = {
 };
 
 //local prototypes
-void viPostCallback(u32 retraceCount);
-void* gcDvdCheckThread(void* param);
-void gcRumbleCheck(void);
-void gcResetCheck(void);
 
 void marioStInit(void) {
 	if (!OSIsRestart() || (OSGetResetCode() & OS_RESET_SHUTDOWN)) {

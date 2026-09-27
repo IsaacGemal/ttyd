@@ -11,19 +11,11 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
+#include "evt/evt_hit.h"
 
 // Prototypes not yet in a shared header (all defined in src/driver/hitdrv.c).
-void hitObjAttrOn(const char* name, s32 attr);
-void hitObjAttrOff(const char* name, s32 attr);
-void hitGrpAttrOn(const char* name, s32 attr);
-void hitGrpAttrOff(const char* name, s32 attr);
-void hitObjFlagOff(const char* name, s32 flag);
-void hitGrpFlagOn(const char* name, s32 flag);
-void hitGrpFlagOff(const char* name, s32 flag);
-void hitBindUpdate(const char* name);
 
 // Defined below (mutually recursive with evt_hitobj_name_callback).
-void name_callback_sub(const char* name, void* script, s32 recurse);
 
 // .sbss
 HitDamageReturn* hitDmgretPtr;

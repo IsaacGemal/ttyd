@@ -5,6 +5,13 @@
 #include "battle/battle.h"
 #include "driver/icondrv.h"
 #include <string.h>
+#include "eff/eff_sleep.h"
+#include "battle/battle_damage.h"
+#include "battle/battle_sub.h"
+#include "driver/msgdrv.h"
+#include "eff/eff_fire.h"
+#include "eff/eff_ice.h"
+#include "eff/eff_spark.h"
 
 
 //.sdata
@@ -75,36 +82,8 @@ BattleStatusChangeMsgData _st_chg_msg_data[] = {
 };
 
 //local prototypes
-void BSE_Sleep(BattleUnit* unit);
-void BSE_SleepDelete(BattleUnit* unit);
-void BSE_Biribiri(BattleUnit* unit);
-void BSE_BiribiriDelete(BattleUnit* unit);
-void BSE_Fire(BattleUnit* unit);
-void BSE_FireDelete(BattleUnit* unit);
-void BSE_Freeze(BattleUnit* unit);
-void BSE_FreezeDelete(BattleUnit* unit);
-void BSE_Kagegakure(BattleUnit* unit);
-void BSE_KagegakureDelete(BattleUnit* unit);
-s32 _get_pri(s8 type);
-void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s8 type, s8 p1, s32 p2);
-void BattleStatusChangeMsgSetAnnouce(BattleUnit* unit, s32 type, s32 msg);
-void BattleStatusChangeMsgAdjust(BattleWork* wp);
-BOOL BattleStatusChangeMsgMain(BattleWork* wp);
-BOOL BattleStatusChangeAnnouceMain(BattleWork* wp);
 
 // additional local prototypes (targets not yet declared in shared headers)
-EffectEntry* effFireEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
-EffectEntry* effIceEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
-EffectEntry* effSparkEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
-EffectEntry* effSleepEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6, f32 a7);
-BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit);
-void BattleDamageDirect(s32, BattleUnit*, s32, s32, s32, s32, s32, s32);
-f32 sinfd(f32 x);
-BOOL BattleStatusChangeAnnouceMain_Unit(BattleUnit* unit);
-void _st_chg_msg_disp(CameraId camera, void* param);
-const char* msgSearch(const char* tag);
-void FontDrawStart(void);
-void FontDrawMessage(s32 x, s32 y, const char* msg);
 
 // local overlays for BattleUnit regions the shared header leaves unnamed
 typedef struct BattleUnitEffectFields {

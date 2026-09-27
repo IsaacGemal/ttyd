@@ -1,3 +1,4 @@
+#include "motion/mot_plane.h"
 #include "mot/mot_plane.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_snd.h"

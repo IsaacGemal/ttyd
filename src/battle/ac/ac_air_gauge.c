@@ -8,10 +8,6 @@
 #include <string.h>
 #include "battle/ac/ac_air_gauge.h"
 
-extern void BattleAcDrawGauge(s32, s32, s32, s32, s32, s32, s32, s32, f32);
-extern void BattleAcGaugeSeInit(void);
-extern void BattleAcGaugeSeUpdate(f32);
-extern void BattleAcGaugeSeDelete(void);
 
 const Vec vec3_802fdc68 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdc74 = {0.0f, 0.0f, 0.0f};
@@ -144,7 +140,6 @@ typedef struct GaugeTableEntry {
 	s32 unk8;      // 0x8
 } GaugeTableEntry;
 
-f32 _GetGaugeDecValue(void);
 
 // NONMATCHING (92.72%): register allocation only; the work-area pointer is folded into the BattleWork base
 // and the base/table registers differ.

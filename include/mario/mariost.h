@@ -102,3 +102,7 @@ void marioStMain(void);
 void marioStDisp(void);
 void marioStSystemLevel(s32 level);
 s32 marioStGetSystemLevel(void);
+void viPostCallback(u32 retraceCount);
+void* gcDvdCheckThread(void* param);
+void gcRumbleCheck(void);
+void gcResetCheck(void);

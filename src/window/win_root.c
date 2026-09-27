@@ -8,6 +8,12 @@
 #include "mario/mariost.h"
 #include <dolphin/types.h>
 #include <string.h>
+#include "driver/mapdrv.h"
+#include "system.h"
+#include "window/win_root.h"
+#include "data/mail_data.h"
+#include "window/win_item.h"
+#include "window/win_badge.h"
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -32,38 +38,9 @@ extern const f32 float_30_8041d100;
 extern const f32 float_40_8041d0e8;
 extern const f32 float_0p125_8041d104;
 extern ItemData itemDataTable[];
-extern void unk_800d06b4(char* src, char* dst);
-extern void* mailGetPtr(s32 id);
-extern void pouchSortItem(s32 type);
-extern void winMakeSkipList(WindowWork* work);
-extern void winMakeEquipList(WindowWork* work);
-extern void N_mapDispOff(void);
 
 static char msgbuf[0x3C];
-extern void qqsort(void* base, u32 n, u32 size, s32 (*compare)(void*, void*));
 
-s32 compare_func1(void* a, void* b);
-s32 compare_func1_r(void* a, void* b);
-s32 compare_func2(void* a, void* b);
-s32 compare_func2_r(void* a, void* b);
-s32 compare_func3(void* a, void* b);
-s32 compare_func3_r(void* a, void* b);
-s32 compare_func4(void* a, void* b);
-s32 compare_func4_r(void* a, void* b);
-s32 compare_func5(void* a, void* b);
-s32 compare_func5_r(void* a, void* b);
-s32 compare_func6_1(void* a, void* b);
-s32 compare_func6_1_r(void* a, void* b);
-s32 compare_func6_2(void* a, void* b);
-s32 compare_func6_2_r(void* a, void* b);
-s32 compare_func5_1(void* a, void* b);
-s32 compare_func5_1_r(void* a, void* b);
-s32 compare_func5_2(void* a, void* b);
-s32 compare_func5_2_r(void* a, void* b);
-s32 N_compare_func4_1(void* a, void* b);
-s32 N_compare_func4_1_r(void* a, void* b);
-s32 N_compare_func4_2(void* a, void* b);
-s32 N_compare_func4_2_r(void* a, void* b);
 
 s32 winSortWait(WindowWork* work) {
     return WW_S32(work, 0x17C) != 0;
@@ -137,7 +114,7 @@ void winZClear(void) {
     GXSetColorUpdate(1);
 }
 
-s32 compare_func1(void* a, void* b) {
+int compare_func1(void* a, void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -147,7 +124,7 @@ s32 compare_func1(void* a, void* b) {
     }
 }
 
-s32 compare_func1_r(void* a, void* b) {
+int compare_func1_r(void* a, void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {
@@ -157,7 +134,7 @@ s32 compare_func1_r(void* a, void* b) {
     }
 }
 
-s32 compare_func5(void* a, void* b) {
+int compare_func5(void* a, void* b) {
     if (*(u8*)a > *(u8*)b) {
         return 1;
     } else if (*(u8*)a < *(u8*)b) {
@@ -167,7 +144,7 @@ s32 compare_func5(void* a, void* b) {
     }
 }
 
-s32 compare_func5_r(void* a, void* b) {
+int compare_func5_r(void* a, void* b) {
     if (*(u8*)a < *(u8*)b) {
         return 1;
     } else if (*(u8*)a > *(u8*)b) {
@@ -197,7 +174,7 @@ void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b) {
     WW_S32(work, 0x17C) = 1;
 }
 
-s32 N_compare_func4_2(void* a, void* b) {
+int N_compare_func4_2(void* a, void* b) {
     s32 id_a = (s16)*(s32*)((u8*)a + 8);
     s32 id_b = (s16)*(s32*)((u8*)b + 8);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -212,7 +189,7 @@ s32 N_compare_func4_2(void* a, void* b) {
     }
 }
 
-s32 N_compare_func4_2_r(void* a, void* b) {
+int N_compare_func4_2_r(void* a, void* b) {
     s32 id_a = (s16)*(s32*)((u8*)a + 8);
     s32 id_b = (s16)*(s32*)((u8*)b + 8);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -228,7 +205,7 @@ s32 N_compare_func4_2_r(void* a, void* b) {
 }
 
 // NONMATCHING (80.65%): 3 missing, 3 extra.
-s32 N_compare_func4_1(void* a, void* b) {
+int N_compare_func4_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)*(s32*)((u8*)a + 8);
@@ -240,7 +217,7 @@ s32 N_compare_func4_1(void* a, void* b) {
 }
 
 // NONMATCHING (79.84%): 3 missing, 3 extra, plus register differences.
-s32 N_compare_func4_1_r(void* a, void* b) {
+int N_compare_func4_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s32 id_a = (s16)*(s32*)((u8*)a + 8);
@@ -251,7 +228,7 @@ s32 N_compare_func4_1_r(void* a, void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
-s32 compare_func5_2(void* a, void* b) {
+int compare_func5_2(void* a, void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -266,7 +243,7 @@ s32 compare_func5_2(void* a, void* b) {
     }
 }
 
-s32 compare_func5_2_r(void* a, void* b) {
+int compare_func5_2_r(void* a, void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xF0);
     s16 id_b = (s16)(*(s16*)b + 0xF0);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -281,7 +258,7 @@ s32 compare_func5_2_r(void* a, void* b) {
     }
 }
 
-s32 compare_func6_2(void* a, void* b) {
+int compare_func6_2(void* a, void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -296,7 +273,7 @@ s32 compare_func6_2(void* a, void* b) {
     }
 }
 
-s32 compare_func6_2_r(void* a, void* b) {
+int compare_func6_2_r(void* a, void* b) {
     s16 id_a = (s16)(*(s16*)a + 0xB3);
     s16 id_b = (s16)(*(s16*)b + 0xB3);
     s16 va = itemDataTable[id_a].type_sort_order;
@@ -312,7 +289,7 @@ s32 compare_func6_2_r(void* a, void* b) {
 }
 
 // NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-s32 compare_func5_1(void* a, void* b) {
+int compare_func5_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xF0);
@@ -324,7 +301,7 @@ s32 compare_func5_1(void* a, void* b) {
 }
 
 // NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-s32 compare_func5_1_r(void* a, void* b) {
+int compare_func5_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xF0);
@@ -336,7 +313,7 @@ s32 compare_func5_1_r(void* a, void* b) {
 }
 
 // NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-s32 compare_func6_1(void* a, void* b) {
+int compare_func6_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xB3);
@@ -348,7 +325,7 @@ s32 compare_func6_1(void* a, void* b) {
 }
 
 // NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
-s32 compare_func6_1_r(void* a, void* b) {
+int compare_func6_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
     s16 id_a = (s16)(*(s16*)a + 0xB3);
@@ -360,7 +337,7 @@ s32 compare_func6_1_r(void* a, void* b) {
 }
 
 // NONMATCHING (92.86%): 1 missing, 1 extra.
-s32 compare_func4(void* a, void* b) {
+int compare_func4(void* a, void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
     const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
@@ -370,7 +347,7 @@ s32 compare_func4(void* a, void* b) {
 }
 
 // NONMATCHING (92.31%): 1 missing, 1 extra.
-s32 compare_func4_r(void* a, void* b) {
+int compare_func4_r(void* a, void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
     const char* sa = (const char*)msgSearch(*(const char**)((u8*)ma + 8));
@@ -654,8 +631,6 @@ void winSortMain(WindowWork* work) {
 
 extern const f32 float_neg800_8041d1b0;
 extern const f32 float_neg170_8041d1b4;
-extern f32 intplGetValue(s32 mode, s32 currStep, s32 steps, f32 start, f32 end);
-extern u32 keyGetDirTrg(u32 chan);
 
 void winMsgMain(WindowWork* work) {
     switch (WW_S32(work, 0x130)) {

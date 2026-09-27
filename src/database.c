@@ -4,8 +4,8 @@
 #include "memory.h"
 #include "system.h"
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.sbss
 void* ptr; //but why

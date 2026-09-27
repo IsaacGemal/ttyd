@@ -61,17 +61,8 @@
 HitEntry* lbl_80418408; // TODO: proper name
 
 // local prototypes
-void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion);
-s16 hitCalcVtxPosition(HitEntry* hit);
 
-inline BOOL tempfunc(HitCheckQuery* query, HitVector* vector);
-inline BOOL tempfunc2(HitCheckQuery* query, HitVector* vector);
-inline BOOL tempfunc3(HitCheckQuery* query, HitVector* vector);
-BOOL checkTriVec_xz(HitCheckQuery* query, HitVector* vector);
-BOOL chkFilterAttr(HitCheckQuery* query, HitEntry* entry);
-void hitObjGetPosSub(HitEntry* hit, Vec* position, s32* counter, BOOL recursion);
-void hitDamageReturnSet(HitEntry* hit, HitDamageReturn* damage, BOOL recursion);
-s32 hitGetEntNum(HitEntry* hitObject);
+
 
 void hitInit(void) {
     ; // stubbed in retail

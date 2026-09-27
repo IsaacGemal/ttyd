@@ -17,16 +17,17 @@
 #include <string.h>
 #include "koopa.h"
 #include "driver/npcdrv.h"
+#include "system.h"
+#include "mario/mario_party.h"
+#include "evt/evt_mobj.h"
+#include "kpa_act.h"
+#include "koopa_motion.h"
+#include "eff/eff_fire.h"
+#include "eff/eff_small_star.h"
+#include "eff/eff_mobj_broken.h"
+#include <dolphin/mtx.h>
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
-extern s32 kpaGetLevel(void);
-extern void kpaAddScore(s32 score);
-extern void kpaAddScorePos(s32 score, Vec* pos);
-extern void kpaPowUp(void);
-extern void kpaAddCoin(s32 coins);
-extern s32 kpaMutekiCheck(void);
-extern void hitGrpFlagOn(const char* name, s32 flag);
-extern void hitGrpFlagOff(const char* name, s32 flag);
 
 // Read-only constants defined in this unit's .rodata (to be defined locally later)
 extern f32 float_0_8041a150;
@@ -38,7 +39,6 @@ extern f32 float_10_8041a1a4;
 extern f32 float_0p8_8041a1b0;
 extern f32 float_0p125_8041a1b4;
 extern f32 float_0p99_8041a1b8;
-extern EffectEntry* effFireEntry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f);
 extern const char str_802C46E4[];
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
@@ -46,41 +46,11 @@ extern Vec vec3_802c40ac[];
 extern u32 dat_8041a134;
 
 // Prototypes missing from manager/fontmgr.h
-extern void FontDrawColor(GXColor* color);
-extern void FontDrawStringMtx(Mtx mtx, const char* msg);
 
-void kpa_disp_pole_score(CameraId camera, void* param);
 
 // Prototypes missing from driver/mobjdrv.h (to move to the header later)
-extern s32 mobjEntry(const char* name, const char* animPoseName);
-extern void mobjDelete(const char* name);
-extern MapObjectEntry* mobjNameToPtr(const char* name);
-extern MapObjectEntry* mobjNameToPtrNoAssert(const char* name);
-extern void mobjSetPosition(const char* name, f32 x, f32 y, f32 z);
-extern EventEntry* mobjRunEvent(MapObjectEntry* entry, s32* eventCode);
-s32 mobj_signboard(MapObjectEntry* obj);
-s32 mobj_lock(MapObjectEntry* obj);
-s32 mobj_switch_red(MapObjectEntry* obj);
-s32 mobj_switch_blue(MapObjectEntry* obj);
 
 // Prototypes missing from mario/party/sound headers (to move later)
-extern void partyKeyOff(void);
-extern void mobjCalcMtx(MapObjectEntry* entry);
-extern void* effSmallStarEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 f4, f32 f5, f32 f6);
-extern void effSmallStarCamChg(void* entry, s32 camId);
-extern void marioChgJumpStandMotion(f32 a);
-extern s32 irand(s32 max);
-s32 mobj_jumpstand_blue(MapObjectEntry* obj);
-s32 mobj_jumpstand_red(MapObjectEntry* obj);
-extern s32 marioGetPartyId(void);
-extern void mobjCalcMtx2(MapObjectEntry* entry);
-extern f32 PSVECMag(const Vec* v);
-extern f32 PSVECDistance(const Vec* a, const Vec* b);
-s32 mobj_rideswitch_lightblue(MapObjectEntry* obj);
-extern void effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z);
-s32 mobj_koopa_blk(MapObjectEntry* obj);
-s32 mobj_float_blk(MapObjectEntry* obj);
-s32 fire_func(EventEntry* event, BOOL isFirstCall);
 
 // ---------------------------------------------------------------------------
 // Pole score work (sbss `psw`).  The first bytes are the ASCII score string,

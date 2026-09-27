@@ -10,35 +10,14 @@
 #include "battle/battle_menu_disp.h"
 #include "battle/battle_stage.h"
 #include "eff/eff_recovery.h"
+#include "battle/battle_camera.h"
+#include "battle/battle_audience.h"
 
 
 //TODO: move into battle/seq/?
 
 //local prototypes
-void BattleDrawEnemyHP(CameraId camId, void* param);
 
-void BattleMenuDisp_ActSelect_End(BattleWork* wp);
-void BattleMenuDisp_WeaponSelect_End(BattleWork* wp);
-void BattleMenuDisp_Operation_End(BattleWork* wp);
-void BattleMenuDisp_MultiItem_End(BattleWork* wp);
-void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp);
-BattleUnit* BattleGetUnitPtr(BattleWork* wp, s32 index);
-void _btlcmd_MakeActClassTable(BattleWork* wp);
-void _btlcmd_MakeMultiItemTable(BattleWork* wp);
-void _btlcmd_MakeOperationTable(BattleWork* wp);
-void _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg);
-void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out);
-s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon);
-void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void btl_camera_set_mode(s32 mode, s32 param);
-void _cursor_init(BattleCursor* cursor);
-void SelectedItemCoordinateColorUpDate(void);
-s32 BattleAudience_GetPresentItemNo(void);
-s32 BattleAudience_GetPresentTargetUnitId(void);
-void BattleAudience_SetPresentItemNo(s32 itemNo);
-void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
-void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
-void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
 extern f32 float_5_8041c310;
 
 // NONMATCHING (19.37%): 116 missing, plus register differences.
@@ -538,7 +517,6 @@ s32 _check_present_item(void) {
 	return 1;
 }
 
-s32 BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 
 s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon) {
 	u8 work[0xacc];

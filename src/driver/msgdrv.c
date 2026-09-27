@@ -9,9 +9,9 @@
 #include "system.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
 
 typedef struct MsgLookupEntry {
 	u32 startaddr; //0x0
@@ -68,8 +68,6 @@ const char* language_dir[2] = {"msg", "emsg"};
 
 
 //local prototypes
-int msg_compare(const void* a, const void* b);
-void msgDispKeyWait_render(s32 wXluStage);
 
 // NONMATCHING (99.94%): same instructions; only register numbers or operands differ.
 void msgInit(void) {

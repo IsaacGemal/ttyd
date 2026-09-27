@@ -4,10 +4,10 @@
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr_cmd.h"
 #include <string.h>
+#include <stdio.h>
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData* itemDataTable;
-extern int sprintf(char* str, const char* format, ...);
 
 // NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
 BattleIcon* BtlIconGetPtr(s32 index) {

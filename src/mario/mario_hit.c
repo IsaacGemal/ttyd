@@ -8,16 +8,19 @@
 #include "koopa.h"
 #include "party.h"
 #include "driver/mobjdrv.h"
+#include "mario/mario_cam.h"
+#include "mario/mario_sbr.h"
+#include "mario/mario_party.h"
+#include "motion/mot_damage.h"
+#include "koopa_hit.h"
+#include "koopa_motion.h"
+#include "motion/mot_jabara.h"
+#include "pmario_sound.h"
+#include "math_ext.h"
+#include <dolphin/mtx.h>
+#include "motion/mot_slit.h"
 
 // locals for symbols with no home header
-void kpaClearHitobjRide(void);
-void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d);
-s32 kpaFireAttackCheck(void);
-void quake_kpaLandOn(void);
-void camFollowYOn(void);
-void set_damage_root_ypos(f32 y);
-s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
-void* marioLandonChk_old(f32* pos, f32 spd);
 
 // floats with no home header
 extern const f32 float_0_8041a7a4;
@@ -280,10 +283,6 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
 }
 
 // prototypes for in-file functions
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
-void marioSearchFrontWall_staying(f32 a);
-void dou10_yoko_yari(f32* p);
-HitEntry* searchFrontWall(Vec* a, f32* b, f32 c, f32 d, f32 e);
 
 // NONMATCHING (96.18%): CSEs wp+0x210 into an extra callee-saved register (r30)
 // where the original recomputes addi r3,r31,0x210 per dou10_yoko_yari, dragging
@@ -366,9 +365,6 @@ void marioCheckWall(f32 a, f32 b) {
     dou10_yoko_yari((f32*)((u8*)wp + 0x210));
 }
 
-s32 jabaraNoHitChk(void);
-void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a);
-void* marioSearchHead(Vec* pos, f32* outY, f32 a);
 
 extern const f32 float_5_8041a7b8;
 extern const f32 float_neg1_8041a7dc;
@@ -417,9 +413,6 @@ extern const f32 float_180_8041a7cc;
 extern const f32 float_3p1416_8041a7e0;
 extern const f32 float_neg23p7_8041a834;
 extern const f32 float_5p8_8041a838;
-double sin(double x);
-double cos(double x);
-void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 
 // NONMATCHING (87.30%): 2 instructions differ, 8 missing, 16 extra, plus register differences.
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
@@ -475,7 +468,6 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 
 extern s32 gp;
 extern const char str_802C5940[];
-f32 toMovedir(f32 angle);
 
 void marioSearchFrontWall_staying(f32 a) {
     MarioWork* wp = marioGetPtr();
@@ -548,10 +540,6 @@ extern const f32 float_4_8041a7a8;
 extern const f32 float_10_8041a7fc;
 extern const f32 float_40_8041a800;
 extern const f32 float_47_8041a84c;
-void PSVECAdd(const Vec* a, const Vec* b, Vec* ab);
-void PSVECSubtract(const Vec* a, const Vec* b, Vec* a_b);
-void PSVECScale(const Vec* src, Vec* dst, f32 scale);
-f32 PSVECMag(const Vec* v);
 
 // NONMATCHING (99.35%): float_0/float_1000 are allocated f1/f0 instead of f0/f1,
 // so the `else` reuses f1 (stfs f1,0x1c8) where the original reloads float_0.
@@ -657,16 +645,6 @@ void marioCheckWallShip(f32 a, f32 b) {
     }
 }
 
-void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a);
-void* kpaSearchHead(Vec* pos, f32* outY, f32 a);
-s32 marioChkSlitEnd(void);
-void marioChgStayMotion(void);
-void marioSetFallPara(void);
-void marioClearJumpPara(void);
-void marioItemGetDisable(void);
-s32 kpaGetBodyStatus(void);
-s32 marioGetPartyId(void);
-s32 psndSFXOn_3D(const char* name, Vec* position);
 
 // NONMATCHING (97.17%): the `beq else; bne then; b join` branch chain after the
 // hit != NULL test is folded to one `beq`; the float->int magic double loads from an

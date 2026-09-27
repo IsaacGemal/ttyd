@@ -32,7 +32,6 @@ s32* acrobal_tbl[2] = { acrobat_jp, acrobat_us };
 
 //forward declarations
 static void rendermodeFunc(s32 wXluStage);
-void effNiceMain(EffectEntry* effect);
 
 // NONMATCHING (98.91%): same instructions; only register numbers or operands differ.
 BOOL effNiceAsync(s32 group) {

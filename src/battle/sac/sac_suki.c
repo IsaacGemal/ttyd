@@ -17,6 +17,12 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 #include "eff/eff_starstone.h"
+#include "battle/battle_stage.h"
+#include "battle/sac/sac_suki.h"
+#include "eff/n64/eff_stardust_n64.h"
+#include "eff/n64/eff_crystal_n64.h"
+#include "battle/battle_disp.h"
+#include "evt/evt_paper.h"
 
 extern BattleWork* _battleWorkPointer;
 
@@ -89,22 +95,12 @@ static s32 start_game(EventEntry* event, BOOL isFirstCall);
 static void disp_3D_alpha(CameraId camera, void* param);
 static void disp_3D(CameraId camera, void* param);
 
-EffectEntry* effStardustN64Entry(s32 a, f32 b, f32 c, f32 d, f32 e);
-EffectEntry* effCrystalN64Entry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f);
-void btlGetScreenPoint(Vec* pos, Vec* out);
-void BattleAudienceSoundCallKind(s32 kind);
-void BattleAudienceSoundWhistleKind(s32 kind);
-void evt_btl_camera_set_mode(void);
-void evt_btl_camera_set_moveSpeedLv(void);
-void evt_batstage_set_stg_dark(void);
-void evt_batstage_set_aud_dark(void);
-void evt_batstage_return_stg_dark_base(void);
-void evt_batstage_return_aud_dark_base(void);
-void tou_gamen_screen_tev(void);
-void evt_paper_delete(void);
-void mapSetTevCallback(s32 idx, void* cb);
 
-void set_tev(SukiTevParam* param);
+
+
+
+
+
 // .text:0xE8 | 0x80249A08 | size: 0x5C
 // NONMATCHING (77.13%): 2 instructions differ, 8 extra, plus register differences.
 s32 get_img_name(EventEntry* event) {
@@ -261,7 +257,6 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static void disp_3D(CameraId camera, void* param) {
 }
 
-void N__disp_2D(s32 type, s32 index);
 // .text:0x85C | 0x8024A17C | size: 0x180
 // NONMATCHING (51.31%): 13 instructions differ, 15 missing, 46 extra, plus register differences.
 static void disp_2D(CameraId camera, void* param) {
@@ -304,6 +299,4 @@ s32 end_suki(EventEntry* event, BOOL isFirstCall) {
 }
 
 static void main_star(void);
-void main_button(s32 index);
 static void main_base(void);
-s32 main_suki(EventEntry* event, BOOL isFirstCall);

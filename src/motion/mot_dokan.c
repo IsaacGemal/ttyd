@@ -6,19 +6,11 @@
 #include "mario/mario_sbr.h"
 #include "party.h"
 #include "matching.h"
+#include "mario/mario_cam.h"
+#include "motion/mot_slit.h"
+#include "motion/mot_dokan.h"
 
 // Local prototypes for functions whose headers don't declare them yet. Listed in REPORT.md.
-void partyShadowOff(PartyEntry* party);
-void marioSlitForceCancel(void);
-f32 toMovedirSimple(f32 angle);
-void marioUpdateCamPos(void);
-void camFollowYOn(void);
-void camFollowYOff(void);
-void partyDokanEnd(s32 index, s32 unk);
-s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z);
-s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z);
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void _partyEntry(s32 arg);
 
 // Raw accessors for MarioWork and PartyEntry fields that are not named in their headers.
 #define M_S8(m, off) (*(s8*)((unsigned char*)(m) + (off)))

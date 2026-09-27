@@ -7,22 +7,17 @@
 #include "mario/mario.h"
 #include "system.h"
 #include <string.h>
+#include "koopa.h"
+#include "driver/mobjdrv.h"
+#include "eff/n64/eff_magic1_n64.h"
+#include "eff/eff_fire.h"
+#include "math_ext.h"
 
 // From driver/mobjdrv.c (no prototype in header)
-extern MapObjectEntry* mobjNameToPtrNoAssert(const char* name);
 
 // From driver/npcdrv.c (not yet decompiled / no prototype in header)
-extern s32 npcCheckBlow(NpcEntry* npc);
-extern f32 npcTransRytoFaceDir(NpcEntry* npc);
 // From mario/... (not yet decompiled)
-extern s32 kpaGetLevel(void);
 // From driver/effdrv.c (not yet decompiled)
-extern EffectEntry* effMagic1N64Entry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f, f32 g, f32 h);
-extern EffectEntry* effFireEntry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f);
-extern double sqrt(double x);
-extern double fabs(double x);
-extern double sin(double x);
-extern double cos(double x);
 
 USER_FUNC(gesso_ground_check) {
     s32* args = event->args;

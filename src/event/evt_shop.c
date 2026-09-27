@@ -14,6 +14,8 @@
 #include <string.h>
 #include "driver/icondrv.h"
 #include "driver/swdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/mapdrv.h"
 
 extern GlobalWork* gp;
 
@@ -68,8 +70,6 @@ extern const char str_8041BC60[];
 extern const f32 float_0p5_8041bc5c;
 extern const f32 float_12_8041bc64;
 extern const f32 float_108_8041bc58;
-extern void mapObjGetPos(const char* name, Vec* pos);
-extern void FontDrawString(const char* msg, f32 x, f32 y);
 extern const f32 float_30_8041bc40;
 extern const f32 float_10_8041bc3c;
 extern const f32 float_36_8041bc44;
@@ -78,13 +78,7 @@ extern const f32 float_1p1_8041bc48;
 extern const f32 float_0p8_8041bc4c;
 extern const f32 float_124_8041bc50;
 extern const f32 float_38_8041bc54;
-extern const char* msgSearch(const char* tag);
 extern WinMgrDesc list_desc[];
-extern void FontDrawStart(void);
-extern void FontDrawEdge(void);
-extern void FontDrawEdgeOff(void);
-extern void FontDrawColor(GXColor* color);
-extern void FontDrawMessage(s32 x, s32 y, const char* msg);
 
 s32 evtShopIsActive(void) {
 	s32 active;

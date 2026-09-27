@@ -13,6 +13,19 @@
 #include "math.h"
 #include "party/party_move.h"
 #include "party/party_hit.h"
+#include "party/party_motion.h"
+#include "party/party_bomhei.h"
+#include "motion/mot_stay.h"
+#include "party/party_chuchu.h"
+
+// LOCAL_PROTO(psndSFXOnEx_3D): retail event callers narrow volume and pan to u8; the implementation uses s32 and sharing that signature regresses matched event code.
+s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
+
+// LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
+void psndSFX_pit(s32 id, s16 pitch);
+
+// LOCAL_PROTO(psndSFX_vol): retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers.
+extern void psndSFX_vol(s32 id, u8 vol);
 
 // .sbss
 f32 unk_804189e8;
@@ -20,51 +33,6 @@ s32 unk_804189ec;
 f32 touch_wall_ct;
 
 // Local declarations: not yet in a header.
-void psndSFXAllOff(void);
-s32 psndSFXOn_3D(const char* name, Vec* position);
-BOOL psndENVOff(u32 r3);
-void psndSetReverb(s32 mode);
-s32 psndENV_LPF(s32 id, u16 freq);
-s32 psndENVOff_f_d(s32 id, s32 value, s32 flag);
-s32 psndENVOn_f_d(s32 id, s32 a, s32 b, s32 c);
-s32 psndSFX_dist(s32 id, u16 dist);
-void psndSFX_pos(s32 id, Vec* position);
-void psndSFX_vol(s32 id, u8 vol);
-void psndSFX_pit(s32 id, s16 pitch);
-s32 psndSFXChk(u32 id);
-s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
-s32 psndSFXOn(const char* name);
-void psndBGMScope(s32 id, s32 scope);
-void psndBGM_rate(s32 id, u16 rate);
-BOOL psndBGMOff(s32 flags);
-BOOL psndENVOn(s32 a, s32 b);
-s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e);
-s32 unk_800d7270(s32 a, char* b, s32 c, s32 d);
-BOOL psndBGMOn(u32 r3, char* bgm_name);
-void partyPaperOff(PartyEntry* party);
-void partyPaperLightOff(PartyEntry* party);
-HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle);
-void partyChgRunMode(PartyEntry* party, s32 mode);
-u32 partyGetFootmarkId(u32* flags);
-void partyNextReadId(u32 index);
-void partyGetAppearPos4(PartyEntry* party, Vec* position);
-void N_partyPlaySfxPartyLanding1(PartyEntry* party);
-void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
-s32 unk_800c8dd0(HitEntry* hit);
-void partyClearFootmark(void);
-void partyClearFootmark2(void);
-void partyChkWall(PartyEntry* party);
-void partyChkGnd(PartyEntry* party);
-void unk_800c9044(PartyEntry* party);
-void partyMoveBehindMario(PartyEntry* party, s32 arg);
-void party_slit(PartyEntry* party);
-s32 party_roll(PartyEntry* party);
-void unk_8014b824(PartyEntry* party);
-s32 marioChkDeepSleep(void);
-s32 chuchu_searchObject(void);
-void partyGetReturnPos(Vec* position);
-void partyMove(PartyEntry* party);
-void unk_800c9398(PartyEntry* party, f32 value);
 
 void party_motion_upstairs(PartyEntry* party) {
     if (party->field_8 & 0x2) {

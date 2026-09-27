@@ -55,3 +55,5 @@ s32 windowCheckID(s32 id);
 WindowEntry* windowGetPointer(s32 id);
 GXTexObj* getWakuTexObj(s32 id);
 void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve);
+void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10);
+void unk_8007f204(s32 error, DVDFileInfo* info);

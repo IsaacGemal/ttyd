@@ -117,3 +117,24 @@ void psndSetPosDirListener(Vec* position, f32 direction);
 
 u16 psndGetFlag(void);
 void psndSFXOff(s32 id);
+BOOL psndBGMOff(s32 flags);
+void psndSetReverb(s32 mode);
+s32 psndSFXChk(u32 id);
+void psndBGMScope(s32 id, s32 scope);
+void psndBGM_rate(s32 id, u16 rate);
+BOOL psndENVOn(s32 a, s32 b);
+void psndBGMMain(void);
+void psndENVMain(void);
+void psndSFXMain(void);
+void L_psndBGM_stop(void);
+s32 psndENVOff_f_d(s32 id, s32 value, s32 flag);
+s32 psndENVOn_f_d(s32 id, s32 a, s32 b, s32 c);
+s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e);
+void psndSFX_pos(s32 id, Vec* position);
+s32 __psndSFXOn(s32, s32, s32, s32, Vec*, s32, s32, s32);
+
+
+
+s32 psndENV_LPF(s32 id, s32 freq);
+void psndSFX_dist(s32 id, u16 dist);
+BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d);

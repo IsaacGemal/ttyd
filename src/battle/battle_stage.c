@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include "manager/evtmgr_cmd.h"
+#include <stdlib.h>
 
 //.sbss
 static BattleSpotWork work;
@@ -42,7 +43,6 @@ extern f32 float_30_8041c828;
 extern f32 float_neg640_8041c840;
 extern f32 float_640_8041c844;
 extern f32 float_105_8041c848;
-extern s32 rand(void);
 
 typedef struct BattleStageDark {
 	u32 field_0;  //0x0
@@ -124,10 +124,6 @@ typedef struct BattleStageWork {
 } BattleStageWork;
 
 // forward declarations
-void batSpotDisp(CameraId camId, void* param);
-void drawCone(CameraId camId, BattleSpotEntry* entry);
-BattleSpotEntry* batSpotEntry(void);
-void batSpotInit(void);
 
 BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
@@ -345,8 +341,6 @@ typedef struct ScreenWork {
 
 extern ScreenWork* screen_wp;
 extern u32 screen_evt[7];
-s32 screen_evt_func(void);
-void screen_capture(CameraId camId, void* param);
 
 f32 randf(f32 min, f32 max) {
 	f32 r = (f32)rand() / float_32767_8041c81c;
@@ -696,8 +690,6 @@ s32 BattleStageGetLightNumberByName(const char* name) {
 	return -1;
 }
 
-void BattleStageDispDark(CameraId camId, void* param);
-void BattleStageDispLight(CameraId camId, void* param);
 
 #pragma dont_inline on
 void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {

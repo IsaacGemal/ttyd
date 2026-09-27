@@ -16,27 +16,14 @@
 #include "system.h"
 #include <string.h>
 #include "battle/battle_sub.h"
+#include "driver/mapdrv.h"
+#include "eff/n64/eff_pokopi_pcharge_n64.h"
+#include <stdio.h>
 
 // Prototypes for functions that are not declared in a shared header.
-BattleSpotWork* BatSpotGetPtr(void);
-void BattleAudience_Case_GreatVictory(void);
-void BattleAudience_Case_FastVictory(f32 value);
-void BattleAudienceSoundWhistle(void);
-BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
-void mapGrpFlagOn(const char* name, u32 flag);
-void FontDrawString(const char* str, f32 x, f32 y);
-void FontDrawMessage(s32 x, s32 y, const char* msg);
-extern int sprintf(char* str, const char* format, ...);
 
-void _GetExpIcon_Main(BattleWork* wp);
-void _LvupParamConfirmDisp(CameraId camId, void* param);
-void L__LvupParamHelpMsgDisp(CameraId camId, void* param);
-void _lvup_select_object_disp(CameraId camId, void* param);
-void btlseqEnd_DispMain(CameraId camId, BattleWork* wp);
-void effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32 b);
 
 extern s32 btlevtcmd_RunDataEventChild[];
-s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);
 
 //.data
 RankUpData _rank_up_data[] = {

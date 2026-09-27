@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct TEXPalette TEXPalette;
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
@@ -177,3 +179,60 @@ void mapObjGetPos(const char* name, Vec* pos);
 void mapObjFlagOn(const char* name, u32 flag);
 void mapGrpSetOffScreen(const char* name, const char* offName);
 void test_kururing_mapdisp(CameraId camId);
+void mapGrpFlagOn(const char* name, u32 flag);
+void mapGrpFlagOff(const char* name, u32 flag);
+void mapSetTevCallback(s32 idx, void* cb);
+void mapObjFlagOff(const char* name, u32 flag);
+void makeDisplayList(BOOL group);
+void mapGrpClearOffScreen(const char* name);
+void N_mapDispOn(void);
+void N_mapDispOff(void);
+void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a);
+void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a);
+void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a);
+void mapObjFlushOn(const char* name);
+void mapObjFlushOff(const char* name);
+void mapGrpFlushOn(const char* name);
+void mapGrpFlushOff(const char* name);
+void mapObjClearOffScreen(const char* name);
+void mapObjSetOffScreen(const char* name, const char* offName);
+void mapSetPlayRate(const char* name, f32 rate);
+void mapReStartAnimation(const char* name);
+void mapReStartAnimationAll(void);
+void mapPauseAnimation(const char* name);
+void mapPauseAnimationAll(void);
+void mapBlendOff(void);
+void mapBlendOff2(void);
+void mapFogOn(void);
+void mapFogOff(void);
+void mapGetFog(u32* c, f32* near, f32* far, u32* c2);
+void mapSetFog(u32 color, f32 near, f32 far, u32* color2);
+void mapResetPaperAmbColor(void);
+void mapGrpSetColor(const char* name, GXColor* color);
+void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
+void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
+void setColor(MapObject* obj, GXColor* color, s32 a3);
+void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
+void _mapDispMapGrp(MapObject* obj, void* a2);
+void _mapDispMapObj(CameraId camId, MapObject* obj);
+void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2);
+void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj);
+void mapDispMapObj_bbox(s32 camId, MapObject* obj);
+void _setOffScrnId(MapObject* obj, s32 id, s32 a3);
+void mapSearchDmdJointSub(void* a, void* b);
+void mapSearchDmdJointSub2(void* a, void* b, const char* c);
+void mapGetJointsSub(MapFileJoint* joint, s32* numJoints);
+void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table);
+void _mapLoad(MapWork* wp, BOOL group, const char* map);
+void mapObjSetColor(const char* name, GXColor* color);
+void mapSetBlend(GXColor* color);
+void mapSetBlend2(GXColor* color);
+void mapPlayAnimationLv(const char* name, s32 a2, s32 a3);
+void spline_maketable(s32 count, s32 a, s32* b, s32* c);
+void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t);
+void mapSetPaperAmbColor(GXColor* color);
+void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* scale, void* a4);
+void mapGetBoundingBox(Vec min, Vec max);
+MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index);
+MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isRoot, s32 index);
+MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);

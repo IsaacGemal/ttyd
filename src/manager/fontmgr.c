@@ -3,8 +3,9 @@
 #include "driver/camdrv.h"
 #include "memory.h"
 #include "system.h"
+#include <stdio.h>
+#include "math_ext.h"
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.sdata
 GXColor fontColTbl[3] = {
@@ -32,10 +33,6 @@ BinaryFontHeader* pfh; //pointer to font header
 
 //local prototypes
 
-void JUTFont_DrawStart(GXColor color);
-void _JUTFont_DrawPos(u16 code, s16 x, s16 y);
-void FontDrawColor(GXColor* color);
-u16 JUTFont_CodeToGlyph(u32 code);
 
 GXColor FontGetDrawColor(void) {
 	return fontColor;
@@ -97,7 +94,6 @@ void FontDrawNoise(void) {
 }
 
 // NONMATCHING (99.95%): only stack slots for the two inlined GXSetTevColor args are swapped (orig 0xc/0x10, ours 0x10/0xc).
-extern double floor(double x);
 
 // NONMATCHING (99.57%): correct algorithm; only float-register-allocation/constant-label diffs remain.
 u32 HSV2RGB(GXColor* hsv) {
@@ -405,7 +401,6 @@ u16 FontGetMessageWidth(const char* message) {
 }
 
 
-u16 JUTFont_CodeToGlyph(u32 code);
 
 u16 hankakuSearch(s8 code) {
 	return JUTFont_CodeToGlyph(code);

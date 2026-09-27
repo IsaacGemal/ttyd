@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/gx.h>
 #include <dolphin/os.h>
 
@@ -35,3 +37,4 @@ void bgAutoScrollOn(void);
 void bgTransOffsetOff(void);
 void bgTransOffsetOn(void);
 void bgMain(void);
+void bgDisp(CameraId camId, void* param);

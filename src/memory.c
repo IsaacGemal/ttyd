@@ -38,7 +38,6 @@ void* heapStart[6];
 OSHeapHandle heapHandle[6];
 
 //local prototypes
-void smartGarbage(void);
 
 // NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
 void memInit(void) { //almost 1:1, stubborn regalloc at the end

@@ -11,3 +11,8 @@ s32 marioGetExtraPartyId(void);
 
 s32 marioPartyEntry(s32 partyId);
 void marioPartyKill(void);
+s32 marioGetParty(void);
+s32 partyChkJoin(s32 memberId);
+void partyLeft(PartyId partnerId);
+s32 partyGetHp(void);
+void unk_8013be14(void);

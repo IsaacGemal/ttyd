@@ -18,13 +18,10 @@
 #include "party.h"
 #include "party/party_cloud.h"
 #include "pmario_sound.h"
+#include "evt/evt_cloud.h"
+#include "evt/evt_img.h"
 
 // Prototypes not yet in headers.
-void mapGrpFlagOn(const char* name, u32 flag);
-void mapGrpFlagOff(const char* name, u32 flag);
-void mapGrpClearOffScreen(const char* name);
-s32 evt_img_alloc_capture(EventEntry* event, BOOL isFirstCall);
-void offscreenDelete(const char* name);
 
 // .rodata
 const char str_802F6B28[] = "P_oof_cloud_1";
@@ -70,7 +67,6 @@ static CloudEntry cloud[16];
 CloudEntry* cloud_p;
 static s8 cloud_once_flag;
 
-USER_FUNC(evt_cloud_main);
 static u32 evt_cloud_main_evt[] = { 0x0001005B, (u32)evt_cloud_main, 0x2, 0x1 };
 
 USER_FUNC(evt_cloud_get_mode) {

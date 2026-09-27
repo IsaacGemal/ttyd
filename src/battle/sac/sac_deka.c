@@ -19,8 +19,14 @@
 #include <math.h>
 #include "pmario_sound.h"
 #include "eff/eff_starstone.h"
+#include "battle/battle_camera.h"
+#include "battle/sac/sac_deka.h"
+#include "battle/sac/sac_genki.h"
+#include <stdlib.h>
 
+// LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
 void psndSFX_pit(s32 id, s16 pitch);
+
 
 // The original sac_deka unit was compiled with -O4,s (optimize for size): the
 // prologues/epilogues use stmw/lmw, which -O4,p never emits. There is no
@@ -28,13 +34,6 @@ void psndSFX_pit(s32 id, s16 pitch);
 #pragma optimize_for_size on
 
 // ---- local declarations (no header yet) ----
-void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
-void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void mapGrpFlagOn(const char* name, u32 flag);
-void mapGrpFlagOff(const char* name, u32 flag);
-void BattleAudienceSoundHandBeat(void);
-void BattleAudienceSoundCallKind(s32 kind);
-void BattleAudienceSoundWhistleKind(s32 kind);
 
 // ---- local work struct at _battleWorkPointer + 0x1F4C ----
 typedef struct DekaTiming {
@@ -113,15 +112,6 @@ typedef struct DekaWork {
 
 static DekaWork* get_ptr(void);
 
-void main_enemy_sub(BattleUnit* unit, s32* count);
-void yuka_init(void);
-void yuka_main(void);
-void yuka_disp(CameraId cameraId, void* param);
-void main_base(void);
-void main_star(void);
-void disp_2D(CameraId cameraId, void* param);
-void disp_3D(CameraId cameraId, void* param);
-void disp_3D_alpha(CameraId cameraId, void* param);
 
 const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
@@ -175,7 +165,6 @@ extern const f64 double_to_int_80300630;
 extern const f64 double_0p21817_80300638;
 extern const f64 double_to_int_mask_80300640;
 
-int rand(void);
 
 // .text:0x0 | 0x80242FF8 | size: 0x44
 s32 get_result(EventEntry* event) {

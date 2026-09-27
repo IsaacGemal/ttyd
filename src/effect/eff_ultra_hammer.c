@@ -406,8 +406,6 @@ f32 scroll_tbl[] = {
 	-2.9166667f, -3.0625f, -3.2083333f, -3.3541667f, -3.5f
 };
 
-void effUltraHammerMain(EffectEntry* effect);
-void effUltraHammerDisp(enum CameraId camId, void *param);
 
 EffectEntry* effUltraHammerEntry(BOOL arg0, s32 counter, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;

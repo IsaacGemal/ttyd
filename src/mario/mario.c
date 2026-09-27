@@ -10,6 +10,15 @@
 #include "mario/mario_sbr.h"
 #include <string.h>
 #include "driver/seqdrv.h"
+#include "party/party_yoshi.h"
+#include "mario/mario_cam.h"
+#include "mario/mario_hit.h"
+#include "motion/mot_roll.h"
+#include "party/party_kuribo.h"
+#include "motion/mot_ship.h"
+#include "motion/mot_slit.h"
+#include "party/party_bomhei.h"
+#include "party/party_nokonoko.h"
 
 //.data
 const char* dotMarioPose[4][6] = {
@@ -26,38 +35,10 @@ Vec blurPos[8];
 MarioWork* mp;
 
 //local prototypes
-void marioDispBlurSub(s32* unused, s32 blurId);
-const char* toRearPose(const char* name);
-const char* toFrontPose(const char* name);
 
 //locals for symbols with no home header
 extern Vec R_last_position;
 extern const char* marioAnimeGroupData[4][3];
-void partyUsePost(PartyEntry* party);
-void partyCtrlOff(void);
-void marioYoshiForceCancel(void);
-void camFollowYOn(void);
-void camFollowYOff(void);
-void marioMotion(void);
-f32 marioChkOverhead(void);
-void marioSetFallPara(void);
-void marioChkGnd2(void);
-void marioChkGnd(void);
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
-void marioFall(void);
-void marioJump(void);
-void marioReInit_ship(void);
-void marioReInit_roll(void);
-void marioReInit_slit(void);
-void marioRideYoshi(void);
-void marioSlitForceCancel(void);
-s32 marioShipChanging(void);
-BOOL marioRollKeyDisable(void);
-BOOL marioSlitKeyDisable(void);
-BOOL christineGetStatus(void);
-BOOL mario_bomhei_keychk2(void);
-s32 yoshiGetStatus(void);
-BOOL nokonoko_holdItem(void);
 
 MarioWork* marioGetPtr(void) {
 	return mp;

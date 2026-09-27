@@ -8,8 +8,11 @@
 #include "mario/mario_party.h"
 #include "party/party_yoshi.h"
 #include "party/party_move.h"
-double sin(double x);
-double cos(double x);
+#include "mario/mario_sbr.h"
+#include "party/party_vivian.h"
+#include "motion/mot_ship.h"
+#include "party/party_bomhei.h"
+#include "math_ext.h"
 
 // Raw field accessors for fields missing from the shared PartyEntry header.
 #define P8(p, off) (*(u8*)((u8*)(p) + (off)))
@@ -18,24 +21,6 @@ double cos(double x);
 #define P32(p, off) (*(u32*)((u8*)(p) + (off)))
 #define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
-void partyChgRunMode(PartyEntry* party, s32 mode);
-s32 partyEntryMain(s32 memberId);
-s32 partyGetHp(void);
-void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
-void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
-void bomhei_use_cancel(void);
-void getRidePos(PartyEntry* party, Vec* pos);
-void vivianUnhold(PartyEntry* party);
-void driveParty(PartyEntry* party);
-void unk_8013be14(void);
-void partyHelloMain(PartyEntry* party);
-void L_partyVivianTailStart(PartyEntry* party);
-f32 toMovedir(f32 angle);
-f32 toMovedir2(f32 a, f32 b);
-f32 toMovedirSimple(f32 a);
-s32 N_marioShipGetDir(void);
-s32 yoshiGetStatus(void);
-void sincosf(f32* ret_sin, f32* ret_cos, f32 degree);
 
 //.data
 typedef struct PartyData {
@@ -56,7 +41,6 @@ extern char* partyDotPoseTbl[8][15];
 extern char* yoshiDotPoseTbl[7][15];
 extern PartyData partyDataTbl[];
 const f32 vec3_802ccd30[3] = { 0.0f, 0.0f, 0.0f };
-void partyGetAppearPos2(PartyEntry* party, Vec* pos);
 
 /*
     000b95ec 000020 800bebcc  4 partyGetPtr 	party.o

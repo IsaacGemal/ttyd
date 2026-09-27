@@ -223,3 +223,32 @@ struct BattleUnit* BattleChangeParty(BattleWork* wp);
 s32 BattleTransPartyId(BattleUnitType kind);
 
 BOOL battleDisableHResetCheck(void);
+BOOL BattleMain(void);
+void BattlePartyInfoWorkInit(BattleWork* wp);
+void BattleCheckUnitBroken(BattleWork* wp);
+BattleUnitType BattleTransPartyIdToUnitKind(s32 partyId);
+void BattleStoreCoin(BattleWork* wp, s32 coins);
+void BattleStoreExp(BattleWork* wp, s32 exp);
+s32 BattleGetStockExp(BattleWork* wp);
+f32 BattleGetFloorHeight(BattleWork* wp, f32 x, f32 y, f32 z);
+void BattleAfterReactionEntry(s32 id, s32 data);
+void BattleAfterReactionRelease(s32 id, s32 data);
+BOOL BattleAfterReactionMain(void);
+s32 BattleMajinaiCheck(void);
+void BattleMajinaiDone(void);
+void BattleMajinaiEndCheck(void);
+void BattleStatusWindowAPRecoveryOn(void);
+void BattleStatusWindowAPRecoveryOff(void);
+void BattleStatusWindowEventOn(void);
+void BattleStatusWindowSystemOn(void);
+void BattleStatusWindowEventOff(void);
+void BattleStatusWindowSystemOff(void);
+void BattleConsumeReserveItem(void);
+
+typedef enum EquipFlags {
+    EQUIP_RESET = 1 << 0,   // 0x1, clear/reset equipped badges
+    EQUIP_MARIO = 1 << 1,   // 0x2, equip Mario (non-P) badges
+    EQUIP_PARTNER = 1 << 2, // 0x4, equip Partner (P) badges
+} EquipFlags;
+void BtlUnit_EquipItem(BattleUnit* unit, EquipFlags flags, ItemType type);
+void _EquipItem(BattleUnit* unit, EquipFlags flags, ItemType type);

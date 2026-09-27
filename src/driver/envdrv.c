@@ -7,8 +7,9 @@
 #include "texPalette.h"
 #include <dolphin/dvd.h>
 #include <string.h>
+#include "driver/fadedrv.h"
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 extern GlobalWork* gp;
 
 //.data
@@ -72,13 +73,6 @@ s32 tpl_ok;
 TEXPalette* env_tpl;
 
 //local prototypes
-void _callback(s32 result, DVDFileInfo* fileInfo);
-void envCapture(CameraId camId, void* param);
-void envCapture2(CameraId camId, void* param);
-void envDisp(CameraId camId, void* param);
-void envDisp2(CameraId camId, void* param);
-void envDisp_DepthOfField(void);
-void envDisp_Blur(void);
 
 //there is no function so we'll make a macro
 #define envGetWork() (gp->inBattle ? &work[1] : &work[0])

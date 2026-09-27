@@ -4323,18 +4323,8 @@ BOOL _psndPushGroup_trg;
 BOOL init_f;
 
 //local definitions
-void psndBGMMain(void);
-void psndENVMain(void);
-void psndSFXMain(void);
 
 //local declarations for symbols without a header prototype
-BOOL psndBGMOn_f_d(s32, char*, s32, s32, s32);
-BOOL psndENVOn_f_d(s32, s32, s32, s32);
-BOOL psndENVOff_f_d(s32, s32, s32);
-s32 __psndSFXOn(s32, s32, s32, s32, Vec*, s32, s32, s32);
-s32 SoundSSCheck(s32);
-void SoundSSSetPlayFreqCh(s32 chan, u16 freq);
-void SoundSSStopCh(s32);
 
 // psbgmlist is defined in another unit; only field_0x4 is read here
 typedef struct BGMListEntry {

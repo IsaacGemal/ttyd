@@ -19,6 +19,7 @@
 #include "party/party_yoshi.h"
 #include "party/party_move.h"
 #include "party/party_hit.h"
+#include "motion/mot_damage.h"
 
 // .sbss
 s32 jumpheight;
@@ -26,17 +27,7 @@ s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
 
 // Local declarations: not yet in a header.
-void partyChgRunMode(PartyEntry* party, s32 mode);
 // NONMATCHING (0.00%): not implemented yet (bulk of the file).
-void yoshi_use(PartyEntry* party);
-void inertia(PartyEntry* party);
-f32 marioGetMoveRate(f32 angle);
-void marioSetSplash(s32 a, Vec* pos);
-void set_damage_root_ypos(f32 y);
-u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3);
-void party_force_ride_yoshi(PartyEntry* party);
-BOOL partyGoodbyeInit(PartyEntry* party);
-BOOL partyGoodbyeMain(PartyEntry* party);
 
 // Sweat/smoke struct stored in PartyEntry::useStruct (0x170) while riding Yoshi.
 typedef struct PartyYoshiUse {
@@ -812,9 +803,6 @@ L_2968:
 end: ;
 }
 
-HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b);
-HitEntry* dou10_yoko_yari2(f32* out);
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
 
 void checkWall(PartyEntry* party, f32 a, f32 b) {
     MarioWork* mario = marioGetPtr();

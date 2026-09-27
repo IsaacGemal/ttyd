@@ -14,6 +14,7 @@
 #include "manager/evtmgr_cmd.h"
 #include <dolphin/mtx.h>
 #include <math.h>
+#include "math_trig.h"
 
 s32 DoorFLAG;
 s32 door_mapflag;
@@ -50,10 +51,6 @@ typedef struct DoorData {
     u32 data[0x48 / 4];
 } DoorData;
 
-MapObjectEntry* mobjNameToPtrNoAssert(char* name);
-double atan(double x);
-void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* in, Vec* out, s32 flag);
-void door_dark_flag_sub(s32 flag, char** npcs, char** mobjs, char** items);
 
 USER_FUNC(snd_door_in) {
 	psndSetFlag(0x100);

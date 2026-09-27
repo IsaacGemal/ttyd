@@ -1,24 +1,14 @@
+#include "driver/windowdrv.h"
 #include "battle/battle_menu_disp.h"
 #include "system.h"
 #include "manager/fontmgr.h"
 #include "battle/battle_disp.h"
+#include "driver/msgdrv.h"
+#include <stdio.h>
+#include "math_ext.h"
 
 extern BattleWork* _battleWorkPointer;
-extern int sprintf(char* str, const char* format, ...);
-extern f64 cos(f64 x);
-extern f64 sin(f64 x);
-extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
-extern void FontDrawStart(void);
-extern void FontDrawScale(f32 scale);
-extern void FontDrawString(const char* str, f32 x, f32 y);
-extern const char* msgSearch(const char* tag);
-extern void btlGetScreenPoint(Vec* pos, Vec* out);
 
-void DrawMultiItemWin(void);
-void DrawChangePartyWin(void);
-void DrawOperationWin(void);
-void DrawWeaponWin(void);
-void DrawMainMenu(void);
 
 // Layout of the battle menu scratch buffer allocated by
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
@@ -48,9 +38,9 @@ typedef struct BattleMenuWork {
     u8 field_0x114[0x124 - 0x114];
 } BattleMenuWork;
 
-void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu);
-void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor);
-void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor);
+
+
+
 
 //.sbss
 s8 seq;
@@ -409,7 +399,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     s32 line;
     s32 i;
 
-    windowDispGX_Waku_col(0, &color, x, y, 400.0f, 50.0f, 10.0f);
+    windowDispGX_Waku_col(0, color, x, y, 400.0f, 50.0f, 10.0f);
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);

@@ -6,31 +6,12 @@
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
 #include <string.h>
+#include "math_ext.h"
 
-extern f64 sqrt(f64);
 
 extern BattleWork *_battleWorkPointer;
 
 // prototypes for the event wrappers
-USER_FUNC(evt_btl_camera_wait_move_end);
-USER_FUNC(evt_btl_camera_off_posoffset_manual);
-void btl_camera_off_posoffset_manual(s32 id);
-void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z);
-void btl_camera_nomove_x_onoff(s32 id, s32 on);
-void btl_camera_nomove_y_onoff(s32 id, s32 on);
-void btl_camera_nomove_z_onoff(s32 id, s32 on);
-void btl_camera_noshake(s32 id);
-void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
-void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y);
-void btl_camera_set_zoomSpeedLv(s32 id, s32 lv);
-void btl_camera_set_moveSpeedLv(s32 id, s32 lv);
-void btl_camera_add_zoom(s32 id, f32 z);
-void btl_camera_set_zoom(s32 id, f32 z);
-void btl_camera_set_mode(s32 id, s32 mode);
-void btl_camera_set_prilimit(s32 limit);
-f32 battleCameraGetPosMoveSpeed(void);
-void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
-                           f32 f5, f32 f6);
 
 // this file uses -O4,s
 void battleCameraInit(void) {

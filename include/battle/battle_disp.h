@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/mtx.h>
 #include "battle/battle_unit.h"
 
@@ -28,3 +30,10 @@ void btlDispMain(void);
 void btlDispEntAnime(BattleUnit* unit);
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName);
 void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused);
+const char* searchPoseTbl(BattleDispPose* table, s32 poseId);
+void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts);
+void _btlStockExpDisp(CameraId cameraId, void* param);
+void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit);
+void btlDispPoseAnime(BattleUnitPart* part);
+void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset);
+void btlGetScreenPoint(Vec* pos, Vec* out);

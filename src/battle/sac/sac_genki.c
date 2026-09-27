@@ -15,9 +15,12 @@
 #include <dolphin/mtx.h>
 #include "eff/eff_recovery.h"
 #include "eff/eff_starstone.h"
+#include "statuswindow.h"
+#include "battle/sac/sac_genki.h"
+#include "battle/sac/sac_deka.h"
+#include "eff/n64/eff_stamp_n64.h"
+#include "eff/eff_stardust.h"
 
-extern void statusWinOpen(void);
-extern void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
 extern char str_8030045C[];
 extern f32 float_30_80421d80;
 extern f32 float_1p25_80421d6c;
@@ -34,12 +37,10 @@ const char str_80421E18[] = "M_D_1";
 const char str_80421E20[] = "M_X_1";
 extern f32 float_20_80421d78;
 extern f32 float_10_80421d54;
-EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z);
 const s32 dat_803002c8[3] = {0, 4, 2};
 extern f32 float_1p32_80421ddc;
 extern f32 float_1p98_80421de0;
 extern f32 float_15_80421de4;
-void effStardustEntry(s32 type, s32 a, s32 b, f32 c, f32 d, f32 e, f32 f, f32 g);
 extern f32 float_neg1000_80421d88;
 extern f32 float_1_80421d74;
 extern f32 float_901_80421e28;
@@ -73,15 +74,7 @@ extern f32 float_250_80421df4;
 extern f32 float_1E07_80421df8;
 extern f32 float_1p125_80421e08;
 extern char str_80300470[];
-void main_star0(s32 idx);
-void main_star1(void);
-void disp_3D(CameraId camera, void* param);
-void main_base(void);
-void main_weapon(s32 idx);
-void main_star1(void);
 
-void main_star0(s32 idx);
-void main_star1(void);
 
 typedef struct GenkiStar {
     s32 field_0;                // 0x0
@@ -770,7 +763,6 @@ void main_base(void) {
     }
 }
 
-void main_star1(void);
 // NONMATCHING (61.75%): 55 instructions differ, 60 missing, 124 extra, plus register differences.
 void main_star0(s32 idx) {
     const f32* vec = vec3_803002b0;
@@ -908,4 +900,3 @@ void main_star0(s32 idx) {
     }
 }
 
-void main_weapon(s32 idx);

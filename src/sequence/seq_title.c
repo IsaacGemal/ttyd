@@ -7,6 +7,7 @@
 #include "system.h"
 #include <musyx/musyx.h>
 #include <string.h>
+#include "sequence/seq_title.h"
 
 extern SoundWork sound;
 extern PaperSoundBGM psbgm[2];
@@ -16,8 +17,6 @@ TitleWork work2;
 TitleWork* wp2 = &work2;
 
 //local prototypes
-void titleInit(SequenceWork* work);
-void titleMain(SequenceWork* work);
 
 const char* DbgBtlSel_GetMsgDataPtr(void) {
 	return NULL;

@@ -3,6 +3,7 @@
 #include "dolphin/types.h"
 #include "memory.h"
 #include <dolphin/os.h>
+#include "math_ext.h"
 
 //.sbss
 static RomFontWork work;
@@ -39,7 +40,6 @@ const char* msg_us[9] = {
 static const char** msg_tbl[2] = { msg_jp, msg_us };
 
 // local prototypes
-void romFontMake(void);
 
 const char* romFontGetMessage(s32 msg) {
     return msg_tbl[0][msg]; // has eng but always returns JP
@@ -160,7 +160,6 @@ void romFontMake(void) {
     __memFree(HEAP_DEFAULT, chars);
 }
 
-double tan(double);
 
 static RomFontChar* romFontFindChar(u16 code) {
     RomFontChar* table = wp->unk0;

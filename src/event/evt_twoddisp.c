@@ -11,10 +11,10 @@
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
 #include "memory.h"
+#include "evt/evt_twoddisp.h"
+#include <stdio.h>
 
 // FontDrawScale is defined in manager/fontmgr.c but not yet in fontmgr.h.
-extern void FontDrawScale(f32 scale);
-extern int sprintf(char* str, const char* format, ...);
 
 // 2D display entry work. Not extracted into a header yet.
 typedef struct TwoDDisplayer {
@@ -164,7 +164,6 @@ USER_FUNC(evt_twoddisp_init) {
 	return EVT_RETURN_DONE;
 }
 
-void twoddisp_disp(CameraId cameraId, void* param);
 
 USER_FUNC(twoddisp_main) {
 	u32 i;

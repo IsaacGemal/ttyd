@@ -28,13 +28,8 @@ static ImageWork* wp = &work;
 
 //local prototypes
 static void zFill(void);
-void imgDisp(CameraId camId, void* param);
-void imgDisp_ProjPlane(CameraId camId, void* param);
-void imgCapture_Prim(ImageEntry* entry, s32 id);
-void imgCapture(CameraId camId, void* param);
 
 
-void imgShadowDisp(CameraId camId, void* param);
 
 // NONMATCHING (95.28%): 2 instructions differ, 3 missing, 2 extra, plus register differences.
 static void zFill(void) { //almost 1:1

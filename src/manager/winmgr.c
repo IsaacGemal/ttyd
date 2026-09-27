@@ -7,11 +7,11 @@
 #include "data/item_data.h"
 #include <string.h>
 #include "driver/windowdrv.h"
+#include "mario/mario_party.h"
+#include "driver/msgdrv.h"
 
 extern ItemData itemDataTable[];
-extern s32 partyChkJoin(s32 id);
 extern u16 party_id_table[];
-extern const char* msgSearch(const char* tag);
 
 // .sbss2
 GXColor unk_80423330;
@@ -59,8 +59,6 @@ static WinMgrWork work;
 static WinMgrWork* wp = &work;
 
 // local prototypes
-void winMgrDisp(CameraId camId, void* param);
-void winMgrSeq(WinMgrEntry* entry);
 
 void winMgrInit(void) {
     wp->mNumEntries = 32;

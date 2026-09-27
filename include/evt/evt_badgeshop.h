@@ -43,3 +43,4 @@ USER_FUNC(U_evt_badgeShop_get_special_zaiko);
 USER_FUNC(evt_badgeShop_bteresa_get_kind_cnt);
 s32 badgeShop_ThrowCheck(s32 itemId);
 s32 U_badgeShop_SpecialCheck(void);
+s32 bottakuruComp(const void** sortA, const void** sortB);

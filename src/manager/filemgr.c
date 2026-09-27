@@ -5,8 +5,8 @@
 #include "sdk/texPalette.h"
 #include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
 
-extern int vsprintf(char* string, const char* format, va_list arg);
 extern OSThread dvdmgr_thread;
 
 //.bss
@@ -19,11 +19,6 @@ FileManagerWork fileWork;
 FileManagerWork* afp = &fileWork;
 
 //local prototypes
-void fileGarbageDataAdrClear(FileEntry* entry);
-void fileGarbageDataAdrSet(void* data, u8 type);
-FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*));
-void dvdReadDoneCallBack(s32 error, DVDFileInfo* info);
-s32 fileAsync(const char* filename, u8 type, FileCallback callback);
 
 
 

@@ -25,3 +25,6 @@ MapData* mapDataPtr(const char* mapName);
 AreaData* areaDataPtr(const char* areaName);
 void relSetEvtAddr(const char* mapName, s32* eventAddr);
 void relSetBtlAddr(const char* areaName, void* field_8, void* field_C);
+int maxMapInArea(const char* areaName);
+int maxAreaInWorld(void);
+WorldData* worldDataPtr(void);

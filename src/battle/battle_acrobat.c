@@ -4,7 +4,6 @@
 #include "driver/dispdrv.h"
 
 //local prototypes
-void accrobat_timing_icon_disp(CameraId camId, void* param);
 
 s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 						s32 windowEndFrame, s32 endFrame, s32 earlyFrames) {

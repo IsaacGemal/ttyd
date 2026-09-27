@@ -54,3 +54,8 @@ void imgSetVirtualPoint(ImageEntry* entry, const Vec* point);
 void imgClearVirtualPoint(ImageEntry* entry);
 void imgRelease(ImageEntry* entry, s32 type);
 void imgSetShadow(ImageEntry* entry, s32 shadowId);
+void imgDisp(CameraId camId, void* param);
+void imgDisp_ProjPlane(CameraId camId, void* param);
+void imgCapture_Prim(ImageEntry* entry, s32 id);
+void imgCapture(CameraId camId, void* param);
+void imgShadowDisp(CameraId camId, void* param);

@@ -14,7 +14,6 @@ typedef struct effKemuri1Data {
 } effKemuri1Data;
 
 //local prototypes
-void effKemuri1Main(EffectEntry* effect);
 
 // NONMATCHING (17.27%): 2 instructions differ, 300 missing, 2 extra, plus register differences.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {

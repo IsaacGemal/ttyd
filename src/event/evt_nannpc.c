@@ -10,6 +10,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "evt/evt_nannpc.h"
 
 // Local declarations for this translation unit. Nothing below is in a header yet:
 //   NanNpcWork / NanNpcEntry  - the nameless-NPC work and per-entry state
@@ -96,28 +97,6 @@ static inline NanNpcEntry* nannpcFind(const char* name) {
     return NULL;
 }
 
-extern void extLoadShadowMtx(Mtx mtx);
-extern void extLoadShadowRenderMode(void);
-extern void extLoadShadowVertex(void);
-extern void extLoadShadowTev(void);
-extern void extDrawShadow(void);
-extern void extLoadVertex(void);
-extern void extLoadTexture(void);
-extern void extLoadTextureExit(void);
-extern void extLoadRenderMode(void);
-extern void extLoadTev(void);
-extern void extDraw(void);
-extern s32 extGetPoseNum(void);
-extern ExtPose* extGetPosePtr(void);
-extern void extPoseDraw(s32 poseId);
-extern void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void));
-extern void nannpc_ext_dispent(void);
-extern void nannpc_ext_main(void);
-extern void nannpc_ext_main_sub(void);
-extern void nannpc_ext_init(void);
-extern void nannpc_ext_shadow_disp(void);
-extern void nannpc_ext_disp(void);
-extern s32 nannpc_zcompare(ExtSortEntry* a, ExtSortEntry* b);
 
 USER_FUNC(evt_nannpcwork_flag_onoff) {
     s32* args = event->args;

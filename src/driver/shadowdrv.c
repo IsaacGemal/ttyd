@@ -31,7 +31,6 @@ f32 tmp_vp[6];
 
 extern u8 shadowConfig[];
 extern u8 lbl_80303460[];
-void shadowDisp(CameraId cameraId, void* param);
 
 //.bss
 CharShadowWork char_shadow_work;

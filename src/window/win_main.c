@@ -22,10 +22,13 @@
 #include <math.h>
 #include "evt/evt_yuugijou.h"
 #include "eff/eff_recovery.h"
+#include "statuswindow.h"
+#include "window/win_main.h"
+#include "window/win_root.h"
+#include "party/party_motion.h"
+#include <stdio.h>
 
 extern ItemData itemDataTable[];
-extern int sprintf(char* str, const char* format, ...);
-extern int vsprintf(char* str, const char* format, va_list ap);
 
 //.data
 EVT_BEGIN(evt_diary_read)
@@ -36,22 +39,8 @@ static WindowWork* wp;
 TEXPalette* winTexTpl;
 
 // local prototypes
-void winDisp(CameraId camId, void* param);
-void winDispKoopa(CameraId camId, void* param);
-void winLectureKeyMask(void);
 
 // functions defined in this unit but not declared in any header
-extern void winRootDisp(CameraId camId, WindowWork* work);
-extern void allPartyForceSlitOff(void);
-extern void statusWinForceOff(void);
-extern s32 unk_80175e98(void);
-extern s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall);
-extern s32 unk_80177cf8(void);
-extern s32 itemUseFunc2(EventEntry* event, BOOL isFirstCall);
-extern s32 winGhostDiaryChk(void);
-extern s32 party_color(EventEntry* event, BOOL isFirstCall);
-extern s32 famicom_check(EventEntry* event, BOOL isFirstCall);
-extern void statusWinForceOpen(void);
 
 // mario_pouch.h declares the pouch accessors with s16 parameters, but the
 // original win_main.c treated them as s32 (the callees sign-extend their own
@@ -212,13 +201,6 @@ void winDisp(CameraId camId, void* param) {
 extern s32 evt_lecture_msg[];
 
 // Font drawing helpers defined in manager/fontmgr.c but not declared in a header
-void FontDrawColor(GXColor* color);
-void FontDrawMessageMtx(Mtx mtx, const char* msg);
-void FontDrawStringMtx(Mtx mtx, const char* msg);
-void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);
-void FontDrawScaleVec(Vec scale);
-void FontDrawEdge(void);
-void FontDrawEdgeOff(void);
 
 void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
     Mtx mtx1;

@@ -17,7 +17,6 @@ IconDispTableEntry _disp_table[] = {
 };
 
 //local prototypes
-void BattleStatusIconDisp(CameraId camId, void* param);
 
 void BattleStatusIconInit(BattleUnit* unit) {
 	memset(&unit->mStatusIconWork, 0, sizeof(BattleWorkStatusIcon));

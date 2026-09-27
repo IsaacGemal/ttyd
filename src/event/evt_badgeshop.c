@@ -90,7 +90,6 @@ BadgeShopWork badgeshopwork;
 BadgeShopWork* bdsw;
 
 //local prototypes
-s32 bottakuruComp(const void** sortA, const void** sortB);
 
 s32 getBadgeBottakuru100TableMaxCount(void) {
 	return (sizeof(badge_bottakuru100_table) / sizeof(s32)) - 1;

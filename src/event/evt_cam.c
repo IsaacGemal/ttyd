@@ -9,6 +9,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "cam_road.h"
+#include "cam_shift.h"
 
 typedef struct CameraParams {
     f32 fovY;   // 0x00
@@ -18,13 +20,7 @@ typedef struct CameraParams {
     Vec at;     // 0x18
 } CameraParams;
 
-inline Vec makeVecByValue(f32 x, f32 y, f32 z);
-inline Vec makeVecByValue2(f32 x, f32 y, f32 z);
 
-void camRoadReset(void);
-void camShiftReset(void);
-void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
-void camShiftMain(CameraEntry* camera, MarioWork* mario, f32* out);
 
 USER_FUNC(evt_cam_letter_box_camid) {
     s32* args = event->args;

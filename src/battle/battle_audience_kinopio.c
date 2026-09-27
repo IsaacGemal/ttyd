@@ -1,3 +1,5 @@
+#include "battle/battle_stage_object.h"
+#include "battle/battle_camera.h"
 #include "battle/battle_audience.h"
 #include "battle/battle.h"
 #include "battle/battle_stage.h"
@@ -12,6 +14,13 @@
 #include "system.h"
 #include "eff/eff_sleep.h"
 #include <string.h>
+#include "battle/battle_break_slot.h"
+#include "battle/battle_audience_kinopio.h"
+#include "eff/eff_sandars.h"
+#include "eff/n64/eff_onpu_n64.h"
+#include "eff/eff_small_star.h"
+#include <stdlib.h>
+#include "math_ext.h"
 
 
 extern BattleWork* _battleWorkPointer;
@@ -28,23 +37,7 @@ const s32 dat_802f8c9c[24][2] = {
     { 1, -1 },  { 2, -1 },  { -1, -2 }, { 0, -2 },  { 1, -2 },  { 0, -3 },
 };
 
-extern EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a);
-extern void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
-extern int rand(void);
-extern s32 psndSFXOn_3D(const char* name, Vec* pos);
-extern f64 sqrt(f64 x);
-extern f64 sin(f64 x);
-extern EffectEntry* effOnpuN64Entry(s32 type, f32 x, f32 y, f32 z);
-extern s32 BtlUnit_CheckShadowGuard(BattleUnit* unit);
 extern u8 weapon_teresa_trans[];
-extern void btl_camera_set_mode(s32 id, s32 mode);
-extern void btl_camera_set_moveSpeedLv(s32 id, s32 lv);
-extern void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
-    f32 f5, f32 f6);
-extern void* effSmallStarEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 f4, f32 f5, f32 f6);
-extern s32 BattleStage_ObjectFallCheck(void);
-extern void BattleStage_NozzleWorkCheck(s32 flag);
-extern s32 BattleBreakSlot_GetBreakTurn(void);
 extern const Vec vec3_802f8c84;
 extern const Vec vec3_802f8c90;
 extern const char str_802F8D68[];
@@ -57,29 +50,6 @@ const char str_802F8DB4[] = "SFX_AUDIENCE_TELESA_INVISIBLE1";
 const char str_802F8DD4[] = "SFX_AUDIENCE_RUN3";
 const char str_802F8DE8[] = "SFX_AUDIENCE_PANIC_SCREAM2";
 
-void BattleAudienceCtrlProcessKinopioEat(s32 index);
-void BattleAudienceCtrlProcessKinopioIntrude(s32 index);
-void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioIgnite(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioShell(s32 index);
-void BattleAudienceCtrlProcessKinopioSingSub(s32 index);
-void BattleAudienceCtrlProcessKinopioSing(s32 index);
-void BattleAudienceCtrlProcessKinopioBooing(s32 index);
-void BattleAudienceCtrlProcessKinopioItemThrow(s32 index);
-void BattleAudienceCtrlProcessKinopioItemOn(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioJoyJump(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioWaitKubiKatamuke(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioWaitHurimuki(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioDamage(s32 index);
-void BattleAudienceCtrlProcessKinopioEnter(s32 index);
-void BattleAudienceCtrlProcessKinopioEscape(s32 index);
-void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind);
-void BattleAudienceCtrlProcessKinopioTransEvt(s32 index);
-void BattleAudienceCtrlProcessKinopioFireSub(s32 index);
 
 // .sdata2 constants referenced by symbol name in the original
 f32 float_270_8041e170 = 270.0f;
@@ -146,22 +116,6 @@ f32 float_6p2832_8041e260 = 6.283184f;
 
 // Helpers implemented in battle/battle_audience.c and elsewhere (declared locally;
 // these should move to a header).
-s32 BattleAudienceDetectPakkunEatTarget(s32 index);
-BattleUnit* BattleAudienceDetectTargetAll(void);
-void BattleAudiencePuniAllEscape(void);
-void BattleAudienceAddTargetNum(f32 value, f32 delta);
-BOOL BattleAudience_GetEscapeChangeOK(s32 index);
-BOOL BattleAudience_GetFront(s32 index);
-s32 BattleAudience_GetAudienceNoFromOffset(s32 index, s32 column, s32 row);
-BOOL BattleAudience_GetAnimEnd(s32 index);
-void BattleAudienceSoundZZZ(s32 index);
-void BattleAudienceSoundSing(s32 index);
-void BattleAudienceSoundPakkunEat(s32 index);
-void BattleAudienceSoundShell(s32 index);
-void BattleAudienceSoundBombFire(s32 index);
-void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b);
-void BattleAudienceSoundItemThrow(s32 kind, s32 index);
-void BattleAudienceSoundSleep(s32 index);
 
 
 #pragma dont_inline on // dispatcher must emit real `bl`s, not inline the state machines

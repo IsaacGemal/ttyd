@@ -1,3 +1,4 @@
+#include "party/party_chuchu.h"
 #include "party.h"
 #include "mario/mario.h"
 #include "mario/mario_party.h"
@@ -14,19 +15,12 @@
 #include "driver/effdrv.h"
 #include <string.h>
 #include <dolphin/mtx.h>
+#include "party/party_move.h"
+#include "evt/evt_msg.h"
+#include "party/party_hit.h"
+#include "eff/eff_fukidashi.h"
 
 // Local declarations: not yet in a header.
-void partyGetAppearPos3(PartyEntry* party, Vec* position);
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChkGnd(PartyEntry* party);
-void partyWalkInit(PartyEntry* party, s32 mode);
-void partyWalkMain(PartyEntry* party);
-f32 unk_800c92c4(PartyEntry* party);
-f32 partyToMovedir(PartyEntry* party, f32 dir);
-ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);
-MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names);
-void effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i);
-s32 evt_msg_print(EventEntry* event, BOOL isFirstCall);
 
 extern char* mobj_list[];
 

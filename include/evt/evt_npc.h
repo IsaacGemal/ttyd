@@ -63,3 +63,19 @@ USER_FUNC(evt_npc_flag_onoff);
 
 
 USER_FUNC(evt_npc_change_fbat_mode);
+USER_FUNC(evt_npc_check_delete);
+USER_FUNC(evt_npc_entry);
+USER_FUNC(evt_npc_flag_onoff);
+USER_FUNC(evt_npc_get_position);
+USER_FUNC(evt_npc_set_position);
+USER_FUNC(evt_npc_set_tribe);
+USER_FUNC(evt_set_dir_to_target);
+USER_FUNC(evt_npc_entry);
+USER_FUNC(evt_npc_status_onoff);
+USER_FUNC(evt_npc_set_tribe);
+USER_FUNC(evt_npc_set_walk_anim);
+USER_FUNC(evt_npc_set_ry);
+USER_FUNC(evt_npc_jump_position_nohit);
+USER_FUNC(evt_npc_reverse_ry);
+f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target);
+f32 _intplGetFloat(s32 type, f32 t);

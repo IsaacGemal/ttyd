@@ -13,8 +13,6 @@
 #include "pmario_sound.h"
 
 // Prototypes not yet in headers.
-u16 psndGetFlag(void);
-void mapObjGetPos(const char* name, Vec* pos);
 
 // Moving floor work structure. Not in a header yet.
 typedef struct MovingFloorWork {

@@ -8,23 +8,15 @@
 #include "driver/animdrv.h"
 #include <string.h>
 #include "matching.h"
+#include "peach.h"
+#include "mario/mario_hit.h"
+#include "mario/mario_cam.h"
+#include "driver/npcdrv.h"
+#include "motion/mot_walk.h"
+#include "mario/mario_balloon.h"
+#include "mario/mario_kemuri.h"
 
 // locals for symbols with no home header (see REPORT.md)
-void peachChgPose(const char* name);
-f32 marioGetWalkSpd(void);
-f32 marioChkOverhead(void);
-void marioSetFallPara(void);
-void marioChkGnd2(void);
-void marioChkGnd(void);
-void marioBoots(void);
-void marioBottomless(void);
-void marioCamMain(void);
-void marioBalloonMain(void);
-void mario_kemuri_80130474(void);
-void partyMain(void);
-void marioJump(void);
-void marioFall(void);
-void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose);
 
 // .rodata
 const char str_802FC8F8[] = "c_peach";

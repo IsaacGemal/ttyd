@@ -13,21 +13,17 @@
 #include "memory.h"
 #include "system.h"
 #include <string.h>
+#include "koopa.h"
+#include "eff/eff_majinai.h"
+#include "kpa_act.h"
+#include "party/party_cloud.h"
+#include "math_ext.h"
+#include "mario/mario_motion.h"
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
-extern s32 marioChkTalkable(void);
-void _npcGroupDead(NpcEntry* entry);
-void fbatHitCheck(s32 a1, s32 a2);
-ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
-void itemFlagOn(ItemEntry* item, u16 flag);
-EffectEntry* effMajinaiEntry(s32 a1, f32 x, f32 y, f32 z);
-void npcGroupDead(NpcEntry* entry, s32 type);
-s32 kpaMutekiCheck(void);
-void kpaAddScorePos(s32 score, Vec* pos);
-f32 cloudGetBreathPower(f32 param_1, Vec* param_2);
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -98,13 +94,6 @@ NpcFieldEntry* release_wp;
 static NpcWork2 work;
 
 // local prototypes
-void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history);
-void npcDisp_xlu(CameraId cameraId, void* param);
-void npcDisp(CameraId camId, void* param);
-void npcDisp_offscreen_xlu(CameraId camId, void* param);
-void npcDisp_offscreen(CameraId camId, void* param);
-void npcDisp_blur(CameraId camId, void* param);
-void _npcDeleteGroup(NpcEntry* entry);
 
 #define npcGetWorkPtr2(inBattle) ((inBattle) ? &work.battle : &work.field)
 // TODO: inlining?
@@ -236,7 +225,6 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
     }
 }
 
-double atan2(double y, double x);
 
 // NONMATCHING (98.72%): 1 extra, plus register differences.
 void npcDisp_xlu(CameraId cameraId, void* param) {

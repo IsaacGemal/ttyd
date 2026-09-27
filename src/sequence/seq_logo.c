@@ -18,6 +18,7 @@
 #include <dolphin/vi.h>
 #include <string.h>
 #include <dolphin/os.h>
+#include "sequence/seq_logo.h"
 
 extern GlobalWork* gp;
 extern GXRenderModeObj GXNtsc480ProgMarioSt;
@@ -69,9 +70,6 @@ static LogoWork work;
 static LogoWork* wp = &work;
 
 //local prototypes
-void logoDisp(CameraId camId, void* param);
-void dummy_draw(CameraId camId, void* param);
-void progDisp(CameraId camId, void* param);
 
 // NONMATCHING (91.68%): 1 instruction differs, 7 missing, 1 extra, plus register differences.
 void seq_logoInit(SequenceWork* work) {

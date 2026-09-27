@@ -48,3 +48,18 @@ typedef struct ExtWork {
 
 void extInit(void);
 void extMain(void);
+void extLoadShadowRenderMode(void);
+void extLoadShadowVertex(void);
+void extLoadShadowTev(void);
+void extDrawShadow(void);
+void extLoadVertex(void);
+void extLoadTexture(void);
+void extLoadTextureExit(void);
+void extLoadRenderMode(void);
+void extLoadTev(void);
+void extDraw(void);
+s32 extGetPoseNum(void);
+void extPoseDraw(s32 poseId);
+ExtPose* extGetPosePtr(void);
+void extLoadShadowMtx(Mtx mtx);
+void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void));

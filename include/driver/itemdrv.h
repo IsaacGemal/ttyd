@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mario/mario_pouch.h"
+
 #include "driver/effdrv.h"
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
@@ -34,3 +36,14 @@ void itemInit(void);
 void itemReInit(void);
 void itemMain(void);
 ItemEntry* itemNameToPtr(char*);
+void itemDelete(char* name);
+s32 N_itemPickUpFromFieldCheck(void);
+s32 itemGetNokoCheck(ItemEntry* item);
+ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
+void itemFlagOn(ItemEntry* item, u16 flag);
+s32 itemStatus(ItemEntry* item, u32 mask);
+void itemStatusOn(ItemEntry* item, u32 mask);
+void itemFlagOff(ItemEntry* item, u16 flag);
+void itemModeChange(ItemEntry* item, u16 mode);
+void itemForceGet(ItemEntry* item);
+ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);

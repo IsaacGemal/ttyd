@@ -6,6 +6,9 @@
 #include "data/item_data.h"
 #include <dolphin/gx.h>
 #include <string.h>
+#include "driver/animdrv.h"
+#include "system.h"
+#include "battle/battle_sub.h"
 
 
 extern BattleWork* _battleWorkPointer;
@@ -23,7 +26,6 @@ s32 _status_pose_table[] = {
 };
 
 //local prototypes
-const char* searchPoseTbl(BattleDispPose* table, s32 poseId);
 static void btlDispGXInit2DSub(void);
 static void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3);
 static void btlDispGetTexSize(u32 id, u16* width, u16* height);
@@ -35,18 +37,6 @@ static void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, 
 //.rodata
 static Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
 
-extern s32 animPoseSetLocalTimeRate(s32 poseId, f32 localTimeRate);
-extern void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset);
-extern void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag);
-extern s32 animPoseEntry(const char* animName, s32 type);
-extern void animPoseSetMaterialLightFlagOn(s32 poseId, u32 mask);
-void animPoseSetMaterialEvtColor(s32 poseId, GXColor color);
-void animPoseSetMaterialFlagOn(s32 poseId, u32 mask);
-void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
-void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts);
-extern s32 sysMsec2Frame(s32 msec);
-extern s32 irand(s32 max);
-extern f32 sinfd(f32 deg);
 extern double double_to_int_802ede28;
 extern f32 float_4_8041bf3c;
 extern f32 float_2_8041bf68;
@@ -696,7 +686,6 @@ void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor
 #pragma dont_inline reset
 
 extern f32 float_901_8041bf50;
-void _btlStockExpDisp(CameraId cameraId, void* param);
 
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -714,8 +703,6 @@ void BattleStockExpDisp(void) {
 
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
-extern s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
-void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit);
 
 // NONMATCHING (70.80%): MWCC copies the Vec into the iconDispGx arg slot; target reuses the BtlUnit_GetPos slot (r1+8). unit/itemId also land in swapped callee-saved registers.
 void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {

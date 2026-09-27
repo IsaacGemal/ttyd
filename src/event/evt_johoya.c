@@ -2,8 +2,8 @@
 #include "driver/msgdrv.h"
 #include <string.h>
 #include "manager/evtmgr_cmd.h"
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.data
 InformantWork _jdt;
@@ -60,7 +60,6 @@ const char* evtNoLabel[] = {
 };
 
 //local prototypes
-s32 johoya_data_make(const char* prefix, s32 type);
 
 USER_FUNC(johoya_data_alloc) {
     InformantWork* wp = &_jdt;

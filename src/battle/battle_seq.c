@@ -11,11 +11,6 @@
 extern BattleWork* _battleWorkPointer;
 
 //local prototypes
-void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2);
-void btlseqInit(BattleWork* wp);
-void btlseqFirstAct(BattleWork* wp);
-void btlseqTurn(BattleWork* wp);
-void btlseqEnd(BattleWork* wp);
 
 // NONMATCHING (0.00%): 3 instructions differ, 1 missing, 85 extra, plus register differences.
 void BattleSequenceManager(void) { //1:1

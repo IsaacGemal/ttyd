@@ -1,0 +1,104 @@
+[
+  {
+    "path": "src/battle/battle_audience.c",
+    "name": "psndSFX_get_vol",
+    "declaration": "extern s32 psndSFX_get_vol(s32 id);",
+    "reason": "retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos."
+  },
+  {
+    "path": "src/battle/battle_audience.c",
+    "name": "psndSFX_pit",
+    "declaration": "extern s32 psndSFX_pit(s32 id, s32 pit);",
+    "reason": "retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands."
+  },
+  {
+    "path": "src/battle/battle_audience.c",
+    "name": "psndSFX_vol",
+    "declaration": "extern void psndSFX_vol(s32 id, s32 vol);",
+    "reason": "retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers."
+  },
+  {
+    "path": "src/battle/battle_event_cmd.c",
+    "name": "BattleCheckCounter",
+    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32* out);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_stage_object.c",
+    "name": "windowDispGX_Waku_col",
+    "declaration": "extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);",
+    "reason": "retail passes GXColor uncopied by pointer; the shared by-value prototype regresses a matched function."
+  },
+  {
+    "path": "src/battle/battle_unit.c",
+    "name": "psndSFX_get_vol",
+    "declaration": "extern s32 psndSFX_get_vol(s32 id);",
+    "reason": "retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos."
+  },
+  {
+    "path": "src/battle/battle_unit.c",
+    "name": "psndSFX_pit",
+    "declaration": "extern void psndSFX_pit(s32 id, s32 pitch);",
+    "reason": "retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands."
+  },
+  {
+    "path": "src/battle/battle_unit.c",
+    "name": "psndSFX_vol",
+    "declaration": "extern void psndSFX_vol(s32 id, s32 vol);",
+    "reason": "retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers."
+  },
+  {
+    "path": "src/battle/sac/sac_deka.c",
+    "name": "psndSFX_pit",
+    "declaration": "void psndSFX_pit(s32 id, s16 pitch);",
+    "reason": "retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands."
+  },
+  {
+    "path": "src/driver/fadedrv.c",
+    "name": "z",
+    "declaration": "f32 z(void);",
+    "reason": "DOL helper name collides with the dig REL event function z."
+  },
+  {
+    "path": "src/event/evt_npc.c",
+    "name": "psndSFXOnEx_3D",
+    "declaration": "s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);",
+    "reason": "retail event callers narrow volume and pan to u8; the implementation uses s32 and sharing that signature regresses matched event code."
+  },
+  {
+    "path": "src/event/evt_party.c",
+    "name": "cloudGetStatus",
+    "declaration": "s32 cloudGetStatus(void);",
+    "reason": "Retail evt_party_cloud_breathout consumes the result as s32 without masking; the implementation/header return u8."
+  },
+  {
+    "path": "src/party/party_motion.c",
+    "name": "psndSFXOnEx_3D",
+    "declaration": "s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);",
+    "reason": "retail event callers narrow volume and pan to u8; the implementation uses s32 and sharing that signature regresses matched event code."
+  },
+  {
+    "path": "src/party/party_motion.c",
+    "name": "psndSFX_pit",
+    "declaration": "void psndSFX_pit(s32 id, s16 pitch);",
+    "reason": "retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands."
+  },
+  {
+    "path": "src/party/party_motion.c",
+    "name": "psndSFX_vol",
+    "declaration": "extern void psndSFX_vol(s32 id, u8 vol);",
+    "reason": "retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers."
+  },
+  {
+    "path": "src/sdk/DEMOInit.c",
+    "name": "DEMOUpdateStats",
+    "declaration": "extern void DEMOUpdateStats(GXBool inc);",
+    "reason": "the SDK stats header declares DemoStatEnable as u8; this custom unit uses BOOL."
+  },
+  {
+    "path": "src/sdk/DEMOInit.c",
+    "name": "DEMOPrintStats",
+    "declaration": "extern void DEMOPrintStats(void);",
+    "reason": "the SDK stats header conflicts with the custom DemoStatEnable declaration."
+  }
+]

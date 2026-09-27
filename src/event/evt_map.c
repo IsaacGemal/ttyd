@@ -17,46 +17,11 @@
 #include "mario/mario_party.h"
 #include "mario/mario_pouch.h"
 #include "party.h"
+#include "evt/evt_case.h"
+#include "eff/eff_torch.h"
+#include "eff/eff_fire.h"
 
 // Prototypes not yet in headers.
-void N_mapDispOn(void);
-void N_mapDispOff(void);
-void mapObjGetPos(const char* name, Vec* pos);
-void mapObjFlagOn(const char* name, u32 flag);
-void mapObjFlagOff(const char* name, u32 flag);
-void mapObjSetColor(const char* name, GXColor* color);
-void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a);
-void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a);
-void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a);
-void mapObjFlushOn(const char* name);
-void mapObjFlushOff(const char* name);
-void mapGrpFlushOn(const char* name);
-void mapGrpFlushOff(const char* name);
-void mapGrpFlagOn(const char* name, u32 flag);
-void mapGrpFlagOff(const char* name, u32 flag);
-void mapGrpSetColor(const char* name, GXColor* color);
-void mapObjClearOffScreen(const char* name);
-void mapObjSetOffScreen(const char* name, const char* offName);
-void mapGrpClearOffScreen(const char* name);
-void mapSetTevCallback(s32 idx, void* cb);
-void mapSetPlayRate(const char* name, f32 rate);
-void mapReStartAnimation(const char* name);
-void mapReStartAnimationAll(void);
-void mapPauseAnimation(const char* name);
-void mapPauseAnimationAll(void);
-void mapBlendOff(void);
-void mapBlendOff2(void);
-void mapSetBlend(GXColor* color);
-void mapSetBlend2(GXColor* color);
-void mapFogOn(void);
-void mapFogOff(void);
-void mapGetFog(u32* c, f32* near, f32* far, u32* c2);
-void mapSetFog(u32 color, f32 near, f32 far, u32* color2);
-void mapPlayAnimationLv(const char* name, s32 a2, s32 a3);
-EffectEntry* effTorchEntry(s32 id, f32 x, f32 y, f32 z, f32 scale);
-EffectEntry* effFireEntry(s32 a1, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6);
-s32 evtRunCaseEntry(s32 a1, s32 a2, s32 a3, s32 a4, s32* a5, s32* a6);
-MapObjectEntry* mobjNameToPtr(const char* name);
 EVT_DEF(evt_ride_airport);
 EVT_DEF(evt_nonride_airport);
 

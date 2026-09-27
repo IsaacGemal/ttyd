@@ -13,6 +13,8 @@
 #include "driver/camdrv.h"
 #include <dolphin/os.h>
 #include <string.h>
+#include "cam_road.h"
+#include "cam_shift.h"
 
 extern GlobalWork* gp;
 extern const char str_802C4DA8[];
@@ -410,10 +412,6 @@ USER_FUNC(evt_bero_get_into_info) {
 }
 
 // ---- reconstructed functions ----
-void camRoadReset(void);
-void camShiftReset(void);
-void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
-void N_marioSetBottomlessRespawnPosOnBeroEntry(f32 x, f32 y, f32 z);
 
 USER_FUNC(evt_bero_mario_go_init) {
 	BeroMarioGO = 0;
@@ -740,7 +738,6 @@ USER_FUNC(bero_set_disp_position_pipe) {
 	return EVT_RETURN_DONE;
 }
 
-void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end);
 
 typedef struct CameraParams {
 	f32 fovY;   // 0x00

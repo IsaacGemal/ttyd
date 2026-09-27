@@ -3,8 +3,8 @@
 #include "driver/mapdrv.h"
 #include "memory.h"
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.rodata
 const Vec decay_tbl[] = {

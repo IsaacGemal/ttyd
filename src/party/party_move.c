@@ -12,6 +12,13 @@
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "driver/mobjdrv.h"
+#include "party/party_motion.h"
+#include "party/party_cloud.h"
+#include "party/party_vivian.h"
+#include "party/party_nokonoko.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_stay.h"
+#include "party/party_chuchu.h"
 
 // Local declarations for data that will eventually move to a header.
 extern s32 readId[2];
@@ -27,27 +34,6 @@ typedef struct Footmark {
     f32 z;
 } Footmark;
 
-void partyMoveMain(PartyEntry* party, s32 hosei);
-s32 nokonokoGetStatus(PartyEntry* party);
-s32 marioChkDeepSleep(void);
-s32 chuchu_searchObject(void);
-void unk_800c90d4(PartyEntry* party, s32 value);
-s32 N_marioGetMovementSpeed(void);
-void partySetDir(PartyEntry* party, f32 x, f32 z);
-s32 party_motion_fall(PartyEntry* party);
-void party_motion_beside_mario(PartyEntry* party);
-void party_motion_jump2(PartyEntry* party);
-void party_motion_upstairs(PartyEntry* party);
-void party_motion_damage(PartyEntry* party);
-void party_motion_behind_mario(PartyEntry* party);
-void party_motion_behind_mario_fly(PartyEntry* party);
-void unk_8014bbc8(PartyEntry* party);
-void unk_801820d0(PartyEntry* party);
-void unk_8018206c(PartyEntry* party);
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void marioSetSplash(s32 a, Vec* pos);
-void vivianShadow(PartyEntry* party);
-void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed);
 
 void partySetDir(PartyEntry* party, f32 x, f32 z) {
     PartyEntry* work = party;

@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct BattleUnit BattleUnit;
+
 #include <dolphin/types.h>
 #include "battle/battle_database_common.h"
 #include "battle/battle_pad.h"
@@ -60,3 +62,10 @@ void BattleActionCommandStop(BattleWork* work);
 s32 BattleActionCommandGetDefenceResult(void);
 void BattleActionCommandResetDefenceResult(void);
 s8 BattleActionCommandGetDifficulty(BattleWork* work);
+u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
+void BattleAcDrawGauge(s32, s32, s32, s32, s32, s32, s32, s32, f32);
+void BattleAcGaugeSeInit(void);
+void BattleAcGaugeSeUpdate(f32);
+void BattleAcGaugeSeDelete(void);
+void BattleActionCommandSetup(BattleWork* wp, s32 acId, BattleUnit* unit, s32 gauge, s32 diff);
+void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 difficulty);

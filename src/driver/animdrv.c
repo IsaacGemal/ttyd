@@ -17,8 +17,6 @@
 #define PI 3.14159265358979323846264338327950288419716939937510f
 
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
-extern double tan(double arg);
 
 // The header's AnimationPoseData padding at 0x1A0 is 4 bytes short: the original
 // binary has groups at 0x1A8 and mpAnims at 0x1AC. Work around it locally.
@@ -53,14 +51,8 @@ Mtx g_modeling_mtx_stack[32];
 extern Vec vec3_802c2dd4[];
 u32 zero_80419a50 = 0;
 
-void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
-void pushGXModelMtx_TransformNode__(void* node);
 
 // local declarations
-void animPoseRefresh(void);
-void animPaperPoseDisp(CameraId camId, void* param);
-void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
-void animPaperPoseDispSub(s32 unused, AnimationPose* pose);
 
 AnimationWork* animGetPtr(void) {
     return wp;

@@ -22,7 +22,6 @@ static DVDMgrCallback _callback;
 BOOL dvdmgr_thread_on;
 
 //local prototypes
-void* proc_main(void* param);
 static s32 compare(const void** a, const void** b);
 
 void* proc_main(void* param) { //1:1

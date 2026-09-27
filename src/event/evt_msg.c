@@ -12,16 +12,9 @@
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
-s32 msgWindow_ForceClose(s32 id);
-s32 msgWindow_Repeat(s32 id);
-s32 msgWindow_Continue(s32 id);
-s32 msgWindow_Entry(const char* msg, s32 a, s32 b);
-s32 msgWindow_Add(const char* msg, s32 id);
-void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z);
-s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* msg, s32 toge, const char* npcName);
 
 // The message window's smart buffer. Only a few fields are named; the rest is
 // unnamed padding because the header does not declare them yet.

@@ -18,10 +18,22 @@
 #include "mario/mariost.h"
 #include "koopa.h"
 #include "driver/mobjdrv.h"
+#include "mario/mario_cam.h"
+#include "motion/mot_roll.h"
+#include "party/party_yoshi.h"
+#include "peach.h"
+#include "mario/mario_hit.h"
+#include "motion/mot_slit.h"
+#include "motion/mot_ship.h"
+#include "motion/mot_hip.h"
+#include "motion/mot_plane.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_hammer.h"
+#include "koopa_motion.h"
+#include "koopa_hit.h"
+#include "motion/mot_jabara.h"
 
 // From src/mario/mario.c; no header declares it yet.
-void marioSlitForceCancel(void);
-void marioReInit_ship(void);
 
 // Motion table entry. Lives at marioMotTbl (0x8030E5E0), 12 bytes each.
 typedef struct MotTblEntry {
@@ -41,41 +53,6 @@ const char str_802C5A0C[] = "tik_01";
 extern f32 marioJumpSwData[];
 
 // From other units not decompiled yet: no header declares them.
-s32 kpaGetBodyStatus(void);
-s32 marioGetHammerLevel(void);
-s32 marioChkHammer2(void);
-s32 marioSlitChkWallAround(void);
-s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3);
-s32 marioShipChanging(void);
-void camFollowYOn(void);
-void marioResetRollSpd(void);
-void yoshi_jumpStand(void);
-s32 marioChkShipPlace(HitEntry* hit);
-s32 kpaHipAttackOk(void);
-s32 marioChkHipAttack(void);
-void mario_plane_cancel(void);
-void allPartyForceRideOn(void);
-void* marioGetTouchNpcPtr(void);
-void peach_talk(void);
-s32 getRollEvtFlag(void);
-void marioSetPeakYpos(void);
-void kpaClearHitobjRide(void);
-s32 kpaChkHitobjRide(void);
-s32 marioKeyOffChk(void);
-s32 marioCtrlOffChk(void);
-s32 marioPriCheckJabara(void);
-void mot_fall_roll(void);
-void marioLandOn(void);
-void set_damage_root_ypos(f32 y);
-s32 kpaFireAttackCheck(void);
-void quake_kpaLandOn(void);
-void N_marioSlitSetAfterLand(void);
-void unk_800a4e40(void);
-s32 marioChkSlitEnd(void);
-void motSlitCancel(void);
-void marioDmgRetQuakeOn(void);
-void marioUpdateCamPos(void);
-void* marioChkLandon(f32* pos, f32 spd);
 
 
 void marioChgStayMotion(void) {

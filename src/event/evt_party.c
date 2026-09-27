@@ -1,3 +1,4 @@
+#include "evt/evt_party.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_npc.h"
 #include "manager/evtmgr_cmd.h"
@@ -14,6 +15,9 @@
 #include "party/party_yoshi.h"
 #include "party/party_move.h"
 #include "party/party_hit.h"
+#include "party/party_nokonoko.h"
+#include "party/party_bomhei.h"
+#include "mario/mario_hit.h"
 
 // Raw field accessors for PartyEntry fields that aren't declared in the shared header yet.
 #define P8(p, off) (*(u8*)((u8*)(p) + (off)))
@@ -39,32 +43,10 @@ f32 float_neg5000_8041bb30 = -5000.0f;
 f32 float_100_8041bb34 = 100.0f;
 f32 float_50_8041bb38 = 50.0f;
 
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void partySetCamId(PartyEntry* party, s32 cameraId);
-void partyInitCamId(PartyEntry* party);
-void partyRun(PartyEntry* party);
-void partyStop(PartyEntry* party);
-void partyCtrlOff(void);
-void partyMoveBesideMario(PartyEntry* party, s32 unk);
-void partyMoveBehindMario(PartyEntry* party, s32 unk);
-void partyClearFootmark(void);
-void unk_800ba2dc(PartyEntry* party);
-s32 nokonokoGetStatus(PartyEntry* party);
 // party_cloud.h declares cloudGetStatus as returning u8 (its definition masks the result), but the original
 // evt_party_cloud_breathout uses the result unmasked, as if this file saw it declared int.
+// LOCAL_PROTO(cloudGetStatus): Retail evt_party_cloud_breathout consumes the result as s32 without masking; the implementation/header return u8.
 s32 cloudGetStatus(void);
-void nokotaro_hold_cancel(PartyEntry* party);
-s32 bomheiGetStatus(void);
-s32 yoshiGetStatus(void);
-void evt_set_yoshi_spd(f32 spd);
-void evt_set_yoshi_frm(s32 frm);
-s32 evt_get_yoshi_frm(void);
-void L_partyVivianTailStart(PartyEntry* party);
-void L_partyVivianTailStop(PartyEntry* party);
-void vivianUnhold(PartyEntry* party);
-HitEntry* partyHitCheck(PartyEntry* party, Vec* pos, Vec* dir, Vec* hitPos, Vec* hitNormal, f32* dist);
-s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z);
-f32 toMovedirSimple(f32 angle);
 
 USER_FUNC(evt_party_cloud_breathout) {
     s32* args = event->args;

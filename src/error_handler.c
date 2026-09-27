@@ -8,12 +8,11 @@
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
 #include <string.h>
+#include <stdio.h>
 
 extern void* DemoCurrentBuffer, * DemoFrameBuffer1, * DemoFrameBuffer2;
-extern int sprintf(char* str, const char* format, ...);
 
 //local prototypes
-void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar);
 
 void setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_DSI, (void (*)(u16, OSContext*, ...))systemErrorHandler);

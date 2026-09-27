@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/mtx.h>
 
 typedef struct StatusWindowWork {
@@ -41,3 +43,18 @@ void statusWinReInit(void);
 void statusWinMain(void);
 
 void statusWinForceUpdate(void);
+BOOL statusWinCheck(void);
+void statusWinOpen(void);
+void statusWinClose(void);
+void statusWinForceClose(void);
+void statusWinForceOpen(void);
+void statusWinForceUpdateCoin(void);
+void gaugeDisp(s32 a1, f32 x, f32 y);
+s32 valueCheck(void);
+void valueUpdate(void);
+void statusWinForceOff(void);
+void statusWinDisp(CameraId camId, void* param);
+BOOL statusWinCheckUpdate(void);
+
+typedef struct StatusWindowValue StatusWindowValue;
+void statusGetValue(StatusWindowValue* values);

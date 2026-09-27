@@ -49,3 +49,11 @@ USER_FUNC(_set_mobj_shake_init);
 
 void BattleStageObjectInit(void);
 BOOL BattleFogForceStop(void);
+s32 BattleStage_ObjectFallCheck(void);
+void BattleStage_NozzleWorkCheck(s32 flag);
+void BattleObjectConfig(void);
+void _Nozzle_Change_Check(u8 index, void* nozzle);
+s32 _get_nozzle_attack_index(u8 index);
+void _combine_nozzle_weapon(s32 mode, void* dst, void* src);
+void _mobj_shake_main(BattleStageObject* obj);
+void _disp_escape_wall_message(CameraId cameraId, void* param);

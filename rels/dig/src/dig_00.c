@@ -12,37 +12,17 @@
 #include "seq/seq_demo.h"
 #include <stdlib.h>
 #include "manager/fontmgr.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_party.h"
+#include "rel/dig/dig_00.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_sub.h"
 // #include <stdlib.h>
 
 #pragma pool_data off
 
-USER_FUNC(evt_mario_cont_onoff);
-USER_FUNC(evt_party_cont_onoff);
-USER_FUNC(evt_mario_set_pos);
-USER_FUNC(evt_party_set_pos);
-USER_FUNC(z);
-USER_FUNC(evt_cam3d_evt_set);
-USER_FUNC(evt_cam_letter_box_disable);
-USER_FUNC(movie);
-USER_FUNC(evt_fade_set_mapchange_type);
-USER_FUNC(evt_seq_wait);
-USER_FUNC(evt_fade_end_wait);
-USER_FUNC(evt_key_get_buttontrg);
-USER_FUNC(sound_fade);
-USER_FUNC(evt_fade_entry);
-USER_FUNC(evt_seq_set_seq);
-USER_FUNC(evt_action_sub);
-USER_FUNC(evt_npc_entry);
-USER_FUNC(evt_npc_status_onoff);
-USER_FUNC(evt_npc_set_tribe);
-USER_FUNC(evt_sub_random);
-USER_FUNC(gravity_scale);
-USER_FUNC(evt_npc_set_walk_anim);
-USER_FUNC(evt_npc_set_ry);
-USER_FUNC(evt_npc_jump_position_nohit);
-USER_FUNC(evt_sub_intpl_msec_get_value);
-USER_FUNC(evt_sub_intpl_msec_init);
-USER_FUNC(evt_npc_reverse_ry);
 
 // clang-format off
 extend_data(0,
@@ -366,8 +346,6 @@ void dig_thpStop(void) {
     }
 }
 
-void FontDrawString(const char*, f32, f32);
-u16 FontGetMessageWidth(const char*);
 
 void movie_draw(CameraId cameraId, void* param) {
     u32 width, height;

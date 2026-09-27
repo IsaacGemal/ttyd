@@ -17,13 +17,13 @@ extern GlobalWork* gp;
 extern BadgeShopWork* bdsw;
 extern PiantaParlorWork* yuwp;
 extern InformantWork _jdt;
-extern int sprintf(char* str, const char* format, ...);
 
 //.rodata
 #include "assets/_mariost_icon_tex.inc"
 #include "assets/_mariost_icon_tlut.inc"
 #include "assets/_mariost_banner_tex.inc"
 #include <dolphin/card.h>
+#include <stdio.h>
 
 //.sbss
 static CardWork* wp;
@@ -32,45 +32,14 @@ static CardWork* wp;
 const char* version = "009";
 
 //local prototypes
-void check_sum(CardSaveSlot* save);
-void make_header(void);
-void make_data(void);
 
-void memcard_probe(void);
-void memcard_mount(void);
-void memcard_unmount(void);
-void memcard_check(void);
 static void memcard_format(void);
 static void memcard_delete(void);
 static void memcard_create(void);
 static void memcard_write(void* addr, s32 length, s32 offset);
-void memcard_read(void* addr, s32 length, s32 offset);
-void memcard_set_stat(void);
-void memcard_get_stat(void);
-void memcard_get_serial(void);
-void memcard_open(void);
-void memcard_close(void);
 
-void mountDetachCallback(s32 chan, s32 result);
-void mountAttachCallback(s32 chan, s32 result);
-void checkCallback(s32 chan, s32 result);
-void formatCallback(s32 chan, s32 result);
-void createCallback(s32 chan, s32 result);
-void writeCallback(s32 chan, s32 result);
-void readCallback(s32 chan, s32 result);
-void statusCallback(s32 chan, s32 result);
 
-void write_main(void);
-void write_header_main(void);
-void read_main(void);
-void read_all_main(void);
-void create_main(void);
-void format_main(void);
-void delete_main(void);
 
-BOOL headerCheck(void);
-BOOL headerCheck2(void);
-BOOL dataCheck(void);
 
 CardData* cardGetFilePtr(void) {
 	return wp->data;

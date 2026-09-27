@@ -5,6 +5,9 @@
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
 #include <string.h>
+#include "system.h"
+#include <demo/DEMOPad.h>
+#include <stdio.h>
 
 static GXRenderModeObj* rmode;
 static GXRenderModeObj rmodeobj;
@@ -21,12 +24,11 @@ static u32 FrameMissThreshold;
 static vu32 FrameCount;
 char __GXErrorMessage[0x400];
 
-extern void DEMOPadInit(void); //easier to declare this way
+// LOCAL_PROTO(DEMOUpdateStats): the SDK stats header declares DemoStatEnable as u8; this custom unit uses BOOL.
 extern void DEMOUpdateStats(GXBool inc);
+// LOCAL_PROTO(DEMOPrintStats): the SDK stats header conflicts with the custom DemoStatEnable declaration.
 extern void DEMOPrintStats(void);
 
-extern u16 sysGetToken(void);
-extern int sprintf(char* str, const char* format, ...);
 
 //internal, inline
 static void __DEMOInitRenderMode(GXRenderModeObj* mode);

@@ -4,26 +4,24 @@
 #include "system.h"
 #include <string.h>
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_seq.h"
+#include "driver/mapdrv.h"
+#include "battle/battle_sub.h"
+#include "eff/n64/eff_kemuri1_n64.h"
+#include "driver/msgdrv.h"
+#include "pmario_sound.h"
 
 extern BattleWork* _battleWorkPointer;
 
 //local prototypes
-void BattleObjectConfig(void);
 
 // Data + helpers not declared in headers
 extern s32 _fall_frame_event[];
 extern s32 _object_fall_event[];
-extern void BattleAudience_Case_HaikeiSet(void);
-extern s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp);
-extern void _Nozzle_Change_Check(u8 index, void* nozzle);
 extern const char str_802F3C7C[];
-extern void mapGrpSetColor(const char* name, GXColor* color);
-extern s32 _get_nozzle_attack_index(u8 index);
-extern void _combine_nozzle_weapon(s32 mode, void* dst, void* src);
 extern u8 _nozzle_at_base_mario[];
 extern u8 _nozzle_at_base_monster[];
-extern f32 intpl_sub(s32 mode, s32 currStep, s32 steps, f32 start, f32 end);
-extern f32 sinfd(f32 deg);
 extern char str_8041CD68[4];
 extern char str_8041CD6C[4];
 extern char str_8041CD70[4];
@@ -37,10 +35,6 @@ extern char str_802F3CC4[];
 extern char str_802F3CDC[];
 extern char str_802F3CF4[];
 extern char vec3_802f3ac8[];
-extern EffectEntry* effKemuri1N64Entry(s32 type, f32 a2, f32 a3, f32 a4, f32 a5);
-extern void psndSFXOn_3D(const char* name, Vec* position);
-void _mobj_shake_main(BattleStageObject* obj);
-void _disp_escape_wall_message(CameraId cameraId, void* param);
 extern const u32 dat_8041ccf8;
 extern f64 double_to_int_802f3c30;
 extern f32 float_0_8041cd04;
@@ -50,11 +44,10 @@ extern f32 float_30_8041cd5c;
 extern f32 float_neg117_8041cd58;
 extern f32 float_neg120_8041cd60;
 extern const char str_802F3C84[];
-extern const char* msgSearch(const char* tag);
-extern void FontDrawStart(void);
-extern void FontDrawString(const char* str, f32 x, f32 y);
 // Differs from windowdrv.h (s16, GXColor by value): with the header's signature the caller copies the color
 // and _disp_escape_wall_message stops matching (99.06%). The ABI is the same; the original passes it uncopied.
+
+// LOCAL_PROTO(windowDispGX_Waku_col): retail passes GXColor uncopied by pointer; the shared by-value prototype regresses a matched function.
 extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
 
 // .sdata data tables (defined here so references use the small-data area).

@@ -7,6 +7,7 @@
  */
 
 #include "system.h"
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/pad.h>
 // #include <math.h>
@@ -28,12 +29,7 @@ extern GlobalWork* gp;
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
 #else
-double fabs(double x);
-float fabsf(float x);
 #endif
-extern double sin(double x);
-extern double cos(double x);
-extern double fmod(double x, double y);
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)

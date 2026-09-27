@@ -8,8 +8,8 @@
 #include "sdk/texPalette.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.sbss
 static TEXPalette* winTpl; //new in retail
@@ -19,8 +19,6 @@ GXTexObj* wakuTexObj;
 WindowEntry* WinObjects;
 
 //local prototypes
-void unk_8007f204(s32 error, DVDFileInfo* info);
-void _windowDispGX_Message(s32 type, s32 a2, u8 alpha, BOOL dark, f32 x, f32 y, f32 height, f32 width, f32 a9, f32 a10);
 
 void windowInit(void) {
 	WindowEntry* entry = __memAlloc(HEAP_DEFAULT, sizeof(WindowEntry) * 7);

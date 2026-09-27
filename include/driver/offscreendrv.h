@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/types.h>
 
 typedef struct OffscreenEntry {
@@ -31,3 +33,5 @@ s32 offscreenEntry(const char* name);
 void offscreenMain(void);
 s32 offscreenNameToId(const char* name);
 void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom);
+void offscreenDisp(CameraId camId, void* param);
+void offscreenDelete(const char* name);

@@ -7,6 +7,13 @@
 #include "system.h"
 #include <stdlib.h>
 #include <string.h>
+#include "koopa.h"
+#include "mario/mario_sbr.h"
+#include "mario/mario_kemuri.h"
+#include "eff/eff_mugi.h"
+#include "eff/n64/eff_kemuri7_n64.h"
+#include "eff/n64/eff_water_damage_n64.h"
+#include "eff/eff_ripple.h"
 
 // The original build did not inline the effects helpers into their callers
 // (kemuri_mugi/mario_kemuri_landon/kemuri are all large); force that here.
@@ -25,26 +32,9 @@ static s32 cnt491;         // .sbss
 static s32 leftRight482;   // .sbss
 
 // Prototypes not yet in headers.
-EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7);
-EffectEntry* effMugiKemuriEntry(f32 float1, f32 float2, f32 float3, f32 float4);
-EffectEntry* effMugiKemuri2Entry(s32 int1, f32 float2, f32 float3, f32 float4, f32 float5, f32 float6);
-EffectEntry* effKemuri7N64Entry(f32 float1, f32 float2, f32 float3, f32 float4, f32 float5);
-EffectEntry* effWaterDamageN64Entry(s32 int1, s32 int2, f32 float3, f32 float4, f32 float5, f32 float6);
-EffectEntry* effRippleEntry(s32 int1, f32 float2, f32 float3, f32 float4);
-f32 kpaGetBaseScale(s32 index);
-s32 kpaGetLevel(void);
-s32 kpaGetStageViewType(void);
-s32 kpaGetBodyStatus(void);
-f32 toMovedirSimple(f32 angle);
 
 // Forward declarations (functions are defined in reverse .text order so that
 // Metrowerks emits them in the original order).
-void party_kemuri(PartyEntry* party);
-void kemuri(void);
-void kemuri_mugi(void);
-void mario_kemuri_landon(void);
-void unk_80130374(void);
-void mario_simple_kemuri(void);
 
 // `if (currMotionId == 0x1D) return;` is laid out in the reference as
 // `cmplwi 0x1D; bne body; b epilogue` (then-block placed out of line), but mwcc

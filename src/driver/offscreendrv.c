@@ -15,7 +15,6 @@ static OffscreenWork work[2]; //field, battle
 #define offscreenGetWorkGp() (gp->inBattle ? &work[1] : &work[0])
 
 //local prototypes
-void offscreenDisp(CameraId camId, void* param);
 
 // NONMATCHING (85.77%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 void offscreenInit(void) { //TODO: fix r31

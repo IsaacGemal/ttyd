@@ -1,12 +1,9 @@
 #include "driver/seqdrv.h"
 #include "seq/seq_logo.h"
+#include "seq/seq_game.h"
+#include "seq/seq_e3.h"
 
-extern void seq_gameInit(SequenceWork* work); //2
-extern void seq_gameMain(SequenceWork* work);
 
-extern void seq_e3Init(SequenceWork* work); //7
-extern void seq_e3Main(SequenceWork* work);
-extern void seq_e3Exit(SequenceWork* work);
 
 SequenceCallback seq_data[8][3] = {
 	{seq_logoInit, seq_logoMain, seq_logoExit},

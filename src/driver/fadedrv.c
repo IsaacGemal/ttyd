@@ -9,8 +9,11 @@
 #include <dolphin/dvd.h>
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
+// LOCAL_PROTO(z): DOL helper name collides with the dig REL event function z.
+f32 z(void);
+
 
 u8 i4tex = 0xFF; //TODO: align 32-byte
 
@@ -22,13 +25,7 @@ static s32 depth_image[32] = {
 static FadeWork* wp;
 
 //local prototypes
-void _callback(s32 error, DVDFileInfo* info);
-void disp_texture(CameraId camId, void* param);
-f32 z(void);
 static void zFill(void);
-void disp_maku(CameraId camId, void* param);
-void disp_tec(CameraId camId, void* param);
-void disp_dummy_black(CameraId camId, void* param);
 
 void _callback(s32 error, DVDFileInfo* info) {
 	void* userData = info->cb.userData;

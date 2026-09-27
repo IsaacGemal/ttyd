@@ -2,18 +2,12 @@
 #include "manager/evtmgr_cmd.h"
 #include "evt/evt_cmd.h"
 #include "mario/mariost.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_fade.h"
+#include "sequence/seq_load.h"
 
 
 // External event functions referenced by the evt_memcard scripts below.
-s32 evt_msg_print(EventEntry* event, BOOL isFirstCall);
-s32 evt_msg_print_add(EventEntry* event, BOOL isFirstCall);
-s32 evt_msg_print_insert(EventEntry* event, BOOL isFirstCall);
-s32 evt_msg_print_add_insert(EventEntry* event, BOOL isFirstCall);
-s32 evt_msg_select(EventEntry* event, BOOL isFirstCall);
-s32 evt_msg_continue(EventEntry* event, BOOL isFirstCall);
-s32 evt_fade_end_wait(EventEntry* event, BOOL isFirstCall);
-s32 evt_fade_entry(EventEntry* event, BOOL isFirstCall);
-s32 unk_800f2398(EventEntry* event, BOOL isFirstCall);
 
 s32 memcard_code(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;

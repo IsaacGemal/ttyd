@@ -6,35 +6,15 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "system.h"
+#include "battle/battle_camera.h"
+#include "evt/evt_audience.h"
+#include "evt/evt_eff.h"
+#include "battle/battle_ac_help.h"
 
 // ---- local prototypes (no header declares these yet) ----
-void BattleAcHelpSetDispType(s32 type);
-BOOL BattleAudienceSoundCheck(s32 index);
-void BattleAudienceSoundStop(s32 index);
-void BattleAudienceSoundCheer(s32 a, s32 b);
-void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3);
-void BattleAudienceSoundHandBeat(void);
-void BattleAudienceSoundClap(s32 a, s32 b);
-void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b);
-void BattleAudienceSoundWhistleKind(s32 kind);
 
 // Event command functions referenced by the script tables below. The ones not
 // already in battle_event_cmd.h have no header yet.
-USER_FUNC(evt_btl_camera_set_mode);
-USER_FUNC(evt_btl_camera_set_homing_unit);
-USER_FUNC(evt_btl_camera_set_zoom);
-USER_FUNC(evt_btl_camera_set_moveSpeedLv);
-USER_FUNC(evt_btl_camera_set_zoomSpeedLv);
-USER_FUNC(btlevtcmd_CheckStatus);
-USER_FUNC(btlevtcmd_AnimeChangePoseType);
-USER_FUNC(btlevtcmd_FaceDirectionAdd);
-USER_FUNC(btlevtcmd_MovePosition);
-USER_FUNC(btlevtcmd_snd_se);
-USER_FUNC(btlevtcmd_AnimeChangePose);
-USER_FUNC(btlevtcmd_SetMoveSpeed);
-USER_FUNC(evt_audience_sound_cheer);
-USER_FUNC(evt_eff);
-USER_FUNC(evt_eff_delete);
 
 // ---- sbss globals ----
 static s32 count;

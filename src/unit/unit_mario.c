@@ -6,9 +6,10 @@
 #include "battle/battle_unit.h"
 #include "driver/animdrv.h"
 #include "dolphin/gx/GXTev.h"
+#include "driver/mapdrv.h"
+#include "unit/unit_mario.h"
 
 //local prototypes inherited from headers that do not declare these yet
-void mapSetTevCallback(s32 idx, void* cb);
 
 //strings and constants are defined with the rest of the file's .rodata/.sdata2
 extern const char str_802F3780[];
@@ -40,12 +41,6 @@ typedef struct TevCallbackParam {
 
 static void callback(TevCallbackParam* param);
 
-s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);
-s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode);
-s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall);
-void faker_mario_makkuro_set(void);
-s32 mario_pinch_pose_sound_callback(BattleUnit* unit);
-s32 _get_local_frame(EventEntry* event, BOOL isFirstCall);
 
 USER_FUNC(_get_mario_hammer_lv) {
     s32 arg = event->args[0];

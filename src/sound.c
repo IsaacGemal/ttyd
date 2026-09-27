@@ -6,10 +6,10 @@
 #include "system.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 // TODO: use SoundInit to fill in SoundStream/Entry
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.bss
 SND_AUX_REVERBHI revH;
@@ -23,16 +23,8 @@ static char str[0x100];
 u32 aramMemArray[8];
 
 // local prototypes
-void* sndMalloc(size_t size);
-void sndFree(void* ptr);
-void* loadDVD_callback(u32 offset, u32 length);
-void SoundEfxMain(void);
-void SoundDVDMain(void);
 
-void SoundSSMainInt(void);
-s32 SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
 
-void SoundAIDMACallback(void);
 
 void* sndMalloc(size_t size) {
     return __memAlloc(HEAP_DEFAULT, size);

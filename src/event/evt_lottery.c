@@ -10,7 +10,6 @@ extern GlobalWork* gp;
 BOOL dbg_lotteryinfo;
 
 //local prototypes
-USER_FUNC(evt_lottery);
 
 lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
