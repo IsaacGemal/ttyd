@@ -15,3 +15,4 @@ void camFollowYOn(void);
 void camFollowYOff(void);
 void marioCamMain(void);
 void marioSetCamId(CameraId camId);
+void marioSetCamFollowRate(f32 followRate);

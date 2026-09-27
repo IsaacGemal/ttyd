@@ -24,3 +24,4 @@ void marioChgMotSub(s32 motion, s32 sub);
 void marioChgMot2(s32 motion);
 s32 marioRollChgChk(void);
 BOOL marioChkTalkable(void);
+void marioSetJumpPara(void);

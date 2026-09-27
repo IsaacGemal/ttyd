@@ -30,3 +30,5 @@ void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a);
 BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 HitEntry* marioSearchUnder(void);
+void clear_hitobj_ride(void);
+void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist);

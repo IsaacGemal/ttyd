@@ -16,3 +16,4 @@ s32 kpaGetBodyStatus(void);
 f32 kpaGetBaseScale(s32 index);
 s32 kpaGetStageViewType(void);
 void kpaFireAttack(void);
+void kpa_jumpNpc(void);
