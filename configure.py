@@ -1068,7 +1068,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/buffer_io.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/critical_regions.gamecube.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/ctype.c"),
-            Object(Matching, "MSL_C.PPCEABI.bare.H.a/locale.c"),
+            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/locale.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/direct_io.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/file_io.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/FILE_POS.C"),
