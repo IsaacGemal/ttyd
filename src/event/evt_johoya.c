@@ -86,7 +86,6 @@ USER_FUNC(johoya_data_free) {
     return 2;
 }
 
-// NONMATCHING (97.84%): 2 instructions differ, 2 missing, plus register differences.
 s32 johoya_data_make(const char* prefix, s32 type) {
     InformantWork* wp = &_jdt;
     char label[64];
@@ -99,8 +98,8 @@ s32 johoya_data_make(const char* prefix, s32 type) {
     s32 infoId;
     s32 initEndPos;
     s16 tagEndPos;
-    const char* msg;
-    const char* tagdata;
+    const s8* msg;
+    const s8* tagdata;
     s32 count;    
     s32 labelId;
     
@@ -111,7 +110,7 @@ s32 johoya_data_make(const char* prefix, s32 type) {
     infoId = 0;
     while (1) {
         sprintf(label, "%s_%04d", prefix, storyId);
-        msg = msgSearch(label);
+        msg = (const s8*)msgSearch(label);
         if (msg[0] != '<') {
             break;
         }
@@ -211,4 +210,233 @@ s32 search_evt_no(const char* label) {
         }
     }
     return -1;
+}
+
+const char* search_evt_moji(s32 index) {
+    return evtNoLabel[index];
+}
+
+s16 johoya_get(u8* data, s16 id) {
+    u8 mask;
+    s32 shift;
+
+    switch (id & 7) {
+        case 0:
+            mask = 0x01;
+            shift = 0;
+            break;
+        case 1:
+            mask = 0x02;
+            shift = 1;
+            break;
+        case 2:
+            mask = 0x04;
+            shift = 2;
+            break;
+        case 3:
+            mask = 0x08;
+            shift = 3;
+            break;
+        case 4:
+            mask = 0x10;
+            shift = 4;
+            break;
+        case 5:
+            mask = 0x20;
+            shift = 5;
+            break;
+        case 6:
+            mask = 0x40;
+            shift = 6;
+            break;
+        case 7:
+            mask = 0x80;
+            shift = 7;
+            break;
+    }
+
+    return (data[id / 8] & mask) >> shift;
+}
+
+// NONMATCHING (99.43%): only register allocation differs below the switch; the original
+// keeps the value temp in r0 and the data temp in r4, this build swaps them.
+s32 johoya_set(u8* data, s16 id, s16 value) {
+    u8 invmask;
+    s32 shift;
+    s32 index;
+
+
+    switch (id & 7) {
+        case 0:
+            invmask = 0xFE;
+            shift = 0;
+            break;
+        case 1:
+            invmask = 0xFD;
+            shift = 1;
+            break;
+        case 2:
+            invmask = 0xFB;
+            shift = 2;
+            break;
+        case 3:
+            invmask = 0xF7;
+            shift = 3;
+            break;
+        case 4:
+            invmask = 0xEF;
+            shift = 4;
+            break;
+        case 5:
+            invmask = 0xDF;
+            shift = 5;
+            break;
+        case 6:
+            invmask = 0xBF;
+            shift = 6;
+            break;
+        case 7:
+            invmask = 0x7F;
+            shift = 7;
+            break;
+    }
+
+    index = id / 8;
+    if (value < 0) {
+        value = 0;
+    }
+    else if (value > 1) {
+        value = 1;
+    }
+    data[index] = (u8)(value << shift) + (u8)(data[index] & invmask);
+    return value;
+}
+
+USER_FUNC(johoya_luigi_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    johoya_set(wp->unk14.unk1A, wp->info[*(s32*)wp->unk10].storyId, 1);
+    return 2;
+}
+
+USER_FUNC(johoya_perfect_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    johoya_set(wp->unk14.unkD, wp->info[*(s32*)wp->unk10].storyId, 1);
+    return 2;
+}
+
+USER_FUNC(johoya_keti_oldspeak_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    *(u16*)&wp->info[*(s32*)wp->unk10].unk0 |= 1;
+    return 2;
+}
+
+USER_FUNC(johoya_keti_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+    s32 index;
+
+    index = *(s32*)wp->unk10;
+    johoya_set(wp->unk14.unk0, wp->info[index].storyId, 1);
+    *(u16*)&wp->info[index].unk0 |= 1;
+    return 2;
+}
+
+USER_FUNC(johoya_keti_oldspeak_check) {
+    InformantWork* wp = &_jdt;
+    s32* args = event->args;
+    u8* flag = wp->unk14.unk0;
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) != 0
+            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return 2;
+}
+
+USER_FUNC(johoya_keti_newjoho_check) {
+    InformantWork* wp = &_jdt;
+    s32* args = event->args;
+    u8* flag = wp->unk14.unk0;
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) == 0) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return 2;
+}
+
+USER_FUNC(johoya_keti_oldspeak_makelabel) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    InformantWork* wp = &_jdt;
+    u8* flag = wp->unk14.unk0;
+    s32 matchCount = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) != 0
+            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            if (value == matchCount) {
+                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
+                evtSetValue(event, args[1], (s32)wp->infoEnd);
+                evtSetValue(event, args[2], wp->info[i].initEndPos);
+                evtSetValue(event, args[3], wp->info[i].tagEndPos);
+                evtSetValue(event, args[4], 0);
+                *(s32*)wp->unk10 = i;
+                return 2;
+            }
+            matchCount++;
+        }
+    }
+    ((char*)wp->infoEnd)[0] = '\0';
+    evtSetValue(event, args[1], (s32)wp->infoEnd);
+    evtSetValue(event, args[2], (s32)wp->infoEnd);
+    evtSetValue(event, args[3], 0);
+    evtSetValue(event, args[4], 0);
+    return 2;
+}
+
+USER_FUNC(johoya_keti_newjoho_makelabel) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    InformantWork* wp = &_jdt;
+    char sp[64];
+    u8* flag = wp->unk14.unk0;
+    const char* msg;
+    s32 matchCount = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) == 0) {
+            if (value == matchCount) {
+                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
+                sprintf(sp, "jketi_title_%04d", wp->info[i].storyId);
+                msg = msgSearch(sp);
+                evtSetValue(event, args[1], (s32)wp->infoEnd);
+                evtSetValue(event, args[2], (s32)msg);
+                evtSetValue(event, args[3], strlen(msg));
+                evtSetValue(event, args[4], wp->info[i].unkA);
+                *(s32*)wp->unk10 = i;
+                return 2;
+            }
+            matchCount++;
+        }
+    }
+    ((char*)wp->infoEnd)[0] = '\0';
+    evtSetValue(event, args[1], (s32)wp->infoEnd);
+    evtSetValue(event, args[2], (s32)wp->infoEnd);
+    evtSetValue(event, args[3], 0);
+    evtSetValue(event, args[4], 0);
+    return 2;
 }
