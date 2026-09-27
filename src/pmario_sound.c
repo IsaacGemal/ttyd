@@ -4892,9 +4892,9 @@ void psndMapChange(void) {
 		*(u16*)((u8*)&psnd + 0x52) = 0;
 	}
 	strcpy(psnd.unk40, gp->currentMapName);
-#ifdef MUST_MATCH
-	// through a byte pointer (98.86%); the field access schedules the psnd address differently (96.17%)
 	p = (u8*)&psnd;
+#ifdef MUST_MATCH
+	// through the byte pointer (98.86%); the field access schedules the psnd address differently (96.17%)
 	*(u16*)(p + 0x56) &= ~0x100;
 #else
 	psnd.unk56 &= ~0x100;

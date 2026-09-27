@@ -13,8 +13,8 @@ Agents may add prototypes to the header of the file that defines a function (inc
 header if needed; they may not change or remove existing lines. Allowed lines added to an existing header: blank
 lines, comments, `#pragma once`, `#include`, function prototypes, `struct X;` forward declarations and
 `typedef struct X X;`. A header the patch creates (`@@ -0,0 ...`) may also define types, as the codebase's own
-headers do (e.g. an effect's work struct); only `static` lines, backslash-continued lines and `#include`s that
-aren't a plain .h path are refused there.
+headers do (e.g. an effect's work struct): struct/union/enum bodies, their fields and enum members. Function
+bodies, initialized data, macros and other directives are refused everywhere.
 Applying a created header that already exists (another agent created it first) is refused unless all its lines
 are of the kinds allowed in an existing header, since skipping already-present lines would mangle a struct body.
 Prints what's wrong and exits 1 if anything else is in the patch.
@@ -31,6 +31,19 @@ ALLOWED = [
     r"typedef\s+struct\s+\w+\s+\w+\s*;",
     r"(?:extern\s+)?(?:const\s+|unsigned\s+|struct\s+)*[A-Za-z_]\w*[\s\*]+\w+\s*\([^;{}]*\)\s*;(\s*//.*)?",
     r"USER_FUNC\(\w+\)\s*;",
+]
+
+
+# Extra lines a header the patch creates may hold: type definitions (struct/union/enum bodies, their fields and
+# enum members), as the codebase's own headers define an effect's work struct.
+C = r"(\s*//.*)?"
+TYPES = [
+    r"(?:typedef\s+)?(?:struct|union|enum)(?:\s+\w+)?\s*\{" + C,
+    r"(?:(?:const|unsigned|signed|volatile|struct|union|enum)\s+)*\w+[\s\*]+\w+(?:\s*\[[\w\s+\-*/()]+\])*"
+    r"(?:\s*:\s*\d+)?\s*;" + C,
+    r"(?:(?:const|unsigned|struct)\s+)*\w+[\s\*]*\(\s*\*\s*\w+\s*\)\s*\([^;{}]*\)\s*;" + C,
+    r"\w+(?:\s*=\s*[-+\w\s()<>|&~]+)?\s*,?" + C,
+    r"\}\s*\w*\s*;" + C,
 ]
 
 
@@ -89,10 +102,8 @@ def problems(patch):
                 out.append(f"line {n}: static declarations belong in the .c file: {body}")
             elif body.endswith("\\"):
                 out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
-            elif not new and not declaration(body):
-                out.append(f"line {n}: not a declaration: {body}")
-            elif new and re.match(r"#\s*include\b", body) and not declaration(body):
-                out.append(f"line {n}: #include must be a plain .h path without '..': {body}")
+            elif not declaration(body) and not (new and any(re.fullmatch(rx, body) for rx in TYPES)):
+                out.append(f"line {n}: not a declaration" + (" or type definition" if new else "") + f": {body}")
     if patch.strip() and not sections and not out:
         out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
     return out
