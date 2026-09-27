@@ -1017,7 +1017,7 @@ config.libs = [
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/__exception.s"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/dolphin_trk.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/main_TRK.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/dolphin_trk_glue.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/dolphin_trk_glue.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/targcont.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/target_options.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/mslsupp.c"),
