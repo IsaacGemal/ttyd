@@ -236,3 +236,5 @@ void mapGetBoundingBox(Vec min, Vec max);
 MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index);
 MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isRoot, s32 index);
 MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);
+void bmapLoad(const char* map1, const char* map2);
+void bmapUnLoad(void);

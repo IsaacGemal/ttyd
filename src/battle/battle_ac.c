@@ -103,7 +103,7 @@ void BattleActionCommandStop(BattleWork* work) {
 
 //TODO: a2 is some pointer
 // NONMATCHING (0.91%): 1 instruction differs, 152 missing.
-s32 BattleActionCommandCheckDefence(BattleUnit* unit, int a2) {
+s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	return -2;
 }
 
