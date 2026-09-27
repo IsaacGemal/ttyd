@@ -344,8 +344,8 @@ label_5:
 
 // NONMATCHING (76.80%): 5 instructions differ, 8 missing, 8 extra, plus register differences.
 s32 animPaperPoseEntry(const char* animName, s32 group) {
-    AnimationPose* pose;
     s32 i;
+    AnimationPose* pose;
 
     for (i = 0; i < wp->totalPoses; i++) {
         pose = &wp->poses[i];
@@ -360,7 +360,9 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
     if (i == wp->totalPoses) {
         i = -1;
     }
-    if (i < 0) {
+    if (i >= 0) {
+        wp->poses[i].references++;
+    } else {
         i = animPoseEntry(animName, group);
         if (i != -2) {
             pose = &wp->poses[i];
@@ -368,13 +370,11 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
             pose->references = 0;
             pose->flags |= 1;
         }
-    } else {
-        wp->poses[i].references++;
     }
     return i;
 }
 
-// NONMATCHING (95.13%): 3 instructions differ, 2 missing, plus register differences.
+// animEffectAsync
 BOOL animEffectAsync(const char* animName, u32 group) {
     s32 fileId;
     s32 other;
@@ -419,10 +419,18 @@ found:
     if (other == -1) {
         return TRUE;
     }
-    if ((u32)other == 0) {
-        return FALSE;
+#ifdef MUST_MATCH
+    // Natural `return other != 0;` compiles to the branchless (x | -x) >> 31 form; the
+    // original keeps the explicit 0/1 blocks, which a goto preserves.
+    if ((u32)other != 0) {
+        goto ret_true;
     }
+    return FALSE;
+ret_true:
     return TRUE;
+#else
+    return other != 0;
+#endif
 }
 
 void animPosePeraOn(s32 poseId) {
@@ -482,10 +490,12 @@ void animPoseSetStartTime(s32 poseId, OSTime startTime) {
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
-    s32 top = data->mAnimCount;
-    s32 animId = (s32)animName;
+    s32 top;
+    s32 animId;
 
-    if (animId != 0) {
+    animId = (s32)animName;
+    top = data->mAnimCount;
+    if (animId < 0) {
         for (animId = 0; animId < top; animId++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
                 break;
@@ -573,18 +583,17 @@ void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     }
     pose = &wp->poses[pose->paperId];
     data = *wp->files[pose->fileId].handle->data;
+    i = (s32)animName;
     top = data->mAnimCount;
-    if (animName != NULL) {
+    if (i < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
                 break;
             }
         }
-        if (i == top) {
+        if (i >= top) {
             i = 0;
         }
-    } else {
-        i = 0;
     }
     if (!reset && pose->animId == i) {
         return;
@@ -1002,13 +1011,13 @@ void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void
     wp->field_0xDC = a7;
 }
 
-// NONMATCHING (99.36%): same instructions; only register numbers or operands differ.
+// animPoseRelease
 void animPoseRelease(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationTextureFile* texture;
-    AnimationPoseFile* file;
 
     if ((u32)pose->typeFlags != 0) {
+        AnimationPoseFile* file;
+        AnimationTextureFile* texture;
         pose->references--;
         if (pose->references < 0) {
             file = &wp->files[pose->fileId];
@@ -1026,6 +1035,8 @@ void animPoseRelease(s32 poseId) {
             pose->flags = 0;
         }
     } else {
+        AnimationPoseFile* file;
+        AnimationTextureFile* texture;
         if (pose->flags & 0x40) {
             smartFree(*(smartEntry**)((u8*)pose + 0x15C));
         }
@@ -1072,17 +1083,16 @@ void animPaperPoseRelease(s32 poseId) {
 }
 
 // animPoseAutoRelease
-// NONMATCHING (99.43%): same instructions; only register numbers or operands differ.
 void animPoseAutoRelease(s32 type) {
     AnimationPose* pose;
-    AnimationTextureFile* texture;
-    AnimationPoseFile* file;
     s32 i;
 
     for (i = 0; i < wp->totalPoses; i++) {
         pose = &wp->poses[i];
         if ((pose->flags & 1) && pose->type == type) {
             if ((u32)pose->typeFlags != 0) {
+                AnimationPoseFile* file;
+                AnimationTextureFile* texture;
                 pose->references--;
                 if (pose->references < 0) {
                     file = &wp->files[pose->fileId];
@@ -1100,6 +1110,8 @@ void animPoseAutoRelease(s32 type) {
                     pose->flags = 0;
                 }
             } else {
+                AnimationPoseFile* file;
+                AnimationTextureFile* texture;
                 if (pose->flags & 0x40) {
                     smartFree(*(smartEntry**)((u8*)pose + 0x15C));
                 }
