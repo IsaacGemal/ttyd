@@ -50,7 +50,7 @@ typedef struct SukiWork {
     Vec pos;                 // 0xD0
     SukiButton buttons[7];   // 0xDC
     SukiButton buttons2[7];  // 0x184
-    u32 starState;           // 0x22C
+    s32 starState;           // 0x22C
     s32 starCounter;         // 0x230
     Vec starCur;             // 0x234
     Vec starStart;           // 0x240
@@ -63,6 +63,10 @@ typedef struct SukiWork {
     u8 weapon[0xC0];         // 0x284
     u8 field_344[0x4C8 - 0x344]; // 0x344
 } SukiWork;
+
+typedef struct SukiBytes6 {
+    u8 x[6];
+} SukiBytes6;
 
 typedef struct SukiTevParam {
     u8 pad[0xC];
@@ -82,6 +86,7 @@ extern Vec vec3_80300a90;
 extern u8 N_ohko_rate_tbl[6];
 extern u8 weapon[];
 extern s32 nice_event[];
+extern const GXColor dat_804220a0;
 
 static SukiWork* get_ptr(void);
 static void main_base(void);
@@ -101,8 +106,31 @@ static void disp_3D(CameraId camera, void* param);
 
 
 
+// .text:0x0 | 0x80249920 | size: 0xE8
+// NONMATCHING (99.88%): same instructions; only register numbers or operands differ.
+void set_tev(SukiTevParam* param) {
+    SukiWork* work = get_ptr();
+    u8 flash = work->flash;
+
+    GXSetTevOrder(0, 0xFF, 0xFF, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+    GXSetTevAlphaIn(0, 7, 7, 7, 1);
+    {
+        GXColor color;
+        color = dat_804220a0;
+        color.r = flash;
+        color.g = flash;
+        color.b = flash;
+        GXSetTevColor(1, color);
+    }
+    param->field_C = 1;
+    param->field_14 = 0;
+    param->field_10 = 0;
+}
+
 // .text:0xE8 | 0x80249A08 | size: 0x5C
-// NONMATCHING (77.13%): 2 instructions differ, 8 extra, plus register differences.
 s32 get_img_name(EventEntry* event) {
     s32* args = event->args;
     s8 index = (s8)evtGetValue(event, args[0]);
@@ -113,7 +141,6 @@ s32 get_img_name(EventEntry* event) {
 }
 
 // .text:0x144 | 0x80249A64 | size: 0x84
-// NONMATCHING (85.88%): 1 instruction differs, 1 missing, 6 extra, plus register differences.
 s32 eff_crystal(EventEntry* event) {
     s32* args = event->args;
     f32 f1;
@@ -128,7 +155,6 @@ s32 eff_crystal(EventEntry* event) {
 }
 
 // .text:0x1C8 | 0x80249AE8 | size: 0x88
-// NONMATCHING (90.41%): 2 instructions differ, 4 extra, plus register differences.
 s32 get_screen_point(EventEntry* event) {
     s32* args = event->args;
     Vec pos;
@@ -143,7 +169,6 @@ s32 get_screen_point(EventEntry* event) {
 }
 
 // .text:0x250 | 0x80249B70 | size: 0x68
-// NONMATCHING (87.46%): 2 instructions differ, 4 extra, plus register differences.
 s32 exist_map(EventEntry* event) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
@@ -168,10 +193,10 @@ s32 flash_update(EventEntry* event) {
 }
 
 // .text:0x2F8 | 0x80249C18 | size: 0x68
-// NONMATCHING (79.54%): 2 instructions differ, 1 missing, 6 extra, plus register differences.
+// The original loads event->args before the BattleAudienceBaseGetPtr call.
 s32 aud_set_draw(EventEntry* event) {
-    BattleAudience* aud = BattleAudienceBaseGetPtr();
     s32* args = event->args;
+    BattleAudience* aud = BattleAudienceBaseGetPtr();
 
     if (evtGetValue(event, args[0]) == 0) {
         aud->flags |= 0x20000;
@@ -182,23 +207,62 @@ s32 aud_set_draw(EventEntry* event) {
     return EVT_RETURN_DONE;
 }
 
+// .text:0x360 | 0x80249C80 | size: 0x84
+static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    SukiWork* work = get_ptr();
+#ifdef MUST_MATCH
+    // MUST_MATCH: a 6-byte struct assignment makes MWCC inline the copy as the retail `lwz`/`sth`
+    // direct SDA loads; a plain `u8[6]` + memcpy emits a real `bl memcpy`.
+    SukiBytes6 tbl;
+
+    tbl = *(SukiBytes6*)N_ohko_rate_tbl;
+    memcpy(work->weapon, weapon, 0xC0);
+    work->weapon[0x9E] = tbl.x[index - 1];
+#else
+    u8 tbl[6];
+
+    memcpy(tbl, N_ohko_rate_tbl, 6);
+    memcpy(work->weapon, weapon, 0xC0);
+    work->weapon[0x9E] = tbl[index - 1];
+#endif
+    evtSetValue(event, args[1], (s32)work->weapon);
+    return EVT_RETURN_DONE;
+}
+
 // .text:0x3E4 | 0x80249D04 | size: 0x38
-// NONMATCHING (83.93%): the original tests == N with subic/subfe; ours emits subfic/nor/srawi for the same test.
 s32 wait_star_stone_attack_end(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
     return (work->starState == 8) ? 2 : 0;
 }
 
-// .text:0x4E8 | 0x80249E08 | size: 0x84
-// NONMATCHING (71.61%): 2 instructions differ, 1 missing, 14 extra, plus register differences.
-s32 star_stone_get_attack_point(EventEntry* event) {
+// .text:0x41C | 0x80249D3C | size: 0xCC
+static s32 star_stone_attack(EventEntry* event, BOOL isFirstCall) {
+    SukiWork* work = get_ptr();
     s32* args = event->args;
-    SukiWork* work;
-    s32 index;
+    s32 index = evtGetValue(event, args[0]);
+    CameraEntry* cam;
 
-    work = get_ptr();
-    index = evtGetValue(event, args[0]);
+    work->starState = 9;
+    work->starCounter = 0;
+    work->starStart = work->table[index];
+    work->starCur = work->starStart;
+    cam = camGetPtr(CAMERA_3D);
+    work->starEnd = cam->cameraPos;
+    work->starEnd.y += 20.0f;
+    work->starEnd.z += 10.0f;
+    return 2;
+}
+
+// .text:0x4E8 | 0x80249E08 | size: 0x84
+// The original loads event->args only after the get_ptr call.
+s32 star_stone_get_attack_point(EventEntry* event) {
+    SukiWork* work = get_ptr();
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
     evtSetFloat(event, args[1], work->table[index].x);
     evtSetFloat(event, args[2], work->table[index].y);
     evtSetFloat(event, args[3], work->table[index].z);
@@ -206,7 +270,6 @@ s32 star_stone_get_attack_point(EventEntry* event) {
 }
 
 // .text:0x56C | 0x80249E8C | size: 0x38
-// NONMATCHING (83.93%): the original tests == N with subic/subfe; ours emits subfic/nor/srawi for the same test.
 s32 wait_star_stone_up_end(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
@@ -258,28 +321,29 @@ static void disp_3D(CameraId camera, void* param) {
 }
 
 // .text:0x85C | 0x8024A17C | size: 0x180
-// NONMATCHING (51.31%): 13 instructions differ, 15 missing, 46 extra, plus register differences.
+// NONMATCHING (82.40%): 8 instructions differ, 8 missing, 4 extra, plus register differences.
 static void disp_2D(CameraId camera, void* param) {
     SukiWork* work = get_ptr();
     Mtx mtx;
     s32 i;
-    Vec pos;
+    Vec pos1;
+    Vec pos2;
 
     PSMTXScale(mtx, 26.0f, 1.0f, 1.0f);
     PSMTXTransApply(mtx, mtx, work->pos.x, work->pos.y + 60.0f, work->pos.z);
     iconDispGx2(mtx, 0x10, 0x8E);
 
-    pos = vec3_80300a78;
-    pos.x = work->pos.x + 215.0f;
-    pos.y = work->pos.y + 60.0f;
-    pos.z = work->pos.z;
-    iconDispGx(pos, 0x10, 0x90, 1.0f);
+    pos1 = vec3_80300a78;
+    pos1.x = work->pos.x + 215.0f;
+    pos1.y = work->pos.y + 60.0f;
+    pos1.z = work->pos.z;
+    iconDispGx(&pos1, 0x10, 0x90, 1.0f);
 
-    pos = vec3_80300a84;
-    pos.x = work->pos.x - 215.0f;
-    pos.y = work->pos.y + 60.0f;
-    pos.z = work->pos.z;
-    iconDispGx(pos, 0x10, 0x8F, 1.0f);
+    pos2 = vec3_80300a84;
+    pos2.x = work->pos.x - 215.0f;
+    pos2.y = work->pos.y + 60.0f;
+    pos2.z = work->pos.z;
+    iconDispGx(&pos2, 0x10, 0x8F, 1.0f);
 
     GXSetScissor(0, 0x91, gp->fbWidth, 0x50);
     for (i = 0; i < 7; i++) {

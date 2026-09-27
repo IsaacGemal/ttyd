@@ -54,9 +54,7 @@ static void actionCommandDisp(f32, f32);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function.
 #pragma dont_inline on
-// NONMATCHING (50.30%): register allocation (mwcc folds the dec/disp/vec bases into work; the
-// original keeps r28=dec, r29=disp, r30=work, r31=vec) plus a duplicated by-value Vec argument
-// copy. The frame size (0xa0), switch tree and all icon/Vec logic match.
+// NONMATCHING (73.11%): 15 instructions differ, 14 missing, 25 extra, plus register differences.
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
     BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -70,7 +68,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         pos = vec3_802fea38[0];
         pos.x = float_neg200_804215d4 + f1;
         pos.y = float_25_804215d8 + f2;
-        iconDispGx(pos, 0x10, 0x8c, float_1_804215dc);
+        iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
     }
 
     ratio = dec->gaugePercent / float_100_804215e0;
@@ -94,13 +92,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             pos = vec3_802fea38[1];
             pos.x = f1;
             pos.y = f2;
-            iconDispGx(pos, 0x10, 0x7e, float_1_804215dc);
+            iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
         }
         {
             pos = vec3_802fea38[2];
             pos.x = float_56_804215ec + f1;
             pos.y = f2;
-            iconDispGx(pos, 0x10, 0x80, float_1_804215dc);
+            iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
         }
         break;
     case 0x3e8:
@@ -112,13 +110,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
                 pos = vec3_802fea38[3];
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(pos, 0x10, 0x7f, float_1_804215dc);
+                iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
             }
             {
                 pos = vec3_802fea38[4];
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
-                iconDispGx(pos, 0x10, 0x81, float_1_804215dc);
+                iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
             }
         }
         else {
@@ -128,13 +126,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
                 pos = vec3_802fea38[5];
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(pos, 0x10, 0x7e, float_1_804215dc);
+                iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
             }
             {
                 pos = vec3_802fea38[6];
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
-                iconDispGx(pos, 0x10, 0x80, float_1_804215dc);
+                iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
             }
         }
         break;

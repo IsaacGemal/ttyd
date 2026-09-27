@@ -96,7 +96,7 @@ void systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 		isync
 	};
 #endif
-	smartReInit();
+	L_smartReInit();
 	if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
 		fontHeader = smartAlloc(OS_FONT_SIZE_SJIS, 0)->address;
 	}

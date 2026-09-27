@@ -13,16 +13,27 @@ extern const Vec vec3_802c1ae4;
 extern Vec testKagePosArray[];
 extern GXColor unk_80422f98;
 extern GXColor unk_80422f9c;
+extern const f32 float_0_804198f4;
+extern const f32 float_0p5_804198f8;
+extern const f32 float_1_80419904;
+extern const f32 float_150_80419920;
+extern const f32 float_1p5_80419924;
+extern const f32 float_1p25_8041991c;
+extern const f32 float_2p5_80419918;
+extern const f32 float_256_804198fc;
+extern const f32 float_16_80419900;
+extern const f32 float_neg1_80419908;
 
 typedef struct ShadowConfigFields {
     u8 pad00[0x28];
     f32 unk28;
     f32 unk2C;
     f32 unk30;
-    u8 pad34[4];
+    f32 unk34;
     s32 unk38;
-    u8 pad3C[4];
+    u32 unk3C;
     s32 unk40;
+    f32 unk44;
 } ShadowConfigFields;
 
 Mtx tmp_view;
@@ -488,7 +499,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     u16 left, top, right, bottom;
     GXColor color;
     Mtx mtx;
-    f32 zero = 0.0f;
+    f32 zero;
     s32 i;
 
     view = camGetCurPtr()->view;
@@ -503,7 +514,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
     GXSetTevAlphaIn(0, 7, 1, 5, 7);
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422f98);
+    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZMode(1, 3, 0);
     GXSetZCompLoc(1);
@@ -514,6 +525,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     GXClearVtxDesc();
     GXSetVtxDesc(9, 2);
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    zero = float_0_804198f4;
     for (i = 0; i < cswp->unk104; i++, entry++) {
         if (entry->size == zero) {
             continue;
@@ -548,7 +560,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     }
 }
 
-// NONMATCHING (99.74%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
+// NONMATCHING (99.77%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
 // _filter/_query argument-setup register choice differ.
 void shadowCharShadowDisp_Collision(void) {
     ShadowEntry* entry = cswp->entries;
@@ -557,10 +569,11 @@ void shadowCharShadowDisp_Collision(void) {
     f32 (*mtx)[4];
     f32 size;
     f32 unk14;
-    f32 zero = 0.0f;
+    f32 zero;
     s32 i;
 
     camGetCurPtr();
+    zero = float_0_804198f4;
     for (i = 0; i < cswp->unk104; i++, entry++) {
         mtx = entry->matrix;
         if (entry->size == zero) {
@@ -571,9 +584,9 @@ void shadowCharShadowDisp_Collision(void) {
         }
         if (entry->unk2 != 3 && (entry->flags & 1) != 0) {
             query.targetPos = entry->position;
-            query.targetPos.y += 1.0f;
+            query.targetPos.y += float_1_80419904;
             query.targetDir = vec3_802c1a90;
-            query.targetDistance = 150.0f;
+            query.targetDistance = float_150_80419920;
             hit = hitCheckVecFilter(&query, _filter);
             if (hit == NULL) {
                 continue;
@@ -586,7 +599,7 @@ void shadowCharShadowDisp_Collision(void) {
             mtx[1][0] = query.hitNormal.x * size;
             mtx[1][1] = query.hitNormal.y * unk14;
             mtx[1][2] = query.hitNormal.z * size;
-            mtx[2][0] = 0.0f;
+            mtx[2][0] = float_0_804198f4;
             mtx[2][1] = query.hitNormal.z * size;
             mtx[2][2] = -query.hitNormal.y * size;
             mtx[0][0] = size * (-query.hitNormal.y * query.hitNormal.y - query.hitNormal.z * query.hitNormal.z);
@@ -594,28 +607,27 @@ void shadowCharShadowDisp_Collision(void) {
             mtx[0][2] = size * (query.hitNormal.x * query.hitNormal.z);
         }
         else {
-            PSMTXTrans(mtx, entry->position.x, 1.5f + entry->position.y, entry->position.z);
+            PSMTXTrans(mtx, entry->position.x, float_1p5_80419924 + entry->position.y, entry->position.z);
             size = entry->size;
             mtx[2][2] = size;
             mtx[0][0] = size;
             mtx[1][1] = entry->unk14;
-            entry->flags |= 2;
         }
+        entry->flags |= 2;
     }
 }
 
-// NONMATCHING (99.94%): body identical; only the 0.0f .sdata2 relocation differs (pool offsets).
 void shadowMain(void) {
-    dispEntry(CAMERA_3D, 0.0f, 9, shadowDisp, NULL);
-    dispEntry(CAMERA_OFFSCREEN2, 0.0f, 9, shadowDisp, NULL);
-    dispEntry(CAMERA_3D_EFFECTA, 0.0f, 9, shadowDisp, NULL);
-    dispEntry(CAMERA_3D_EFFECTB, 0.0f, 9, shadowDisp, NULL);
+    dispEntry(CAMERA_3D, float_0_804198f4, 9, shadowDisp, NULL);
+    dispEntry(CAMERA_OFFSCREEN2, float_0_804198f4, 9, shadowDisp, NULL);
+    dispEntry(CAMERA_3D_EFFECTA, float_0_804198f4, 9, shadowDisp, NULL);
+    dispEntry(CAMERA_3D_EFFECTB, float_0_804198f4, 9, shadowDisp, NULL);
     if (cswp->unk10C != 0) {
-        dispEntry(CAMERA_SHADOW, 0.0f, 5, shadowDisp, NULL);
-        dispEntry(CAMERA_SHADOW, 0.0f, 0, shadowDisp, NULL);
-        dispEntry(CAMERA_SHADOW, 0.0f, 2, shadowDisp, NULL);
-        dispEntry(CAMERA_SHADOW, 0.0f, 7, shadowDisp, NULL);
+        dispEntry(CAMERA_SHADOW, float_0_804198f4, 5, shadowDisp, NULL);
     }
+    dispEntry(CAMERA_SHADOW, float_0_804198f4, 0, shadowDisp, NULL);
+    dispEntry(CAMERA_SHADOW, float_0_804198f4, 2, shadowDisp, NULL);
+    dispEntry(CAMERA_SHADOW, float_0_804198f4, 7, shadowDisp, NULL);
     cswp->unk104 = 0;
     cswp->unk0 &= ~1;
     cswp->unk4 = 0;
@@ -623,4 +635,94 @@ void shadowMain(void) {
     pswp->unk4 = 0;
     dswp->unk0 &= ~1;
     dswp->unk4 = 0;
+}
+
+// NONMATCHING (85.96%): 5 instructions differ, 15 missing, 9 extra, plus register differences.
+void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
+    ShadowConfigFields* config;
+    CameraEntry* cam;
+    Mtx mtx;
+    Mtx mtx2;
+    GXTexObj* texObj;
+    smartEntry* smart;
+    f32 f29;
+    f32 f30;
+    f32 f31;
+    f32 f4;
+    s32 fmt;
+    s32 sizeFmt;
+    s32 size;
+    s32 flag;
+
+    cam = camGetCurPtr();
+    PSMTXCopy(tmp_view, cam->view);
+    GXSetColorUpdate(1);
+    GXSetViewport(tmp_vp[0], tmp_vp[1], tmp_vp[2], tmp_vp[3], tmp_vp[4], tmp_vp[5]);
+    GXSetScissor(tmp_sci[0], tmp_sci[1], tmp_sci[2], tmp_sci[3]);
+
+    if (work->unk4 != 0) {
+        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
+        if (config->unk3C <= 2) {
+            fmt = 0x11;
+            sizeFmt = 1;
+        }
+        else {
+            fmt = 0x13;
+            sizeFmt = 3;
+        }
+        if (work->unk0 & 2) {
+            size = ShadowSizeTbl[config->unk40];
+            smart = smartAlloc(GXGetTexBufferSize(size, size, sizeFmt, 0, 0), 3);
+            *(smartEntry**)((u8*)work + 0xFC) = smart;
+        }
+        GXSetTexCopySrc(0, 0, size, size);
+        GXSetTexCopyDst(size, size, fmt, 0);
+        GXSetZMode(1, 3, 1);
+        smart = *(smartEntry**)((u8*)work + 0xFC);
+        GXCopyTex(smart->address, 1);
+        GXPixModeSync();
+        texObj = (GXTexObj*)((u8*)work + 0xDC);
+        GXInitTexObj(texObj, smart->address, size, size, sizeFmt, 0, 0, 0);
+        GXInitTexObjLOD(texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
+        if (&work->unkC[0x70] != NULL) {
+            flag = (config->unk3C > 2);
+            if (config->unk38 == 0) {
+                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
+            }
+            else {
+                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, 0.5f, 0.5f, 0.5f, 0.5f);
+            }
+            PSMTXConcat(mtx, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0x70]);
+        }
+        if (&work->unkC[0xA0] != NULL) {
+            f29 = config->unk30;
+            f30 = config->unk34;
+            f31 = f30 - f29;
+            PSMTXScale(mtx2, 0.0f, 0.0f, 0.0f);
+            if (flag) {
+                f4 = float_256_804198fc;
+            }
+            else {
+                f4 = float_16_80419900;
+            }
+            if (config->unk38 == 0) {
+                mtx2[0][2] = f30 / f31;
+                mtx2[0][3] = f30 * f29 / f31;
+                mtx2[1][2] = (f30 / f31) * f4;
+                mtx2[1][3] = (f30 * f29 / f31) * f4;
+                mtx2[2][2] = float_1_80419904;
+                mtx2[2][3] = config->unk44;
+            }
+            else {
+                mtx2[0][2] = float_neg1_80419908 / f31;
+                mtx2[0][3] = -f29 / f31;
+                mtx2[1][2] = (float_neg1_80419908 / f31) * f4;
+                mtx2[1][3] = (-f29 / f31) * f4;
+                mtx2[2][3] = float_1_80419904 + config->unk44;
+            }
+            PSMTXConcat(mtx2, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0xA0]);
+        }
+        work->unk0 |= 1;
+    }
 }

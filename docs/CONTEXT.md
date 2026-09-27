@@ -22,8 +22,8 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 26 after wave 8, PR #9): 4,151 of 9,770 functions matched, 20.53% of code;
-  linked code 9.89%, linked data 4.15%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Progress (local build, Sep 27 after waves 9 and 10, PRs #12 and #11): 4,298 of 9,770 functions matched,
+  21.53% of code; linked code 10.69%, linked data 4.78%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
 - Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
@@ -1094,3 +1094,52 @@ Review 3 (a fresh Claude) found:
   gaps in the header-patch, prototype and claims checks. The merge script now also runs `proto_asm.py` when an
   agent added header lines and prints any findings as a warning to check by hand.
 
+
+## Wave 10: the first wave run in parallel with another (2026-09-27, Claude Opus 5.5 ("TTYD Claude #2"); agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+Ran alongside wave 9 (the other orchestrator): its own worktree (`~/ttyd-wave10`), its own inference key, units
+kept apart by `tools/claims.py`. 24 agents, 30 minutes, 15:22-15:53: 18 on near-misses in existing files, 6 new
+files. Merged 23 of 24; fontmgr was rejected (cut off with the file not compiling). **4,155 -> 4,236 functions
+(+81) on its own; 4,298 after merging main with wave 9 in, exactly main's 4,217 + 81.** PR #11.
+
+**Running two waves at once.** Both waves' agents compiling at once put the tower at load ~600 (16 cores):
+`check.py` ran plain `ninja`, 18 jobs per agent. It now runs `ninja -j2` (patched into running workspaces
+mid-wave; the template has it). The two PRs touched two files in common (configure.py, one declaration in
+battle_stage_object.c) and git merged them without conflicts; the second to land merges main in once rather than
+rebasing its ~30 commits.
+
+**15 of 24 agents ran to the time limit.** Next waves get 45 minutes (Isaac).
+
+**Merge-time fixes by the orchestrator.** Three agents put a struct in an existing header or changed a header
+line, which header patches may not do; the structs were moved into the .c files and koopa_hit's `void` ->
+`void*` (checked in the asm) applied by hand, each noted in its commit. Five files' agents used
+`optimize_for_size` pragmas file-wide; they build with `-O4,s` in configure.py instead (no score change).
+
+**What the three reviews found** (every finding checked against the asm before acting):
+- Review 1 (fresh Claude): 6 high, all logic bugs in partial functions: an inverted condition and a missing
+  `cont = 1` in battleAcMain_StickRotate, `|= 0x100` for `oris 0x100` (0x01000000) in Vivian's disp_off, score
+  popups losing their last digit, `pouchAddKpaCoin` declared `void` when it returns the coin wrap (its callers'
+  1000-point bonus was missing), and two in depthShadowEnd (`== 2` for an unsigned `> 2`; texture filters 1,1 for
+  0,0). Its best medium: `iconDispGx`/`iconDispGxAlpha` take `Vec*`, not `Vec` (open since wave 8); fixing the
+  header and 52 call sites matched iconDispGx and raised 14 functions in 10 files by 6-30 points. Also wrong
+  header types `MarioWork.multiTimer` and `BattleActions.outputParams` (both s32) and two KpaWork copies merged.
+- Review 2 (Codex): `marioHitCheckVec` returns the HitEntry*, not a BOOL; a third CameraParams copy (one in
+  camdrv.h now); match-only code review 1 had only commented, moved under `#ifdef MUST_MATCH` as the brief asks.
+  It re-checked review 1's fixes against the asm and found them right.
+- Review 3 (fresh Claude): **float constants CI can't see.** Agents wrote 3.1416f etc. from the .sdata2 symbols'
+  rounded names; the original holds 3.1415927. objdiff doesn't compare literal values, so functions at 100% had
+  the wrong constant (GetRingOffset, getRidePos). Fixed in six files and added to the agent brief (rule 9).
+  Also `smartReInit` is `L_smartReInit` in the original, so CI never scored it (renamed; an extra store removed),
+  and `_get_icon_id` inlined where the original calls it (dont_inline: two functions 25% and 72% -> 94%).
+
+**Lessons.**
+- A score says nothing about constants in the literal pool; a float literal needs checking against the asm's
+  `.float` even at 100%.
+- A C function whose name differs from the original's symbol is invisible to CI: no score, no label, no ratchet.
+- Header types were again the biggest lever: one prototype fix (`Vec*`) did more than several agents.
+
+**Open:** ItemData.icon_id and discount_price are read with `lhz` (u16), and iconDispGx's iconId looks u16
+(`clrlwi r5, 16`), but changing them moved battle_disp's scores both ways; battle_attack_audience's .sdata2 floats
+stay writable (const makes MWCC fold them: 99% -> 73%); kpa_act's vec3_802fe200 keeps `__declspec(section)`;
+evt_win reads the u16 fields through puns under MUST_MATCH; symbols.txt gives `kpa_fall` local scope though
+mot_jump calls it; fontmgr (rejected) is back in the queue.

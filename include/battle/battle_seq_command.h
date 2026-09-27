@@ -37,3 +37,4 @@ void _cursor_init(BattleCursor* cursor);
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
+BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp);

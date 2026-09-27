@@ -551,7 +551,7 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
         iconSetScale(name, 0.45f);
         iconFlagOn(name, 2);
         *(s32*)((u8*)work + 0xCC + i * 4) = 0;
-        *(f32*)((u8*)work + 0x118 + i * 0xC) = 86.9f - 16.2f * (f32)(i - 9);
+        *(f32*)((u8*)work + 0x118 + i * 0xC) = 86.899994f - 16.199999f * (f32)(i - 9);
         *(f32*)((u8*)work + 0x11C + i * 0xC) = 0.0f;
         *(f32*)((u8*)work + 0x120 + i * 0xC) = 0.0f;
         iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
@@ -617,7 +617,7 @@ s32 _set_confetti_control_evtid(EventEntry* event, BOOL isFirstCall) {
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};
 
-    windowDispGX_Waku_col(0, color, -76.9f, 21.0f, 165.8f, 24.2f, 10.0f);
+    windowDispGX_Waku_col(0, color, -76.899994f, 21.0f, 165.79999f, 24.199999f, 10.0f);
 }
 
 // NONMATCHING (68.47%): rebuilt from the asm; logic is complete. The switch, pouch checks and message
@@ -662,9 +662,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     FontDrawMessage((s32)x, -148 + (lines - 1) * 29, msg);
 }
 
-// NONMATCHING (56.97%): rebuilt from the asm; logic is complete. Differences: our frame is 0x70 vs the
-// original 0x60, so the icon Vec and float-conversion scratch land 0x10 higher; the int->float scheduling
-// and a couple of load orderings differ.
+// NONMATCHING (82.23%): 8 missing, 8 extra, plus register differences.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -685,15 +683,14 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     pos.x = -40.0f;
     pos.y = (f32)(-50 - *(s32*)((u8*)work + 0x24) * 25);
     pos.z = 0.0f;
-    iconDispGx(pos, 0x10, 0x18C, 1.0f);
+    iconDispGx(&pos, 0x10, 0x18C, 1.0f);
 }
 
-// NONMATCHING (77.00%): 5 instructions differ, 10 extra, plus register differences.
+// NONMATCHING (94.62%): 2 instructions differ, 2 extra, plus register differences. Known issue: strlen's result is converted unsigned in the original (no xoris); u32 len alone scores lower because the frame shifts
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     Vec pos;
-    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     char buf[8];
     s32 len;
 
@@ -704,8 +701,8 @@ void _MarioExpDisp(CameraId camId, void* param) {
     if (work != NULL) {
         sprintf(buf, "%2d", *(s16*)((u8*)work + 0xA));
         len = strlen(buf);
-        windowDispGX_Waku_col(0, color, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
-        iconDispGx(pos, 0x10, 0x18C, 1.0f);
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
+        iconDispGx(&pos, 0x10, 0x18C, 1.0f);
         FontDrawStart();
         FontDrawString(buf, 225.0f, -163.0f);
     }

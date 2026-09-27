@@ -9,3 +9,5 @@ void quake_kpaLandOn(void);
 s32 kpaHipAttackOk(void);
 void kpa_hip(void);
 void kpa_stay(void);
+void kpa_fall_80213C38(void);
+void kpa_jump(void);

@@ -49,9 +49,7 @@ typedef struct ButtonDownWork {
 // pragma to the two functions that need it.
 #pragma optimize_for_size on
 
-// NONMATCHING (67.80%): the derived work pointer is folded into the BattleWork base and the by-value
-// Vec argument gets an extra stack copy (frame is 0xc0 instead of 0xb0). The float callee-saved
-// assignment is rotated (original f30=baseX, f28=iconX, f29=iconY).
+// NONMATCHING (87.85%): 7 instructions differ, 8 missing, 10 extra, plus register differences.
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
@@ -72,7 +70,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         t = vec[0];
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(t, 0x10, 0x8F, float_1_804204f4);
+        iconDispGx(&t, 0x10, 0x8F, float_1_804204f4);
     }
 
     iconX += float_16_804204f8;
@@ -81,7 +79,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         t = vec[1];
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(t, 0x10, 0x8E, float_1_804204f4);
+        iconDispGx(&t, 0x10, 0x8E, float_1_804204f4);
         iconX += float_16_804204f8;
     }
 
@@ -90,7 +88,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         t = vec[2];
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(t, 0x10, 0x90, float_1_804204f4);
+        iconDispGx(&t, 0x10, 0x90, float_1_804204f4);
     }
 
     flags = *(s32*)&work->actionCommands.field_34[0x00];
@@ -156,12 +154,12 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
             v = vec[3];
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(v, 0x10, pressed, float_1_804204f4);
+            iconDispGx(&v, 0x10, pressed, float_1_804204f4);
         } else {
             v = vec[4];
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(v, 0x10, released, float_1_804204f4);
+            iconDispGx(&v, 0x10, released, float_1_804204f4);
         }
     }
 }
@@ -202,7 +200,7 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (81.49%): the state machine and all logic match, but MWCC assigns the callee-saved
+// NONMATCHING (82.01%): the state machine and all logic match, but MWCC assigns the callee-saved
 // registers differently (work is r24 instead of r22, smooth r28 instead of r25, ...), so almost every
 // instruction that touches a pointer/loop variable differs in its register field.
 s32 battleAcMain_ButtonDown(BattleWork* work) {

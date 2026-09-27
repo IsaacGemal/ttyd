@@ -361,7 +361,7 @@ void iconDisp(CameraId camId, void* param) {
 // NONMATCHING (96.60%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
-void iconDispGxAlpha(Vec position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
+void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -372,7 +372,7 @@ void iconDispGxAlpha(Vec position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
     camera = camGetCurPtr();
     if (!icon_tpl_ok || !icon_bin_ok)
         return;
-    MTXTrans(transmtx, position.x, position.y, position.z);
+    MTXTrans(transmtx, position->x, position->y, position->z);
     MTXScale(scalemtx, scale, scale, scale);
     MTXRotRad(rotmtx, 'y', float_deg2rad_804197c0 * -camera->viewYaw);
     MTXConcat(transmtx, rotmtx, mtx);
@@ -418,9 +418,7 @@ void iconDispGxAlpha(Vec position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
 
 #pragma dont_inline reset
 
-// NONMATCHING (21.78%): the header takes `Vec` by value but retail has `Vec*`; ours copies
-// the struct before calling iconDispGxAlpha, retail forwards r3 unchanged.
-void iconDispGx(Vec position, s16 flags, s16 iconId, f32 scale) {
+void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 

@@ -3,7 +3,9 @@
 #include "system.h"
 #include "manager/fontmgr.h"
 #include "battle/battle_disp.h"
+#include "driver/icondrv.h"
 #include "driver/msgdrv.h"
+#include "pmario_sound.h"
 #include <stdio.h>
 #include "math_ext.h"
 
@@ -35,7 +37,9 @@ typedef struct BattleMenuWork {
     s32 field_0xC0[7];      // 0xC0
     s32 field_0xDC[7];      // 0xDC
     s32 field_0xF8[7];      // 0xF8
-    u8 field_0x114[0x124 - 0x114];
+    u8 field_0x114[0x11C - 0x114];
+    s32 field_0x11C;        // 0x11C
+    f32 field_0x120;        // 0x120
 } BattleMenuWork;
 
 
@@ -113,7 +117,6 @@ void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, u32 flags) {
     }
 }
 
-// NONMATCHING (85.16%): 1 instruction differs, 1 missing, 3 extra.
 void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
     BattleMenuWork* window;
@@ -133,7 +136,6 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     }
 }
 
-// NONMATCHING (83.10%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* arg, u32 flags) {
     BattleMenuWork* window = 0;
     BattleCursor* cursor = 0;
@@ -149,7 +151,6 @@ void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* 
 // These are called, never inlined, in the original build. The unit's configure
 // entry still uses the default `-inline auto`, so keep them out of line here.
 #pragma dont_inline on
-// NONMATCHING (7.97%): 11 instructions differ, 6 missing, 53 extra, plus register differences.
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -288,7 +289,6 @@ void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
     }
 }
 
-// NONMATCHING (49.16%): 4 instructions differ, 22 missing, 46 extra, plus register differences.
 void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 idx, s32 mode) {
     s32 i;
 
@@ -331,7 +331,8 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     }
 }
 
-// NONMATCHING (80.50%): 1 instruction differs, 5 missing, 12 extra, plus register differences.
+// NONMATCHING (99.11%): in the non-flag branch MWCC rotates window/idx/i through
+// r8/r6/r7 where the original uses r6/r7/r8; no source form found that fixes it.
 void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32 flags) {
     s32 i;
     s32 idx;
@@ -355,10 +356,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
                 w->field_0x34[idx] = 0xB;
             }
             w->field_0x48[idx] = 0;
-            {
-                s32 v = a->unk8 + i;
-                w->field_0x84[idx] = v - 1;
-            }
+            w->field_0x84[idx] = a->unk8 - 1 + i;
             if (w->field_0x84[idx] >= a->unk8) {
                 w->field_0x84[idx] -= a->unk8;
             }
@@ -389,7 +387,47 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
-// NONMATCHING (90.09%): 6 instructions differ, 6 missing, 1 extra, plus register differences.
+// NONMATCHING (85.42%): 7 instructions differ, 5 missing, 5 extra, plus register differences.
+void DrawMenuCursorAndScrollArrow(Vec* pos) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleCursor* cursor = window->cursor;
+    Vec vec;
+    f32 f31;
+    s32 n;
+
+    f31 = intplGetValue(4, window->field_0x11C, 6, 0.0f, 10.0f);
+    window->field_0x11C++;
+    if (window->field_0x11C >= 12) {
+        window->field_0x11C = 0;
+    }
+    if (cursor->field_4 > 0) {
+        vec.x = 155.0f + pos->x;
+        vec.y = 15.0f + pos->y + f31;
+        vec.z = 0.0f;
+        iconDispGx(&vec, 0x10, 0x1B5, 0.75f);
+    }
+    if (cursor->unk8 - 6 > cursor->field_4) {
+        vec.x = 155.0f + pos->x;
+        vec.y = 20.0f + pos->y - 164.0f - f31;
+        vec.z = 0.0f;
+        iconDispGx(&vec, 0x10, 0x1B6, 0.75f);
+    }
+    n = cursor->field_0 - cursor->field_4;
+    if (n < 0) {
+        n = 0;
+    }
+    if (n >= 6) {
+        n = 5;
+    }
+    vec.x = pos->x;
+    vec.y = pos->y - 24.0f * (f32)n;
+    vec.z = 0.0f;
+    iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
+}
+
+// NONMATCHING (97.44%): MWCC coalesces sp/p (`cmplwi` instead of `mr. r31,r3`),
+// shifting p/line to r3/r4; everything else is register renaming.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xCF};
     s8 text[4][0x30];
@@ -444,25 +482,84 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
         }
         FontDrawString((char*)text[2], x + 20.0f, y - 52.0f);
     } else {
-        FontDrawString("\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49",
-                       x + 10.0f, y - 4.0f);
+        FontDrawString("\x82\xB9\x82\xC2\x82\xDF\x82\xA2\x82\xCD\x81\x40\x82\xC8\x82\xA2\x82\xCC\x82\xBE\x81\x49\x81\x49", x + 10.0f, y - 4.0f);
     }
 }
 
-void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle) {
+// _Sub is a real call in the original; without this MWCC inlines it into DrawMenuPartyChangeButton.
+#pragma dont_inline on
+void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
     Mtx mtx;
 
     PSMTXRotRad(mtx, 'y', 0.017453f * angle);
     PSMTXTransApply(mtx, mtx, x, y, 0.0f);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-        btlDispTexPlane2(mtx, (u32)tex, color, 0);
+        btlDispTexPlane2(mtx, tex, color, 0);
+    }
+}
+#pragma dont_inline reset
+
+// NONMATCHING (99.91%): f31 = x1 + x2 then *= 0.5f puts the sum in f31; the
+// original keeps it in a temp f1 and multiplies into f31 (2 instructions).
+void DrawMenuPartyChangeButton(void) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleUnit* mario;
+    BattleUnit* party;
+    s32 memberId;
+    f32 itemX;
+    f32 itemY;
+    f32 itemZ;
+    Vec screen1;
+    Vec screen2;
+    f32 f31;
+    f32 f30;
+
+    camGetPtr(8);
+    mario = BattleGetMarioPtr(wp);
+    party = BattleGetPartyPtr(wp);
+    if (party == 0) {
+        BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
+        if (memberId != -1) {
+            if (window->field_0x120 > 0.0f) {
+                window->field_0x120 -= 5.0f;
+            } else {
+                window->field_0x120 = 0.0f;
+            }
+            btlGetScreenPoint(&mario->mPosition, &screen1);
+            DrawMenuPartyChangeButton_Sub(5, screen1.x, screen1.y - 20.0f, window->field_0x120);
+        } else {
+            window->field_0x120 = 90.0f;
+        }
+    } else {
+        btlGetScreenPoint(&mario->mPosition, &screen1);
+        btlGetScreenPoint(&party->mPosition, &screen2);
+        f31 = screen1.x + screen2.x;
+        f31 *= 0.5f;
+        f30 = screen1.y;
+        BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
+        if (memberId != -1) {
+            if (window->field_0x120 == 90.0f) {
+                psndSFXOn("SFX_BTL_SYS_CAUTION_THROW1");
+            }
+            if (window->field_0x120 > 0.0f) {
+                window->field_0x120 -= 5.0f;
+            } else {
+                window->field_0x120 = 0.0f;
+            }
+            DrawMenuPartyChangeButton_Sub(5, f31, f30 - 20.0f, window->field_0x120);
+        } else {
+            window->field_0x120 = 90.0f;
+            if (BattleCommandCheckChangePositionEnable(wp)) {
+                DrawMenuPartyChangeButton_Sub(4, f31, f30 - 20.0f, 0.0f);
+            }
+        }
     }
 }
 
-// NONMATCHING (83.93%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void GetRingOffset(f32* x, f32* y, f32 angle) {
-    f32 a = 4.7124f - angle;
+    f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);
     *x = c;
     *y = 35.0f * (f32)sin(a);

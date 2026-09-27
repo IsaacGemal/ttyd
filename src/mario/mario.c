@@ -28,6 +28,29 @@ const char* dotMarioPose[4][6] = {
 	{"Z_18", "S_4", "W_18", "R_18", "U_4", "J_4"}
 };
 
+//.sdata
+const char* marioAnimeGroupData[4][3] = {
+	{"a_mario", "a_mario_r", "e_mario"},
+	{"a_mario_l", "a_mario_lr", "e_mario_l"},
+	{"a_mario_w", "a_mario_wr", "e_mario_w"},
+	{"a_mario_wl", "a_mario_wlr", "e_mario_wl"}
+};
+
+//unreferenced vec constants kept to preserve the original .rodata layout
+const Vec vec3_802c3698 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802c36a4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802c36b0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802c36bc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802c36c8 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_802c36d4 = {0.0f, 74.0f, 0.0f};
+const Vec vec3_802c36e0 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_802c36ec = {0.0f, 74.0f, 0.0f};
+const Vec vec3_802c36f8 = {0.0f, -10000.0f, 0.0f};
+const Vec vec3_802c3704 = {0.0f, 0.0f, 0.0f};
+
+//.sdata2
+const u32 dat_80419e34 = 0xFFFFFF00;
+
 //.bss
 Vec blurPos[8];
 
@@ -38,7 +61,6 @@ MarioWork* mp;
 
 //locals for symbols with no home header
 extern Vec R_last_position;
-extern const char* marioAnimeGroupData[4][3];
 
 MarioWork* marioGetPtr(void) {
 	return mp;
@@ -452,77 +474,61 @@ void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;
 
-	if (wp->currMotionId == MARIO_MOTION_PLANE) {
-		return;
-	}
-	if (wp->currMotionId == MARIO_MOTION_SHIP) {
-		return;
-	}
-	if ((u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) <= 2) {
-		return;
-	}
-	if (wp->currMotionId == MARIO_MOTION_JABARA) {
-		return;
-	}
-	if (wp->currMotionId == MARIO_MOTION_YOSHI) {
-		return;
-	}
-	if (wp->currMotionId == MARIO_MOTION_JUMP_3) {
-		return;
-	}
-	if (wp->currMotionId == MARIO_MOTION_JUMP_STAND) {
-		return;
-	}
-	if (vivianGetStatus() != 0) {
-		return;
-	}
-	marioMotion();
-	flags = wp->flags;
-	if (flags & 0x40000) {
-		marioMove();
-		marioChkOverhead();
-		if (wp->airTimer > 100) {
-			marioChgMot(MARIO_MOTION_FALL);
-			marioSetFallPara();
-		}
-		return;
-	}
-	if (flags & 0x10000) {
-		marioJump();
-		marioChkOverhead();
-		marioMove();
-		if (mp->currMotionId == MARIO_MOTION_ROLL) {
+	if (wp->currMotionId != MARIO_MOTION_PLANE && wp->currMotionId != MARIO_MOTION_SHIP
+	    && (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) > 2 && wp->currMotionId != MARIO_MOTION_JABARA
+	    && wp->currMotionId != MARIO_MOTION_YOSHI && wp->currMotionId != MARIO_MOTION_JUMP_3
+	    && wp->currMotionId != MARIO_MOTION_JUMP_STAND) {
+		if (vivianGetStatus() != 0) {
 			return;
 		}
-		if (wp->airTimer <= 5) {
-			return;
-		}
-		marioChkGnd2();
-		return;
-	}
-	if (flags & 0x20000) {
-		if (wp->currMotionId == MARIO_MOTION_SHIP) {
-			return;
-		}
-		marioMove();
-		if (wp->currMotionId == MARIO_MOTION_HIP) {
-			f32 overheadY = marioChkOverhead();
-			if (*(void**)((u8*)wp + 0x1f4) != NULL) {
-				wp->position.y = overheadY;
+		marioMotion();
+		flags = wp->flags;
+		if (flags & 0x40000) {
+			marioMove();
+			marioChkOverhead();
+			if (wp->airTimer > 100) {
+				marioChgMot(MARIO_MOTION_FALL);
+				marioSetFallPara();
 			}
+			return;
+		}
+		if (flags & 0x10000) {
+			marioJump();
+			marioChkOverhead();
+			marioMove();
+			if (mp->currMotionId == MARIO_MOTION_ROLL) {
+				return;
+			}
+			if (wp->airTimer <= 5) {
+				return;
+			}
+			marioChkGnd2();
+			return;
+		}
+		if (flags & 0x20000) {
+			if (wp->currMotionId == MARIO_MOTION_SHIP) {
+				return;
+			}
+			marioMove();
+			if (wp->currMotionId == MARIO_MOTION_HIP) {
+				f32 overheadY = marioChkOverhead();
+				if (*(void**)((u8*)wp + 0x1f4) != NULL) {
+					wp->position.y = overheadY;
+				}
+			}
+			else {
+				marioChkOverhead();
+			}
+			marioFall();
+			if (wp->currMotionId == MARIO_MOTION_HIP || wp->currMotionId == MARIO_MOTION_HIP_2
+			    || (mp->currMotionId != MARIO_MOTION_ROLL && wp->airTimer > 5)) {
+				marioChkGnd2();
+			}
+			marioChkWallAround(&wp->position, 0, 0.0f, 0.0f, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
 		}
 		else {
-			marioChkOverhead();
+			marioChkGnd();
 		}
-		marioFall();
-		if (wp->currMotionId == MARIO_MOTION_HIP || wp->currMotionId == MARIO_MOTION_HIP_2
-		    || (mp->currMotionId != MARIO_MOTION_ROLL && wp->airTimer > 5)) {
-			marioChkGnd2();
-		}
-		marioChkWallAround(&wp->position, 0, 0.0f, 0.0f, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
-	}
-	else {
-		marioChkGnd();
 	}
 }
 
@@ -565,10 +571,14 @@ s32 marioAnimeId(void) {
 void unk_80058374(void) {
 	MarioWork* wp = mp;
 	MarioMotion mot = wp->currMotionId;
+	s32 flags;
 
-	if (mot != MARIO_MOTION_SHIP && mot != MARIO_MOTION_ROLL && mot != MARIO_MOTION_PLANE && mot != MARIO_MOTION_JABARA && mot != MARIO_MOTION_YOSHI
-	    && !(wp->dispFlags & 0x1000000)) {
-		marioChgPose("M_D_1"); //inline
+	if (mot != MARIO_MOTION_SHIP && mot != MARIO_MOTION_ROLL && mot != MARIO_MOTION_PLANE && mot != MARIO_MOTION_JABARA && mot != MARIO_MOTION_YOSHI) {
+		flags = wp->dispFlags;
+		if (!(flags & 0x1000000)) {
+			marioChgPose("M_D_1"); //inline
+		}
+		return;
 	}
 }
 
@@ -796,7 +806,6 @@ void marioDisp(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toRearPose(const char* name) { //1:1
 	const char* rear = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {
@@ -921,7 +930,7 @@ const char* toRearPose(const char* name) { //1:1
 			rear = "M_H_8R";
 		}
 		else if (!strcmp(name, "M_O_2")) {
-			rear = "M_O_1R";
+			rear = "M_O_2R";
 		}
 		else if (!strcmp(name, "M_I_2")) {
 			rear = "M_I_2R";
@@ -936,7 +945,6 @@ const char* toRearPose(const char* name) { //1:1
 	}
 }
 
-// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toFrontPose(const char* name) { //1:1
 	const char* front = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {

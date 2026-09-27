@@ -152,8 +152,9 @@ USER_FUNC(unitwin_get_work_ptr) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.44%): itemDataTable[].icon_id is declared s16 in item_data.h,
-// but the original loads it with lhz (u16); sign extension adds one instruction.
+// NONMATCHING (99.56%): itemDataTable[].icon_id is s16 in the header but the
+// original uses lhz (u16); a u16* load reproduces it. Address build still differs:
+// original `mulli r0; add r4,r4,r0`, ours `mulli r5; add r4,r0,r5`.
 USER_FUNC(set_new_goods_list) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
@@ -164,7 +165,11 @@ USER_FUNC(set_new_goods_list) {
 	if (wp->index < wp->count) {
 		sprintf(name, str_8041DAC0, wp->index);
 		if (item != 0) {
+#ifdef MUST_MATCH
+			iconChange(name, *(u16*)&itemDataTable[item].icon_id);
+#else
 			iconChange(name, (u16)itemDataTable[item].icon_id);
+#endif
 		} else {
 			iconDelete(name);
 		}
@@ -189,9 +194,8 @@ USER_FUNC(evt_unitwin_main_func) {
 	return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (98.47%): the original materializes !marioChkCtrl()/!marioChkKey()
-// with cntlzw+srwi; writing the same test as `a || b`, `a == 0`, etc. makes the
-// compiler emit cmpwi instead.
+// NONMATCHING (99.49%): first !marioChkCtrl() is cntlzw+srwi. via the BOOL; the
+// second !marioChkKey() still merges into srwi + cmpwi instead of srwi. + branch.
 USER_FUNC(unk_80174e98) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];
 	s32 selected = 0;
@@ -199,6 +203,7 @@ USER_FUNC(unk_80174e98) {
 	PartyEntry* party = partyGetPtr(0);
 	HitEntry* hit = (HitEntry*)mario->hitobjStandOn;
 	s32 buttons;
+	BOOL notCtrl;
 	s32 i;
 
 	if (wp->field_0x54 & 1) {
@@ -206,9 +211,12 @@ USER_FUNC(unk_80174e98) {
 		return EVT_RETURN_DONE;
 	}
 	wp->flags &= ~1;
-
 	buttons = keyGetButtonTrg(0);
-	if (!marioChkCtrl() || !marioChkKey()) {
+	notCtrl = !marioChkCtrl();
+	if (!notCtrl) {
+		notCtrl = !marioChkKey();
+	}
+	if (notCtrl) {
 		buttons = 0;
 	}
 
@@ -316,13 +324,13 @@ USER_FUNC(unk_8017524c) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.16%): the loop/return body matches; the epilogue restores r31
-// after r30 in the original, the compiler here hoists the r31 restore earlier.
 USER_FUNC(unitwincoin_wait) {
 	UnitWinWork* wp = _wp;
+	s32 coin;
 
 	pouchGetPtr();
-	return (pouchGetCoin() != wp->field_0x2C) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+	coin = pouchGetCoin();
+	return (wp->field_0x2C != coin) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
 USER_FUNC(unitwincoin_disp_onoff) {
@@ -415,8 +423,6 @@ USER_FUNC(evt_unitwin_alloc) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.40%): itemDataTable[].icon_id is declared s16 in item_data.h,
-// but the original loads it with lhz (u16); sign extension adds one instruction.
 USER_FUNC(evt_unitwin_selltable_setup) {
 	s32* args = event->args;
 	s32 i;
@@ -437,7 +443,11 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 		mapObjFlagOn(wp->objList[i].name, 0x4000);
 		if (wp->field_0x8[i] != 0) {
 			sprintf(name, str_8041DAC0, i);
+#ifdef MUST_MATCH
+			iconEntry(name, *(u16*)&itemDataTable[wp->field_0x8[i]].icon_id);
+#else
 			iconEntry(name, (u16)itemDataTable[wp->field_0x8[i]].icon_id);
+#endif
 			iconSetPos(name, pos.x, float_6_8041dbe8 + pos.y, pos.z);
 			iconFlagOn(name, 0x40);
 		} else {
@@ -487,16 +497,15 @@ void unk_80175710(WinMgrEntry* entry) {
 	}
 }
 
-// NONMATCHING (98.05%): itemDataTable[].discount_price is declared s16 but the
-// original loads it with lhz (u16); remaining diffs are stack slot and float
-// register allocation offsets.
+// NONMATCHING (99.74%): itemDataTable[].discount_price is s16 in the header but
+// the original uses lhz (u16); the two loads use a u16* cast. Remaining: int-to-
+// double literal names (@368/@369) and f2/f3/f4 float-register allocation.
 void unk_8017599c(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
-	GXColor iconColor;
-	GXColor titleColor;
+	Mtx mtx;
 	Vec pos;
 	char buf[0x40];
-	Mtx mtx;
+	GXColor titleColor;
 	const char* msg;
 	s32 i;
 
@@ -517,11 +526,18 @@ void unk_8017599c(WinMgrEntry* entry) {
 		pos.y += float_30_8041dbf0;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
-		pos.x *= float_0p5_8041db60 * (f32)gp->fbWidth;
-		pos.y *= float_0p5_8041db60 * (f32)gp->efbHeight;
+		pos.x *= (f32)gp->fbWidth * float_0p5_8041db60;
+		pos.y *= (f32)gp->efbHeight * float_0p5_8041db60;
+#ifdef MUST_MATCH
+		sprintf(buf, str_8041DBAC, *(u16*)&itemDataTable[wp->field_0x8[i]].discount_price);
+#else
 		sprintf(buf, str_8041DBAC, itemDataTable[wp->field_0x8[i]].discount_price);
+#endif
 		PSMTXTrans(mtx, float_12_8041dbfc * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
-		*(u32*)&iconColor = dat_8041d9b8;
-		iconNumberDispGx(mtx, itemDataTable[wp->field_0x8[i]].discount_price, 0, iconColor);
+#ifdef MUST_MATCH
+		iconNumberDispGx(mtx, *(u16*)&itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
+#else
+		iconNumberDispGx(mtx, itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
+#endif
 	}
 }

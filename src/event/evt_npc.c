@@ -32,7 +32,6 @@ extern GXColor unk_80422fc0;
 
 // TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
 // might just be -inline deferred? No auto
-#pragma optimize_for_size on
 #pragma pool_data on
 
 #ifdef __MWERKS__
@@ -855,7 +854,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 // Full translation; only the callee-saved register assignment differs from the original: ours
 // puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
 // f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
-// NONMATCHING (40.85%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
+// NONMATCHING (40.44%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
@@ -950,8 +949,8 @@ USER_FUNC(evt_npc_glide_position) {
 
     dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
     npc->moveOffset.y += dy * delta;
-    t = (f32)sin(3.1416f * b);
-    a = (f32)sin(3.1416f * a);
+    t = (f32)sin(3.1415927f * b);
+    a = (f32)sin(3.1415927f * a);
     npc->moveOffset.y += arcHeight * (a - t);
 
     sfxFlag = 0;
@@ -2253,6 +2252,7 @@ USER_FUNC(evt_npc_change_interrupt) {
 // the original computes npc->description (r3) before &color (r4), MWCC here does the reverse.
 USER_FUNC(evt_npc_set_color) {
     GXColor color;
+    GXColor tmp;
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     u8 r = evtGetValue(event, args[1]);
@@ -2260,26 +2260,25 @@ USER_FUNC(evt_npc_set_color) {
     u8 b = evtGetValue(event, args[3]);
     u8 a = evtGetValue(event, args[4]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
+    char* desc = npc->description;
 #ifdef MUST_MATCH
-    // The original builds the color in a temporary then copies it into `color`; natural form below.
-    GXColor tmp;
+    // The original builds the color in a temporary then copies it into `color` (the copy is one word).
     tmp = unk_80422fc0;
     tmp.r = r;
     tmp.g = g;
     tmp.b = b;
     tmp.a = a;
-    color = tmp;
+    npcSetColor(desc, (color = tmp, &color));
 #else
     color = unk_80422fc0;
     color.r = r;
     color.g = g;
     color.b = b;
     color.a = a;
+    npcSetColor(desc, &color);
 #endif
-    npcSetColor(npc->description, &color);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_npc_battle_start) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2385,7 +2384,7 @@ USER_FUNC(evt_npc_add_dirdist) {
     dist = evtGetFloat(event, args[3]);
     x = evtGetFloat(event, outX);
     z = evtGetFloat(event, outZ);
-    rad = angle * 6.2832f / 360.0f;
+    rad = angle * 6.2831855f / 360.0f;
     s = (f32)sin(rad);
     c = (f32)cos(rad);
     x = x + dist * s;
@@ -2395,10 +2394,9 @@ USER_FUNC(evt_npc_add_dirdist) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.84%): only the operand order of the fmadds differs. The original is
-// `fmadds f0, f1, f2, f0` (f1=100.0f, f2=viewYaw); MWCC here emits `fmadds f0, f2, f1, f0`
-// for `cam->viewYaw * scale + 5.0f`. Writing `scale * cam->viewYaw` swaps which register the
-// constant and the field land in, which is worse (97.86%). Multiply is commutative, logic is right.
+// The original computes `scale * yaw` so 100.0f is in f1 and viewYaw in f2; ours matches those
+// loads and the fdivs. `scale * yaw` moves the constant load into f2 first (97.86%). Commutative.
+// NONMATCHING (99.84%): only the fmadds operand order (original f1,f2; ours f2,f1) differs.
 USER_FUNC(evt_npc_set_ry_lr) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2406,7 +2404,8 @@ USER_FUNC(evt_npc_set_ry_lr) {
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     CameraEntry* cam = camGetPtr(4);
     f32 scale = 100.0f;
-    s32 x = (s32)reviseAngle((cam->viewYaw * scale + 5.0f) / scale);
+    f32 yaw = cam->viewYaw;
+    s32 x = (s32)reviseAngle((yaw * scale + 5.0f) / scale);
     f32 d1 = (x - 90) % 360;
     f32 d2 = (x + 90) % 360;
     if (flag == 0) {
@@ -2418,11 +2417,11 @@ USER_FUNC(evt_npc_set_ry_lr) {
 }
 
 // The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
-// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Writing cases
-// 7/8/10 as `1 - (1-tt)*(1-tt)*cos(...)` forces tt to stay in f31 and lifts the match from 75% to
-// 86%, but the multiply grouping then fuses to fnmsubs and the clamp/cases 4-6/11-13 still
-// schedule differently (f31 vs f1). Logic is equivalent.
-// NONMATCHING (86.12%): hoisted `1-tt` vs original's `tt` register and fused fnmsubs.
+// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 now
+// use an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into
+// fnmsubs and matches those cases (86.12% -> 90.25%). Cases 7/8/10 still fuse where the original
+// does two separate fmuls, and the case 11/12 operand register differs; logic is equivalent.
+// NONMATCHING (94.67%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
     if (tt > 1.0f) {
@@ -2437,24 +2436,43 @@ f32 _intplGetFloat(s32 type, f32 t) {
             return tt * tt * tt;
         case 3:
             return tt * tt * tt * tt;
-        case 7:
-            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt / 3.1416f));
-        case 8:
-            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 15.0f);
-        case 4:
-            return 1.0f - (1.0f - tt) * (1.0f - tt);
-        case 5:
-            return 1.0f - (1.0f - tt) * ((1.0f - tt) * (1.0f - tt));
-        case 6:
-            return 1.0f - (1.0f - tt) * ((1.0f - tt) * ((1.0f - tt) * (1.0f - tt)));
-        case 10:
-            return 1.0f - fabsf((1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 40.0f));
+        case 7: {
+            f32 c = (f32)cos(4.0f * (tt / 3.1415927f));
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * c);
+        }
+        case 8: {
+            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 15.0f);
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * c);
+        }
+        case 4: {
+            f32 a = 1.0f - tt;
+            return 1.0f - a * a;
+        }
+        case 5: {
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * a);
+        }
+        case 6: {
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * (a * a));
+        }
+        case 10: {
+            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 40.0f);
+            f32 a = 1.0f - tt;
+            f32 v = a * (a * c);
+            if (v < 0.0f) {
+                v = -v;
+            }
+            return 1.0f - v;
+        }
         case 11:
-            return (1.0f - (f32)cos(3.1416f * tt)) * 0.5f;
+            return 0.5f * (1.0f - (f32)cos(3.1415927f * tt));
         case 12:
-            return (f32)sin(1.5708f * tt);
+            return (f32)sin(1.5707964f * tt);
         case 13:
-            return 1.0f - (f32)cos(1.5708f * tt);
+            return 1.0f - (f32)cos(1.5707964f * tt);
     }
     return 0.0f;
 }

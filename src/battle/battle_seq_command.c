@@ -634,36 +634,44 @@ BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp) {
 
 // Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
-// NONMATCHING (87.02%): logic matches; callee-saved register allocation differs (target
-// wp=r29/unit=r28/weapon=r30/work=r31; ours wp=r26/.../work=r30), and the original sign-extends the attack
-// direction before BattleSamplingEnemy (`extsb r9,r0`), so battle_detect.h's `s8` may be the wrong width.
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	u8* work = wp->field_428;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWeapon* weapon;
-	s32 i;
 	s32 selected;
+	s32 i;
 	s8 belong;
 
 	_btlcmd_MakeSelectWeaponTable(wp, (void*)arg);
 	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
+#ifdef MUST_MATCH
+	// the field is already s8; the no-op cast changes the scheduling (98.75% without it)
+	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
+	                    *(s32*)&weapon->field_64[4], (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+#else
 	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
 	                    *(s32*)&weapon->field_64[4], wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
 	work[0xAB7] = 0;
 	if (*(s32*)&weapon->field_64[4] & 0x30000000) {
-		s8 ownBelong = BtlUnit_GetBelong(unit);
+		s8 ownBelong;
 
 		selected = -1;
+		ownBelong = (s8)BtlUnit_GetBelong(unit);
 		for (i = 0; i < *(s8*)&work[0xA6C]; i++) {
-			s32 uid = *(s16*)(work + ((s8)work[0xA6D + i]) * 0x24 + 4);
+			s32 offset = ((s8)work[0xA6D + i]) * 0x24 + 4;
 
 			if (*(s32*)&weapon->field_64[4] & 0x10000000) {
+				s32 uid = *(s16*)(work + offset);
+
 				if (ownBelong == BtlUnit_GetBelong(BattleGetUnitPtr(wp, uid))) {
 					selected = i;
 				}
 			} else {
+				s32 uid = *(s16*)(work + offset);
+
 				if (ownBelong != BtlUnit_GetBelong(BattleGetUnitPtr(wp, uid))) {
 					selected = i;
 					break;

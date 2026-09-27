@@ -29,7 +29,7 @@ s32 size_table[6][2] = {
 static SmartWork* wp = &smartWork;
 
 //.sbss
-s16 count;
+u16 count;
 BOOL g_bFirstSmartAlloc;
 u32 mapalloc_size;
 void* mapalloc_base_ptr;
@@ -100,22 +100,19 @@ void memInit(void) { //almost 1:1, stubborn regalloc at the end
     }
 }
 
-// NONMATCHING (93.98%): 1 missing, 1 extra, plus register differences.
+// NONMATCHING (95.20%): 1 missing, 1 extra, plus register differences.
 void memClear(HEAP_TYPE heap) {
-	MapAllocEntry* entry;
-	void* ptr;
 	u32 size;
+	MapAllocEntry* entry;
 
 	OSDestroyHeap(heapHandle[heap]);
 	OSCreateHeap(heapStart[heap], heapEnd[heap]);
 	if (heap == HEAP_MALLOC) {
 		size = (u32)heapEnd[1] - (u32)heapStart[1] - 32;
-		//inline __memAlloc?
-		ptr = OSAllocFromHeap(heapHandle[1], size);
-		entry = ptr;
-		if (ptr) {
-			memset(ptr, 0, size);
-			DCFlushRange(ptr, size);
+		entry = OSAllocFromHeap(heapHandle[1], size);
+		if (entry) {
+			memset(entry, 0, size);
+			DCFlushRange(entry, size);
 		}
 		entry->next = NULL;
 		entry->size = size - 32;
@@ -141,7 +138,6 @@ void __memFree(HEAP_TYPE heap, void* ptr) {
 	OSFreeToHeap(heapHandle[heap], ptr);
 }
 
-// NONMATCHING (90.15%): 1 instruction differs, 3 missing, 3 extra.
 void* _mapAlloc(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -194,7 +190,6 @@ void* _mapAlloc(u32 size) {
 	}
 }
 
-// NONMATCHING (99.13%): 1 instruction differs.
 void* _mapAllocTail(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -279,10 +274,11 @@ void _mapFree(void* alloc) {
 	entry->inuse = 0;
 }
 
-// NONMATCHING (9.88%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
+// NONMATCHING (75.04%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
 void smartInit(void) {
 	void* ptr;
 	u32 size;
+	smartEntry* entry;
 	int i;
 
 	size = (u32)heapEnd[5] - (u32)heapStart[5] - 32;
@@ -294,12 +290,14 @@ void smartInit(void) {
 	wp->ptr = ptr;
 	wp->field_0xE008 = 0;
 	wp->field_0xE00C = 0;
-	wp->bytesLeft = size;
-	memset(wp->ptr, 0, size);
+	wp->bytesLeft = (u32)heapEnd[5] - (u32)heapStart[5] - 32;
+	memset(wp->ptr, 0, (u32)heapEnd[5] - (u32)heapStart[5] - 32);
 	memset(wp->work, 0, sizeof(wp->work));
+	entry = wp->work;
 	for (i = 0; i < 0x800; i++) {
-		wp->work[i].next = &wp->work[i + 1];
-		wp->work[i].prev = &wp->work[i - 1];
+		entry->next = entry + 1;
+		entry->prev = entry - 1;
+		entry++;
 	}
 	wp->head = &wp->work[0];
 	wp->head->prev = NULL;
@@ -309,8 +307,10 @@ void smartInit(void) {
 	g_bFirstSmartAlloc = FALSE;
 }
 
-void smartReInit(void) {
+// NONMATCHING (59.39%): 1 instruction differs, 9 missing, 24 extra, plus register differences.
+void L_smartReInit(void) {
 	u32 size;
+	smartEntry* entry;
 	int i;
 
 	wp->field_0xE008 = 0;
@@ -319,41 +319,121 @@ void smartReInit(void) {
 	wp->bytesLeft = size;
 	memset(wp->ptr, 0, size);
 	memset(wp->work, 0, sizeof(wp->work));
+	entry = wp->work;
 	for (i = 0; i < 0x800; i++) {
-		wp->work[i].next = &wp->work[i + 1];
-		wp->work[i].prev = &wp->work[i - 1];
+		entry->next = entry + 1;
+		entry->prev = entry - 1;
+		entry++;
 	}
 	wp->head = &wp->work[0];
 	wp->head->prev = NULL;
 	wp->tail = &wp->work[0x7FF];
 	wp->tail->next = NULL;
-	wp->waitsync = 0;
 	g_bFirstSmartAlloc = 0;
 }
 
 
 
-// NONMATCHING (2.44%): empty placeholder, not decompiled yet.
+// dont_inline keeps the smartAutoFree/smartGarbage calls in smartAlloc as real `bl`s.
+#pragma dont_inline on
 void smartAutoFree(u32 a1) {
+	smartEntry* entry;
+	smartEntry* next;
+	u16 type;
 
+	type = a1;
+	entry = wp->field_0xE008;
+	while (entry) {
+		next = entry->next;
+		if (entry->type == type) {
+			smartFree(entry);
+		}
+		entry = next;
+	}
+	if ((s32)a1 == 3) {
+		entry = wp->field_0xE008;
+		while (entry) {
+			next = entry->next;
+			if ((s32)entry->type == 4) {
+				smartFree(entry);
+			}
+			entry = next;
+		}
+	}
 }
 
-// NONMATCHING (1.18%): empty placeholder, not decompiled yet.
 void smartFree(smartEntry* entry) {
+	smartEntry* prev;
+	s32 size;
 
+	if (entry->type == 4) {
+		entry->type = 3;
+		return;
+	}
+	if (!entry->prev) {
+		wp->field_0xE008 = entry->next;
+		if (wp->field_0xE008) {
+			wp->field_0xE008->prev = NULL;
+		}
+	}
+	else {
+		entry->prev->next = entry->next;
+	}
+	if (!entry->next) {
+		wp->field_0xE00C = entry->prev;
+		if (wp->field_0xE00C) {
+			wp->field_0xE00C->next = NULL;
+		}
+	}
+	else {
+		entry->next->prev = entry->prev;
+	}
+	prev = entry->prev;
+	size = entry->size + entry->field_0x10;
+	if (prev) {
+		prev->field_0x10 += size;
+	}
+	else {
+		wp->bytesLeft += size;
+	}
+	if (!wp->head) {
+		wp->head = entry;
+		entry->prev = NULL;
+	}
+	else {
+		wp->tail->next = entry;
+		entry->prev = wp->tail;
+	}
+	entry->field_0xC = 0;
+	entry->next = NULL;
+	entry->size = 0;
+	entry->field_0x10 = 0;
+	entry->field_0x8 = 0;
+	wp->tail = entry;
+	wp->waitsync++;
 }
 
-// NONMATCHING (96.32%): 3 instructions differ, 4 missing, plus register differences.
+// NONMATCHING (97.76%): 3 instructions differ, 4 missing, plus register differences.
 smartEntry* smartAlloc(u32 size, u8 type) {
 	smartEntry* entry1, * entry2;
+	u32 size2;
 	int i;
 
+	size2 = size;
+#ifdef MUST_MATCH
+	if (g_bFirstSmartAlloc == 0) { // `!g_bFirstSmartAlloc` scores 97.47% instead of 97.76%
+#else
 	if (!g_bFirstSmartAlloc) {
+#endif
 		g_bFirstSmartAlloc = TRUE;
 		smartAutoFree(3);
 	}
 
+#ifdef MUST_MATCH
+	if ((s32)wp->waitsync != 0) {
+#else
 	if (wp->waitsync) {
+#endif
 		sysWaitDrawSync();
 		wp->waitsync = 0;
 	}
@@ -380,17 +460,17 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 		entry2->next->prev = entry2->prev;
 	}
 
-	if (size & 31) {
-		size += 32 - (size & 31);
+	if (size2 & 31) {
+		size2 += 32 - (size2 & 31);
 	}
 
 	entry2->field_0xC = 1;
 	entry2->type = type;
-	entry2->size = size;
+	entry2->size = size2;
 	entry2->field_0x8 = 0;
-	if (wp->bytesLeft >= size) {
+	if (wp->bytesLeft >= size2) {
 		entry2->address = wp->ptr;
-		entry2->field_0x10 = wp->bytesLeft - size;
+		entry2->field_0x10 = wp->bytesLeft - size2;
 		entry2->next = wp->field_0xE008;
 		entry2->prev = NULL;
 		wp->bytesLeft = 0;
@@ -406,9 +486,9 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 	}
 	else {
 		for (entry1 = wp->field_0xE008; entry1; entry1 = entry1->next) {
-			if (entry1->field_0x10 >= size) {
+			if (entry1->field_0x10 >= size2) {
 				entry2->address = (void*)((u32)entry1->address + entry1->size);
-				entry2->field_0x10 = entry1->field_0x10 - size;
+				entry2->field_0x10 = entry1->field_0x10 - size2;
 				entry2->next = entry1->next;
 				entry2->prev = entry1;
 				entry1->field_0x10 = 0;
@@ -430,13 +510,17 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 				case 2:
 					_fileGarbage(0);
 					break;
+#ifdef MUST_MATCH
+				// redundant with default; makes mwcc pick 1 as the search-tree pivot.
+				case 0:
+#endif
 				default: break;
 			}
 			smartGarbage();
 			entry1 = wp->field_0xE00C;
-			if (entry1->field_0x10 >= size) {
+			if (entry1->field_0x10 >= size2) {
 				entry2->address = (void*)((u32)entry1->address + entry1->size);
-				entry2->field_0x10 = entry1->field_0x10 - size;
+				entry2->field_0x10 = entry1->field_0x10 - size2;
 				entry2->next = entry1->next;
 				entry2->prev = entry1;
 				entry1->field_0x10 = 0;
@@ -458,6 +542,7 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 void smartGarbage(void) {
 
 }
+#pragma dont_inline reset
 
 GXTexObj* smartTexObj(GXTexObj* obj, void** image_ptr) {
 	if (image_ptr) {

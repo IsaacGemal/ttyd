@@ -129,7 +129,7 @@ typedef struct MarioWork {
     u8 field_0x3E[0x40 - 0x3E];    // 0x3E
 	s8 wMotionTimer;               // 0x40
     u32 currSubMotionId;           // 0x44
-    u32 multiTimer;                // 0x48, ???
+    s32 multiTimer;                // 0x48, ???
 	s16 unk4C;                     // 0x4C
 	s16 forceMoveTimer;            // 0x4E
     s16 airTimer;                  // 0x50

@@ -303,12 +303,15 @@ u32 pouchGetKpaScore(void) {
 	return mpp->mSuperBowserScore;
 }
 
-// NONMATCHING (74.29%): 1 instruction differs, 3 missing.
-void pouchAddKpaCoin(u8 coins) {
+BOOL pouchAddKpaCoin(s32 coins) {
+	BOOL wrapped = FALSE;
+
 	mpp->mSuperBowserCoins += coins;
 	if (mpp->mSuperBowserCoins >= 100) {
 		mpp->mSuperBowserCoins -= 100;
+		wrapped = TRUE;
 	}
+	return wrapped;
 }
 
 u8 pouchGetKpaCoin(void) {
@@ -402,7 +405,6 @@ void pouchRevisePartyParam(void) {
 			count++;
 		}
 	}
-
 	for (i = 0; i < 8; i++) { //TODO: NUM_PARTNERS macro
 		if (i != PARTNER_NONE) {
 			party = &mpp->partyData[i];
@@ -687,9 +689,68 @@ s32 pouchGetCoin(void) {
 	return mpp->coins;
 }
 
+// NONMATCHING (91.36%): same instructions; the original reuses `table1+index*2` from the initial check as the loop pointer (add+lha) where we emit an indexed lhax and re-add for the loop. Same scheduling leftover as pouchRemoveItem.
+s32 pouchRemoveItemIndex(s32 id, s32 index) {
+	s16* table1, * table2;
+	BOOL valid;
+	s32 maximum;
+	int i, j, temp;
 
-
-
+	maximum = 0;
+	table1 = NULL;
+	table2 = NULL;
+	if (id >= ITEM_MIN && id < ITEM_MAX) {
+		table1 = mpp->heldItems;
+		table2 = NULL;
+		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		valid = TRUE;
+	}
+	else if (id >= KEY_ITEM_MIN && id < KEY_ITEM_MAX) {
+		table1 = mpp->keyItems;
+		table2 = NULL;
+		maximum = 121;
+		valid = TRUE;
+	}
+	else if (id >= BADGE_MIN && id < BADGE_MAX) {
+		table1 = mpp->badges;
+		table2 = mpp->equippedBadges;
+		maximum = 200;
+		valid = TRUE;
+	}
+	else {
+		valid = FALSE;
+	}
+	if (!valid) {
+		return FALSE;
+	}
+	if (*(table1 + index) != id) {
+		return FALSE;
+	}
+	for (i = index; i < maximum; i++) {
+		if (id == table1[i]) {
+			table1[i] = ITEM_NULL;
+			if (table2 != 0) {
+				table2[i] = ITEM_NULL;
+			}
+			if (table2) {
+				for (j = i; j < maximum - 1; j++) {
+					table1[j] = table1[j + 1];
+					table1[j + 1] = ITEM_NULL;
+					table2[j] = table2[j + 1];
+					table2[j + 1] = ITEM_NULL;
+				}
+			}
+			else {
+				for (j = i; j < maximum - 1; j++) {
+					table1[j] = table1[j + 1];
+					table1[j + 1] = ITEM_NULL;
+				}
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
 
 // NONMATCHING (92.43%): signed pouchCheckItem test, shift count maximum-1-i, index-based shift loop. Leftover is scheduling: the original hoists the `table1+i`/`table2+i` pointer setup and `temp=0` above the `if (table2)` branch and branches later.
 BOOL pouchRemoveItem(ItemType type) {
@@ -834,38 +895,43 @@ BOOL N_pouchUnEquipBadgeID(s32 badgeId) {
 	return FALSE;
 }
 
-// NONMATCHING (97.75%): same instructions; only register numbers or operands differ.
 void unk_800d06b4(char* src, char* dst) {
 	u16 c;
-	int i;
 	int len = strlen(src) / 2;
+	char* s = src;
+	char* d = dst;
+	int i;
 
 	for (i = 0; i < len; i++) {
-		c = *(u16*)(src + i * 2);
+		c = *(u16*)s;
 		if (c >= 0x829F && c < 0x82DE) {
 			c += 0xA1;
 		}
 		else if (c >= 0x82DE && c <= 0x82F1) {
 			c += 0xA2;
 		}
-		*(u16*)(dst + i * 2) = c;
+		*(u16*)d = c;
+		s += 2;
+		d += 2;
 	}
 	dst[i * 2] = 0;
 }
 
-// NONMATCHING (88.23%): instructions are identical but CodeWarrior colors the itemDataTable base r31/str r30 where the original has base r30/str r31; loop registers follow.
+// NONMATCHING (88.84%): loop shape matches (buf/str pointers, i, temp c); CodeWarrior still colors buf r3/i r5 and itemDataTable base r31/str r30 where the original has buf r5/i r3 and base r30/str r31. Declaration order moves the temp/buf registers around but not to the original permutation.
 s32 comp_aiueo(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
+	u16* buf;
 	const char* str;
-	s32 i;
 	s32 len;
 	u32 c;
+	s32 i;
 	s16 id_a = *a;
 	s16 id_b = *b;
 
 	str = msgSearch(itemDataTable[id_a].name);
 	len = strlen(str) / 2;
+	buf = buf_a;
 	for (i = 0; i < len; i++) {
 		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
@@ -874,13 +940,15 @@ s32 comp_aiueo(s16* a, s16* b) {
 		else if (c >= 0x82DE && c <= 0x82F1) {
 			c += 0xA2;
 		}
-		buf_a[i] = c;
+		*buf = c;
 		str += 2;
+		buf++;
 	}
 	((u8*)buf_a)[i * 2] = 0;
 
 	str = msgSearch(itemDataTable[id_b].name);
 	len = strlen(str) / 2;
+	buf = buf_b;
 	for (i = 0; i < len; i++) {
 		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
@@ -889,27 +957,30 @@ s32 comp_aiueo(s16* a, s16* b) {
 		else if (c >= 0x82DE && c <= 0x82F1) {
 			c += 0xA2;
 		}
-		buf_b[i] = c;
+		*buf = c;
 		str += 2;
+		buf++;
 	}
 	((u8*)buf_b)[i * 2] = 0;
 
 	return strcmp((const char*)buf_a, (const char*)buf_b);
 }
 
-// NONMATCHING (87.87%): same base/str r30/r31 color swap as comp_aiueo.
+// NONMATCHING (88.48%): same base/str and buf/i color swap as comp_aiueo; pointer form for buf improved it from 87.87%.
 s32 comp_aiueo_r(s16* a, s16* b) {
 	u16 buf_a[64];
 	u16 buf_b[64];
+	u16* buf;
 	const char* str;
-	s32 i;
 	s32 len;
 	u32 c;
+	s32 i;
 	s16 id_a = *a;
 	s16 id_b = *b;
 
 	str = msgSearch(itemDataTable[id_a].name);
 	len = strlen(str) / 2;
+	buf = buf_a;
 	for (i = 0; i < len; i++) {
 		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
@@ -918,13 +989,15 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 		else if (c >= 0x82DE && c <= 0x82F1) {
 			c += 0xA2;
 		}
-		buf_a[i] = c;
+		*buf = c;
 		str += 2;
+		buf++;
 	}
 	((u8*)buf_a)[i * 2] = 0;
 
 	str = msgSearch(itemDataTable[id_b].name);
 	len = strlen(str) / 2;
+	buf = buf_b;
 	for (i = 0; i < len; i++) {
 		c = *(u16*)str;
 		if (c >= 0x829F && c < 0x82DE) {
@@ -933,8 +1006,9 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 		else if (c >= 0x82DE && c <= 0x82F1) {
 			c += 0xA2;
 		}
-		buf_b[i] = c;
+		*buf = c;
 		str += 2;
+		buf++;
 	}
 	((u8*)buf_b)[i * 2] = 0;
 

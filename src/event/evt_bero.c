@@ -12,14 +12,17 @@
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include <dolphin/os.h>
+#include <math.h>
 #include <string.h>
 #include "cam_road.h"
 #include "cam_shift.h"
+#include "system.h"
 
 extern GlobalWork* gp;
 extern const char str_802C4DA8[];
 extern const char str_802C4DB4[];
 extern f32 float_37p5_8041a408;
+const f64 double_to_int_802c4da0 = 4503601774854144.0;
 
 //.bss
 s32 BeroSW[16]; //switches
@@ -554,14 +557,11 @@ USER_FUNC(evt_bero_id_filter) {
 
 	// NONMATCHING (99.58%): register allocation / branch layout differs from the original
 USER_FUNC(evt_bero_get_number) {
-	BeroEntry** temp, **table;
-	s32 id;
-	s32 newId;
+	BeroEntry** temp, **table = BeroINFOARR;
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+	s32 newId = id;
 	const char *string, *test;
-
-	table = BeroINFOARR;
-	id = evtGetValue(event, event->args[0]);
-	newId = id;
 
 	if (id < 0 || id >= 16) {
 		test = (const char*)id;
@@ -739,13 +739,29 @@ USER_FUNC(bero_set_disp_position_pipe) {
 }
 
 
-typedef struct CameraParams {
-	f32 fovY;   // 0x00
-	f32 aspect; // 0x04
-	f32 far;    // 0x08
-	Vec pos;    // 0x0C
-	Vec at;     // 0x18
-} CameraParams;
+// NONMATCHING (65.28%): the two Vec copies (storedPos/storedAt) are emitted directly
+// from work.pos/work.at by our compiler, while the original materialises compiler
+// temporaries initialised from two zero Vec .rodata objects (vec3_802c4c58/64), which
+// also grows the frame to 0x60 and keeps r28-r29 live.
+USER_FUNC(evt_camera_change_event_from_road) {
+	MarioWork* mario = marioGetPtr();
+	CameraEntry* cam = camGetPtr(CAMERA_3D);
+	CameraParams work;
+	f32 out;
+
+	camShiftMain(cam, mario, &out);
+	camRoadMain(&work.fovY, mario->position.x, cam->marioPos.y, mario->position.z,
+	            mario->position.x, cam->marioPos.y, mario->position.z, out);
+	cam->presetPos = cam->cameraPos;
+	cam->presetAt = cam->cameraAt;
+	cam->storedPos = work.pos;
+	cam->storedAt = work.at;
+	cam->startTimeA = gp->renderTime;
+	cam->durationA = OSMillisecondsToTicks(500);
+	cam->stateA = 3;
+	cam->curveA = 0xb;
+	return EVT_RETURN_DONE;
+}
 
 // NONMATCHING (66.58%): 3 instructions differ, 27 missing, plus register differences.
 USER_FUNC(bero_get_position_pipe2) {
@@ -769,8 +785,8 @@ USER_FUNC(bero_get_position_pipe2) {
 	// BeroEY ternary is stored directly from f2 instead of the original's f0 + frsp f2,f0.
 USER_FUNC(bero_get_position_pipe_pure) {
 	s32* args = event->args;
-	s32 kind;
 	s32 a;
+	s32 kind;
 	s32 b;
 	Vec start, end;
 
@@ -855,4 +871,118 @@ USER_FUNC(evt_bero_get_info_num) {
 	event->lwData[13] = entry->nextareaArg1;
 	event->lwData[14] = (s32)entry->nextareaArg2;
 	return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (90.41%): the float temporaries land in different registers (rad in f30 not
+// f27, dist reuses f29 instead of f26) and the int->double magic constant is emitted as
+// an anonymous @NNN instead of double_to_int_802c4da0; brace/line layout otherwise matches.
+USER_FUNC(evt_bero_move_mario_speed) {
+	f32 speed = evtGetFloat(event, event->args[0]);
+	OSTime now = gp->inBattle ? gp->renderTime : gp->renderFieldTime;
+	MarioWork* mario;
+	f32 sec, rad, sn, cs, dist, dx, dy, vx, vy;
+	s32 frames;
+	BOOL reachedX, reachedY;
+
+	if (isFirstCall) {
+		event->savedTime = now;
+	}
+	sec = sysFrame2SecFloat(speed);
+	rad = 6.2831855f * reviseAngle(angleABf(BeroSX, BeroSY, BeroEX, BeroEY)) / 360.0f;
+	sn = (f32)sin(rad);
+	cs = (f32)cos(rad);
+	frames = sysMsec2Frame((s32)OSTicksToMilliseconds((u64)(s64)(s32)((s32)now - (s32)event->savedTime)));
+	vx = sec * sn;
+	vy = -(sec * cs);
+	dist = sec * (f32)frames;
+	dx = sn * dist;
+	dy = -(cs * dist);
+	mario = marioGetPtr();
+	mario->position.x = BeroSX + dx;
+	mario = marioGetPtr();
+	mario->position.y = BeroSY + dy;
+	mario = marioGetPtr();
+	mario->position.z = BeroSZ;
+	reachedX = 0;
+	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
+		reachedX = 1;
+	}
+	if (vx < 0 && BeroEX >= marioGetPtr()->position.x) {
+		reachedX = 1;
+	}
+	reachedY = 0;
+	if (vy >= 0 && BeroEY <= marioGetPtr()->position.y) {
+		reachedY = 1;
+	}
+	if (vy < 0 && BeroEY >= marioGetPtr()->position.y) {
+		reachedY = 1;
+	}
+	if (reachedX + reachedY == 2) {
+		marioGetPtr()->position.x = BeroEX;
+		marioGetPtr()->position.y = BeroEY;
+		marioGetPtr()->position.z = BeroEZ;
+		return EVT_RETURN_DONE;
+	}
+	return 0;
+}
+
+// NONMATCHING (98.83%): 1 instruction differs, 2 extra, plus register differences.
+void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end) {
+	f32 hitX = 0.0f;
+	f32 hitY = 0.0f;
+	f32 hitZ = 0.0f;
+	f32 distance = 10000.0f;
+	f32 hitNX;
+	f32 hitNY;
+	f32 hitNZ;
+	f32 off = 20.0f;
+
+	switch (d) {
+	case 6:
+		b = -b;
+		off = -off;
+	case 2:
+		if (a == 0) {
+			hitObjGetPos((const char*)c, start);
+			start->x -= off;
+			end->x = start->x + (f32)b;
+			end->y = start->y;
+			end->z = start->z;
+			hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, end->x,
+			               end->y, end->z, 0.0f, -1.0f, 0.0f);
+		} else {
+			hitObjGetPos((const char*)c, end);
+			end->x -= off;
+			start->x = end->x + (f32)b;
+			start->y = end->y;
+			start->z = end->z;
+			hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+			               start->x, start->y, start->z, 0.0f, -1.0f, 0.0f);
+		}
+		start->y = hitY;
+		end->y = hitY;
+		break;
+	case 9:
+		b = -b;
+	case 8:
+		if (a == 0) {
+			hitObjGetPos((const char*)c, start);
+			end->x = start->x;
+			end->y = start->y + (f32)b;
+			end->z = start->z;
+		} else {
+			hitObjGetPos((const char*)c, end);
+			start->x = end->x;
+			start->y = end->y + (f32)b;
+			start->z = end->z;
+		}
+		break;
+	case 7:
+	case 0xA:
+	case 0x2710:
+	default:
+		hitObjGetPos((const char*)c, start);
+		hitObjGetPos((const char*)c, end);
+		break;
+	}
 }

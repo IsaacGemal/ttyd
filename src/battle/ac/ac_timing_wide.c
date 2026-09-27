@@ -33,9 +33,7 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (0.00%): the by-value Vec argument to iconDispGx() makes MWCC copy the 12-byte struct
-// (frame 0x150 vs the original 0xd0) and the register allocation is wrong; see REPORT.md for the header
-// evidence and the `Vec*` experiment.
+// NONMATCHING: a local function, so the report gives it no score; the frame and register allocation differ.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -85,7 +83,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			v.z = vec3_802fd630[0].z;
 			v.x = float_neg200_80420508 + x;
 			v.y = float_50_8042050c + y;
-			iconDispGx(v, 0x10, down, float_1_80420510);
+			iconDispGx(&v, 0x10, down, float_1_80420510);
 		}
 		else {
 			Vec v;
@@ -94,7 +92,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 			v.z = vec3_802fd630[1].z;
 			v.x = float_neg200_80420508 + x;
 			v.y = float_50_8042050c + y;
-			iconDispGx(v, 0x10, up, float_1_80420510);
+			iconDispGx(&v, 0x10, up, float_1_80420510);
 		}
 		break;
 	case 1:
@@ -106,7 +104,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[10].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -115,7 +113,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[11].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, up, float_1_80420510);
+				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 		}
 		else if (dec->field_0x08 >= *(s32*)&work->actionCommands.field_34[0x0C] &&
@@ -127,7 +125,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[6].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, up, float_1_80420510);
+				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -136,7 +134,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[7].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 		}
 		else {
@@ -147,7 +145,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[8].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -156,7 +154,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[9].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, up, float_1_80420510);
+				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 		}
 		break;
@@ -173,7 +171,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[4].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, up, float_1_80420510);
+				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -182,7 +180,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[5].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 		}
 		else {
@@ -193,7 +191,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[2].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, down, float_1_80420510);
+				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 			else {
 				Vec v;
@@ -202,7 +200,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 				v.z = vec3_802fd630[3].z;
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
-				iconDispGx(v, 0x10, up, float_1_80420510);
+				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 		}
 		break;
@@ -287,7 +285,7 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (95.48%): the state machine and all logic match; MWCC picked different callee-saved
+// NONMATCHING (95.86%): the state machine and all logic match; MWCC picked different callee-saved
 // registers. The original keeps work r30, dec r31, disp r29 (saving r28-r31); ours keeps work r31, disp r30,
 // autoCommand r29 and rematerialises dec (saving r29-r31). ~141 instructions differ only in register fields.
 s32 battleAcMain_TimingWide(BattleWork* work) {

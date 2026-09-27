@@ -24,39 +24,6 @@
 // locals for symbols with no home header (see REPORT.md)
 extern f32 marioJumpData[];
 
-// userdata of the fire effect (fireefp->userdata); nodes are 0x50 bytes apart
-typedef struct KpaFireNode {
-    u8  unk00[0x04];
-    Vec pos;         // 0x04
-    u8  unk10[0x1C - 0x10];
-    s32 unk1C;       // 0x1C
-    u8  unk20[0x40 - 0x20];
-    f32 unk40;       // 0x40
-    s32 unk44;       // 0x44
-    f32 unk48;       // 0x48
-    void* unk4C;     // 0x4C
-} KpaFireNode;
-
-// Koopa's per-character work, allocated at mario->field_0x28C (size 0x154).
-typedef struct KpaWork {
-    u32 flags;       // 0x0
-    s32 level;       // 0x4
-    u8  unk08[0x18 - 0x8];
-    void* unk18;     // 0x18
-    u8  unk1C[0xD0 - 0x1C];
-    s32 unkD0;       // 0xD0
-    u8  unkD4[0xD8 - 0xD4];
-    s32 unkD8;       // 0xD8
-    u8  unkDC[0xE0 - 0xDC];
-    s32 unkE0;       // 0xE0
-    u8  unkE4[0x138 - 0xE4];
-    s32 mutekiTimer; // 0x138
-    s32 attackMode;  // 0x13C
-    u8  unk140[0x14C - 0x140];
-    u32 sfxId;       // 0x14C
-} KpaWork;
-
-#define KPA(m) (*(KpaWork**)((u8*)(m) + 0x28C))
 #define MW_U8(m, off)  (*(u8*)((u8*)(m) + (off)))
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 #define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
