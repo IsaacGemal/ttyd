@@ -204,24 +204,27 @@ int N_compare_func4_2_r(void* a, void* b) {
     }
 }
 
-// NONMATCHING (80.65%): 3 missing, 3 extra.
+// NONMATCHING (80.65%): the instruction multiset matches the original; only MWCC's
+// scheduling differs (the original hoists `lwz r4, 0x8(r4)` above the prologue
+// saves, ours emits it after them).
 int N_compare_func4_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s16 id_a = (s16)*(s32*)((u8*)a + 8);
     s16 id_b = (s16)*(s32*)((u8*)b + 8);
+    s16 id_a = (s16)*(s32*)((u8*)a + 8);
 
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
-// NONMATCHING (79.84%): 3 missing, 3 extra, plus register differences.
+// NONMATCHING (80.65%): same schedule-only difference as N_compare_func4_1 (ids
+// are s16, the original `extsh`s both).
 int N_compare_func4_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
-    s32 id_a = (s16)*(s32*)((u8*)a + 8);
-    s32 id_b = (s16)*(s32*)((u8*)b + 8);
+    s16 id_b = (s16)*(s32*)((u8*)b + 8);
+    s16 id_a = (s16)*(s32*)((u8*)a + 8);
 
     unk_800d06b4((char*)msgSearch(itemDataTable[id_a].name), (char*)buf_a);
     unk_800d06b4((char*)msgSearch(itemDataTable[id_b].name), (char*)buf_b);
@@ -367,14 +370,13 @@ void sort_7_1_func(WindowWork* work) {
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
 
-// NONMATCHING (73.70%): 6 instructions differ, 2 missing, 6 extra, plus register differences.
 void sort_7_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func3);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3);
     } else {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1_r);
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func3_r);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func3_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x1040) = 0;
@@ -403,14 +405,13 @@ void sort_8_2_func(WindowWork* work) {
     WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
 }
 
-// NONMATCHING (73.70%): 6 instructions differ, 2 missing, 6 extra, plus register differences.
 void sort_7_2_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func2);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func2);
     } else {
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1_r);
-        qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func2_r);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1_r);
+        qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func2_r);
     }
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x1040) = 0;
@@ -561,9 +562,9 @@ void sort_1_1_func(WindowWork* work) {
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
 }
 
-// NONMATCHING (99.88%): message/list view. Only the pooled signed int->float
-// constant name (double_to_int_802f44d0 vs a local @460; resolves once
-// winRootMain is written) and two fmadds operand orders differ.
+// NONMATCHING (99.88%): only the pooled int->float magic constant differs
+// (double_to_int_802f44d0 vs a local @773@; resolves once the pool is complete).
+// The two trailing fmadds now match (0.125 multiply with the constant on the left).
 void winSortMain(WindowWork* work) {
     u32 trg = work->buttonTrg;
     u32 rep = work->dirRep;
@@ -625,8 +626,8 @@ void winSortMain(WindowWork* work) {
         }
     }
 
-    WW_F32(work, 0x164) += (WW_F32(work, 0x16C) - WW_F32(work, 0x164)) * float_0p125_8041d104;
-    WW_F32(work, 0x168) += (WW_F32(work, 0x170) - WW_F32(work, 0x168)) * float_0p125_8041d104;
+    WW_F32(work, 0x164) += float_0p125_8041d104 * (WW_F32(work, 0x16C) - WW_F32(work, 0x164));
+    WW_F32(work, 0x168) += float_0p125_8041d104 * (WW_F32(work, 0x170) - WW_F32(work, 0x168));
 }
 
 extern const f32 float_neg800_8041d1b0;
@@ -783,19 +784,19 @@ void winBgMain(WindowWork* work) {
     }
 }
 
-// NONMATCHING (83.67%): bubble sort of the 0xc-byte records at work+0x404.
-// Loops/branches match; MWCC keeps the swap flag in a callee-saved register and
-// uses a different volatile register assignment than the original.
+// NONMATCHING (84.78%): bubble sort of the 0xc-byte records at work+0x404. pb now
+// starts as work + j*0xc like the original; still, the original spills the three
+// swap temporaries to 0x14/0x18/0x1c and uses different volatile registers.
 void sort_4_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        u8* pa = (u8*)work;
         s32 i;
+        u8* pa = (u8*)work;
 
         for (i = 0; i < WW_S32(work, 0xD64) - 1; i++) {
-            u8* pb = pa + 0xC;
-            s32 j;
+            s32 j = i + 1;
+            u8* pb = (u8*)work + j * 0xC;
 
-            for (j = i + 1; j < WW_S32(work, 0xD64); j++) {
+            while (j < WW_S32(work, 0xD64)) {
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
                 s32 swap = 0;
@@ -817,18 +818,19 @@ void sort_4_3_func(WindowWork* work) {
                     *(u32*)(pb + 0x40C) = t2;
                 }
                 pb += 0xC;
+                j++;
             }
             pa += 0xC;
         }
     } else {
-        u8* pa = (u8*)work;
         s32 i;
+        u8* pa = (u8*)work;
 
         for (i = 0; i < WW_S32(work, 0xD64) - 1; i++) {
-            u8* pb = pa + 0xC;
-            s32 j;
+            s32 j = i + 1;
+            u8* pb = (u8*)work + j * 0xC;
 
-            for (j = i + 1; j < WW_S32(work, 0xD64); j++) {
+            while (j < WW_S32(work, 0xD64)) {
                 ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
                 ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
                 s32 swap = 0;
@@ -850,6 +852,7 @@ void sort_4_3_func(WindowWork* work) {
                     *(u32*)(pb + 0x40C) = t2;
                 }
                 pb += 0xC;
+                j++;
             }
             pa += 0xC;
         }
@@ -860,13 +863,13 @@ void sort_4_3_func(WindowWork* work) {
     WW_S32(work, 0x3F0) = WW_S32(work, 0x3E8) / 8;
 }
 
-// NONMATCHING (97.72%): same bubble sort as sort_4_3 but over the s16 array at
+// NONMATCHING (98.13%): same bubble sort as sort_4_3 but over the s16 array at
 // work+0xeb8 (index +0xF0). Loops/branches match; only MWCC's register assignment
-// differs (it puts pa/i/j/pb/da/db in different volatile vs saved regs).
+// differs (original: i=r12, j=r31, pb=r6; ours: i=r6, j=r8, pb=r9).
 void sort_5_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
-        u8* pa = (u8*)work;
         s32 i;
+        u8* pa = (u8*)work;
 
         for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
             s32 j = i + 1;
@@ -894,8 +897,8 @@ void sort_5_3_func(WindowWork* work) {
             pa += 2;
         }
     } else {
-        u8* pa = (u8*)work;
         s32 i;
+        u8* pa = (u8*)work;
 
         for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
             s32 j = i + 1;
