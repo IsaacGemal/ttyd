@@ -196,8 +196,8 @@ s32 _sort(const void* a, const void* b) {
 	}
 }
 
-// NONMATCHING (97.44%): output-loop register numbering only; the real header type differs, see REPORT.md.
-void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags flags) {
+// NONMATCHING (99.53%): 1 instruction differs.
+s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFlags flags) {
 	LightWork* wp = lightGetWork();
 	LightNearObj near[32];
 	LightEntry* p;
@@ -236,15 +236,16 @@ void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags
 		if (flags != 0 && !(flags & p->flags)) {
 			continue;
 		}
-		((LightEntry**)entry)[n] = p; // cast works around the wrong header type (should be LightEntry**)
+		entries[n] = p;
 		n++;
 		if (n >= count) {
 			break;
 		}
 	}
 	for (i = n; i < count; i++) {
-		((LightEntry**)entry)[i] = NULL;
+		entries[i] = NULL;
 	}
+	return n;
 }
 
 LightEntry* lightGetAmbient(void) {

@@ -381,7 +381,7 @@ USER_FUNC(evt_msg_repeat) {
 }
 
 USER_FUNC(evt_msg_close) {
-    msgWindow_ForceClose(evtGetValue(event, *event->args));
+    msgWindow_ForceClose((const char*)evtGetValue(event, *event->args));
     return EVT_RETURN_DONE;
 }
 

@@ -72,4 +72,3 @@ void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 di
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, int a2);
 s32 BattleActionCommandGetPrizeLv(BattleWork* wp, BattleUnit* unit, s32 index);
 s32 BattleACGetButtonIcon(s32 button, s32 status);
-s32 BattleACGetButtonIcon(s32 button, s32 pressed);

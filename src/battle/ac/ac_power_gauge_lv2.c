@@ -56,10 +56,8 @@ typedef struct PowerGaugeLv2DecWork {
 
 static void actionCommandDisp(f32, f32);
 
-// don't_inline: the original keeps actionCommandDisp as its own local function.
-#pragma dont_inline on
 // NONMATCHING (84.40%): the frame/layout now match, but the Vec BaseRemat, the integer register
-// allocation in the two threshold loops, and the icon argument setup still differ. See REPORT.md.
+// allocation in the two threshold loops, and the icon argument setup still differ.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleActions* ac = (BattleActions*)((u8*)_battleWorkPointer + 0x1C90);
     const Vec* vec = vec3_803001c0;
@@ -165,7 +163,6 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconDispGx(&pos, 0x10, *(s32*)((u8*)ac + 0x2D8) != 0 ? 0x95 : 0x91, float_1_80421c2c);
     }
 }
-#pragma dont_inline reset
 
 void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
@@ -174,7 +171,7 @@ void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
 }
 
 // NONMATCHING (98.86%): mwcc folds `disp` into the `work` base and keeps work in r31; the original
-// materialises work+0x1F20 in r31 and accesses 0x14/0x18/0x20. See REPORT.md.
+// materialises work+0x1F20 in r31 and accesses 0x14/0x18/0x20.
 void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
     BattleWork* work = (BattleWork*)param;
     BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -215,7 +212,7 @@ s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
 
 // NONMATCHING (98.44%): `BattleActionCommandGetDifficulty` returns s8 in the header, so the
 // assignment emits `extsb r31, r3`; the original references the named double_to_int_80300200
-// instead of an anonymous @NNN; and a few scheduler/register choices differ. See REPORT.md.
+// instead of an anonymous @NNN; and a few scheduler/register choices differ.
 s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     s32 difficulty;
     PowerGaugeLv2DecWork* dec;

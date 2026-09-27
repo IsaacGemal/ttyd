@@ -71,22 +71,29 @@ const char str_802FD6EC[] = "msg_slot_SP_max";
 const char str_802FD6FC[] = "msg_slot_HPFPSP_max";
 const char str_802FD710[] = "msg_slot_HPFPSP_half";
 
-f32 zero_80420520 = 0.0f;
-u32 dat_80420524 = 0xFFFFFFD0;
-u32 dat_80420528 = 0xFFFFFF00;
-u32 dat_8042052c = 0xFFFFFF00;
-f32 float_226_80420530 = 226.0f;
-f32 float_42_80420534 = 42.0f;
-f32 float_122_80420538 = 122.0f;
-f32 float_0_8042053c = 0.0f;
-f32 float_deg2rad_80420540 = 0.017453292f;
-f32 float_neg32_80420544 = -32.0f;
-f32 float_neg128_80420548 = -128.0f;
-f32 float_490_8042054c = 490.0f;
-f32 float_neg1_80420550 = -1.0f;
-f32 float_0p2_80420554 = 0.2f;
-f32 float_0p15_80420558 = 0.15f;
-f32 float_32767_8042055c = 32767.0f;
+// The original has these constants in .sdata2 (const). Declared const, MWCC folds their values into its own
+// pool and BattleBreakSlotDispReel drops from 68% to 64%, so the matching build keeps them writable.
+#ifdef MUST_MATCH
+#define SDATA2_CONST
+#else
+#define SDATA2_CONST const
+#endif
+SDATA2_CONST f32 zero_80420520 = 0.0f;
+SDATA2_CONST u32 dat_80420524 = 0xFFFFFFD0;
+SDATA2_CONST u32 dat_80420528 = 0xFFFFFF00;
+SDATA2_CONST u32 dat_8042052c = 0xFFFFFF00;
+SDATA2_CONST f32 float_226_80420530 = 226.0f;
+SDATA2_CONST f32 float_42_80420534 = 42.0f;
+SDATA2_CONST f32 float_122_80420538 = 122.0f;
+SDATA2_CONST f32 float_0_8042053c = 0.0f;
+SDATA2_CONST f32 float_deg2rad_80420540 = 0.017453292f;
+SDATA2_CONST f32 float_neg32_80420544 = -32.0f;
+SDATA2_CONST f32 float_neg128_80420548 = -128.0f;
+SDATA2_CONST f32 float_490_8042054c = 490.0f;
+SDATA2_CONST f32 float_neg1_80420550 = -1.0f;
+SDATA2_CONST f32 float_0p2_80420554 = 0.2f;
+SDATA2_CONST f32 float_0p15_80420558 = 0.15f;
+SDATA2_CONST f32 float_32767_8042055c = 32767.0f;
 
 u16 tex_id_list_small[] = { '+', '-', '/', '.', ',', 0 };
 u16 tex_id_list_big[] = { '0', '2', '4', '3', '1', 0 };
@@ -235,9 +242,7 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 
-// NONMATCHING (68.41%): the drawing logic is right, but the compiler lays the nine stack Mtx
-// temporaries and the .sdata2 constant pool out at different offsets than the original (frame
-// 0x1e0 vs 0x1f0), so most matrix/conversion-constant references differ by 4 or by symbol name.
+// NONMATCHING (68.41%): 3 instructions differ, 35 missing, 33 extra, plus register differences.
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
     GXColor color;
     Mtx mtxTrans;

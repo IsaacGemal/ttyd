@@ -197,10 +197,10 @@ const char str_804216C4[4] = "Z_1";
 extern const f32 float_37_804216c8;
 extern const f32 float_2160_804216cc;
 
-void bakuGameDispStar(void) {
+void bakuGameDispStar(CameraId camId, void* param) {
 }
 
-void bakuGameDisp3D(void) {
+void bakuGameDisp3D(CameraId camId, void* param) {
     BakuGameWork* baku = GetBakuGamePtr();
     CameraEntry* cam = camGetPtr(4);
     Mtx scale;
@@ -484,7 +484,7 @@ void bakuGameDecideButton(s32 arg) {
     }
 }
 
-// NONMATCHING (86.90%): case-5 Vec copy order and case-0 FPR allocation differ.
+// NONMATCHING (86.62%): case-5 Vec copy order and case-0 FPR allocation differ.
 s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
 
@@ -516,7 +516,7 @@ s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
             baku->field_0x1E8 = v;
             baku->field_0x1C4 = 0;
             baku->field_0x1C8 = 0x1E;
-            break;
+            // fall through
         }
         case 10: {
             s32 m;
@@ -540,11 +540,27 @@ s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
             break;
         }
     }
-    dispEntry(4, float_0_80421618, 1, (DispCallback)bakuGameDisp3D, NULL);
+    dispEntry(4, float_0_80421618, 1, bakuGameDisp3D, NULL);
     return 0;
 }
 
-static BattleWeapon weapon;
+// The weapon bakuGameDecideWeapon copies into the work (0xC0 bytes, a BattleWeapon): name, message, stats and
+// the attack event script. Written as words because BattleWeapon's header leaves most of its fields unnamed.
+extern s32 marioAttackEvent_BakuGame[];
+static void* weapon[0xC0 / 4] = {
+    (void*)str_802FEA98, (void*)0x01980000, NULL, (void*)str_802FEAAC,
+    (void*)0x64000200, (void*)0x3F800000, (void*)0x01056432, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, (void*)0x02100060, (void*)0x20000000, (void*)0x00000302,
+    (void*)str_802FEABC, (void*)0x00020088, (void*)0x000007FF, NULL,
+    (void*)0x00006401, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL,
+    (void*)marioAttackEvent_BakuGame, (void*)0x00000064, NULL, NULL,
+};
 
 s32 bakuGameBombEntry(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
@@ -599,8 +615,8 @@ s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (75.09%): GX/float register scheduling and several sdata2 constant relocations differ.
-void main_star(void) {
+// NONMATCHING (76.07%): GX/float register scheduling and several sdata2 constant relocations differ.
+static USER_FUNC(main_star) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
 
@@ -621,7 +637,7 @@ void main_star(void) {
             baku->field_0x224.z += float_neg1_80421604;
             baku->field_0x23C = vec3_802feac8;
             baku->field_0x248 = vec3_802fead4;
-            break;
+            // fall through
         case 2:
             baku->frame++;
             if (baku->frame <= 100) {
@@ -665,7 +681,8 @@ void main_star(void) {
         e[8] = baku->field_0x248.z;
         e[5] = float_1p5_80421648 * baku->field_0x23C.x;
     }
-    dispEntry(4, float_0_80421618, 2, (DispCallback)bakuGameDispStar, NULL);
+    dispEntry(4, float_0_80421618, 2, bakuGameDispStar, NULL);
+    return EVT_RETURN_BLOCK;
 }
 
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {

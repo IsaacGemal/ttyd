@@ -315,8 +315,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (97.50%): gp/userdata/data land in r4/r3 in the original but r5/r4 here (register allocation only).
-s32 msgWindow_Continue(s32 id) {
+void msgWindow_Continue(s32 id) {
 	WindowEntry* window = windowGetPointer(id);
 	MsgWindowWork* data;
 
@@ -326,7 +325,7 @@ s32 msgWindow_Continue(s32 id) {
 	data->field_0x30 = gp->renderTime;
 }
 
-s32 msgWindow_Add(const char* msg, s32 id) {
+void msgWindow_Add(const char* msg, s32 id) {
 	WindowEntry* window = windowGetPointer(id);
 	smartEntry* smart = window->userdata;
 	MsgWindowWork* data;
@@ -338,8 +337,7 @@ s32 msgWindow_Add(const char* msg, s32 id) {
 	window->flags |= 2;
 }
 
-// NONMATCHING (92.27%): register allocation differs.
-s32 msgWindow_Repeat(s32 id) {
+void msgWindow_Repeat(s32 id) {
 	WindowEntry* window = windowGetPointer(id);
 	MsgWindowWork* data;
 
@@ -368,10 +366,8 @@ void msgWindow_Delete(WindowEntry* window) {
 	}
 }
 
-// NONMATCHING (97.10%): logic complete; the msg-tag check uses r4/r0 instead of the original's r3.
-s32 msgWindow_ForceClose(s32 id) {
+void msgWindow_ForceClose(const char* tag) {
 	s32 i = 0;
-	const char* msg = (const char*)id;
 	WindowEntry* window;
 	MsgWindowWork* data;
 
@@ -379,7 +375,7 @@ s32 msgWindow_ForceClose(s32 id) {
 		window = windowGetPointer(i);
 		if (window->flags && *(u16*)window->field_0x0 && window->userdata) {
 			data = window->userdata->address;
-			if (data->tag && strcmp(data->tag, msg) == 0) {
+			if (data->tag && strcmp(data->tag, tag) == 0) {
 				*(u16*)window->field_0x0 = 7;
 				data = window->userdata->address;
 				if (data->field_0x4 & 8) {
@@ -657,7 +653,7 @@ char* msgGetCommand(char* str, char* arg1, char* arg2) {
 	return NULL;
 }
 
-// NONMATCHING (4.61%): 25 instructions differ, 1271 missing, plus register differences.
+// NONMATCHING (4.75%): 25 instructions differ, 1271 missing, plus register differences.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	MessageData* data;
 	MsgDataEntry* entry;

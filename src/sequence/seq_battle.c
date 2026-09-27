@@ -75,7 +75,7 @@ void seq_battleExit(SequenceWork* work) {
     battle_exit();
 }
 
-// NONMATCHING (92.93%): `work` holds r31 instead of r30 and the .rodata base is the
+// NONMATCHING (95.83%): `work` holds r31 instead of r30 and the .rodata base is the
 // section symbol instead of vec3_802c4820; the rest is schedule/allocation noise.
 void seq_battleMain(SequenceWork* work) {
     FieldBattleData* fbat;
@@ -123,7 +123,7 @@ void seq_battleMain(SequenceWork* work) {
             }
             *(u32*)((u8*)fbatGetPointer() + 0x570) = 0;
             work->state++;
-            break;
+            // fall through
 
         case 3:
             {
@@ -170,14 +170,14 @@ void seq_battleMain(SequenceWork* work) {
                 }
             }
             work->state++;
-            break;
+            // fall through
 
         case 4:
             if (battle_init() != 0) {
                 break;
             }
             work->state++;
-            break;
+            // fall through
 
         case 5:
             {

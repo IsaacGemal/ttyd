@@ -58,7 +58,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type);
 
 
 // The original emits `clrlwi r5, r0, 16` for `(s16)(i + 0x92)`; MWCC emits `extsh r5, r0` because
-// iconDispGx declares its iconId `s16`. The original argument is really `u16`; see REPORT.md.
+// iconDispGx declares its iconId `s16`. The original argument is really `u16` (clrlwi r5, 16 in iconDispGxAlpha).
 // NONMATCHING (99.70%): one instruction differs (the `extsh` above).
 static void actionCommandDisp(f32 x, f32 y, s32 type) {
     s32 off;
@@ -193,7 +193,7 @@ s32 battleAcResult_LstRcKeep(BattleWork* work) {
 
 // `BattleActionCommandGetDifficulty` is declared `s8`, so MWCC emits `extsb r0, r3` before the `slwi`
 // table index; the original callee is `lbz r3, 0x1cbd(r3); blr` (zero-extending) and the caller does
-// `slwi r0, r3, 2` with no extension, i.e. the return is really `u8` (see REPORT.md).
+// `slwi r0, r3, 2` with no extension, i.e. the return is really `u8`.
 // NONMATCHING (99.52%): one instruction differs (the `extsb` above).
 s32 battleAcMain_LstRcKeep(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;

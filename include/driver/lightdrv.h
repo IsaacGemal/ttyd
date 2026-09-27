@@ -40,7 +40,7 @@ void lightReInit(void);
 void lightMain(void);
 s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle);
 LightEntry* lightNameToPtr(const char* name);
-void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags flags);
+s32 lightGetNearObj(Vec position, LightEntry** entries, s32 count, LightEntryFlags flags);
 
 
 

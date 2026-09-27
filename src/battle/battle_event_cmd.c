@@ -38,7 +38,7 @@ s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, Bat
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
-extern f32 float_1_8041bfa4;
+extern const f32 float_1_8041bfa4;
 
 //s32 frameIndex, s32 retIndex
 USER_FUNC(btlevtcmd_ftof) {
@@ -2707,6 +2707,7 @@ USER_FUNC(btlevtcmd_AcSetFlag) {
 }
 
 //s32* name, u32 flag, s32 onOff
+// NONMATCHING (97.24%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_BtlStageObjFlagOnOff) {
     s32* args = event->args;
     const char* name;

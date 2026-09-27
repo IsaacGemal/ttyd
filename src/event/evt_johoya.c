@@ -98,6 +98,7 @@ s32 johoya_data_make(const char* prefix, s32 type) {
     s32 infoId;
     s32 initEndPos;
     s16 tagEndPos;
+    // The original reads these message bytes as signed (lbz; extsb); the project builds with -char unsigned.
     const s8* msg;
     const s8* tagdata;
     s32 count;    

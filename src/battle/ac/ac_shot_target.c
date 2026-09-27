@@ -69,6 +69,7 @@ extern const f32 float_1p5_80421938;
 extern const f32 float_3_8042193c;
 extern const f32 float_10_80421940;
 
+// dont_inline: the original keeps actionCommandDisp as its own local function.
 #pragma dont_inline on
 // NONMATCHING (64.05%): the original materialises st (work+0x1F4C) and the vec3 base in registers;
 // MWCC folds st into the work base and reloads the vec base per call (frame 0x90 vs 0xF0).
