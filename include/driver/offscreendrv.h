@@ -35,3 +35,7 @@ s32 offscreenNameToId(const char* name);
 void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom);
 void offscreenDisp(CameraId camId, void* param);
 void offscreenDelete(const char* name);
+OffscreenEntry* offscreenNameToPtr(const char* name);
+void offscreenGetTexObj(s32 id, void** texObj, u32** imagePtr);
+s32 offscreenGetBoundingBox(s32 id, u16* left, u16* top, u16* right, u16* bottom);
+s32 offscreenGetBoundingBox_BeforeFrame(s32 id, u16* left, u16* top, u16* right, u16* bottom);
