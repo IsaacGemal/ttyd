@@ -22,9 +22,9 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 26 after wave 7, PR #8): 4,024 of 9,770 functions matched, 19.74% of code;
-  linked code 9.78%, linked data 4.15%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
-- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session). Overnight
+- Progress (local build, Sep 26 after wave 8, PR #9): 4,151 of 9,770 functions matched, 20.53% of code;
+  linked code 9.89%, linked data 4.15%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
   or Codex twice; no GLM). Before round 1 the orchestrator checks every declaration the PR adds against headers
