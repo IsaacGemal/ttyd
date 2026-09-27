@@ -37,6 +37,7 @@ ACCEPTED = CI_DIR / "accepted.json"
 OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
 
 PROTECTED = ("config/", "orig/", "tools/", ".github/", "libs/", "assets/")
+UNPROTECTED = ("libs/metrowerks/src/",)  # the runtime libraries ported here are ours to decompile (their headers aren't)
 ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
 PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b(?!\s+once\b)")
 UNIT_KEYS = ["fuzzy_match_percent", "matched_code_percent", "matched_data_percent",
@@ -61,7 +62,7 @@ def lint(base, allow_pragma, allow_protected, allow_configure):
     names += run(["git", "ls-files", "--others", "--exclude-standard"]).stdout.split()
     problems = []
     for name in names:
-        if name.startswith(PROTECTED) and name != "tools/ci.py" and not allow_protected:
+        if name.startswith(PROTECTED) and not name.startswith(UNPROTECTED) and name != "tools/ci.py" and not allow_protected:
             problems.append(f"{name}: protected path (pass --allow-protected if intended)")
     diff = run(["git", "diff", "-U0", base, "--", "src", "include", "rels", "configure.py"]).stdout
     for path in run(["git", "ls-files", "--others", "--exclude-standard", "src", "include", "rels"]).stdout.split():
