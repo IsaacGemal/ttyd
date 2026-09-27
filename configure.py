@@ -1001,7 +1001,7 @@ config.libs = [
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/nubevent.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/nubinit.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msg.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msgbuf.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/msgbuf.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/serpoll.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/usr_put.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/dispatch.c"),
