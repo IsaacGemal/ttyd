@@ -17,3 +17,5 @@ f32 kpaGetBaseScale(s32 index);
 s32 kpaGetStageViewType(void);
 void kpaFireAttack(void);
 void kpa_jumpNpc(void);
+s32 kpaGetStageType(void);
+void* getKoopaFireEfp(void);
