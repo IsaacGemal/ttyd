@@ -696,14 +696,14 @@ void BattleStockExpDisp(void) {
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 
-// NONMATCHING (70.80%): MWCC copies the Vec into the iconDispGx arg slot; target reuses the BtlUnit_GetPos slot (r1+8). unit/itemId also land in swapped callee-saved registers.
+// NONMATCHING (85.73%): 2 instructions differ, 2 missing, 2 extra, plus register differences.
 void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {
 	Vec v;
 	s32 itemId = unit->heldItem;
 
 	BtlUnit_GetPos(unit, &v.x, &v.y, &v.z);
 	v.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit) + float_5_8041bf6c;
-	iconDispGx(v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
+	iconDispGx(&v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
 }
 
 // NONMATCHING (96.86%): one branch-layout instruction (target `blt body; b end`, ours `bge end`).
@@ -722,7 +722,7 @@ void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 	}
 }
 
-// NONMATCHING (81.95%): target reuses the BtlUnit_GetPos stack slot for the iconDispGx Vec and keeps the dead `(f32)BtlUnit_GetHeight` conversion at the top; MWCC drops the conversion and copies the Vec.
+// NONMATCHING (91.57%): 2 instructions differ, 4 missing, plus register differences.
 #pragma dont_inline on
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
@@ -742,7 +742,7 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 		v.x += unit->heldItemOffset.x;
 		v.y += unit->heldItemOffset.y;
 		v.z += unit->heldItemOffset.z;
-		iconDispGx(v, 0, itemDataTable[item].icon_id, float_1_8041bf64);
+		iconDispGx(&v, 0, itemDataTable[item].icon_id, float_1_8041bf64);
 	}
 }
 #pragma dont_inline reset

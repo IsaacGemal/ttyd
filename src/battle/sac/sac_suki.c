@@ -107,6 +107,7 @@ static void disp_3D(CameraId camera, void* param);
 
 
 // .text:0x0 | 0x80249920 | size: 0xE8
+// NONMATCHING (99.88%): same instructions; only register numbers or operands differ.
 void set_tev(SukiTevParam* param) {
     SukiWork* work = get_ptr();
     u8 flash = work->flash;
@@ -320,10 +321,7 @@ static void disp_3D(CameraId camera, void* param) {
 }
 
 // .text:0x85C | 0x8024A17C | size: 0x180
-// NONMATCHING (51.31%): the retail iconDispGx takes `Vec*` (include/driver/icondrv.h wrongly declares it
-// by value), so our by-value calls copy each Vec into an argument temp and add 0x10 to the frame; that
-// pushes Mtx to 0x38 instead of 0x20 and the two Vec slots to 0x2c/0x20 instead of 0x14/0x08. Body logic
-// and the scissor/N__disp_2D loop match.
+// NONMATCHING (82.40%): 8 instructions differ, 8 missing, 4 extra, plus register differences.
 static void disp_2D(CameraId camera, void* param) {
     SukiWork* work = get_ptr();
     Mtx mtx;
@@ -339,13 +337,13 @@ static void disp_2D(CameraId camera, void* param) {
     pos1.x = work->pos.x + 215.0f;
     pos1.y = work->pos.y + 60.0f;
     pos1.z = work->pos.z;
-    iconDispGx(pos1, 0x10, 0x90, 1.0f);
+    iconDispGx(&pos1, 0x10, 0x90, 1.0f);
 
     pos2 = vec3_80300a84;
     pos2.x = work->pos.x - 215.0f;
     pos2.y = work->pos.y + 60.0f;
     pos2.z = work->pos.z;
-    iconDispGx(pos2, 0x10, 0x8F, 1.0f);
+    iconDispGx(&pos2, 0x10, 0x8F, 1.0f);
 
     GXSetScissor(0, 0x91, gp->fbWidth, 0x50);
     for (i = 0; i < 7; i++) {

@@ -52,7 +52,7 @@ void battleAcDelete_StickRotate(BattleWork* work) {
 }
 
 // optimize_for_size: matches the original's divide-by-two idiom and prologue (file looks like -O4,s).
-// NONMATCHING (52.68%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
+// NONMATCHING (71.69%): 1 instruction differs, 4 missing, 28 extra, plus register differences.
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -64,7 +64,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v = vec[6];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
             break;
         }
         case 0x3E8:
@@ -94,7 +94,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             v = vec[7];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, _get_icon_id(sr->field_0x06), float_1_804204d8);
+            iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x06), float_1_804204d8);
             break;
         }
         case 0x3EA:
@@ -105,7 +105,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v = vec[8];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
             break;
         }
         default:
@@ -114,7 +114,7 @@ void actionCommandDisp2(f32 x, f32 y) {
 }
 
 // optimize_for_size: matches the original's prologue and idioms (file looks like -O4,s).
-// NONMATCHING (0.00%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
+// NONMATCHING (25.47%): 4 instructions differ, 5 missing, 104 extra, plus register differences.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -127,13 +127,13 @@ static void actionCommandDisp(f32 x, f32 y) {
             v = vec[0];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
             break;
         case 0x3E8:
             v = vec[1];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
+            iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
             break;
         case 0x3E9:
             if ((s8)sr->field_0x05 <
@@ -142,20 +142,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     v = vec[2];
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(v, 0x10, _get_icon_id(sr->field_0x02),
+                    iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02),
                                float_1_804204d8);
                 } else {
                     v = vec[3];
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(v, 0x10, _get_icon_id(sr->field_0x01),
+                    iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x01),
                                float_1_804204d8);
                 }
             } else {
                 v = vec[4];
                 v.x = float_neg200_804204d0 + x;
                 v.y = float_70_804204d4 + y;
-                iconDispGx(v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
+                iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
             }
             break;
         case 0x3EA:
@@ -166,7 +166,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             v = vec[5];
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
             break;
         default:
             break;

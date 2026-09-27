@@ -387,9 +387,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
-// NONMATCHING (79.15%): iconDispGx's header declares `Vec position` by value, so
-// MWCC copies the 12-byte struct (frame 0x60 vs 0x40) and register allocation
-// differs. The original callers pass the address of a local Vec; see REPORT.md.
+// NONMATCHING (85.42%): 7 instructions differ, 5 missing, 5 extra, plus register differences.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -407,13 +405,13 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         vec.x = 155.0f + pos->x;
         vec.y = 15.0f + pos->y + f31;
         vec.z = 0.0f;
-        iconDispGx(vec, 0x10, 0x1B5, 0.75f);
+        iconDispGx(&vec, 0x10, 0x1B5, 0.75f);
     }
     if (cursor->unk8 - 6 > cursor->field_4) {
         vec.x = 155.0f + pos->x;
         vec.y = 20.0f + pos->y - 164.0f - f31;
         vec.z = 0.0f;
-        iconDispGx(vec, 0x10, 0x1B6, 0.75f);
+        iconDispGx(&vec, 0x10, 0x1B6, 0.75f);
     }
     n = cursor->field_0 - cursor->field_4;
     if (n < 0) {
@@ -425,7 +423,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     vec.x = pos->x;
     vec.y = pos->y - 24.0f * (f32)n;
     vec.z = 0.0f;
-    iconDispGx(vec, 0x14, 0x1F0, 1.0f);
+    iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
 }
 
 // NONMATCHING (97.44%): MWCC coalesces sp/p (`cmplwi` instead of `mr. r31,r3`),

@@ -71,7 +71,7 @@ USER_FUNC(_disp_heart_entry_stop) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85.86%): identical instruction sequence; only the stack slot chosen for the temporary
+// NONMATCHING (85.81%): identical instruction sequence; only the stack slot chosen for the temporary
 // second icon position differs (target reuses 0x20, ours allocates an extra Vec at 0x38).
 void _disp_heart(CameraId cameraId, void* param) {
     EventEntry* event;
@@ -107,8 +107,8 @@ void _disp_heart(CameraId cameraId, void* param) {
     iconPos = pos;
     iconPos.y += float_16_8041de9c * scale;
     iconPos.z += float_5_8041dea0;
-    iconDispGx(pos, 0, 0x1F2, scale);
-    iconDispGx(iconPos, 0, 0x189, scale);
+    iconDispGx(&pos, 0, 0x1F2, scale);
+    iconDispGx(&iconPos, 0, 0x189, scale);
 }
 
 USER_FUNC(_disp_heart_entry) {

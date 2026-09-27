@@ -174,9 +174,7 @@ USER_FUNC(twoddisp_main) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (83.03%): only the outgoing GXColor/Vec argument stack slots differ
-// (ours: debug copies 0x10/0x14, fog temps 0x8/0xc, pos copied to 0x18 from 0x24;
-// original: debug copies 0x8/0xc, fog temps 0x10/0x14, pos directly at 0x18).
+// NONMATCHING (95.32%): 1 missing, 2 extra, plus register differences.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	TwoDDisplayer* entry;
 	s32 offset;
@@ -203,7 +201,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			pos.y = entry->baseY + entry->y;
 			pos.z = float_0_8041ccb0;
 			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, color);
-			iconDispGx(pos, 0x10, (u16)entry->field_0x24, entry->scale);
+			iconDispGx(&pos, 0x10, (u16)entry->field_0x24, entry->scale);
 		} else {
 			FontDrawStart();
 			FontDrawScale(entry->scale);

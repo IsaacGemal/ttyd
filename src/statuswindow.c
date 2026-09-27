@@ -345,7 +345,7 @@ void statusWinOpen(void) {
     wp->field_0x4 |= 5;
 }
 
-// NONMATCHING (59.94%): 9 instructions differ, 20 missing, 25 extra, plus register differences.
+// NONMATCHING (66.15%): 9 instructions differ, 22 missing, 15 extra, plus register differences.
 void gaugeDisp(s32 a1, f32 x, f32 y) {
     s32 count;
     s32 i;
@@ -377,7 +377,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         pos.x = x + hundreds * 32;
         pos.y = y;
         pos.z = 0.0f;
-        iconDispGx(pos, 0x10, gauge_wakka[fifteenths], 1.0f);
+        iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
     }
     y += 12.0f;
     for (i = 0; i < 8; i++) {
@@ -387,7 +387,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
             pos.x = x + i * 32;
             pos.y = y;
             pos.z = 0.0f;
-            iconDispGx(pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
+            iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
         }
     }
 }

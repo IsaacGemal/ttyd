@@ -46,8 +46,7 @@ typedef struct AirGaugeDecWork {
 
 // don't_inline: the original keeps actionCommandDisp as its own local function
 #pragma dont_inline on
-// NONMATCHING (74.31%): the derived work pointer is folded into the BattleWork base and the by-value Vec
-// argument gets an extra copy; float constants also land in the compiler's own pool.
+// NONMATCHING (89.16%): 6 instructions differ, 4 missing, 2 extra, plus register differences.
 static void actionCommandDisp(f32 f1, f32 f2) {
 	BattleWork* work = _battleWorkPointer;
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -80,14 +79,14 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 		pos = vec3_802fdc68;
 		pos.x = float_neg200_80420a7c + f1;
 		pos.y = float_58_80420a80 + f2;
-		iconDispGx(pos, 0x10, 0x65, float_1_80420a84);
+		iconDispGx(&pos, 0x10, 0x65, float_1_80420a84);
 	}
 	else {
 		Vec pos;
 		pos = vec3_802fdc74;
 		pos.x = float_neg200_80420a7c + f1;
 		pos.y = float_58_80420a80 + f2;
-		iconDispGx(pos, 0x10, 0x64, float_1_80420a84);
+		iconDispGx(&pos, 0x10, 0x64, float_1_80420a84);
 	}
 }
 #pragma dont_inline reset
