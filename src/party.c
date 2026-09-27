@@ -22,6 +22,7 @@
 #define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
 
+
 //.data
 typedef struct PartyData {
     char* name;       // 0, TODO: modelname? animname?
@@ -604,15 +605,13 @@ void partyUsePost(PartyEntry* party) {
 
 // Keep partyChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (88.52%): ours drops the original's redundant `mr r3,r30`
-// before the call; scheduling/peephole/opt_propagation and local forms don't restore it.
 void partyChgRunMode(PartyEntry* party, s32 mode) {
     if (party->field_34 != 9 && party->field_34 != 3) {
         party->field_35 = party->field_34;
-        N__partyChgRunMode(party, party->field_34, mode);
-        party->field_34 = mode;
-        party->field_8 |= 8;
     }
+    N__partyChgRunMode(party, party->field_34, mode);
+    party->field_34 = mode;
+    party->field_8 |= 8;
 }
 #pragma dont_inline reset
 
@@ -645,16 +644,14 @@ void partyChgPose(PartyEntry* party, char* pose) {
 
 // Keep N_partyForceChgRunMode out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (90.00%): same missing redundant `mr r3,r29` / arg-load order as
-// partyChgRunMode (ours drops the move the original keeps).
 void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk) {
     if (party->field_34 != 9 && party->field_34 != 3) {
         party->field_35 = party->field_34;
-        N__partyChgRunMode(party, party->field_34, mode);
-        party->field_34 = mode;
-        party->field_8 &= ~8;
-        P8(party, 0x38) = unk;
     }
+    N__partyChgRunMode(party, party->field_34, mode);
+    party->field_34 = mode;
+    party->field_8 &= ~8;
+    P8(party, 0x38) = unk;
 }
 #pragma dont_inline reset
 
@@ -1064,17 +1061,49 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     return ret;
 }
 
-// NONMATCHING (89.94%): partyChgPoseId is inlined but ours does not
-// constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
-// inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
+// MUST_MATCH: the inliner does not fold partyChgPoseId's `index == 1` chain for the
+// literal argument, so write the already-folded pose selection the target emits; the
+// natural call is under #else.
 void party_force_ride_yoshi(PartyEntry* party) {
     Vec pos;
+#ifdef MUST_MATCH
+    char* index;
+    char* pose;
+#else
+    char* pose;
+#endif
 
     N_partyForceChgRunMode(party, 0xc, 0xa);
     party->flags &= ~0x100;
     getRidePos(party, &pos);
     party->position = pos;
+#ifdef MUST_MATCH
+    index = (char*)1;
+    if (!(party->flags2 & 2)) {
+        s32 lowHp = 0;
+
+        if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+            lowHp = 1;
+        }
+        if (lowHp == 1) {
+            index = (char*)12;
+        }
+        if (!(party->flags2 & 0x8000)) {
+            pose = partyPoseTbl[party->currentMemberId][(s32)index];
+        } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+            pose = partyDotPoseTbl[party->currentMemberId][(s32)index];
+        } else {
+            pose = yoshiDotPoseTbl[pouchGetPartyColor(PARTY_MEMBER_YOSHI)][(s32)index];
+        }
+        if (!(party->field_18 && !strcmp(party->field_18, pose))) {
+            party->field_18 = pose;
+            party->field_20 = 0;
+            party->field_8 |= 0x2000;
+        }
+    }
+#else
     partyChgPoseId(party, 1);
+#endif
     PF32(party, 0x114) = 0.0f;
     partyShadowOff(party);
     PF32(party, 0x110) = PF32(party->playerPtr, 0x1AC);
