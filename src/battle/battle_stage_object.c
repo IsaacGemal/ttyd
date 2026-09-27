@@ -371,12 +371,13 @@ void BattleStage_DestroyA2(void) {
 // mwcc merges it and mutates r31 after the first `evtDeleteID`.
 void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
+	u8* base = (u8*)wp;
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x19C);
 
-	evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F14));
-	*(s32*)((u8*)wp + 0x20000 - 0x7F14) = 0;
-	if (*(s32*)((u8*)wp + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)((u8*)wp + 0x20000 - 0x7F20))) {
-		evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F20));
+	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F14));
+	*(s32*)(base + 0x20000 - 0x7F14) = 0;
+	if (*(s32*)(base + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)(base + 0x20000 - 0x7F20))) {
+		evtDeleteID(*(s32*)(base + 0x20000 - 0x7F20));
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_B;
@@ -384,21 +385,20 @@ void BattleStage_DestroyB(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			*(s32*)((u8*)wp + 0x20000 - 0x7F20) = e->eventId;
+			*(s32*)(base + 0x20000 - 0x7F20) = e->eventId;
 		}
 	}
 }
 
-// NONMATCHING (94.51%): target keeps `wp` in r31 and recomputes `wp + 0x20000` into r3 at each use; mwcc
-// merges `wp` into the byte-offset pointer after the first `evtDeleteID` call (`addis r31,r31,2`) and uses r31.
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
+	u8* base = (u8*)wp;
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x194);
 
-	evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F1C));
-	*(s32*)((u8*)wp + 0x20000 - 0x7F1C) = 0;
-	if (*(s32*)((u8*)wp + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)((u8*)wp + 0x20000 - 0x7F20))) {
-		evtDeleteID(*(s32*)((u8*)wp + 0x20000 - 0x7F20));
+	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F1C));
+	*(s32*)(base + 0x20000 - 0x7F1C) = 0;
+	if (*(s32*)(base + 0x20000 - 0x7F20) != 0 && evtCheckID(*(s32*)(base + 0x20000 - 0x7F20))) {
+		evtDeleteID(*(s32*)(base + 0x20000 - 0x7F20));
 	}
 	if (evt == NULL) {
 		evt = _object_turn_event_A1;
@@ -406,7 +406,7 @@ void BattleStage_DestroyA1(void) {
 	{
 		EventEntry* e = evtEntry(evt, 10, 0);
 		if (e != NULL) {
-			*(s32*)((u8*)wp + 0x20000 - 0x7F20) = e->eventId;
+			*(s32*)(base + 0x20000 - 0x7F20) = e->eventId;
 		}
 	}
 }
@@ -439,6 +439,7 @@ USER_FUNC(_fall_frame_delete) {
 	return EVT_RETURN_DONE;
 }
 
+
 // Keep _mobj_shake_main out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void _mobj_shake_main(BattleStageObject* obj) {
@@ -451,9 +452,6 @@ void _mobj_shake_main(BattleStageObject* obj) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (91.12%): the `BattleWaitAllActiveEvtEnd_NoBgSetEndWait` prototype needed its real
-// `BattleWork*` parameter, fixing the `mr r29,r5`/`mr r3,r29` dance. Remaining diff is block layout:
-// target inlines `li r3,2` for DONE and splits the switch default test into `beq; bge`.
 USER_FUNC(_set_mobj_shake) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* w = (u8*)wp + 0x20000;
@@ -461,30 +459,34 @@ USER_FUNC(_set_mobj_shake) {
 	BattleStageObject* obj;
 	s32 i;
 
-	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp)
-	    || (*(s32*)(w - 0x7D68) != 0 && evtCheckID(*(s32*)(w - 0x7D68)))
-	    || (*(s32*)(w - 0x7D58) != 0 && evtCheckID(*(s32*)(w - 0x7D58)))) {
-		switch (layer) {
-			case 0:
-			case 1:
-				for (i = 0; i < 32; i++) {
-					obj = &wp->stageObjects[i];
-					if (obj->id > 0 && obj->data->mLayer == layer) {
-						_mobj_shake_main(obj);
-					}
-				}
-				break;
-		}
-		return EVT_RETURN_BLOCK;
+	if (BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp)
+	    && !(*(s32*)(w - 0x7D68) != 0 && evtCheckID(*(s32*)(w - 0x7D68)))
+	    && !(*(s32*)(w - 0x7D58) != 0 && evtCheckID(*(s32*)(w - 0x7D58)))) {
+		return EVT_RETURN_DONE;
 	}
-	return EVT_RETURN_DONE;
+	switch (layer) {
+		case 0:
+		case 1:
+			for (i = 0; i < 32; i++) {
+				obj = &wp->stageObjects[i];
+				if (obj->id > 0 && obj->data->mLayer == layer) {
+					_mobj_shake_main(obj);
+				}
+			}
+			break;
+		case 2:
+			break;
+		default:
+			break;
+	}
+	return EVT_RETURN_BLOCK;
 }
 
 // NONMATCHING (84.83%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
 USER_FUNC(_fall_frame) {
+	s32 layer = event->args[0];
 	BattleWork* wp = _battleWorkPointer;
 	u8* w = (u8*)wp + 0x20000;
-	s32 layer = event->args[0];
 	BattleStageObject* obj = BattleSearchObjectPtr(str_802F3C7C);
 
 	if (isFirstCall) {
@@ -494,11 +496,11 @@ USER_FUNC(_fall_frame) {
 	event->userdata[2]++;
 	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
 	                             (f32)(s32)event->field_84, 0.0f);
-	if (event->userdata[2] >= 0x3C) {
-		evtSetValue(event, layer, *(s32*)(w - 0x7F08));
-		return EVT_RETURN_DONE;
+	if (event->userdata[2] < 0x3C) {
+		return EVT_RETURN_BLOCK;
 	}
-	return EVT_RETURN_BLOCK;
+	evtSetValue(event, layer, *(s32*)(w - 0x7F08));
+	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(_fall_frame_wait_unit_ready) {
@@ -536,10 +538,12 @@ USER_FUNC(_fall_frame_wait_unit_ready) {
 }
 
 #pragma dont_inline on
-// NONMATCHING (91.12%): target keeps the base in r5 and the zero-extended index in r3, reloading
-// `clrlwi r0,r3,24` per case; mwcc keeps the base in r3 and skips the reloads. All case bodies/labels match.
+// NONMATCHING (91.12%): target keeps the loaded pointer in r4, base in r5 and reloads `clrlwi r0,r3,24`
+// per case (index stays live in r3); mwcc keeps base in r3 and reuses the once-extended index in r0.
+// All case bodies/labels match.
 s32 _get_nozzle_attack_index(u8 index) {
-	u8* base = (u8*)_battleWorkPointer + 0x20000 - 0x7F40;
+	BattleWork* wp = _battleWorkPointer;
+	u8* base = (u8*)wp + 0x20000 - 0x7F40;
 	u8 type;
 
 	switch (index) {
@@ -686,17 +690,23 @@ USER_FUNC(_mobj_destroy) {
 }
 
 #pragma dont_inline on
-// NONMATCHING (94.50%): target hoists `lis/addi vec3_802f3ac8@ha/@l` before the `evtGetValue` call and keeps
-// the args pointer in r5; mwcc does the vec3 base load after the call in r3 and uses r4 for `event->args`, which
-// also shifts the `li r25/r31,0` ordering. Functionally identical. Uses named `float_15/30/0_8041cd*` and
-// `vec3_802f3ac8` (the strings live at +0x1FC/+0x214/+0x22C) so the constants relocate to the target symbols.
+// Copy propagation off is required: it keeps the `vec3_802f3ac8` base in a callee-saved register loaded
+// before the `evtGetValue` call and the three string offsets computed after it, as the target does.
+#pragma opt_propagation off
 USER_FUNC(_bgset_kemuri_effect) {
-	BattleWork* wp = _battleWorkPointer;
 	s32* args = event->args;
-	s32 layer = evtGetValue(event, *args);
+	char* s0;
+	char* s1;
+	char* s2;
+	char* vec = vec3_802f3ac8;
+	BattleWork* wp = _battleWorkPointer;
 	s32 i;
 	BattleStageObject* obj;
 	f32 x, y, z;
+	s32 layer = evtGetValue(event, *args);
+	s0 = vec + 0x1FC;
+	s1 = vec + 0x214;
+	s2 = vec + 0x22C;
 
 	for (i = 0; i < 32; i++) {
 		obj = &wp->stageObjects[i];
@@ -708,24 +718,25 @@ USER_FUNC(_bgset_kemuri_effect) {
 				case 0:
 					z += float_30_8041cd5c;
 					effKemuri1N64Entry(3, x, y, z, float_0_8041cd04);
-					psndSFXOn_3D(vec3_802f3ac8 + 0x1FC, &obj->mPosition);
+					psndSFXOn_3D(s0, &obj->mPosition);
 					break;
 				case 1:
 					z += float_15_8041cd18;
 					effKemuri1N64Entry(0, x, y, z, float_0_8041cd04);
-					psndSFXOn_3D(vec3_802f3ac8 + 0x214, &obj->mPosition);
+					psndSFXOn_3D(s1, &obj->mPosition);
 					break;
 				case 2:
 					z += float_30_8041cd5c;
 					effKemuri1N64Entry(3, x, y, z, float_0_8041cd04);
 					effKemuri1N64Entry(4, x, y, z, float_0_8041cd04);
-					psndSFXOn_3D(vec3_802f3ac8 + 0x22C, &obj->mPosition);
+					psndSFXOn_3D(s2, &obj->mPosition);
 					break;
 			}
 		}
 	}
 	return EVT_RETURN_DONE;
 }
+#pragma opt_propagation on
 
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;
