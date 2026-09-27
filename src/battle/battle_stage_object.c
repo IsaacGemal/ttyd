@@ -14,7 +14,7 @@ void BattleObjectConfig(void);
 extern s32 _fall_frame_event[];
 extern s32 _object_fall_event[];
 extern void BattleAudience_Case_HaikeiSet(void);
-extern s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(void);
+extern s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp);
 extern void _Nozzle_Change_Check(u8 index, void* nozzle);
 extern const char str_802F3C7C[];
 extern void mapGrpSetColor(const char* name, GXColor* color);
@@ -172,7 +172,7 @@ void BattleStage_IronFrameFallCheck(void) {
 s32 _fall_frame_wait(void) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 
-	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait()) {
+	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
 	}
 	if (*(s32*)(w - 0x7D68) != 0) {
@@ -187,7 +187,7 @@ s32 _fall_frame_wait(void) {
 s32 _object_fall_wait(void) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 
-	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait()) {
+	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
 	}
 	if (*(s32*)(w - 0x7D68) != 0) {
@@ -228,7 +228,7 @@ s32 _nozzle_work_wait(void) {
 	u8* w = (u8*)_battleWorkPointer + 0x180C0;
 	s32 i;
 
-	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait()) {
+	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(_battleWorkPointer)) {
 		return 0;
 	}
 	for (i = 0; i < 3; i++) {
@@ -289,15 +289,18 @@ void BattleStage_NozzleWorkCheck(s32 flag) {
 	}
 }
 
-// NONMATCHING (94.57%): only the address form differs. Target emits `slwi r0,r3,2; add r5,r31,r0;
-// lwz r5,0x3c(r5)`; mwcc folds the +0x3C into the index and emits `addi r0,r5,0x3c; lwzx r5,r31,r0`.
+typedef struct BattleNozzleWork {
+	u8 field_0[0x3C];
+	s32 weaponAddr[3];
+} BattleNozzleWork;
+
 USER_FUNC(_nozzle_work_get_weapon_address) {
-	u8* w = (u8*)_battleWorkPointer + 0x20000 - 0x7F40;
+	BattleNozzleWork* w = (BattleNozzleWork*)((u8*)_battleWorkPointer + 0x20000 - 0x7F40);
 	s32* args = event->args;
 	s32 idx;
 
 	idx = evtGetValue(event, *args);
-	evtSetValue(event, args[1], *(s32*)(w + idx * 4 + 0x3C));
+	evtSetValue(event, args[1], w->weaponAddr[idx]);
 	return EVT_RETURN_DONE;
 }
 
@@ -416,9 +419,12 @@ void BattleStage_DestroyA1(void) {
 	}
 }
 
-// NONMATCHING (89.03%): target materializes the GXColor in a temp at 0x8 then copies it to `color` at 0xc and
+// NONMATCHING (93.59%): target materializes the GXColor in a temp at 0x8 then copies it to `color` at 0xc and
 // references the named `dat_8041ccfc` (=0xFFFFFF00); mwcc builds it in place at 0x8 and emits an anonymous
 // constant (`@345`). Functionally identical. Discovered the data value 0xFFFFFF00 (alpha 0) while trying forms.
+// NONMATCHING (93.59%): the two-local `color`/`c` idiom now produces the temp-then-copy; only instruction
+// scheduling differs: mwcc hoists the `dat_8041ccfc` load above the `userdata[2] -= 5` store while the target
+// keeps it after, and the userdata value sits in r4 here vs r5 there.
 USER_FUNC(_fall_frame_delete) {
 	u8* w = (u8*)_battleWorkPointer + 0x20000;
 
@@ -427,9 +433,12 @@ USER_FUNC(_fall_frame_delete) {
 	}
 	event->userdata[2] -= 5;
 	{
-		GXColor color = { 0xFF, 0xFF, 0xFF, 0 };
+		GXColor c;
+		GXColor color;
+		color = *(GXColor*)&dat_8041ccfc;
 		color.a = event->userdata[2];
-		mapGrpSetColor(str_802F3C7C, &color);
+		c = color;
+		mapGrpSetColor(str_802F3C7C, &c);
 	}
 	if (event->userdata[2] > 0) {
 		return EVT_RETURN_BLOCK;
@@ -450,10 +459,9 @@ void _mobj_shake_main(BattleStageObject* obj) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (87.33%): target loads `_battleWorkPointer` into r5, computes `w` from r5 and then `mr r29,r5`
-// before the call; mwcc loads straight into r29. All other instructions match. The `layer >= 0 && layer < 2`
-// guard compiled correctly as a `switch (layer) { case 0: case 1: ... }`; `_mobj_shake_main` must be wrapped in
-// `#pragma dont_inline on/reset` or mwcc inlines the call away (target keeps the `bl`).
+// NONMATCHING (91.12%): the `BattleWaitAllActiveEvtEnd_NoBgSetEndWait` prototype needed its real
+// `BattleWork*` parameter, fixing the `mr r29,r5`/`mr r3,r29` dance. Remaining diff is block layout:
+// target inlines `li r3,2` for DONE and splits the switch default test into `beq; bge`.
 USER_FUNC(_set_mobj_shake) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* w = (u8*)wp + 0x20000;
@@ -461,7 +469,7 @@ USER_FUNC(_set_mobj_shake) {
 	BattleStageObject* obj;
 	s32 i;
 
-	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait()
+	if (!BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp)
 	    || (*(s32*)(w - 0x7D68) != 0 && evtCheckID(*(s32*)(w - 0x7D68)))
 	    || (*(s32*)(w - 0x7D58) != 0 && evtCheckID(*(s32*)(w - 0x7D58)))) {
 		switch (layer) {
@@ -480,6 +488,7 @@ USER_FUNC(_set_mobj_shake) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (84.83%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
 USER_FUNC(_fall_frame) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* w = (u8*)wp + 0x20000;
@@ -487,13 +496,13 @@ USER_FUNC(_fall_frame) {
 	BattleStageObject* obj = BattleSearchObjectPtr(str_802F3C7C);
 
 	if (isFirstCall) {
-		event->userdata[0] = 0;
-		event->userdata[1] = (s32)obj->mPosition.y;
+		event->userdata[2] = 0;
+		event->field_84 = (s32)obj->mPosition.y;
 	}
-	event->userdata[0]++;
-	obj->mPosition.y = intpl_sub(2, event->userdata[0] * event->userdata[0] / 0x3C, 0x3C,
-	                             (f32)event->userdata[1], 0.0f);
-	if (event->userdata[0] >= 0x3C) {
+	event->userdata[2]++;
+	obj->mPosition.y = intpl_sub(2, event->userdata[2] * event->userdata[2] / 0x3C, 0x3C,
+	                             (f32)(s32)event->field_84, 0.0f);
+	if (event->userdata[2] >= 0x3C) {
 		evtSetValue(event, layer, *(s32*)(w - 0x7F08));
 		return EVT_RETURN_DONE;
 	}
@@ -726,44 +735,50 @@ USER_FUNC(_bgset_kemuri_effect) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (89.80%): target materialises each GXColor in a 4-byte temp then copies it to the real slot
-// (temp at color-4), giving a 0x30 frame; mwcc builds it in place (0x20 frame). Every other instruction matches.
-// Fixed by declaring `str_8041CD6{8,C,0,4}` as `[4]` (size <= sdata2 threshold -> `li r3,sym@sda21`),
-// `u8 alpha` (target `clrlwi r30,r3,24`), `s32* args = event->args` (target keeps it in r31), and assigning
-// `color = *(GXColor*)&dat_8041cce8; color.a = alpha;` so the constant relocates to the named symbol.
 USER_FUNC(_mobj_set_alpha) {
 	s32* args = event->args;
 	s32 which = evtGetValue(event, args[0]);
 	u8 alpha = evtGetValue(event, args[1]);
-	GXColor color;
 
 	switch (which) {
 		case 0:
 			if (mapGetMapObj(str_8041CD68) != NULL) {
+				GXColor c;
+				GXColor color;
 				color = *(GXColor*)&dat_8041cce8;
 				color.a = alpha;
-				mapGrpSetColor(str_8041CD68, &color);
+				c = color;
+				mapGrpSetColor(str_8041CD68, &c);
 			}
 			break;
 		case 1:
 			if (mapGetMapObj(str_8041CD6C) != NULL) {
+				GXColor c;
+				GXColor color;
 				color = *(GXColor*)&dat_8041ccec;
 				color.a = alpha;
-				mapGrpSetColor(str_8041CD6C, &color);
+				c = color;
+				mapGrpSetColor(str_8041CD6C, &c);
 			}
 			break;
 		case 2:
 			if (mapGetMapObj(str_8041CD70) != NULL) {
+				GXColor c;
+				GXColor color;
 				color = *(GXColor*)&dat_8041ccf0;
 				color.a = alpha;
-				mapGrpSetColor(str_8041CD70, &color);
+				c = color;
+				mapGrpSetColor(str_8041CD70, &c);
 			}
 			break;
 		case 3:
 			if (mapGetMapObj(str_8041CD74) != NULL) {
+				GXColor c;
+				GXColor color;
 				color = *(GXColor*)&dat_8041ccf4;
 				color.a = alpha;
-				mapGrpSetColor(str_8041CD74, &color);
+				c = color;
+				mapGrpSetColor(str_8041CD74, &c);
 			}
 			break;
 	}
@@ -797,6 +812,7 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	return NULL; //if name not found
 }
 
+// NONMATCHING (0.18%): 564 missing.
 void BattleStageObjectInit(void) {
 
 }
@@ -843,6 +859,7 @@ void BattleObjectConfig(void) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (0.37%): 269 missing.
 void BattleStageObjectMain(void) {
 
 }

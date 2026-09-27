@@ -2,11 +2,17 @@
 #include "driver/dispdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/mobjdrv.h"
+#include "driver/offscreendrv.h"
+#include "eff/eff_n64.h"
+#include "system.h"
 #include <string.h>
 
 extern const Vec vec3_802c1a90;
 extern const Vec vec3_802c1acc;
 extern const Vec vec3_802c1ae4;
+extern Vec testKagePosArray[];
+extern GXColor unk_80422f98;
+extern GXColor unk_80422f9c;
 
 typedef struct ShadowConfigFields {
     u8 pad00[0x28];
@@ -54,11 +60,13 @@ DepthShadowWork* dswp = &depth_shadow_work;
 ProjShadowWork* pswp = &proj_shadow_work;
 CharShadowWork* cswp = &char_shadow_work;
 
+// NONMATCHING (99.47%): body matches. `bufferSize` lands in r31 as the original, but the first assignment has
+// an extra `mr r0,r3; mr r31,r0` and the second `bufferSize`/`ramp16` pair are swapped (r31/r30).
 void shadowInit(void) { //almost 1:1, minor regalloc
+    u32 bufferSize;
     u8* ramp8;
     u16* ramp16;
     u32 i;
-    u32 bufferSize;
     CharShadowWork* wp;
 
     cswp->unk0 = 0;
@@ -265,7 +273,8 @@ s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
     return id;
 }
 
-// NONMATCHING (95.08%): instruction sequence identical; only scratch register allocation differs.
+// NONMATCHING (95.08%): instruction sequence and addresses identical; the whole body is shifted one register
+// (entries r5 vs r4, entry r10 vs r9) because the allocator reuses cswp's r4 for the entries load.
 void shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     ShadowEntry* entries = cswp->entries;
     s32 id = cswp->unk104;
@@ -395,8 +404,154 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
     }
 }
 
-// NONMATCHING (99.94%): body identical; only the 0.0f .sdata2 relocation differs (pool offsets).
-// NONMATCHING (98.91%): body matches; only float-constant pool labels and a couple of operand orders differ.
+// NONMATCHING (95.81%): body matches. This compiler hoists `negSize * 0.5f` out of the entry loop into f31
+// (the original keeps -2.5 in f30 and computes the product per iteration), which shifts the immediate-mode
+// FP registers; the two GXColor argument-copy stack slots are also swapped (0x10/0x14 vs 0x14/0x10).
+void shadowCharShadowDisp_Texture(CameraId camId) {
+    ShadowEntry* entry = cswp->entries;
+    f32 (*view)[4];
+    u16 left, top, right, bottom;
+    GXColor color;
+    GXTexObj texObj;
+    Mtx mtx;
+    f32 zero = 0.0f;
+    f32 size = 2.5f;
+    f32 negSize = -size;
+    s32 i;
+
+    view = camGetCurPtr()->view;
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    color = cswp->unk100;
+    GXSetChanMatColor(4, color);
+    effGetTexObjN64(0x2C, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 4, 5, 7);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422f9c);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZMode(1, 3, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    for (i = 0; i < cswp->unk104; i++, entry++) {
+        if (entry->size == zero) {
+            continue;
+        }
+        if (entry->unk2 != 1) {
+            continue;
+        }
+        if (!(entry->flags & 2)) {
+            continue;
+        }
+        if (*(s16*)&entry->camId != camId) {
+            continue;
+        }
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXClearBoundingBox();
+        }
+        PSMTXConcat(view, entry->matrix, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        GXPosition3f32(negSize * 0.5f, 0.0f, 1.25f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(1.25f, 0.0f, 1.25f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(1.25f, 0.0f, negSize * 0.5f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(negSize * 0.5f, 0.0f, negSize * 0.5f);
+        GXTexCoord2f32(0.0f, 1.0f);
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXReadBoundingBox(&left, &top, &right, &bottom);
+            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+        }
+    }
+}
+
+// NONMATCHING (99.98%): only the two GXColor argument-copy stack slots are swapped (original 0x10/0x14,
+// ours 0x14/0x10) and the 0.0f .sdata2 pool label differs; body/control flow match.
+void shadowCharShadowDisp_Polygon(CameraId camId) {
+    ShadowEntry* entry = cswp->entries;
+    f32 (*view)[4];
+    u16 left, top, right, bottom;
+    GXColor color;
+    Mtx mtx;
+    f32 zero = 0.0f;
+    s32 i;
+
+    view = camGetCurPtr()->view;
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    color = cswp->unk100;
+    GXSetChanMatColor(4, color);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0xFF, 0xFF, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+    GXSetTevAlphaIn(0, 7, 1, 5, 7);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422f98);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZMode(1, 3, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXSetArray(9, testKagePosArray, 0xC);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 2);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    for (i = 0; i < cswp->unk104; i++, entry++) {
+        if (entry->size == zero) {
+            continue;
+        }
+        if (entry->unk2 != 0) {
+            continue;
+        }
+        if (!(entry->flags & 2)) {
+            continue;
+        }
+        if (*(s16*)&entry->camId != camId) {
+            continue;
+        }
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXClearBoundingBox();
+        }
+        PSMTXConcat(view, entry->matrix, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, 6);
+        GXPosition1x8(0);
+        GXPosition1x8(1);
+        GXPosition1x8(2);
+        GXPosition1x8(3);
+        GXPosition1x8(4);
+        GXPosition1x8(5);
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXReadBoundingBox(&left, &top, &right, &bottom);
+            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+        }
+    }
+}
+
+// NONMATCHING (99.74%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
+// _filter/_query argument-setup register choice differ.
 void shadowCharShadowDisp_Collision(void) {
     ShadowEntry* entry = cswp->entries;
     HitCheckQuery query;
@@ -404,12 +559,13 @@ void shadowCharShadowDisp_Collision(void) {
     f32 (*mtx)[4];
     f32 size;
     f32 unk14;
+    f32 zero = 0.0f;
     s32 i;
 
     camGetCurPtr();
     for (i = 0; i < cswp->unk104; i++, entry++) {
         mtx = entry->matrix;
-        if (entry->size == 0.0f) {
+        if (entry->size == zero) {
             continue;
         }
         if (entry->flags & 2) {
@@ -441,14 +597,16 @@ void shadowCharShadowDisp_Collision(void) {
         }
         else {
             PSMTXTrans(mtx, entry->position.x, 1.5f + entry->position.y, entry->position.z);
-            mtx[2][2] = entry->size;
-            mtx[0][0] = entry->size;
+            size = entry->size;
+            mtx[2][2] = size;
+            mtx[0][0] = size;
             mtx[1][1] = entry->unk14;
             entry->flags |= 2;
         }
     }
 }
 
+// NONMATCHING (99.94%): body identical; only the 0.0f .sdata2 relocation differs (pool offsets).
 void shadowMain(void) {
     dispEntry(CAMERA_3D, 0.0f, 9, shadowDisp, NULL);
     dispEntry(CAMERA_OFFSCREEN2, 0.0f, 9, shadowDisp, NULL);

@@ -16,7 +16,7 @@ s32 batSpotEntry_28;
 static BattleSpotWork* wp = &work;
 
 //.sdata2
-s32 batSpotInit_28 = -1;
+s32 dat_8041c7ec = -1;
 
 extern Vec vec3_802f31a8[];
 extern Vec vec3_802f31b4[];
@@ -133,6 +133,7 @@ BattleStage* BattleStageGetPtr(void) {
     return &_battleWorkPointer->stage;
 }
 
+// NONMATCHING (76.11%): 7 missing, 6 extra, plus register differences.
 void BattleStageInit(void) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
@@ -183,23 +184,30 @@ void BattleStageInit(void) {
 	batSpotInit();
 }
 
+// NONMATCHING (0.25%): 397 missing.
 void BattleStageMain(void) {
 }
 
+// NONMATCHING (91.67%): only the `offset`/`null` register choice is swapped
+// (original offset=r31, null=r30; ours offset=r30, null=r31). The two-step
+// `u8* p` pointer is needed to keep the lights +4 from folding into the load.
 void BattleStageEnd(void) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	s32 offset;
+	void* null;
 	s32 i;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 
-	{
-		s32 offset = 0;
-		for (i = 0; i < 12; i++) {
-			BattleStageLight* light = (BattleStageLight*)((u8*)stage->lights + offset);
-			if (light->spline != NULL) {
-				__memFree(HEAP_BATTLE, light->spline);
-				light->spline = NULL;
-			}
-			offset += 0xe8;
+	offset = 0;
+	null = NULL;
+	i = 0;
+	for (; i < 12; i++) {
+		u8* p = (u8*)stage + offset;
+		BattleStageLight* light = (BattleStageLight*)(p + 4);
+		if (light->spline != NULL) {
+			__memFree(HEAP_BATTLE, light->spline);
+			light->spline = null;
 		}
+		offset += 0xe8;
 	}
 }
 
@@ -208,6 +216,9 @@ BattleSpotWork* BatSpotGetPtr(void) {
 }
 
 #pragma dont_inline on
+// NONMATCHING (96.08%): only the compiler-generated int->float conversion
+// double differs: original folds `lfd f30, 0x78(r31)` (vec3 rodata and double
+// share one TU), ours emits `lis @422; lfd @422@l`; same blocker as party_yoshi.c.
 void batSpotInit(void) {
 	Vec* g = vec3_802f31a8;
 	int i;
@@ -225,7 +236,7 @@ void batSpotInit(void) {
 		entry->field_4 = v;
 		entry->field_10 = g[5];
 		entry->field_1C = g[6];
-		entry->field_28 = batSpotInit_28;
+		entry->field_28 = dat_8041c7ec;
 	}
 }
 
@@ -259,14 +270,14 @@ void batSpotDisp(CameraId camId, void* param) {
 	GXSetNumChans(1);
 
 	entry = wp->entries;
-	for (i = 0; i < wp->count; entry++, i++) {
+	for (i = 0; i < wp->count; i++, entry++) {
 		if ((entry->flags & 1) && (entry->flags & 2)) {
 			GXSetCullMode(2);
 			GXSetAlphaUpdate(1);
 			GXSetColorUpdate(0);
 			GXSetZMode(1, 3, 0);
 			GXSetBlendMode(0, 4, 5, 0);
-			GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+			GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
 			drawCone(camId, entry);
 
 			GXSetCullMode(1);
@@ -344,7 +355,7 @@ f32 randf(f32 min, f32 max) {
 }
 
 s32 screen_evt_func(void) {
-	dispEntry(8, float_1000_8041c814, 0, screen_capture, NULL);
+	dispEntry(8, 1000.0f, 0, screen_capture, NULL);
 	return 0;
 }
 
@@ -356,6 +367,9 @@ void screen_capture(CameraId camId, void* param) {
 	screen_wp->field_0x4 = 1;
 }
 
+// NONMATCHING (90.16%): the float locals must stay (otherwise MWCC reloads
+// every store), and declaration order fixes f2=one/f1=zero/f0=negOne. Only the
+// scheduling of the `addi r4,0x180` GSW setup and `lfs`/`lwz` around it differs.
 s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
@@ -363,9 +377,12 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	screen_wp = _mapAlloc(0x2C);
 	screen_wp->field_0x0 = _mapAlloc(size);
 	{
-		f32 negOne = float_neg1_8041c818;
-		f32 zero = float_0_8041c7f0;
-		f32 one = float_1_8041c7f4;
+		f32 negOne;
+		f32 zero;
+		f32 one;
+		one = float_1_8041c7f4;
+		zero = float_0_8041c7f0;
+		negOne = float_neg1_8041c818;
 		screen_wp->field_0x4 = 0;
 		screen_wp->field_0xC = one;
 		screen_wp->field_0x8 = one;
@@ -390,7 +407,7 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 
 
 #pragma dont_inline on
-void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
+void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->field_6 = dark->field_4;
 	dark->field_8 = a;
 	dark->field_C = frames;
@@ -401,7 +418,7 @@ void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
 	}
 }
 
-void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
+void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
 	dark->field_7 = dark->field_5;
 	dark->field_9 = a;
 	dark->field_10 = frames;
@@ -413,33 +430,33 @@ void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, u8 ease) {
 }
 #pragma dont_inline reset
 
-void BattleStageSetStgDark(u8 a, s32 frames, u8 ease) {
+void BattleStageSetStgDark(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDark(&stage->stgDark, a, frames, ease);
 }
 
-void BattleStageSetStgDarkBase(u8 a, s32 frames, u8 ease) {
+void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDarkBase(&stage->stgDark, a, frames, ease);
 }
 
-void BattleStageSetAudDark(u8 a, s32 frames, u8 ease) {
+void BattleStageSetAudDark(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDark(&stage->audDark, a, frames, ease);
 }
 
-void BattleStageSetAudDarkBase(u8 a, s32 frames, u8 ease) {
+void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageSetDarkBase(&stage->audDark, a, frames, ease);
 }
 
-void BattleStageReturnStgDarkBase(s32 frames, u8 ease) {
+void BattleStageReturnStgDarkBase(s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageDark* dark = &stage->stgDark;
 	BattleStageSetDark(dark, dark->field_5, frames, ease);
 }
 
-void BattleStageReturnAudDarkBase(s32 frames, u8 ease) {
+void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageDark* dark = &stage->audDark;
 	BattleStageSetDark(dark, dark->field_5, frames, ease);
@@ -623,13 +640,20 @@ void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s
 }
 #pragma dont_inline reset
 
+// NONMATCHING (98.43%): only the second loop preamble differs: original emits
+// `li r0,7; li r31,0; li r3,0; mtctr r0`, ours `li r31,0; li r0,7; mr r3,r31`
+// (offset=0 reuses i's zero).
 s32 BattleStageSysLightEntry(const char* name) {
+	s32 offset;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
-	s32 offset = 0;
+	s32 count = 7;
 
-	for (i = 0; i <= 6; i++) {
-		BattleStageLight* light = (BattleStageLight*)((u8*)stage + (4 + offset));
+	i = 0;
+	offset = 0;
+	for (; i <= 6; i++) {
+		u8* p = (u8*)stage + offset;
+		BattleStageLight* light = (BattleStageLight*)(p + 4);
 		if (light->flags & 1) {
 			strcmp(light->name, name);
 		}
@@ -638,37 +662,35 @@ s32 BattleStageSysLightEntry(const char* name) {
 
 	i = 0;
 	offset = 0;
-	{
-		s32 count = 7;
-		do {
-			BattleStageLight* light = (BattleStageLight*)((u8*)stage + (4 + offset));
-			if (!(light->flags & 1)) {
-				light->flags = 1;
-				strcpy(light->name, name);
-				break;
-			}
-			i++;
-			offset += 0xe8;
-		} while (--count);
+	for (; count > 0; count--) {
+		u8* p = (u8*)stage + offset;
+		BattleStageLight* light = (BattleStageLight*)(p + 4);
+		if (!(light->flags & 1)) {
+			light->flags = 1;
+			strcpy(light->name, name);
+			break;
+		}
+		i++;
+		offset += 0xe8;
 	}
 
 	return i;
 }
 
 s32 BattleStageGetLightNumberByName(const char* name) {
+	s32 offset;
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	s32 i;
 
-	{
-		BattleStageLight* lights = stage->lights;
-		s32 offset = 0;
-		for (i = 0; i < 12; i++) {
-			BattleStageLight* light = (BattleStageLight*)((u8*)lights + offset);
-			if ((light->flags & 1) && strcmp(light->name, name) == 0) {
-				return i;
-			}
-			offset += 0xe8;
+	i = 0;
+	offset = 0;
+	for (; i < 12; i++) {
+		u8* p = (u8*)stage + offset;
+		BattleStageLight* light = (BattleStageLight*)(p + 4);
+		if ((light->flags & 1) && strcmp(light->name, name) == 0) {
+			return i;
 		}
+		offset += 0xe8;
 	}
 
 	return -1;
@@ -710,7 +732,6 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	Mtx mRotX;
 	Mtx mRotY;
 	Mtx mRotZ;
-	s32 color;
 	s32 i;
 
 	PSMTXTrans(mTrans, entry->field_4.x, entry->field_4.y, entry->field_4.z);
@@ -727,9 +748,8 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	GXSetCurrentMtx(0);
 	GXBegin(0xA0, 0, 0x20);
 
-	color = ((u8*)entry)[0x2B];
-	GXPosition3f32(float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0);
-	GXColor4u8(0, 0, 0, color);
+	GXPosition3f32(0.0f, 0.0f, 0.0f);
+	GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B]);
 
 	for (i = 0; i < 0x1F; i++) {
 		f32 angle;
@@ -744,11 +764,14 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		s = sin(angle);
 		c = cos(angle);
 		GXPosition3f32(c, s, float_neg1_8041c818);
-		GXColor4u8(0, 0, 0, color / 3);
+		GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B] / 3);
 	}
 }
 #pragma dont_inline off
 
+// NONMATCHING (91.40%): fixed a real bug (calls 1 and 3 had their 3rd/4th
+// DarkBySquare args swapped; original is -640,640,640,-640,105). Still: original
+// materialises r31=&stage->audDark and uses 0x4(r31), ours folds to 0x6ee8(r30).
 void BattleStageDispDark(CameraId camId, void* param) {
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	CameraEntry* cam = camGetPtr(4);
@@ -773,9 +796,12 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 7, 7, 5);
 	GXSetTevOrder(0, 0xFF, 0xFF, 4);
 	GXSetZMode(1, 6, 0);
-	DarkBySquare(stage->audDark.field_4, float_neg640_8041c840, float_640_8041c844, float_neg640_8041c840, float_640_8041c844, float_105_8041c848);
+	{
+		BattleStageDark* audDark = &stage->audDark;
+		DarkBySquare(audDark->field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
+		GXSetZMode(1, 1, 0);
+		DarkBySquare(audDark->field_4, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848);
+	}
 	GXSetZMode(1, 1, 0);
-	DarkBySquare(stage->audDark.field_4, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848);
-	GXSetZMode(1, 1, 0);
-	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_neg640_8041c840, float_640_8041c844, float_105_8041c848);
+	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
 }

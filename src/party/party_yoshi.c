@@ -14,7 +14,8 @@
 #include "manager/evtmgr.h"
 #include "dolphin/types.h"
 #include <string.h>
-#include <math.h>
+// #include <math.h>  // drags the extern-inline sqrtf/sqrt into .rodata
+#include "matching.h"
 
 // .sbss
 s32 jumpheight;
@@ -52,6 +53,7 @@ typedef struct YoshiZeroVec6 {
 const Vec vec3_802cccd0[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
 
 // .sdata2
+static const f32 float_0 = 0.0f;
 static const f32 float_1p5 = 1.5f;
 static const f32 float_0p75 = 0.75f;
 static const f32 float_10 = 10.0f;
@@ -217,8 +219,6 @@ void marioRideYoshi(void) {
     }
 }
 
-// NONMATCHING (99.29%): only the register holding the float_18 constant in the
-// position.y + 18 conversion differs (f2 vs f0).
 void L_sweatMain(PartyEntry* party) {
     if (party->useStruct == NULL) {
         return;
@@ -228,12 +228,12 @@ void L_sweatMain(PartyEntry* party) {
     }
 
     {
-        f32 y = party->position.y;
+        f32 y = party->position.y + float_18;
         f32 z = party->position.z;
         f32 x = party->position.x;
 
         ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[1] = x;
-        ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[2] = float_18 + y;
+        ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[2] = y;
         ((f32*)((PartyYoshiUse*)party->useStruct)->effect->userdata)[3] = z;
     }
 
@@ -266,7 +266,7 @@ void evt_set_yoshi_frm(s32 msec) {
     evt_yoshi_frm = sysMsec2Frame(msec);
 }
 
-// NONMATCHING (87.40%): the three strcmp literals need to share the vec3
+// NONMATCHING (93.55%): the three strcmp literals need to share the vec3
 // rodata base+0x30/0x40/0x50; compiler gives each its own literal.
 void unk_800b45e0(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
@@ -434,11 +434,10 @@ void yoshi_bye(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (96.03%): 2 missing, plus register differences.
 void L_yoshiFlyMove(PartyEntry* party) {
     MarioWork* mario = marioGetPtr();
-    f32 f30;
     f32 f31;
+    f32 f30;
     f32 f29;
     f32 lim;
 
@@ -446,27 +445,28 @@ void L_yoshiFlyMove(PartyEntry* party) {
     f30 = *(f32*)((u8*)mario + 0x2B0);
     f31 = -*(f32*)((u8*)mario + 0x2B4);
 
-    f29 = 0.1f * distABf(0.0f, 0.0f, f30, f31);
-    lim = mario->mBaseDashSpeed * 1.0f;
+    f29 = float_0p1 * distABf(0.0f, 0.0f, f30, f31);
+    lim = mario->mBaseDashSpeed * MATCH_F32(float_1);
     if (f29 >= lim) {
         f29 = lim;
     }
 
     f31 = angleABf(0.0f, 0.0f, f30, f31);
-    if (f29 < 0.01f) {
+    if (f29 < float_0p01) {
         f29 = 0.0f;
     }
 
     party->speed = f29;
-    if (f29 != 0.0f) {
+    if (f29 != MATCH_F32(float_0)) {
         party->dir = revise360(f31 + *(f32*)((u8*)party + 0xF8));
         party->field_FC = revise360(f31 + *(f32*)((u8*)party + 0xF8));
     }
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
 
-// NONMATCHING (88.75%): the t<=256 branch is decided; remaining is the
-// `f5 -= 0.0f` dead-store ordering and branch shape.
+// NONMATCHING (95.12%): the t=f4*f4+f5*f5 association and the float_0p01
+// operand order are reproduced. Remaining in the else branch: fmadds register
+// order, `fneg` of float_16 vs a pooled -16, and the `f5 -= 0.0f` position.
 void inertia(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 f3 = (f32)(s8)*(u8*)((u8*)party + 0x158);
@@ -474,46 +474,45 @@ void inertia(PartyEntry* party) {
     f32 f5 = *(f32*)((u8*)mario + 0x2B4);
 
     if (f3 == 0.0f) {
-        f32 k;
-        if (*(s32*)((u8*)mario + 0x1F0) != 0) {
-            k = -0.5f;
-        } else {
-            k = -0.07f;
+        f32 k = float_neg0p07;
+        if (*(u32*)mario->field_0x1F0 != 0) {
+            k = float_neg0p5;
         }
         f4 = f4 * k + f4;
         f5 = f5 * k + f5;
-        if (fabsf(f4) < 0.01f) {
+        if (__fabsf(f4) < float_0p01) {
             f4 = 0.0f;
         }
-        if (fabsf(f5) < 0.01f) {
+        if (__fabsf(f5) < float_0p01) {
             f5 = 0.0f;
         }
     } else {
-        f32 t = f5 * f5 + f4 * f4;
+        f32 t = f4 * f4 + f5 * f5;
 
-        if (t <= 256.0f) {
+        if (t <= float_256) {
             s32 v = *(s32*)((u8*)party->useStruct + 4);
-            f4 = f3 * 0.01f + f4;
+            f4 = f3 * MATCH_F32(float_0p01) + f4;
             if (v > 0 && f4 <= 0.0f) {
                 f4 = 0.0f;
             }
             if (v < 0 && f4 >= 0.0f) {
                 f4 = 0.0f;
             }
+            f5 = f5 - MATCH_F32(float_0);
         } else {
-            f5 = f5 - 0.0f;
-            f4 = f3 * 0.01f + f4;
-            if (f4 < -16.0f) {
-                f4 = -16.0f;
+            f5 = f5 - MATCH_F32(float_0);
+            f4 = f3 * float_0p01 + f4;
+            if (f4 < -float_16) {
+                f4 = -float_16;
             }
-            if (f4 > 16.0f) {
-                f4 = 16.0f;
+            if (f4 > float_16) {
+                f4 = float_16;
             }
-            if (f5 < -16.0f) {
-                f5 = -16.0f;
+            if (f5 < -float_16) {
+                f5 = -float_16;
             }
-            if (f5 > 16.0f) {
-                f5 = 16.0f;
+            if (f5 > float_16) {
+                f5 = float_16;
             }
         }
     }
@@ -612,7 +611,7 @@ void searchGround(PartyEntry* party) {
     f32 f31;
 
     if (!(party->flags & PARTY_FLAG_FORCE_FALL)) {
-        f32 v = fabsf(party->jumpPara3);
+        f32 v = __fabsf(party->jumpPara3);
 
         if (v < 1.0f) {
             v = 1.0f;

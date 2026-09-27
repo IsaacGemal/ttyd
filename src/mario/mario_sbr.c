@@ -96,18 +96,20 @@ void marioGetRubInit(void) {
 s32 N_marioGetMovementSpeed(void) {
     MarioWork* p = marioGetPtr();
 
-    if ((s8)p->wStickDir1 == 0 && (s8)p->wStickDir2 == 0) {
+    // wStickDir1/2 are declared u8 in mario.h, but the original sign-extends them (`extsb`),
+    // so they are really s8. The signed lvalue is needed for mwcc to keep the raw byte in a
+    // register and extend it at each use.
+    if (*(s8*)&p->wStickDir1 == 0 && *(s8*)&p->wStickDir2 == 0) {
         return 0;
     }
-    if ((s8)p->wStickDir1 * (s8)p->wStickDir1 + (s8)p->wStickDir2 * (s8)p->wStickDir2 > 0xBD1) {
+    if (*(s8*)&p->wStickDir1 * *(s8*)&p->wStickDir1 + *(s8*)&p->wStickDir2 * *(s8*)&p->wStickDir2 > 0xBD1) {
         return 2;
     }
     return 1;
 }
 
 f32 marioGetMoveRate(f32 angle) {
-    MarioWork* p = marioGetPtr();
-    f32 diff = angle - p->targetYaw;
+    f32 diff = angle - marioGetPtr()->targetYaw;
     f32 c = (f32)cos(3.1415927f * diff / 180.0f);
     return 0.19f * __fabsf(c) + 1.0f;
 }
@@ -163,16 +165,18 @@ void marioSetForceMove(s32 timer, f32 direction, f32 speed) {
     p->directionView = direction;
     p->forceMoveTimer = timer;
     p->baseSpeed = speed;
-    if (p->currMotionId == MARIO_MOTION_SHIP) {
+    if (p->currMotionId == MARIO_MOTION_SHIP ||
+        (u16)(p->currMotionId - MARIO_MOTION_SLIT) <= 1 ||
+        p->currMotionId == MARIO_MOTION_YOSHI) {
         return;
     }
-    if ((u16)(p->currMotionId - MARIO_MOTION_SLIT) <= 1) {
-        return;
-    }
-    if (p->currMotionId == MARIO_MOTION_YOSHI) {
-        return;
-    }
+#ifdef MUST_MATCH
+    // Without the (s32) casts the ternary has enum type and mwcc zero-extends it (clrlwi r3,r0,16)
+    // before the call; the original passes the constant directly in r3.
+    marioChgMot(speed > p->mBaseWalkSpeed ? (s32)MARIO_MOTION_DASH : (s32)MARIO_MOTION_WALK);
+#else
     marioChgMot(speed > p->mBaseWalkSpeed ? MARIO_MOTION_DASH : MARIO_MOTION_WALK);
+#endif
     *(f32*)((u8*)p + 0x19C) = direction;
     p->directionView = direction;
     p->forceMoveTimer = timer;
@@ -227,12 +231,18 @@ f32 partyToMovedir(PartyEntry* party, f32 dir) {
     MarioWork* player = party->playerPtr;
 
     if (party->flags & 0x1000) {
-        if (280.0f == *(f32*)((u8*)party + 0x10C) || 460.0f == *(f32*)((u8*)party + 0x10C)) {
+#ifdef MUST_MATCH
+        // Fusing the field load into the first comparison makes mwcc emit the 280 constant load
+        // before the field load, which the original does (plain `a = ...; if (280.0f == a)` emits them swapped).
+        if (280.0f == (a = party->field_10C) || 460.0f == a) {
+#else
+        a = party->field_10C;
+        if (280.0f == a || 460.0f == a) {
+#endif
             dir = 0.0f;
-        } else if (260.0f == *(f32*)((u8*)party + 0x10C) || 440.0f == *(f32*)((u8*)party + 0x10C)) {
+        } else if (a == 260.0f || a == 440.0f) {
             dir = 180.0f;
         } else {
-            a = *(f32*)((u8*)party + 0x10C);
             while (a < 0.0f) {
                 a += 360.0f;
             }
@@ -257,12 +267,17 @@ f32 toMovedir(f32 angle) {
     f32 dir;
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
-        if (280.0f == p->unk1A8 || 460.0f == p->unk1A8) {
+#ifdef MUST_MATCH
+        // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
+        if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
+#else
+        dir = p->unk1A8;
+        if (280.0f == dir || 460.0f == dir) {
+#endif
             angle = 0.0f;
-        } else if (260.0f == p->unk1A8 || 440.0f == p->unk1A8) {
+        } else if (260.0f == dir || 440.0f == dir) {
             angle = 180.0f;
         } else {
-            dir = p->unk1A8;
             while (dir < 0.0f) {
                 dir += 360.0f;
             }
@@ -288,12 +303,17 @@ f32 toMovedir2(f32 base, f32 adjust) {
     f32 delta;
 
     if (p->flags & MARIO_FLAG_PAPER_MODE) {
-        if (280.0f == p->unk1A8 || 460.0f == p->unk1A8) {
+#ifdef MUST_MATCH
+        // See partyToMovedir: fusing the load keeps the 280 constant load ahead of the field load.
+        if (280.0f == (dir = p->unk1A8) || 460.0f == dir) {
+#else
+        dir = p->unk1A8;
+        if (280.0f == dir || 460.0f == dir) {
+#endif
             base = 0.0f;
-        } else if (260.0f == p->unk1A8 || 440.0f == p->unk1A8) {
+        } else if (260.0f == dir || 440.0f == dir) {
             base = 180.0f;
         } else {
-            dir = p->unk1A8;
             while (dir < 0.0f) {
                 dir += 360.0f;
             }
@@ -317,11 +337,7 @@ f32 toMovedir2(f32 base, f32 adjust) {
     while (delta >= 360.0f) {
         delta -= 360.0f;
     }
-    if (delta >= 180.0f) {
-        base += -adjust;
-    } else {
-        base += adjust;
-    }
+    base += (delta >= 180.0f) ? -adjust : adjust;
     return revise360(base);
 }
 
@@ -373,6 +389,9 @@ s32 marioSetDirEventMain(void) {
     }
 }
 
+// NONMATCHING (99.35%): only the base pointer `w` and the hoisted `w->unk0C` are in swapped
+// registers (wanted r6/r5, got r5/r6). Declaration order, a separate init, direct rubwork
+// access and an explicit index local all leave it unchanged.
 s32 checkOneRevolution(s32 dir) {
 RubWork* w = &rubwork;
 s32 idx;
@@ -425,6 +444,9 @@ s32 result = 0;
     return result;
 }
 
+// NONMATCHING (96.91%): identical instruction sequence but the allocator picks different
+// registers for w, cur, prev, countUp, countDown and idx1/idx2 (e.g. original cur=r30/prev=r29/
+// countUp=r31, ours cur=r31/prev=r30/countUp=r6). Declaration reordering did not help.
 s32 chkRevolveDir(s32* left, s32* right) {
 RubWork* w = &rubwork;
 s32 i;
@@ -485,9 +507,12 @@ s32 adj;
     return -1;
 }
 
+// NONMATCHING (99.00%): the `invert ? 0 : -stickY` result is written straight to r28 in ours,
+// while the original computes it in r0 and does `mr r28,r0` at the join (li r0,0 / neg r0,r0 / mr).
+// Tried if/else, ternary, !invert, temp local, and all declaration orders.
 void marioGetStick(f32* outAngle, f32* outMag) {
     MarioWork* p = marioGetPtr();
-    s8 x;
+    s32 x;
     s32 invert;
     s32 y2;
     f32 mag;
@@ -498,7 +523,7 @@ void marioGetStick(f32* outAngle, f32* outMag) {
         *outMag = p->baseSpeed;
         return;
     }
-    x = (s8)p->wStickDir1;
+    x = *(s8*)&p->wStickDir1;
     invert = 0;
     if ((p->flags & 0x02000000) || kpaGetStageViewType() == 0) {
         invert = 1;
@@ -539,9 +564,10 @@ void marioUpdateKeyData(void) {
     *(u8*)((u8*)p + 0x253) = gp->triggerRight[0];
     *(u8*)((u8*)p + 0x254) = 0;
     *(u8*)((u8*)p + 0x255) = 0;
-    mask = -1;
     if (*(u32*)((u8*)p + 0x284) != 0) {
         mask = *(u32*)((u8*)p + 0x284);
+    } else {
+        mask = -1;
     }
     *(u16*)((u8*)p + 0x246) = gp->button[0] & mask;
     *(u16*)((u8*)p + 0x248) = gp->buttonNew[0] & mask;
@@ -599,6 +625,9 @@ void marioUpdateKeyData(void) {
     rubwork.unk3C[20] = (v); \
 } while (0)
 
+// NONMATCHING (94.49%): stick part now matches except the forced-move path keeps angle/mag in
+// f1/f31 instead of f0/f2, and the RUB_SET3C expansion + later `unk3C`/`unk14` handling differ in
+// base pointer/register choice.
 s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
     MarioWork* p;
     MarioWork* wp;
@@ -631,7 +660,7 @@ s32 marioGetRub(u32 mask, s32* out1, s32* out2, f32* out3) {
         angle = wp->directionView;
         mag = wp->baseSpeed;
     } else {
-        x = (s8)wp->wStickDir1;
+        x = *(s8*)&wp->wStickDir1;
         invert = 0;
         if ((wp->flags & 0x02000000) || kpaGetStageViewType() == 0) {
             invert = 1;

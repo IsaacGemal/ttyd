@@ -185,7 +185,7 @@ USER_FUNC(_hammer_star_effect) {
     }
     }
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    pos.y += unit->mSizeMultiplier * (0.85f * (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit));
+    pos.y += unit->mSizeMultiplier * (0.85f * (f32)BtlUnit_GetHeight(unit));
     pos.x += unit->mSizeMultiplier * (26.0f * -sinfd(angle));
     pos.y += unit->mSizeMultiplier * (26.0f * cosfd(angle));
     effEnergyEntry(value1, 30, pos.x, pos.y, pos.x, 0.08f * event->userdata[0] + 0.1f, dir, 0.05f);
@@ -329,10 +329,10 @@ USER_FUNC(_wait_jyabara_hit_iron_frame) {
     value = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, value));
     BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-    if (pos.y + (f32)((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit) < 130.0f) {
+    if (pos.y + (f32)BtlUnit_GetHeight(unit) < 130.0f) {
         return EVT_RETURN_BLOCK;
     }
-    BtlUnit_SetPos(unit, pos.x, (f32)(130 - ((s32(*)(BattleUnit*))BtlUnit_GetHeight)(unit)), pos.z);
+    BtlUnit_SetPos(unit, pos.x, (f32)(130 - BtlUnit_GetHeight(unit)), pos.z);
     return EVT_RETURN_DONE;
 }
 

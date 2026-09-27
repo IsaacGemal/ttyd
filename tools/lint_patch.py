@@ -15,6 +15,7 @@ The checks reviewers kept flagging, run mechanically so reviews can look for new
 Exit 1 if any STUB, else 0. Everything else is printed for the merge and the PR description.
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -52,11 +53,23 @@ def source_path(unit):
     return f"src/{unit}.c", f"MarioSt/{unit}"
 
 
+def base_file(base):
+    """BASE is a git ref when git knows it (refs such as origin/main contain a slash too), otherwise a file
+    (/dev/null for a new file)."""
+    is_ref = subprocess.run(["git", "rev-parse", "--verify", "--quiet", base + "^{commit}"],
+                            capture_output=True).returncode == 0
+    if is_ref:
+        return None
+    if not os.path.exists(base):
+        sys.exit(f"{base}: neither a git ref nor a file")
+    return base
+
+
 def main():
     unit = sys.argv[1]
     base = sys.argv[2:] or []
     path, report_name = source_path(unit)
-    BASE_FILE = base[0] if base and ("/" in base[0] or base[0].endswith(".c")) else None
+    BASE_FILE = base_file(base[0]) if base else None
     if BASE_FILE:
         diff = subprocess.run(["diff", "-U0", BASE_FILE, path], capture_output=True, text=True).stdout
     else:
@@ -96,7 +109,7 @@ def main():
         if re.match(r"\s*extern\b", l):
             out.append("EXTERN     " + l.strip())
     for i, l in enumerate(lines):
-        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|optimize_for_size\s+on)", l):
+        if i in touched_lines and re.match(r"\s*#\s*pragma\s+(dont_inline\s+on|opt_propagation\s+off|opt_common_subs\s+off|optimize_for_size\s+on)", l):
             if not any("//" in c or "/*" in c for c in lines[max(0, i - 2):i + 1]):
                 out.append(f"PRAGMA     line {i + 1}: {l.strip()}")
     for n in stubs:

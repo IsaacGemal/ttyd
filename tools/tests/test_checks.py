@@ -35,6 +35,16 @@ class LintStubs(unittest.TestCase):
         self.assertTrue(lint_patch.is_stub(" // stubbed in retail\n"))
 
 
+class LintBase(unittest.TestCase):
+    def test_a_ref_with_a_slash_is_not_a_file(self):
+        # wave 8: `lint_patch.py UNIT origin/main` opened "origin/main" as a file and crashed on every unit
+        self.assertIsNone(lint_patch.base_file("origin/main"))
+        self.assertIsNone(lint_patch.base_file("main"))
+
+    def test_an_existing_path_is_a_file(self):
+        self.assertEqual(lint_patch.base_file("/dev/null"), "/dev/null")
+
+
 class LabelArguments(unittest.TestCase):
     def test_note_keeps_function_and_text_in_order(self):
         # Bug found in wave 5: notes[pop()] = pop() evaluates the right-hand side first.

@@ -39,8 +39,9 @@ extern void L_psndBGM_stop(void);
 extern f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target);
 extern s32 offscreenNameToId(const char* name);
 extern void npcSetLink(NpcEntry* npc, NpcEntry* link);
-extern void npcSetColor(const char* name, GXColor color);
+void npcSetColor(const char* name, GXColor* color);
 extern f32 npcTransRytoFaceDir(NpcEntry* npc);
+f32 _intplGetFloat(s32 type, f32 t);
 extern int rand(void);
 extern GXColor unk_80422fc0;
 extern void PSVECSubtract(const Vec* a, const Vec* b, Vec* out);
@@ -510,6 +511,7 @@ USER_FUNC(evt_npc_set_rotate_offset) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 USER_FUNC(evt_npc_move_position) {
     s32* args = event->args;
 
@@ -807,6 +809,9 @@ USER_FUNC(evt_npc_jump_position) {
     return EVT_RETURN_YIELD;
 }
 
+// NONMATCHING (99.79%): the unsigned `divwu` result for `elapsed` is allocated to r29 here but
+// lands in r4 in the original (which then does `mr r29, r4` to keep it across the intplGetValue
+// calls). Signedness and logic are correct; only this intermediate register differs.
 USER_FUNC(evt_npc_jump_position_nohit) {
     s32* args = event->args;
 
@@ -818,7 +823,6 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     s32 duration = evtGetValue(event, *args++);
     f32 arcHeight = (f32)evtGetValue(event, *args++);
     s32 sfxFlag;
-    u32 ticksPerMs;
     s32 elapsed;
     f32 t;
     Vec endPos;
@@ -867,6 +871,136 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     }
 
     return EVT_RETURN_DONE;
+}
+
+// Full translation; only the callee-saved register assignment differs from the original: ours
+// puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
+// f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
+// NONMATCHING (40.85%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
+USER_FUNC(evt_npc_glide_position) {
+    s32* args = event->args;
+    const char* npcName = (const char*)evtGetValue(event, args[0]);
+    f32 targetX = evtGetFloat(event, args[1]);
+    f32 targetY = evtGetFloat(event, args[2]);
+    f32 targetZ = evtGetFloat(event, args[3]);
+    f32 moveTime = (f32)evtGetValue(event, args[4]) / 1000.0f;
+    f32 speed = evtGetFloat(event, args[5]);
+    f32 arcHeight = evtGetFloat(event, args[6]);
+    s32 intplType = evtGetValue(event, args[7]);
+    s32 mode = args[8];
+    NpcEntry* npc = evtNpcNameToPtr(event, npcName);
+    Vec diff;
+    f32 dist;
+    f32 dx;
+    f32 dz;
+    f32 dy;
+    f32 delta;
+    f32 t;
+    f32 a;
+    f32 b;
+    s32 flag;
+    s32 sfxFlag;
+
+    npc->jumpFlags |= 0x10;
+    if ((mode & 2) == 0) {
+        npc->jumpFlags |= 0x1000;
+    }
+
+    if (isFirstCall) {
+        npc->field_188 = 0;
+        npc->field_108 = 0;
+        npc->jumpTargetPos.x = targetX;
+        npc->jumpTargetPos.y = targetY;
+        npc->jumpTargetPos.z = targetZ;
+        npc->jumpStartPos = npc->position;
+        VECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &diff);
+        dist = sqrtf(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+        if (moveTime <= 0.0f) {
+            if (speed == 0.0f) {
+                return EVT_RETURN_YIELD;
+            }
+            if (dist == 0.0f) {
+                return EVT_RETURN_YIELD;
+            }
+            moveTime = dist / speed;
+        }
+        npc->moveTime = moveTime;
+        npc->moveSpeed = speed;
+        if (speed <= 0.1f) {
+            npc->moveSpeed = dist / npc->moveTime;
+        }
+        npc->footstepAccum = 0.0f;
+        npc->footstepToggle = 1;
+        return EVT_RETURN_BLOCK;
+    }
+
+    if ((mode & 1) && npc->field_2FC != 0) {
+        return EVT_RETURN_DONE;
+    }
+
+    flag = 0;
+    dy = npc->field_1A0;
+    t = npc->moveTime;
+    delta = npc->moveDt;
+    if (dy >= t) {
+        flag = 1;
+        if (dy > t) {
+            delta = delta - (t - dy);
+            if (delta <= 0.0f) {
+                return EVT_RETURN_DONE;
+            }
+        }
+    }
+
+    a = _intplGetFloat(intplType, dy / t);
+    b = _intplGetFloat(intplType, (dy - delta) / t);
+    dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
+    dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
+    delta = a - b;
+    npc->moveOffset.x += dx * delta;
+    npc->moveOffset.z += dz * delta;
+
+    if (npc->jumpFlags & 2) {
+        if (dx != 0.0f || dz != 0.0f) {
+            if (npc != fbatGetPointer()->target ||
+                (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
+                npcTuningRy(npc, angleABf(0.0f, 0.0f, dx, dx));
+            }
+        }
+    }
+
+    dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
+    npc->moveOffset.y += dy * delta;
+    t = (f32)sin(3.1416f * b);
+    a = (f32)sin(3.1416f * a);
+    npc->moveOffset.y += arcHeight * (a - t);
+
+    sfxFlag = 0;
+    if (psndGetFlag() & 0x100) {
+        if (!(animPoseGetMaterialFlag(npc->poseId) & 0x1800)) {
+            sfxFlag = 0x10000;
+        }
+    }
+    if ((f32)npc->footstepStride / npc->moveSpeed < npc->footstepAccum) {
+        if (npc->footstepToggle != 0) {
+            if (npc->footstepSfxA != NULL) {
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxA)), &npc->position, 0xff, 0xff, 0, 8);
+            }
+        } else {
+            if (npc->footstepSfxB != NULL) {
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxB)), &npc->position, 0xff, 0xff, 0, 8);
+            }
+        }
+        npc->footstepAccum = 0.0f;
+        npc->footstepToggle = (s8)(1 - npc->footstepToggle);
+    }
+    if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
+        npc->footstepAccum += 1000.0f * npc->moveDt;
+    }
+    if (flag) {
+        return EVT_RETURN_YIELD;
+    }
+    return EVT_RETURN_BLOCK;
 }
 
 #pragma dont_inline on
@@ -944,12 +1078,12 @@ USER_FUNC(evt_npc_flag_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
-    u32 mask = evtGetValue(event, args[2]);
+    s32 mask = evtGetValue(event, args[2]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     switch (type) {
         case 0: {
             u32* flags = (u32*)&npc->flags;
-            *flags &= ~mask;
+            *flags = *flags & ~mask;
             break;
         }
         case 1:
@@ -2136,6 +2270,8 @@ USER_FUNC(evt_npc_change_interrupt) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.51%): only the scheduling of the two argument setup instructions differs;
+// the original computes npc->description (r3) before &color (r4), MWCC here does the reverse.
 USER_FUNC(evt_npc_set_color) {
     GXColor color;
     s32* args = event->args;
@@ -2145,12 +2281,23 @@ USER_FUNC(evt_npc_set_color) {
     u8 b = evtGetValue(event, args[3]);
     u8 a = evtGetValue(event, args[4]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
+#ifdef MUST_MATCH
+    // The original builds the color in a temporary then copies it into `color`; natural form below.
+    GXColor tmp;
+    tmp = unk_80422fc0;
+    tmp.r = r;
+    tmp.g = g;
+    tmp.b = b;
+    tmp.a = a;
+    color = tmp;
+#else
     color = unk_80422fc0;
     color.r = r;
     color.g = g;
     color.b = b;
     color.a = a;
-    npcSetColor(npc->description, color);
+#endif
+    npcSetColor(npc->description, &color);
     return EVT_RETURN_DONE;
 }
 
@@ -2208,9 +2355,9 @@ USER_FUNC(evt_npc_get_loiter_dir) {
     if (range <= 0.0f) {
         result = c + a;
     } else {
-        result = reviseAngle(c + (a + (f32)rand() / range));
+        result = c + (a + (f32)rand() / range);
     }
-    evtSetFloat(event, index, result);
+    evtSetFloat(event, index, reviseAngle(result));
     return EVT_RETURN_DONE;
 }
 
@@ -2221,8 +2368,8 @@ USER_FUNC(evt_npc_facedirection_add) {
     f32 b = evtGetFloat(event, args[2]);
     f32 sign;
     if (strcmp(name, "mario") == 0) {
-        f32 angle = *(f32*)((u8*)marioGetPtr() + 0x1a8);
-        if (180.0f == angle) {
+        MarioWork* mario = marioGetPtr();
+        if (180.0f == mario->unk1A8) {
             sign = 1.0f;
         } else {
             sign = -1.0f;
@@ -2235,10 +2382,15 @@ USER_FUNC(evt_npc_facedirection_add) {
             sign = -1.0f;
         }
     }
-    evtSetValue(event, args[1], (s32)(b * sign + a));
+    evtSetValue(event, event->args[1], (s32)(b * sign + a));
     return EVT_RETURN_DONE;
 }
 
+// The final z result register differs. The original reuses rad's f27 (`fnmsubs f27, f29, f0, f31`),
+// MWCC here reuses s's f28 (`fnmsubs f28, ...`) followed by `fmr f1, f27` vs `fmr f1, f28`.
+// Declaring s, c, rad in that order gets the rad/s split right; the last dead-register choice is a
+// scheduler artifact. Logic is correct.
+// NONMATCHING (99.85%): dead-register choice for the final fnmsubs (f28 vs f27).
 USER_FUNC(evt_npc_add_dirdist) {
     s32* args = event->args;
     s32 outX = args[0];
@@ -2247,23 +2399,27 @@ USER_FUNC(evt_npc_add_dirdist) {
     f32 dist;
     f32 x;
     f32 z;
+    f32 s;
+    f32 c;
     f32 rad;
     angle = evtGetFloat(event, args[2]);
     dist = evtGetFloat(event, args[3]);
     x = evtGetFloat(event, outX);
     z = evtGetFloat(event, outZ);
     rad = angle * 6.2832f / 360.0f;
-    {
-        f32 s = (f32)sin(rad);
-        f32 c = (f32)cos(rad);
-        x = x + dist * s;
-        z = z - dist * c;
-    }
+    s = (f32)sin(rad);
+    c = (f32)cos(rad);
+    x = x + dist * s;
+    z = z - dist * c;
     evtSetFloat(event, outX, x);
     evtSetFloat(event, outZ, z);
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.84%): only the operand order of the fmadds differs. The original is
+// `fmadds f0, f1, f2, f0` (f1=100.0f, f2=viewYaw); MWCC here emits `fmadds f0, f2, f1, f0`
+// for `cam->viewYaw * scale + 5.0f`. Writing `scale * cam->viewYaw` swaps which register the
+// constant and the field land in, which is worse (97.86%). Multiply is commutative, logic is right.
 USER_FUNC(evt_npc_set_ry_lr) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2282,6 +2438,12 @@ USER_FUNC(evt_npc_set_ry_lr) {
     return EVT_RETURN_DONE;
 }
 
+// The file's MWCC keeps `1.0f - tt` live in f31 and hoists it across the cos() calls in cases
+// 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Writing cases
+// 7/8/10 as `1 - (1-tt)*(1-tt)*cos(...)` forces tt to stay in f31 and lifts the match from 75% to
+// 86%, but the multiply grouping then fuses to fnmsubs and the clamp/cases 4-6/11-13 still
+// schedule differently (f31 vs f1). Logic is equivalent.
+// NONMATCHING (86.12%): hoisted `1-tt` vs original's `tt` register and fused fnmsubs.
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
     if (tt > 1.0f) {
@@ -2297,9 +2459,9 @@ f32 _intplGetFloat(s32 type, f32 t) {
         case 3:
             return tt * tt * tt * tt;
         case 7:
-            return 1.0f - (1.0f - tt) * ((1.0f - tt) * (f32)cos(4.0f * (tt / 3.1416f)));
+            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt / 3.1416f));
         case 8:
-            return 1.0f - (1.0f - tt) * ((1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 15.0f));
+            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 15.0f);
         case 4:
             return 1.0f - (1.0f - tt) * (1.0f - tt);
         case 5:
@@ -2307,7 +2469,7 @@ f32 _intplGetFloat(s32 type, f32 t) {
         case 6:
             return 1.0f - (1.0f - tt) * ((1.0f - tt) * ((1.0f - tt) * (1.0f - tt)));
         case 10:
-            return 1.0f - fabsf((1.0f - tt) * ((1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 40.0f)));
+            return 1.0f - fabsf((1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 40.0f));
         case 11:
             return (1.0f - (f32)cos(3.1416f * tt)) * 0.5f;
         case 12:

@@ -121,8 +121,9 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// NONMATCHING (80.50%): the original saves f29 and r28-r31 individually where ours uses stmw, and register
-// allocation differs throughout.
+// NONMATCHING (80.50%): the original saves f29 and r28-r31 with individual stores where ours emits
+// `stmw r27`; see REPORT.md "Compiler flags note" (no available flag/version gives individual saves).
+// Register allocation and two load/store schedules also differ.
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -288,21 +289,19 @@ s32 kpaFireAttackCheck(void) {
     return 0;
 }
 
-// NONMATCHING (97%): baseSpeed fmadds register and hitobj reload
 void kpaFall(void) {
     MarioWork* mp = marioGetPtr();
+    f32 spd;
+    void* res;
+    f32 landY;
     if (strcmp(gp->currentMapName, "kpa_03") == 0) {
-        f32 spd;
-        void* res;
-        f32 landY;
-
         mp->hitobjStandOn = NULL;
         kpaClearHitobjRide();
         spd = marioGetFallSpd();
         if (spd < -20.0f) {
             spd = -20.0f;
         }
-        if (spd == 0.0f) {
+        if (!spd) {
             MarioWork* mp2 = marioGetPtr();
             if (MW_U16(mp2, 0x246) & 0x100) {
                 MW_F32(mp2, 0x7C) = -0.05f;
@@ -330,19 +329,17 @@ void kpaFall(void) {
             psndSFXOn_3D((const char*)0x81D, &mp->position);
         }
     } else {
-        f32 spd;
-        void* res;
-        f32 landY;
-
         if (mp->currMotionId == 0x10 || mp->currMotionId == 0x11) {
             return;
         }
         if (marioKeyOffChk() == 0 || marioCtrlOffChk() == 0) {
             if (!(mp->flags & 0x20)) {
-                mp->baseSpeed = 0.01f * (-0.5f - mp->baseSpeed) + mp->baseSpeed;
-                if (mp->baseSpeed < 0.0f) {
-                    mp->baseSpeed = 0.0f;
+                f32 base = mp->baseSpeed;
+                base = base + 0.01f * (-0.5f - base);
+                if (base < 0.0f) {
+                    base = 0.0f;
                 }
+                mp->baseSpeed = base;
             }
         }
         if (mp->currMotionId != 4) {
@@ -364,19 +361,18 @@ void kpaFall(void) {
         } else {
             mp->hitobjStandOn = res;
             mp->hitobjJumpFrom = NULL;
-            if (hitGetAttr((HitEntry*)mp->hitobjStandOn) & 0x200) {
+            if (hitGetAttr((HitEntry*)res) & 0x200) {
                 mp->position.y += spd;
             } else {
                 mp->position.y = landY;
             }
         }
-        if (res != NULL || kpaChkHitobjRide() != 0) {
+        if (res != NULL || (u32)kpaChkHitobjRide() != 0u) {
             marioLandOn();
         }
     }
 }
 
-// NONMATCHING (98%): branch layout for currSubMotionId check (cmpwi + inverse branch)
 void kpa_jumpNpc(void) {
     MarioWork* mp = marioGetPtr();
 
@@ -398,7 +394,8 @@ void kpa_jumpNpc(void) {
         mp->flags |= 0x10000;
         mp->currSubMotionId = 0;
     }
-    if (!(s32)mp->currSubMotionId) {
+    switch ((s32)mp->currSubMotionId) {
+    case 0:
         marioMakeJumpPara();
         if (MW_F32(mp, 0x7C) <= 0.0f) {
             if (!(mp->flags & 0x2000)) {
@@ -413,13 +410,15 @@ void kpa_jumpNpc(void) {
             mp->flags &= ~0x10000;
             mp->flags |= 0x20000;
         }
+        break;
     }
     mp->position.y += MW_F32(mp, 0x7C);
     mp->airTimer += 1;
 }
 
-// NONMATCHING (99%): float temp register choice (f1 vs f2)
-void kpaSetFallPara(void) {
+// The original reserves f1 for a float return value (the float temps start at f2),
+// so the source declared this returning f32 even though it stores and returns nothing.
+f32 kpaSetFallPara(void) {
     MarioWork* mp = marioGetPtr();
     if (MW_U16(mp, 0x246) & 0x100) {
         MW_F32(mp, 0x7C) = -0.05f;
@@ -434,9 +433,8 @@ void kpaSetFallPara(void) {
     }
 }
 
-// NONMATCHING (89%): marioJumpData base address materialization (lfsu vs callee-saved r31)
 f32 kpaSetJumpPara(void) {
-    f32* jump = marioJumpData;
+    f32* const jump = marioJumpData;
     MarioWork* mp = marioGetPtr();
     MW_F32(mp, 0x7C) = jump[0];
     MW_F32(mp, 0x80) = jump[1];
@@ -471,12 +469,13 @@ f32 kpaSetJumpPara(void) {
     return MW_F32(mp, 0x7C);
 }
 
-// NONMATCHING (96%): mp callee-saved register (r30 vs r31) and word-copy scheduling
 void kpa3DMain(void) {
     MarioWork* mp = marioGetPtr();
+    MarioWork* m;
     MarioWork* m2;
     KpaWork* kpa;
     void* hit;
+    Vec* prevPos;
 
     hit = kpaHitCheck();
     if (hit != NULL) {
@@ -501,20 +500,19 @@ void kpa3DMain(void) {
     marioItemGetChk();
     kpaFireAttack();
     kpaFireMain();
-    mp = marioGetPtr();
-    kpa = KPA(mp);
+    m = marioGetPtr();
+    kpa = KPA(m);
     if (kpa->mutekiTimer > 0) {
         if (--kpa->mutekiTimer <= 0) {
-            KPA(mp)->mutekiTimer = 0;
+            KPA(m)->mutekiTimer = 0;
             m2 = marioGetPtr();
             animPoseSetMaterialFlagOff(m2->paperAnimGroupId[0], 0x80000000);
             KPA(m2)->flags &= ~0x10000;
         }
     }
     if (mp->currMotionId == 8) {
-        MW_U32(mp, 0x110) = MW_U32(mp, 0x8C);
-        MW_U32(mp, 0x114) = MW_U32(mp, 0x90);
-        MW_U32(mp, 0x118) = MW_U32(mp, 0x94);
+        prevPos = (Vec*)((u8*)mp + 0x110);
+    *prevPos = mp->position;
         MW_F32(mp, 0x174) = 0.0f;
         MW_F32(mp, 0x178) = 0.0f;
         MW_F32(mp, 0x17C) = 0.0f;
@@ -563,18 +561,18 @@ void kpa3DMain(void) {
     partyMain();
     marioCamMain();
     MW_U32(mp, 0x34)++;
-    MW_U32(mp, 0x110) = MW_U32(mp, 0x8C);
-    MW_U32(mp, 0x114) = MW_U32(mp, 0x90);
-    MW_U32(mp, 0x118) = MW_U32(mp, 0x94);
+    prevPos = (Vec*)((u8*)mp + 0x110);
+    *prevPos = mp->position;
     MW_F32(mp, 0x174) = 0.0f;
     MW_F32(mp, 0x178) = 0.0f;
     MW_F32(mp, 0x17C) = 0.0f;
 }
 
-// NONMATCHING (97%): mp callee-saved register (r30 vs r31) and pos/delta stack slots
 void kpa2DMain(void) {
     MarioWork* mp = marioGetPtr();
+    MarioWork* m;
     MarioWork* m2;
+    Vec* prevPos;
     KpaWork* kpa;
     f32 f31;
     f32 sn, cs;
@@ -593,20 +591,19 @@ void kpa2DMain(void) {
     marioItemGetChk();
     kpaFireAttack();
     kpaFireMain();
-    mp = marioGetPtr();
-    kpa = KPA(mp);
+    m = marioGetPtr();
+    kpa = KPA(m);
     if (kpa->mutekiTimer > 0) {
         if (--kpa->mutekiTimer <= 0) {
-            KPA(mp)->mutekiTimer = 0;
+            KPA(m)->mutekiTimer = 0;
             m2 = marioGetPtr();
             animPoseSetMaterialFlagOff(m2->paperAnimGroupId[0], 0x80000000);
             KPA(m2)->flags &= ~0x10000;
         }
     }
     if (mp->currMotionId == 8) {
-        MW_U32(mp, 0x110) = MW_U32(mp, 0x8C);
-        MW_U32(mp, 0x114) = MW_U32(mp, 0x90);
-        MW_U32(mp, 0x118) = MW_U32(mp, 0x94);
+        prevPos = (Vec*)((u8*)mp + 0x110);
+    *prevPos = mp->position;
         MW_F32(mp, 0x174) = 0.0f;
         MW_F32(mp, 0x178) = 0.0f;
         MW_F32(mp, 0x17C) = 0.0f;
@@ -621,7 +618,8 @@ void kpa2DMain(void) {
     f31 = 0.0f;
     if (!(mp->flags & 0x80)) {
         if (mp->airTimer != 0) {
-            f31 = mp->controlStickSensitivity * mp->playerGravity * 0.015f;
+            f31 = mp->controlStickSensitivity * mp->playerGravity;
+            f31 *= 0.015f;
             if (!(mp->flags & 0x70000)) {
                 f31 *= 0.25f;
             }
@@ -675,9 +673,8 @@ void kpa2DMain(void) {
     mario_kemuri_80130474();
     marioCamMain();
     MW_U32(mp, 0x34)++;
-    MW_U32(mp, 0x110) = MW_U32(mp, 0x8C);
-    MW_U32(mp, 0x114) = MW_U32(mp, 0x90);
-    MW_U32(mp, 0x118) = MW_U32(mp, 0x94);
+    prevPos = (Vec*)((u8*)mp + 0x110);
+    *prevPos = mp->position;
     MW_F32(mp, 0x174) = 0.0f;
     MW_F32(mp, 0x178) = 0.0f;
     MW_F32(mp, 0x17C) = 0.0f;
@@ -691,7 +688,9 @@ void kpaMain(void) {
     }
 }
 
-// NONMATCHING (95%): extra callee-saved register for initial mp
+// NONMATCHING (99.94%): the five map-name strings are addressed as `addi r4, r31, off` off a common
+// vec3_802fc920 base; our .rodata pool puts them at different offsets because the original pool also
+// holds the KPA_* pose strings of the not-yet-written kpaFireAttack. No source difference remains.
 void kpaPreInit(void) {
     MarioWork* mp = marioGetPtr();
 
@@ -703,7 +702,8 @@ void kpaPreInit(void) {
     KPA(mp)->unkD0 = 1;
     KPA(mp)->unkE0 = 0;
     KPA(mp)->unkD8 = 1;
-    KPA(marioGetPtr())->sfxId = 0xFFFFFFFFu;
+    mp = marioGetPtr();
+    KPA(mp)->sfxId = -1;
     mp = marioGetPtr();
     if (strcmp(gp->currentMapName, "kpa_02") == 0
         || strcmp(gp->currentMapName, "kpa_03") == 0
