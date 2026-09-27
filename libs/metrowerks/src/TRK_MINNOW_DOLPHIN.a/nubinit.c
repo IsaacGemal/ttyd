@@ -29,6 +29,8 @@ DSError TRKInitializeNub (void){
     int res;
     res = TRK_InitializeEndian();
 
+    MWTRACE(1, "Initialize NUB\n");
+
     if (res == 0){
         usr_put_initialize();
     }
@@ -44,14 +46,8 @@ DSError TRKInitializeNub (void){
     if(res == DS_NoError){
         res = TRKInitializeDispatcher();
     }
-    
-    if(res == DS_NoError){
-        DSError ures = TRKInitializeIntDrivenUART(0xE100, 1, 0, (volatile u8**)&gTRKInputPendingPtr);
-        TRKTargetSetInputPendingPtr(gTRKInputPendingPtr);
-        if(ures != DS_NoError){
-            res = ures;
-        }
-    }
+
+    InitializeProgramEndTrap();
 
     if(res == DS_NoError){
         res = TRKInitializeSerialHandler();
@@ -59,6 +55,14 @@ DSError TRKInitializeNub (void){
 
     if(res == DS_NoError){
         res = TRKInitializeTarget();
+    }
+    
+    if(res == DS_NoError){
+        DSError ures = TRKInitializeIntDrivenUART(0xE100, 1, 0, (volatile u8**)&gTRKInputPendingPtr);
+        TRKTargetSetInputPendingPtr(gTRKInputPendingPtr);
+        if(ures != DS_NoError){
+            res = ures;
+        }
     }
 
     return res;
@@ -71,5 +75,5 @@ DSError TRKTerminateNub(void){
 } 
 
 void TRKNubWelcome(void){
-    TRK_board_display("MetroTRK for GAMECUBE v0.10");
+    TRK_board_display("MetroTRK for GAMECUBE v2.6");
 }
