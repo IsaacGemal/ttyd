@@ -20,7 +20,16 @@ src = next(iter(glob.glob(f"libs/*/src/{unit_path}.c")), None) if not os.path.ex
 src = src or f"src/{unit_path}.c"
 if os.path.exists(src) and src not in open("build.ninja").read():
     subprocess.run(["python3", "configure.py"], capture_output=True)  # a new source file needs a build rule
-b = subprocess.run(["ninja", "-j2"], capture_output=True, text=True)  # two waves of agents share the tower's 16 cores
+# Build and score only this unit: its object, then objdiff's report for a one-unit copy of objdiff.json (the same
+# scoring as the full report, which re-diffs every object in the project: ~95% of a check's CPU with 48 agents).
+# --final also compiles every source (a header change could break another file), and the merge builds everything.
+project = json.load(open("objdiff.json"))
+entry = next((e for e in project["units"] if e["name"] == unit), None)
+target = entry.get("base_path") if entry else None
+jobs = ["-j2"]  # two waves of agents share the tower's 16 cores
+b = subprocess.run(["ninja", *jobs] + ([target] if target else []), capture_output=True, text=True)
+if b.returncode == 0 and FINAL:
+    b = subprocess.run(["ninja", *jobs, "all_source"], capture_output=True, text=True)
 if b.returncode:
     out = b.stdout + b.stderr
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
@@ -29,7 +38,19 @@ if b.returncode:
 if os.path.exists(src):
     import shutil
     shutil.copy(src, "lastgood.c")  # the last version that built: survives an agent cut off mid-edit
-report = json.load(open("build/G8MJ01/report.json"))
+if target:
+    import tempfile
+    one = dict(project, units=[dict(entry, **{k: os.path.abspath(entry[k]) for k in ("target_path", "base_path")
+                                                if entry.get(k)})])
+    with tempfile.TemporaryDirectory() as d:
+        json.dump(one, open(os.path.join(d, "objdiff.json"), "w"))
+        r = subprocess.run(["build/tools/objdiff-cli", "report", "generate", "-p", d, "-o", "-"], capture_output=True,
+                           text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
+    if r.returncode:
+        sys.exit("objdiff report failed:\n" + r.stderr[-2000:])
+    report = json.loads(r.stdout)
+else:
+    report = json.load(open("build/G8MJ01/report.json"))  # no source object yet: the full build's report
 u = next((x for x in report["units"] if x["name"] == unit), None)
 if u is None:
     sys.exit(f"unit {unit} not in report")
@@ -79,11 +100,14 @@ if len(sys.argv) == 2:
 func = sys.argv[2]
 f = fns.get(func)
 print(f"{func}: {f.get('fuzzy_match_percent', 0):.2f}% ({f['size']} B)" if f else f"{func}: not in unit report")
-subprocess.run(["build/tools/objdiff-cli", "diff", "-p", ".", "-u", unit, func, "-o", "build/_od.json",
-                "--format", "json"], capture_output=True)
+# instructions only: the percentage above comes from the report (objdiff's diff can score a function differently)
+r = subprocess.run(["build/tools/objdiff-cli", "diff", "-p", ".", "-u", unit, func, "-o", "-", "--format", "json"],
+                   capture_output=True, text=True, env={**os.environ, "RAYON_NUM_THREADS": "1"})
 try:
-    d = json.load(open("build/_od.json"))
-except Exception:
+    d = json.loads(r.stdout) if r.returncode == 0 else None
+except ValueError:
+    d = None
+if d is None:
     sys.exit("objdiff produced no diff (is the function defined in your source?)")
 
 
