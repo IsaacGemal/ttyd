@@ -51,7 +51,9 @@ void partyChgMot(PartyEntry* party, s32 mot) {
     work->field_8 |= 2;
 }
 
-// NONMATCHING (86.67%): 2 missing.
+// NONMATCHING (86.67%): the original keeps a redundant `cmpwi r0,4; bge` range test for the empty
+// case 4/5 group; this compiler (GC/2.6) folds it. Cases above 6 emit `cmpwi r0,7` instead. Non-empty
+// case 4/5 bodies make -O4,p duplicate the shared after-switch block instead of merging it.
 void partyChgMoveMode(PartyEntry* party, u8 mode) {
     PartyEntry* work = party;
     s32 oldMode = work->field_3B;
@@ -184,7 +186,8 @@ void party_move_mode_behind_mario(PartyEntry* party) {
 // NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
 void unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
-    f32 speed = value * work->playerPtr->playerGravity;
+    f32 gravity = work->playerPtr->playerGravity;
+    f32 speed = value * gravity;
     f32 scale;
     if (work->flags & 0x80) {
         scale = 0.75f;
@@ -244,8 +247,9 @@ void partyNextReadId(u32 index) {
 
 // Each clears one party slot's buffer: 0x50 records (0x500 bytes) of footmarkBuf.
 #ifdef MUST_MATCH
-// NONMATCHING (63.22%): the `u32` copy makes the compiler emit the original's `stw` stores (the plain
-// field form below gives `stfs`); the unrolled loop and buffer register still differ.
+// NONMATCHING (84.98%): the `u32` copy makes the compiler emit the original's `stw` stores; the
+// pointer walk matches the `bdnz`/0x80-stride unroll, but this compiler still emits a redundant
+// loop-entry test (`cmpwi`/`bge`) the original lacks.
 void partyClearFootmark(void) {
     MarioWork* mario = marioGetPtr();
     Vec pos = mario->position;
@@ -254,10 +258,11 @@ void partyClearFootmark(void) {
     s32 i;
 
     for (i = 0; i < 0x50; i++) {
-        f[i].field_0 = 0;
-        ((u32*)&f[i].x)[0] = src[0];
-        ((u32*)&f[i].x)[1] = src[1];
-        ((u32*)&f[i].x)[2] = src[2];
+        ((u32*)&f->x)[0] = src[0];
+        ((u32*)&f->x)[1] = src[1];
+        ((u32*)&f->x)[2] = src[2];
+        f->field_0 = 0;
+        f++;
     }
     writeId[0] = 0;
     readId[0] = 0;
@@ -278,24 +283,29 @@ void partyClearFootmark(void) {
 }
 #endif
 
-// NONMATCHING (66.98%): the clear loop's stores and unrolling differ, as in partyClearFootmark.
+// NONMATCHING (87.37%): shares the clear loop's redundant loop-entry test with partyClearFootmark;
+// the mario/target copy is otherwise matched.
 void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target = partyGetPtr(marioGetPartyId());
     Vec pos;
+    u32* src = (u32*)&pos;
+    Footmark* f;
     s32 i;
 
-    if (target != NULL && nokonokoGetStatus(target) != 3
-        && PSVECDistance(&mario->position, &target->position) < 150.0f) {
-        pos = target->position;
-    } else {
+    if (target == NULL || nokonokoGetStatus(target) == 3
+        || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
         pos = mario->position;
+    } else {
+        pos = target->position;
     }
+    f = (Footmark*)(footmarkBuf + 0x500);
     for (i = 0; i < 0x50; i++) {
-        ((Footmark*)(footmarkBuf + 0x500))[i].field_0 = 0;
-        ((Footmark*)(footmarkBuf + 0x500))[i].x = pos.x;
-        ((Footmark*)(footmarkBuf + 0x500))[i].y = pos.y;
-        ((Footmark*)(footmarkBuf + 0x500))[i].z = pos.z;
+        ((u32*)&f->x)[0] = src[0];
+        ((u32*)&f->x)[1] = src[1];
+        ((u32*)&f->x)[2] = src[2];
+        f->field_0 = 0;
+        f++;
     }
     writeId[1] = 0;
     readId[1] = 0;
