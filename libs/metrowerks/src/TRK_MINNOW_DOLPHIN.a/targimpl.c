@@ -856,8 +856,7 @@ asm void TRKInterruptHandlerEnableInterrupts(void)
 DSError TRKTargetInterrupt(TRKEvent* event)
 {
     DSError error = DS_NoError;
-    // TTYD's TRKEvent.eventType is a 4-byte NubEventType; the vendored header has u8.
-    switch (*(NubEventType*)event) {
+    switch (event->eventType) {
     case NUBEVENT_Breakpoint:
     case NUBEVENT_Exception:
         if (TRKTargetCheckStep() == FALSE) {

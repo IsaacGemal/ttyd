@@ -57,15 +57,16 @@ def fail(step, msg):
     sys.exit(1)
 
 
-def lint(base, allow_pragma, allow_protected, allow_configure):
+def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
     names = run(["git", "diff", "--name-only", base]).stdout.split()
     names += run(["git", "ls-files", "--others", "--exclude-standard"]).stdout.split()
     problems = []
     for name in names:
         if name.startswith(PROTECTED) and not name.startswith(UNPROTECTED) and name != "tools/ci.py" and not allow_protected:
             problems.append(f"{name}: protected path (pass --allow-protected if intended)")
-    diff = run(["git", "diff", "-U0", base, "--", "src", "include", "rels", "configure.py"]).stdout
-    for path in run(["git", "ls-files", "--others", "--exclude-standard", "src", "include", "rels"]).stdout.split():
+    scanned = ["src", "include", "rels", "libs/metrowerks/src"]
+    diff = run(["git", "diff", "-U0", base, "--", *scanned, "configure.py"]).stdout
+    for path in run(["git", "ls-files", "--others", "--exclude-standard", *scanned]).stdout.split():
         diff += f"+++ b/{path}\n" + "".join("+" + l for l in (ROOT / path).read_text(errors="replace").splitlines(True))
     current = None
     for line in diff.splitlines():
@@ -80,8 +81,10 @@ def lint(base, allow_pragma, allow_protected, allow_configure):
                 problems.append(f"configure.py: only Object(...) lines may change (pass --allow-configure if intended): {added.strip()[:100]}")
             continue
         code = added.split("//", 1)[0]
-        if ASM_RE.search(code):
-            problems.append(f"{current}: new inline asm: {added.strip()[:100]}")
+        if ASM_RE.search(code) and not (allow_asm and current.startswith(UNPROTECTED)):
+            problems.append(f"{current}: new inline asm: {added.strip()[:100]}"
+                            + (" (--allow-asm: only for the ported libraries' hand-written assembly, checked against"
+                               " the reference projects)" if current.startswith(UNPROTECTED) else ""))
         if PRAGMA_RE.search(code) and not allow_pragma:
             problems.append(f"{current}: new #pragma (pass --allow-pragma if intended): {added.strip()[:100]}")
     if problems:
@@ -169,6 +172,7 @@ def main():
     ap.add_argument("--init", action="store_true")
     ap.add_argument("--allow-pragma", action="store_true")
     ap.add_argument("--allow-protected", action="store_true")
+    ap.add_argument("--allow-asm", action="store_true")
     ap.add_argument("--allow-configure", action="store_true")
     ap.add_argument("--allow-regress", action="append", default=[], metavar="NAME",
                     help="a not-yet-matched function, or a unit, whose score may drop when wrong code is fixed or "
@@ -183,7 +187,7 @@ def main():
     if not ACCEPTED.exists():
         fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
     tests()
-    lint(a.base, a.allow_pragma, a.allow_protected, a.allow_configure)
+    lint(a.base, a.allow_pragma, a.allow_protected, a.allow_configure, a.allow_asm)
     problems, count = local_prototypes.check_tree(ROOT)
     if problems:
         fail("prototypes", "\n  " + "\n  ".join(problems))

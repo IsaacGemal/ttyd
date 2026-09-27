@@ -4,10 +4,16 @@
 #include "MSL_C/wchar_io.h"
 
 size_t __fwrite(const void* buffer, size_t size, size_t count, FILE* stream);
+extern void __begin_critical_region(int);
+extern void __end_critical_region(int);
 
-// NONMATCHING (25.52%): 23 missing, plus register differences.
 size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream) {
-    __fwrite(buffer, size, count, stream);
+    size_t written;
+
+    __begin_critical_region(2);
+    written = __fwrite(buffer, size, count, stream);
+    __end_critical_region(2);
+    return written;
 }
 
 size_t __fwrite(const void* buffer, size_t size, size_t count, FILE* stream) {

@@ -76,9 +76,7 @@ DSError TRKPostEvent(TRKEvent* event)
  */
 void TRKConstructEvent(TRKEvent* event, int eventType)
 {
-	// TTYD's TRKEvent::eventType is a 4-byte NubEventType (TRKNubMainLoop reads it with lwz),
-	// but the vendored header declares it u8, which would emit stb. Store the full word.
-	*(u32*)event = eventType;
+	event->eventType = eventType;
 	event->eventID   = 0;
 	event->msgBufID  = -1;
 }

@@ -147,7 +147,7 @@ bbaCommTableSuccess:
 #endif // clang-format on
 }
 
-// NONMATCHING (86.87%): the compiler has no `__dcbi` intrinsic. The three data-cache invalidates compile as
+// NONMATCHING (87.28%): the compiler has no `__dcbi` intrinsic. The three data-cache invalidates compile as
 // `dcbf` instead of `dcbi` (same operand form, different opcode); the remaining diff is register allocation
 // in the cache loop. Everything else follows the original.
 void TRK__write_aram(u8* buf, u32 aram, u32* size)
@@ -181,7 +181,7 @@ void TRK__write_aram(u8* buf, u32 aram, u32* size)
 	}
 
 	intr = __ARGetInterruptStatus();
-	lastAram = 0x800;
+	lastAram = 0x08000000;
 
 	if (aramOff != 0) {
 		lastAram = alignedAram;

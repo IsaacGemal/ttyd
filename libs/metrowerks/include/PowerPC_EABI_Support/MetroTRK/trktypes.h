@@ -87,7 +87,7 @@ typedef struct CommandReply {
 
 // Nub event information (size 0xC).
 typedef struct TRKEvent {
-	u8 eventType;         // _00
+	NubEventType eventType; // _00 (a word in TTYD's TRK; ac-decomp's has u8)
 	NubEventID eventID;   // _04
 	TRKBufferID msgBufID; // _08
 } TRKEvent;
