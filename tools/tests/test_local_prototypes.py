@@ -48,8 +48,8 @@ class PrototypeParsing(unittest.TestCase):
         found = list(prototypes('/* comment\ncontinues */\n\nvoid f(void);'))
         self.assertEqual(found[0].line, 4)
 
-    def test_static_forward_declarations_are_allowed(self):
-        self.assertEqual(check_sources({'src/a.c': 'static inline int f(void);'}, []), [])
+    def test_static_forward_declarations_of_local_functions_are_allowed(self):
+        self.assertEqual(check_sources({'src/a.c': 'static inline int f(void);'}, [], lambda path: {'f': 'local'}), [])
 
 
 class PrototypeExceptions(unittest.TestCase):

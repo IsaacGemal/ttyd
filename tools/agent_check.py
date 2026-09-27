@@ -42,13 +42,15 @@ if FINAL:
     sys.path.insert(0, "tools")
     import local_prototypes
     src = f"src/{unit_path}.c"
-    exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] == src]
+    exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] in (src, "*")]
     protos = local_prototypes.check_sources({src: open(src).read()}, exc)
     for p in protos:
         if "exception must match" in p:
             todo.append("PROTOTYPE  " + p + "  -> a documented exception no longer matches your file; restore that"
                         " declaration exactly, or say in your report why it should go (only the orchestrator edits"
                         " the exceptions list)")
+        elif "static" in p:
+            todo.append("PROTOTYPE  " + p)
         else:
             todo.append("PROTOTYPE  " + p + "  -> move it to the defining file's header (include/<path>.h)")
     if not todo:

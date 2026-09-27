@@ -44,8 +44,6 @@ extern f32 float_30_8041cd5c;
 extern f32 float_neg117_8041cd58;
 extern f32 float_neg120_8041cd60;
 extern const char str_802F3C84[];
-// Differs from windowdrv.h (s16, GXColor by value): with the header's signature the caller copies the color
-// and _disp_escape_wall_message stops matching (99.06%). The ABI is the same; the original passes it uncopied.
 
 // LOCAL_PROTO(windowDispGX_Waku_col): match-only. The original passes the GXColor by value like every caller (a
 // stack copy); this by-pointer declaration only steers register allocation (see the exceptions file).

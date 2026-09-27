@@ -218,9 +218,6 @@ void partyPaperLightOff(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
 }
 
-// NONMATCHING (99.89%): the low-HP check's sign-extension lands in r0 instead of
-// the original's r3 (`extsb r3,r0`/`cmpwi r3,8`).  Tried temps, s8/s32 locals,
-// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -969,7 +966,7 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     }
 }
 
-// NONMATCHING (97.91%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
+// NONMATCHING (98.00%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
 // low-HP `extsb r3,r0` vs our `extsb r0,r0`.
 s32 partyEntry(s32 memberId) {
     PartyEntry* party;
@@ -1015,8 +1012,6 @@ s32 partyEntry(s32 memberId) {
     return ret;
 }
 
-// NONMATCHING (99.93%): only the low-HP check's extsb lands in r0 here vs the
-// original's r3 (the same difference as in partyChgPoseId); the rest matches.
 s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     const Vec* v;
     PartyEntry* party;
@@ -1069,7 +1064,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     return ret;
 }
 
-// NONMATCHING (89.84%): partyChgPoseId is inlined but ours does not
+// NONMATCHING (89.94%): partyChgPoseId is inlined but ours does not
 // constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
 // inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
 void party_force_ride_yoshi(PartyEntry* party) {

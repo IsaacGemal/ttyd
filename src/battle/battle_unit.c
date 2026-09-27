@@ -1738,10 +1738,10 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     cost = BtlUnit_GetWeaponCost(unit, weapon);
     BtlUnit_SetFp(unit, fp - cost);
     if (unit->currentKind == UNIT_MARIO) {
-        BtlActRec_AddPoint((u8*)wp + 0x16F2F, (u8)cost);
+        BtlActRec_AddPoint((u8*)wp + 0x16F2F, cost);
         BtlActRec_AddCount((u8*)wp + 0x16F30);
     } else if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-        BtlActRec_AddPoint((u8*)wp + 0x16F31, (u8)cost);
+        BtlActRec_AddPoint((u8*)wp + 0x16F31, cost);
         BtlActRec_AddCount((u8*)wp + 0x16F32);
     }
     pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);

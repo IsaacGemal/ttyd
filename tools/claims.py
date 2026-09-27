@@ -32,14 +32,15 @@ def db_path():
 
 def unit_name(u):
     """event/evt_npc, src/event/evt_npc.c, ./src/event/evt_npc.c, an absolute path and rels/pik/src/unit/x.c all
-    name a unit the same way; anything that doesn't reduce to a plain relative unit path is refused."""
+    name a unit the same way; anything that doesn't reduce to a plain relative unit path is refused. The REL
+    name is dropped, so the same path in two RELs (or in a REL and src/) is one claim: the safe side."""
     root = str(Path(__file__).resolve().parent.parent) + "/"
     u = os.path.normpath(u)
     if u.startswith(root):
         u = u[len(root):]
     u = re.sub(r"^(?:rels/[^/]+/)?src/", "", u)
     u = u[:-2] if u.endswith(".c") else u
-    if u.startswith(("/", "..")) or not re.fullmatch(r"[\w./-]+", u):
+    if u in (".", "src") or u.startswith(("/", "..")) or not re.fullmatch(r"[\w./-]+", u):
         raise SystemExit(f"claims.py: not a unit name: {u}")
     return u
 

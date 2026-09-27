@@ -46,10 +46,11 @@ if [ -s "$D/include.patch" ]; then
     if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
     echo "REJECT $TAG: header changes other than added declarations:"; echo "$BAD"; exit 1; }
   # append-only: each added line goes to the end of its header unless the header already has it
-  HDRS=$(python3 tools/header_patch.py --apply "$D/include.patch") || {
+  APPLIED=$(python3 tools/header_patch.py --apply "$D/include.patch") || {
     git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f
     if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
     echo "REJECT $TAG: header patch failed"; exit 1; }
+  HDRS=$(echo "$APPLIED" | cut -f2); HDRLINES=$(echo "$APPLIED" | awk -F'\t' '{s+=$1} END{print s+0}')
   HDR=1
 fi
 [ -z "$(git status --short -- "$F" include)" ] && { echo "SKIP $TAG: no change to $F"; exit 1; }
@@ -74,6 +75,9 @@ LINT=$(python3 tools/lint_patch.py "$F" 2>&1) || {
   if echo "$LINT" | grep -q '^STUB'; then echo "REJECT $TAG: empty stubs:"; else echo "REJECT $TAG: lint failed:"; fi
   echo "$LINT"; exit 1; }
 [ -n "$LINT" ] && { echo "$LINT"; echo "$LINT" > "$D/lint.txt"; }
+if [ -n "$HDRS" ]; then  # main reports no problems, so anything here came from this agent's headers; check it in the asm
+  PA=$(python3 tools/proto_asm.py) || { echo "WARN $TAG: proto_asm.py findings (check by hand):"; echo "$PA" | tee "$D/proto_asm.txt"; }
+fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
@@ -81,7 +85,7 @@ if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 HDRNOTE=""
-[ $HDR = 1 ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $(grep -c '^+[^+]' "$D/include.patch") lines."
+[ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG
 $SUBJECT
 

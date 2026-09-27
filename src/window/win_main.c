@@ -404,7 +404,6 @@ void winDispKoopa(CameraId camId, void* param) {
     winTexSet(0xB7, (Vec){ 0.0f, 50.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 }
 
-// NONMATCHING (99.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(itemUseFunc) {
     static s32 cnt;
     PartyEntry* party;

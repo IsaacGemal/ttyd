@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """Reject external function declarations in game/REL C files.
 
-Shared interfaces belong in headers. Static forward declarations remain local.
+Shared interfaces belong in headers. A static forward declaration stays local, but only for a function the original
+has local to that unit (`.fn NAME, local` in its asm), or one the file defines that the asm doesn't have at all
+(inlined everywhere). Otherwise `static` would hide an unchecked prototype of another file's function, or make a
+global function local.
 A small exact allowlist records original ABI disagreements and symbol collisions;
 changing an exception's signature, duplicating it, or leaving a stale entry fails.
+An entry with path "*" names a function whose callers disagree in the original: any file may declare it locally,
+with the signature that file's asm uses.
 
 This is a lexical check for this project's C declarators and USER_FUNC macro, not
 an ABI verifier. The build and objdiff ratchet still validate header changes.
@@ -36,6 +41,7 @@ class Prototype:
 
 def prototypes(text):
     code = mask_noncode(text)
+    code = re.sub(r"__declspec\s*\([^()]*\)", lambda m: " " * len(m[0]), code)
     # Statement boundaries also catch declarations after another statement on
     # the same line, and prototypes nested inside a function body.
     pattern = re.compile(
@@ -74,7 +80,7 @@ def prototypes(text):
                         code.count("\n", 0, start) + 1, "static" in ret)
     for m in re.finditer(
         r"(?:^|(?<=[;{}]))[ \t\r\n]*(?P<decl>(?:(?P<storage>static|extern)\s+)?"
-        r"USER_FUNC\(\s*(?P<name>\w+)\s*\)\s*;)", code, re.M
+        r"USER_FUNC\s*\(\s*(?P<name>\w+)\s*\)\s*;)", code, re.M
     ):
         start = m.start("decl")
         yield Prototype(m["name"], text[start:m.end()],
@@ -85,10 +91,39 @@ def declaration_key(text):
     return re.sub(r"\s+", "", mask_noncode(text))
 
 
-def check_sources(sources, exceptions):
-    """sources maps repository-relative paths to C text (also usable in tests)."""
-    problems, allowed, seen = [], {}, Counter()
+def asm_path(path, root=ROOT):
+    """The original's asm for a source file: src/x/y.c -> build/G8MJ01/asm/x/y.s,
+    rels/r/src/x/y.c -> build/G8MJ01/r/asm/x/y.s."""
+    parts = Path(path).with_suffix(".s").parts
+    if parts[0] == "src":
+        return root / "build" / "G8MJ01" / "asm" / Path(*parts[1:])
+    return root / "build" / "G8MJ01" / parts[1] / "asm" / Path(*parts[3:])
+
+
+def asm_scopes(path, root=ROOT):
+    """{name: "local"/"global"/"weak"} for the functions in this unit's asm, or None if it isn't there (not built)."""
+    a = asm_path(path, root)
+    if not a.exists():
+        return None
+    return dict(re.findall(r"^\.fn (\w+), (\w+)", a.read_text(errors="ignore"), re.M))
+
+
+def definitions(text):
+    code = mask_noncode(text)
+    names = set(re.findall(r"\b([A-Za-z_]\w*)\s*\([^;{}()]*(?:\([^;{}()]*\)[^;{}()]*)*\)\s*\{", code))
+    return names | set(re.findall(r"\bUSER_FUNC\(\s*(\w+)\s*\)\s*\{", code))
+
+
+def check_sources(sources, exceptions, scopes_of=asm_scopes):
+    """sources maps repository-relative paths to C text (also usable in tests); scopes_of(path) gives the
+    original's function scopes in that unit, or None if unknown."""
+    problems, allowed, seen, anywhere = [], {}, Counter(), set()
     for entry in exceptions:
+        if entry["path"] == "*":
+            if not entry.get("reason", "").strip():
+                problems.append(f"*: {entry['name']}: exception needs a reason")
+            anywhere.add(entry["name"])
+            continue
         key = (entry["path"], entry["name"], declaration_key(entry["declaration"]))
         if not entry.get("reason", "").strip():
             problems.append(f"{entry['path']}: {entry['name']}: exception needs a reason")
@@ -96,8 +131,23 @@ def check_sources(sources, exceptions):
             problems.append(f"{entry['path']}: {entry['name']}: duplicate exception")
         allowed[key] = entry
     for path, text in sorted(sources.items()):
+        defined, scopes = definitions(text), scopes_of(path)
         for proto in prototypes(text):
             if proto.static:
+                scope = None if scopes is None else scopes.get(proto.name)
+                if scope == "local" or (scope is None and proto.name in defined):
+                    continue
+                if scopes is None:
+                    problems.append(f"{path}:{proto.line}: {proto.name}: static declaration can't be checked "
+                                    f"(no asm at {asm_path(path)}; build first)")
+                elif scope is None:
+                    problems.append(f"{path}:{proto.line}: {proto.name}: declared static, but this unit neither "
+                                    f"defines it nor has it in the original; move the prototype to its owning header")
+                else:
+                    problems.append(f"{path}:{proto.line}: {proto.name}: declared static, but the original has it "
+                                    f"{scope}; drop static and put the prototype in the unit's header")
+                continue
+            if proto.name in anywhere:
                 continue
             key = (path, proto.name, declaration_key(proto.declaration))
             if key not in allowed:

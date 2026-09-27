@@ -651,7 +651,7 @@ USER_FUNC(irai_mail_check) {
 
 extern WinMgrDesc coinget_window_desc;
 
-// NONMATCHING (82.55%): 5 instructions differ, 19 missing, 24 extra, plus register differences.
+// NONMATCHING (87.09%): 4 instructions differ, 6 missing, 24 extra, plus register differences.
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);

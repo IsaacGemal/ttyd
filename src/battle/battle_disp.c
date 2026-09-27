@@ -25,14 +25,6 @@ s32 _status_pose_table[] = {
 	-1
 };
 
-//local prototypes
-static void btlDispGXInit2DSub(void);
-static void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3);
-static void btlDispGetTexSize(u32 id, u16* width, u16* height);
-static void _pose_def(BattleUnitPart* part);
-static void _pose_one_pattern(BattleUnitPart* part);
-static void _pose_two_pattern(BattleUnitPart* part);
-static void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation);
 
 //.rodata
 static Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
@@ -374,7 +366,7 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 }
 
 #pragma dont_inline on
-static void _pose_def(BattleUnitPart* part) {
+void _pose_def(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: a one-case switch makes MWCC emit the original `beq body; b end` guard;
 	   the natural early-return folds to `bne end`. */
@@ -398,7 +390,7 @@ static void _pose_def(BattleUnitPart* part) {
 }
 
 // NONMATCHING (78.24%): target keeps the string base in r31 and `part` in r30; ours folds each string into its own @ha/@l and puts `part` in r31.
-static void _pose_one_pattern(BattleUnitPart* part) {
+void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: one-case switch reproduces the original `beq body; b end` guard. */
 	switch (*(u8*)((char*)part + 0x214)) {
@@ -444,7 +436,7 @@ static void _pose_one_pattern(BattleUnitPart* part) {
 
 // NONMATCHING (76.61%): 9 instructions differ, 28 missing, 11 extra, plus register differences.
 #pragma dont_inline on
-static void _pose_two_pattern(BattleUnitPart* part) {
+void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
 
 	switch (*(u8*)((char*)part + 0x214)) {

@@ -3,7 +3,7 @@
 
   python3 tools/header_patch.py PATCH          check it; print what's wrong, exit 1 if anything is
   python3 tools/header_patch.py --apply PATCH  check it, then append each added line to its header unless the
-                                               header already has it; print the headers changed
+                                               header already has it; print "LINES<tab>HEADER" for each header changed
 
 Applying never uses the patch's line numbers or context: several agents in a wave add to the same headers, so
 their patches overlap, and all they may do is add lines. Appending (skipping lines already present) can't delete
@@ -49,7 +49,7 @@ def additions(patch):
 
 
 def problems(patch):
-    out, cur = [], None
+    out, cur, sections = [], None, 0
     for n, line in enumerate(patch.splitlines(), 1):
         if line.startswith(("diff ", "--- ")):
             cur = None
@@ -59,6 +59,7 @@ def problems(patch):
             if not m or ".." in m.group(1):
                 out.append(f"line {n}: patches something other than a header under include/: {line[4:].split(chr(9))[0]}")
             cur = m.group(1) if m and ".." not in m.group(1) else None
+            sections += cur is not None
             continue
         if line.startswith(("@@", "Only in", "\\ No newline")):
             continue
@@ -69,14 +70,19 @@ def problems(patch):
             out.append(f"line {n}: removes or changes an existing header line: {line[1:].strip()}")
         elif line.startswith("+"):
             body = line[1:].strip()
-            if not any(re.fullmatch(rx, body) for rx in ALLOWED):
-                out.append(f"line {n}: not a declaration: {body}")
-            elif re.match(r"static\b", body):
+            if re.match(r"static\b", body):
                 out.append(f"line {n}: static declarations belong in the .c file: {body}")
+            elif body.endswith("\\"):
+                out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
+            elif not any(re.fullmatch(rx, body) for rx in ALLOWED):
+                out.append(f"line {n}: not a declaration: {body}")
+    if patch.strip() and not sections and not out:
+        out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
     return out
 
 
-def apply(patch, root):
+def apply(patch, root, counts=None):
+    """Append the patch's new lines; returns the headers changed (and fills counts with lines added per header)."""
     changed = []
     for path, lines in additions(patch).items():
         f = root / path
@@ -91,20 +97,27 @@ def apply(patch, root):
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(text + ("" if not text or text.endswith("\n") else "\n") + "\n".join(new) + "\n")
         changed.append(path)
+        if counts is not None:
+            counts[path] = len(new)
     return changed
 
 
 def main():
-    args = sys.argv[1:]
-    do_apply = args[:1] == ["--apply"]
-    patch = open(args[-1]).read()
+    import argparse
+    from pathlib import Path
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("patch")
+    a = ap.parse_args()
+    patch = open(a.patch).read()
     p = problems(patch)
     if p:
         print("\n".join(p))
         return 1
-    if do_apply:
-        from pathlib import Path
-        print("\n".join(apply(patch, Path(__file__).resolve().parent.parent)))
+    if a.apply:
+        counts = {}
+        for path in apply(patch, Path(__file__).resolve().parent.parent, counts):
+            print(f"{counts[path]}\t{path}")
     return 0
 
 

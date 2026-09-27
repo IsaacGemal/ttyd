@@ -1031,6 +1031,11 @@ worktree). The launcher claims its units before starting agents and skips any an
 orchestrator releases the wave's claims once its PR merges; claims expire after 24 hours so a crashed wave
 doesn't lock files. The design follows itsgrimetime/melee-decomp's claims database for Melee agents.
 
+Claims cover units, not headers. Two waves working on different units can both append to the same header, and
+`header_patch.py`'s append-only merge only reconciles patches within one wave, so the second wave's PR will conflict
+textually in git at that header's end. Resolve it by keeping both sides' lines. A REL unit is claimed without its
+REL name, so the same path in two RELs is one claim.
+
 
 
 ## Reference repos, and study them before building tools (2026-09-27, Isaac; written up by Claude Opus 5.5)
@@ -1055,7 +1060,7 @@ the canonical declarations: missing arguments (`npcCheckInterrupt`, `_npcGroupDe
 `partyGetHp`, `tou_gamen_screen_tev`), `void` where callers use the result (seven functions, e.g.
 `BattleAudienceAddAudienceNum`, `effSplashEntry`, `party_slit`), and an event function declared as a plain one
 (`evt_paper_delete`). Four C callers were dropping real arguments and now pass them (two functions newly match).
-16 functions that the original keeps local to one file had been put in headers (the sac_* files each have their
+17 functions that the original keeps local to one file had been put in headers (the sac_* files each have their
 own `main_base`, `disp_2D` ...); they are `static` in their files now.
 
 `tools/proto_asm.py` (read-only, a report, not a CI gate) compares header prototypes of undecompiled functions
@@ -1067,4 +1072,25 @@ The merge script applied agents' header patches with `patch`, which left `.orig`
 already-applied patch, and would apply a patch aimed outside include/. `tools/header_patch.py --apply` now appends
 each added line to its header unless already present (agents may only add lines, and patches from one wave
 overlap, so context-based patching is the wrong tool), and rejects any path that isn't a header under include/.
+
+
+## Reviews 2 and 3 of the cleanup PR (2026-09-27, Claude Opus 5.5; reviews by Codex and a fresh Claude Opus 5.5)
+
+Review 2 (Codex) found three more local functions in headers (`paper_on`, `paper_off`, `evt_cloud_main`, missed
+because `proto_asm.py` didn't read `USER_FUNC` declarations), header patches whose lines could land in the wrong
+header, and claims loopholes (non-positive durations, `./src/x.c` vs `src/x.c`). That makes 20 functions made static.
+
+Review 3 (a fresh Claude) found:
+- The four sound functions whose callers disagree in the original (`psndSFX_pit`, `psndSFX_vol`,
+  `psndSFX_get_vol`, `psndSFXOnEx_3D`) had no workable declaration for an agent: a local one was rejected, and a
+  header one broke the files with their own widths. They are now exceptions for any file (`"path": "*"`), declared
+  with the widths that file's asm uses.
+- `static` hid unchecked prototypes: CI skipped every static declaration, and MWCC accepts a call to a static
+  function that is never defined (a warning only). A static declaration now passes only if the original has the
+  function local to that unit, or the file defines a function the asm doesn't have at all (inlined everywhere).
+  This caught ten functions in battle_disp.c and DEMOInit.c that are global in the original; their prototypes are
+  in the headers now (no change in matching).
+- `BtlActRec_AddPoint` takes a `u8` (all four callers truncate with `clrlwi`), stale NONMATCHING labels, and smaller
+  gaps in the header-patch, prototype and claims checks. The merge script now also runs `proto_asm.py` when an
+  agent added header lines and prints any findings as a warning to check by hand.
 

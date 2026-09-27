@@ -93,8 +93,6 @@ void FontDrawNoise(void) {
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, 0x21, GX_FALSE, 0x7d);
 }
 
-// NONMATCHING (99.95%): only stack slots for the two inlined GXSetTevColor args are swapped (orig 0xc/0x10, ours 0x10/0xc).
-
 // NONMATCHING (99.57%): correct algorithm; only float-register-allocation/constant-label diffs remain.
 u32 HSV2RGB(GXColor* hsv) {
 	f32 h = hsv->r * 360.0f * 0.00390625f;

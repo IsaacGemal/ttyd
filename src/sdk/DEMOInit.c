@@ -35,9 +35,6 @@ static void __DEMOInitRenderMode(GXRenderModeObj* mode);
 static void __DEMOInitMem(void);
 static void __DEMOInitGX(void);
 static void __DEMOInitVI(void);
-static void __NoHangRetraceCallback(u32 count);
-static void __NoHangDoneRender(void);
-static void __DEMODiagnoseHang(void);
 
 // NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void DEMOInit(GXRenderModeObj* mode) {
@@ -207,7 +204,7 @@ void DEMOEnableGPHangWorkaround(u32 timeoutFrames) {
 	}
 }
 
-static void __NoHangRetraceCallback(u32 count) {
+void __NoHangRetraceCallback(u32 count) {
 #pragma unused (count)
 	static u32 ovFrameCount = 0;
 	static u32 lastOvc = 0;
@@ -231,7 +228,7 @@ static void __NoHangRetraceCallback(u32 count) {
 }
 
 // NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
-static void __NoHangDoneRender(void) {
+void __NoHangDoneRender(void) {
 	BOOL abort = FALSE;
 	u16 token = sysGetToken();
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
@@ -284,7 +281,7 @@ void DEMOSetGPHangMetric(GXBool enable) {
 }
 
 // NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
-static void __DEMODiagnoseHang(void) {
+void __DEMODiagnoseHang(void) {
 	u32 xfTop0, xfBot0, suRdy0, r0Rdy0;
 	u32 xfTop1, xfBot1, suRdy1, r0Rdy1;
 	u32 xfTopD, xfBotD, suRdyD, r0RdyD;

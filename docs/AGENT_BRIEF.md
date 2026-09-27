@@ -74,12 +74,16 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    prototype (`-requireprotos`, as in Melee), and CI rejects function prototypes in .c files (static helpers
    excepted). Include the header that declares the function; if none does, add the prototype to the header of
    the file that defines it (`include/<path>.h` for `src/<path>.c`; for a REL module's `rels/<rel>/src/<path>.c`,
-   `include/rel/<rel>/<path>.h`), created if missing. Copy the definition's signature, or, if it isn't
+   `include/rel/<rel>/<path>.h`; the merge only accepts headers under `include/`), created if missing. Copy the definition's signature, or, if it isn't
    decompiled yet, read it from the original: the callee's asm shows which of `r3`-`r10`/`f1`-`f8` it reads and
    whether it leaves a result in `r3`/`f1` that callers use. Write each prototype on one line; the merge accepts
    only single-line declarations. If the original has the function local to one file (`.fn NAME, local` in the
-   asm), it is not a header prototype: declare it `static` in that file. Only add lines to headers; never change
-   existing ones. If an existing header declaration looks wrong, report it with the asm evidence.
+   asm), it is not a header prototype: declare it `static` in that file. Never use `static` for any other
+   function: CI checks each static declaration against the asm. Only add lines to headers; never change
+   existing ones. If an existing header declaration looks wrong, report it with the asm evidence. Exception:
+   `psndSFX_pit`, `psndSFX_vol`, `psndSFX_get_vol` and `psndSFXOnEx_3D` have no header prototype, because the
+   original's files disagree on their widths; declare them in your .c file with the widths your file's asm uses
+   (e.g. a `clrlwi r4, rX, 24` before the call means a `u8` argument).
 13. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
    object (declare it as the original's symbol) instead.
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
