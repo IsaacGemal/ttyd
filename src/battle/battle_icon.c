@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 extern BattleWork* _battleWorkPointer;
-extern ItemData* itemDataTable;
+extern ItemData itemDataTable[];
 
 // NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
 BattleIcon* BtlIconGetPtr(s32 index) {
