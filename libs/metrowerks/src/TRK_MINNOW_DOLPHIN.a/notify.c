@@ -23,10 +23,10 @@ DSError TRKDoNotifyStopped(MessageCommandID cmd)
 
 	err = TRKGetFreeBuffer(&bufIdx, &msg);
 	if (err == DS_NoError) {
-		err = TRKDoNotifyStopped_Inline(msg, cmd);
-
+		// TTYD's build emits a second `err` test here but no inlined helper body:
+		// the ac-decomp helper was not inlined into this version.
 		if (err == DS_NoError) {
-			if ((u8)cmd == DSMSG_NotifyStopped) {
+			if (cmd == DSMSG_NotifyStopped) {
 				TRKTargetAddStopInfo(msg);
 			} else {
 				TRKTargetAddExceptionInfo(msg);
