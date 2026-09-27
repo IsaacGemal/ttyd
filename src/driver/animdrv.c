@@ -342,7 +342,7 @@ label_5:
     return poseId;
 }
 
-// NONMATCHING (76.80%): 5 instructions differ, 8 missing, 8 extra, plus register differences.
+// NONMATCHING (90.00%): 5 instructions differ, 8 missing, 8 extra, plus register differences.
 s32 animPaperPoseEntry(const char* animName, s32 group) {
     s32 i;
     AnimationPose* pose;
@@ -486,7 +486,7 @@ void animPoseSetStartTime(s32 poseId, OSTime startTime) {
     pose->localTime = startTime;
 }
 
-// NONMATCHING (95.47%): 4 instructions differ, 3 missing, plus register differences.
+// NONMATCHING (95.58%): 4 instructions differ, 3 missing, plus register differences.
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
@@ -501,9 +501,9 @@ void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
                 break;
             }
         }
-        if (animId >= top) {
-            animId = 0;
-        }
+    }
+    if (animId >= top) {
+        animId = 0;
     }
     if (!reset && pose->animId == animId) {
         return;
@@ -571,7 +571,7 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
 }
 
-// NONMATCHING (95.10%): 5 instructions differ, 2 missing, 1 extra, plus register differences.
+// NONMATCHING (95.80%): 5 instructions differ, 2 missing, 1 extra, plus register differences.
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data;
@@ -591,9 +591,9 @@ void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
                 break;
             }
         }
-        if (i >= top) {
-            i = 0;
-        }
+    }
+    if (i >= top) {
+        i = 0;
     }
     if (!reset && pose->animId == i) {
         return;

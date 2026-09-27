@@ -389,7 +389,7 @@ void SoundLoadDVD2Free(void) {
     }
 }
 
-// NONMATCHING (98.79%): same instructions; only register numbers or operands differ.
+// NONMATCHING (98.96%): same instructions; only register numbers or operands differ.
 BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     DVDEntry* entry;
     SoundGroup* temp_r0;
@@ -1470,7 +1470,7 @@ void SoundAIDMACallback(void) {
     }
 
     src = (s16*)&sound.unk33C[0];
-    sel = *(u16*)&sound.unk330;
+    sel = sound.unk330;
     dest = (u16*)(sound.unk5C0 + (sel << 11));
     dest += sound.unk15C0;
     for (i = sound.dmaLength >> 1; i != 0; i -= 2) {
@@ -1479,8 +1479,8 @@ void SoundAIDMACallback(void) {
         dest++;
         if ((u32)++sound.unk15C0 >= 0x400) {
             sound.unk15C0 = 0;
-            *(u16*)&sound.unk330 = 1 - *(u16*)&sound.unk330;
-            dest = (u16*)(sound.unk5C0 + (*(u16*)&sound.unk330 << 11));
+            sound.unk330 = 1 - sound.unk330;
+            dest = (u16*)(sound.unk5C0 + (sound.unk330 << 11));
         }
     }
 }

@@ -1576,7 +1576,6 @@ void BtlUnit_RecoverHp(BattleUnit* unit, s32 value) {
     }
 }
 
-// NONMATCHING (94.32%): two callee-save register-assignment instructions differ.
 void BtlUnit_RecoverFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;

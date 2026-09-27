@@ -389,7 +389,7 @@ void mapReStartAnimation(const char* name) {
 	}
 }
 
-// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
+// NONMATCHING (99.15%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
 void mapSetPlayRate(const char* name, f32 rate) {
 	MapEntryAnimData* found = mapSearchAnmObj(name);
 
@@ -824,7 +824,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
-// NONMATCHING (92.24%): search-loop register permutation and the search branch shape
+// NONMATCHING (94.21%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	MapEntryAnimData* found = mapSearchAnmObj(animName);
 

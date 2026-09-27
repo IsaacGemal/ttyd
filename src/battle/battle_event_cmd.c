@@ -822,7 +822,7 @@ USER_FUNC(btlevtcmd_SetAlpha) {
 }
 
 //s32* battleId, s32* partId, u8* redIndex, u8* greenIndex, u8* blueIndex
-// NONMATCHING (98.12%): same instructions; only register numbers or operands differ.
+// NONMATCHING (98.38%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetRGB) {
     s32* args = event->args;
     s32 btlId, partId;
@@ -2134,7 +2134,6 @@ USER_FUNC(btlevtcmd_GetUnitId) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.71%): 2 instructions differ, plus register differences.
 USER_FUNC(btlevtcmd_GetPartyTechLv) {
     s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
@@ -2147,10 +2146,18 @@ USER_FUNC(btlevtcmd_GetPartyTechLv) {
     kind = BattleGetUnitPtr(wp, id)->currentKind;
     value = 0;
     if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
+#ifdef MUST_MATCH
         u8* p;
+#endif
         i = BattleTransPartyId(kind);
+#ifdef MUST_MATCH
+        // the field access compiles to a different address computation (96.71%): the original adds i * 0xe to the
+        // pouch pointer first, then loads from +0xc
         p = (u8*)pouchGetPtr() + i * 0xe;
         value = *(s16*)(p + 0xc);
+#else
+        value = pouchGetPtr()->partyData[i].techLevel;
+#endif
     }
     evtSetValue(event, index, value);
     return EVT_RETURN_DONE;

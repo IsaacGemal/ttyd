@@ -289,8 +289,10 @@ void partyClearFootmark2(void) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target = partyGetPtr(marioGetPartyId());
     Vec pos;
+#ifdef MUST_MATCH
     u32* src = (u32*)&pos;
     Footmark* f;
+#endif
     s32 i;
 
     if (target == NULL || nokonokoGetStatus(target) == 3
@@ -299,6 +301,8 @@ void partyClearFootmark2(void) {
     } else {
         pos = target->position;
     }
+#ifdef MUST_MATCH
+    // the u32 copy and pointer walk, as in partyClearFootmark
     f = (Footmark*)(footmarkBuf + 0x500);
     for (i = 0; i < 0x50; i++) {
         ((u32*)&f->x)[0] = src[0];
@@ -307,6 +311,14 @@ void partyClearFootmark2(void) {
         f->field_0 = 0;
         f++;
     }
+#else
+    for (i = 0; i < 0x50; i++) {
+        ((Footmark*)footmarkBuf)[0x50 + i].field_0 = 0;
+        ((Footmark*)footmarkBuf)[0x50 + i].x = pos.x;
+        ((Footmark*)footmarkBuf)[0x50 + i].y = pos.y;
+        ((Footmark*)footmarkBuf)[0x50 + i].z = pos.z;
+    }
+#endif
     writeId[1] = 0;
     readId[1] = 0;
 }

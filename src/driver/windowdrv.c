@@ -1063,8 +1063,7 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	}
 }
 
-// NONMATCHING (85.00%): float register allocation/literal reloads in the GXPosition/GXTexCoord block;
-// ours emits ~47 extra `lfs` of the 0.0/1.0/0.3333 constants.
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
@@ -1240,7 +1239,7 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 widt
 	}
 }
 
-// NONMATCHING (85.51%): the same constant reloads as windowDispGX_Waku_col.
+// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx2;

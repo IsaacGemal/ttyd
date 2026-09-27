@@ -157,7 +157,7 @@ typedef struct SoundWork {
     char filepath[0x100];      // 0x22A
     u8 pad32A[2];              // 0x32A
     void* filedata;            // 0x32C
-    s16 unk330;                // 0x330
+    u16 unk330;                // 0x330
     u8 pad332[2];              // 0x332
     u8* dmaAddress;            // 0x334
     u32 dmaLength;             // 0x338

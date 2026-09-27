@@ -97,7 +97,7 @@ void seq_logoExit(SequenceWork* work) {
 	fileFree(wp->texture);
 }
 
-// NONMATCHING (93.56%): branch layout for the psndPushGroup result and the fileAsyncf return check; size decode still differs.
+// NONMATCHING (94.04%): branch layout for the psndPushGroup result and the fileAsyncf return check; size decode still differs.
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1
 	FileEntry* first;

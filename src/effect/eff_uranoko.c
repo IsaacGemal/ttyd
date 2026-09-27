@@ -84,6 +84,7 @@ void effUranokoMain(EffectEntry* effect) {
 	}
 }
 
+// NONMATCHING (99.87%): same instructions; only register numbers or operands differ.
 void effUranokoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effUranokoData* data = effect->userdata;

@@ -984,7 +984,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.03%): 1 missing, plus register differences.
+// NONMATCHING (99.97%): 1 missing, plus register differences.
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1739,6 +1739,7 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// NONMATCHING (97.90%): 1 missing, 1 extra, plus register differences.
 s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);

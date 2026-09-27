@@ -71,7 +71,7 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	s32 trigger;
 
 	flag = 0;
-	if (*(u8*)((u8*)work->actionCommands.mAcUnit + 0x303) != 0) {
+	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
 		flag = 1;
 	}
 	unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);

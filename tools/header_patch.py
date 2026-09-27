@@ -13,7 +13,8 @@ Agents may add prototypes to the header of the file that defines a function (inc
 header if needed; they may not change or remove existing lines. Allowed lines added to an existing header: blank
 lines, comments, `#pragma once`, `#include`, function prototypes, `struct X;` forward declarations and
 `typedef struct X X;`. A header the patch creates (`@@ -0,0 ...`) may also define types, as the codebase's own
-headers do (e.g. an effect's work struct); only `static` lines and backslash-continued lines are refused there.
+headers do (e.g. an effect's work struct); only `static` lines, backslash-continued lines and `#include`s that
+aren't a plain .h path are refused there.
 Applying a created header that already exists (another agent created it first) is refused unless all its lines
 are of the kinds allowed in an existing header, since skipping already-present lines would mangle a struct body.
 Prints what's wrong and exits 1 if anything else is in the patch.
@@ -90,6 +91,8 @@ def problems(patch):
                 out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
             elif not new and not declaration(body):
                 out.append(f"line {n}: not a declaration: {body}")
+            elif new and re.match(r"#\s*include\b", body) and not declaration(body):
+                out.append(f"line {n}: #include must be a plain .h path without '..': {body}")
     if patch.strip() and not sections and not out:
         out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
     return out

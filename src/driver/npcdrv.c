@@ -24,7 +24,9 @@ extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
+#ifdef MUST_MATCH
 extern f32 vec3_802c2f78[];
+#endif
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -389,13 +391,27 @@ s32 npcEntry(const char* a1, const char* animName) {
         entry->poseId = animPoseEntry("hoshi", gp->inBattle != 0);
     }
     animPosePeraOn(entry->poseId);
+#ifdef MUST_MATCH
+    // vec3_802c2f78 (0,0,0) and vec3_802c2f84 (1,1,1) are this file's own rodata, which the original reaches from one
+    // base register; indexing past the first object reproduces that until the file defines its rodata
     entry->position = *(Vec*)&vec3_802c2f78;
+#else
+    entry->position.x = 0.0f;
+    entry->position.y = 0.0f;
+    entry->position.z = 0.0f;
+#endif
     entry->prevPosition.x = entry->position.x;
     entry->prevPosition.y = entry->position.y;
     entry->prevPosition.z = entry->position.z;
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
+#ifdef MUST_MATCH
     entry->scale = *(Vec*)&vec3_802c2f78[3];
+#else
+    entry->scale.x = 1.0f;
+    entry->scale.y = 1.0f;
+    entry->scale.z = 1.0f;
+#endif
     entry->field_154 = 1.0f;
     entry->field_108 = 0;
     entry->field_10C = "M_I_2";
@@ -999,8 +1015,7 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (88.37%): `(s8)name[0]` is needed because the unit is `-char unsigned`; the original's `lbz` is
-// scheduled before the prologue saves (mwcc keeps it after them in the original).  Everything else matches.
+// NONMATCHING (88.37%): 5 missing, 5 extra, plus register differences.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;

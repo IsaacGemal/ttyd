@@ -293,6 +293,9 @@ class CreatedHeaders(unittest.TestCase):
         patch = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n"
         self.assertTrue(header_patch.problems(patch))
 
+    def test_a_created_header_still_checks_includes(self):
+        self.assertTrue(header_patch.problems(self.NEW + '+#include "../src/x.c"\n'))
+
     def test_static_is_refused_even_in_a_created_header(self):
         self.assertTrue(header_patch.problems(self.NEW + "+static void f(void);\n"))
 

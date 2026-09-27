@@ -267,7 +267,7 @@ void object_entry(void) {
     }
 }
 
-// NONMATCHING (96.48%): 1 missing, plus register differences.
+// NONMATCHING (98.93%): 1 missing, plus register differences.
 void weapon_entry(void) {
     GenkiWork* genki = get_ptr();
     s32 offsets[10];
@@ -310,7 +310,7 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static void disp_2D(CameraId camera, void* param) {
 }
 
-// NONMATCHING (96.46%): same instructions; only register numbers or operands differ.
+// NONMATCHING (97.00%): same instructions; only register numbers or operands differ.
 USER_FUNC(end_genki) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -471,7 +471,7 @@ void main_mario(void) {
     }
 }
 
-// NONMATCHING (95.32%): 2 instructions differ, 3 missing, 10 extra, plus register differences.
+// NONMATCHING (95.84%): 2 instructions differ, 3 missing, 10 extra, plus register differences.
 void main_object(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiObject* obj = (GenkiObject*)((u8*)genki + 0x358 + idx * 0x2C);
@@ -566,7 +566,7 @@ void main_object(s32 idx) {
     }
 }
 
-// NONMATCHING (90.67%): 2 instructions differ, 5 missing, 14 extra, plus register differences.
+// NONMATCHING (93.61%): 2 instructions differ, 5 missing, 14 extra, plus register differences.
 s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     GenkiWork* genki = get_ptr();
     s32 i;
@@ -628,7 +628,7 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// NONMATCHING (98.74%): 2 missing, 4 extra, plus register differences.
+// NONMATCHING (99.38%): 2 missing, 4 extra, plus register differences.
 static void main_base(void) {
     GenkiWork* genki = get_ptr();
     s32 i;

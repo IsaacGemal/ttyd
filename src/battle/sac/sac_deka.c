@@ -461,8 +461,7 @@ void main_enemy(void) {
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
 #pragma dont_inline reset
 #pragma dont_inline on
-// NONMATCHING (89.57%): the field copy is a 12-byte memcpy here; the original inlines it as
-// lwz/lwz/stw/stw/lwz/stw after the alpha store. This build emits a `bl memcpy` instead.
+// NONMATCHING (85.22%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
 void main_timing(s32 idx) {
     DekaWork* p = get_ptr();
     DekaTiming* t = &p->timing[idx];
@@ -473,7 +472,7 @@ void main_timing(s32 idx) {
             break;
         case 2:
             t->alpha = 0xFF;
-            memcpy(&t->unk10, &vec3_80300534, 12);
+            t->unk10 = vec3_80300534;
             break;
         case 3:
             t->state = 4;
