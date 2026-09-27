@@ -10,9 +10,6 @@
 #include "math_ext.h"
 
 extern BattleWork* _battleWorkPointer;
-// The file is built with -O4,s in the original build (every other battle/*.c is);
-// this pragma stands in until configure.py gets the extra_cflags entry.
-#pragma optimize_for_size on
 
 
 // Layout of the battle menu scratch buffer allocated by

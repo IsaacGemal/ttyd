@@ -32,7 +32,6 @@ extern GXColor unk_80422fc0;
 
 // TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
 // might just be -inline deferred? No auto
-#pragma optimize_for_size on
 #pragma pool_data on
 
 #ifdef __MWERKS__

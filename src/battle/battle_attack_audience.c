@@ -18,8 +18,6 @@
 #include "data/item_data.h"
 #include <stdio.h>
 
-// The whole unit was built with -O4,s; per-function -O4,p leaves most functions one scheduling step off.
-#pragma optimize_for_size on
 
 extern ItemData itemDataTable[];
 

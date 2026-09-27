@@ -13,11 +13,6 @@
 #include "system.h"
 #include "battle/sac/sac_scissor.h"
 
-// The original sac_scissor unit was compiled with -O4,s (optimize for size): the
-// comparison idiom (`subi; subic; subfe; and`) and stmw/lmw prologues only come
-// out under size optimization. There is no per-Object flag for this unit, so set
-// it here (matches sac_deka.c; the orchestrator can move it to configure.py).
-#pragma optimize_for_size on
 
 extern BattleWork* _battleWorkPointer;
 

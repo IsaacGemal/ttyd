@@ -107,8 +107,6 @@ static void disp_3D(CameraId camera, void* param);
 
 
 // .text:0x0 | 0x80249920 | size: 0xE8
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 void set_tev(SukiTevParam* param) {
     SukiWork* work = get_ptr();
     u8 flash = work->flash;
@@ -130,11 +128,8 @@ void set_tev(SukiTevParam* param) {
     param->field_14 = 0;
     param->field_10 = 0;
 }
-#pragma optimize_for_size reset
 
 // .text:0xE8 | 0x80249A08 | size: 0x5C
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits; the body itself is identical.
-#pragma optimize_for_size on
 s32 get_img_name(EventEntry* event) {
     s32* args = event->args;
     s8 index = (s8)evtGetValue(event, args[0]);
@@ -143,11 +138,8 @@ s32 get_img_name(EventEntry* event) {
     evtSetValue(event, args[1], (s32)(work->img[index]));
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x144 | 0x80249A64 | size: 0x84
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 s32 eff_crystal(EventEntry* event) {
     s32* args = event->args;
     f32 f1;
@@ -160,11 +152,8 @@ s32 eff_crystal(EventEntry* event) {
     *(s32*)((u8*)effect->userdata + 0x38) = 7;
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x1C8 | 0x80249AE8 | size: 0x88
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 s32 get_screen_point(EventEntry* event) {
     s32* args = event->args;
     Vec pos;
@@ -177,11 +166,8 @@ s32 get_screen_point(EventEntry* event) {
     evtSetFloat(event, args[4], pos.y);
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x250 | 0x80249B70 | size: 0x68
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 s32 exist_map(EventEntry* event) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
@@ -194,7 +180,6 @@ s32 exist_map(EventEntry* event) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x2B8 | 0x80249BD8 | size: 0x40
 s32 flash_update(EventEntry* event) {
@@ -207,8 +192,7 @@ s32 flash_update(EventEntry* event) {
 }
 
 // .text:0x2F8 | 0x80249C18 | size: 0x68
-// The original's prologue is stmw/lmw (-O4,s), and it loads event->args before the BattleAudienceBaseGetPtr call.
-#pragma optimize_for_size on
+// The original loads event->args before the BattleAudienceBaseGetPtr call.
 s32 aud_set_draw(EventEntry* event) {
     s32* args = event->args;
     BattleAudience* aud = BattleAudienceBaseGetPtr();
@@ -221,11 +205,8 @@ s32 aud_set_draw(EventEntry* event) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x360 | 0x80249C80 | size: 0x84
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 index = evtGetValue(event, args[0]);
@@ -248,21 +229,15 @@ static s32 set_weapon(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, args[1], (s32)work->weapon);
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x3E4 | 0x80249D04 | size: 0x38
-// The original was built with -O4,s: this comparison only compiles to subic/subfe under size optimization.
-#pragma optimize_for_size on
 s32 wait_star_stone_attack_end(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
     return (work->starState == 8) ? 2 : 0;
 }
-#pragma optimize_for_size reset
 
 // .text:0x41C | 0x80249D3C | size: 0xCC
-// The original's prologue is stmw/lmw, which only -O4,s (optimize_for_size) emits.
-#pragma optimize_for_size on
 static s32 star_stone_attack(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
     s32* args = event->args;
@@ -279,11 +254,9 @@ static s32 star_stone_attack(EventEntry* event, BOOL isFirstCall) {
     work->starEnd.z += 10.0f;
     return 2;
 }
-#pragma optimize_for_size reset
 
 // .text:0x4E8 | 0x80249E08 | size: 0x84
-// The original's prologue is stmw/lmw (-O4,s) and it loads event->args only after the get_ptr call.
-#pragma optimize_for_size on
+// The original loads event->args only after the get_ptr call.
 s32 star_stone_get_attack_point(EventEntry* event) {
     SukiWork* work = get_ptr();
     s32* args = event->args;
@@ -294,17 +267,13 @@ s32 star_stone_get_attack_point(EventEntry* event) {
     evtSetFloat(event, args[3], work->table[index].z);
     return EVT_RETURN_DONE;
 }
-#pragma optimize_for_size reset
 
 // .text:0x56C | 0x80249E8C | size: 0x38
-// The original was built with -O4,s: this comparison only compiles to subic/subfe under size optimization.
-#pragma optimize_for_size on
 s32 wait_star_stone_up_end(EventEntry* event, BOOL isFirstCall) {
     SukiWork* work = get_ptr();
 
     return (work->starState == 4) ? 2 : 0;
 }
-#pragma optimize_for_size reset
 
 // .text:0x5A4 | 0x80249EC4 | size: 0x2C
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
