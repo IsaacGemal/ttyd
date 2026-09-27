@@ -65,6 +65,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    16-19 (`1<<16` to `1<<19`, mask `0x000F0000`): PowerPC numbers bits from the top, so value bit = 31 - IBM
    bit. Mixing the two numberings is exactly how a wrong flag mask got written. A magic-number division tells
    you the divisor. A wrong constant in a partial function is a real bug that CI can't catch.
+   Float constants too, even in functions at 100%: objdiff doesn't compare literal values. A symbol's name is
+   rounded (`float_3p1416_80419d80` holds 3.1415927, not 3.1416): write the value from the `.float` line in the
+   asm, not the name.
 10. **Misreading common idioms.** `subi rX, rX, N; subic rX, rX, 1; subfe rX, rX, rX; and rX, rY, rX` means
    `x == N ? y : 0`, not `x < N`. `fcmpo; cror eq, gt, eq; bne` is a `>=` test. When unsure, write the C, build,
    and compare the instructions with `check.py FUNC`.
