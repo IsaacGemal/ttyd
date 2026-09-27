@@ -396,8 +396,8 @@ BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     SoundGroup* iter;
     SoundGroup* group;
     SoundGroup* var_r4;
-    u32 temp_r28;
     u32* var_r27;
+    u32 temp_r28;
     u16 id;
     u32 length;
     void* temp_r0_3;
@@ -870,7 +870,8 @@ inline u32 SoundEfxCheckPlay(s32 chan) {
     return TRUE;
 }
 
-// NONMATCHING (99.49%): same instructions; only register numbers or operands differ.
+// 100%: the free-slot scan for the "stop all" fallback must be written inline (reusing chan/sfx) rather than
+// calling inline SoundEfxStopAll; that is what lets MWCC coalesce them onto r29/r30.
 s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
     SoundEffect* sfx;
     s32 chan;
@@ -881,8 +882,17 @@ s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
             break;
         }
     }
-    if (chan >= 40u && SoundEfxStopAll(a2) >= 40u) {
-        return -1;
+    if (chan >= 40u) {
+        sfx = sound.effects;
+        for (chan = 0; chan < 40; chan++, sfx++) {
+            if (sfx->unk2 <= a2) {
+                SoundEfxMuteCh(chan);
+                break;
+            }
+        }
+        if (chan >= 40u) {
+            return -1;
+        }
     }
     sfx->flags = 0;
     if (!sound.unk20C) {
@@ -1436,13 +1446,14 @@ void SoundSSMainInt(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (87.28%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
+// NONMATCHING (96.03%): second half matches byte-for-byte now that sound.unk330 is read unsigned (lhz) and
+// the toggle uses clrlslwi; only the first loop's r6/r7/r8 assignment (i/dest/base) and one hoisted li r4 differ.
 void SoundAIDMACallback(void) {
+    s32 i;
     u32 length;
     u8* address;
     u16* dest;
     s16* src;
-    s32 i;
     u32 sel;
 
     sound.callback();
@@ -1468,9 +1479,8 @@ void SoundAIDMACallback(void) {
         dest++;
         if ((u32)++sound.unk15C0 >= 0x400) {
             sound.unk15C0 = 0;
-            sel = 1 - sel;
-            sound.unk330 = sel;
-            dest = (u16*)(sound.unk5C0 + (sel << 11));
+            *(u16*)&sound.unk330 = 1 - *(u16*)&sound.unk330;
+            dest = (u16*)(sound.unk5C0 + (*(u16*)&sound.unk330 << 11));
         }
     }
 }
