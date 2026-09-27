@@ -26,7 +26,7 @@ case $UNIT in
 esac
 
 [ -z "$(git status --short -- src include rels libs)" ] || { echo "SKIP $TAG: tree not clean"; exit 1; }
-own="Only in src$( [ "$(dirname $UNIT)" = . ] || echo /$(dirname $UNIT)): $(basename $UNIT).c"
+own="Only in $(dirname "$F"): $(basename "$F")"  # how `diff -rq` lists the agent's own new file
 if [ -s "$D/other_changes.txt" ] && grep -v -x -F "$own" "$D/other_changes.txt" | grep -q .; then
   echo "REJECT $TAG: touched other files:"; cat "$D/other_changes.txt"; exit 1
 fi
