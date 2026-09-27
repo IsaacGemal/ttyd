@@ -688,12 +688,12 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     iconDispGx(pos, 0x10, 0x18C, 1.0f);
 }
 
-// NONMATCHING (77.00%): 5 instructions differ, 10 extra, plus register differences.
+// NONMATCHING (82.73%): a named GXColor local was spilled to 0xc (pushing `pos` to 0x24 and forcing an
+// iconDispGx copy); the compound literal keeps it in a register and moves pos to 0x20. Original pos=0xc, buf=0x18.
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     Vec pos;
-    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
     char buf[8];
     s32 len;
 
@@ -704,7 +704,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
     if (work != NULL) {
         sprintf(buf, "%2d", *(s16*)((u8*)work + 0xA));
         len = strlen(buf);
-        windowDispGX_Waku_col(0, color, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 180.0f, -160.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
         iconDispGx(pos, 0x10, 0x18C, 1.0f);
         FontDrawStart();
         FontDrawString(buf, 225.0f, -163.0f);
