@@ -34,8 +34,11 @@ extern const f32 float_neg300_804204dc;
 extern const f32 float_30_804204e0;
 extern const f32 float_0_804204e4;
 
-// Vec literals the original unit emitted into .rodata: one contiguous array of nine zero vectors.
-// match-only layout: nine separate zero Vecs in the original (vec3_802fd560 ... vec3_802fd5c0), read as one array
+// The original emits nine separate zero Vecs into .rodata (vec3_802fd560 ... vec3_802fd5c0), one per
+// `Vec v = {0}` initializer, and reads them from one base register; one array reproduces that.
+#ifdef MUST_MATCH
+#define STICK_VEC_BASE const Vec* vec = vec3_802fd560;
+#define STICK_ZERO_VEC(i) (vec[i])
 const Vec vec3_802fd560[9] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
@@ -47,6 +50,10 @@ const Vec vec3_802fd560[9] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
 };
+#else
+#define STICK_VEC_BASE
+#define STICK_ZERO_VEC(i) ((Vec){ 0.0f, 0.0f, 0.0f })
+#endif
 
 void battleAcDelete_StickRotate(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
@@ -56,12 +63,12 @@ void battleAcDelete_StickRotate(BattleWork* work) {
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
-    const Vec* vec = vec3_802fd560;
+    STICK_VEC_BASE
 
     switch (work->actionCommands.mAcState) {
         case 0x63:
         case 0x64: {
-            Vec v = vec[6];
+            Vec v = STICK_ZERO_VEC(6);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
@@ -91,7 +98,7 @@ void actionCommandDisp2(f32 x, f32 y) {
                     }
                 }
             }
-            v = vec[7];
+            v = STICK_ZERO_VEC(7);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x06), float_1_804204d8);
@@ -102,7 +109,7 @@ void actionCommandDisp2(f32 x, f32 y) {
         case 0x3EC:
         case 0x3ED:
         case 0x3EE: {
-            Vec v = vec[8];
+            Vec v = STICK_ZERO_VEC(8);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
@@ -117,19 +124,19 @@ void actionCommandDisp2(f32 x, f32 y) {
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
-    const Vec* vec = vec3_802fd560;
+    STICK_VEC_BASE
     Vec v;
 
     switch (work->actionCommands.mAcState) {
         case 0x63:
         case 0x64:
-            v = vec[0];
+            v = STICK_ZERO_VEC(0);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
             break;
         case 0x3E8:
-            v = vec[1];
+            v = STICK_ZERO_VEC(1);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
@@ -138,20 +145,20 @@ static void actionCommandDisp(f32 x, f32 y) {
             if (sr->field_0x05 <
                 *(s32*)&work->actionCommands.field_34[0x14]) {
                 if (sr->field_0x08 <= 1) {
-                    v = vec[2];
+                    v = STICK_ZERO_VEC(2);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
                     iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02),
                                float_1_804204d8);
                 } else {
-                    v = vec[3];
+                    v = STICK_ZERO_VEC(3);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
                     iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x01),
                                float_1_804204d8);
                 }
             } else {
-                v = vec[4];
+                v = STICK_ZERO_VEC(4);
                 v.x = float_neg200_804204d0 + x;
                 v.y = float_70_804204d4 + y;
                 iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
@@ -162,7 +169,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         case 0x3EC:
         case 0x3ED:
         case 0x3EE:
-            v = vec[5];
+            v = STICK_ZERO_VEC(5);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
             iconDispGx(&v, 0x10, 0x79, float_1_804204d8);

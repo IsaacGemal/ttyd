@@ -739,14 +739,6 @@ USER_FUNC(bero_set_disp_position_pipe) {
 }
 
 
-typedef struct CameraParams {
-	f32 fovY;   // 0x00
-	f32 aspect; // 0x04
-	f32 far;    // 0x08
-	Vec pos;    // 0x0C
-	Vec at;     // 0x18
-} CameraParams;
-
 // NONMATCHING (65.28%): the two Vec copies (storedPos/storedAt) are emitted directly
 // from work.pos/work.at by our compiler, while the original materialises compiler
 // temporaries initialised from two zero Vec .rodata objects (vec3_802c4c58/64), which

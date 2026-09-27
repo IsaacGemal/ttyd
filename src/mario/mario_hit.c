@@ -762,7 +762,7 @@ f32 marioChkOverhead(void) {
     return v.y;
 }
 
-BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
+HitEntry* marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
     HitCheckQuery query;
     HitEntry* hit;
 
@@ -779,7 +779,7 @@ BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
     }
 
     if (hit == NULL) {
-        return FALSE;
+        return NULL;
     }
 
     *distance = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
@@ -801,7 +801,7 @@ BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
     if (d != NULL) {
         *d = query.hitNormal;
     }
-    return (BOOL)hit;
+    return hit;
 }
 
 extern const Vec vec3_802c5754;
@@ -827,8 +827,7 @@ HitEntry* marioSearchUnder(void) {
     pos.y = pos.y + y;
     dir = vec3_802c5754;
     dist = float_1000_8041a7a0;
-    // marioHitCheckVec returns the hit entry itself, not just TRUE
-    hit = (HitEntry*)marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
+    hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
     *(f32*)wp->field_0x1C0 = (hit != NULL) ? hitPos.y : float_neg3000_8041a870;
     return hit;
 }

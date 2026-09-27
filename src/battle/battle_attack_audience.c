@@ -127,7 +127,11 @@ void _get_item_announce_disp(CameraId camera, void* param) {
     width = FontGetMessageWidthLine(buf, &lines);
     x = float_0_8041cccc - (f32)(width / 2);
     lines++;
-    color = *(GXColor*)&dat_8041ccc0; // match-only: a GXColor object here changes the load (99% -> 80%)
+#ifdef MUST_MATCH
+    color = *(GXColor*)&dat_8041ccc0; // a GXColor object here changes the load (99% -> 80%)
+#else
+    color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+#endif
     windowDispGX_Waku_col(0, color, x - float_10_8041ccd0, float_34_8041ccd4,
                           (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
     FontDrawStart();
@@ -197,9 +201,14 @@ s32 _attack_aud(EventEntry* event) {
     f32 x;
     f32 y;
     f32 z;
-    // match-only: these pointers give the original's frame (0x30) and r28-r31 save set
+#ifdef MUST_MATCH
+    // these pointers give the original's frame (0x30) and r28-r31 save set
     f32* py = &y;
     f32* pz = &z;
+#else
+#define py (&y)
+#define pz (&z)
+#endif
     char* sound = NULL;
 
     BattleAudience_GetItemOn2(&memberId, &x, py, pz, NULL);
@@ -215,6 +224,11 @@ s32 _attack_aud(EventEntry* event) {
     BattleAudience_Attack(memberId);
     return 2;
 }
+
+#ifndef MUST_MATCH
+#undef py
+#undef pz
+#endif
 
 s32 _get_attack_aud_no(EventEntry* event) {
     s32* args = event->args;

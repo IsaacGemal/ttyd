@@ -420,13 +420,20 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 	int i;
 
 	size2 = size;
-	// match-only forms: `!g_bFirstSmartAlloc` and `if (wp->waitsync)` score 97.47% instead of 97.76%
-	if (g_bFirstSmartAlloc == 0) {
+#ifdef MUST_MATCH
+	if (g_bFirstSmartAlloc == 0) { // `!g_bFirstSmartAlloc` scores 97.47% instead of 97.76%
+#else
+	if (!g_bFirstSmartAlloc) {
+#endif
 		g_bFirstSmartAlloc = TRUE;
 		smartAutoFree(3);
 	}
 
+#ifdef MUST_MATCH
 	if ((s32)wp->waitsync != 0) {
+#else
+	if (wp->waitsync) {
+#endif
 		sysWaitDrawSync();
 		wp->waitsync = 0;
 	}

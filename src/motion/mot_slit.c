@@ -416,9 +416,9 @@ BOOL marioCreviceWallChk(Vec* pos) {
     f32 offx, offz;
     f32 angle1 = 0.0f;
     f32 angle2 = 0.0f;
-    BOOL hit;
-    BOOL hit1;
-    BOOL hit2;
+    HitEntry* hit;
+    HitEntry* hit1;
+    HitEntry* hit2;
 
 #define CREVICE_CHECK(base, ox, oz, target)                                            \
     {                                                                                  \

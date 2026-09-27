@@ -12,14 +12,6 @@
 #include "cam_road.h"
 #include "cam_shift.h"
 
-typedef struct CameraParams {
-    f32 fovY;   // 0x00
-    f32 aspect; // 0x04
-    f32 far;    // 0x08
-    Vec pos;    // 0x0C
-    Vec at;     // 0x18
-} CameraParams;
-
 
 
 USER_FUNC(evt_cam_letter_box_camid) {

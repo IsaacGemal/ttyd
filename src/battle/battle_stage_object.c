@@ -367,9 +367,16 @@ void BattleStage_DestroyA2(void) {
 	evtEntry(evt, 10, 0);
 }
 
+// The original keeps (u8*)wp in its own register; without the `base` alias these two functions score 94.51%.
+#ifndef MUST_MATCH
+#define base ((u8*)wp)
+#endif
+
 void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp; // match-only: without this alias the function drops to 94.51%
+#ifdef MUST_MATCH
+	u8* base = (u8*)wp;
+#endif
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x19C);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F14));
@@ -390,7 +397,9 @@ void BattleStage_DestroyB(void) {
 
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp; // match-only: without this alias the function drops to 94.51%
+#ifdef MUST_MATCH
+	u8* base = (u8*)wp;
+#endif
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x194);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F1C));
@@ -409,9 +418,10 @@ void BattleStage_DestroyA1(void) {
 	}
 }
 
-// NONMATCHING (93.59%): target materializes the GXColor in a temp at 0x8 then copies it to `color` at 0xc and
-// references the named `dat_8041ccfc` (=0xFFFFFF00); mwcc builds it in place at 0x8 and emits an anonymous
-// constant (`@345`). Functionally identical. Discovered the data value 0xFFFFFF00 (alpha 0) while trying forms.
+#ifndef MUST_MATCH
+#undef base
+#endif
+
 // NONMATCHING (93.59%): the two-local `color`/`c` idiom now produces the temp-then-copy; only instruction
 // scheduling differs: mwcc hoists the `dat_8041ccfc` load above the `userdata[2] -= 5` store while the target
 // keeps it after, and the userdata value sits in r4 here vs r5 there.
@@ -696,15 +706,23 @@ USER_FUNC(_bgset_kemuri_effect) {
 	char* s0;
 	char* s1;
 	char* s2;
-	char* vec = vec3_802f3ac8;
+#ifdef MUST_MATCH
+	char* vec = vec3_802f3ac8; // the original offsets the three strings from this .rodata base
+#endif
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
 	BattleStageObject* obj;
 	f32 x, y, z;
 	s32 layer = evtGetValue(event, *args);
-	s0 = vec + 0x1FC;
-	s1 = vec + 0x214;
-	s2 = vec + 0x22C;
+#ifdef MUST_MATCH
+	s0 = vec + 0x1FC; // str_802F3CC4
+	s1 = vec + 0x214; // str_802F3CDC
+	s2 = vec + 0x22C; // str_802F3CF4
+#else
+	s0 = str_802F3CC4;
+	s1 = str_802F3CDC;
+	s2 = str_802F3CF4;
+#endif
 
 	for (i = 0; i < 32; i++) {
 		obj = &wp->stageObjects[i];

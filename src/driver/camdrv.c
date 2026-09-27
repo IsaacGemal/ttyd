@@ -30,14 +30,6 @@ Vec camUpDefault = { 0.0f, 1.0f, 0.0f };
 //.sbss
 CameraId currentCamNo;
 
-typedef struct CameraParams {
-    f32 fovY;   // 0x00
-    f32 aspect; // 0x04
-    f32 far;    // 0x08
-    Vec pos;    // 0x0C
-    Vec at;     // 0x18
-} CameraParams;
-
 // forward declarations
 
 void camInit(void) {
