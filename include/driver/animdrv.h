@@ -317,3 +317,4 @@ void animPaperPoseDisp(CameraId camId, void* param);
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose);
 void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
+void animPoseAutoRelease(s32 type);

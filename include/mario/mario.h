@@ -268,3 +268,4 @@ void marioDisp(CameraId camId, void* param);
 void marioDispBlurSub(s32* unused, s32 blurId);
 const char* toRearPose(const char* name);
 const char* toFrontPose(const char* name);
+s32 N_marioChkUseParty(void);

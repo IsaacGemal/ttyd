@@ -256,3 +256,4 @@ void npcSetColor(const char* name, GXColor* color);
 f32 npcTransRytoFaceDir(NpcEntry* npc);
 s32 npcCheckBlow(NpcEntry* npc);
 void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history);
+void npcSetStayPose(const char* name);

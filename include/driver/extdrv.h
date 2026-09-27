@@ -63,3 +63,4 @@ void extPoseDraw(s32 poseId);
 ExtPose* extGetPosePtr(void);
 void extLoadShadowMtx(Mtx mtx);
 void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void));
+void extReset(void);
