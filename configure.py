@@ -1008,7 +1008,7 @@ config.libs = [
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msghndlr.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/support.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mutex_TRK.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/notify.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/notify.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/flush_cache.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mem_TRK.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/targimpl.c"),
