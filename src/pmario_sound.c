@@ -4558,8 +4558,8 @@ BOOL psndENVOff(u32 r3) { //probably "id"
 	return psndENVOff_f_d(r3, 0x3E8, 0);
 }
 
-// NONMATCHING (91.16%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void psndSFXAllOff(void) {
+	u8* p = (u8*)&psnd;
 	int i;
 
 	for (i = 0; i < 40; i++) {
@@ -4569,10 +4569,10 @@ void psndSFXAllOff(void) {
 			sfx->unk6 |= 0x40;
 		}
 	}
-	if (*(u8*)((u8*)&psnd + 0x24) != 2) {
-		*(u8*)((u8*)&psnd + 0x24) = 2;
-		*(s16*)((u8*)&psnd + 0x26) = 0x2D;
-		*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+	if (p[0x24] != 2) {
+		p[0x24] = 2;
+		*(s16*)(p + 0x26) = 0x2D;
+		*(s16*)(p + 0x28) = 0x2D;
 	}
 }
 
@@ -4659,33 +4659,32 @@ void psndBGMScope(s32 id, s32 scope) {
 	}
 }
 
-// NONMATCHING (98.00%): same instructions, different register numbers.
 void psndBGM_rate(s32 id, u16 rate) {
-	s32 idx = id & 0xF;
-	PaperSoundBGM* bgm = &psbgm[idx];
-	s32 bgmid = bgm->unk0;
+	BGMListEntry* entry;
+	u32 bgmid;
+	PaperSoundBGM* bgm = &psbgm[id & 0xF];
+	bgmid = bgm->unk0;
 
 	if ((u32)bgmid == -1) {
 		return;
 	}
-	if (!(psbgmlist[bgmid].field_0x4 & 0x80000000)) {
+	entry = &psbgmlist[bgmid];
+	if (!(entry->field_0x4 & 0x80000000)) {
 		return;
 	}
 	SoundSSSetPlayFreqCh(bgm->streamId, rate);
 }
 
-// NONMATCHING (98.86%): 1 instruction differs, plus register differences.
+// NONMATCHING (98.86%): sub is computed into r3 (extra register), so the sfx pointer lands in r4.
 s32 psndSFXChk(u32 id) {
-	PaperSoundEffect* sfx;
-	u32 sub;
+	PaperSoundEffectU16* sfx;
 	s32 val;
 
 	if (id == -1) {
 		return -1;
 	}
-	sub = (id >> 8) & 0xFFFF;
-	sfx = &pssfx[id & 0xFF];
-	if (sub != *(u16*)((u8*)sfx + 4)) {
+	sfx = (PaperSoundEffectU16*)&pssfx[id & 0xFF];
+	if (((id >> 8) & 0xFFFF) != sfx->unk4) {
 		return -1;
 	}
 	val = sfx->unk0;
@@ -4795,22 +4794,18 @@ void psndSetReverb(s32 mode) {
 	}
 }
 
-// NONMATCHING (81.94%): 2 instructions differ, 1 missing, 1 extra, plus register differences.
+// NONMATCHING (81.94%): `li r3,1` scheduled after the psnd address calc, which then uses r3 not r5.
 s32 psndENV_LPF(s32 id, s32 freq) {
 	u16* env = (u16*)((u8*)&psnd + 0x18);
-	s32 ret;
 
 	if (env[id & 0xF] == 0) {
-		ret = 0;
+		return 0;
 	}
-	else {
-		if ((freq & 0xFFFF) == 0) {
-			freq = 0x7D00;
-		}
-		((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
-		ret = 1;
+	if ((freq & 0xFFFF) == 0) {
+		freq = 0x7D00;
 	}
-	return ret;
+	((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
+	return 1;
 }
 
 void psndSFXOff(s32 id) {
@@ -4869,8 +4864,9 @@ void psndSFX_pit(s32 id, u16 pitch) {
 	}
 }
 
-// NONMATCHING (84.28%): 1 instruction differs, 8 missing, 2 extra, plus register differences.
+// NONMATCHING (94.37%): the psndBGMOff_f_d calls are optimised away (empty stub) and psndENVOff is inlined.
 void psndStopAllFadeOut(void) {
+	u8* p = (u8*)&psnd;
 	int i;
 
 	psndBGMOff_f_d(0x200, 0x3E8, 0);
@@ -4882,30 +4878,33 @@ void psndStopAllFadeOut(void) {
 			((PaperSoundEffectU16*)&pssfx[i])->unk6 |= 0x40;
 		}
 	}
-	*(u8*)((u8*)&psnd + 0x24) = 2;
-	*(s16*)((u8*)&psnd + 0x26) = 0x2D;
-	*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+	p[0x24] = 2;
+	*(s16*)(p + 0x26) = 0x2D;
+	*(s16*)(p + 0x28) = 0x2D;
 }
 
-// NONMATCHING (96.47%): 2 extra, plus register differences.
+// NONMATCHING (98.86%): the loop pointer is set up as `addi r3,...; mr r7,r3` instead of `addi r7,...`.
 void psndMapChange(void) {
+	u8* p;
 	int i;
 
 	if (strcmp(psnd.unk40, gp->currentMapName) != 0) {
 		*(u16*)((u8*)&psnd + 0x52) = 0;
 	}
 	strcpy(psnd.unk40, gp->currentMapName);
+	p = (u8*)&psnd;
 	psnd.unk56 &= ~0x100;
-	for (i = 0; i < 40; i++) {
-		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[i];
-
-		if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
-			sfx->unk6 |= 0x40;
+	{
+		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[0];
+		for (i = 0; i < 40; sfx++, i++) {
+			if ((u32)sfx->unk0 != -1 && !(sfx->unk6 & 0xA0)) {
+				sfx->unk6 |= 0x40;
+			}
 		}
 	}
-	if (*(u8*)((u8*)&psnd + 0x24) != 2) {
-		*(u8*)((u8*)&psnd + 0x24) = 2;
-		*(s16*)((u8*)&psnd + 0x26) = 0x2D;
-		*(s16*)((u8*)&psnd + 0x28) = 0x2D;
+	if (p[0x24] != 2) {
+		p[0x24] = 2;
+		*(s16*)(p + 0x26) = 0x2D;
+		*(s16*)(p + 0x28) = 0x2D;
 	}
 }

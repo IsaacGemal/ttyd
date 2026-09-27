@@ -47,7 +47,7 @@ extern const char str_802F3C84[];
 
 // LOCAL_PROTO(windowDispGX_Waku_col): match-only. The original passes the GXColor by value like every caller (a
 // stack copy); this by-pointer declaration only steers register allocation (see the exceptions file).
-extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
+extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 w, f32 h, f32 curve);
 
 // .sdata data tables (defined here so references use the small-data area).
 s32 _object_wall_data[6] = { 0, 0x00040005, 0xC32F0000, 0, 0, 0 };

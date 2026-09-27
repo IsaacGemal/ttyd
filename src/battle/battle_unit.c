@@ -27,6 +27,10 @@ f32 float_1p3_8041c3d0 = 1.3f;
 f32 float_1p5_8041c3d4 = 1.5f;
 f32 float_0p5_8041c3d8 = 0.5f;
 
+// .rodata integer-conversion / pow constants named by the original pool.
+const f64 double_to_int_802efab8 = 4503601774854144.0;
+const f64 double_2_802efad0 = 2.0;
+
 
 //local prototypes
 
@@ -63,7 +67,7 @@ typedef struct BattleUnitKindCoinFields {
 } BattleUnitKindCoinFields;
 
 typedef struct HpGaugeLocal {
-    s16 field_0;  // 0x0
+    u16 field_0;  // 0x0
     u16 field_2;  // 0x2
     s16 field_4;  // 0x4
     s16 field_6;  // 0x6
@@ -189,7 +193,8 @@ void BtlUnit_ReviseHpFp(BattleUnit* unit) {
     }
 }
 
-// NONMATCHING (96.14%): target reads the gauge type with `lhz` + `cmpwi`; the then/else block layout also differs.
+// NONMATCHING (97.50%): gauge type now matches (`lhz` + `cmpwi`, field_0 is u16); the then/else block
+// layout still differs (target `beq then; b else`, ours `bne else`).
 void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
     f32 ratio;
@@ -202,7 +207,7 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     ratio = (f32)unit->currentHp / (f32)unit->maxHp;
     gauge->field_14 = ratio;
     gauge->field_18 = ratio;
-    if (gauge->field_0 == 1) {
+    if ((s32)gauge->field_0 == 1) {
         gauge->field_6 = 0x28;
         gauge->field_A = gauge->field_6 + 0x1E;
     } else {
@@ -243,6 +248,20 @@ BOOL BtlUnit_CanGuardStatus(BattleUnit* unit) {
 
 void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName) {
     btlDispChangeAnime(part, animName, FALSE);
+}
+
+s32 BtlUnit_GetACPossibility(BattleUnit* unit) {
+    if (unit->mAlliance != 0) {
+        return 0;
+    }
+    if (unit->currentKind == 0xDF) {
+        return 0;
+    }
+    if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) || BtlUnit_CheckStatus(unit, STATUS_STOP) ||
+        BtlUnit_CheckStatus(unit, STATUS_FREEZE) || BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+        return 0;
+    }
+    return !BtlUnit_CheckStatusFlag(unit, 1);
 }
 
 // Keep BtlUnit_SetAnimType out of line: the original calls it rather than inlining.
@@ -348,7 +367,6 @@ s32 BtlUnit_GetUnitId(BattleUnit* unit) {
 
 // Keep BtlUnit_GetPartsPtr, BtlUnit_GetBodyPartsId out of line: the original calls them rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (87.19%): target entry test is `bne loop; blr`, mine the inverse `beqlr; b loop`.
 BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
     BattleUnitPart* part = unit->mParts;
 
@@ -358,12 +376,11 @@ BattleUnitPart* BtlUnit_GetPartsPtr(BattleUnit* unit, s32 partNum) {
     if (part->mNextPart == NULL) {
         return part;
     }
-    do {
+    for (; part; part = part->mNextPart) {
         if (part->mKindPartParams->partNum == partNum) {
             return part;
         }
-        part = part->mNextPart;
-    } while (part);
+    }
     return part;
 }
 
@@ -1559,7 +1576,6 @@ void BtlUnit_RecoverHp(BattleUnit* unit, s32 value) {
     }
 }
 
-// NONMATCHING (94.32%): two callee-save register-assignment instructions differ.
 void BtlUnit_RecoverFp(BattleUnit* unit, s32 value) {
     BattleUnitType kind = unit->currentKind;
     BattleWork* wp = _battleWorkPointer;
@@ -1567,7 +1583,7 @@ void BtlUnit_RecoverFp(BattleUnit* unit, s32 value) {
     s16* fp; //but why
 
     if (kind >= TYPE_PARTNER_MIN && kind < TYPE_PARTNER_MAX) {
-        max = BtlUnit_GetMaxFp(BattleGetMarioPtr(_battleWorkPointer));
+        max = BtlUnit_GetMaxFp(BattleGetMarioPtr(wp));
         fp = &BattleGetMarioPtr(wp)->currentFp;
     }
     else {
@@ -1641,6 +1657,23 @@ typedef struct BtlUnitSeMode {
     s16 field_0x14; // 0x14
     s32 field_0x18; // 0x18
 } BtlUnitSeMode;
+
+void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
+    BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+    BOOL flag = FALSE;
+
+    if ((unit->mStatusFlags & 0x30000000) == 0) {
+        if (_GetStatusPoseType(unit) == 0x1C) {
+            flag = TRUE;
+        }
+    }
+    if (flag) {
+        BtlUnit_SetAnimType(part, 0x43);
+        ((BattleUnitPartFields*)part)->mFlags |= 0x80;
+    } else {
+        btlDispPoseAnime(part);
+    }
+}
 
 void BtlUnit_SetSeMode(BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g) {
     se->field_0x0 = a;
@@ -1728,7 +1761,6 @@ typedef struct BattleWeaponFields {
 } BattleWeaponFields;
 
 
-// NONMATCHING (97.77%): pouchAddAP(s16) forces an extra extsh on the computed AP delta.
 void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     BattleWork* wp = _battleWorkPointer;
     s32 fp;
@@ -1744,11 +1776,15 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
         BtlActRec_AddPoint((u8*)wp + 0x16F31, cost);
         BtlActRec_AddCount((u8*)wp + 0x16F32);
     }
+#ifdef MUST_MATCH
+    /* Match-only: the header declares pouchAddAP as taking `s16`, but the target passed the full
+       32-bit delta (no extsh). Call it through an s32-taking prototype. */
+    (*(void(*)(s32))pouchAddAP)(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+#else
     pouchAddAP(-((BattleWeaponFields*)weapon)->field_0x12 * 100);
+#endif
 }
 
-// NONMATCHING (95.19%): pouchGetAP is declared s16 in the header, so an extra extsh is emitted; the
-// target used a 32-bit-return declaration. Semantics identical.
 BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     s32 fp = BtlUnit_GetFp(unit);
     s32 cost = BtlUnit_GetWeaponCost(unit, weapon);
@@ -1756,11 +1792,16 @@ BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     if (fp < cost) {
         return FALSE;
     }
+#ifdef MUST_MATCH
+    /* Match-only: the header declares pouchGetAP as `s16`, but the target consumed the raw 32-bit
+       return (no extsh). Call it through an s32-returning prototype, as evt_kinopio.c does. */
+    return (*(s32(*)(void))pouchGetAP)() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+#else
     return pouchGetAP() >= (s32)((BattleWeaponFields*)weapon)->field_0x12 * 100;
+#endif
 }
 
-// NONMATCHING (98.43%): compiler pool constants are anonymous (@1121/@1123) vs the target's named
-// double_to_int_802efab8 / double_2_802efad0; one address-materialization sequence differs.
+// Keep BtlUnit_GetWeaponCost out of line: the original calls it rather than inlining its switch.
 #pragma dont_inline on
 s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
     s32 cost = ((BattleWeaponFields*)weapon)->field_0x11;
@@ -1784,7 +1825,7 @@ s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
             case 0x14E:
             case 0x151:
             case 0x152:
-                cost = (s32)(cost * pow(badgeCount - 1, 2.0));
+                cost = (s32)(cost * pow(2.0, badgeCount - 1));
                 break;
             case 0xF4:
             case 0xF5:

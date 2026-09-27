@@ -28,7 +28,7 @@
   {
     "path": "src/battle/battle_stage_object.c",
     "name": "windowDispGX_Waku_col",
-    "declaration": "extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);",
+    "declaration": "extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 w, f32 h, f32 curve);",
     "reason": "match-only: the original copies the GXColor to a stack temp as usual for a by-value struct, so the header's by-value prototype is ABI-correct; this local by-pointer prototype only steers register allocation (_disp_escape_wall_message loses ~1% with the header's). Review 1 of PR #10."
   },
   {

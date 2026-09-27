@@ -733,3 +733,4 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit);
 s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z);
 BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
+s32 BtlUnit_GetACPossibility(BattleUnit* unit);

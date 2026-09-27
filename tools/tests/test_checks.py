@@ -280,5 +280,42 @@ class ReviewThreeInputs(unittest.TestCase):
                 claims.unit_name(bad)
 
 
+
+class CreatedHeaders(unittest.TestCase):
+    """A header the patch creates may define types (wave 9's effect headers); existing ones stay declarations-only."""
+    NEW = ("--- a/include/eff/e.h\t1969-12-31\n+++ b/include/eff/e.h\t2026-09-27\n@@ -0,0 +1,5 @@\n"
+           "+#pragma once\n+typedef struct effEData {\n+\ts32 a; //0x0\n+} effEData;\n+void effEEntry(void);\n")
+
+    def test_a_created_header_may_define_types(self):
+        self.assertEqual(header_patch.problems(self.NEW), [])
+
+    def test_an_existing_header_still_takes_only_declarations(self):
+        patch = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n"
+        self.assertTrue(header_patch.problems(patch))
+
+    def test_a_created_header_still_checks_includes(self):
+        self.assertTrue(header_patch.problems(self.NEW + '+#include "../src/x.c"\n'))
+
+    def test_a_created_header_takes_types_but_not_code(self):
+        ok = ("+typedef enum E {\n+\tE_A = 0x1, // a\n+\tE_B\n+} E;\n+struct S {\n+\tu8 flags : 4;\n"
+              "+\tvoid (*cb)(s32 a);\n+\tVec pos[2]; //0x4\n+};\n")
+        self.assertEqual(header_patch.problems(self.NEW + ok), [])
+        for bad in ("+int injected = 1;\n", "+void body(void) { injected++; }\n", "+#define REWRITE(x) 0\n",
+                    "+#error accepted\n", "+s32 g;\n", "+u8 buf[0x100];\n", "+void (*hook)(void);\n",
+                    "+struct T {\n+\ts32 a;\n+} gObj;\n", "+bareword\n"):
+            self.assertTrue(header_patch.problems(self.NEW + bad), bad)
+
+    def test_static_is_refused_even_in_a_created_header(self):
+        self.assertTrue(header_patch.problems(self.NEW + "+static void f(void);\n"))
+
+    def test_a_created_header_that_already_exists_is_not_merged_line_by_line(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            header_patch.apply(self.NEW, root)
+            with self.assertRaises(SystemExit):
+                header_patch.apply(self.NEW, root)
+
+
 if __name__ == "__main__":
     unittest.main()

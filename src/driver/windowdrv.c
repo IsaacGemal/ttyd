@@ -42,11 +42,9 @@ void windowInit(void) {
 }
 
 //new in retail
-// NONMATCHING (94.59%): the descriptor loop's `mr r5, i` is emitted in the loop body in ours but in
-// the loop-condition block in the original (same loop as windowTexSetup).
 void unk_8007f204(s32 error, DVDFileInfo* info) {
 	void* userdata = info->cb.userData;
-	u32 i;
+	int i;
 
 	UnpackTexPalette(winTpl);
 	DVDMgrClose(userdata);
@@ -58,13 +56,11 @@ void unk_8007f204(s32 error, DVDFileInfo* info) {
 	unk_804187fc = TRUE;
 }
 
-// NONMATCHING (97.14%): the descriptor loop's `mr r5, i` is emitted in the loop body in ours but in
-// the loop-condition block in the original (same loop as unk_8007f204).
 void windowTexSetup(void) {
 	DVDEntry* entry;
 	u32 size;
 	char path[128];
-	u32 i;
+	int i;
 
 	winTpl = NULL;
 	unk_804187fc = FALSE;
@@ -1067,12 +1063,12 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	}
 }
 
-// NONMATCHING (85.00%): float register allocation/literal reloads in the GXPosition/GXTexCoord block;
-// ours emits ~47 extra `lfs` of the 0.0/1.0/0.3333 constants.
-void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 height, f32 width, f32 curve) {
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
+void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx;
-	f32 fVar1, fVar2, fVar3, fVar4, fVar5, fVar6; //TODO: rename
+	f32 fVar1, fVar4, fVar2, fVar6, fVar5, fVar3; //TODO: rename
+	f32 oneThird, twoThirds;
 
 	if (unk_804187fc) {
 		if (gxTexMapID) {
@@ -1108,6 +1104,8 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 heig
 		GXLoadTexObj(&wakuTexObj[gxTexMapID], GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0x24);
 
+		oneThird = 0.33333333f;
+		twoThirds = 0.66666666f;
 		fVar1 = x + width;
 		fVar2 = x + curve;
 		fVar6 = fVar1 - curve;
@@ -1119,94 +1117,94 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 heig
 		GXTexCoord2f32(0.0f, 0.0f);
 
 		GXPosition3f32(fVar2, y, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.0f);
+		GXTexCoord2f32(oneThird, 0.0f);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(x, fVar5, 0.0f);
-		GXTexCoord2f32(0.0f, 0.33333333f);
+		GXTexCoord2f32(0.0f, oneThird);
 
 
 
 		GXPosition3f32(fVar2, y, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.0f);
+		GXTexCoord2f32(oneThird, 0.0f);
 
 		GXPosition3f32(fVar6, y, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.0f);
+		GXTexCoord2f32(twoThirds, 0.0f);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 
 
 		GXPosition3f32(fVar6, y, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.0f);
+		GXTexCoord2f32(twoThirds, 0.0f);
 
 		GXPosition3f32(fVar1, y, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
 
 		GXPosition3f32(fVar1, fVar5, 0.0f);
-		GXTexCoord2f32(1.0f, 0.33333333f);
+		GXTexCoord2f32(1.0f, oneThird);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 
 
 		GXPosition3f32(x, fVar5, 0.0f);
-		GXTexCoord2f32(0.0f, 0.33333333f);
+		GXTexCoord2f32(0.0f, oneThird);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(x, fVar3, 0.0f);
-		GXTexCoord2f32(0.0f, 0.66666666f);
+		GXTexCoord2f32(0.0f, twoThirds);
 
 
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar1, fVar5, 0.0f);
-		GXTexCoord2f32(1.0f, 0.33333333f);
+		GXTexCoord2f32(1.0f, oneThird);
 
 		GXPosition3f32(fVar1, fVar3, 0.0f);
-		GXTexCoord2f32(1.0f, 0.66666666f);
+		GXTexCoord2f32(1.0f, twoThirds);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 
 
 		GXPosition3f32(x, fVar3, 0.0f);
-		GXTexCoord2f32(0.0f, 0.66666666f);
+		GXTexCoord2f32(0.0f, twoThirds);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(fVar2, fVar4, 0.0f);
-		GXTexCoord2f32(0.33333333f, 1.0f);
+		GXTexCoord2f32(oneThird, 1.0f);
 
 		GXPosition3f32(x, fVar4, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
@@ -1214,38 +1212,39 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 heig
 
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar6, fVar4, 0.0f);
-		GXTexCoord2f32(0.66666666f, 1.0f);
+		GXTexCoord2f32(twoThirds, 1.0f);
 
 		GXPosition3f32(fVar2, fVar4, 0.0f);
-		GXTexCoord2f32(0.33333333f, 1.0f);
+		GXTexCoord2f32(oneThird, 1.0f);
 
 
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar1, fVar3, 0.0f);
-		GXTexCoord2f32(1.0f, 0.66666666f);
+		GXTexCoord2f32(1.0f, twoThirds);
 
 		GXPosition3f32(fVar1, fVar4, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
 
 		GXPosition3f32(fVar6, fVar4, 0.0f);
-		GXTexCoord2f32(0.66666666f, 1.0f);
+		GXTexCoord2f32(twoThirds, 1.0f);
 	}
 }
 
-// NONMATCHING (85.51%): the same constant reloads as windowDispGX_Waku_col.
+// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve) {
 	CameraEntry* camera = camGetCurPtr();
 	Mtx mtx2;
-	f32 fVar1, fVar2, fVar3, fVar4, fVar5, fVar6, dVar9, dVar10; //TODO: rename
+	f32 fVar1, fVar4, fVar2, fVar6, fVar5, fVar3, dVar10, dVar9; //TODO: rename
+	f32 oneThird, twoThirds;
 
 	if (unk_804187fc) {
 		if (gxTexMapID) {
@@ -1285,105 +1284,107 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0x24);
 
 
+		oneThird = 0.33333333f;
+		twoThirds = 0.66666666f;
 		fVar1 = dVar10 + width;
 		fVar4 = dVar9 - height;
 		fVar2 = dVar10 + curve;
-		fVar5 = dVar9 - curve;
 		fVar6 = fVar1 - curve;
+		fVar5 = dVar9 - curve;
 		fVar3 = curve + fVar4;
 
 		GXPosition3f32(dVar10, dVar9, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
 
 		GXPosition3f32(fVar2, dVar9, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.0f);
+		GXTexCoord2f32(oneThird, 0.0f);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(dVar10, fVar5, 0.0f);
-		GXTexCoord2f32(0.0f, 0.33333333f);
+		GXTexCoord2f32(0.0f, oneThird);
 
 
 
 		GXPosition3f32(fVar2, dVar9, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.0f);
+		GXTexCoord2f32(oneThird, 0.0f);
 
 		GXPosition3f32(fVar6, dVar9, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.0f);
+		GXTexCoord2f32(twoThirds, 0.0f);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 
 
 		GXPosition3f32(fVar6, dVar9, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.0f);
+		GXTexCoord2f32(twoThirds, 0.0f);
 
 		GXPosition3f32(fVar1, dVar9, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
 
 		GXPosition3f32(fVar1, fVar5, 0.0f);
-		GXTexCoord2f32(1.0f, 0.33333333f);
+		GXTexCoord2f32(1.0f, oneThird);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 
 
 		GXPosition3f32(dVar10, fVar5, 0.0f);
-		GXTexCoord2f32(0.0f, 0.33333333f);
+		GXTexCoord2f32(0.0f, oneThird);
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(dVar10, fVar3, 0.0f);
-		GXTexCoord2f32(0.0f, 0.66666666f);
+		GXTexCoord2f32(0.0f, twoThirds);
 
 
 
 		GXPosition3f32(fVar2, fVar5, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.33333333f);
+		GXTexCoord2f32(oneThird, oneThird);
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 
 
 		GXPosition3f32(fVar6, fVar5, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.33333333f);
+		GXTexCoord2f32(twoThirds, oneThird);
 
 		GXPosition3f32(fVar1, fVar5, 0.0f);
-		GXTexCoord2f32(1.0f, 0.33333333f);
+		GXTexCoord2f32(1.0f, oneThird);
 
 		GXPosition3f32(fVar1, fVar3, 0.0f);
-		GXTexCoord2f32(1.0f, 0.66666666f);
+		GXTexCoord2f32(1.0f, twoThirds);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 
 
 		GXPosition3f32(dVar10, fVar3, 0.0f);
-		GXTexCoord2f32(0.0f, 0.66666666f);
+		GXTexCoord2f32(0.0f, twoThirds);
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(fVar2, fVar4, 0.0f);
-		GXTexCoord2f32(0.33333333f, 1.0f);
+		GXTexCoord2f32(oneThird, 1.0f);
 
 		GXPosition3f32(dVar10, fVar4, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
@@ -1391,30 +1392,30 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 
 
 		GXPosition3f32(fVar2, fVar3, 0.0f);
-		GXTexCoord2f32(0.33333333f, 0.66666666f);
+		GXTexCoord2f32(oneThird, twoThirds);
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar6, fVar4, 0.0f);
-		GXTexCoord2f32(0.66666666f, 1.0f);
+		GXTexCoord2f32(twoThirds, 1.0f);
 
 		GXPosition3f32(fVar2, fVar4, 0.0f);
-		GXTexCoord2f32(0.33333333f, 1.0f);
+		GXTexCoord2f32(oneThird, 1.0f);
 
 
 
 		GXPosition3f32(fVar6, fVar3, 0.0f);
-		GXTexCoord2f32(0.66666666f, 0.66666666f);
+		GXTexCoord2f32(twoThirds, twoThirds);
 
 		GXPosition3f32(fVar1, fVar3, 0.0f);
-		GXTexCoord2f32(1.0f, 0.66666666f);
+		GXTexCoord2f32(1.0f, twoThirds);
 
 		GXPosition3f32(fVar1, fVar4, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
 
 		GXPosition3f32(fVar6, fVar4, 0.0f);
-		GXTexCoord2f32(0.66666666f, 1.0f);
+		GXTexCoord2f32(twoThirds, 1.0f);
 	}
 }
 
