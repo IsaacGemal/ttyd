@@ -8,21 +8,16 @@
 #include "mario/mario_pouch.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "battle/battle_audience.h"
+#include "eff/eff_majinai.h"
+#include "eff/eff_hibashira.h"
+#include "eff/eff_energy.h"
+#include "eff/eff_fire.h"
+#include "eff/n64/eff_whirlwind_n64.h"
+#include "eff/n64/eff_kameki_tornade_n64.h"
+static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for helpers that have no header yet. See REPORT.md.
-void BattleMajinaiDone(void);
-void BattleMajinaiEndCheck(void);
-void BattleAudience_Case_JumpNewRecord(void);
-void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
-EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z);
-EffectEntry* effHibashiraEntry(s32 a, s32 b, s32 c, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 scale);
-EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5, f32 p6);
-EffectEntry* effFireEntry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale);
-EffectEntry* effWhirlwindN64Entry(s32 a, s32 b, s32 c, f32 x);
-EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 a4);
-void psndSFX_pos(s32 id, Vec* position);
-f32 sinfd(f32 angle);
-f32 cosfd(f32 angle);
 
 // .rodata 0x802EEFF0; referenced by _battle_majinai_effect.
 const Vec vec3_802eeff0 = {0.0f, 10.0f, 0.0f};

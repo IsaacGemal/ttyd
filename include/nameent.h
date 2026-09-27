@@ -32,3 +32,8 @@ typedef struct NameEntryWork {
 void nameEntInit(void);
 void nameEntReInit(void);
 void nameEntMain(void);
+BOOL nameEntPrepare(void);
+void nameEntOff(void);
+char* nameEntGetName(void);
+BOOL nameEntWait(void);
+void nameEntOn(s32 type);

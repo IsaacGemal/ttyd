@@ -7,19 +7,12 @@
 #include "driver/camdrv.h"
 #include <string.h>
 #include <math.h>
+#include "motion/mot_roll.h"
+#include "mario/mario_hit.h"
+#include "party.h"
+#include "mario/mario_cam.h"
 
 // locals for symbols with no home header (see REPORT.md)
-void* marioChkLandon(f32* pos, f32 spd);
-f32 marioGetFallSpd(void);
-void marioLandOn(void);
-void marioClearJumpPara(void);
-void marioGetRubInit(void);
-BOOL marioSlitChkWallAround(void);
-void marioChgMotSub(s32 motion, s32 sub);
-void allPartyRideShip(void);
-void allPartyRideOff(void);
-void allPartyForceRideOn(void);
-void camFollowYOff(void);
 extern s32 roll_flyout_flag2;
 extern f32 rollData;
 

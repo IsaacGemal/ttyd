@@ -91,3 +91,7 @@ BOOL fadeIsFinish(void);
 void fadeReset(s32 id);
 TEXPalette* fadeGetTpl(void);
 void fadeSetNarrowFast(void);
+void disp_texture(CameraId camId, void* param);
+void disp_maku(CameraId camId, void* param);
+void disp_tec(CameraId camId, void* param);
+void disp_dummy_black(CameraId camId, void* param);

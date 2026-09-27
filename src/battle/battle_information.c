@@ -12,6 +12,7 @@ void BattleInformationSetFirstAttack(FieldBattleInfo* info, u32 partyId) {
 	info->partyId = partyId;
 }
 
+// NONMATCHING (3.57%): empty placeholder, not decompiled yet.
 void BattleInformationInit(FieldBattleInfo* info) {
 
 }

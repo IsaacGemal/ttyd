@@ -4,7 +4,6 @@
 #include "driver/dispdrv.h"
 
 //local prototypes
-void accrobat_timing_icon_disp(CameraId camId, void* param);
 
 s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 						s32 windowEndFrame, s32 endFrame, s32 earlyFrames) {
@@ -18,6 +17,7 @@ s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 	return 0; //???
 }
 
+// NONMATCHING (80.82%): 6 instructions differ, 6 missing, 16 extra, plus register differences.
 s32 BattleAcrobatMain(BattleWork* work) {
 	BattleActions* manager;
 	BattleUnit* unit;

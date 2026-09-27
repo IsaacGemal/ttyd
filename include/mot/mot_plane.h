@@ -8,5 +8,3 @@ typedef struct MotionPlaneData {
 	s32 field_0x28; //0x28, some sfxId
 	u8 field_0x2C[0x48 - 0x2C]; //0x2C
 } MotionPlaneData;
-
-void flyMain(void);

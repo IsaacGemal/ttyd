@@ -1,3 +1,4 @@
+#include "evt/evt_case.h"
 #include <string.h>
 
 #include <dolphin/types.h>
@@ -8,7 +9,6 @@
 #include "manager/evtmgr_cmd.h"
 
 // Not yet in a header, and not decompiled yet (casedrv.s).
-CaseEntry* caseIdToPtr(s32 caseId);
 
 USER_FUNC(evt_set_case_wrk) {
 	s32* args = event->args;

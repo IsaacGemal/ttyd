@@ -13,21 +13,17 @@
 #include "memory.h"
 #include "system.h"
 #include <string.h>
+#include "koopa.h"
+#include "eff/eff_majinai.h"
+#include "kpa_act.h"
+#include "party/party_cloud.h"
+#include "math_ext.h"
+#include "mario/mario_motion.h"
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
-extern s32 marioChkTalkable(void);
-void _npcGroupDead(NpcEntry* entry);
-void fbatHitCheck(s32 a1, s32 a2);
-ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
-void itemFlagOn(ItemEntry* item, u16 flag);
-EffectEntry* effMajinaiEntry(s32 a1, f32 x, f32 y, f32 z);
-void npcGroupDead(NpcEntry* entry, s32 type);
-s32 kpaMutekiCheck(void);
-void kpaAddScorePos(s32 score, Vec* pos);
-f32 cloudGetBreathPower(f32 param_1, Vec* param_2);
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -98,13 +94,6 @@ NpcFieldEntry* release_wp;
 static NpcWork2 work;
 
 // local prototypes
-void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history);
-void npcDisp_xlu(CameraId cameraId, void* param);
-void npcDisp(CameraId camId, void* param);
-void npcDisp_offscreen_xlu(CameraId camId, void* param);
-void npcDisp_offscreen(CameraId camId, void* param);
-void npcDisp_blur(CameraId camId, void* param);
-void _npcDeleteGroup(NpcEntry* entry);
 
 #define npcGetWorkPtr2(inBattle) ((inBattle) ? &work.battle : &work.field)
 // TODO: inlining?
@@ -236,8 +225,8 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
     }
 }
 
-double atan2(double y, double x);
 
+// NONMATCHING (98.72%): 1 extra, plus register differences.
 void npcDisp_xlu(CameraId cameraId, void* param) {
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
@@ -304,18 +293,22 @@ void npcDisp_xlu(CameraId cameraId, void* param) {
     animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
 }
 
+// NONMATCHING (0.55%): 180 missing.
 void npcDisp(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
 }
 
+// NONMATCHING (0.55%): 181 missing.
 void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
 }
 
+// NONMATCHING (0.51%): 194 missing.
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
 }
 
+// NONMATCHING (0.53%): 186 missing.
 void npcDisp_blur(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
 }
@@ -359,6 +352,7 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
+// NONMATCHING (75.61%): 15 instructions differ, 13 missing, 11 extra, plus register differences.
 s32 npcEntry(const char* a1, const char* animName) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -478,6 +472,7 @@ void npcDeleteGroup(NpcEntry* entry) {
     _npcDeleteGroup(entry);
 }
 
+// NONMATCHING (97.10%): same instructions; only register numbers or operands differ.
 void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     int i;
 
@@ -494,6 +489,7 @@ void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     npcDelete(entry);
 }
 
+// NONMATCHING (12.08%): 8 instructions differ, 1395 missing, 3 extra, plus register differences.
 void npcMain(void) {
     NpcWork* npcwork;
     NpcEntry* entry;
@@ -763,7 +759,8 @@ s32 _check(EventEntry* evt) {
     return 2;
 }
 
-s32 npcKoopaModeMobjBoundDeadCheck(void* mobj) {
+// NONMATCHING (80.90%): 9 extra, plus register differences.
+s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     s32 total;
     NpcEntry* entry;
@@ -790,7 +787,7 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
     while (entry->prev) {
         entry = entry->prev;
     }
-    _npcGroupDead(entry);
+    _npcGroupDead(entry, type);
 }
 
 void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
@@ -802,6 +799,7 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     }
 }
 
+// NONMATCHING (1.61%): empty placeholder, not decompiled yet.
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
 }
 
@@ -852,6 +850,7 @@ void npcBlurOff(const char* name) {
     entry->flags &= ~0x100;
 }
 
+// NONMATCHING (96.41%): 1 instruction differs, 1 missing, plus register differences.
 s32 _majinai_effect(EventEntry* evt, s32 a2) {
     MarioWork* mario = marioGetPtr();
 
@@ -999,6 +998,7 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
+// NONMATCHING (87.67%): 1 instruction differs, 5 missing, 5 extra, plus register differences.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -1045,6 +1045,7 @@ void npcSetStayPose(const char* name) {
     }
 }
 
+// NONMATCHING (87.65%): 1 instruction differs, 5 missing, 5 extra, plus register differences.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -1091,6 +1092,7 @@ void npcSetTalkPose(const char* name) {
     }
 }
 
+// NONMATCHING (65.88%): 3 instructions differ, 24 missing, 1 extra, plus register differences.
 s32 npcCheckBlow(NpcEntry* entry) {
     Vec pos;
 
@@ -1112,6 +1114,7 @@ s32 npcCheckBlow(NpcEntry* entry) {
     return cloudGetBreathPower(entry->width, &pos) > 0.0f;
 }
 
+// NONMATCHING (95.66%): 4 missing, plus register differences.
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;

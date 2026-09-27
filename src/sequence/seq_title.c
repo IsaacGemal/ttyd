@@ -7,6 +7,7 @@
 #include "system.h"
 #include <musyx/musyx.h>
 #include <string.h>
+#include "sequence/seq_title.h"
 
 extern SoundWork sound;
 extern PaperSoundBGM psbgm[2];
@@ -16,8 +17,6 @@ TitleWork work2;
 TitleWork* wp2 = &work2;
 
 //local prototypes
-void titleInit(SequenceWork* work);
-void titleMain(SequenceWork* work);
 
 const char* DbgBtlSel_GetMsgDataPtr(void) {
 	return NULL;
@@ -38,6 +37,7 @@ void seq_titleExit(SequenceWork* work) {
 	}
 }
 
+// NONMATCHING (0.00%): 20 extra, plus register differences.
 void seq_titleMain(SequenceWork* work) {
 	titleMain(work);
 }
@@ -92,6 +92,7 @@ void titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
+// NONMATCHING (4.50%): 11 instructions differ, 509 missing, plus register differences.
 void titleMain(SequenceWork* work) {
 	switch (wp2->field_0x8) {
 		case 0:

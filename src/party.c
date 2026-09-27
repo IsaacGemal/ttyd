@@ -6,8 +6,13 @@
 #include "mario/mario_cam.h"
 #include "system.h"
 #include "mario/mario_party.h"
-double sin(double x);
-double cos(double x);
+#include "party/party_yoshi.h"
+#include "party/party_move.h"
+#include "mario/mario_sbr.h"
+#include "party/party_vivian.h"
+#include "motion/mot_ship.h"
+#include "party/party_bomhei.h"
+#include "math_ext.h"
 
 // Raw field accessors for fields missing from the shared PartyEntry header.
 #define P8(p, off) (*(u8*)((u8*)(p) + (off)))
@@ -16,26 +21,6 @@ double cos(double x);
 #define P32(p, off) (*(u32*)((u8*)(p) + (off)))
 #define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChgMot(PartyEntry* party, s32 mot);
-s32 partyEntryMain(s32 memberId);
-s32 partyGetHp(void);
-void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
-void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
-void bomhei_use_cancel(void);
-void getRidePos(PartyEntry* party, Vec* pos);
-void vivianUnhold(PartyEntry* party);
-void marioGetoffYoshi(void);
-void driveParty(PartyEntry* party);
-void unk_8013be14(void);
-void partyHelloMain(PartyEntry* party);
-void L_partyVivianTailStart(PartyEntry* party);
-f32 toMovedir(f32 angle);
-f32 toMovedir2(f32 a, f32 b);
-f32 toMovedirSimple(f32 a);
-s32 N_marioShipGetDir(void);
-s32 yoshiGetStatus(void);
-void sincosf(f32* ret_sin, f32* ret_cos, f32 degree);
 
 //.data
 typedef struct PartyData {
@@ -56,7 +41,6 @@ extern char* partyDotPoseTbl[8][15];
 extern char* yoshiDotPoseTbl[7][15];
 extern PartyData partyDataTbl[];
 const f32 vec3_802ccd30[3] = { 0.0f, 0.0f, 0.0f };
-void partyGetAppearPos2(PartyEntry* party, Vec* pos);
 
 /*
     000b95ec 000020 800bebcc  4 partyGetPtr 	party.o
@@ -234,9 +218,6 @@ void partyPaperLightOff(PartyEntry* party) {
     animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 1);
 }
 
-// NONMATCHING (99.89%): the low-HP check's sign-extension lands in r0 instead of
-// the original's r3 (`extsb r3,r0`/`cmpwi r3,8`).  Tried temps, s8/s32 locals,
-// ternary, extra/reordered locals, opt_propagation/peephole/optimize_for_size.
 char* partyChgPoseId(PartyEntry* party, s32 index) {
     BOOL v5;             // r30
     char* v6;            // r30
@@ -246,7 +227,7 @@ char* partyChgPoseId(PartyEntry* party, s32 index) {
         return party->field_18;
     }
     v5 = 0;
-    if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
         v5 = TRUE;
     }
     if (v5 == TRUE) {
@@ -584,7 +565,7 @@ s32 partyRideChk(PartyEntry* party) {
     return result;
 }
 
-void partySetForceMove(PartyEntry* party, s16 unk, f32 x, f32 z) {
+void partySetForceMove(PartyEntry* party, s32 unk, f32 x, f32 z) {
     PF32(party, 0x100) = x;
     P16(party, 0x28) = unk;
     PF32(party, 0x104) = z;
@@ -908,7 +889,7 @@ void partyHello(PartyEntry* party) {
             P8(party, 0x38) = 0;
             party->field_110 = mario->unk1A8;
             party->field_10C = mario->unk1A8;
-            party->position = *(Vec*)((u8*)mario + 0x8C);
+            party->position = mario->position;
             *(Vec*)((u8*)party + 0xB8) = party->position;
         } else if (party->field_34 == 7) {
             *(Vec*)((u8*)party + 0x70) = *(Vec*)(v + 57);
@@ -920,7 +901,7 @@ void partyHello(PartyEntry* party) {
             P8(party, 0x38) = 0xa;
             party->field_110 = mario->unk1A8;
             party->field_10C = mario->unk1A8;
-            party->position = *(Vec*)((u8*)mario + 0x8C);
+            party->position = mario->position;
             *(Vec*)((u8*)party + 0xB8) = party->position;
         }
         party->flags &= ~0x100;
@@ -985,7 +966,7 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     }
 }
 
-// NONMATCHING (97.91%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
+// NONMATCHING (98.00%): Vec copy scheduling of 0x70 (0x8 load hoisted) and the
 // low-HP `extsb r3,r0` vs our `extsb r0,r0`.
 s32 partyEntry(s32 memberId) {
     PartyEntry* party;
@@ -1008,7 +989,7 @@ s32 partyEntry(s32 memberId) {
     index = 1;
     if (!(party->flags2 & 2)) {
         lowHp = 0;
-        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+        if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
             lowHp = 1;
         }
         if (lowHp == 1) {
@@ -1031,8 +1012,6 @@ s32 partyEntry(s32 memberId) {
     return ret;
 }
 
-// NONMATCHING (99.93%): only the low-HP check's extsb lands in r0 here vs the
-// original's r3 (the same difference as in partyChgPoseId); the rest matches.
 s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     const Vec* v;
     PartyEntry* party;
@@ -1061,7 +1040,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     }
     if (!(party->flags2 & 2)) {
         lowHp = 0;
-        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+        if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
             lowHp = 1;
         }
         if (lowHp == 1) {
@@ -1085,7 +1064,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     return ret;
 }
 
-// NONMATCHING (89.84%): partyChgPoseId is inlined but ours does not
+// NONMATCHING (89.94%): partyChgPoseId is inlined but ours does not
 // constant-fold the literal `index == 1` chain (extra cmpwi chain), and the
 // inlined low-HP check has the same extsb r0/r3 difference as partyChgPoseId.
 void party_force_ride_yoshi(PartyEntry* party) {

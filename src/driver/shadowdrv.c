@@ -31,8 +31,6 @@ f32 tmp_vp[6];
 
 extern u8 shadowConfig[];
 extern u8 lbl_80303460[];
-MapObject* mobjHitObjPtrToPtr(HitEntry* hitObj);
-void shadowDisp(CameraId cameraId, void* param);
 
 //.bss
 CharShadowWork char_shadow_work;
@@ -227,8 +225,8 @@ GXTexObj* shadowGetProjShadowTexObj(void) {
 
 BOOL _filter(HitCheckQuery* query, HitEntry* hit) {
     if (hitGetAttr(hit) & 0x80000000) {
-        MapObject* obj = mobjHitObjPtrToPtr(hit);
-        if (*(u32*)obj->field_0x0 & 0x800) {
+        MapObjectEntry* obj = mobjHitObjPtrToPtr(hit);
+        if (obj->flags & 0x800) {
             return FALSE;
         }
     }

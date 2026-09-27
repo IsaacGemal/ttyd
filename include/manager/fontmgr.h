@@ -97,3 +97,12 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines);
 u16 FontGetMessageWidth(const char* message);
 
 void FontDrawStringMtx(Mtx mtx, const char* msg);
+void FontDrawColorIDX(u32 idx);
+void FontDrawScale(f32 scale);
+u16 JUTFont_CodeToGlyph(u32 code);
+void FontDrawMessage(s32 x, s32 y, const char* msg);
+void JUTFont_DrawStart(GXColor color);
+void _JUTFont_DrawPos(u16 code, s16 x, s16 y);
+void FontDrawMessageMtx(Mtx mtx, const char* msg);
+void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);
+void FontDrawScaleVec(Vec scale);

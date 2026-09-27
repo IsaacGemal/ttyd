@@ -1,5 +1,10 @@
 #pragma once
 
+typedef struct BattleUnit BattleUnit;
+typedef struct BattleWorkUnitPart BattleUnitPart;
+
+typedef struct BattleWork BattleWork;
+
 #include <dolphin/types.h>
 
 typedef struct BattleVulnerableStatus {
@@ -28,3 +33,9 @@ typedef struct BattleVulnerableStatus {
 } BattleVulnerableStatus;
 
 s32 BattleCheckDamage(struct BattleUnit* unit1, struct BattleUnit* unit2, struct BattleWorkUnitPart* part, struct BattleWeapon* weapon, s32 flags);
+void BattleAttackDeclareAll(BattleWork* wp);
+s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32 a);
+
+void BattleInitCounterPreCheckWork(void* work);
+void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 arg2, s32 arg3, s32 arg4,
+                        s32 arg5, s32 arg6, s32 arg7);

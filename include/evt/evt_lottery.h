@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 #include <dolphin/types.h>
 
 typedef struct lottery_info {
@@ -8,3 +10,4 @@ typedef struct lottery_info {
 } lottery_info;
 
 lottery_info* lotteryGetPtr(void);
+USER_FUNC(evt_lottery);

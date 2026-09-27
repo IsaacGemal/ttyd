@@ -13,6 +13,8 @@
 #include "driver/camdrv.h"
 #include <dolphin/os.h>
 #include <string.h>
+#include "cam_road.h"
+#include "cam_shift.h"
 
 extern GlobalWork* gp;
 extern const char str_802C4DA8[];
@@ -242,7 +244,7 @@ USER_FUNC(evt_bero_get_info_length) {
 		evtSetFloat(event, args[1], (f32)v5);
 		return EVT_RETURN_DONE;
 	}
-	switch ((*(u16*)((u8*)bero + 0x4)) & 0xFFF) {
+	switch ((bero->kinddirArg1) & 0xFFF) {
 		case 0:
 		case 3:
 		case 0xF00:
@@ -267,8 +269,8 @@ USER_FUNC(evt_bero_get_info_kinddir) {
 	s32* args = event->args;
 
 	bero = BeroINFOARR[evtGetValue(event, args[0])];
-	evtSetValue(event, args[1], *(u16*)((u8*)bero + 0x4));
-	evtSetValue(event, args[2], *(u16*)((u8*)bero + 0x6));
+	evtSetValue(event, args[1], bero->kinddirArg1);
+	evtSetValue(event, args[2], bero->kinddirArg2);
 	evtSetValue(event, args[3], bero->kinddirArg3);
 	return EVT_RETURN_DONE;
 }
@@ -357,14 +359,14 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[1] = 0;
 		event->lwData[2] = BeroNUM;
 		event->lwData[3] = (s32)entry->hitName;
-		event->lwData[4] = *(u16*)((u8*)entry + 0x4);
+		event->lwData[4] = entry->kinddirArg1;
 		kind = entry->kinddirArg3;
 		{
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
 			if (kind == 0x4E20) {
 				if (kind == 0x2710) {
 					kind = 0x2710;
-				} else if ((*(u16*)((u8*)entry + 0x4) & 0xFFF) < 2) {
+				} else if ((entry->kinddirArg1 & 0xFFF) < 2) {
 					for (kind = 0; (u32)kind < 8U; kind++) {
 						if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
 							break;
@@ -383,14 +385,14 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[1] = i;
 		event->lwData[2] = BeroNUM;
 		event->lwData[3] = (s32)gp->beroEnterName;
-		event->lwData[4] = *(u16*)((u8*)entry + 0x4);
+		event->lwData[4] = entry->kinddirArg1;
 		kind = entry->kinddirArg3;
 		{
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
 			if (kind == 0x4E20) {
 				if (kind == 0x2710) {
 					kind = 0x2710;
-				} else if ((*(u16*)((u8*)entry + 0x4) & 0xFFF) < 2) {
+				} else if ((entry->kinddirArg1 & 0xFFF) < 2) {
 					for (kind = 0; (u32)kind < 8U; kind++) {
 						if (!strncmp(names[kind], entry->hitName, strlen(names[kind]))) {
 							break;
@@ -410,10 +412,6 @@ USER_FUNC(evt_bero_get_into_info) {
 }
 
 // ---- reconstructed functions ----
-void camRoadReset(void);
-void camShiftReset(void);
-void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
-void N_marioSetBottomlessRespawnPosOnBeroEntry(f32 x, f32 y, f32 z);
 
 USER_FUNC(evt_bero_mario_go_init) {
 	BeroMarioGO = 0;
@@ -740,7 +738,6 @@ USER_FUNC(bero_set_disp_position_pipe) {
 	return EVT_RETURN_DONE;
 }
 
-void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end);
 
 typedef struct CameraParams {
 	f32 fovY;   // 0x00

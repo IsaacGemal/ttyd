@@ -6,10 +6,10 @@
 #include "system.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 // TODO: use SoundInit to fill in SoundStream/Entry
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.bss
 SND_AUX_REVERBHI revH;
@@ -23,16 +23,8 @@ static char str[0x100];
 u32 aramMemArray[8];
 
 // local prototypes
-void* sndMalloc(size_t size);
-void sndFree(void* ptr);
-void* loadDVD_callback(u32 offset, u32 length);
-void SoundEfxMain(void);
-void SoundDVDMain(void);
 
-void SoundSSMainInt(void);
-s32 SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);
 
-void SoundAIDMACallback(void);
 
 void* sndMalloc(size_t size) {
     return __memAlloc(HEAP_DEFAULT, size);
@@ -397,6 +389,7 @@ void SoundLoadDVD2Free(void) {
     }
 }
 
+// NONMATCHING (98.79%): same instructions; only register numbers or operands differ.
 BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     DVDEntry* entry;
     SoundGroup* temp_r0;
@@ -529,6 +522,7 @@ BOOL SoundSLibLoadDVD(const char* path) { // regalloc, stack, otherwise 1:1
     return TRUE;
 }
 
+// NONMATCHING (97.77%): 2 instructions differ, plus register differences.
 BOOL SoundDropData(void) {
     SoundSong* song;
     SoundEffect* effect;
@@ -876,6 +870,7 @@ inline u32 SoundEfxCheckPlay(s32 chan) {
     return TRUE;
 }
 
+// NONMATCHING (99.49%): same instructions; only register numbers or operands differ.
 s32 SoundEfxPlayEx(SND_FXID fid, u8 a2, u8 vol, u8 pan) {
     SoundEffect* sfx;
     s32 chan;
@@ -1088,6 +1083,7 @@ inline void SoundEfxCheckCh(s32 chan) {
     }
 }
 
+// NONMATCHING (89.01%): 4 instructions differ, 13 missing, 5 extra, plus register differences.
 void SoundEfxMain(void) {
     SoundEffect* effect;
     f32 x, y, z;
@@ -1177,6 +1173,7 @@ inline void SoundDVDSetPanCh(s32 chan, u8 pan) { // I think this is the correct 
     AISetStreamVolRight((u8)right);
 }
 
+// NONMATCHING (99.71%): same instructions; only register numbers or operands differ.
 void SoundDVDMain(void) {
     SoundDVD* dvd;
     int i;
@@ -1225,6 +1222,7 @@ void SoundDVDMain(void) {
 
 // Keep _ssDVDReadAsync_activeChk out of line: the original calls it rather than inlining.
 #pragma dont_inline on
+// NONMATCHING (0.38%): empty placeholder, not decompiled yet.
 void _ssDVDReadAsync_activeChk(s32 result, DVDFileInfo* fileInfo) {
 }
 #pragma dont_inline reset
@@ -1237,15 +1235,19 @@ void cache_flush(u32 pointerToARQRequest) {
     _ssDVDReadAsync_activeChk(0, &dvd->info);
 }
 
+// NONMATCHING (0.44%): empty placeholder, not decompiled yet.
 void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
 }
 
+// NONMATCHING (1.49%): empty placeholder, not decompiled yet.
 void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
 }
 
+// NONMATCHING (0.20%): empty placeholder, not decompiled yet.
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 }
 
+// NONMATCHING (0.16%): 626 missing.
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     if (result >= 0) {}
 }
@@ -1374,6 +1376,7 @@ void SoundSSSetSrndPanCh(s32 chan, u8 span) {
     SoundSSSetPanCh(chan, (u8)stream->pan);
 }
 
+// NONMATCHING (99.56%): same instructions; only register numbers or operands differ.
 void SoundSSSetVolCh(s32 chan, u8 vol) {
     SoundStream* stream = &sound.streams[chan];
     f32 value;
@@ -1419,6 +1422,7 @@ void SoundSSStopCh(s32 chan) {
 // dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
 // stack frame and real call sequence).
 #pragma dont_inline on
+// NONMATCHING (0.43%): 232 missing.
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
@@ -1432,6 +1436,7 @@ void SoundSSMainInt(void) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (87.28%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
 void SoundAIDMACallback(void) {
     u32 length;
     u8* address;

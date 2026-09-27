@@ -7,6 +7,7 @@ typedef struct FSTEntry {
 	u32 entrySizeOrNext; //file = size, dir = next entry
 } FSTEntry;
 
+// NONMATCHING (29.82%): 23 instructions differ, 76 missing, 8 extra, plus register differences.
 s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 	FSTEntry* entry;
 	u32 currDir, i;
@@ -55,10 +56,12 @@ s32 ARCConvertPathToEntrynum(ARCHandle* handle, const char* path) {
 	}
 }
 
+// NONMATCHING (3.33%): empty placeholder, not decompiled yet.
 BOOL ARCOpen(ARCHandle* handle, const char* filename, ARCFileInfo* info) {
 	return FALSE;
 }
 
+// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
 BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	FSTEntry* entry;
 	ARCHeader* header;
@@ -78,14 +81,17 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 	return TRUE;
 }
 
+// NONMATCHING (28.00%): empty placeholder, not decompiled yet.
 void* ARCGetStartAddrInMem(ARCFileInfo* info) {
 	return NULL;
 }
 
+// NONMATCHING (70.00%): empty placeholder, not decompiled yet.
 u32 ARCGetLength(ARCFileInfo* info) {
 	return 0;
 }
 
+// NONMATCHING (50.00%): empty placeholder, not decompiled yet.
 void ARCClose(void) {
 
 }

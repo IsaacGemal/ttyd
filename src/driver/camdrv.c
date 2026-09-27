@@ -13,8 +13,8 @@
 #include "cam_road.h"
 #include "cam_shift.h"
 #include "battle/battle_camera.h"
+#include "math_ext.h"
 
-extern double tan(double arg);
 // NOTE: this is ~roughly 12.5 degrees in radians, ideally it should be MTXDegToRad(12.5) or 5PI/72
 #define DEG_TO_RAD_12_5__1 0.21816612780094147
 #define DEG_TO_RAD_12_5__2 0.21816615760326385
@@ -39,16 +39,6 @@ typedef struct CameraParams {
 } CameraParams;
 
 // forward declarations
-CameraEntry* camEntryPersp(CameraCallback callback, f32 fovY, f32 aspect, f32 near, f32 far, f32 nearZ, f32 farZ,
-                           const char* name);
-CameraEntry* camEntryOrtho(CameraCallback callback, f32 fovY, f32 aspect, f32 top, f32 bottom, f32 left, f32 right,
-                           f32 near, f32 far, f32 nearZ, f32 farZ, const char* name);
-void camEvalNearFar(CameraEntry* camera);
-void cam3dMain(CameraEntry* camera);
-void cam3dImgMain(CameraEntry* camera);
-void camEffMain(CameraEntry* camera);
-void camLetterBox(void);
-inline Vec makeVecByValue(f32 x, f32 y, f32 z);
 
 void camInit(void) {
     f32 deg2rad;

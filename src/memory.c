@@ -38,8 +38,8 @@ void* heapStart[6];
 OSHeapHandle heapHandle[6];
 
 //local prototypes
-void smartGarbage(void);
 
+// NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
 void memInit(void) { //almost 1:1, stubborn regalloc at the end
     MapAllocEntry* entry;
     void* arenaLo;
@@ -100,6 +100,7 @@ void memInit(void) { //almost 1:1, stubborn regalloc at the end
     }
 }
 
+// NONMATCHING (93.98%): 1 missing, 1 extra, plus register differences.
 void memClear(HEAP_TYPE heap) {
 	MapAllocEntry* entry;
 	void* ptr;
@@ -140,6 +141,7 @@ void __memFree(HEAP_TYPE heap, void* ptr) {
 	OSFreeToHeap(heapHandle[heap], ptr);
 }
 
+// NONMATCHING (90.15%): 1 instruction differs, 3 missing, 3 extra.
 void* _mapAlloc(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -192,6 +194,7 @@ void* _mapAlloc(u32 size) {
 	}
 }
 
+// NONMATCHING (99.13%): 1 instruction differs.
 void* _mapAllocTail(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -276,6 +279,7 @@ void _mapFree(void* alloc) {
 	entry->inuse = 0;
 }
 
+// NONMATCHING (9.88%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
 void smartInit(void) {
 	void* ptr;
 	u32 size;
@@ -329,14 +333,17 @@ void smartReInit(void) {
 
 
 
+// NONMATCHING (2.44%): empty placeholder, not decompiled yet.
 void smartAutoFree(u32 a1) {
 
 }
 
+// NONMATCHING (1.18%): empty placeholder, not decompiled yet.
 void smartFree(smartEntry* entry) {
 
 }
 
+// NONMATCHING (96.32%): 3 instructions differ, 4 missing, plus register differences.
 smartEntry* smartAlloc(u32 size, u8 type) {
 	smartEntry* entry1, * entry2;
 	int i;
@@ -447,6 +454,7 @@ smartEntry* smartAlloc(u32 size, u8 type) {
 	}
 }
 
+// NONMATCHING (0.88%): empty placeholder, not decompiled yet.
 void smartGarbage(void) {
 
 }

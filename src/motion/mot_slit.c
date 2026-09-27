@@ -1,3 +1,4 @@
+#include "motion/mot_slit.h"
 #include "mot/mot_slit.h"
 #include "dolphin/types.h"
 #include "dolphin/mtx.h"
@@ -9,19 +10,12 @@
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+#include "mario/mario_hit.h"
+#include "party/party_motion.h"
+#include "math_ext.h"
 
 // Local declarations for functions whose headers don't exist yet. Each one is
 // listed in REPORT.md so it can move to a header later.
-void marioChgMot2(s32 motion);
-s32 marioRollChgChk(void);
-s32 marioSlitChkWallAround(void);
-f32 toMovedirSimple(f32 angle);
-f32 fabsf(f32 x);
-BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
-void allPartySlitOn(void);
-void allPartyForceSlitOff(void);
-void mapSetPaperAmbColor(GXColor* color);
-void mapResetPaperAmbColor(void);
 
 // Raw accessors for MarioWork fields that are not named in include/mario/mario.h.
 // The header currently ends at a byte array at 0x2D8, but this unit uses many

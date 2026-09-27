@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/mtx.h>
 
 typedef struct BattleWorkStatusIconEntry {
@@ -20,3 +22,4 @@ typedef struct BattleWorkStatusIcon {
 void BattleStatusIconInit(struct BattleUnit* unit);
 void BattleStatusIconMain(struct BattleUnit* unit);
 void BattleStatusIconDelete(struct BattleUnit* unit);
+void BattleStatusIconDisp(CameraId camId, void* param);

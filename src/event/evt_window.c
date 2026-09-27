@@ -14,23 +14,10 @@
 #include "nameent.h"
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "statuswindow.h"
+#include "evt/evt_window.h"
 
 // Locally declared prototypes (move to headers later).
-void nameEntOff(void);
-char* nameEntGetName(void);
-BOOL nameEntWait(void);
-void nameEntOn(s32 type);
-BOOL nameEntPrepare(void);
-void coin_disp(WinMgrEntry* entry);
-void oneMessageDisp(WinMgrEntry* entry);
-void statusWinForceUpdateCoin(void);
-void FontDrawColor(GXColor* color);
-void FontDrawMessage(s32 x, s32 y, const char* msg);
-WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3);
-s32 winMgrSelect(WinMgrSelect* select);
-s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);
-void winMgrSelectDelete(s32 select);
-s32 unk_80237448(WinMgrSelect* select);
 
 // Work structs allocated by the coin / one-message events.
 typedef struct WinCoinWork {

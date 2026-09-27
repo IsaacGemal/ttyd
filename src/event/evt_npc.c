@@ -12,39 +12,23 @@
 #include <string.h>
 #include "mario/mario.h"
 #include "party.h"
+#include "mario/mario_party.h"
+#include "driver/offscreendrv.h"
+#include "eff/n64/eff_kemuri10_n64.h"
+#include <stdlib.h>
+#include <dolphin/mtx.h>
+#include "math_ext.h"
+
+// LOCAL_PROTO(psndSFXOnEx_3D): retail event callers narrow volume and pan to u8; the implementation uses s32 and sharing that signature regresses matched event code.
+s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
+
 
 // Callers mask these to u8/u16 (clrlwi), but pmario_sound.c's definition only matches with ints, so this
 // prototype can't live in pmario_sound.h yet.
-s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
-extern char* strcat(char* dest, const char* src);
-extern EffectEntry* effKemuri10N64Entry(s32 a1, f32 a2, f32 a3, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8);
 
 // From driver/npcdrv.c (not yet decompiled)
-extern void npcStopForEvent(void);
-extern void npcStartForEvent(void);
-extern void npcStopForOneEvent(NpcEntry* npc);
-extern void npcStartForOneEvent(NpcEntry* npc);
-extern void npcCheckInterrupt(void);
-extern s16 marioSetMutekiTime(s32 msec);
-extern void npcBlurOn(const char* name);
-extern void npcBlurOff(const char* name);
-extern void* npcGetBtlSetupWork(NpcEntry* npc, s32 index);
-extern void npcSetBtlSetupWork(NpcEntry* npc, s32 index, s32 value);
-extern s32 partyCtrlOn(void);
-extern s32 marioCtrlOn(void);
-extern s32 marioGetPartyId(void);
-extern SequenceType seqGetSeq(void);
-extern void L_psndBGM_stop(void);
-extern f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target);
-extern s32 offscreenNameToId(const char* name);
-extern void npcSetLink(NpcEntry* npc, NpcEntry* link);
-void npcSetColor(const char* name, GXColor* color);
-extern f32 npcTransRytoFaceDir(NpcEntry* npc);
-f32 _intplGetFloat(s32 type, f32 t);
-extern int rand(void);
 extern GXColor unk_80422fc0;
-extern void PSVECSubtract(const Vec* a, const Vec* b, Vec* out);
 
 // TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
 // might just be -inline deferred? No auto
@@ -55,12 +39,7 @@ extern void PSVECSubtract(const Vec* a, const Vec* b, Vec* out);
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
 #else
-double fabs(double x);
-float fabsf(float x);
 #endif
-extern double sin(double x);
-extern double cos(double x);
-extern double fmod(double x, double y);
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -1853,7 +1832,7 @@ USER_FUNC(evt_npc_restart_regular_event) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     *(u32*)npc->field_140 |= 0x10000000;
-    npcCheckInterrupt();
+    npcCheckInterrupt(npc);
     return EVT_RETURN_DONE;
 }
 
@@ -2138,7 +2117,7 @@ USER_FUNC(evt_npc_set_btlsetup_work) {
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     s32 index = evtGetValue(event, args[1]);
     s32 value = evtGetValue(event, args[2]);
-    npcSetBtlSetupWork(npc, index, value);
+    npcSetBtlSetupWork(npc, index, (void*)value);
     return EVT_RETURN_DONE;
 }
 

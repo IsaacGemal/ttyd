@@ -3,6 +3,7 @@
 #include "dolphin/types.h"
 #include "memory.h"
 #include <dolphin/os.h>
+#include "math_ext.h"
 
 //.sbss
 static RomFontWork work;
@@ -39,7 +40,6 @@ const char* msg_us[9] = {
 static const char** msg_tbl[2] = { msg_jp, msg_us };
 
 // local prototypes
-void romFontMake(void);
 
 const char* romFontGetMessage(s32 msg) {
     return msg_tbl[0][msg]; // has eng but always returns JP
@@ -160,7 +160,6 @@ void romFontMake(void) {
     __memFree(HEAP_DEFAULT, chars);
 }
 
-double tan(double);
 
 static RomFontChar* romFontFindChar(u16 code) {
     RomFontChar* table = wp->unk0;
@@ -174,6 +173,7 @@ static RomFontChar* romFontFindChar(u16 code) {
 }
 
 // Not quite matched, see: https://decomp.me/scratch/cdEUS
+// NONMATCHING (99.67%): 1 instruction differs, plus register differences.
 void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ...) {
     char buf[1024];  // 0x158
     Mtx mtx;         // 0x128
@@ -270,6 +270,7 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
+// NONMATCHING (2.06%): empty placeholder, not decompiled yet.
 s32 romFontGetWidth(const char* message) {
     return 0;
 }

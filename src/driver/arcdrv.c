@@ -20,6 +20,7 @@ void arcInit(void) {
 	}
 }
 
+// NONMATCHING (87.13%): 3 instructions differ, 3 missing, 1 extra, plus register differences.
 void* arcOpen(const char* filename, void** addr, u32* length) {
 	ARCFileInfo info;
 	void* startAddr;
@@ -47,6 +48,7 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 	return NULL;
 }
 
+// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
 void arcEntry(s32 id, void* data, u32 size) {
 
 }

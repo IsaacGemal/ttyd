@@ -21,10 +21,14 @@
 #include <stdarg.h>
 #include <math.h>
 #include "evt/evt_yuugijou.h"
+#include "eff/eff_recovery.h"
+#include "statuswindow.h"
+#include "window/win_main.h"
+#include "window/win_root.h"
+#include "party/party_motion.h"
+#include <stdio.h>
 
 extern ItemData itemDataTable[];
-extern int sprintf(char* str, const char* format, ...);
-extern int vsprintf(char* str, const char* format, va_list ap);
 
 //.data
 EVT_BEGIN(evt_diary_read)
@@ -35,23 +39,8 @@ static WindowWork* wp;
 TEXPalette* winTexTpl;
 
 // local prototypes
-void winDisp(CameraId camId, void* param);
-void winDispKoopa(CameraId camId, void* param);
-void winLectureKeyMask(void);
 
 // functions defined in this unit but not declared in any header
-extern void winRootDisp(CameraId camId, WindowWork* work);
-extern void allPartyForceSlitOff(void);
-extern void statusWinForceOff(void);
-extern s32 unk_80175e98(void);
-extern s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall);
-extern s32 unk_80177cf8(void);
-extern s32 itemUseFunc2(EventEntry* event, BOOL isFirstCall);
-extern s32 winGhostDiaryChk(void);
-extern s32 party_color(EventEntry* event, BOOL isFirstCall);
-extern s32 famicom_check(EventEntry* event, BOOL isFirstCall);
-extern void statusWinForceOpen(void);
-extern void* effRecoveryEntry(s32 type, f32 x, f32 y, f32 z);
 
 // mario_pouch.h declares the pouch accessors with s16 parameters, but the
 // original win_main.c treated them as s32 (the callees sign-extend their own
@@ -113,6 +102,7 @@ void winOpenDisable(void) {
     }
 }
 
+// NONMATCHING (26.44%): 21 instructions differ, 521 missing, 2 extra, plus register differences.
 void winMain(void) {
     MarioWork* mario;
 
@@ -211,13 +201,6 @@ void winDisp(CameraId camId, void* param) {
 extern s32 evt_lecture_msg[];
 
 // Font drawing helpers defined in manager/fontmgr.c but not declared in a header
-void FontDrawColor(GXColor* color);
-void FontDrawMessageMtx(Mtx mtx, const char* msg);
-void FontDrawStringMtx(Mtx mtx, const char* msg);
-void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);
-void FontDrawScaleVec(Vec scale);
-void FontDrawEdge(void);
-void FontDrawEdgeOff(void);
 
 void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
     Mtx mtx1;
@@ -234,6 +217,7 @@ void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
     }
 }
 
+// NONMATCHING (96.62%): 1 missing, 1 extra, plus register differences.
 void winFontSetPitch(Vec* pos, Vec* scale, GXColor* color, f32 pitch, const char* format, ...) {
     char buf[0x400];
     GXColor c;
@@ -396,6 +380,7 @@ USER_FUNC(famicom_check) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.97%): same instructions; only register numbers or operands differ.
 void winDispKoopa(CameraId camId, void* param) {
     winTexTpl = **(TEXPalette***)(*(u8**)((u8*)wp + 0x28) + 0xA0);
     GXSetCullMode(GX_CULL_NONE);
@@ -436,12 +421,12 @@ USER_FUNC(itemUseFunc) {
         case 0:
             statusWinForceOpen();
             if (event->lwData[11] == 0) {
-                POUCH_SETHP(POUCH_GETHP() + (u8)item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + (u8)item->fp_restored);
+                POUCH_SETHP(POUCH_GETHP() + item->hp_restored);
+                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
                 POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
             } else {
-                POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + (u8)item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + (u8)item->fp_restored);
+                POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + item->hp_restored);
+                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
                 POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
             }
             cnt++;
@@ -452,11 +437,11 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0xC8;
                 break;
             }
-            if ((u8)item->hp_restored == 0) {
+            if (item->hp_restored == 0) {
                 cnt = 0x64;
                 break;
             }
-            effRecoveryEntry(0, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
+            effRecoveryEntry(0, item->hp_restored, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
             cnt++;
             break;
 
@@ -469,11 +454,11 @@ USER_FUNC(itemUseFunc) {
             break;
 
         case 0x64:
-            if ((u8)item->fp_restored == 0) {
+            if (item->fp_restored == 0) {
                 cnt = 0x3E7;
                 break;
             }
-            effRecoveryEntry(1, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
+            effRecoveryEntry(1, item->fp_restored, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
             /* fallthrough */
         case 0x82:
             cnt = 0x3E7;
@@ -481,11 +466,11 @@ USER_FUNC(itemUseFunc) {
 
         case 0xC8: {
             f32* target;
-            if ((u8)item->hp_restored == 0) {
+            if (item->hp_restored == 0) {
                 cnt = 0x12C;
                 break;
             }
-            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
+            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
             *target = (-(*(f32*)((u8*)party + 0xF0))) / 2.0f;
             cnt++;
             break;
@@ -500,11 +485,11 @@ USER_FUNC(itemUseFunc) {
             break;
 
         case 0x12C:
-            if ((u8)item->fp_restored == 0) {
+            if (item->fp_restored == 0) {
                 cnt = 0x3E7;
                 break;
             }
-            effRecoveryEntry(1, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z);
+            effRecoveryEntry(1, item->fp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z);
             cnt++;
             break;
 
@@ -594,6 +579,7 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
+// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
 void winIconGrayInit(void) {
     winTexTpl = NULL;
     GXSetCullMode(GX_CULL_NONE);

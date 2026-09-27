@@ -7,7 +7,6 @@ extern ActionCommandEntry ActionCommandList[];
 extern BattleWork* _battleWorkPointer;
 
 //local prototypes
-u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask);
 
 
 void BattleActionCommandManagerInit(BattleWork* wp) {
@@ -49,6 +48,7 @@ s32 BattleActionCommandResult(BattleWork* wp) {
 	}
 }
 
+// NONMATCHING (56.06%): 3 instructions differ, 11 missing, 1 extra, plus register differences.
 void BattleActionCommandDeclareACResult(BattleWork* work, BattleWeapon* weapon, s32 result) {
 	if (result == -1) {
 		//BattleAudience_Case_ActionCommandBad(weapon);
@@ -62,6 +62,7 @@ void BattleActionCommandDeclareACResult(BattleWork* work, BattleWeapon* weapon, 
 	}
 }
 
+// NONMATCHING (90.14%): 1 missing, 2 extra, plus register differences.
 void BattleActionCommandSetup(BattleWork* work, s32 id, BattleUnit* unit, s32 a4, s32 a5) {
 	ActionCommandEntry* entry; // r6
 
@@ -101,6 +102,7 @@ void BattleActionCommandStop(BattleWork* work) {
 }
 
 //TODO: a2 is some pointer
+// NONMATCHING (0.91%): 1 instruction differs, 152 missing.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, int a2) {
 	return -2;
 }
@@ -113,6 +115,7 @@ s32 BattleActionCommandGetDefenceResult(void) {
 	return _battleWorkPointer->actionCommands.mDefenseResult;
 }
 
+// NONMATCHING (91.67%): 1 extra.
 void BattleActionCommandResetDefenceResult(void) {
 	_battleWorkPointer->actionCommands.mDefenseResult = 0;
 	BtlPad_WorkInit(&_battleWorkPointer->actionCommands.pad);
@@ -122,6 +125,7 @@ s8 BattleActionCommandGetDifficulty(BattleWork* work) {
 	return work->actionCommands.mAcDifficulty;
 }
 
+// NONMATCHING (96.25%): same instructions; only register numbers or operands differ.
 void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 difficulty) {
 	s32 adjusted;
 

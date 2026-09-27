@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 #include <dolphin/mtx.h>
 
 typedef struct BattleCameraWork {
@@ -44,3 +46,33 @@ typedef struct BattleCameraWork {
 void battleCameraInit(void);
 
 void battleCameraMain(void);
+void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
+void btl_camera_set_mode(s32 id, s32 mode);
+void btl_camera_set_moveSpeedLv(s32 id, s32 lv);
+void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
+    f32 f5, f32 f6);
+void btl_camera_off_posoffset_manual(s32 id);
+void btl_camera_set_posoffset(s32 id, f32 x, f32 y, f32 z);
+void btl_camera_nomove_x_onoff(s32 id, s32 on);
+void btl_camera_nomove_y_onoff(s32 id, s32 on);
+void btl_camera_nomove_z_onoff(s32 id, s32 on);
+void btl_camera_noshake(s32 id);
+void btl_camera_shake_w(s32 id, s32 a, s32 b, f32 x, f32 y);
+void btl_camera_set_zoomSpeedLv(s32 id, s32 lv);
+void btl_camera_add_zoom(s32 id, f32 z);
+void btl_camera_set_zoom(s32 id, f32 z);
+void btl_camera_set_prilimit(s32 limit);
+f32 battleCameraGetPosMoveSpeed(void);
+USER_FUNC(evt_btl_camera_wait_move_end);
+USER_FUNC(evt_btl_camera_off_posoffset_manual);
+USER_FUNC(evt_btl_camera_set_mode);
+USER_FUNC(evt_btl_camera_set_homing_unit);
+USER_FUNC(evt_btl_camera_set_zoom);
+USER_FUNC(evt_btl_camera_set_moveSpeedLv);
+USER_FUNC(evt_btl_camera_set_zoomSpeedLv);
+USER_FUNC(evt_btl_camera_set_mode);
+USER_FUNC(evt_btl_camera_set_homing_unit);
+USER_FUNC(evt_btl_camera_set_moveSpeedLv);
+USER_FUNC(evt_btl_camera_set_zoom);
+USER_FUNC(evt_btl_camera_shake_h);
+USER_FUNC(evt_btl_camera_add_zoom);

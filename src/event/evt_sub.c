@@ -1,3 +1,4 @@
+#include "evt/evt_sub.h"
 #include "mario/mario_pouch.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr_cmd.h"
@@ -16,6 +17,15 @@
 #include "system.h"
 #include <stdlib.h>
 #include <math.h>
+#include "statuswindow.h"
+#include "manager/fontmgr.h"
+#include "mario/mario_motion.h"
+#include "driver/msgdrv.h"
+#include "mario/mario_cam.h"
+#include "driver/mapdrv.h"
+#include "eff/eff_stageclear.h"
+#include "eff/eff_itemget.h"
+#include <stdio.h>
 
 
 // Strings and data owned by other units (evt_npc.c)
@@ -27,33 +37,11 @@ extern const char str_802C35E4[];
 extern const char str_802C35F8[];
 
 // Status window helpers, not yet declared in statuswindow.h
-s32 statusWinCheckUpdate(void);
-void statusWinForceClose(void);
-void statusWinForceOpen(void);
 
 // Countdown helpers, not yet declared in countdown.h
-s32 countDownGetStatus(void);
-void countDownEnd(void);
-void countDownSetRestartTime(s32 time);
-void countDownFlagOn(u16 flag);
-void countDownFlagOff(u16 flag);
-void countDownStart(s32 type, s32 time);
 
 // Misc functions not yet in any header
-BOOL effStageClearEndChk(EffectEntry* effect);
-extern void FontDrawStart(void);
-extern void FontDrawColor(GXColor* color);
-extern void FontDrawMessage(s32 x, s32 y, const char* msg);
-extern u16 FontGetMessageWidth(const char* message);
-extern const char* msgSearch(const char* tag);
-extern int sprintf(char* str, const char* format, ...);
 extern u32 dat_80419d38;
-EffectEntry* effItemGetEntry(s32 id);
-void marioSetCamId(CameraId camId);
-void marioChgGetItemMotion(void);
-void marioChgStayMotion(void);
-void spline_maketable(s32 count, s32 a, s32* b, s32* c);
-void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t);
 
 typedef struct SplineWork {
 	s32 type;      // 0x0
@@ -626,7 +614,6 @@ USER_FUNC(evt_sub_area_check) {
 	return EVT_RETURN_DONE;
 }
 
-extern void pouchReceiveMail(s32 mail);
 
 #define IRAI_MAIL_CHECK(f1, f2, base, sf, mail)                          \
 	do {                                                                 \
@@ -663,18 +650,8 @@ USER_FUNC(irai_mail_check) {
 }
 
 extern WinMgrDesc coinget_window_desc;
-extern BOOL psndBGMOff(s32 flags);
-extern void iconSetPos(const char* name, f32 x, f32 y, f32 z);
-extern void iconFlagOn(const char* name, s16 flags);
-extern void iconFlagOff(const char* name, s16 mask);
-extern void iconDelete(const char* name);
-extern s32 winMgrEntry(WinMgrDesc* desc);
-extern void winMgrOpen(s32 id);
-extern void winMgrSetParam(s32 id, void* param);
-extern void winMgrCloseAutoDelete(s32 id);
-extern BOOL winMgrAction(s32 id);
 
-// NONMATCHING (82.55%): 5 instructions differ, 19 missing, 24 extra, plus register differences.
+// NONMATCHING (87.09%): 4 instructions differ, 6 missing, 24 extra, plus register differences.
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
@@ -782,7 +759,7 @@ USER_FUNC(evt_sub_get_coin) {
 
 	if (isFirstCall) {
 		event->userdata[0] = 0;
-		event->userdata[1] = (s32)effItemGetEntry(7);
+		event->userdata[1] = (s32)effItemGetEntry(7, pos1.x, pos1.y, pos1.z);
 		event->userdata[2] = 0;
 		event->field_84 = 0;
 		*(s32**)((u8*)event + 0x88) = _mapAlloc(8);

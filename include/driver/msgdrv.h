@@ -1,7 +1,7 @@
 #pragma once
 
 #include <dolphin/os.h>
-#include "driver/windowdrv.h"
+typedef struct WindowEntry WindowEntry;
 #include "memory.h"
 
 typedef struct MsgDataEntry {
@@ -54,3 +54,10 @@ MessageWork* msgGetWork(void);
 
 const char* msgSearch(const char* tag);
 BOOL _ismbblead(u32 a1);
+int msg_compare(const void* a, const void* b);
+void msgDispKeyWait_render(s32 wXluStage);
+s32 msgWindow_ForceClose(s32 id);
+s32 msgWindow_Repeat(s32 id);
+s32 msgWindow_Continue(s32 id);
+s32 msgWindow_Entry(const char* msg, s32 a, s32 b);
+s32 msgWindow_Add(const char* msg, s32 id);

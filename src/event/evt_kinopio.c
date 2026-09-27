@@ -9,12 +9,25 @@
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include <string.h>
+#include "evt/evt_kinopio.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_pouch.h"
+#include "party/party_motion.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_window.h"
+#include "math_ext.h"
+static USER_FUNC(paper_off);  // local to this file in the original
+static USER_FUNC(paper_on);  // local to this file in the original
 
-extern double sin(double x);
-extern double cos(double x);
 
 // itemEntry is defined in driver/itemdrv.c but not declared in any header yet.
-ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8);
 
 // shared .sdata2 constants (named by their original addresses)
 char str_8041BC68[] = "mario";
@@ -43,72 +56,6 @@ const char str_802ECF0C[0x08] = "p_slit";
 const char str_802ECF14[0x08] = "PM_S_3A";
 
 // event function prototypes referenced by the script tables
-USER_FUNC(N_cameraman_on);
-USER_FUNC(breakfast);
-USER_FUNC(coin_chk);
-USER_FUNC(evt_cam3d_evt_off);
-USER_FUNC(evt_cam3d_evt_set);
-USER_FUNC(evt_eff);
-USER_FUNC(evt_eff_fukidashi);
-USER_FUNC(evt_fade_end_wait);
-USER_FUNC(evt_fade_entry);
-USER_FUNC(evt_fade_set_spot_pos);
-USER_FUNC(evt_mario_adjust_dir);
-USER_FUNC(evt_mario_dispflag_onoff);
-USER_FUNC(evt_mario_flag_onoff);
-USER_FUNC(evt_mario_get_exparty);
-USER_FUNC(evt_mario_get_party);
-USER_FUNC(evt_mario_get_pos);
-USER_FUNC(evt_mario_goodbye_party);
-USER_FUNC(evt_mario_jump_pos);
-USER_FUNC(evt_mario_key_onoff);
-USER_FUNC(evt_mario_mov_pos2);
-USER_FUNC(evt_mario_set_dir_npc);
-USER_FUNC(evt_mario_set_party_pos);
-USER_FUNC(evt_mario_set_pos);
-USER_FUNC(evt_msg_print);
-USER_FUNC(evt_msg_print_add);
-USER_FUNC(evt_msg_print_insert);
-USER_FUNC(evt_msg_select);
-USER_FUNC(evt_npc_check_delete);
-USER_FUNC(evt_npc_entry);
-USER_FUNC(evt_npc_flag_onoff);
-USER_FUNC(evt_npc_get_position);
-USER_FUNC(evt_npc_set_position);
-USER_FUNC(evt_npc_set_tribe);
-USER_FUNC(evt_party_run);
-USER_FUNC(evt_party_set_dir_npc);
-USER_FUNC(evt_party_set_pos);
-USER_FUNC(evt_pouch_add_coin);
-USER_FUNC(evt_pouch_all_party_recovery);
-USER_FUNC(evt_pouch_check_item);
-USER_FUNC(evt_pouch_mario_recovery);
-USER_FUNC(evt_pouch_remove_item);
-USER_FUNC(evt_set_dir_to_target);
-USER_FUNC(evt_snd_bgmoff);
-USER_FUNC(evt_snd_bgmon);
-USER_FUNC(evt_snd_sfxon);
-USER_FUNC(evt_snd_sfxon_3d);
-USER_FUNC(evt_sub_get_coin);
-USER_FUNC(evt_sub_get_mapname);
-USER_FUNC(evt_win_coin_off);
-USER_FUNC(evt_win_coin_on);
-USER_FUNC(get_bed);
-USER_FUNC(get_beddeg);
-USER_FUNC(get_bedside);
-USER_FUNC(get_cam);
-USER_FUNC(get_from_bed_evt);
-USER_FUNC(get_npcname);
-USER_FUNC(get_npctalk);
-USER_FUNC(get_ryoukin);
-USER_FUNC(get_to_bed_evt);
-USER_FUNC(msg_no);
-USER_FUNC(offset);
-USER_FUNC(paper_off);
-USER_FUNC(paper_on);
-USER_FUNC(power_chk);
-USER_FUNC(snd_off);
-USER_FUNC(snd_on);
 
 // script tables (defined before the functions so the string pool order matches)
 extern s32 evt_50[];
@@ -445,13 +392,13 @@ USER_FUNC(offset) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(paper_off) {
+static USER_FUNC(paper_off) {
     marioPaperOff();
     return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (99.78%): prologue allocates the string-pool base and event->args to r6/r5; original uses r5/r6.
-USER_FUNC(paper_on) {
+static USER_FUNC(paper_on) {
     s32* args = event->args;
     const char* str = str_802ECE50;
     f32 val = evtGetFloat(event, args[0]);

@@ -17,12 +17,12 @@ IconDispTableEntry _disp_table[] = {
 };
 
 //local prototypes
-void BattleStatusIconDisp(CameraId camId, void* param);
 
 void BattleStatusIconInit(BattleUnit* unit) {
 	memset(&unit->mStatusIconWork, 0, sizeof(BattleWorkStatusIcon));
 }
 
+// NONMATCHING (86.59%): 6 instructions differ, 7 missing, 4 extra, plus register differences.
 void BattleStatusIconMain(BattleUnit* unit) {
 	BattleWorkStatusIcon* icon = &unit->mStatusIconWork;
 	BattleWork* work = _battleWorkPointer;
@@ -61,6 +61,7 @@ void BattleStatusIconDelete(BattleUnit* unit) {
 	; //stubbed in retail
 }
 
+// NONMATCHING (0.46%): 218 missing.
 void BattleStatusIconDisp(CameraId camId, void* param) {
 	BattleUnit* unit = param; //cast to proper type
 }

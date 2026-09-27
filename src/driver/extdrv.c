@@ -1,3 +1,4 @@
+#include "system.h"
 #include "driver/extdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/camdrv.h"
@@ -8,14 +9,12 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 #include <string.h>
+#include "driver/animdrv.h"
+#include "math_trig.h"
 
 extern GlobalWork* gp;
 extern f32 queen_uv[]; //gxsub.c
 extern u32 anim_ext_tex_size; //animdrv.c
-extern void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
-                                        f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
-extern void qqsort(void* array, s32 num_elements, s32 element_size, s32 (*compare)(void*, void*));
-extern double atan2(double y, double x);
 
 static ExtWork work[2];
 
@@ -113,6 +112,7 @@ static f32 shadow_vtx[12] = {-1.2f, 0.0f, -1.2f, -1.2f, 0.0f, 1.2f, 1.2f, 0.0f, 
 static f32 shadow_vtx_pad[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 static f32 shadow_coord[8] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
+// NONMATCHING (99.69%): same instructions; only register numbers or operands differ.
 void extDrawShadow(void) {
 	ExtWork* wp = extGetWork();
 	s32 i;
@@ -202,6 +202,7 @@ void extLoadTextureExit(void) {
 	GXTexModeSync();
 }
 
+// NONMATCHING (94.53%): 2 extra, plus register differences.
 void extLoadTexture(void) {
 	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
@@ -309,7 +310,7 @@ ExtPose* extGetPosePtr(void) {
 	return wp->poses;
 }
 
-static s32 compare(void* a, void* b) {
+static int compare(void* a, void* b) {
 	if (((ExtSortEntry*)a)->field_0x4 > ((ExtSortEntry*)b)->field_0x4) {
 		return 1;
 	}
@@ -319,6 +320,7 @@ static s32 compare(void* a, void* b) {
 	return 0;
 }
 
+// NONMATCHING (80.88%): 10 instructions differ, 12 missing, 22 extra, plus register differences.
 void extMain(void) {
 	ExtWork* wp = extGetWork();
 	ExtPose* pose;
@@ -455,6 +457,7 @@ void extReset(void) {
 	memset(wp, 0, 0x70);
 }
 
+// NONMATCHING (69.56%): 11 instructions differ, 35 missing, 20 extra, plus register differences.
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;

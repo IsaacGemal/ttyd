@@ -9,16 +9,14 @@
 #include "demo/DEMOPad.h"
 #include "system.h"
 #include <string.h>
+#include "mot/mot_walk.h"
+#include "koopa.h"
+#include "party/party_yoshi.h"
+#include "motion/mot_walk.h"
+#include "motion/mot_slit.h"
+#include "math_ext.h"
 
 // locals for symbols with no home header
-s32 checkOneRevolution(s32 dir);
-s32 chkRevolveDir(s32* left, s32* right);
-f32 marioGetWalkSpd(void);
-f32 marioGetDashSpd(void);
-s32 marioGetMotSlitCancel3(void);
-s32 kpaGetStageViewType(void);
-s32 yoshiGetStatus(void);
-double cos(double x);
 
 // rub work state, .bss
 typedef struct RubWork {
@@ -592,8 +590,8 @@ void marioUpdateKeyData(void) {
         }
     }
     if ((p->flags & 0x0E) || !marioChkKey()) {
-        *(u8*)((u8*)p + 0x24E) = 0;
-        *(u8*)((u8*)p + 0x24F) = 0;
+        p->wStickDir1 = 0;
+        p->wStickDir2 = 0;
         *(u8*)((u8*)p + 0x250) = 0;
         *(u8*)((u8*)p + 0x251) = 0;
         *(u8*)((u8*)p + 0x252) = 0;

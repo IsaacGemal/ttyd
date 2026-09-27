@@ -6,9 +6,9 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "evt/evt_cmd.h"
+#include "eff/n64/eff_whirlwind_n64.h"
 
 //=== added by agent: local prototypes for undeclared externals ===
-EffectEntry* effWhirlwindN64Entry(s32 a1, s32 a2, s32 a3, f32 a4);
 
 USER_FUNC(_binta_effect) {
     BattleWork* wp = _battleWorkPointer;

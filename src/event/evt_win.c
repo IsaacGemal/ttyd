@@ -18,16 +18,15 @@
 #include <dolphin/mtx.h>
 #include "manager/fontmgr.h"
 #include "driver/camdrv.h"
+#include "driver/itemdrv.h"
+#include "evt/evt_win.h"
+#include "window/win_main.h"
+#include <stdio.h>
 
 // evt_unitwin_disp_func is a display callback, not an event command.
-void evt_unitwin_disp_func(CameraId cameraId, void* param);
 
-extern void mapObjFlagOff(const char* name, u32 flag);
 const char str_802F6894[] = "yubicursor_2";
-extern s32 winGhostDiaryChk(void);
-extern s32 N_itemPickUpFromFieldCheck(void);
 
-extern int sprintf(char* str, const char* format, ...);
 extern ItemData itemDataTable[];
 extern f32 float_1000_8041dbe4;
 extern f32 float_6_8041dbe8;
@@ -87,8 +86,6 @@ typedef struct UnitWinWork {
 
 static UnitWinWork* _wp;
 static s16* mario_status_point_table[3];
-USER_FUNC(evt_unitwin_main_func);
-USER_FUNC(unk_80174e98);
 static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)unk_80174e98, 0x2, 0x1 };
 extern WinMgrDesc unk_80375478[];

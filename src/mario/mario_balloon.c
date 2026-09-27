@@ -1,3 +1,4 @@
+#include "mario/mario_balloon.h"
 #include "driver/casedrv.h"
 #include "driver/effdrv.h"
 #include "driver/hitdrv.h"
@@ -6,14 +7,10 @@
 #include "mario/mario.h"
 #include "mario/mario_hit.h"
 #include <string.h>
+#include "eff/eff_mario_balloon.h"
 
 // Prototypes not yet in headers (these functions are defined in driver/mobjdrv.c and driver/npcdrv.c,
 // but no included header declares them). See REPORT.md.
-MapObjectEntry* mobjHitObjPtrToPtr(HitEntry* hitObj);
-BOOL mobjGetHint(MapObjectEntry* entry);
-s32 mobjCheckItemboxOpen(MapObjectEntry* entry);
-NpcEntry* fbatNpcTalkCheck(void);
-EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc);
 
 // Raw-offset accessors for MarioWork fields that are still padding in mario/mario.h:
 //   0x1DC, 0x1E0: two unnamed HitEntry* fields before hitobjStandOn (0x1E4).

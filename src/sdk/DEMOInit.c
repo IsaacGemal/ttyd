@@ -5,6 +5,9 @@
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
 #include <string.h>
+#include "system.h"
+#include <demo/DEMOPad.h>
+#include <stdio.h>
 
 static GXRenderModeObj* rmode;
 static GXRenderModeObj rmodeobj;
@@ -21,22 +24,19 @@ static u32 FrameMissThreshold;
 static vu32 FrameCount;
 char __GXErrorMessage[0x400];
 
-extern void DEMOPadInit(void); //easier to declare this way
+// LOCAL_PROTO(DEMOUpdateStats): the SDK stats header declares DemoStatEnable as u8; this custom unit uses BOOL.
 extern void DEMOUpdateStats(GXBool inc);
+// LOCAL_PROTO(DEMOPrintStats): the SDK stats header conflicts with the custom DemoStatEnable declaration.
 extern void DEMOPrintStats(void);
 
-extern u16 sysGetToken(void);
-extern int sprintf(char* str, const char* format, ...);
 
 //internal, inline
 static void __DEMOInitRenderMode(GXRenderModeObj* mode);
 static void __DEMOInitMem(void);
 static void __DEMOInitGX(void);
 static void __DEMOInitVI(void);
-static void __NoHangRetraceCallback(u32 count);
-static void __NoHangDoneRender(void);
-static void __DEMODiagnoseHang(void);
 
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void DEMOInit(GXRenderModeObj* mode) {
 	OSInit();
 	DVDInit();
@@ -143,6 +143,7 @@ void DEMOBeforeRender(void) {
 	GXInvalidateTexAll();
 }
 
+// NONMATCHING (97.89%): 2 instructions differ.
 void DEMODoneRender(void) {
 	if (GPHangWorkaround) {
 		__NoHangDoneRender();
@@ -203,7 +204,7 @@ void DEMOEnableGPHangWorkaround(u32 timeoutFrames) {
 	}
 }
 
-static void __NoHangRetraceCallback(u32 count) {
+void __NoHangRetraceCallback(u32 count) {
 #pragma unused (count)
 	static u32 ovFrameCount = 0;
 	static u32 lastOvc = 0;
@@ -226,7 +227,8 @@ static void __NoHangRetraceCallback(u32 count) {
 	}
 }
 
-static void __NoHangDoneRender(void) {
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
+void __NoHangDoneRender(void) {
 	BOOL abort = FALSE;
 	u16 token = sysGetToken();
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
@@ -278,7 +280,8 @@ void DEMOSetGPHangMetric(GXBool enable) {
 	}
 }
 
-static void __DEMODiagnoseHang(void) {
+// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
+void __DEMODiagnoseHang(void) {
 	u32 xfTop0, xfBot0, suRdy0, r0Rdy0;
 	u32 xfTop1, xfBot1, suRdy1, r0Rdy1;
 	u32 xfTopD, xfBotD, suRdyD, r0RdyD;

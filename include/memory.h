@@ -48,3 +48,4 @@ void smartAutoFree(u32 a1);
 void smartFree(smartEntry* entry);
 smartEntry* smartAlloc(u32 size, u8 type);
 GXTexObj* smartTexObj(GXTexObj* obj, void** image_ptr);
+void smartGarbage(void);

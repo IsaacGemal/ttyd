@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/mtx.h>
 #include "driver/effdrv.h"
 
@@ -16,3 +18,5 @@ typedef struct EffUltraHammerData {
 } EffUltraHammerData;
 
 EffectEntry* effUltraHammerEntry(BOOL arg0, s32 counter, f32 x, f32 y, f32 z, f32 scale);
+void effUltraHammerMain(EffectEntry* effect);
+void effUltraHammerDisp(enum CameraId camId, void *param);

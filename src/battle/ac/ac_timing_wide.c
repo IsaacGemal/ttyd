@@ -1,3 +1,4 @@
+#include "battle/ac/ac_timing_wide.h"
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_unit.h"

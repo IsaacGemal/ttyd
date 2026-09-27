@@ -1,3 +1,4 @@
+#include "motion/mot_plane.h"
 #include "mot/mot_plane.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_snd.h"
@@ -16,6 +17,7 @@ CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_AIRPLANE1"), LW(0), LW(1), LW(2), 0)
 RETURN
 EVT_END()
 
+// NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
 void mot_plane(void) {
 	MarioWork* mario;
 	MotionPlaneData* data;
@@ -40,7 +42,8 @@ void mot_plane(void) {
 	}
 }
 
-void flyMain(void) {
+// NONMATCHING (2.15%): 4 instructions differ, 844 missing, plus register differences.
+static void flyMain(void) {
 	MarioWork* mario;
 
 	mario = marioGetPtr();

@@ -10,6 +10,15 @@
 #include "mario/mario_sbr.h"
 #include <string.h>
 #include "driver/seqdrv.h"
+#include "party/party_yoshi.h"
+#include "mario/mario_cam.h"
+#include "mario/mario_hit.h"
+#include "motion/mot_roll.h"
+#include "party/party_kuribo.h"
+#include "motion/mot_ship.h"
+#include "motion/mot_slit.h"
+#include "party/party_bomhei.h"
+#include "party/party_nokonoko.h"
 
 //.data
 const char* dotMarioPose[4][6] = {
@@ -26,39 +35,10 @@ Vec blurPos[8];
 MarioWork* mp;
 
 //local prototypes
-void marioDispBlurSub(s32* unused, s32 blurId);
-const char* toRearPose(const char* name);
-const char* toFrontPose(const char* name);
 
 //locals for symbols with no home header
 extern Vec R_last_position;
 extern const char* marioAnimeGroupData[4][3];
-void partyUsePost(PartyEntry* party);
-void partyCtrlOn(void);
-void partyCtrlOff(void);
-void marioYoshiForceCancel(void);
-void camFollowYOn(void);
-void camFollowYOff(void);
-void marioMotion(void);
-f32 marioChkOverhead(void);
-void marioSetFallPara(void);
-void marioChkGnd2(void);
-void marioChkGnd(void);
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
-void marioFall(void);
-void marioJump(void);
-void marioReInit_ship(void);
-void marioReInit_roll(void);
-void marioReInit_slit(void);
-void marioRideYoshi(void);
-void marioSlitForceCancel(void);
-s32 marioShipChanging(void);
-BOOL marioRollKeyDisable(void);
-BOOL marioSlitKeyDisable(void);
-BOOL christineGetStatus(void);
-BOOL mario_bomhei_keychk2(void);
-s32 yoshiGetStatus(void);
-BOOL nokonoko_holdItem(void);
 
 MarioWork* marioGetPtr(void) {
 	return mp;
@@ -68,10 +48,12 @@ s32 marioGetColor(void) {
 	return mp->colorId;
 }
 
+// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
 void marioSetCharMode(s32 mode) {
 
 }
 
+// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
 void marioSetFamicomMode(s32 mode) {
 
 }
@@ -178,6 +160,7 @@ BOOL unk_8005bb80(void) {
 	return TRUE;
 }
 
+// NONMATCHING (0.50%): 1 instruction differs, 276 missing.
 BOOL marioCheckMenuDisable(void) {
 	return TRUE;
 }
@@ -423,10 +406,12 @@ void marioResetHitObj(const char* name) {
 	}
 }
 
+// NONMATCHING (0.72%): empty placeholder, not decompiled yet.
 void marioReset(void) {
 
 }
 
+// NONMATCHING (3.57%): empty placeholder, not decompiled yet.
 void marioOfsRotReset(void) {
 
 }
@@ -447,18 +432,22 @@ void marioPoseInit(void) {
 	wp->paperAnimGroupId[2] = animPoseEntry(marioAnimeGroupData[mp->colorId][2], 2);
 }
 
+// NONMATCHING (0.35%): empty placeholder, not decompiled yet.
 void marioInit(void) {
 
 }
 
+// NONMATCHING (0.40%): empty placeholder, not decompiled yet.
 void marioReInit(void) {
 
 }
 
+// NONMATCHING (0.16%): empty placeholder, not decompiled yet.
 void marioMain(void) {
 
 }
 
+// NONMATCHING (85.70%): 4 instructions differ, 15 missing, plus register differences.
 void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;
@@ -537,10 +526,12 @@ void marioCtrlOff2Main(void) {
 	}
 }
 
+// NONMATCHING (0.13%): empty placeholder, not decompiled yet.
 void marioMove(void) {
 
 }
 
+// NONMATCHING (0.27%): empty placeholder, not decompiled yet.
 void marioMoveMain(void) {
 
 }
@@ -570,6 +561,7 @@ s32 marioAnimeId(void) {
 	return id;
 }
 
+// NONMATCHING (99.25%): 1 instruction differs, 1 missing, plus register differences.
 void unk_80058374(void) {
 	MarioWork* wp = mp;
 	MarioMotion mot = wp->currMotionId;
@@ -677,6 +669,7 @@ void marioChgPaper(const char* name) {
 	}
 }
 
+// NONMATCHING (78.52%): 4 missing, 6 extra, plus register differences.
 void marioSetPaperAnimeLocalTime(s16 frames) { //f32 cast reuse, flags check
 	MarioWork* wp = mp;
 	s32 group;
@@ -699,6 +692,7 @@ inline void marioPaperRelease(void) {
 	}
 }
 
+// NONMATCHING (95.91%): 1 missing, 1 extra, plus register differences.
 BOOL marioPaperOn(const char* name) { //almost 1:1, some regalloc
 	MarioWork* wp = mp;
 	BOOL flag;
@@ -765,27 +759,33 @@ f32 marioGetScale(void) { //1:1
 	return mp->flags & 0x2000000 ? 1.2f : 2.0f;
 }
 
+// NONMATCHING (0.29%): empty placeholder, not decompiled yet.
 void marioMakeDispDir(void) {
 
 }
 
+// NONMATCHING (0.23%): empty placeholder, not decompiled yet.
 void marioRearAnime(void) {
 
 }
 
+// NONMATCHING (0.38%): empty placeholder, not decompiled yet.
 void marioPreDisp(void) {
 
 }
 
+// NONMATCHING (0.26%): empty placeholder, not decompiled yet.
 void marioDispBlurSub(s32* unused, s32 blurId) {
 
 }
 
+// NONMATCHING (1.03%): 96 missing.
 void marioDispBlur(CameraId camId, void* param) {
 	MarioWork* wp = param; //cast to correct type
 
 }
 
+// NONMATCHING (6.54%): 309 missing, plus register differences.
 void marioDisp(CameraId camId, void* param) {
 	MarioWork* wp = param; //cast to correct type
 	Mtx mtx1; //TODO: rename
@@ -796,6 +796,7 @@ void marioDisp(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toRearPose(const char* name) { //1:1
 	const char* rear = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {
@@ -935,6 +936,7 @@ const char* toRearPose(const char* name) { //1:1
 	}
 }
 
+// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toFrontPose(const char* name) { //1:1
 	const char* front = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {

@@ -16,6 +16,10 @@
 #include <string.h>
 // #include <math.h>  // drags the extern-inline sqrtf/sqrt into .rodata
 #include "matching.h"
+#include "party/party_yoshi.h"
+#include "party/party_move.h"
+#include "party/party_hit.h"
+#include "motion/mot_damage.h"
 
 // .sbss
 s32 jumpheight;
@@ -23,19 +27,7 @@ s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
 
 // Local declarations: not yet in a header.
-void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChgMot(PartyEntry* party, s32 mot);
 // NONMATCHING (0.00%): not implemented yet (bulk of the file).
-void yoshi_use(PartyEntry* party);
-void inertia(PartyEntry* party);
-f32 marioGetMoveRate(f32 angle);
-HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
-void marioSetSplash(s32 a, Vec* pos);
-void set_damage_root_ypos(f32 y);
-u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3);
-void party_force_ride_yoshi(PartyEntry* party);
-BOOL partyGoodbyeInit(PartyEntry* party);
-BOOL partyGoodbyeMain(PartyEntry* party);
 
 // Sweat/smoke struct stored in PartyEntry::useStruct (0x170) while riding Yoshi.
 typedef struct PartyYoshiUse {
@@ -96,7 +88,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
 
     if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
         *outDist = 0.0f;
-        *outAngle = *(f32*)((u8*)party + 0xFC);
+        *outAngle = party->field_FC;
         return;
     }
 
@@ -111,7 +103,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
         }
         ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
         if (dist == 0.0f) {
-            ang = *(f32*)((u8*)party + 0xFC);
+            ang = party->field_FC;
         }
         ang = revise360(ang + *(f32*)((u8*)party + 0xF8));
         *outAngle = ang;
@@ -811,9 +803,6 @@ L_2968:
 end: ;
 }
 
-HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b);
-HitEntry* dou10_yoko_yari2(f32* out);
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
 
 void checkWall(PartyEntry* party, f32 a, f32 b) {
     MarioWork* mario = marioGetPtr();
@@ -875,11 +864,11 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
     } else {
         if (!a) {
             pos = party->position;
-            hit = partySearchWallFront(party, &pos, a, *(f32*)((u8*)party + 0x100));
+            hit = partySearchWallFront(party, &pos, a, party->dir);
             party->field_12C = hit;
             *(HitEntry**)((u8*)mario + 0x1E0) = hit;
             if (hit == NULL) {
-                f32 dir = toMovedir(*(f32*)((u8*)party + 0x10C));
+                f32 dir = toMovedir(party->field_10C);
 
                 pos = party->position;
                 hit = partySearchWallFront(party, &pos, a, dir);
@@ -890,7 +879,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                 HitEntry* h;
 
                 pos = party->position;
-                h = partySearchWallFront(party, &pos, a, *(f32*)((u8*)party + 0x100));
+                h = partySearchWallFront(party, &pos, a, party->dir);
                 if (h == NULL) {
                     *(HitEntry**)((u8*)party + 0x130) = h;
                     *(HitEntry**)((u8*)mario + 0x1DC) = h;
@@ -960,7 +949,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
         }
     }
 
-    marioChkWallAround(&pos, 1, a, b, *(f32*)((u8*)party + 0xF4), *(f32*)((u8*)mario + 0x1B8));
+    marioChkWallAround(&pos, 1, a, b, *(f32*)((u8*)party + 0xF4), mario->wPlayerCollisionBox.y);
     party->position.x = pos.x;
     party->position.z = pos.z;
 

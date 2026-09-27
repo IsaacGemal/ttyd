@@ -7,8 +7,9 @@
 #include "texPalette.h"
 #include <dolphin/dvd.h>
 #include <string.h>
+#include "driver/fadedrv.h"
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 extern GlobalWork* gp;
 
 //.data
@@ -72,13 +73,6 @@ s32 tpl_ok;
 TEXPalette* env_tpl;
 
 //local prototypes
-void _callback(s32 result, DVDFileInfo* fileInfo);
-void envCapture(CameraId camId, void* param);
-void envCapture2(CameraId camId, void* param);
-void envDisp(CameraId camId, void* param);
-void envDisp2(CameraId camId, void* param);
-void envDisp_DepthOfField(void);
-void envDisp_Blur(void);
 
 //there is no function so we'll make a macro
 #define envGetWork() (gp->inBattle ? &work[1] : &work[0])
@@ -179,6 +173,7 @@ void envCapture2(CameraId camId, void* param) { //1:1
     }
 }
 
+// NONMATCHING (86.96%): 3 missing.
 void envDisp(CameraId camId, void *param) {
     f32 vp[GX_VIEWPORT_SZ];
     f32 pm[GX_PROJECTION_SZ];
@@ -192,6 +187,7 @@ void envDisp(CameraId camId, void *param) {
     GXSetProjectionv(pm);
 }
 
+// NONMATCHING (99.93%): same instructions; only register numbers or operands differ.
 void envDisp2(CameraId camId, void *param) { //almost 1:1, needs extra addi
     f32 vp[GX_VIEWPORT_SZ];
     f32 pm[GX_PROJECTION_SZ];
@@ -241,6 +237,7 @@ void envMain(void) {
 #define TWO_PI 6.283185307179586f
 s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 
+// NONMATCHING (55.26%): 33 instructions differ, 239 missing, 104 extra, plus register differences.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     Mtx sp48;
@@ -838,6 +835,7 @@ void envDisp_DepthOfField(void) {
 
 
 //almost 1:1, needs some regalloc work and type changes
+// NONMATCHING (91.29%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
 void envGlare(EnvironmentGlare* glare) {
     EnvironmentWork* var_r4 = envGetWork();
     EnvironmentGlareFilter* temp_r30;

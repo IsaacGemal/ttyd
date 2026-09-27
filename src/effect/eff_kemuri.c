@@ -23,6 +23,7 @@ typedef struct effKemuriData {
 	s32 field_0x88; //0x88
 } effKemuriData;
 
+// NONMATCHING (99.80%): same instructions; only register numbers or operands differ.
 EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6) {
 	effKemuriData* data;
 	s32 numEffects, i;
@@ -90,10 +91,12 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	return entry;
 }
 
+// NONMATCHING (0.52%): empty placeholder, not decompiled yet.
 void effKemuriMain(EffectEntry* effect) {
 
 }
 
+// NONMATCHING (0.25%): 399 missing.
 void effKemuriDisp(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 }

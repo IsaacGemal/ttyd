@@ -15,6 +15,7 @@
 #include "dolphin/os.h"
 #include "manager/dvdmgr.h"
 #include <dolphin/thp.h>
+#include "sequence/seq_demo.h"
 
 typedef struct THPHeader {
     char magic[4];             // 0x0
@@ -145,13 +146,6 @@ AIDCallback OldAIDCallback;
 BOOL Initialized;
 
 // Forward Declarations
-void __THPSimpleDVDCallback(s32 result, DVDFileInfo* fileInfo);
-BOOL VideoDecode(u8* videoFrame);
-void THPAudioMixCallback(void);
-void THPGXRestore(void);
-void THPGXYuv2RgbSetup(GXRenderModeObj* rmode);
-void THPGXYuv2RgbDraw(u8* y_data, u8* u_data, u8* v_data, s16 x, s16 y, s16 textureWidth, s16 textureHeight,
-                      s16 polygonWidth, s16 polygonHeight);
 
 BOOL THPSimpleInit(s32 audioSystem) {
     memset(&SimpleControl, 0, sizeof(THPSimple));

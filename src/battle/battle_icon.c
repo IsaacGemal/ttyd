@@ -4,11 +4,12 @@
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr_cmd.h"
 #include <string.h>
+#include <stdio.h>
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData* itemDataTable;
-extern int sprintf(char* str, const char* format, ...);
 
+// NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
 	int i;
@@ -22,10 +23,12 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 	return NULL;
 }
 
+// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
 void BattleIconInit(void) {
 	memset(_battleWorkPointer->icons, 0, sizeof(_battleWorkPointer->icons));
 }
 
+// NONMATCHING (59.35%): 8 instructions differ, 7 missing, 7 extra, plus register differences.
 void BattleIconMain(void) {
 	BattleWork* wp;
 	BattleIcon* icon;
@@ -51,6 +54,7 @@ void BattleIconMain(void) {
 	}
 }
 
+// NONMATCHING (32.25%): 3 instructions differ, 2 missing, 10 extra, plus register differences.
 void BattleIconEnd(void) {
 	BattleWork* wp = _battleWorkPointer;
 	int i;
@@ -60,6 +64,7 @@ void BattleIconEnd(void) {
 	}
 }
 
+// NONMATCHING (7.59%): 7 instructions differ, 4 missing, 62 extra, plus register differences.
 BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	BattleIcon* icon;
 	int i;
@@ -90,6 +95,7 @@ BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	}
 }
 
+// NONMATCHING (90.53%): 3 instructions differ.
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {
 		iconDelete(icon->base->name);
@@ -98,6 +104,7 @@ void BtlIcon_Delete(BattleIcon* icon) {
 }
 
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
+// NONMATCHING (0.00%): 4 instructions differ, 1 missing, 104 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconEntry) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -115,6 +122,7 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 }
 
 //s32 itemId (index for itemDataTable) , f32 x, f32 y, f32 z, s32 evtIndex
+// NONMATCHING (0.00%): 10 instructions differ, 2 missing, 106 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -132,6 +140,7 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 }
 
 //s32 index for BtlIconGetPtr
+// NONMATCHING (0.00%): 2 instructions differ, 52 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconDelete) {
 	BattleIcon* icon;
 	s32 value;
@@ -143,6 +152,7 @@ USER_FUNC(btlevtcmd_BtlIconDelete) {
 }
 
 //s32 index for BtlIconGetPtr, f32 x, f32 y, f32 z
+// NONMATCHING (0.00%): 5 instructions differ, 1 missing, 60 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconSetPosition) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -159,6 +169,7 @@ USER_FUNC(btlevtcmd_BtlIconSetPosition) {
 }
 
 //s32 index for BtlIconGetPtr, f32 fallAccel
+// NONMATCHING (0.00%): 3 instructions differ, 1 missing, 46 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 	s32* args = event->args;
 	s32 index = evtGetValue(event, args[0]);
@@ -167,6 +178,7 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (0.57%): 1 instruction differs, 244 missing.
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	//TODO: revisit when more of BattleWorkIcon is filled out
 	return 2;

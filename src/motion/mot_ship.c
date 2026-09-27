@@ -1,3 +1,4 @@
+#include "motion/mot_ship.h"
 #include "mario/mario.h"
 #include "mario/mario_sbr.h"
 #include "driver/hitdrv.h"
@@ -6,15 +7,11 @@
 #include "system.h"
 #include "memory.h"
 #include <string.h>
+#include "party.h"
+#include "eff/eff_funemizu.h"
+#include "math_ext.h"
 
 // Local declarations for symbols that have no home header yet (see REPORT.md).
-void allPartyRideOff(void);
-void allPartyForceRideOn(void);
-void psndSFX_pos(s32 id, Vec* position);
-EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e);
-extern double sin(double x);
-extern double cos(double x);
-extern f32 __fabsf(f32 x);
 
 // Motion data allocated as mario->motStruct (size 0x48).
 typedef struct MotionShipData {

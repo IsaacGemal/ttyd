@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include <dolphin/gx.h>
 #include "memory.h"
 
@@ -61,5 +63,9 @@ void envMain(void);
 //envBlurOn
 //envBlurOff
 void envGlare(EnvironmentGlare* glare);
-
-
+void envDisp_DepthOfField(void);
+void envCapture(CameraId camId, void* param);
+void envCapture2(CameraId camId, void* param);
+void envDisp(CameraId camId, void* param);
+void envDisp2(CameraId camId, void* param);
+void envDisp_Blur(void);

@@ -6,6 +6,9 @@
 #include "data/item_data.h"
 #include <dolphin/gx.h>
 #include <string.h>
+#include "driver/animdrv.h"
+#include "system.h"
+#include "battle/battle_sub.h"
 
 
 extern BattleWork* _battleWorkPointer;
@@ -22,31 +25,10 @@ s32 _status_pose_table[] = {
 	-1
 };
 
-//local prototypes
-const char* searchPoseTbl(BattleDispPose* table, s32 poseId);
-static void btlDispGXInit2DSub(void);
-static void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3);
-static void btlDispGetTexSize(u32 id, u16* width, u16* height);
-static void _pose_def(BattleUnitPart* part);
-static void _pose_one_pattern(BattleUnitPart* part);
-static void _pose_two_pattern(BattleUnitPart* part);
-static void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor color, f32 rotation);
 
 //.rodata
 static Vec vec3_802eddd0 = { 0.0f, 0.0f, 0.0f };
 
-extern s32 animPoseSetLocalTimeRate(s32 poseId, f32 localTimeRate);
-extern void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset);
-extern void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag);
-extern s32 animPoseEntry(const char* animName, s32 type);
-extern void animPoseSetMaterialLightFlagOn(s32 poseId, u32 mask);
-void animPoseSetMaterialEvtColor(s32 poseId, GXColor color);
-void animPoseSetMaterialFlagOn(s32 poseId, u32 mask);
-void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
-void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts);
-extern s32 sysMsec2Frame(s32 msec);
-extern s32 irand(s32 max);
-extern f32 sinfd(f32 deg);
 extern double double_to_int_802ede28;
 extern f32 float_4_8041bf3c;
 extern f32 float_2_8041bf68;
@@ -258,7 +240,7 @@ void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 
 
 // Keep btlDispTexPlane2 out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color) {
+void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused) {
 	CameraEntry* camera;
 	Mtx mtx2;
 
@@ -384,7 +366,7 @@ void btlDispChangeAnime(BattleUnitPart* part, const char* animName, BOOL reset) 
 }
 
 #pragma dont_inline on
-static void _pose_def(BattleUnitPart* part) {
+void _pose_def(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: a one-case switch makes MWCC emit the original `beq body; b end` guard;
 	   the natural early-return folds to `bne end`. */
@@ -408,7 +390,7 @@ static void _pose_def(BattleUnitPart* part) {
 }
 
 // NONMATCHING (78.24%): target keeps the string base in r31 and `part` in r30; ours folds each string into its own @ha/@l and puts `part` in r31.
-static void _pose_one_pattern(BattleUnitPart* part) {
+void _pose_one_pattern(BattleUnitPart* part) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: one-case switch reproduces the original `beq body; b end` guard. */
 	switch (*(u8*)((char*)part + 0x214)) {
@@ -454,7 +436,7 @@ static void _pose_one_pattern(BattleUnitPart* part) {
 
 // NONMATCHING (76.61%): 9 instructions differ, 28 missing, 11 extra, plus register differences.
 #pragma dont_inline on
-static void _pose_two_pattern(BattleUnitPart* part) {
+void _pose_two_pattern(BattleUnitPart* part) {
 	s32 t;
 
 	switch (*(u8*)((char*)part + 0x214)) {
@@ -696,7 +678,6 @@ void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor
 #pragma dont_inline reset
 
 extern f32 float_901_8041bf50;
-void _btlStockExpDisp(CameraId cameraId, void* param);
 
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
@@ -714,8 +695,6 @@ void BattleStockExpDisp(void) {
 
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
-extern s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
-void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit);
 
 // NONMATCHING (70.80%): MWCC copies the Vec into the iconDispGx arg slot; target reuses the BtlUnit_GetPos slot (r1+8). unit/itemId also land in swapped callee-saved registers.
 void btlUnitStolenItemDisp(CameraId cameraId, BattleUnit* unit) {
@@ -770,7 +749,6 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 
 extern f32 float_deg2rad_8041bf54;
 
-// NONMATCHING (98.90%): exact except the caller does not emit the trailing `li r6,0` for the by-value GXColor argument to btlDispTexPlane2.
 void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color) {
 	Mtx mtx;
 	Mtx transM;
@@ -796,5 +774,5 @@ void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scal
 	PSMTXConcat(rotXM, mtx, mtx);
 	PSMTXConcat(rotYM, mtx, mtx);
 	PSMTXConcat(transM, mtx, mtx);
-	btlDispTexPlane2(mtx, id, *color);
+	btlDispTexPlane2(mtx, id, *color, 0);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct BattleWeapon BattleWeapon;
+
 #include <dolphin/types.h>
 #include "battle/battle_damage.h"
 #include "battle/battle_status_effect.h"
@@ -713,3 +715,21 @@ BOOL BtlUnit_CheckData(BattleUnit* unit, s32 tag);
 BOOL BtlUnit_GetEnemyBelong(BattleUnit* unit);
 void BtlUnit_ReviseHpFp(BattleUnit* unit);
 void BtlUnit_SetParamFromPouch(BattleUnit* unit);
+s32 BtlUnit_EnemyItemCanUseCheck(s32 itemId);
+void BtlUnit_ChangeStayAnim(s32 unitId);
+void BtlUnit_ChangeTalkAnim(s32 unitId);
+BOOL BtlUnit_CanActStatus(BattleUnit* unit);
+s32 BtlUnit_GetExp(BattleUnit* unit);
+s32 BtlUnit_GetCoin(BattleUnit* unit);
+void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
+void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
+void BtlUnit_PoseSoundInit(BattleUnitPart* part);
+BattleUnit* BtlUnit_GetGuardKouraPtr(BattleUnit* unit);
+BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit);
+void _CheckMoveCount(BattleUnit* unit);
+void BtlUnit_SetBodyAnim(BattleUnit* unit, const char* animName);
+void BtlUnit_SetBodyAnimType(BattleUnit* unit, s32 type);
+void BtlUnit_HpGaugeInit(BattleUnit* unit);
+s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
+void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z);
+BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);

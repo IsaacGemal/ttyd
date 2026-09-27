@@ -7,6 +7,7 @@
  */
 
 #include "system.h"
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/pad.h>
 // #include <math.h>
@@ -28,12 +29,7 @@ extern GlobalWork* gp;
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
 #else
-double fabs(double x);
-float fabsf(float x);
 #endif
-extern double sin(double x);
-extern double cos(double x);
-extern double fmod(double x, double y);
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -127,6 +123,7 @@ f32 reviseAngle(f32 angle) {
     return result;
 }
 
+// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 f32 distABf(f32 x1, f32 y1, f32 x2, f32 y2) {
     f32 xdiff, ydiff;
 

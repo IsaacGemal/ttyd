@@ -7,15 +7,6 @@
 #include <string.h>
 
 // Locally declared prototypes (move to battle/battle_stage.h later).
-extern s32 BattleStageGetLightNumberByName(const char* name);
-extern s32 BattleStageSysLightEntry(const char* name);
-extern void BattleStageLightRelease(s32 idx, s32 frames, u8 ease);
-extern void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease);
-extern void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease);
-extern void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease);
-extern void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease);
-extern void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease);
-extern void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease);
 
 // .rodata
 const char dat_802f32f8[3][0x20] = {

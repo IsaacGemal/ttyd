@@ -9,6 +9,7 @@
 #include "memory.h"
 #include <math.h>
 #include <string.h>
+#include "mario/mario_party.h"
 
 extern GlobalWork* gp;
 
@@ -65,12 +66,7 @@ typedef struct StatusWindowValue {
 } StatusWindowValue;
 
 // local prototypes
-void gaugeDisp(s32 a1, f32 x, f32 y);
-void statusGetValue(StatusWindowValue* values);
-s32 marioGetParty(void);
-s32 valueCheck(void);
-void valueUpdate(void);
-void statusWinDisp(CameraId camId, void* param);
+
 
 void statusWinInit(void) {
     wp = __memAlloc(HEAP_DEFAULT, sizeof(StatusWindowWork));
@@ -108,6 +104,7 @@ void statusWinReInit(void) {
     }
 }
 
+// NONMATCHING (92.73%): 4 instructions differ, 20 missing, 2 extra, plus register differences.
 void statusWinMain(void) {
     MarioWork* mario;
 
@@ -348,6 +345,7 @@ void statusWinOpen(void) {
     wp->field_0x4 |= 5;
 }
 
+// NONMATCHING (59.94%): 9 instructions differ, 20 missing, 25 extra, plus register differences.
 void gaugeDisp(s32 a1, f32 x, f32 y) {
     s32 count;
     s32 i;
@@ -478,6 +476,7 @@ static s32 valueMoveAmount(s16 cur, s16 target) {
     return step;
 }
 
+// NONMATCHING (97.54%): 3 missing, plus register differences.
 void valueUpdate(void) {
     static s32 count;
     StatusWindowValue values;
@@ -520,6 +519,7 @@ void valueUpdate(void) {
     }
 }
 
+// NONMATCHING (15.31%): 15 instructions differ, 448 missing, 2 extra, plus register differences.
 void statusWinDisp(CameraId camId, void* param) {
     alwaysDtEntry* dtEntry;
     s32 v6;

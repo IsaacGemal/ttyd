@@ -22,7 +22,6 @@ static DVDMgrCallback _callback;
 BOOL dvdmgr_thread_on;
 
 //local prototypes
-void* proc_main(void* param);
 static s32 compare(const void** a, const void** b);
 
 void* proc_main(void* param) { //1:1
@@ -169,6 +168,7 @@ DVDEntry* DVDMgrOpen(const char* path, u8 priority, u16 unknown) { //1:1
 }
 
 //return is s32 even though it cannot be negative
+// NONMATCHING (85.36%): 1 instruction differs, 2 missing, 2 extra.
 s32 DVDMgrRead(DVDEntry* entry, void* address, u32 size, s32 offset) {
 	entry->address = address;
 	entry->bytesLeft = size;

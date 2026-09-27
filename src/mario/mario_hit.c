@@ -5,18 +5,22 @@
 #include "party/party_vivian.h"
 #include "system.h"
 #include <string.h>
+#include "koopa.h"
+#include "party.h"
+#include "driver/mobjdrv.h"
+#include "mario/mario_cam.h"
+#include "mario/mario_sbr.h"
+#include "mario/mario_party.h"
+#include "motion/mot_damage.h"
+#include "koopa_hit.h"
+#include "koopa_motion.h"
+#include "motion/mot_jabara.h"
+#include "pmario_sound.h"
+#include "math_ext.h"
+#include <dolphin/mtx.h>
+#include "motion/mot_slit.h"
 
 // locals for symbols with no home header
-MapObject* mobjHitObjPtrToPtr(HitEntry* hitObj);
-void kpaClearHitobjRide(void);
-void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d);
-s32 kpaFireAttackCheck(void);
-s32 kpaCamFollow(void);
-void quake_kpaLandOn(void);
-void camFollowYOn(void);
-void set_damage_root_ypos(f32 y);
-s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
-void* marioLandonChk_old(f32* pos, f32 spd);
 
 // floats with no home header
 extern const f32 float_0_8041a7a4;
@@ -279,10 +283,6 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
 }
 
 // prototypes for in-file functions
-void marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d);
-void marioSearchFrontWall_staying(f32 a);
-void dou10_yoko_yari(f32* p);
-HitEntry* searchFrontWall(Vec* a, f32* b, f32 c, f32 d, f32 e);
 
 // NONMATCHING (96.18%): CSEs wp+0x210 into an extra callee-saved register (r30)
 // where the original recomputes addi r3,r31,0x210 per dou10_yoko_yari, dragging
@@ -332,7 +332,7 @@ void marioCheckWall(f32 a, f32 b) {
         }
         if (marioChkBero(hit)) {
             if (a != float_0_8041a7a4) {
-                *(void**)((u8*)wp + 0x1EC) = hit;
+                wp->hitobjPush = hit;
                 *(void**)((u8*)wp + 0x1F0) = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
@@ -353,7 +353,7 @@ void marioCheckWall(f32 a, f32 b) {
                     r = wp2->currMotionId == 0x19;
                 }
                 if (r != 0) {
-                    *(void**)((u8*)wp + 0x1EC) = hit;
+                    wp->hitobjPush = hit;
                 }
             }
             wp->position = v;
@@ -365,9 +365,6 @@ void marioCheckWall(f32 a, f32 b) {
     dou10_yoko_yari((f32*)((u8*)wp + 0x210));
 }
 
-s32 jabaraNoHitChk(void);
-void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a);
-void* marioSearchHead(Vec* pos, f32* outY, f32 a);
 
 extern const f32 float_5_8041a7b8;
 extern const f32 float_neg1_8041a7dc;
@@ -416,9 +413,6 @@ extern const f32 float_180_8041a7cc;
 extern const f32 float_3p1416_8041a7e0;
 extern const f32 float_neg23p7_8041a834;
 extern const f32 float_5p8_8041a838;
-double sin(double x);
-double cos(double x);
-void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 
 // NONMATCHING (87.30%): 2 instructions differ, 8 missing, 16 extra, plus register differences.
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
@@ -474,7 +468,6 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 
 extern s32 gp;
 extern const char str_802C5940[];
-f32 toMovedir(f32 angle);
 
 void marioSearchFrontWall_staying(f32 a) {
     MarioWork* wp = marioGetPtr();
@@ -500,7 +493,7 @@ void marioSearchFrontWall_staying(f32 a) {
     }
 
     if (hit == NULL) {
-        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+        angle = toMovedir(wp->unk1A8);
         v = wp->position;
         hit = searchFrontWall(&v, &f8, halfx, angle, wp->wPlayerCollisionBox.z);
         if (wp->currMotionId != 0x13) {
@@ -511,7 +504,7 @@ void marioSearchFrontWall_staying(f32 a) {
     } else {
         if (strcmp((char*)(gp + 0x12C), str_802C5940) == 0) {
             if (vivianGetStatus() != 2 && vivianGetStatus() != 1 && vivianGetStatus() != 3) {
-                angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+                angle = toMovedir(wp->unk1A8);
                 v = wp->position;
                 movePos(&v.x, &v.z, float_0p5_8041a7c4 * wp->wPlayerCollisionBox.x, angle);
                 angle = angle + float_180_8041a7cc;
@@ -547,10 +540,6 @@ extern const f32 float_4_8041a7a8;
 extern const f32 float_10_8041a7fc;
 extern const f32 float_40_8041a800;
 extern const f32 float_47_8041a84c;
-void PSVECAdd(const Vec* a, const Vec* b, Vec* ab);
-void PSVECSubtract(const Vec* a, const Vec* b, Vec* a_b);
-void PSVECScale(const Vec* src, Vec* dst, f32 scale);
-f32 PSVECMag(const Vec* v);
 
 // NONMATCHING (99.35%): float_0/float_1000 are allocated f1/f0 instead of f0/f1,
 // so the `else` reuses f1 (stfs f1,0x1c8) where the original reloads float_0.
@@ -611,7 +600,7 @@ void marioCheckWallShip(f32 a, f32 b) {
         }
         if (r != 0) {
             if (a != float_0_8041a7a4) {
-                *(void**)((u8*)wp + 0x1EC) = hit;
+                wp->hitobjPush = hit;
                 *(void**)((u8*)wp + 0x1F0) = hit;
             }
             movePos(&wp->position.x, &wp->position.z, a, b);
@@ -637,7 +626,7 @@ void marioCheckWallShip(f32 a, f32 b) {
                         r = (wp3->currMotionId == 0x19);
                     }
                     if (r != 0) {
-                        *(void**)((u8*)wp + 0x1EC) = hit;
+                        wp->hitobjPush = hit;
                     }
                 }
             }
@@ -656,18 +645,6 @@ void marioCheckWallShip(f32 a, f32 b) {
     }
 }
 
-void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a);
-void* kpaSearchHead(Vec* pos, f32* outY, f32 a);
-s32 marioChkSlitEnd(void);
-void marioChgStayMotion(void);
-void marioSetFallPara(void);
-void marioClearJumpPara(void);
-void marioItemGetDisable(void);
-s32 kpaGetBodyStatus(void);
-void* partyGetPtr(s32 index);
-f32 partyGetHeight(void* party);
-s32 marioGetPartyId(void);
-s32 psndSFXOn_3D(const char* name, Vec* position);
 
 // NONMATCHING (97.17%): the `beq else; bne then; b join` branch chain after the
 // hit != NULL test is folded to one `beq`; the float->int magic double loads from an
@@ -728,7 +705,7 @@ f32 marioChkOverhead(void) {
             ok = 0;
         }
         if (ok) {
-            *(f32*)((u8*)wp + 0x180) = float_0_8041a7a4;
+            wp->baseSpeed = float_0_8041a7a4;
             wp->flags |= 0x80;
         }
         wp->flags |= 0x08000000;
@@ -753,12 +730,12 @@ f32 marioChkOverhead(void) {
             if (!(wp->flags & 0x1000000) && wp->currMotionId != 0x19 &&
                 wp->currMotionId != 0x18 && wp->currMotionId != 0x1C &&
                 wp->characterId != 2 && marioChkSlitEnd() == 0) {
-                if (float_0_8041a7a4 == *(f32*)((u8*)wp + 0x180)) {
+                if (float_0_8041a7a4 == wp->baseSpeed) {
                     if (wp->currMotionId != 0) {
                         marioChgStayMotion();
                     }
                 } else {
-                    marioChgMot(*(f32*)((u8*)wp + 0x180) > *(f32*)((u8*)wp + 0x184) ? 2 : 1);
+                    marioChgMot(wp->baseSpeed > wp->mBaseWalkSpeed ? 2 : 1);
                 }
             }
         }

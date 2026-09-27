@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 #include "manager/filemgr.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -308,3 +310,10 @@ void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode);
 
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale);
+void animPoseRefresh(void);
+void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z);
+void pushGXModelMtx_TransformNode__(void* node);
+void animPaperPoseDisp(CameraId camId, void* param);
+void animPaperPoseDispSub(s32 unused, AnimationPose* pose);
+void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
+                                        f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);

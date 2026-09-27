@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/camdrv.h"
+
 /*
 icon.bin structure:
 s16 numEntries
@@ -74,3 +76,6 @@ void iconSetScale(const char* name, f32 scale);
 void iconSetAlpha(const char* name, u8 alpha);
 f32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color);
 f32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color);
+void _callback_bin(s32 error, DVDFileInfo* info);
+void iconDisp(CameraId camId, void* param);
+void iconGX(Mtx mtx, IconEntry* entry);

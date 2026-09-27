@@ -15,6 +15,7 @@ void parseInit(void* ptr, u32 size) {
 
 
 
+// NONMATCHING (0.84%): empty placeholder, not decompiled yet.
 BOOL parsePush(const char* tag) {
 
 }
@@ -25,6 +26,7 @@ BOOL parsePush(const char* tag) {
 
 
 
+// NONMATCHING (2.89%): 2 instructions differ, 158 missing, plus register differences.
 BOOL parseGet1Next(s32 type, void* data) {
 	BOOL result;
 

@@ -977,7 +977,7 @@ the earlier one lands.
 **Open:**
 - Predating the PR: iconMain's uninitialized `data`, the empty `iconGX`, `L_getStick`'s -128 case.
 - `mobjHitObjPtrToPtr` returns `MapObject*` but callers use it as `MapObjectEntry*` (retail reads
-  `animName` at 0x15), which means `HitEntry.mapObj`'s type is wrong.
+  `animName` at 0x15), which means `HitEntry.mapObj`'s type is wrong. (Resolved in the cleanup PR, 59abc86: it returns `MapObjectEntry*`.)
 - icondrv's `iconDispGx`/`iconDispGxAlpha` take `Vec` by value where the original passes a pointer.
 - `BtlUnit_CheckStatus` is cast to an `s8` parameter in battle_disp.
 - Unmarked match-only tricks in evt_bero, evt_npc (`_intplGetFloat`'s regrouping rounds differently from the
@@ -985,4 +985,112 @@ the earlier one lands.
 - Local `IconFrame` struct overlaying `IconBinaryEntry`, a third `CameraParams` copy.
 - `ac_power_gauge_lv`, `ac_timing_wide` and `mot_dokan` are written in the original's function order, but
   under `-inline auto,deferred` they must be reversed to link.
+
+
+
+## Local prototypes moved to headers; CI now rejects new ones (2026-09-26, Codex / GPT-6 Sol; finished by Claude Opus 5.5)
+
+Isaac had Codex start with a batch of 100 and then continue; it ran until its usage limit. Result: the ~1,700
+function prototypes that .c files declared for themselves are in the headers of the files that define them
+(94 new headers), and the local copies are gone. 17 remained at first, 16 after review 1 (below), listed with reasons in
+`tools/local_prototype_exceptions.json`: they are cases where the original's own files disagree (the
+psndSFX_* argument widths three ways, psndSFXOnEx_3D, cloudGetStatus, BattleCheckCounter), two SDK stats
+functions, and one match-only declaration (battle_stage_object's by-pointer windowDispGX_Waku_col, which only
+steers register allocation; the original passes the colour by value like everyone else). fadedrv's `z`, first
+listed as a name collision, is simply local in the original and is now static (review 1 of PR #10).
+`tools/local_prototypes.py` (run by `tools/ci.py`) fails on any other non-static function declaration in
+src/ or rels/, and on an exception whose declaration changed or no longer exists. CI passed after every batch
+with all measures unchanged (4,153 functions); an independent count found exactly the 17 exceptions of the time.
+
+**Agents now put prototypes in headers** (Isaac, Sep 26): the prompt and `docs/AGENT_BRIEF.md` (mistake 12) say to
+add a missing prototype to the defining file's header, created if needed, and never to change existing header
+lines. The launcher template collects each agent's header additions as `include.patch`;
+`tools/merge_agent.sh` checks it with `tools/header_patch.py` (added declarations only), applies it and commits
+it with the agent's file. `check.py --final` flags local prototypes, so agents fix them before stopping.
+
+
+## Bug pattern: a local prototype hiding a missing argument (2026-09-26, Isaac; written up by Claude Opus 5.5)
+
+`win_main.c`'s `itemUseFunc` declared `effRecoveryEntry` locally without its `s32 count` parameter and called
+it without the count (how many heart particles to show). The compiler accepted it, because it only checks a
+call against the prototype it can see, and the file's own copy agreed with the call. The score was 99.8%
+because the original happened to have the value in `r4` already (it loads `item->hp_restored` there for a
+zero test), so only a register name differed. Found by the cross-file declaration check; with the prototype
+in a header the defining file also includes, the build would have refused it. Fixed in 59abc86 (the function
+now matches). This is why local prototypes are moving into headers and why the agent brief's mistake 1 now
+carries this example. A near-match whose only differences are argument registers deserves a look for a
+missing argument.
+
+
+## Claims for parallel waves (2026-09-27, Isaac + Claude Opus 5.5)
+
+With more than one orchestrator, two waves could pick the same unit: the agent time of whichever merges second
+is wasted (the ratchet rejects it), and header additions could collide. `tools/claims.py` keeps a shared
+SQLite table of which wave owns which unit (`scratch/claims.sqlite` in the main checkout, shared by every
+worktree). The launcher claims its units before starting agents and skips any another wave holds; the
+orchestrator releases the wave's claims once its PR merges; claims expire after 24 hours so a crashed wave
+doesn't lock files. The design follows itsgrimetime/melee-decomp's claims database for Melee agents.
+
+Claims cover units, not headers. Two waves working on different units can both append to the same header, and
+`header_patch.py`'s append-only merge only reconciles patches within one wave, so the second wave's PR will conflict
+textually in git at that header's end. Resolve it by keeping both sides' lines. A REL unit is claimed without its
+REL name, so the same path in two RELs is one claim.
+
+
+
+## Reference repos, and study them before building tools (2026-09-27, Isaac; written up by Claude Opus 5.5)
+
+Sources of truth for how a mature GameCube decomp does things, all cloned in `~/`:
+- `~/melee`: Super Smash Bros. Melee (doldecomp), the main reference so far.
+- `~/ac-decomp`: Animal Crossing.
+- `~/SFA-Decomp`: Star Fox Adventures.
+Also studied, not a source of truth: [itsgrimetime/melee-decomp](https://github.com/itsgrimetime/melee-decomp), AI-agent
+tooling for Melee (claims database, worktree per agent, a self-hosted decomp.me).
+
+**Working rule (Isaac):** before building a tool, look at how these repos solve the problem and reuse their approach
+or code. Our own tools have had bugs in every wave; build only what they don't cover, and keep what we build as
+small and read-only as possible. Example: Melee marks prototypes of undecompiled functions `UNK_RET fn(UNK_PARAMS)`
+(src/placeholder.h) rather than guessing a signature.
+
+
+## Review 1 of the cleanup PR: moved prototypes carried old bugs (2026-09-27, Claude Opus 5.5; review by a fresh Claude Opus 5.5)
+
+The prototype move copied each local prototype into a header as it was, so local prototypes that were wrong became
+the canonical declarations: missing arguments (`npcCheckInterrupt`, `_npcGroupDead`, `effItemGetEntry`,
+`partyGetHp`, `tou_gamen_screen_tev`), `void` where callers use the result (seven functions, e.g.
+`BattleAudienceAddAudienceNum`, `effSplashEntry`, `party_slit`), and an event function declared as a plain one
+(`evt_paper_delete`). Four C callers were dropping real arguments and now pass them (two functions newly match).
+17 functions that the original keeps local to one file had been put in headers (the sac_* files each have their
+own `main_base`, `disp_2D` ...); they are `static` in their files now.
+
+`tools/proto_asm.py` (read-only, a report, not a CI gate) compares header prototypes of undecompiled functions
+with the original's asm: argument registers read on entry, callers using `r3`/`f1`, and `.fn NAME, local`. It found
+every case the reviewer found by hand plus seven more, each then checked by hand. Its scan is rough (linear, up to
+the first call), so a clean run is not proof.
+
+The merge script applied agents' header patches with `patch`, which left `.orig` files, silently reversed an
+already-applied patch, and would apply a patch aimed outside include/. `tools/header_patch.py --apply` now appends
+each added line to its header unless already present (agents may only add lines, and patches from one wave
+overlap, so context-based patching is the wrong tool), and rejects any path that isn't a header under include/.
+
+
+## Reviews 2 and 3 of the cleanup PR (2026-09-27, Claude Opus 5.5; reviews by Codex and a fresh Claude Opus 5.5)
+
+Review 2 (Codex) found three more local functions in headers (`paper_on`, `paper_off`, `evt_cloud_main`, missed
+because `proto_asm.py` didn't read `USER_FUNC` declarations), header patches whose lines could land in the wrong
+header, and claims loopholes (non-positive durations, `./src/x.c` vs `src/x.c`). That makes 20 functions made static.
+
+Review 3 (a fresh Claude) found:
+- The four sound functions whose callers disagree in the original (`psndSFX_pit`, `psndSFX_vol`,
+  `psndSFX_get_vol`, `psndSFXOnEx_3D`) had no workable declaration for an agent: a local one was rejected, and a
+  header one broke the files with their own widths. They are now exceptions for any file (`"path": "*"`), declared
+  with the widths that file's asm uses.
+- `static` hid unchecked prototypes: CI skipped every static declaration, and MWCC accepts a call to a static
+  function that is never defined (a warning only). A static declaration now passes only if the original has the
+  function local to that unit, or the file defines a function the asm doesn't have at all (inlined everywhere).
+  This caught ten functions in battle_disp.c and DEMOInit.c that are global in the original; their prototypes are
+  in the headers now (no change in matching).
+- `BtlActRec_AddPoint` takes a `u8` (all four callers truncate with `clrlwi`), stale NONMATCHING labels, and smaller
+  gaps in the header-patch, prototype and claims checks. The merge script now also runs `proto_asm.py` when an
+  agent added header lines and prints any findings as a warning to check by hand.
 

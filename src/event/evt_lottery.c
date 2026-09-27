@@ -10,12 +10,12 @@ extern GlobalWork* gp;
 BOOL dbg_lotteryinfo;
 
 //local prototypes
-USER_FUNC(evt_lottery);
 
 lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
 
+// NONMATCHING (3.63%): 3 instructions differ, 643 missing, plus register differences.
 USER_FUNC(evt_lottery) {
 	lottery_info* LotteryInfo;
 

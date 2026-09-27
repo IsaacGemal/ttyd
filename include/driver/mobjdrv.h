@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct EventEntry EventEntry;
+
 #include "dolphin/gx/GXStruct.h"
 #include "driver/camdrv.h"
 #include "driver/hitdrv.h"
@@ -52,3 +54,15 @@ void mobjInit(void);
 void mobjMain(void);
 
 void mobjHitEntry(MapObjectEntry* entry, s32 type);
+BOOL mobjGetHint(MapObjectEntry* entry);
+MapObjectEntry* mobjHitObjPtrToPtr(HitEntry* hit);
+s32 mobjEntry(const char* name, const char* animPoseName);
+void mobjDelete(const char* name);
+void mobjSetPosition(const char* name, f32 x, f32 y, f32 z);
+MapObjectEntry* mobjNameToPtr(const char* name);
+MapObjectEntry* mobjNameToPtrNoAssert(const char* name);
+EventEntry* mobjRunEvent(MapObjectEntry* entry, s32* eventCode);
+void mobjCalcMtx(MapObjectEntry* entry);
+void mobjCalcMtx2(MapObjectEntry* entry);
+s32 mobjCheckItemboxOpen(MapObjectEntry* entry);
+MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names);

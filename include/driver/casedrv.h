@@ -34,3 +34,4 @@ s32 caseEntry(CaseSetup* setup);
 void caseDelete(s32 caseId);
 void caseMain(void);
 CaseEntry* caseCheckHitObj(void* obj); // Takes HitEntry
+CaseEntry* caseIdToPtr(s32 caseId);

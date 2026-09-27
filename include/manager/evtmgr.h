@@ -251,3 +251,5 @@ void evtStopOther(EventEntry* entry, u32 type);
 void evtStartOther(EventEntry* entry, u32 type);
 EventEntry* evtGetPtr(s32 index);
 EventEntry* evtGetPtrID(s32 eventId);
+void make_pri_table(void);
+void evtEntryRunCheck(EventEntry* entry);

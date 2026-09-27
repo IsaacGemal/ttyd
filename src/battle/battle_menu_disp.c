@@ -1,24 +1,14 @@
+#include "driver/windowdrv.h"
 #include "battle/battle_menu_disp.h"
 #include "system.h"
+#include "manager/fontmgr.h"
+#include "battle/battle_disp.h"
+#include "driver/msgdrv.h"
+#include <stdio.h>
+#include "math_ext.h"
 
 extern BattleWork* _battleWorkPointer;
-extern int sprintf(char* str, const char* format, ...);
-extern f64 cos(f64 x);
-extern f64 sin(f64 x);
-extern void btlDispTexPlane2(Mtx mtx, u32 id, GXColor* color, s32 arg);
-extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
-extern void FontDrawStart(void);
-extern void FontDrawColorIDX(s32 idx);
-extern void FontDrawScale(f32 scale);
-extern void FontDrawString(const char* str, f32 x, f32 y);
-extern const char* msgSearch(const char* tag);
-extern void btlGetScreenPoint(Vec* pos, Vec* out);
 
-void DrawMultiItemWin(void);
-void DrawChangePartyWin(void);
-void DrawOperationWin(void);
-void DrawWeaponWin(void);
-void DrawMainMenu(void);
 
 // Layout of the battle menu scratch buffer allocated by
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
@@ -48,9 +38,9 @@ typedef struct BattleMenuWork {
     u8 field_0x114[0x124 - 0x114];
 } BattleMenuWork;
 
-void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu);
-void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor);
-void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor);
+
+
+
 
 //.sbss
 s8 seq;
@@ -123,6 +113,7 @@ void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, u32 flags) {
     }
 }
 
+// NONMATCHING (85.16%): 1 instruction differs, 1 missing, 3 extra.
 void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
     BattleMenuWork* window;
@@ -142,6 +133,7 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     }
 }
 
+// NONMATCHING (83.10%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* arg, u32 flags) {
     BattleMenuWork* window = 0;
     BattleCursor* cursor = 0;
@@ -157,6 +149,7 @@ void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* 
 // These are called, never inlined, in the original build. The unit's configure
 // entry still uses the default `-inline auto`, so keep them out of line here.
 #pragma dont_inline on
+// NONMATCHING (7.97%): 11 instructions differ, 6 missing, 53 extra, plus register differences.
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -241,7 +234,7 @@ void battleMenuDispEnd(void) {
 }
 
 void BattleMenuDisp_MultiItem_Main(void) {}
-void BattleMenuDisp_MultiItem_Disp(void) {
+void BattleMenuDisp_MultiItem_Disp(BattleWork* wp) {
     DrawMultiItemWin();
 }
 void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
@@ -252,7 +245,7 @@ void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_ChangePartySelect_Main(void) {}
-void BattleMenuDisp_ChangePartySelect_Disp(void) {
+void BattleMenuDisp_ChangePartySelect_Disp(BattleWork* wp) {
     DrawChangePartyWin();
 }
 void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp) {
@@ -263,7 +256,7 @@ void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_Operation_Main(void) {}
-void BattleMenuDisp_Operation_Disp(void) {
+void BattleMenuDisp_Operation_Disp(BattleWork* wp) {
     DrawOperationWin();
 }
 void BattleMenuDisp_Operation_End(BattleWork* wp) {
@@ -274,7 +267,7 @@ void BattleMenuDisp_Operation_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_WeaponSelect_Main(void) {}
-void BattleMenuDisp_WeaponSelect_Disp(void) {
+void BattleMenuDisp_WeaponSelect_Disp(BattleWork* wp) {
     DrawWeaponWin();
 }
 void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
@@ -285,7 +278,7 @@ void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_ActSelect_Main(void) {}
-void BattleMenuDisp_ActSelect_Disp(void) {
+void BattleMenuDisp_ActSelect_Disp(BattleWork* wp) {
     DrawMainMenu();
 }
 void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
@@ -295,6 +288,7 @@ void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
     }
 }
 
+// NONMATCHING (49.16%): 4 instructions differ, 22 missing, 46 extra, plus register differences.
 void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 idx, s32 mode) {
     s32 i;
 
@@ -337,6 +331,7 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     }
 }
 
+// NONMATCHING (80.50%): 1 instruction differs, 5 missing, 12 extra, plus register differences.
 void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32 flags) {
     s32 i;
     s32 idx;
@@ -394,6 +389,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
+// NONMATCHING (90.09%): 6 instructions differ, 6 missing, 1 extra, plus register differences.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xCF};
     s8 text[4][0x30];
@@ -403,7 +399,7 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     s32 line;
     s32 i;
 
-    windowDispGX_Waku_col(0, &color, x, y, 400.0f, 50.0f, 10.0f);
+    windowDispGX_Waku_col(0, color, x, y, 400.0f, 50.0f, 10.0f);
     FontDrawStart();
     FontDrawColorIDX(0);
     FontDrawScale(0.8f);
@@ -460,10 +456,11 @@ void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle) {
     PSMTXTransApply(mtx, mtx, x, y, 0.0f);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-        btlDispTexPlane2(mtx, (u32)tex, &color, 0);
+        btlDispTexPlane2(mtx, (u32)tex, color, 0);
     }
 }
 
+// NONMATCHING (83.93%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.7124f - angle;
     f32 c = 80.0f * (f32)cos(a);

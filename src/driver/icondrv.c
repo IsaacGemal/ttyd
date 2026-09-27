@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <stdio.h>
+#include "driver/shadowdrv.h"
 
 
 extern GlobalWork* gp;
@@ -50,11 +51,6 @@ u16 suuji[] = { 473, 475, 477, 479, 481, 483, 485, 487, 489, 491 };   // 0-9
 u16 suuji_s[] = { 474, 476, 478, 480, 482, 484, 486, 488, 490, 492 }; // 0-9 small
 
 // local prototypes
-void _callback_tpl(s32 error, DVDFileInfo* info);
-void _callback_bin(s32 error, DVDFileInfo* info);
-void iconDisp(CameraId camId, void* param);
-void iconGX(Mtx mtx, IconEntry* entry);
-void shadowEntry(f32 x, f32 y, f32 z, f32 size);
 
 
 // TODO: inline function? I see nothing in the symbol map
@@ -74,7 +70,7 @@ inline IconEntry* iconGetEntry(const char* name) {
     return NULL;
 }
 
-void _callback_tpl(s32 error, DVDFileInfo* info) {
+static void _callback_tpl(s32 error, DVDFileInfo* info) {
     void* userData = info->cb.userData;
 
     UnpackTexPalette(icon_tpl);

@@ -11,25 +11,19 @@
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "party/party_yoshi.h"
+#include "mario/mario_cam.h"
+#include "mario/mario_hit.h"
+#include "evt/evt_cam.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_slit.h"
+#include "mario/mario_kemuri.h"
+#include "party/party_nokonoko.h"
+#include "party/party_bomhei.h"
+#include "eff/eff_splash.h"
 
 // Prototypes for functions this unit calls whose headers don't declare them
 // yet. Each one is listed in REPORT.md so it can move to a header later.
-void marioClearSlitFloor(void);
-void marioSlitForceCancel(void);
-void marioYoshiForceCancel(void);
-void unk_800cd9a0(void);
-void marioNoUpdateCamPos(void);
-void bomhei_use_cancel2(void);
-void mario_simple_kemuri(void);
-void marioSetFallPara(void);
-f32 marioGetFallSpd(void);
-void* marioChkLandon(f32* pos, f32 spd);
-void marioUpdateCamPos(void);
-void npcStopForEvent(void);
-void npcStartForEvent(void);
-void effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale);
-USER_FUNC(evt_cam_shake);
-USER_FUNC(gazigazi);
 extern s32 evt_gazigazi_appear[];
 
 // .rodata named constants.

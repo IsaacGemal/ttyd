@@ -1,3 +1,4 @@
+#include "battle/ac/ac_power_gauge_lv.h"
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_pad.h"
@@ -8,7 +9,6 @@
 #include <string.h>
 
 // --- Declarations that belong in a header (no ac_power_gauge_lv.h exists yet) ---
-extern void BattleAcDrawGauge(s32, s32, s32, s32, s32, s32, s32, s32, f32);
 
 // --- .rodata literals of this unit (offsets in REPORT.md) ---
 // The seven Vec3 literals are one contiguous array; the original object names them individually at

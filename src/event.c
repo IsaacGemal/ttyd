@@ -13,74 +13,18 @@
 #include "mario/mario_party.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
+#include "party.h"
+#include "evt/evt_badgeshop.h"
+#include "evt/evt_yuugijou.h"
+#include "evt/evt_johoya.h"
+#include "statuswindow.h"
 //TODO: put in /evt?
 //funcs sorted backwards aka original source file
 
-extern void badgeShop_init(void);
-extern void yuugijou_init(void);
-extern void johoya_init(void);
-extern void yoshiSetColor(void);
-extern void partyLeft(PartyId partnerId);
-extern void statusWinForceUpdate(void);
 
 // Original symbol names for this unit (see config/G8MJ01/symbols.txt);
 // the data tables below reference them.
-extern void stg0_13_init00(void);
-extern void stg1_30_init(void);
-extern void stg1_35_init01(void);
-extern void stg2_18_init02(void);
-extern void stg2_21_init02(void);
-extern void stg3_07_init__6(void);
-extern void stg3_07_init__7(void);
-extern void stg3_07_init__8(void);
-extern void stg3_07_init__9(void);
-extern void stg3_10_init__5(void);
-extern void stg3_12_init__1(void);
-extern void stg3_12_init__2(void);
-extern void stg3_12_init__3(void);
-extern void stg3_12_init__4(void);
-extern void stg3_12_2_init(void);
-extern void stg3_20_init_1(void);
-extern void stg3_20_init_2(void);
-extern void stg3_20_init_3(void);
-extern void stg3_20_init_4(void);
-extern void stg3_20_init_5(void);
-extern void stg3_20_init_6(void);
-extern void stg3_20_init_7(void);
-extern void stg3_20_init_8(void);
-extern void stg3_20_init_9(void);
-extern void stg3_20_init_10(void);
-extern void stg3_20_12_init(void);
-extern void stage4_00_init(void);
-extern void stage4_04_init(void);
-extern void stage4_04_01_init(void);
-extern void stage4_05_init(void);
-extern void stage4_09_05_init(void);
-extern void stage4_10_init(void);
-extern void stg5_12_init01(void);
-extern void stg5_15_init02(void);
-extern void stg5_18_init_02(void);
-extern void stg5_21_init03(void);
-extern void stg5_21_01_init00(void);
-extern void stg5_30_init02(void);
-extern void stg6_71_01_init(void);
-extern void stg6_72_init(void);
-extern void stg6_end_init02(void);
-extern void stg7_03_white_0(void);
-extern void stg7_03_white_1(void);
-extern void stg7_03_white_2(void);
-extern void stg7_03_white_3(void);
-extern void stg7_03_white_4(void);
-extern void stg7_03_white_5(void);
-extern void stg7_15_init(void);
-extern void stg7_15_room_A_init(void);
-extern void stg7_15_room_B_init(void);
-extern void stg7_15_room_C_init(void);
-extern void stg8_15_init(void);
-extern void N_stg9_02_init(void);
 
-extern void stg3_30_init(void);
-extern void stg3_31_00_init(void);
 extern GlobalWork* gp;
 
 EventData stage0_evt[] = {

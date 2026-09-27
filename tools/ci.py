@@ -10,6 +10,7 @@ Steps, stopping at the first failure:
 0. Tests: tools/tests (the checks' own unit tests).
 1. Lint the diff: no new inline asm, no new #pragma, no edits to protected paths, and configure.py
    changes limited to Object(...) lines. Overrides: --allow-pragma, --allow-protected, --allow-configure.
+   Also reject external local prototypes in src/ and rels/ except documented ABI exceptions.
 2. Build: configure + ninja. Ninja fails if a linked module stops hashing to config/*/build.sha1.
 3. Ratchet: compare build/<ver>/report.json with the accepted report (build/ci/accepted.json) using
    objdiff-cli. Any function, unit or total that got worse fails the run, whatever else improved.
@@ -20,6 +21,7 @@ Steps, stopping at the first failure:
    fully matched but not yet linked.
 """
 import argparse
+import local_prototypes
 import json
 import re
 import shutil
@@ -181,6 +183,10 @@ def main():
         fail("ratchet", "no accepted baseline yet; run `python3 tools/ci.py --init` on a known-good tree")
     tests()
     lint(a.base, a.allow_pragma, a.allow_protected, a.allow_configure)
+    problems, count = local_prototypes.check_tree(ROOT)
+    if problems:
+        fail("prototypes", "\n  " + "\n  ".join(problems))
+    print(f"ok   [prototypes] {count} documented exceptions; no other external local prototypes")
     build()
     ratchet(set(a.allow_regress))
     summary()

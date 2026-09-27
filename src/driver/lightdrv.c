@@ -3,8 +3,8 @@
 #include "driver/mapdrv.h"
 #include "memory.h"
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 //.rodata
 const Vec decay_tbl[] = {
@@ -28,6 +28,7 @@ static s32 _sort(const void* a, const void* b);
 
 #define lightGetWork() (mapGetActiveGroup() == 1 ? &work[1] : &work[0])
 
+// NONMATCHING (97.70%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 void lightInit(void) {
 	Mtx scale;
 
@@ -77,6 +78,7 @@ void lightReInit(void) {
 	memset(wp->entries, 0, sizeof(LightEntry) * wp->count);
 }
 
+// NONMATCHING (25.07%): 9 instructions differ, 72 missing, 4 extra, plus register differences.
 void lightMain(void) {
 	CameraEntry* camera;
 	Vec position;
@@ -92,6 +94,7 @@ void lightMain(void) {
 	booLight.position = (Vec){0.0f, 1000.0f, 0.0f};
 }
 
+// NONMATCHING (81.70%): 9 instructions differ, 18 missing, 5 extra, plus register differences.
 s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor color, s32 attenType, s32 flags, f32 spotAngle, f32 attenAngle) {
 	LightWork* wp = lightGetWork();
 	LightEntry* entry;
@@ -154,6 +157,7 @@ s32 lightEntry(const char* name, s32 type, Vec position, Vec rotation, GXColor c
 	return i;
 }
 
+// NONMATCHING (99.75%): same instructions; only register numbers or operands differ.
 LightEntry* lightNameToPtr(const char* name) {
 	LightWork* wp = lightGetWork();
 	LightEntry* entry = wp->entries;
@@ -168,6 +172,7 @@ LightEntry* lightNameToPtr(const char* name) {
 }
 
 //TODO: cleanup?
+// NONMATCHING (69.36%): 1 instruction differs, 3 extra, plus register differences.
 s32 _sort(const void* a, const void* b) {
 	f32 value1, value2;
 
@@ -182,6 +187,7 @@ s32 _sort(const void* a, const void* b) {
 	return -1;
 }
 
+// NONMATCHING (0.79%): empty placeholder, not decompiled yet.
 void lightGetNearObj(Vec position, LightEntry* entry, s32 count, LightEntryFlags flags) {
 
 }

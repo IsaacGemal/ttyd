@@ -6,6 +6,18 @@
 #include "system.h"
 #include <string.h>
 #include "pmario_sound.h"
+#include "battle/battle_weapon_power.h"
+#include <stdio.h>
+
+// LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
+extern s32 psndSFX_get_vol(s32 id);
+
+// LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
+extern s32 psndSFX_pit(s32 id, s32 pit);
+
+// LOCAL_PROTO(psndSFX_vol): retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers.
+extern void psndSFX_vol(s32 id, s32 vol);
+
 
 #pragma optimize_for_size on
 
@@ -129,91 +141,8 @@ f32 float_0p01_8041e628 = 0.01f;
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
 extern BattleWork* _battleWorkPointer;
-extern int sprintf(char* str, const char* format, ...);
 
 //local prototypes
-FileEntry* tplRead(const char* path);
-BOOL check_exe_phase_evt_status(s32 index, s32 type);
-void BattleAudienceSettingAudience(void);
-void BattleAudienceGuestTPLRead(s32 index, AudienceMemberType member, const char* tplName);
-void BattleAudienceCtrlProcess(void);
-BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems);
-void BattleAudienceSetThrowItemMax(void);
-BattleUnit* BattleAudienceDetectTargetAll(void);
-BattleUnit* BattleAudienceDetectTargetPlayer(void);
-void BattleAudienceItemCtrlProcess(void);
-void BattleAudienceApSrcCtrlProcess(void);
-BOOL BattleAudienceApSrcEntry(void);
-void BattleAudienceWinCtrlProcess(void);
-void BattleAudienceGXInit(void);
-void BattleAudienceAnimProcess(void);
-void BattleAudienceDispAudience(CameraId camId, void* param);
-void BattleAudienceDispItem(CameraId camId, void* param);
-void BattleAudienceDispApSrc(CameraId camId, void* param);
-void BattleAudienceDispWin(CameraId camId, void* param);
-void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status);
-BOOL BattleAudience_GetAnimEnd(s32 index);
-BOOL BattleAudience_GetFront(s32 index);
-BOOL BattleAudience_GetEscapeChangeOK(s32 index);
-s32 BattleAudience_GetAudienceNoFromOffset(s32 index, s32 column, s32 row);
-s32 BattleAudience_NoUsedHaitiRand(void);
-s32 BattleAudience_NoUsedFCHaitiRand(void);
-s32 BattleAudience_GetPPAudienceNum(void);
-s32 BattleAudience_GetPPAudienceNumKind(s32 type);
-s32 BattleAudience_GetPPAudienceNum_R(void);
-s32 BattleAudience_GetPPAudienceNum_L(void);
-s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset);
-BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id);
-
-
-
-
-
-
-
-
-
-
-void BattleAudienceAddTargetNumSub(f32 value);
-void BattleAudienceAddTargetNum(f32 value, f32 delta);
-void BattleAudienceAddAudienceNum(s32 num);
-void BattleAudienceAddPhaseEvtList(s32 evtId);
-void BattleAudienceJoy(s32 a);
-void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d);
-void BattleAudienceSoundCheer(s32 a, s32 b);
-void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b);
-void BattleAudienceSoundBooingKind(s32 kind);
-void BattleAudienceSoundBooing(void);
-void BattleAudienceSoundWhistleKind(s32 kind);
-void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d);
-void BattleAudienceSoundGetInfo2(s32 index, Vec* pos);
-s32 BattleAudienceSound1(const char* name, s32 a, s32 b);
-s32 BattleAudienceSound2(const char* name, s32 index);
-void BattleAudienceSoundStop(s32 index);
-void BattleAudienceSoundWhistle(void);
-void BattleAudiencePuniAllEscape(void);
-void BattleAudienceAddPuni(s32 num);
-void BattleAudienceCheer(s32 a);
-void BattleAudienceNoiseMain(void);
-extern s32 psndSFXOn(const char* name);
-extern s32 psndSFXOn_3D(const char* name, Vec* pos);
-extern s32 psndSFX_get_vol(s32 id);
-extern void psndSFX_vol(s32 id, s32 vol);
-extern s32 psndSFX_pit(s32 id, s32 pit);
-extern void BattleStatusWindowAPRecoveryOn(void);
-extern u32 weaponGetPowerFromMarioHammerLv();
-extern void BattleAudienceSoundClap(s32 a, s32 b);
-s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b);
-s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c);
-s32 BattleAudienceNumToTargetSub(void);
-
-
-void BattleAudienceSoundNoiseAlways(void);
-void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3);
-void BattleAudienceNumToTarget(void);
-void BattleAudience_WinSetActive(u8 active);
-
-void BattleAudienceSoundMain(void);
 
 
 #pragma dont_inline on

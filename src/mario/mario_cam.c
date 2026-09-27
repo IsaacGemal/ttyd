@@ -64,6 +64,7 @@ void marioPreCamera(void) {
     marioGetPtr()->targetYaw = revise360((s32)((1000.0f * camGetPtr(CAMERA_3D)->viewYaw) + roundingFactor) / 1000.0f);
 }
 
+// NONMATCHING (1.25%): empty placeholder, not decompiled yet.
 void marioCamMain(void) {
 }
 
@@ -73,6 +74,7 @@ void marioUpdateCamCollision(Vec collision) {
     mario->dispFlags |= 0x40000;
 }
 
+// NONMATCHING (0.64%): empty placeholder, not decompiled yet.
 void marioUpdateCam(void) {
 }
 
@@ -232,6 +234,7 @@ BOOL marioCamZoomUp(void) {
     return TRUE;
 }
 
+// NONMATCHING (0.58%): empty placeholder, not decompiled yet.
 BOOL marioCamZoomUpLevelMain(void) {
 
 }

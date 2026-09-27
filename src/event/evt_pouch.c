@@ -1,6 +1,7 @@
 /* "evt_pouch" - Pouch-related Event Script Functions
  * Status: In progress.
  */
+#include "evt/evt_pouch.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
@@ -9,8 +10,6 @@
 
 
 // Local prototypes not yet in a shared header.
-extern void partyLeft(PartyId partnerId);
-extern s32 pouchRemoveItemIndex(s32 id, s32 index);
 
 USER_FUNC(evt_pouch_get_coin) {
 	s32* args = event->args;

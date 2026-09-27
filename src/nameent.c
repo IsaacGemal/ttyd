@@ -75,6 +75,7 @@ BOOL nameEntPrepare(void) {
 	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0;
 }
 
+// NONMATCHING (1.45%): empty placeholder, not decompiled yet.
 void nameEntMain(void) {
 
 }

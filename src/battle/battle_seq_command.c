@@ -7,47 +7,17 @@
 #include "driver/msgdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "battle/battle_detect.h"
+#include "battle/battle_menu_disp.h"
+#include "battle/battle_stage.h"
+#include "eff/eff_recovery.h"
+#include "battle/battle_camera.h"
+#include "battle/battle_audience.h"
 
 
 //TODO: move into battle/seq/?
 
 //local prototypes
-void BattleDrawEnemyHP(CameraId camId, void* param);
 
-void BattleMenuDisp_ActSelect_Disp(BattleWork* wp);
-void BattleMenuDisp_WeaponSelect_Disp(BattleWork* wp);
-void BattleMenuDisp_Operation_Disp(BattleWork* wp);
-void BattleMenuDisp_MultiItem_Disp(BattleWork* wp);
-void BattleMenuDisp_ChangePartySelect_Disp(BattleWork* wp);
-void BattleMenuDisp_ActSelect_End(BattleWork* wp);
-void BattleMenuDisp_WeaponSelect_End(BattleWork* wp);
-void BattleMenuDisp_Operation_End(BattleWork* wp);
-void BattleMenuDisp_MultiItem_End(BattleWork* wp);
-void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp);
-void BattleMenuDisp_ActSelect_Init(BattleWork* wp, s32 cursor, void* table, void* arg);
-void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, s32 cursor, void* table, void* arg);
-void BattleMenuDisp_Operation_Init(BattleWork* wp, void* arg);
-void BattleMenuDisp_MultiItem_Init(BattleWork* wp, void* arg);
-void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, void* arg);
-BattleUnit* BattleGetUnitPtr(BattleWork* wp, s32 index);
-void _btlcmd_MakeActClassTable(BattleWork* wp);
-void _btlcmd_MakeMultiItemTable(BattleWork* wp);
-void _btlcmd_MakeOperationTable(BattleWork* wp);
-void _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg);
-void _btlcmd_GetCursorPtr(BattleCommand* cmd, s32 index, BattleCursor** out);
-s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon);
-void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void btl_camera_set_mode(s32 mode, s32 param);
-void _cursor_init(BattleCursor* cursor);
-void SelectedItemCoordinateColorUpDate(void);
-void BattleStageOffLightInCommand(s32 a, s32 b);
-s32 BattleAudience_GetPresentItemNo(void);
-s32 BattleAudience_GetPresentTargetUnitId(void);
-void BattleAudience_SetPresentItemNo(s32 itemNo);
-void effRecoveryEntry(s32 type, s32 arg, f32 x, f32 y, f32 z);
-void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
-void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
-void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
 extern f32 float_5_8041c310;
 
 // NONMATCHING (19.37%): 116 missing, plus register differences.
@@ -135,7 +105,7 @@ void BattleCommandDisplay_ChangePartySelectMenuEnd(BattleWork* wp) {
 }
 
 void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) {
-	BattleMenuDisp_ChangePartySelect_Init(wp, arg);
+	BattleMenuDisp_ChangePartySelect_Init(wp, (u32)arg);
 	wp->commandMenu.field_4 |= 0x01001000;
 }
 
@@ -179,13 +149,13 @@ s32 _getJumpIconId(void) {
 
 void BattleCommandDisplay_MultiItemMenuSetup(BattleWork* wp, void* arg) {
 	_btlcmd_MakeMultiItemTable(wp);
-	BattleMenuDisp_MultiItem_Init(wp, arg);
+	BattleMenuDisp_MultiItem_Init(wp, (u32)arg);
 	wp->commandMenu.field_4 |= 0x20;
 }
 
 void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
 	_btlcmd_MakeOperationTable(wp);
-	BattleMenuDisp_Operation_Init(wp, arg);
+	BattleMenuDisp_Operation_Init(wp, (u32)arg);
 	wp->commandMenu.field_4 |= 0x01000100;
 }
 
@@ -195,7 +165,7 @@ void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, void* arg, void*
 
 	_btlcmd_MakeSelectWeaponTable(wp, arg);
 	_btlcmd_GetCursorPtr(cmd, (s32)arg, &cursor);
-	BattleMenuDisp_WeaponSelect_Init(wp, (s32)cursor, &cmd->unk8[0x80 - 0x8], arg2);
+	BattleMenuDisp_WeaponSelect_Init(wp, cursor, &cmd->unk8[0x80 - 0x8], (u32)arg2);
 	cmd->field_4 |= 0x01000010;
 }
 
@@ -207,7 +177,7 @@ void BattleCommandDisplay_ActMenuSetup(BattleWork* wp, void* arg) {
 
 	_btlcmd_MakeActClassTable(work);
 	_btlcmd_GetCursorPtr(cmd, 14, &cursor);
-	BattleMenuDisp_ActSelect_Init(work, (s32)cursor, &cmd->unk8[0], a);
+	BattleMenuDisp_ActSelect_Init(work, cursor, &cmd->unk8[0], (u32)a);
 	*(s32*)&cmd->unk560[0] = 0;
 	cmd->field_4 |= 0x01000001;
 	if (a == NULL && cmd->unk540[0x18] == 0) {
@@ -547,7 +517,6 @@ s32 _check_present_item(void) {
 	return 1;
 }
 
-s32 BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 
 s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon* weapon) {
 	u8 work[0xacc];

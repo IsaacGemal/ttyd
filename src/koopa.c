@@ -12,38 +12,17 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "koopa.h"
+#include "mario/mario_hit.h"
+#include "mario/mario_sbr.h"
+#include "mario/mario_balloon.h"
+#include "mario/mario_kemuri.h"
+#include "motion/mot_jump.h"
+#include "koopa_motion.h"
+#include "koopa_hit.h"
 
 // locals for symbols with no home header (see REPORT.md)
-f32 marioGetFallSpd(void);
-void marioLandOn(void);
-void* marioChkLandon(f32* pos, f32 spd);
-void marioSetPeakYpos(void);
-void marioCheckWall(f32 a, f32 b);
-void marioPreJump(void);
-void marioSetFallPara(void);
-void marioBoots(void);
-void marioForceMoveMain(void);
-void marioChkGnd2(void);
-void marioChkGnd(void);
-f32 marioChkOverhead(void);
-void marioBottomless(void);
-void marioCamMain(void);
-void marioBalloonMain(void);
-void mario_kemuri_80130474(void);
-void camFollowYOn(void);
-void camFollowYOff(void);
-void partyMain(void);
-void kpaSetSpec(void);
-void* kpaHitCheck(void);
-void* kpaFlameHitCheck(f32 x, f32 y, f32 z, f32 rad);
-void kpaSearchFrontUnder(void);
-void kpaClearHitobjRide(void);
-s32 kpaChkHitobjRide(void);
 extern f32 marioJumpData[];
-void kpa2DMain(void);
-void kpa3DMain(void);
-void kpaFireAttack(void);
-void kpaFireMain(void);
 
 // userdata of the fire effect (fireefp->userdata); nodes are 0x50 bytes apart
 typedef struct KpaFireNode {

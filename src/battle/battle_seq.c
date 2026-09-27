@@ -11,12 +11,8 @@
 extern BattleWork* _battleWorkPointer;
 
 //local prototypes
-void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2);
-void btlseqInit(BattleWork* wp);
-void btlseqFirstAct(BattleWork* wp);
-void btlseqTurn(BattleWork* wp);
-void btlseqEnd(BattleWork* wp);
 
+// NONMATCHING (0.00%): 3 instructions differ, 1 missing, 85 extra, plus register differences.
 void BattleSequenceManager(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	switch (BattleGetSeq(wp, SEQ_UNKNOWN)) {
@@ -38,6 +34,7 @@ void BattleSequenceManager(void) { //1:1
 	}
 }
 
+// NONMATCHING (93.23%): 1 instruction differs, 1 missing, 7 extra, plus register differences.
 void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forced
 	BattleUnit* unit;
 	BOOL v6;
@@ -118,6 +115,7 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forc
 	}
 }
 
+// NONMATCHING (91.00%): 1 instruction differs, 4 missing, 4 extra, plus register differences.
 void btlseqInit(BattleWork* wp) { //1:1, needs stmw
 	MarioWork* mario;
 	PartyEntry* party;
@@ -166,16 +164,19 @@ void btlseqInit(BattleWork* wp) { //1:1, needs stmw
 	}
 }
 
+// NONMATCHING (5.88%): empty placeholder, not decompiled yet.
 BattleWeapon* _GetFirstAttackWeapon(s32 id) {
 	return NULL;
 }
 
+// NONMATCHING (1.75%): 1 instruction differs, 501 missing, plus register differences.
 void btlseqFirstAct(BattleWork* wp) {
 	switch (BattleGetSeq(wp, SEQ_FIRST_ACT)) {
 
 	}
 }
 
+// NONMATCHING (0.05%): empty placeholder, not decompiled yet.
 void btlseqTurn(BattleWork* wp) {
 
 }

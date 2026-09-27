@@ -7,14 +7,7 @@
 
 extern ItemData itemDataTable[];
 
-BOOL BtlUnit_CanActStatus(BattleUnit* unit);
 
-void* _check_status_recover_item(BattleUnit* unit);
-void* _check_status_support_item(BattleUnit* unit);
-void* _check_status_attack_item(BattleUnit* unit);
-void* _check_attack_item(BattleUnit* unit);
-void* _check_fp_recover_item(BattleUnit* unit);
-void* _check_hp_recover_item(BattleUnit* unit);
 
 // Keep the local _check_* helpers out of line: the original calls them with `bl` instead of
 // inlining their bodies into BattleEnemyUseItemCheck.

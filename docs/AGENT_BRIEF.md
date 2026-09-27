@@ -34,6 +34,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 1. **Calling a function without the arguments it takes,** relying on the value already sitting in a register
    (`r3`-`r10`, or `f1`-`f8` for floats). If the original loads a register before a `bl`, your C passes that
    value. Declare the callee with its real parameters (check its definition in `src/` or its header).
+   Real case: `win_main.c` declared `effRecoveryEntry(s32 type, f32 x, f32 y, f32 z)` locally, leaving out
+   `s32 count`, and called it without the count. The original loads `item->hp_restored` into `r4` before
+   the call (`lbz r4, 0x1d(r29)`); it did so anyway for a zero test, so the function scored 99.8% and the
+   missing argument went unnoticed through several reviews. A local prototype hides this: the compiler only
+   checks your call against your own copy. Before writing any prototype, find the function's definition or
+   the original's callee and count its parameters.
 2. **Ignoring a return value the original uses,** or declaring a function `void` that returns something. If
    the caller uses `r3` after the call, the function returns a value; if its header says `void`, the header is
    probably wrong: say so in your report.
@@ -64,9 +70,20 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    and compare the instructions with `check.py FUNC`.
 11. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
-12. **Calling a function with no prototype.** The build rejects it (`-requireprotos`, as in Melee). Include the
-   header that declares it, or add the prototype to the header of the file that defines it, as its definition
-   (or the original's calls) say. Not a local declaration that contradicts a header.
+12. **Calling a function with no prototype, or declaring one in your .c file.** The build rejects a call with no
+   prototype (`-requireprotos`, as in Melee), and CI rejects function prototypes in .c files (static helpers
+   excepted). Include the header that declares the function; if none does, add the prototype to the header of
+   the file that defines it (`include/<path>.h` for `src/<path>.c`; for a REL module's `rels/<rel>/src/<path>.c`,
+   `include/rel/<rel>/<path>.h`; the merge only accepts headers under `include/`), created if missing. Copy the definition's signature, or, if it isn't
+   decompiled yet, read it from the original: the callee's asm shows which of `r3`-`r10`/`f1`-`f8` it reads and
+   whether it leaves a result in `r3`/`f1` that callers use. Write each prototype on one line; the merge accepts
+   only single-line declarations. If the original has the function local to one file (`.fn NAME, local` in the
+   asm), it is not a header prototype: declare it `static` in that file. Never use `static` for any other
+   function: CI checks each static declaration against the asm. Only add lines to headers; never change
+   existing ones. If an existing header declaration looks wrong, report it with the asm evidence. Exception:
+   `psndSFX_pit`, `psndSFX_vol`, `psndSFX_get_vol` and `psndSFXOnEx_3D` have no header prototype, because the
+   original's files disagree on their widths; declare them in your .c file with the widths your file's asm uses
+   (e.g. a `clrlwi r4, rX, 24` before the call means a `u8` argument).
 13. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
    object (declare it as the original's symbol) instead.
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a

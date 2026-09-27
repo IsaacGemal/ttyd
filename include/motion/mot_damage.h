@@ -1,0 +1,7 @@
+#pragma once
+
+#include "evt/evt_cmd.h"
+USER_FUNC(gazigazi);
+void set_damage_root_ypos(f32 y);
+void marioDmgRetQuakeOn(void);
+void marioSetSplash(s32 a, Vec* pos);

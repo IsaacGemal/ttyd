@@ -9,16 +9,13 @@
 #include "manager/evtmgr.h"
 #include "evt/evt_cmd.h"
 #include "mario/mario_hit.h"
+#include "mario/mario_cam.h"
+#include "evt/evt_cam.h"
+#include "motion/mot_damage.h"
+#include "motion/mot_hip.h"
+#include "koopa_motion.h"
 
 // Locals for symbols with no home header (see REPORT.md so they can move later).
-void camFollowYOn(void);
-void set_damage_root_ypos(f32 y);
-void marioChgMotSub(s32 motion, s32 sub);
-f32 marioGetFallSpd(void);
-void* marioChkLandon(f32* pos, f32 spd);
-void kpa_hip(void);
-USER_FUNC(evt_cam_shake);
-s32 U_chkground(void);
 
 // Event scripts. The original symbols are local (.sdata), so keep them static.
 static s32 quake_evt[] = {

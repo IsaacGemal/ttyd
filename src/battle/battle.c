@@ -13,25 +13,14 @@
 #include "mario/mariost.h"
 #include "driver/animdrv.h"
 #include "system.h"
+#include "statuswindow.h"
 
-typedef enum EquipFlags {
-    EQUIP_RESET = 1 << 0,   // 0x1, clear/reset equipped badges
-    EQUIP_MARIO = 1 << 1,   // 0x2, equip Mario (non-P) badges
-    EQUIP_PARTNER = 1 << 2, // 0x4, equip Partner (P) badges
-} EquipFlags;
+
 
 // forward declarations
-BOOL BattleMain(void);
-void BtlUnit_EquipItem(BattleUnit* unit, EquipFlags flags, ItemType type);
-void _EquipItem(BattleUnit* unit, EquipFlags flags, ItemType type);
-void BattlePartyInfoWorkInit(BattleWork* wp);
-void BattleCheckUnitBroken(BattleWork* wp);
 
-// status window helpers live in battle_disp.c / another unit but are not declared in a header
-BOOL statusWinCheck(void);
-void statusWinOpen(void);
-void statusWinClose(void);
-BOOL BattleCheckConcluded(BattleWork* wp);
+
+
 
 // Fields of BattleWork that are still holes in the shared header.  The offsets
 // are load-bearing: they come from the original binary, not from the header.
@@ -60,26 +49,6 @@ typedef struct BattleWorkOverlay {
 } BattleWorkOverlay;
 
 #define BW_OVL(wp) ((BattleWorkOverlay*)(wp))
-
-// Prototypes for functions defined later in this file but not declared in a header.
-BattleUnitType BattleTransPartyIdToUnitKind(s32 partyId);
-void BattleStoreCoin(BattleWork* wp, s32 coins);
-void BattleStoreExp(BattleWork* wp, s32 exp);
-s32 BattleGetStockExp(BattleWork* wp);
-f32 BattleGetFloorHeight(BattleWork* wp, f32 x, f32 y, f32 z);
-void BattleAfterReactionEntry(s32 id, s32 data);
-void BattleAfterReactionRelease(s32 id, s32 data);
-BOOL BattleAfterReactionMain(void);
-s32 BattleMajinaiCheck(void);
-void BattleMajinaiDone(void);
-void BattleMajinaiEndCheck(void);
-void BattleStatusWindowAPRecoveryOn(void);
-void BattleStatusWindowAPRecoveryOff(void);
-void BattleStatusWindowEventOn(void);
-void BattleStatusWindowSystemOn(void);
-void BattleStatusWindowEventOff(void);
-void BattleStatusWindowSystemOff(void);
-void BattleConsumeReserveItem(void);
 
 extern BattleUnitSetup entryunit_party[7];
 

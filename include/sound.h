@@ -201,3 +201,14 @@ void SoundEfxSetLPF(s32 chan, s16 freq);
 BOOL SoundEfxCheck(s32 chan);
 
 void SoundSSMain(void);
+s32 SoundSSCheck(s32);
+void SoundSSSetPlayFreqCh(s32 chan, u16 freq);
+void SoundSSStopCh(s32);
+void* sndMalloc(size_t size);
+void sndFree(void* ptr);
+void* loadDVD_callback(u32 offset, u32 length);
+void SoundEfxMain(void);
+void SoundDVDMain(void);
+void SoundSSMainInt(void);
+void SoundAIDMACallback(void);
+s32 SoundSSPlayChEx(s32 chan, u32 a2, u32 a3);

@@ -6,12 +6,10 @@
 #include "mario/mario_pouch.h"
 #include "memory.h"
 #include <string.h>
+#include <stdio.h>
 
-extern int sprintf(char* str, const char* format, ...);
 
 // Local prototypes not yet in a shared header.
-s16 johoya_get(u8* data, s16 id);
-s32 johoya_set(u8* data, s16 id, s16 value);
 
 // Local structs not yet in a shared header.
 typedef struct UranaiInfo {

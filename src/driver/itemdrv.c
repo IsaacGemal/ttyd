@@ -15,13 +15,12 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include <string.h>
+#include "driver/npcdrv.h"
+#include "party/party_nokonoko.h"
+#include <stdio.h>
 
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
 
-s32 itemGetNokoCheck(ItemEntry* item);
-s32 N_fbatPreventMarioEventChk(void);
-s32 nokonoko_holdItem(void);
 
 extern ItemData itemDataTable[];
 extern const char str_802CADE8[];
@@ -34,10 +33,6 @@ extern u32 dat_8041af94;
 extern u32 dat_8041af98;
 extern const Vec vec3_802cabec;
 extern const Vec vec3_802cabf8;
-extern void FontDrawEdge(void);
-extern void FontDrawEdgeOff(void);
-extern void FontDrawColor(GXColor* color);
-extern void FontDrawMessage(s32 x, s32 y, const char* msg);
 
 //.bss
 static ItemWork work[2];
@@ -97,6 +92,7 @@ void itemReInit(void) {
 
 
 
+// NONMATCHING (14.78%): 9 instructions differ, 434 missing, 8 extra, plus register differences.
 ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8) {
 	ItemWork* wp = itemGetWork();
 	ItemEntry* entry;
@@ -149,6 +145,7 @@ ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5,
 }
 
 
+// NONMATCHING (0.24%): empty placeholder, not decompiled yet.
 void itemMain(void) {
 
 }

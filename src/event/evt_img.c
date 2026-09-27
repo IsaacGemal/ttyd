@@ -1,3 +1,4 @@
+#include "evt/evt_img.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"

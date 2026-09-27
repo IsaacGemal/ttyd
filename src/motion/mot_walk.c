@@ -1,3 +1,4 @@
+#include "motion/mot_walk.h"
 #include "dolphin/types.h"
 #include "driver/hitdrv.h"
 #include "pmario_sound.h"

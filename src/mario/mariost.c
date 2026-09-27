@@ -58,8 +58,8 @@
 #include <dolphin/vi.h>
 #include <string.h>
 #include <dolphin/os.h>
+#include <demo/DEMOPad.h>
 
-extern void DEMOPadInit(void);
 extern BOOL g_bFirstSmartAlloc;
 
 //.bss
@@ -155,10 +155,6 @@ GXRenderModeObj sRMObjHReso = {
 };
 
 //local prototypes
-void viPostCallback(u32 retraceCount);
-void* gcDvdCheckThread(void* param);
-void gcRumbleCheck(void);
-void gcResetCheck(void);
 
 void marioStInit(void) {
 	if (!OSIsRestart() || (OSGetResetCode() & OS_RESET_SHUTDOWN)) {
@@ -268,6 +264,7 @@ void marioStInit(void) {
 	}
 }
 
+// NONMATCHING (64.05%): 51 extra, plus register differences.
 void marioStMain(void) {
 	int i;
 
@@ -371,6 +368,7 @@ s32 marioStGetSystemLevel(void) {
 	return gp->systemLevelFlags;
 }
 
+// NONMATCHING (95.89%): 5 instructions differ, 6 missing, plus register differences.
 void viPostCallback(u32 retraceCount) {
 	OSTime time, check;
 	u32 reset = PAD_BUTTON_B | PAD_BUTTON_X | PAD_BUTTON_START; //TODO: make sure it inlines right
@@ -449,6 +447,7 @@ exitcheck:
 }
 
 //TODO: fuck up float conversions for 1:1 cuz this is cleaner
+// NONMATCHING (38.75%): 5 instructions differ, 14 missing, 55 extra, plus register differences.
 void* gcDvdCheckThread(void* param) {
 	const char* message;
 	s32 msgId;
@@ -512,6 +511,7 @@ void* gcDvdCheckThread(void* param) {
 	}
 }
 
+// NONMATCHING (0.52%): empty placeholder, not decompiled yet.
 void gcRumbleCheck(void) {
 	/*OSTime start;
 	volatile BOOL array[4] = { 0 };

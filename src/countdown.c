@@ -13,9 +13,11 @@ void countDownInit(void) {
     memset(&gp->countdown, 0, sizeof(gp->countdown));
 }
 
+// NONMATCHING (1.47%): empty placeholder, not decompiled yet.
 void countDownSaveReStart(void) {
 }
 
+// NONMATCHING (0.72%): empty placeholder, not decompiled yet.
 void countDownMain(void) {
 }
 

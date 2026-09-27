@@ -15,6 +15,7 @@ BOOL christineGetStatus(void) {
     return TRUE;
 }
 
+// NONMATCHING (7.49%): 1 instruction differs, 415 missing, 1 extra, plus register differences.
 USER_FUNC(pre_kurio_use) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 

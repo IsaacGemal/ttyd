@@ -9,6 +9,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "pmario_sound.h"
 #include "system.h"
+#include "cam_road.h"
+#include "cam_shift.h"
 
 typedef struct CameraParams {
     f32 fovY;   // 0x00
@@ -18,13 +20,7 @@ typedef struct CameraParams {
     Vec at;     // 0x18
 } CameraParams;
 
-inline Vec makeVecByValue(f32 x, f32 y, f32 z);
-inline Vec makeVecByValue2(f32 x, f32 y, f32 z);
 
-void camRoadReset(void);
-void camShiftReset(void);
-void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank);
-void camShiftMain(CameraEntry* camera, MarioWork* mario, f32* out);
 
 USER_FUNC(evt_cam_letter_box_camid) {
     s32* args = event->args;
@@ -444,6 +440,7 @@ USER_FUNC(evt_cam3d_evt_set_npc_rel) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (80.37%): 4 instructions differ, 16 missing, 16 extra, plus register differences.
 USER_FUNC(evt_cam3d_evt_set_rel) {
     s32* args = event->args;
     f32 x = evtGetValue(event, args[0]);
@@ -479,6 +476,7 @@ USER_FUNC(evt_cam3d_evt_set_rel) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (95.76%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
 USER_FUNC(evt_cam3d_evt_set) {
     s32* args = event->args;
     f32 x = evtGetValue(event, args[0]);
@@ -511,6 +509,7 @@ USER_FUNC(evt_cam3d_evt_set) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (71.36%): 11 instructions differ, 47 missing, 14 extra, plus register differences.
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;
     CameraId camId = evtGetValue(event, args[0]);

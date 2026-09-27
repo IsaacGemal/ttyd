@@ -735,6 +735,7 @@ TattleEntry* battleGetUnitMonosiriPtr(s32 id) {
 	return &monosiriMessageTable[id];
 }
 
+// NONMATCHING (87.19%): 2 instructions differ, 1 missing, 5 extra, plus register differences.
 BOOL battleCheckUnitMonosiriFlag(BattleUnit* unit) { //needs stmw, swGet | fix
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnitType kind = unit->currentKind;
@@ -753,6 +754,7 @@ BOOL battleCheckUnitMonosiriFlag(BattleUnit* unit) { //needs stmw, swGet | fix
 		return FALSE;
 }
 
+// NONMATCHING (65.79%): 5 instructions differ, 6 missing, 15 extra, plus register differences.
 void battleSetUnitMonosiriFlag(BattleUnitType kind) { //very non-matching, TODO permute
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnitType** table;

@@ -6,12 +6,12 @@
 #include "system.h"
 #include "data/item_data.h"
 #include <string.h>
+#include "driver/windowdrv.h"
+#include "mario/mario_party.h"
+#include "driver/msgdrv.h"
 
 extern ItemData itemDataTable[];
-extern s32 partyChkJoin(s32 id);
 extern u16 party_id_table[];
-extern const char* msgSearch(const char* tag);
-extern void windowDispGX2_Waku_col(Mtx mtx, s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve);
 
 // .sbss2
 GXColor unk_80423330;
@@ -59,8 +59,6 @@ static WinMgrWork work;
 static WinMgrWork* wp = &work;
 
 // local prototypes
-void winMgrDisp(CameraId camId, void* param);
-void winMgrSeq(WinMgrEntry* entry);
 
 void winMgrInit(void) {
     wp->mNumEntries = 32;
@@ -73,6 +71,7 @@ void winMgrReInit(void) {
 }
 
 // TODO: finish
+// NONMATCHING (98.56%): 3 missing, plus register differences.
 void winMgrDisp(CameraId camId, void* param) {
     Mtx rotmtx, scalemtx;
     WinMgrEntry* entry = (WinMgrEntry*)param;
@@ -144,6 +143,7 @@ void winMgrMain(void) {
     }
 }
 
+// NONMATCHING (96.63%): 2 instructions differ, 3 missing, 3 extra, plus register differences.
 void winMgrSeq(WinMgrEntry* entry) {
     entry->flags |= 4;
 
@@ -372,6 +372,7 @@ void winMgrHelpMain(WinMgrEntry* entry) {
 
 // Keep winMgrHelpDraw out of line: the original calls it rather than inlining.
 #pragma dont_inline on
+// NONMATCHING (0.35%): empty placeholder, not decompiled yet.
 void winMgrHelpDraw(WinMgrEntry* entry) {
 }
 #pragma dont_inline reset
@@ -380,6 +381,7 @@ s32 unk_80237448(WinMgrSelect* select) {
     return select->field_0xC;
 }
 
+// NONMATCHING (82.06%): 2 missing, 1 extra, plus register differences.
 void winMgrSelectDelete(s32 select) {
     __memFree(HEAP_DEFAULT, (void*)((WinMgrSelect*)select)->field_0x30);
     __memFree(HEAP_DEFAULT, (void*)select);
@@ -446,6 +448,7 @@ void select_main3(WinMgrEntry* entry) {
     }
 }
 
+// NONMATCHING (97.81%): same instructions; only register numbers or operands differ.
 void select_disp3(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
 
@@ -458,6 +461,7 @@ void select_disp3(WinMgrEntry* entry) {
     }
 }
 
+// NONMATCHING (10.64%): 5 instructions differ, 829 missing, 11 extra, plus register differences.
 WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     WinMgrSelectTbl* table;
     WinMgrSelect* select;

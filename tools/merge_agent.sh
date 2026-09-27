@@ -7,7 +7,9 @@
 # UNIT may also be the source file's path, e.g. rels/pik/src/unit/unit_purple_teresa.c: needed for a new file in
 # a REL module, and for a unit that exists in several RELs.
 # RESULTS_DIR is the agent's result folder: final.c (the agent's whole file; used for new files and finishers)
-# or src.patch (a diff against the file on main), plus other_changes.txt (files the agent changed besides its own).
+# or src.patch (a diff against the file on main), plus other_changes.txt (source files the agent changed besides
+# its own) and include.patch (prototypes the agent added to headers; tools/header_patch.py checks it only adds
+# declarations).
 # UNIT is the source path without src/ and .c, e.g. event/evt_map. The wave name in the commit is RESULTS_DIR's
 # parent folder name. ORCHESTRATOR (env) names the model doing the merge in the commit trailer.
 # Prints MERGED, REJECT or SKIP. Run on a clean tree.
@@ -38,10 +40,24 @@ elif [ -s "$D/final.c" ]; then
 else
   echo "REJECT $TAG: no changes"; exit 1
 fi
-[ -z "$(git status --short -- "$F")" ] && { echo "SKIP $TAG: no change to $F"; exit 1; }
+HDR=0; HDRS=""
+if [ -s "$D/include.patch" ]; then
+  BAD=$(python3 tools/header_patch.py "$D/include.patch") || {
+    if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
+    echo "REJECT $TAG: header changes other than added declarations:"; echo "$BAD"; exit 1; }
+  # append-only: each added line goes to the end of its header unless the header already has it
+  APPLIED=$(python3 tools/header_patch.py --apply "$D/include.patch") || {
+    git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f
+    if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
+    echo "REJECT $TAG: header patch failed"; exit 1; }
+  HDRS=$(echo "$APPLIED" | cut -f2); HDRLINES=$(echo "$APPLIED" | awk -F'\t' '{s+=$1} END{print s+0}')
+  HDR=1
+fi
+[ -z "$(git status --short -- "$F" include)" ] && { echo "SKIP $TAG: no change to $F"; exit 1; }
 python3 configure.py >/dev/null   # a new source file needs a build rule
 
 restore() {
+  if [ $HDR = 1 ]; then git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f; fi  # tree was clean before the merge
   if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
   python3 configure.py >/dev/null
 }
@@ -59,16 +75,22 @@ LINT=$(python3 tools/lint_patch.py "$F" 2>&1) || {
   if echo "$LINT" | grep -q '^STUB'; then echo "REJECT $TAG: empty stubs:"; else echo "REJECT $TAG: lint failed:"; fi
   echo "$LINT"; exit 1; }
 [ -n "$LINT" ] && { echo "$LINT"; echo "$LINT" > "$D/lint.txt"; }
+if [ -n "$HDRS" ]; then  # main reports no problems, so anything here came from this agent's headers; check it in the asm
+  PA=$(python3 tools/proto_asm.py) || { echo "WARN $TAG: proto_asm.py findings (check by hand):"; echo "$PA" | tee "$D/proto_asm.txt"; }
+fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
 if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions matched"
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
-git add "$F" && git commit -q -F - <<MSG
+HDRNOTE=""
+[ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $HDRLINES lines."
+git add "$F" $HDRS && git commit -q -F - <<MSG
 $SUBJECT
 
 tools/ci.py${FLAGS:+ $FLAGS}: PASS, no regressions; $n0 -> $n1 functions matched.
+$HDRNOTE
 
 Agent: $MODEL, TTYD $WAVE; verified and merged by the orchestrator.
 

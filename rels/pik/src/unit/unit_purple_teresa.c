@@ -1,3 +1,4 @@
+#include "battle/battle_event_default.h"
 #include "battle/battle.h"
 #include "battle/battle_status_effect.h"
 #include "battle/battle_sub.h"
@@ -7,6 +8,9 @@
 #include "forcedata.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_database_common.h"
+#include "battle/battle_camera.h"
+#include "evt/evt_sub.h"
+#include "battle/battle_weapon_power.h"
 
 // These floats are not referenced by any decompiled code, but the original object carries them
 // (MSL's sqrtf inlined them here).  Mark them force_active so the REL linker keeps the
@@ -32,41 +36,7 @@ extend_data(1,
 // clang-format on
 
 // Referenced (by address) from the unit's event scripts, but no header declares them.
-USER_FUNC(btlevtcmd_SetEventWait);
-USER_FUNC(btlevtcmd_SetEventAttack);
-USER_FUNC(btlevtcmd_SetEventDamage);
-USER_FUNC(btlevtcmd_SetEventConfusion);
-USER_FUNC(btlevtcmd_StartWaitEvent);
-USER_FUNC(btlevtcmd_CheckStatus);
-USER_FUNC(btlevtcmd_EnemyItemUseCheck);
-USER_FUNC(btlevtcmd_WeaponAftereffect);
-USER_FUNC(btlevtcmd_AttackDeclare);
-USER_FUNC(btlevtcmd_PayWeaponCost);
-USER_FUNC(btlevtcmd_WaitGuardMove);
-USER_FUNC(btlevtcmd_AnimeChangePoseType);
-USER_FUNC(btlevtcmd_AnimeChangePose);
-USER_FUNC(btlevtcmd_AnimeChangePoseFromTable);
-USER_FUNC(btlevtcmd_DivePosition);
-USER_FUNC(btlevtcmd_FaceDirectionAdd);
-USER_FUNC(btlevtcmd_FaceDirectionSub);
-USER_FUNC(btlevtcmd_PreCheckDamage);
-USER_FUNC(btlevtcmd_ResultACDefence);
-USER_FUNC(btlevtcmd_CheckDamage);
-USER_FUNC(btlevtcmd_GetFirstAttackTarget);
-USER_FUNC(btlevtcmd_SamplingEnemy);
-USER_FUNC(btlevtcmd_ChoiceSamplingEnemy);
-USER_FUNC(btlevtcmd_GetSelectNextEnemy);
-USER_FUNC(btlevtcmd_snd_se);
-USER_FUNC(btldefaultevt_Damage);
-USER_FUNC(evt_btl_camera_set_mode);
-USER_FUNC(evt_btl_camera_set_homing_unit);
-USER_FUNC(evt_btl_camera_set_moveSpeedLv);
-USER_FUNC(evt_btl_camera_set_zoom);
-USER_FUNC(evt_btl_camera_shake_h);
-USER_FUNC(evt_btl_camera_add_zoom);
-USER_FUNC(evt_sub_random);
 extern s32 subsetevt_confuse_flustered[];
-u32 weaponGetPowerDefault(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part);
 #pragma force_active off
 
 USER_FUNC(teresa_check_trans) {

@@ -16,15 +16,40 @@ ROOT = Path(__file__).resolve().parent.parent
 SCALARS = {"f32", "f64", "s8", "u8", "s16", "u16", "s32", "u32", "BOOL", "Vec"}
 
 
+def struct_body(text, name):
+    """The top-level lines of `typedef struct ... { ... } NAME;`, found by walking back from `} NAME;` to its
+    matching brace (a lazy regex from the first `typedef struct` in the file can span earlier structs)."""
+    m = re.search(r"\}\s*" + re.escape(name) + r"\s*;", text)
+    if not m:
+        return None
+    depth, i = 0, m.start()
+    while i >= 0:
+        depth += {"}": 1, "{": -1}.get(text[i], 0)
+        if depth == 0:
+            break
+        i -= 1
+    if i < 0 or not re.search(r"typedef\s+struct\s*\w*\s*$", text[:i]):
+        return None
+    lines, depth = [], 0
+    for line in text[i + 1:m.start()].splitlines():
+        if depth == 0:
+            lines.append(line)
+        depth += line.count("{") - line.count("}")
+    return lines
+
+
 def struct_fields(name):
     """offset -> (type, field) for STRUCT, from the `// 0xNN` comments in its definition."""
     for h in (ROOT / "include").rglob("*.h"):
         text = h.read_text(errors="ignore")
-        m = re.search(r"typedef struct \w*\s*\{(.*?)\}\s*" + re.escape(name) + r"\s*;", text, re.S)
-        if not m:
+        body = struct_body(text, name)
+        if body is None:
+            if re.search(r"\}\s*" + re.escape(name) + r"\s*;", text):
+                print(f"warning: {h.relative_to(ROOT)} defines {name}, but its body couldn't be read "
+                      "(a brace in a comment?); skipped", file=sys.stderr)
             continue
         fields = {}
-        for line in m.group(1).splitlines():
+        for line in body:
             f = re.match(r"\s*(?:struct\s+)?(\w+)(\s*\*+)?\s+(\w+)\s*;\s*//\s*(0x[0-9A-Fa-f]+)", line)
             if not f:
                 continue

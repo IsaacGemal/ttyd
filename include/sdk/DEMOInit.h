@@ -11,3 +11,6 @@ GXRenderModeObj* DEMOGetRenderModeObj(void);
 void* DEMOGetCurrentBuffer(void);
 void DEMOEnableGPHangWorkaround(u32 timeoutFrames);
 void DEMOSetGPHangMetric(GXBool enable);
+void __NoHangRetraceCallback(u32 count);
+void __NoHangDoneRender(void);
+void __DEMODiagnoseHang(void);

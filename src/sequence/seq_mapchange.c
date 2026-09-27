@@ -20,6 +20,7 @@ char _next_bero[0x20];
 char _next_map[0x20];
 char _next_area[0x20];
 
+// NONMATCHING (0.15%): empty placeholder, not decompiled yet.
 void seq_mapChangeMain(SequenceWork* work) {
     /*
     BOOL newarea;
@@ -83,6 +84,7 @@ void seq_mapChangeExit(SequenceWork* work) {
     dbg_lotteryinfo = FALSE;
 }
 
+// NONMATCHING (77.63%): 2 instructions differ, 8 missing, 8 extra, plus register differences.
 void seq_mapChangeInit(SequenceWork* work) {
     strcpy(_next_area, "");
     strcpy(_next_map, "");
@@ -105,6 +107,7 @@ void seq_mapChangeInit(SequenceWork* work) {
     }
 }
 
+// NONMATCHING (31.83%): 208 missing, 1 extra, plus register differences.
 void _load(const char* prevMapName, const char* newMapName, const char* beroName) {
     MapData* map;
     char mapFile[64];

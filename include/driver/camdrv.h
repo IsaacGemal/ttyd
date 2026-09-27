@@ -114,3 +114,12 @@ void camSetTypeOrtho(CameraId cameraId);
 
 void getScreenPoint(Vec* model, Vec* screen);
 void camLetterBox(void);
+void camEvalNearFar(CameraEntry* camera);
+void cam3dMain(CameraEntry* camera);
+void cam3dImgMain(CameraEntry* camera);
+void camEffMain(CameraEntry* camera);
+CameraEntry* camEntryPersp(CameraCallback callback, f32 fovY, f32 aspect, f32 near, f32 far, f32 nearZ, f32 farZ,
+                           const char* name);
+CameraEntry* camEntryOrtho(CameraCallback callback, f32 fovY, f32 aspect, f32 top, f32 bottom, f32 left, f32 right,
+                           f32 near, f32 far, f32 nearZ, f32 farZ, const char* name);
+inline Vec makeVecByValue(f32 x, f32 y, f32 z);

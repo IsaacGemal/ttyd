@@ -1,3 +1,4 @@
+#include "motion/mot_stay.h"
 #include "dolphin/types.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"
@@ -10,15 +11,12 @@
 #include "peach.h"
 #include <string.h>
 #include "matching.h"
+#include "motion/mot_slit.h"
+#include "koopa_motion.h"
+#include "motion/mot_jabara.h"
 
 // Local declarations for functions whose headers don't declare them yet.
 // Listed in REPORT.md so they can move to a header later.
-void kpa_stay(void);
-void peach_stay(void);
-void marioClearJumpPara(void);
-void marioChgMot2(s32 motion);
-BOOL marioChkJabara(void);
-void motSlitCancel(void);
 
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.
 // Offsets are listed in REPORT.md.

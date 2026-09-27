@@ -482,9 +482,6 @@ UNUSED   000028 ........ maxAreaInWorld mapdata.o
 000327c8 0000b0 80037da8  4 relSetBtlAddr 	mapdata.o */
 
 // forward declarations
-WorldData* worldDataPtr(void);
-int maxMapInArea(const char* areaName);
-int maxAreaInWorld(void);
 
 MapData* mapDataPtr(const char* mapName) {
     WorldData* wp = worldDataPtr();

@@ -178,6 +178,7 @@ void mobjReset(BOOL inBattle) {
 //     bboxMax = pose->bboxMax;
 // }
 
+// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjEntry(const char* name, const char* animPoseName) {
     MapObjectWork* wp = mobjGetWork();
     s32 entryCount;
@@ -260,6 +261,7 @@ void mobjSetPosition(const char* name, f32 x, f32 y, f32 z) {
     entry->position.z = z;
 }
 
+// NONMATCHING (0.10%): empty placeholder, not decompiled yet.
 void mobjMain(void) {
 }
 
@@ -301,9 +303,10 @@ MapObjectEntry* mobjNameToPtrNoAssert(const char* name) {
     return entry;
 }
 
-MapObject* mobjHitObjPtrToPtr(HitEntry* hitObj) {
+MapObjectEntry* mobjHitObjPtrToPtr(HitEntry* hitObj) {
+    // for mobj hits, HitEntry.mapObj holds the MapObjectEntry
     if (hitObj->attributes & (1 << 31)) {
-        return hitObj->mapObj;
+        return (MapObjectEntry*)hitObj->mapObj;
     }
 
     return NULL;
@@ -376,6 +379,7 @@ BOOL mobjCheckExec() {
     return FALSE;
 }
 
+// NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     if (strcmp(entry->animName, "MOBJ_TreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BigTreasureBox") == 0 ||
         strcmp(entry->animName, "MOBJ_GrayTreasureBox") == 0 || strcmp(entry->animName, "MOBJ_BlackTreasureBox") == 0) {
@@ -388,6 +392,7 @@ s32 mobjCheckItemboxOpen(MapObjectEntry* entry) {
     }
 }
 
+// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
 MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names) {
     int entryCount;
     Vec pos;

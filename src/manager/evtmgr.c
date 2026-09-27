@@ -31,8 +31,6 @@ s32 evtID = 1;
 f32 evtSpd = 1.0f;
 
 //local definitions
-void make_pri_table(void);
-void evtEntryRunCheck(EventEntry* entry);
 
 EventWork* evtGetWork(void) {
 	return gp->inBattle ? &work[1] : &work[0];

@@ -24,9 +24,10 @@
 #include "mario/mario_party.h"
 #include "statuswindow.h"
 #include "driver/windowdrv.h"
+#include "sequence/seq_e3.h"
+#include "math_ext.h"
+static void pressStartGX(s32 alpha, f32 x, f32 y);  // local to this file in the original
 
-extern double tan(double arg);
-extern double sin(double arg);
 extern OSTime none_key;
 
 // TODO: move all this into other TUs
@@ -59,9 +60,6 @@ char* anim_tbl[] = { "b_mario", "PKR_W_1", "PKR_S_1", "PKR_A_2A", "PNK_W_1", "PN
                      "PNK_O_1", "c_windy", "PWD_W_1", "PWD_S_1",  "PWD_A_7" };
 
 // Forward Declarations
-void e3Disp(CameraId cameraId, void* param);
-void e3DispOffscreen(CameraId cameraId, void* param);
-void pressStartGX(s32 alpha, f32 x, f32 y);
 
 void alarm_handler(OSAlarm* alarm, OSContext* context) {
     gp->flags |= 0x2000;
@@ -456,7 +454,7 @@ void e3DispOffscreen(CameraId cameraId, void* param) {
     offscreenAddBoundingBox(offscreenNameToId("fOff_peron"), left, top, right, bottom);
 }
 
-void pressStartGX(s32 alpha, f32 x, f32 y) {
+static void pressStartGX(s32 alpha, f32 x, f32 y) {
     CameraEntry* camera = camGetCurPtr();
     GXTexObj startText, gradient;
     Mtx v17, v16;

@@ -9,18 +9,17 @@
 #include "texPalette.h"
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 #define PI 3.14159265358979323846264338327950288419716939937510
 #define TWO_PI 6.28318530717958647692528676655900576839433879875021
 
 extern GlobalWork* gp;
-extern int sprintf(char* str, const char* format, ...);
 
 //.bss
 static BackgroundWork work[2];
 
 //local prototypes
-void bgDisp(CameraId camId, void* param);
 
 //TODO: inline function? I see nothing in the symbol map
 #define bgGetWork() (gp->inBattle ? &work[1] : &work[0])
@@ -34,6 +33,7 @@ void bgReInit(void) {
 	memset(bgGetWork(), 0, sizeof(BackgroundWork));
 }
 
+// NONMATCHING (85.20%): 1 instruction differs, 5 missing, 7 extra, plus register differences.
 void bgEntry(const char* filename) {
 	BackgroundWork* bgwork;
 	TEXPalette* tpl;
@@ -78,6 +78,7 @@ void bgEntry(const char* filename) {
 	}
 }
 
+// NONMATCHING (86.56%): 1 instruction differs, 5 missing, 7 extra, plus register differences.
 void bgReEntry(const char* filename) {
 	BackgroundWork* bgwork;
 	TEXPalette* tpl;
@@ -157,6 +158,7 @@ void bgTransOffsetOn(void) {
 	bgGetWork()->flags &= ~8;
 }
 
+// NONMATCHING (82.66%): 9 instructions differ, 5 missing, 7 extra, plus register differences.
 void bgMain(void) {
 	f32 angle, sinangle, cosangle, v8, v11;
 	BackgroundWork* bgwork;
@@ -187,6 +189,7 @@ void bgMain(void) {
 	}
 }
 
+// NONMATCHING (11.33%): 6 instructions differ, 271 missing, 1 extra, plus register differences.
 void bgDisp(CameraId camId, void* param) {
 	BackgroundWork* bgwork = bgGetWork();
 	CameraEntry* camera = camGetPtr(camId);

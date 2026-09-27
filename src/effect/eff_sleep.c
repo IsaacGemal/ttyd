@@ -5,8 +5,8 @@
 #include <math.h>
 
 //local prototypes
-void effSleepDisp(CameraId camId, EffectEntry* effect);
 
+// NONMATCHING (99.18%): same instructions; only register numbers or operands differ.
 EffectEntry* effSleepEntry(s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 scale, f32 rotation) {
 	EffectEntry* effect;
 	effSleepData* data;
@@ -47,10 +47,12 @@ EffectEntry* effSleepEntry(s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 scale, f32 r
 	return effect;
 }
 
+// NONMATCHING (1.08%): empty placeholder, not decompiled yet.
 void effSleepMain(EffectEntry* effect) {
 
 }
 
+// NONMATCHING (0.32%): empty placeholder, not decompiled yet.
 void effSleepDisp(CameraId camId, EffectEntry* effect) {
 
 }
