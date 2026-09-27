@@ -1,4 +1,12 @@
+// The vendored trk.h declares TRKResetBuffer's keepData as u8, but TTYD's original compares
+// r4 directly (cmpwi r4, 0) without masking the low byte, so its second parameter is int.
+// Give the header's u8 declaration a throwaway name while it is parsed, then declare the
+// correct prototype below (report has the asm evidence).
+#define TRKResetBuffer TRKResetBuffer_u8_hdr
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
+#undef TRKResetBuffer
+
+void TRKResetBuffer(TRKBuffer* msg, int keepData);
 
 TRKBuffer gTRKMsgBufs[3];
 
@@ -99,7 +107,8 @@ void TRKReleaseBuffer(int idx)
  * Address:	8021C67C
  * Size:	000040
  */
-void TRKResetBuffer(TRKBuffer* msg, u8 keepData)
+// TTYD's TRKResetBuffer takes an int; see the declaration and note at the top of the file.
+void TRKResetBuffer(TRKBuffer* msg, int keepData)
 {
 	msg->length   = 0;
 	msg->position = 0;
@@ -137,7 +146,6 @@ DSError TRKSetBufferPosition(TRKBuffer* msg, u32 pos)
  * Address:	8021C6EC
  * Size:	0000A4
  */
-#pragma dont_inline on
 DSError TRKAppendBuffer(TRKBuffer* msg, const void* data, size_t length)
 {
 	DSError error = DS_NoError; // r31
@@ -171,7 +179,6 @@ DSError TRKAppendBuffer(TRKBuffer* msg, const void* data, size_t length)
 
 	return error;
 }
-#pragma dont_inline reset
 
 /*
  * --INFO--
