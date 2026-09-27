@@ -301,7 +301,8 @@ class CreatedHeaders(unittest.TestCase):
               "+\tvoid (*cb)(s32 a);\n+\tVec pos[2]; //0x4\n+};\n")
         self.assertEqual(header_patch.problems(self.NEW + ok), [])
         for bad in ("+int injected = 1;\n", "+void body(void) { injected++; }\n", "+#define REWRITE(x) 0\n",
-                    "+#error accepted\n"):
+                    "+#error accepted\n", "+s32 g;\n", "+u8 buf[0x100];\n", "+void (*hook)(void);\n",
+                    "+struct T {\n+\ts32 a;\n+} gObj;\n", "+bareword\n"):
             self.assertTrue(header_patch.problems(self.NEW + bad), bad)
 
     def test_static_is_refused_even_in_a_created_header(self):

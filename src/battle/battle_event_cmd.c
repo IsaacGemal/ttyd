@@ -3595,7 +3595,7 @@ USER_FUNC(btlevtcmd_AcGetOutputParam) {
     args = event->args;
     wp = _battleWorkPointer;
     index = evtGetValue(event, args[0]);
-    value = ((s32*)((u8*)wp + 0x1CE8))[index];
+    value = wp->actionCommands.outputParams[index];
 
     if (args[1] != EVTDAT_POINTER_MAX) {
         evtSetValue(event, args[1], value);

@@ -17,7 +17,7 @@ unit = "MarioSt/" + unit_path
 import os
 if os.path.exists(f"src/{unit_path}.c") and f"src/{unit_path}.c" not in open("build.ninja").read():
     subprocess.run(["python3", "configure.py"], capture_output=True)  # a new source file needs a build rule
-b = subprocess.run(["ninja", "-j2"], capture_output=True, text=True)  # 48 agents share 16 cores
+b = subprocess.run(["ninja", "-j2"], capture_output=True, text=True)  # two waves of agents share the tower's 16 cores
 if b.returncode:
     out = b.stdout + b.stderr
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]

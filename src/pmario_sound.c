@@ -4893,12 +4893,7 @@ void psndMapChange(void) {
 	}
 	strcpy(psnd.unk40, gp->currentMapName);
 	p = (u8*)&psnd;
-#ifdef MUST_MATCH
-	// through the byte pointer (98.86%); the field access schedules the psnd address differently (96.17%)
-	*(u16*)(p + 0x56) &= ~0x100;
-#else
 	psnd.unk56 &= ~0x100;
-#endif
 	{
 		PaperSoundEffectU16* sfx = (PaperSoundEffectU16*)&pssfx[0];
 		for (i = 0; i < 40; sfx++, i++) {

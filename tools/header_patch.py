@@ -37,14 +37,33 @@ ALLOWED = [
 # Extra lines a header the patch creates may hold: type definitions (struct/union/enum bodies, their fields and
 # enum members), as the codebase's own headers define an effect's work struct.
 C = r"(\s*//.*)?"
-TYPES = [
-    r"(?:typedef\s+)?(?:struct|union|enum)(?:\s+\w+)?\s*\{" + C,
-    r"(?:(?:const|unsigned|signed|volatile|struct|union|enum)\s+)*\w+[\s\*]+\w+(?:\s*\[[\w\s+\-*/()]+\])*"
-    r"(?:\s*:\s*\d+)?\s*;" + C,
-    r"(?:(?:const|unsigned|struct)\s+)*\w+[\s\*]*\(\s*\*\s*\w+\s*\)\s*\([^;{}]*\)\s*;" + C,
-    r"\w+(?:\s*=\s*[-+\w\s()<>|&~]+)?\s*,?" + C,
-    r"\}\s*\w*\s*;" + C,
-]
+OPEN = re.compile(r"(typedef\s+)?(struct|union|enum)(?:\s+\w+)?\s*\{" + C)
+FIELD = re.compile(r"(?:(?:const|unsigned|signed|volatile|struct|union|enum)\s+)*\w+[\s\*]+\w+"
+                   r"(?:\s*\[[\w\s+\-*/()]+\])*(?:\s*:\s*\d+)?\s*;" + C)
+FNPTR = re.compile(r"(?:(?:const|unsigned|struct)\s+)*\w+[\s\*]*\(\s*\*\s*\w+\s*\)\s*\([^;{}]*\)\s*;" + C)
+MEMBER = re.compile(r"\w+(?:\s*=\s*[-+\w\s()<>|&~]+)?\s*,?" + C)
+CLOSE = re.compile(r"\}\s*(\w*)\s*;" + C)
+
+
+def type_line(body, stack):
+    """True if body is part of a type definition, given the open definitions (stack of (typedef?, kind)); updates
+    the stack. Fields only inside a struct/union, members only inside an enum, and `} name;` only closing a typedef
+    or a nested member, so a header can't define global data."""
+    m = OPEN.fullmatch(body)
+    if m and (not stack or stack[-1][1] != "enum"):
+        stack.append((bool(m.group(1)), m.group(2)))
+        return True
+    if not stack:
+        return False
+    if stack[-1][1] == "enum":
+        ok = bool(MEMBER.fullmatch(body))
+    else:
+        ok = bool(FIELD.fullmatch(body) or FNPTR.fullmatch(body))
+    m = CLOSE.fullmatch(body)
+    if m:
+        typedef, _ = stack.pop()
+        return not m.group(1) or typedef or bool(stack)
+    return ok
 
 
 TARGET = re.compile(r"^\+\+\+ b/(include/(?:[\w.-]+/)*[\w.-]+\.h)(?:\t.*)?$")
@@ -73,7 +92,7 @@ def declaration(body):
 
 
 def problems(patch):
-    out, cur, sections, new = [], None, 0, False
+    out, cur, sections, new, stack = [], None, 0, False, []
     for n, line in enumerate(patch.splitlines(), 1):
         if line.startswith(("diff ", "--- ")):
             cur = None
@@ -84,7 +103,7 @@ def problems(patch):
                 out.append(f"line {n}: patches something other than a header under include/: {line[4:].split(chr(9))[0]}")
             cur = m.group(1) if m and ".." not in m.group(1) else None
             sections += cur is not None
-            new = False
+            new, stack = False, []
             continue
         if line.startswith("@@"):
             new = new or line.startswith("@@ -0,0 ")
@@ -102,7 +121,7 @@ def problems(patch):
                 out.append(f"line {n}: static declarations belong in the .c file: {body}")
             elif body.endswith("\\"):
                 out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
-            elif not declaration(body) and not (new and any(re.fullmatch(rx, body) for rx in TYPES)):
+            elif not (new and type_line(body, stack)) and (stack or not declaration(body)):
                 out.append(f"line {n}: not a declaration" + (" or type definition" if new else "") + f": {body}")
     if patch.strip() and not sections and not out:
         out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
