@@ -9,6 +9,11 @@
 
 extern void __num2dec(const decform*, double, decimal*);
 
+// MSL_C/printf.h does not declare the critical-region helpers this version of
+// printf/vprintf uses; declare them here (library-local declarations).
+extern void __begin_critical_region(int);
+extern void __end_critical_region(int);
+
 #define TARGET_FLOAT_BITS 64
 #define TARGET_FLOAT_BYTES (TARGET_FLOAT_BITS / 8)
 #define TARGET_FLOAT_MAX_EXP LDBL_MAX_EXP
@@ -1170,20 +1175,51 @@ static unsigned long __StringWrite(void* pCtrl, const char* pBuffer, size_t char
     return 1;
 }
 
-int printf(const char* format, ...) {
-    int res;
+int sprintf(char* s, const char* format, ...) {
+    int end;
+    int len;
+    va_list args;
+    __OutStrCtrl osc;
 
-    if (fwide(stdout, -1) >= 0) {
-        return -1;
+    va_start(args, format);
+
+    osc.CharStr = s;
+    osc.MaxCharCount = (size_t)-1;
+    osc.CharsWritten = 0;
+
+    end = __pformatter(&__StringWrite, &osc, format, args);
+
+    if (s != NULL) {
+        len = -2;
+        if (end < (size_t)-1) {
+            len = end;
+        }
+        s[len] = '\0';
     }
 
-    {
-        va_list args;
-        va_start(args, format);
-        res = __pformatter(&__FileWrite, (void*)stdout, format, args);
+    return end;
+}
+
+int vsprintf(char* s, const char* format, va_list arg) {
+    int end;
+    int len;
+    __OutStrCtrl osc;
+
+    osc.CharStr = s;
+    osc.MaxCharCount = (size_t)-1;
+    osc.CharsWritten = 0;
+
+    end = __pformatter(&__StringWrite, &osc, format, arg);
+
+    if (s != NULL) {
+        len = -2;
+        if (end < (size_t)-1) {
+            len = end;
+        }
+        s[len] = '\0';
     }
 
-    return res;
+    return end;
 }
 
 int vprintf(const char* format, va_list arg) {
@@ -1193,33 +1229,24 @@ int vprintf(const char* format, va_list arg) {
         return -1;
     }
 
+    __begin_critical_region(2);
     ret = __pformatter(&__FileWrite, (void*)stdout, format, arg);
+    __end_critical_region(2);
     return ret;
 }
 
-int vsnprintf(char* s, size_t n, const char* format, va_list arg) {
-    int end;
-    __OutStrCtrl osc;
-    osc.CharStr = s;
-    osc.MaxCharCount = n;
-    osc.CharsWritten = 0;
-
-    end = __pformatter(&__StringWrite, &osc, format, arg);
-
-    if (s)
-        s[(end < n) ? end : n - 1] = '\0';
-
-    return end;
-}
-
-int snprintf(char* s, size_t n, const char* format, ...) {
+int printf(const char* format, ...) {
+    int res;
     va_list args;
-    va_start(args, format);
-    return vsnprintf(s, n, format, args);
-}
 
-// int sprintf(char* s, const char* format, ...) {
-//     va_list args;
-//     va_start(args, format);
-//     return vsnprintf(s, 0xFFFFFFFF, format, args);
-// }
+    if (fwide(stdout, -1) >= 0) {
+        return -1;
+    }
+
+    __begin_critical_region(2);
+    va_start(args, format);
+    res = __pformatter(&__FileWrite, (void*)stdout, format, args);
+    __end_critical_region(2);
+
+    return res;
+}
