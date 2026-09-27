@@ -269,11 +269,11 @@ void object_entry(void) {
 
 // NONMATCHING (96.48%): 1 missing, plus register differences.
 void weapon_entry(void) {
-    BattleUnit* mario;
-    BattleUnitPart* parts;
     GenkiWork* genki = get_ptr();
     s32 offsets[10];
+    BattleUnit* mario;
     s32 found = 0;
+    BattleUnitPart* parts;
     s32 i;
     s32 idx;
     s32 count;
@@ -288,8 +288,12 @@ void weapon_entry(void) {
     }
     if (found >= 1) {
         idx = offsets[irand(found)];
-        genki->weapon[idx].field_0 = 1;
-        genki->weapon[idx].field_4 = 7;
+        {
+            GenkiWeapon* wep = &genki->weapon[idx];
+
+            wep->field_0 = 1;
+            wep->field_4 = 7;
+        }
         BtlUnit_SetAnim(parts, str_8030045C);
     }
 }
@@ -311,10 +315,11 @@ USER_FUNC(end_genki) {
     GenkiWork* genki = get_ptr();
     s32 i;
     s32 j;
-    s32 offset;
-    s32 woffset;
-    GenkiStar* star;
     GenkiWeapon* weapon;
+    s32 woffset;
+    s32 offset;
+    GenkiStar* star;
+
 
     offset = 0;
     for (i = 0; i < 7; i++, offset += 0x64) {
@@ -558,8 +563,6 @@ void main_object(s32 idx) {
     case 3:
         obj->field_0 = 0;
         break;
-    case 4:
-        break;
     }
 }
 
@@ -575,13 +578,17 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
         memset(genki, 0, 0x7CC);
         genki->field_50 = evtGetValue(event, args[0]);
         genki->field_C = evtGetValue(event, args[1]);
-        genki->field_40 = 0x384;
-        genki->score[2] = 0;
-        genki->score[1] = 0;
-        genki->score[0] = 0;
-        genki->field_24 = float_0_80421d84;
-        genki->field_20 = float_0_80421d84;
-        genki->field_1C = float_0_80421d84;
+        {
+            f32 zero = float_0_80421d84;
+
+            genki->field_40 = 0x384;
+            genki->score[2] = 0;
+            genki->score[1] = 0;
+            genki->score[0] = 0;
+            genki->field_24 = zero;
+            genki->field_20 = zero;
+            genki->field_1C = zero;
+        }
         if (genki->field_C == 0) {
             genki->field_58 = 3;
         } else {
@@ -737,7 +744,7 @@ static void main_base(void) {
             }
         }
         if (genki->field_40 <= 0) {
-            s32 ocount = 0;
+            s32 ocount;
             s32 wcount = 0;
             for (i = 0; i < genki->field_58; i++) {
                 if (genki->weapon[i].field_0 == 0) {
@@ -746,6 +753,7 @@ static void main_base(void) {
                     break;
                 }
             }
+            ocount = 0;
             for (i = 0; i < 10; i++) {
                 if (genki->objects[i].field_0 == 0) {
                     ocount++;
