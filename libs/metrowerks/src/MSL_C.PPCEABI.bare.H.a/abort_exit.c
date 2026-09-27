@@ -3,6 +3,8 @@
 void _ExitProcess();
 void __destroy_global_chain();
 void __kill_critical_regions();
+void __begin_critical_region(int region);
+void __end_critical_region(int region);
 
 extern void (*_dtors[])(void);
 
@@ -19,6 +21,9 @@ void exit(int status) {
     void (**dtor)(void);
 
     if (!__aborting) {
+        __begin_critical_region(0);
+        __end_critical_region(0);
+
         __destroy_global_chain();
 
         dtor = _dtors;
@@ -33,8 +38,11 @@ void exit(int status) {
         }
     }
 
+    __begin_critical_region(0);
     while (__atexit_curr_func > 0)
         __atexit_funcs[--__atexit_curr_func]();
+    __end_critical_region(0);
+    __kill_critical_regions();
 
     if (__console_exit != NULL) {
         __console_exit();
