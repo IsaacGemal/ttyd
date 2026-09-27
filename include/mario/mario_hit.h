@@ -29,3 +29,4 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a);
 void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a);
 BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
+HitEntry* marioSearchUnder(void);
