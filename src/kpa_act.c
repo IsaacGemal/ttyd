@@ -52,11 +52,10 @@ USER_FUNC(kpa_chg_pose) {
     return EVT_RETURN_DONE;
 }
 
-// The digit extraction and the string writes are byte-for-byte right; the remainder split (which
-// register holds the running score, when each digit is sign-extended, and the order the /10000,
-// /1000, /100, /10 magic constants are loaded) still differs. The original uses r31 for score,
-// r9/r8/r7/r5/r3 for the five digits and r4 for the loop pointer.
-// NONMATCHING (83.39%)
+// The remainder split (which register holds the running score, when each digit is sign-extended,
+// and the order the /10000, /1000, /100, /10 magic constants are loaded) still differs. The original
+// uses r31 for score, r9/r8/r7/r5/r3 for the five digits and r4 for the loop pointer.
+// NONMATCHING (84.21%)
 void kpaAddScorePos(s32 score, Vec* pos) {
     s32 i;
     s32 len;
@@ -104,6 +103,7 @@ void kpaAddScorePos(s32 score, Vec* pos) {
         }
         if (len != 0 || ones != 0) {
             *str = ones + '0';
+            len++;
         }
         ksdp[i].text[len] = 0;
         ksdp[i].timer = 30;
@@ -121,12 +121,7 @@ void kpaAddScore(s32 score) {
     pouchAddKpaScore(score);
 }
 
-// `pouchAddKpaCoin` needs the original's real signature (it returns BOOL and takes an unmasked s32;
-// see the asm) but include/mario/mario_pouch.h declares `void pouchAddKpaCoin(u8)`. The header
-// prototype forces a `clrlwi` at the call and hides the return, so the `if (...)
-// pouchAddKpaScore(1000)` block cannot be written here. Everything after that (coins * 500, the
-// clamp, and the whole decimal popup) matches the same way kpaAddScorePos does.
-// NONMATCHING (82.94%)
+// NONMATCHING (85.90%)
 void kpaAddCoinPos(s32 coins, Vec* pos) {
     s32 i;
     s32 len;
@@ -137,7 +132,9 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
     s8 ones;
     char* str;
 
-    pouchAddKpaCoin(coins);
+    if (pouchAddKpaCoin(coins)) {
+        pouchAddKpaScore(1000);
+    }
     coins *= 500;
     if (coins > 10000) {
         coins = 10000;
@@ -176,6 +173,7 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
         }
         if (len != 0 || ones != 0) {
             *str = ones + '0';
+            len++;
         }
         ksdp[i].text[len] = 0;
         ksdp[i].timer = 30;
@@ -186,13 +184,12 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
     }
 }
 
-// Same `pouchAddKpaCoin` header problem as kpaAddCoinPos: the original checks the BOOL it returns
-// and adds 1000 score, which the header's void prototype hides.
-// NONMATCHING (82.00%)
 void kpaAddCoin(s32 coins) {
     s32 score;
 
-    pouchAddKpaCoin(coins);
+    if (pouchAddKpaCoin(coins)) {
+        pouchAddKpaScore(1000);
+    }
     score = coins * 500;
     if (score > 10000) {
         score = 10000;

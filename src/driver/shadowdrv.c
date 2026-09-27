@@ -560,7 +560,7 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     }
 }
 
-// NONMATCHING (99.74%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
+// NONMATCHING (99.77%): body matches; only float-constant pool labels (TU-global .sdata2 layout) and the
 // _filter/_query argument-setup register choice differ.
 void shadowCharShadowDisp_Collision(void) {
     ShadowEntry* entry = cswp->entries;
@@ -617,7 +617,6 @@ void shadowCharShadowDisp_Collision(void) {
     }
 }
 
-// NONMATCHING (99.94%): body identical; only the 0.0f .sdata2 relocation differs (pool offsets).
 void shadowMain(void) {
     dispEntry(CAMERA_3D, float_0_804198f4, 9, shadowDisp, NULL);
     dispEntry(CAMERA_OFFSCREEN2, float_0_804198f4, 9, shadowDisp, NULL);
@@ -638,7 +637,7 @@ void shadowMain(void) {
     dswp->unk4 = 0;
 }
 
-// NONMATCHING (0%): first attempt, see report.
+// NONMATCHING (85.68%): first attempt, see report.
 void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
     ShadowConfigFields* config;
     CameraEntry* cam;
@@ -684,10 +683,10 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         GXPixModeSync();
         texObj = (GXTexObj*)((u8*)work + 0xDC);
         GXInitTexObj(texObj, smart->address, size, size, sizeFmt, 0, 0, 0);
-        GXInitTexObjLOD(texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXInitTexObjLOD(texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
         if (&work->unkC[0x70] != NULL) {
-            flag = (config->unk3C == 2);
+            flag = ((u32)config->unk3C > 2);
             if (config->unk38 == 0) {
                 C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
             }

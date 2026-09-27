@@ -303,12 +303,15 @@ u32 pouchGetKpaScore(void) {
 	return mpp->mSuperBowserScore;
 }
 
-// NONMATCHING (74.29%): 1 instruction differs, 3 missing.
-void pouchAddKpaCoin(u8 coins) {
+BOOL pouchAddKpaCoin(s32 coins) {
+	BOOL wrapped = FALSE;
+
 	mpp->mSuperBowserCoins += coins;
 	if (mpp->mSuperBowserCoins >= 100) {
 		mpp->mSuperBowserCoins -= 100;
+		wrapped = TRUE;
 	}
+	return wrapped;
 }
 
 u8 pouchGetKpaCoin(void) {

@@ -111,7 +111,6 @@ void _disp_heart(CameraId cameraId, void* param) {
     iconDispGx(iconPos, 0, 0x189, scale);
 }
 
-// NONMATCHING (95%): first draft.
 USER_FUNC(_disp_heart_entry) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -165,7 +164,7 @@ USER_FUNC(_make_kagenuke_weapon) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (0%): first draft.
+// NONMATCHING (76.09%): first draft.
 USER_FUNC(unk_8017d03c) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -286,6 +285,7 @@ USER_FUNC(_vivian_make_extra_work_area) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (91.42%): 5 instructions differ, 5 missing, 5 extra, plus register differences.
 USER_FUNC(battle_evt_majo_disp_off) {
 #ifdef MUST_MATCH
     const char* const base = str_802F7C30;
@@ -347,7 +347,7 @@ USER_FUNC(battle_evt_majo_disp_off) {
             event->userdata[0]++;
             event->userdata[1] = 0;
             if (v3 != 0) {
-                parts->attributes |= 0x100;
+                parts->attributes |= 0x01000000;
             }
         }
         break;
@@ -366,6 +366,7 @@ USER_FUNC(battle_evt_majo_disp_off) {
     return 0;
 }
 
+// NONMATCHING (84.85%): 3 instructions differ, 26 missing, 2 extra, plus register differences.
 USER_FUNC(battle_evt_majo_disp_on) {
 #ifdef MUST_MATCH
     const char* const base = str_802F7C30;

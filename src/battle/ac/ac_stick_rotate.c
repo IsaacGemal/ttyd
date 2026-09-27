@@ -52,7 +52,7 @@ void battleAcDelete_StickRotate(BattleWork* work) {
 }
 
 // optimize_for_size: matches the original's divide-by-two idiom and prologue (file looks like -O4,s).
-// NONMATCHING (36%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
+// NONMATCHING (52.68%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -114,7 +114,7 @@ void actionCommandDisp2(f32 x, f32 y) {
 }
 
 // optimize_for_size: matches the original's prologue and idioms (file looks like -O4,s).
-// NONMATCHING (0%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
+// NONMATCHING (0.00%): MWCC spills the Vec through a temp instead of writing the arg slot directly.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -197,7 +197,7 @@ s32 _get_icon_id(s32 id) {
 }
 
 // optimize_for_size: the original prologue uses stmw/lmw (the file looks like -O4,s).
-// NONMATCHING (95%): the disp pointer is folded into the BattleWork base; everything else matches.
+// NONMATCHING (95.67%): the disp pointer is folded into the BattleWork base; everything else matches.
 void battleAcDisp_StickRotate(CameraId camId, void* param) {
     register BattleACDispParams* disp =
         &((BattleWork*)param)->actionCommands.dispParams;
@@ -251,7 +251,7 @@ s32 battleAcResult_StickRotate(BattleWork* work) {
 // optimize_for_size: the original prologue uses stmw/lmw (the file looks like -O4,s).
 // opt_propagation off: keeps sr/disp as separate live pointers like the original.
 #pragma opt_propagation off
-// NONMATCHING (85%): sr is folded into the BattleWork base; MWCC picks different callee-saved registers.
+// NONMATCHING (85.50%): sr is folded into the BattleWork base; MWCC picks different callee-saved registers.
 s32 battleAcMain_StickRotate(BattleWork* work) {
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -332,6 +332,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     work->actionCommands.mAcState = 0x3EA;
                     work->actionCommands.outputParams[0] =
                         *(s32*)&work->actionCommands.field_34[0x04];
+                    cont = 1;
                 }
                 sr->field_0x0C--;
                 sr->field_0x05++;
@@ -342,8 +343,8 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 if (sr->field_0x0C < 0) {
                     if (work->actionCommands.outputParams[0] >=
-                            *(s32*)&work->actionCommands.field_34[0x10] ||
-                        BattlePadCheckNow(
+                            *(s32*)&work->actionCommands.field_34[0x10] &&
+                        !BattlePadCheckNow(
                             *(s32*)&work->actionCommands.field_34[0x0C])) {
                         work->actionCommands.result |= 2;
                     }
