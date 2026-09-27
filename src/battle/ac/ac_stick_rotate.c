@@ -15,7 +15,7 @@ typedef struct StickRotateWork {
     s8 field_0x02;    // 0x02, last accepted direction
     s8 field_0x03;    // 0x03, clamped direction
     s8 field_0x04;    // 0x04, roll direction
-    u8 field_0x05;    // 0x05, roll counter
+    s8 field_0x05;    // 0x05, roll counter
     s8 field_0x06;    // 0x06, icon id
     u8 field_0x07;    // 0x07, icon timer
     u16 field_0x08;   // 0x08, roll step count
@@ -35,6 +35,7 @@ extern const f32 float_30_804204e0;
 extern const f32 float_0_804204e4;
 
 // Vec literals the original unit emitted into .rodata: one contiguous array of nine zero vectors.
+// match-only layout: nine separate zero Vecs in the original (vec3_802fd560 ... vec3_802fd5c0), read as one array
 const Vec vec3_802fd560[9] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
@@ -51,7 +52,6 @@ void battleAcDelete_StickRotate(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// optimize_for_size: matches the original's divide-by-two idiom and prologue (file looks like -O4,s).
 // NONMATCHING (71.69%): 1 instruction differs, 4 missing, 28 extra, plus register differences.
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -113,7 +113,6 @@ void actionCommandDisp2(f32 x, f32 y) {
     }
 }
 
-// optimize_for_size: matches the original's prologue and idioms (file looks like -O4,s).
 // NONMATCHING (25.47%): 4 instructions differ, 5 missing, 104 extra, plus register differences.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -136,7 +135,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             iconDispGx(&v, 0x10, _get_icon_id(sr->field_0x02), float_1_804204d8);
             break;
         case 0x3E9:
-            if ((s8)sr->field_0x05 <
+            if (sr->field_0x05 <
                 *(s32*)&work->actionCommands.field_34[0x14]) {
                 if (sr->field_0x08 <= 1) {
                     v = vec[2];
@@ -196,7 +195,6 @@ s32 _get_icon_id(s32 id) {
     }
 }
 
-// optimize_for_size: the original prologue uses stmw/lmw (the file looks like -O4,s).
 // NONMATCHING (95.67%): the disp pointer is folded into the BattleWork base; everything else matches.
 void battleAcDisp_StickRotate(CameraId camId, void* param) {
     register BattleACDispParams* disp =
@@ -248,10 +246,7 @@ s32 battleAcResult_StickRotate(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: the original prologue uses stmw/lmw (the file looks like -O4,s).
-// opt_propagation off: keeps sr/disp as separate live pointers like the original.
-#pragma opt_propagation off
-// NONMATCHING (85.50%): sr is folded into the BattleWork base; MWCC picks different callee-saved registers.
+// NONMATCHING (85.92%): 3 instructions differ, 25 missing, 21 extra, plus register differences.
 s32 battleAcMain_StickRotate(BattleWork* work) {
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -423,14 +418,14 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
                     if (sr->field_0x08 > 1) {
-                        if ((s8)sr->field_0x05 >
+                        if (sr->field_0x05 >
                             *(s32*)&work->actionCommands.field_34[0x18]) {
                             work->actionCommands.result &= ~1;
                             work->actionCommands.mAcState = 0x3EA;
                             cont = 1;
                             break;
                         }
-                        if ((s8)sr->field_0x05 <
+                        if (sr->field_0x05 <
                             *(s32*)&work->actionCommands.field_34[0x14]) {
                             sr->field_0x10++;
                             if (sr->field_0x10 >
@@ -508,7 +503,6 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
 
     return 1;
 }
-#pragma opt_propagation on
 
 // dont_inline: the original calls _CalcRollDir/_GetInputDir; MWCC inline-expanded them.
 #pragma dont_inline on
@@ -542,7 +536,6 @@ s32 _CalcRollDir(void) {
     }
 }
 
-// optimize_for_size: matches the original's cmpwi/booleanise idioms (the file looks like -O4,s).
 s32 _GetInputDir(void) {
     BattleWork* work = _battleWorkPointer;
     u32 mask = *(u32*)&work->actionCommands.field_34[0x0C];

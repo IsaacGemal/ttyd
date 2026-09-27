@@ -31,7 +31,7 @@ typedef struct ShadowConfigFields {
     f32 unk30;
     f32 unk34;
     s32 unk38;
-    s32 unk3C;
+    u32 unk3C;
     s32 unk40;
     f32 unk44;
 } ShadowConfigFields;
@@ -637,7 +637,7 @@ void shadowMain(void) {
     dswp->unk4 = 0;
 }
 
-// NONMATCHING (85.68%): first attempt, see report.
+// NONMATCHING (85.96%): 5 instructions differ, 15 missing, 9 extra, plus register differences.
 void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
     ShadowConfigFields* config;
     CameraEntry* cam;
@@ -686,7 +686,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         GXInitTexObjLOD(texObj, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
         if (&work->unkC[0x70] != NULL) {
-            flag = ((u32)config->unk3C > 2);
+            flag = (config->unk3C > 2);
             if (config->unk38 == 0) {
                 C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
             }

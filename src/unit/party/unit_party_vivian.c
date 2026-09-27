@@ -168,7 +168,7 @@ USER_FUNC(_make_kagenuke_weapon) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (76.09%): first draft.
+// NONMATCHING (93.07%): 4 instructions differ, 4 missing, 1 extra, plus register differences.
 USER_FUNC(unk_8017d03c) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -207,7 +207,7 @@ USER_FUNC(unk_8017d03c) {
     k58 = *(f32*)((u8*)unit2->mKindParams + 0x58);
     d1 = (f32)unit1->faceDirection;
     d2 = (f32)unit2->faceDirection;
-    t = (s32)(d2 * k54 * sx);
+    t = (s32)(d2 * (k54 * sx));
     u = (s32)(k58 * sz);
     outX = (s32)((f32)v1 + ((float_neg30_8041dea4 * scale1) * d1 + (f32)t));
     outY = (s32)((f32)v2 - float_20_8041dea8 * scale1);

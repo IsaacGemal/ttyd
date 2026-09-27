@@ -343,6 +343,7 @@ void mot_jump(void) {
     mario->airTimer++;
 }
 
+// NONMATCHING (90.61%): 11 instructions differ, 8 missing, 11 extra, plus register differences.
 void mot_jumpNpc(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
@@ -471,6 +472,7 @@ void mot_jumpNpc(void) {
     mario->airTimer++;
 }
 
+// NONMATCHING (89.45%): 11 instructions differ, 8 missing, 11 extra, plus register differences.
 void mot_jumpSw(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
@@ -580,6 +582,7 @@ void mot_jumpSw(void) {
     mario->airTimer++;
 }
 
+// NONMATCHING (99.44%): 2 instructions differ, plus register differences.
 void mot_jumpStand(void) {
     MarioWork* mario = marioGetPtr();
 

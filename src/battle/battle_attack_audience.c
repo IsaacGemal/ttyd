@@ -102,7 +102,7 @@ s32 _get_item_announce(EventEntry* event, s32 isFirstCall) {
             event->userdata[2]--;
         }
         if (event->userdata[2] <= 0) {
-            itemDelete((char*)event->userdata[1] + 0xC);
+            itemDelete(((ItemEntry*)event->userdata[1])->name);
             return 2;
         }
     }
@@ -127,7 +127,7 @@ void _get_item_announce_disp(CameraId camera, void* param) {
     width = FontGetMessageWidthLine(buf, &lines);
     x = float_0_8041cccc - (f32)(width / 2);
     lines++;
-    color = *(GXColor*)&dat_8041ccc0;
+    color = *(GXColor*)&dat_8041ccc0; // match-only: a GXColor object here changes the load (99% -> 80%)
     windowDispGX_Waku_col(0, color, x - float_10_8041ccd0, float_34_8041ccd4,
                           (f32)(width + 20), (f32)(lines * 0x1D + 3), float_10_8041ccd0);
     FontDrawStart();
@@ -197,6 +197,7 @@ s32 _attack_aud(EventEntry* event) {
     f32 x;
     f32 y;
     f32 z;
+    // match-only: these pointers give the original's frame (0x30) and r28-r31 save set
     f32* py = &y;
     f32* pz = &z;
     char* sound = NULL;

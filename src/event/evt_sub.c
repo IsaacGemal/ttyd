@@ -484,8 +484,8 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
 #pragma opt_propagation reset
+// NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];

@@ -100,7 +100,7 @@ void memInit(void) { //almost 1:1, stubborn regalloc at the end
     }
 }
 
-// NONMATCHING (93.98%): 1 missing, 1 extra, plus register differences.
+// NONMATCHING (95.20%): 1 missing, 1 extra, plus register differences.
 void memClear(HEAP_TYPE heap) {
 	u32 size;
 	MapAllocEntry* entry;
@@ -138,7 +138,6 @@ void __memFree(HEAP_TYPE heap, void* ptr) {
 	OSFreeToHeap(heapHandle[heap], ptr);
 }
 
-// NONMATCHING (90.15%): 1 instruction differs, 3 missing, 3 extra.
 void* _mapAlloc(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -191,7 +190,6 @@ void* _mapAlloc(u32 size) {
 	}
 }
 
-// NONMATCHING (99.13%): 1 instruction differs.
 void* _mapAllocTail(u32 size) {
 	MapAllocEntry* nextptr; //shorthand to make sure regalloc is correct
 	MapAllocEntry* entry; //for our loop
@@ -276,7 +274,7 @@ void _mapFree(void* alloc) {
 	entry->inuse = 0;
 }
 
-// NONMATCHING (9.88%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
+// NONMATCHING (75.04%): 13 instructions differ, 24 missing, 75 extra, plus register differences.
 void smartInit(void) {
 	void* ptr;
 	u32 size;
@@ -415,13 +413,14 @@ void smartFree(smartEntry* entry) {
 	wp->waitsync++;
 }
 
-// NONMATCHING (96.32%): 3 instructions differ, 4 missing, plus register differences.
+// NONMATCHING (97.76%): 3 instructions differ, 4 missing, plus register differences.
 smartEntry* smartAlloc(u32 size, u8 type) {
 	smartEntry* entry1, * entry2;
 	u32 size2;
 	int i;
 
 	size2 = size;
+	// match-only forms: `!g_bFirstSmartAlloc` and `if (wp->waitsync)` score 97.47% instead of 97.76%
 	if (g_bFirstSmartAlloc == 0) {
 		g_bFirstSmartAlloc = TRUE;
 		smartAutoFree(3);

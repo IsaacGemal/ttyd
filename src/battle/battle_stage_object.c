@@ -367,11 +367,9 @@ void BattleStage_DestroyA2(void) {
 	evtEntry(evt, 10, 0);
 }
 
-// NONMATCHING (94.51%): same as DestroyA1; target keeps `wp` in r31 and recomputes the `+0x20000` base,
-// mwcc merges it and mutates r31 after the first `evtDeleteID`.
 void BattleStage_DestroyB(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp;
+	u8* base = (u8*)wp; // match-only: without this alias the function drops to 94.51%
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x19C);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F14));
@@ -392,7 +390,7 @@ void BattleStage_DestroyB(void) {
 
 void BattleStage_DestroyA1(void) {
 	BattleWork* wp = _battleWorkPointer;
-	u8* base = (u8*)wp;
+	u8* base = (u8*)wp; // match-only: without this alias the function drops to 94.51%
 	void* evt = *(void**)(*(u8**)((u8*)wp->fbatInfo->setup) + 0x194);
 
 	evtDeleteID(*(s32*)(base + 0x20000 - 0x7F1C));
@@ -482,7 +480,7 @@ USER_FUNC(_set_mobj_shake) {
 	return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (84.83%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
+// NONMATCHING (92.12%): 3 instructions differ, 3 missing, 4 extra, plus register differences.
 USER_FUNC(_fall_frame) {
 	s32 layer = event->args[0];
 	BattleWork* wp = _battleWorkPointer;

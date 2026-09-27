@@ -18,10 +18,10 @@
 #define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
 
 // head_sphere_data: sphere offsets (forward, height, radius) and a facing-condition type per level.
-static s32 head_sphere_data_lv0[] = { 1, 10, 15, 6, 0 };
-static s32 head_sphere_data_lv1[] = { 3, 32, 55, 24, 0, 26, 30, 16, 2, -10, 44, 25, 1 };
-static s32 head_sphere_data_lv2[] = { 3, 45, 75, 34, 0, 36, 30, 16, 2, -15, 59, 36, 1 };
-static s32 head_sphere_data_lv3[] = { 4, 100, 162, 80, 0, 90, 75, 30, 2, 50, 40, 30, 3, -43, 142, 74, 1 };
+s32 head_sphere_data_lv0[] = { 1, 10, 15, 6, 0 };
+s32 head_sphere_data_lv1[] = { 3, 32, 55, 24, 0, 26, 30, 16, 2, -10, 44, 25, 1 };
+s32 head_sphere_data_lv2[] = { 3, 45, 75, 34, 0, 36, 30, 16, 2, -15, 59, 36, 1 };
+s32 head_sphere_data_lv3[] = { 4, 100, 162, 80, 0, 90, 75, 30, 2, 50, 40, 30, 3, -43, 142, 74, 1 };
 s32* head_sphere_data[] = { head_sphere_data_lv0, head_sphere_data_lv1, head_sphere_data_lv2,
                             head_sphere_data_lv3 };
 
@@ -48,7 +48,7 @@ BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     return strcmp(obj->animName, "MOBJ_Block") != 0;
 }
 
-// NONMATCHING (91.6%): register allocation only -- `result` lands in r27 vs the original's r25, the 0.0f
+// NONMATCHING (91.57%): register allocation only -- `result` lands in r27 vs the original's r25, the 0.0f
 // constant in r25 vs r26, plus an extra `mr r29,r28`; instruction selection and constants all match.
 void* kpaHitCheck(void) {
     void* result = NULL;
@@ -123,7 +123,7 @@ void* kpaGetHitobj(void) {
     return KPA(mp)->unk1C;
 }
 
-// NONMATCHING (99.7%): the final 1000.0f store reuses r3 where the original materialises the offset in r4.
+// NONMATCHING (99.66%): same instructions; only register numbers or operands differ.
 void kpaClearHitobjRide(void) {
     MarioWork* mp = marioGetPtr();
     KPA(mp)->ride[0] = NULL;
@@ -174,7 +174,7 @@ s32 kpaChkHitobjRide(void) {
     return (s32)result;
 }
 
-// NONMATCHING (72.9%): MWCC folds the 0x4C field into `lwz 0x4c(r3)` after adding the base, where the
+// NONMATCHING (72.93%): MWCC folds the 0x4C field into `lwz 0x4c(r3)` after adding the base, where the
 // original emits `addi r0,r4,0x4c; lwzx`.
 void* kpaGetHitobjRide(s32 index) {
     KpaWork* kpa = KPA(marioGetPtr());
@@ -185,7 +185,7 @@ void* kpaGetHitobjHead2(void) {
     return KPA(marioGetPtr())->head[0];
 }
 
-// NONMATCHING (72.9%): MWCC folds the 0x20 field into `lwz 0x20(r3)` after adding the base, where the
+// NONMATCHING (72.93%): MWCC folds the 0x20 field into `lwz 0x20(r3)` after adding the base, where the
 // original emits `addi r0,r4,0x20; lwzx`.
 void* kpaGetHitobjHead(s32 index) {
     KpaWork* kpa = KPA(marioGetPtr());
@@ -198,18 +198,18 @@ void* kpaSearchFrontUnder(void) {
     return (void*)(s32)0;
 }
 
-// kpaSearchHead's per-head offset tables (forward, height, facing condition).
-static s32 _ofs0[] = { 3, 12, 16, 1, 0, 16, 0, -9, 16, 0 };
-static s32 _ofs1[] = { 4, 25, 74, 0, 50, 65, 1, 0, 67, 0, -25, 62, 0 };
-static s32 _ofs2[] = { 6, 50, 102, 0, 76, 90, 1, 25, 100, 0, 0, 94, 0, -25, 90, 0, -45, 68, 0 };
-static s32 _ofs3[] = { 13, 170, 194, 1, 145, 204, 0, 120, 232, 0, 95, 227, 0, 70, 232, 0, 55, 232,
-                       0,  30,  194, 0, 5,   187, 0, -20, 210, 0, -45, 201, 0, -70, 181, 0, -95, 153,
-                       0,  -120, 56, 0 };
-static s32* headchkofs[] = { _ofs0, _ofs1, _ofs2, _ofs3 };
 
-// NONMATCHING (81.7%): the spilled float register set differs (extra f27 save) and the `kpaGetLevel()==0`
+// NONMATCHING (81.72%): the spilled float register set differs (extra f27 save) and the `kpaGetLevel()==0`
 // test emits bne where the original emits beq.
 void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
+    // per-head offset tables (forward, height, facing condition)
+    static s32 _ofs0[] = { 3, 12, 16, 1, 0, 16, 0, -9, 16, 0 };
+    static s32 _ofs1[] = { 4, 25, 74, 0, 50, 65, 1, 0, 67, 0, -25, 62, 0 };
+    static s32 _ofs2[] = { 6, 50, 102, 0, 76, 90, 1, 25, 100, 0, 0, 94, 0, -25, 90, 0, -45, 68, 0 };
+    static s32 _ofs3[] = { 13, 170, 194, 1, 145, 204, 0, 120, 232, 0, 95, 227, 0, 70, 232, 0, 55, 232,
+                           0,  30,  194, 0, 5,   187, 0, -20, 210, 0, -45, 201, 0, -70, 181, 0, -95, 153,
+                           0,  -120, 56, 0 };
+    static s32* headchkofs[] = { _ofs0, _ofs1, _ofs2, _ofs3 };
     MarioWork* mp = marioGetPtr();
     void* result = NULL;
     f32 angle;
@@ -225,7 +225,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     if (mp->baseSpeed != 0.0f) {
         angle = mp->directionView;
     } else {
-        angle = toMovedir(MW_F32(mp, 0x1A8));
+        angle = toMovedir(mp->unk1A8);
     }
     dist = *outY;
     *outY = -1.0f;
@@ -294,7 +294,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     return result;
 }
 
-// NONMATCHING (98.1%): one scheduled instruction -- mine hoists `lfs f1,0x90(r31)` (mario y) above the
+// NONMATCHING (98.08%): one scheduled instruction -- mine hoists `lfs f1,0x90(r31)` (mario y) above the
 // preceding `fadds`; every other instruction matches.
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();
@@ -313,7 +313,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     if (dy <= halfH && dx <= halfW) {
         if (mp->flags & 0x20000) {
             if (mp->position.y > y) {
-                if (kpaGetLevel() == 0 && kpaGetStageType() != 1 && MW_S16(mp, 0x4C) == 0 && z < float_50_80420eb0) {
+                if (kpaGetLevel() == 0 && kpaGetStageType() != 1 && mp->unk4C == 0 && z < float_50_80420eb0) {
                     marioChgMot(4);
                 }
                 return 1;
@@ -322,7 +322,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
         if (kpaMutekiCheck() == 1) {
             return 3;
         }
-        if (MW_S16(mp, 0x4C) != 0) {
+        if (mp->unk4C != 0) {
             return 3;
         }
         if (MW_S16(mp, 0x78) == 0) {
@@ -332,8 +332,7 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     return 0;
 }
 
-// NONMATCHING (94.9%): frame is 0x10 bytes smaller; the argument registers for a/b are swapped and the `pos`
-// vector is kept in registers instead of being copied on the stack, shifting every matrix offset.
+// NONMATCHING (98.64%): 2 instructions differ, plus register differences.
 s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     EffectEntry* efp = getKoopaFireEfp();
     KpaFireNode* root;
@@ -363,7 +362,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     radius = root->unk40;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
     cam = camGetPtr(4);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - MW_F32(cam, 0x114)) * float_deg2rad_80420eb4);
+    PSMTXRotRad(m1, 0x79, (root->unk48 - cam->viewYaw) * float_deg2rad_80420eb4);
     if (root->unk48 > float_90_80420eb8 && root->unk48 < float_270_80420ebc) {
         PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
     } else {

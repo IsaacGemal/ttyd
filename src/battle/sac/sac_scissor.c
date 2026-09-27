@@ -70,7 +70,7 @@ typedef struct ScissorWork {
 s32 wait_star_standby(void) {
     ScissorWork* work = GetScissorPtr();
 
-    return (u32)(work->state - 5u) <= 0 ? 2 : 0;
+    return (work->state == 5) ? 2 : 0;
 }
 
 s32 star_stone_appear(void) {
@@ -281,7 +281,6 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (61.86%): 2 instructions differ, 3 missing, 18 extra, plus register differences.
 s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     ScissorWork* work = GetScissorPtr();
     s32 i;
@@ -299,7 +298,6 @@ s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     return 0;
 }
 
-// NONMATCHING (88.36%): 2 instructions differ, 4 extra, plus register differences.
 s32 scissor_tess(void) {
     ScissorWork* work = GetScissorPtr();
     f32* points = BattleAlloc(work->field_0x9C << 3);

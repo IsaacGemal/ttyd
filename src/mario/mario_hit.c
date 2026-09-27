@@ -279,7 +279,7 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
 
 // prototypes for in-file functions
 
-// NONMATCHING (96.18%): CSEs wp+0x210 into an extra callee-saved register (r30)
+// NONMATCHING (99.23%): CSEs wp+0x210 into an extra callee-saved register (r30)
 // where the original recomputes addi r3,r31,0x210 per dou10_yoko_yari, dragging
 // r28/r29/r30 through the function.
 void marioCheckWall(f32 a, f32 b) {
@@ -686,20 +686,20 @@ f32 marioChkOverhead(void) {
         s32 ok;
 
         if (hitGetAttr(hit) & 0x80000000) {
-                u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
+            u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
 
-                if (strcmp((const char*)(obj + 0x15), (char*)base + 0x220) == 0 ||
-                    strcmp((const char*)(obj + 0x15), (char*)base + 0x234) == 0 ||
-                    strcmp((const char*)(obj + 0x15), (char*)base + 0x244) == 0 ||
-                    strcmp((const char*)(obj + 0x15), (char*)base + 0x258) == 0) {
-                    ok = 1;
-                } else {
-                    ok = 0;
-                }
+            if (strcmp((const char*)(obj + 0x15), (char*)base + 0x220) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x234) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x244) == 0 ||
+                strcmp((const char*)(obj + 0x15), (char*)base + 0x258) == 0) {
+                ok = 1;
             } else {
                 ok = 0;
             }
-            if (ok) {
+        } else {
+            ok = 0;
+        }
+        if (ok) {
             wp->baseSpeed = float_0_8041a7a4;
             wp->flags |= 0x80;
         }
@@ -807,16 +807,15 @@ BOOL marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance) {
 extern const Vec vec3_802c5754;
 extern const f32 float_neg3000_8041a870;
 
-// NONMATCHING (83.54%): stack frame is 0x10 too small and every local is 0xc lower than
-// the original (query at 0x20 vs 0x2c); the null-hit branch is folded (`beq` vs the
-// original `bne round; li r3,0; b end`), and the round-to-nearest FPR allocation differs.
+// NONMATCHING (86.16%): 5 instructions differ, 10 missing, 8 extra, plus register differences.
 HitEntry* marioSearchUnder(void) {
     MarioWork* wp = marioGetPtr();
-    HitCheckQuery query;
     Vec pos;
+    Vec dir;
     Vec hitPos;
     Vec hitNormal;
     HitEntry* hit;
+    f32 dist;
     f32 y;
 
     y = wp->wPlayerCollisionBox.y;
@@ -826,31 +825,10 @@ HitEntry* marioSearchUnder(void) {
 
     pos = wp->position;
     pos.y = pos.y + y;
-    query.targetPos = pos;
-    query.targetDir = vec3_802c5754;
-    query.targetDistance = float_1000_8041a7a0;
-
-    if (marioGetPtr()->currMotionId == 0x1C) {
-        hit = hitCheckVecFilter(&query, chkfilterVecVivian);
-    } else if (marioGetPtr()->flags & 0x1000000) {
-        hit = hitCheckVecFilter(&query, chkfilterVecRoll);
-    } else {
-        hit = hitCheckVecFilter(&query, chkfilterVec);
-    }
-
-    if (hit != NULL) {
-        hitPos = query.hitPos;
-        hitPos.x = (f32)(s32)(float_1000_8041a7a0 * hitPos.x +
-                              (hitPos.x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                   float_1000_8041a7a0;
-        hitPos.y = (f32)(s32)(float_1000_8041a7a0 * hitPos.y +
-                              (hitPos.y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                   float_1000_8041a7a0;
-        hitPos.z = (f32)(s32)(float_1000_8041a7a0 * hitPos.z +
-                              (hitPos.z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                   float_1000_8041a7a0;
-        hitNormal = query.hitNormal;
-    }
+    dir = vec3_802c5754;
+    dist = float_1000_8041a7a0;
+    // marioHitCheckVec returns the hit entry itself, not just TRUE
+    hit = (HitEntry*)marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &dist);
     *(f32*)wp->field_0x1C0 = (hit != NULL) ? hitPos.y : float_neg3000_8041a870;
     return hit;
 }

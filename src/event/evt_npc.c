@@ -854,7 +854,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 // Full translation; only the callee-saved register assignment differs from the original: ours
 // puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
 // f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
-// NONMATCHING (40.85%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
+// NONMATCHING (42.26%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);

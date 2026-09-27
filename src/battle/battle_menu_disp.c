@@ -488,14 +488,14 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
 
 // _Sub is a real call in the original; without this MWCC inlines it into DrawMenuPartyChangeButton.
 #pragma dont_inline on
-void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle) {
+void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
     Mtx mtx;
 
     PSMTXRotRad(mtx, 'y', 0.017453f * angle);
     PSMTXTransApply(mtx, mtx, x, y, 0.0f);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-        btlDispTexPlane2(mtx, (u32)tex, color, 0);
+        btlDispTexPlane2(mtx, tex, color, 0);
     }
 }
 #pragma dont_inline reset
@@ -528,7 +528,7 @@ void DrawMenuPartyChangeButton(void) {
                 window->field_0x120 = 0.0f;
             }
             btlGetScreenPoint(&mario->mPosition, &screen1);
-            DrawMenuPartyChangeButton_Sub((void*)5, screen1.x, screen1.y - 20.0f, window->field_0x120);
+            DrawMenuPartyChangeButton_Sub(5, screen1.x, screen1.y - 20.0f, window->field_0x120);
         } else {
             window->field_0x120 = 90.0f;
         }
@@ -548,11 +548,11 @@ void DrawMenuPartyChangeButton(void) {
             } else {
                 window->field_0x120 = 0.0f;
             }
-            DrawMenuPartyChangeButton_Sub((void*)5, f31, f30 - 20.0f, window->field_0x120);
+            DrawMenuPartyChangeButton_Sub(5, f31, f30 - 20.0f, window->field_0x120);
         } else {
             window->field_0x120 = 90.0f;
             if (BattleCommandCheckChangePositionEnable(wp)) {
-                DrawMenuPartyChangeButton_Sub((void*)4, f31, f30 - 20.0f, 0.0f);
+                DrawMenuPartyChangeButton_Sub(4, f31, f30 - 20.0f, 0.0f);
             }
         }
     }

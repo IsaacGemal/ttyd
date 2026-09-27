@@ -806,7 +806,6 @@ void marioDisp(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toRearPose(const char* name) { //1:1
 	const char* rear = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {
@@ -946,7 +945,6 @@ const char* toRearPose(const char* name) { //1:1
 	}
 }
 
-// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 const char* toFrontPose(const char* name) { //1:1
 	const char* front = NULL;
 	if (mp->characterId == 1 && !(mp->peachFlags & 0x2000)) {

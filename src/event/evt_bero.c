@@ -22,7 +22,7 @@ extern GlobalWork* gp;
 extern const char str_802C4DA8[];
 extern const char str_802C4DB4[];
 extern f32 float_37p5_8041a408;
-f64 double_to_int_802c4da0 = 4503601774854144.0;
+const f64 double_to_int_802c4da0 = 4503601774854144.0;
 
 //.bss
 s32 BeroSW[16]; //switches
@@ -934,7 +934,7 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	return 0;
 }
 
-// NONMATCHING (0%): first attempt, see report.
+// NONMATCHING (98.83%): 1 instruction differs, 2 extra, plus register differences.
 void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end) {
 	f32 hitX = 0.0f;
 	f32 hitY = 0.0f;

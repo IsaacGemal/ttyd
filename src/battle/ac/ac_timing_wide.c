@@ -285,7 +285,7 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (95.48%): the state machine and all logic match; MWCC picked different callee-saved
+// NONMATCHING (95.86%): the state machine and all logic match; MWCC picked different callee-saved
 // registers. The original keeps work r30, dec r31, disp r29 (saving r28-r31); ours keeps work r31, disp r30,
 // autoCommand r29 and rematerialises dec (saving r29-r31). ~141 instructions differ only in register fields.
 s32 battleAcMain_TimingWide(BattleWork* work) {

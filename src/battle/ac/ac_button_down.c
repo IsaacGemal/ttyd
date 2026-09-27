@@ -200,7 +200,7 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (81.49%): the state machine and all logic match, but MWCC assigns the callee-saved
+// NONMATCHING (82.01%): the state machine and all logic match, but MWCC assigns the callee-saved
 // registers differently (work is r24 instead of r22, smooth r28 instead of r25, ...), so almost every
 // instruction that touches a pointer/loop variable differs in its register field.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
