@@ -191,6 +191,7 @@ void __str2dec(decimal* d, const char* s, short exp) {
     }
 }
 
+// NONMATCHING (97.70%): 14 instructions differ, 23 missing, 9 extra, plus register differences.
 void __two_exp(decimal* result, short exp) {
     switch (exp) {
         case -64:
@@ -279,6 +280,7 @@ void __two_exp(decimal* result, short exp) {
     }
 }
 
+// NONMATCHING (98.02%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void __num2dec_internal(decimal* d, double x) {
     char sign = (char)(signbit(x) != 0);
 
@@ -380,6 +382,7 @@ void __num2dec(const decform* form, double x, decimal* d) {
 }
 
 // @unused
+// NONMATCHING (5.94%): 1 instruction differs, 992 missing, plus register differences.
 double __dec2num(const decimal* d)
 {
     decimal max;
