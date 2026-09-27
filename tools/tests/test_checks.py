@@ -327,19 +327,45 @@ class LibrarySources(unittest.TestCase):
 
 
 class Provenance(unittest.TestCase):
-    def test_fetches_clones_and_outside_searches_are_listed(self):
-        import json, tempfile, provenance
-        ev = [{"type": "tool_execution_start", "args": {"command": c}} for c in (
-            "curl -s https://raw.githubusercontent.com/x/y/main/a.c -o tmp/a.c",
-            "git clone https://github.com/x/z.git tmp/z",
-            "find / -name scanf.c", "grep -rn foo /home/isaac/ws/src", "ls tmp")]
+    def run_on(self, events, workspace="/home/isaac/ws"):
+        import json, os, tempfile, provenance
+        from unittest import mock
         with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as f:
-            f.write("\n".join(json.dumps(e) for e in ev))
-        out = provenance.findings(f.name, "/home/isaac/ws")
+            f.write("\n".join(json.dumps(e) for e in events))
+        with mock.patch.dict(os.environ, {"HOME": "/home/isaac", "TTYD_BASE": ""}):
+            return provenance.findings(f.name, workspace)
+
+    def bash(self, *cmds):
+        return self.run_on([{"type": "tool_execution_start", "toolName": "bash", "args": {"command": c}} for c in cmds])
+
+    def test_fetches_and_clones_are_listed(self):
+        out = self.bash("curl -s https://raw.githubusercontent.com/x/y/main/a.c -o tmp/a.c",
+                        "git clone https://github.com/x/z.git tmp/z", "gh repo clone doldecomp/melee tmp/m",
+                        "wget github.com/doldecomp/melee/raw/master/src/scanf.c")
         self.assertIn("fetch  https://raw.githubusercontent.com/x/y/main/a.c", out)
         self.assertIn("clone  https://github.com/x/z.git", out)
-        self.assertIn("search /", out)
-        self.assertFalse(any("/home/isaac/ws" in l for l in out))
+        self.assertIn("clone  doldecomp/melee", out)
+        self.assertIn("fetch  github.com/doldecomp/melee/raw/master/src/scanf.c", out)
+
+    def test_paths_outside_the_workspace_are_listed_by_area(self):
+        out = "\n".join(self.bash("grep -rn foo /home/other/src", "find /tmp -name printf.c", "cat /tmp/sfa/src/a.c",
+                                   "find /home/isaac/ws2 -name x", "rg scanf ~/SFA-Decomp", "cp -r ../ws3/src tmp/"))
+        for area in ("/home/other/src", "/tmp ", "/tmp/sfa", "/home/isaac/ws2", "/SFA-Decomp", "/home/isaac/ws3"):
+            self.assertIn(area, out)
+
+    def test_the_workspace_system_paths_and_sed_addresses_are_not(self):
+        self.assertEqual(self.bash("grep -rn foo /home/isaac/ws/src", "ls src > /dev/null", "ls /usr/bin/zstd",
+                                   "sed -n '/fn a/,/endfn a/p' x.s", "awk '/^\\.fn/{print}' x.s", "ls tmp"), [])
+
+    def test_other_tools_paths_are_checked(self):
+        out = self.run_on([{"type": "tool_execution_start", "toolName": "read", "args": {"path": "/home/isaac/melee/a.c"}},
+                           {"type": "tool_execution_start", "toolName": "edit", "args": {"path": "src/a.c"}}])
+        self.assertEqual(out, ["path   /home/isaac/melee  (1 path, e.g. /home/isaac/melee/a.c)"])
+
+    def test_an_unreadable_transcript_is_an_error(self):
+        import provenance
+        with self.assertRaises(OSError):
+            provenance.findings("/nonexistent/events.jsonl.zst", "/home/isaac/ws")
 
 
 if __name__ == "__main__":

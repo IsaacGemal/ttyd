@@ -1,6 +1,3 @@
-/* FIX_SQRT_LINKAGE: w_math.h's extern-inline sqrtf carries initialized static data, which turns off
- * data pooling for the whole translation unit (documented at the top of w_math.h). The original
- * serpoll.o pools the trace strings (base + raw offsets), so sqrtf must stay static/unemitted here. */
 #include "PowerPC_EABI_Support/MetroTRK/trk.h"
 
 /*

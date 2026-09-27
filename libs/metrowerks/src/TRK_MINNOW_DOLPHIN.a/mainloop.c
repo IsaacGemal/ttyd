@@ -41,7 +41,6 @@ void TRKIdle()
  * Address:	8021BFC0
  * Size:	0000F4
  */
-// NONMATCHING (99.03%): 1 instruction differs.
 void TRKNubMainLoop(void)
 {
 	TRKEvent event;

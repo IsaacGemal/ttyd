@@ -147,9 +147,10 @@ bbaCommTableSuccess:
 #endif // clang-format on
 }
 
-// NONMATCHING (87.28%): the compiler has no `__dcbi` intrinsic. The three data-cache invalidates compile as
-// `dcbf` instead of `dcbi` (same operand form, different opcode); the remaining diff is register allocation
-// in the cache loop. Everything else follows the original.
+// NONMATCHING (87.28%): the original's two `dcbi` on the stack buffer are written as `__dcbf`, since GC/2.6
+// has no `__dcbi` intrinsic (it emits `bl __dcbi`). The range check branches the other way (`ble`/`b` in the
+// original, `bgt` here), the original recomputes `clrlwi. r24,r31,27` after __ARGetInterruptStatus where this
+// reuses aramOff, and the cache loop allocates registers differently.
 void TRK__write_aram(u8* buf, u32 aram, u32* size)
 {
 	u32 aramOff;
