@@ -999,7 +999,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/mainloop.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/nubevent.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/nubinit.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/nubinit.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msg.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/msgbuf.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/serpoll.c"),
