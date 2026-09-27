@@ -277,7 +277,6 @@ void BattleAudienceCtrlProcessKinopioFireSub(s32 index) {
 	}
 }
 
-// NONMATCHING (93.12%): 2 instructions differ, 6 missing, 2 extra, plus register differences.
 void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
@@ -296,11 +295,28 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
+#ifdef MUST_MATCH
+		{
+			f32 v = *(f32*)((u8*)member + 0x60);
+			f32 step = float_0p05_8041e198;
+			*(f32*)((u8*)member + 0x60) = v + step;
+			v = *(f32*)((u8*)member + 0x64);
+			*(f32*)((u8*)member + 0x64) = v + step;
+		}
+#else
 		*(f32*)((u8*)member + 0x60) += float_0p05_8041e198;
 		*(f32*)((u8*)member + 0x64) += float_0p05_8041e198;
+#endif
 		(*(s32*)member->field_0x8)--;
 		if (*(s32*)member->field_0x8 <= 0) {
+#ifdef MUST_MATCH
+			{
+				typedef struct { s32 d[24][2]; } Tbl;
+				*(Tbl*)offsets = *(const Tbl*)dat_802f8c9c;
+			}
+#else
 			memcpy(offsets, dat_802f8c9c, sizeof(offsets));
+#endif
 			BattleAudienceSoundBombFire(index);
 			member->flags &= ~0x4;
 			if (index < 0x3c) {
@@ -495,7 +511,6 @@ void BattleAudienceCtrlProcessKinopioItemThrow(s32 index) {
 	}
 }
 
-// NONMATCHING (95.56%): register-allocation / scheduling / symbol-name differences only.
 void BattleAudienceCtrlProcessKinopioItemOn(s32 index, s32 kind) {
 	BattleWork* work = _battleWorkPointer;
 	BattleAudience* audience;
@@ -523,13 +538,14 @@ void BattleAudienceCtrlProcessKinopioItemOn(s32 index, s32 kind) {
 			    float_0_8041e178);
 		}
 	}
-	else if (!(member->flags & 0x20) && (work->flags & 0x80) &&
-	           !(audience->flags & 0x40000)) {
+	else if (!(member->flags & 0x20) && (work->flags & 0x80)) {
 		item = BattleAudienceItemGetPtr(member->itemId);
-		(*(s32*)((u8*)item + 0x8))--;
-		if ((item->flags & 1) && *(s32*)((u8*)item + 0x8) <= 0 && item->state == 1) {
-			BattleAudience_ChangeStatus(index, 8);
-			BattleAudienceSoundItemThrow(0, index);
+		if (!(audience->flags & 0x40000)) {
+			(*(s32*)((u8*)item + 0x8))--;
+			if ((item->flags & 1) && *(s32*)((u8*)item + 0x8) <= 0 && item->state == 1) {
+				BattleAudience_ChangeStatus(index, 8);
+				BattleAudienceSoundItemThrow(0, index);
+			}
 		}
 	}
 }
