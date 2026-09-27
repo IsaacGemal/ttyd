@@ -26,6 +26,7 @@
 #include "driver/windowdrv.h"
 #include "sequence/seq_e3.h"
 #include "math_ext.h"
+static void pressStartGX(s32 alpha, f32 x, f32 y);  // local to this file in the original
 
 extern OSTime none_key;
 
@@ -453,7 +454,7 @@ void e3DispOffscreen(CameraId cameraId, void* param) {
     offscreenAddBoundingBox(offscreenNameToId("fOff_peron"), left, top, right, bottom);
 }
 
-void pressStartGX(s32 alpha, f32 x, f32 y) {
+static void pressStartGX(s32 alpha, f32 x, f32 y) {
     CameraEntry* camera = camGetCurPtr();
     GXTexObj startText, gradient;
     Mtx v17, v16;

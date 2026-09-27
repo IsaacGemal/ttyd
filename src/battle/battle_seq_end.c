@@ -19,6 +19,7 @@
 #include "driver/mapdrv.h"
 #include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include <stdio.h>
+static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for functions that are not declared in a shared header.
 
@@ -96,7 +97,7 @@ s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
+static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     EventEntry* e = event;
     BattleWork* wp = _battleWorkPointer;
     s32* args = e->args;

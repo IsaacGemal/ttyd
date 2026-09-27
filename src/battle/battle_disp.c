@@ -757,7 +757,6 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 
 extern f32 float_deg2rad_8041bf54;
 
-// NONMATCHING (98.90%): exact except the caller does not emit the trailing `li r6,0` for the by-value GXColor argument to btlDispTexPlane2.
 void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color) {
 	Mtx mtx;
 	Mtx transM;

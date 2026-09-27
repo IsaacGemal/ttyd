@@ -6,6 +6,7 @@
 #include <math.h>
 #include "manager/evtmgr_cmd.h"
 #include <stdlib.h>
+static void screen_capture(CameraId camId, void* param);  // local to this file in the original
 
 //.sbss
 static BattleSpotWork work;
@@ -353,7 +354,7 @@ s32 screen_evt_func(void) {
 	return 0;
 }
 
-void screen_capture(CameraId camId, void* param) {
+static void screen_capture(CameraId camId, void* param) {
 	GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
 	GXSetTexCopyDst(0x130, 0xF0, 4, 1);
 	GXCopyTex(screen_wp->field_0x0, 0);

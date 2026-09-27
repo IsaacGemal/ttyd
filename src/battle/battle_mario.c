@@ -15,6 +15,7 @@
 #include "eff/eff_fire.h"
 #include "eff/n64/eff_whirlwind_n64.h"
 #include "eff/n64/eff_kameki_tornade_n64.h"
+static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for helpers that have no header yet. See REPORT.md.
 

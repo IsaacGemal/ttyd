@@ -40,12 +40,13 @@ elif [ -s "$D/final.c" ]; then
 else
   echo "REJECT $TAG: no changes"; exit 1
 fi
-HDR=0
+HDR=0; HDRS=""
 if [ -s "$D/include.patch" ]; then
   BAD=$(python3 tools/header_patch.py "$D/include.patch") || {
     if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
     echo "REJECT $TAG: header changes other than added declarations:"; echo "$BAD"; exit 1; }
-  patch -s -p1 < "$D/include.patch" || {
+  # append-only: each added line goes to the end of its header unless the header already has it
+  HDRS=$(python3 tools/header_patch.py --apply "$D/include.patch") || {
     git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f
     if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
     echo "REJECT $TAG: header patch failed"; exit 1; }
@@ -55,7 +56,7 @@ fi
 python3 configure.py >/dev/null   # a new source file needs a build rule
 
 restore() {
-  if [ $HDR = 1 ]; then git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f; fi
+  if [ $HDR = 1 ]; then git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f; fi  # tree was clean before the merge
   if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
   python3 configure.py >/dev/null
 }
@@ -81,7 +82,7 @@ elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no 
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 HDRNOTE=""
 [ $HDR = 1 ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $(grep -c '^+[^+]' "$D/include.patch") lines."
-git add "$F" include && git commit -q -F - <<MSG
+git add "$F" $HDRS && git commit -q -F - <<MSG
 $SUBJECT
 
 tools/ci.py${FLAGS:+ $FLAGS}: PASS, no regressions; $n0 -> $n1 functions matched.

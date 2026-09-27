@@ -7,7 +7,7 @@ USER_FUNC(evt_snd_bgmoff);
 USER_FUNC(evt_snd_sfxon);
 void allPartySlitOn(void);
 void allPartyForceSlitOff(void);
-void party_slit(PartyEntry* party);
+BOOL party_slit(PartyEntry* party);
 s32 party_roll(PartyEntry* party);
 void unk_8014b824(PartyEntry* party);
 s32 party_motion_fall(PartyEntry* party);

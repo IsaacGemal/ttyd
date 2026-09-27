@@ -759,7 +759,7 @@ USER_FUNC(evt_sub_get_coin) {
 
 	if (isFirstCall) {
 		event->userdata[0] = 0;
-		event->userdata[1] = (s32)effItemGetEntry(7);
+		event->userdata[1] = (s32)effItemGetEntry(7, pos1.x, pos1.y, pos1.z);
 		event->userdata[2] = 0;
 		event->field_84 = 0;
 		*(s32**)((u8*)event + 0x88) = _mapAlloc(8);

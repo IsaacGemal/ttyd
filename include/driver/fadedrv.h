@@ -91,7 +91,6 @@ BOOL fadeIsFinish(void);
 void fadeReset(s32 id);
 TEXPalette* fadeGetTpl(void);
 void fadeSetNarrowFast(void);
-void _callback(s32 result, DVDFileInfo* fileInfo);
 void disp_texture(CameraId camId, void* param);
 void disp_maku(CameraId camId, void* param);
 void disp_tec(CameraId camId, void* param);

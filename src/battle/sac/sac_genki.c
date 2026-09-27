@@ -20,6 +20,8 @@
 #include "battle/sac/sac_deka.h"
 #include "eff/n64/eff_stamp_n64.h"
 #include "eff/eff_stardust.h"
+static void main_base(void);  // local to this file in the original
+static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
 
 extern char str_8030045C[];
 extern f32 float_30_80421d80;
@@ -298,10 +300,10 @@ static GenkiWork* get_ptr(void) {
 }
 #pragma dont_inline reset
 
-void disp_3D_alpha(CameraId camera, void* param) {
+static void disp_3D_alpha(CameraId camera, void* param) {
 }
 
-void disp_2D(CameraId camera, void* param) {
+static void disp_2D(CameraId camera, void* param) {
 }
 
 // NONMATCHING (96.46%): same instructions; only register numbers or operands differ.
@@ -341,7 +343,7 @@ USER_FUNC(end_genki) {
     return 2;
 }
 
-void main_star(void) {
+static void main_star(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
 
@@ -620,7 +622,7 @@ s32 main_genki(EventEntry* event, BOOL isFirstCall) {
 }
 
 // NONMATCHING (98.74%): 2 missing, 4 extra, plus register differences.
-void main_base(void) {
+static void main_base(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
     s32 a;

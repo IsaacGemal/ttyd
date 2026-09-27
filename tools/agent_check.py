@@ -45,7 +45,12 @@ if FINAL:
     exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] == src]
     protos = local_prototypes.check_sources({src: open(src).read()}, exc)
     for p in protos:
-        todo.append("PROTOTYPE  " + p + "  -> move it to the defining file's header (include/<path>.h)")
+        if "exception must match" in p:
+            todo.append("PROTOTYPE  " + p + "  -> a documented exception no longer matches your file; restore that"
+                        " declaration exactly, or say in your report why it should go (only the orchestrator edits"
+                        " the exceptions list)")
+        else:
+            todo.append("PROTOTYPE  " + p + "  -> move it to the defining file's header (include/<path>.h)")
     if not todo:
         print("Merge checks: nothing to fix.")
         sys.exit(0)

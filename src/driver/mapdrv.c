@@ -97,12 +97,12 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-void mapSearchDmdJoint(void* a, s8* b) {
+void* mapSearchDmdJoint(void* a, s8* b) {
 	if (*b != 0x7C) {
-		mapSearchDmdJointSub(a, b);
+		return mapSearchDmdJointSub(a, b);
 	}
 	else {
-		mapSearchDmdJointSub2(a, b, "|");
+		return mapSearchDmdJointSub2(a, b, "|");
 	}
 }
 

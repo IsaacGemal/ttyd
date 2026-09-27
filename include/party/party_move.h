@@ -25,7 +25,7 @@ void partyMoveMain(PartyEntry* party, s32 hosei);
 void unk_800c90d4(PartyEntry* party, s32 value);
 void partySetDir(PartyEntry* party, f32 x, f32 z);
 void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed);
-void partyGetAppearPos3(PartyEntry* party, Vec* position);
+BOOL partyGetAppearPos3(PartyEntry* party, Vec* position);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
 void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
 void partyGetAppearPos2(PartyEntry* party, Vec* pos);

@@ -230,7 +230,7 @@ char* partyChgPoseId(PartyEntry* party, s32 index) {
         return party->field_18;
     }
     v5 = 0;
-    if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
         v5 = TRUE;
     }
     if (v5 == TRUE) {
@@ -992,7 +992,7 @@ s32 partyEntry(s32 memberId) {
     index = 1;
     if (!(party->flags2 & 2)) {
         lowHp = 0;
-        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+        if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
             lowHp = 1;
         }
         if (lowHp == 1) {
@@ -1045,7 +1045,7 @@ s32 partyEntryPos(s32 memberId, f32 x, f32 y, f32 z) {
     }
     if (!(party->flags2 & 2)) {
         lowHp = 0;
-        if (party->currentMemberId < 8 && partyGetHp() <= 5) {
+        if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
             lowHp = 1;
         }
         if (lowHp == 1) {

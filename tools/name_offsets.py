@@ -41,8 +41,12 @@ def struct_body(text, name):
 def struct_fields(name):
     """offset -> (type, field) for STRUCT, from the `// 0xNN` comments in its definition."""
     for h in (ROOT / "include").rglob("*.h"):
-        body = struct_body(h.read_text(errors="ignore"), name)
+        text = h.read_text(errors="ignore")
+        body = struct_body(text, name)
         if body is None:
+            if re.search(r"\}\s*" + re.escape(name) + r"\s*;", text):
+                print(f"warning: {h.relative_to(ROOT)} defines {name}, but its body couldn't be read "
+                      "(a brace in a comment?); skipped", file=sys.stderr)
             continue
         fields = {}
         for line in body:

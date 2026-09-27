@@ -787,7 +787,7 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
     while (entry->prev) {
         entry = entry->prev;
     }
-    _npcGroupDead(entry);
+    _npcGroupDead(entry, type);
 }
 
 void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {

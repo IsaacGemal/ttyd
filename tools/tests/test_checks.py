@@ -118,10 +118,6 @@ class LabelText(unittest.TestCase):
         self.assertFalse(label_partials.in_block_comment(text, text.index("s32 g")))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class HeaderPatch(unittest.TestCase):
     PATCH = """--- a/include/x.h
 +++ b/include/x.h
@@ -165,3 +161,40 @@ class Claims(unittest.TestCase):
         claims.claim(self.con, "w9", ["koopa"], hours=1, now=0)
         self.assertEqual(claims.claim(self.con, "w10", ["koopa"], now=2 * 3600), {"koopa": "w10"})
 
+
+class HeaderPatchApply(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.dir.name)
+        (self.root / "include").mkdir()
+        (self.root / "include/x.h").write_text("#pragma once\ns32 old(void);\n")
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_rejects_paths_outside_include(self):
+        bad = "--- a/src/x.c\n+++ b/src/x.c\n@@ -1 +1,2 @@\n+void f(void);\n"
+        self.assertTrue(header_patch.problems(bad))
+        up = "+++ b/include/../tools/ci.py\n+void f(void);\n"
+        self.assertTrue(header_patch.problems(up))
+
+    def test_rejects_include_of_a_c_file(self):
+        self.assertTrue(header_patch.problems(HeaderPatch.PATCH + '+#include "../src/battle/battle.c"\n'))
+
+    def test_apply_appends_once_and_is_idempotent(self):
+        patch = "--- a/include/x.h\n+++ b/include/x.h\n@@ -2 +2,3 @@\n+s32 old(void);\n+void f(s32 a);\n"
+        self.assertEqual(header_patch.apply(patch, self.root), ["include/x.h"])
+        self.assertEqual(header_patch.apply(patch, self.root), [])
+        text = (self.root / "include/x.h").read_text()
+        self.assertEqual(text.count("void f(s32 a);"), 1)
+        self.assertEqual(text.count("s32 old(void);"), 1)
+
+    def test_apply_creates_a_new_header(self):
+        patch = "--- /home/x/ttyd/include/n.h\n+++ b/include/n.h\n@@ -0,0 +1,2 @@\n+#pragma once\n+void g(void);\n"
+        header_patch.apply(patch, self.root)
+        self.assertEqual((self.root / "include/n.h").read_text(), "#pragma once\nvoid g(void);\n")
+
+
+if __name__ == "__main__":
+    unittest.main()

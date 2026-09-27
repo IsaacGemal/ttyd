@@ -19,6 +19,7 @@
 #include "evt/evt_fade.h"
 #include "evt/evt_seq.h"
 #include "evt/evt_sub.h"
+static USER_FUNC(z);  // local to this file in the original
 // #include <stdlib.h>
 
 #pragma pool_data off
@@ -466,6 +467,6 @@ USER_FUNC(evt_action_sub) {
 }
 */
 
-USER_FUNC(z) {
+static USER_FUNC(z) {
     return EVT_RETURN_DONE;
 }

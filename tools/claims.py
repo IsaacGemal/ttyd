@@ -13,6 +13,7 @@ The database is shared by every checkout of the repo (worktrees included): scrat
 checkout. Each claim runs in one transaction, so two launchers claiming at once can't both get a unit.
 """
 import argparse
+import re
 import sqlite3
 import subprocess
 import time
@@ -20,9 +21,17 @@ from pathlib import Path
 
 
 def db_path():
-    common = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                            cwd=Path(__file__).resolve().parent, capture_output=True, text=True).stdout.strip()
-    return Path(common).parent / "scratch" / "claims.sqlite"
+    r = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                       cwd=Path(__file__).resolve().parent, capture_output=True, text=True)
+    if r.returncode or not r.stdout.strip():
+        raise SystemExit("claims.py: not inside the ttyd git repo, so there is no shared claims database to use")
+    return Path(r.stdout.strip()).parent / "scratch" / "claims.sqlite"
+
+
+def unit_name(u):
+    """event/evt_npc, src/event/evt_npc.c and rels/pik/src/unit/x.c all name a unit the same way."""
+    u = re.sub(r"^(?:rels/[^/]+/)?src/", "", u)
+    return u[:-2] if u.endswith(".c") else u
 
 
 def connect(path=None):
@@ -35,8 +44,10 @@ def connect(path=None):
 
 
 def claim(con, wave, units, hours=24.0, now=None):
-    """Claim units for wave. Returns {unit: owning wave}; a unit is ours if its owner is wave."""
+    """Claim units for wave. Returns {unit: owning wave}; a unit is ours if its owner is wave. Claiming a unit the
+    wave already holds renews its expiry (a wave whose PR is still in review keeps its units)."""
     now = time.time() if now is None else now
+    units = [unit_name(u) for u in units]
     out = {}
     con.execute("BEGIN IMMEDIATE")
     try:
@@ -47,6 +58,8 @@ def claim(con, wave, units, hours=24.0, now=None):
                 con.execute("INSERT INTO claims VALUES (?, ?, ?, ?)", (u, wave, now, now + hours * 3600))
                 out[u] = wave
             else:
+                if row[0] == wave:
+                    con.execute("UPDATE claims SET expires = ? WHERE unit = ?", (now + hours * 3600, u))
                 out[u] = row[0]
         con.execute("COMMIT")
     except BaseException:
@@ -57,6 +70,7 @@ def claim(con, wave, units, hours=24.0, now=None):
 
 def release(con, wave, units=None):
     if units:
+        units = [unit_name(u) for u in units]
         q = "DELETE FROM claims WHERE wave = ? AND unit IN (%s)" % ",".join("?" * len(units))
         return con.execute(q, (wave, *units)).rowcount
     return con.execute("DELETE FROM claims WHERE wave = ?", (wave,)).rowcount

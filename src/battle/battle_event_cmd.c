@@ -684,7 +684,7 @@ USER_FUNC(btlevtcmd_SetHitCursorOffset) {
 }
 
 //s32* battleId, s32 retIndex
-// NONMATCHING (83.18%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
+// NONMATCHING (89.07%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetWidth) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -700,7 +700,7 @@ USER_FUNC(btlevtcmd_GetWidth) {
 }
 
 //s32* battleId, s32 retIndex
-// NONMATCHING (83.18%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
+// NONMATCHING (89.07%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_GetHeight) {
     s32* args = event->args;
     BattleUnit* unit;

@@ -70,7 +70,7 @@ inline IconEntry* iconGetEntry(const char* name) {
     return NULL;
 }
 
-void _callback_tpl(s32 error, DVDFileInfo* info) {
+static void _callback_tpl(s32 error, DVDFileInfo* info) {
     void* userData = info->cb.userData;
 
     UnpackTexPalette(icon_tpl);

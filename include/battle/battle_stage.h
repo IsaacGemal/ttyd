@@ -59,7 +59,6 @@ BattleSpotWork* BatSpotGetPtr(void);
 void batSpotDisp(CameraId camId, void* param);
 void drawCone(CameraId camId, BattleSpotEntry* entry);
 BattleSpotEntry* batSpotEntry(void);
-void screen_capture(CameraId camId, void* param);
 void BattleStageDispDark(CameraId camId, void* param);
 void BattleStageDispLight(CameraId camId, void* param);
-void tou_gamen_screen_tev(void);
+void tou_gamen_screen_tev(void* param);

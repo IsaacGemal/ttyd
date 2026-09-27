@@ -8,6 +8,8 @@
 #include "dolphin/gx/GXTev.h"
 #include "driver/mapdrv.h"
 #include "unit/unit_mario.h"
+static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
+static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 //local prototypes inherited from headers that do not declare these yet
 
@@ -126,7 +128,7 @@ s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
     return 0;
 }
 
-s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
+static s32 _mario_makkuro_set(EventEntry* event, BOOL isFirstCall) {
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
 
     if (mario != NULL) {

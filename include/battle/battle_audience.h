@@ -288,7 +288,7 @@ void BattleAudience_Case_AcrobatNoTry(void);
 void BattleAudienceJoyEnding(void);
 BattleUnit* BattleAudienceDetectTargetAll(void);
 BattleUnit* BattleAudienceDetectTargetPlayer(void);
-void BattleAudienceAddAudienceNum(s32 num);
+s32 BattleAudienceAddAudienceNum(s32 num);
 void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b);
 void BattleAudienceSoundWhistleKind(s32 kind);
 void BattleAudienceNoiseMain(void);

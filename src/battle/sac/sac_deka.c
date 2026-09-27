@@ -23,6 +23,13 @@
 #include "battle/sac/sac_deka.h"
 #include "battle/sac/sac_genki.h"
 #include <stdlib.h>
+static void disp_2D(CameraId cameraId, void* param);  // local to this file in the original
+static void main_star(void);  // local to this file in the original
+static void main_base(void);  // local to this file in the original
+static void disp_3D_alpha(CameraId cameraId, void* param);  // local to this file in the original
+static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
+static void yuka_main(void);  // local to this file in the original
+static void yuka_init(void);  // local to this file in the original
 
 // LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
 void psndSFX_pit(s32 id, s16 pitch);
@@ -576,10 +583,10 @@ s32 main_deka(EventEntry* event, s32 arg) {
 }
 
 // .text:0xAA0 | 0x80243A98 | size: 0x4
-void disp_3D_alpha(CameraId cameraId, void* param) {}
+static void disp_3D_alpha(CameraId cameraId, void* param) {}
 
 // .text:0xAA4 | 0x80243A9C | size: 0x4
-void disp_3D(CameraId cameraId, void* param) {}
+static void disp_3D(CameraId cameraId, void* param) {}
 
 // get_ptr is kept out of line: the original callers all emit `bl get_ptr`.
 #pragma dont_inline on

@@ -1832,7 +1832,7 @@ USER_FUNC(evt_npc_restart_regular_event) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     *(u32*)npc->field_140 |= 0x10000000;
-    npcCheckInterrupt();
+    npcCheckInterrupt(npc);
     return EVT_RETURN_DONE;
 }
 

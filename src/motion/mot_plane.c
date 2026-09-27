@@ -43,7 +43,7 @@ void mot_plane(void) {
 }
 
 // NONMATCHING (2.15%): 4 instructions differ, 844 missing, plus register differences.
-void flyMain(void) {
+static void flyMain(void) {
 	MarioWork* mario;
 
 	mario = marioGetPtr();

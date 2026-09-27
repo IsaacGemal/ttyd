@@ -11,8 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 
-// LOCAL_PROTO(z): DOL helper name collides with the dig REL event function z.
-f32 z(void);
+static f32 z(void);  // local to this file in the original (fadedrv.s: .fn z, local)
 
 
 u8 i4tex = 0xFF; //TODO: align 32-byte
@@ -27,7 +26,7 @@ static FadeWork* wp;
 //local prototypes
 static void zFill(void);
 
-void _callback(s32 error, DVDFileInfo* info) {
+static void _callback(s32 error, DVDFileInfo* info) {
 	void* userData = info->cb.userData;
 
 	UnpackTexPalette(wp->texture);
@@ -200,7 +199,7 @@ void disp_texture(CameraId camId, void* param) {
 	//passed wp, unused
 }
 
-f32 z(void) {
+static f32 z(void) {
 	FadeEntry* entry = &wp->entries[1];
 	CameraEntry* cam;
 	Vec pos;

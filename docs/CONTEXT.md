@@ -994,8 +994,10 @@ Isaac had Codex start with a batch of 100 and then continue; it ran until its us
 function prototypes that .c files declared for themselves are in the headers of the files that define them
 (94 new headers), and the local copies are gone. 17 remain, listed with reasons in
 `tools/local_prototype_exceptions.json`: they are cases where the original's own files disagree (the
-psndSFX_* argument widths three ways, psndSFXOnEx_3D, cloudGetStatus, BattleCheckCounter,
-windowDispGX_Waku_col), a name collision (fadedrv's `z` against the dig REL's), and two SDK stats functions.
+psndSFX_* argument widths three ways, psndSFXOnEx_3D, cloudGetStatus, BattleCheckCounter), two SDK stats
+functions, and one match-only declaration (battle_stage_object's by-pointer windowDispGX_Waku_col, which only
+steers register allocation; the original passes the colour by value like everyone else). fadedrv's `z`, first
+listed as a name collision, is simply local in the original and is now static (review 1 of PR #10).
 `tools/local_prototypes.py` (run by `tools/ci.py`) fails on any other non-static function declaration in
 src/ or rels/, and on an exception whose declaration changed or no longer exists. CI passed after every batch
 with all measures unchanged (4,153 functions); an independent count finds exactly the 17 exceptions.
@@ -1028,4 +1030,41 @@ SQLite table of which wave owns which unit (`scratch/claims.sqlite` in the main 
 worktree). The launcher claims its units before starting agents and skips any another wave holds; the
 orchestrator releases the wave's claims once its PR merges; claims expire after 24 hours so a crashed wave
 doesn't lock files. The design follows itsgrimetime/melee-decomp's claims database for Melee agents.
+
+
+
+## Reference repos, and study them before building tools (2026-09-27, Isaac; written up by Claude Opus 5.5)
+
+Sources of truth for how a mature GameCube decomp does things, all cloned in `~/`:
+- `~/melee`: Super Smash Bros. Melee (doldecomp), the main reference so far.
+- `~/ac-decomp`: Animal Crossing.
+- `~/SFA-Decomp`: Star Fox Adventures.
+Also studied, not a source of truth: [itsgrimetime/melee-decomp](https://github.com/itsgrimetime/melee-decomp), AI-agent
+tooling for Melee (claims database, worktree per agent, a self-hosted decomp.me).
+
+**Working rule (Isaac):** before building a tool, look at how these repos solve the problem and reuse their approach
+or code. Our own tools have had bugs in every wave; build only what they don't cover, and keep what we build as
+small and read-only as possible. Example: Melee marks prototypes of undecompiled functions `UNK_RET fn(UNK_PARAMS)`
+(src/placeholder.h) rather than guessing a signature.
+
+
+## Review 1 of the cleanup PR: moved prototypes carried old bugs (2026-09-27, Claude Opus 5.5; review by a fresh Claude Opus 5.5)
+
+The prototype move copied each local prototype into a header as it was, so local prototypes that were wrong became
+the canonical declarations: missing arguments (`npcCheckInterrupt`, `_npcGroupDead`, `effItemGetEntry`,
+`partyGetHp`, `tou_gamen_screen_tev`), `void` where callers use the result (seven functions, e.g.
+`BattleAudienceAddAudienceNum`, `effSplashEntry`, `party_slit`), and an event function declared as a plain one
+(`evt_paper_delete`). Four C callers were dropping real arguments and now pass them (two functions newly match).
+16 functions that the original keeps local to one file had been put in headers (the sac_* files each have their
+own `main_base`, `disp_2D` ...); they are `static` in their files now.
+
+`tools/proto_asm.py` (read-only, a report, not a CI gate) compares header prototypes of undecompiled functions
+with the original's asm: argument registers read on entry, callers using `r3`/`f1`, and `.fn NAME, local`. It found
+every case the reviewer found by hand plus seven more, each then checked by hand. Its scan is rough (linear, up to
+the first call), so a clean run is not proof.
+
+The merge script applied agents' header patches with `patch`, which left `.orig` files, silently reversed an
+already-applied patch, and would apply a patch aimed outside include/. `tools/header_patch.py --apply` now appends
+each added line to its header unless already present (agents may only add lines, and patches from one wave
+overlap, so context-based patching is the wrong tool), and rejects any path that isn't a header under include/.
 
