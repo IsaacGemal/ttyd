@@ -34,3 +34,6 @@ typedef struct BattleMenuWork BattleMenuWork;
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu);
 void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor);
 void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor);
+void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle);
+void DrawMenuPartyChangeButton(void);
+void DrawMenuCursorAndScrollArrow(Vec* pos);
