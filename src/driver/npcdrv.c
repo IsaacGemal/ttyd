@@ -24,6 +24,7 @@ extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
+extern f32 vec3_802c2f78[];
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -352,27 +353,29 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
-// NONMATCHING (75.61%): 15 instructions differ, 13 missing, 11 extra, plus register differences.
+// NONMATCHING (81.76%): the two search loops use a cached `total` and an incrementing `entry` pointer,
+// and the position/scale zero/one vectors are the shared rodata blobs vec3_802c2f78[0]/[3].  Still register
+// rotation (a1 in r26 vs r25, so `stmw r26` instead of `stmw r25`) and the vec3 base is scheduled later.
 s32 npcEntry(const char* a1, const char* animName) {
     NpcWork* wp;
     NpcEntry* entry;
+    s32 total;
     s32 i;
 
     wp = gp->inBattle ? &work.battle : &work.field;
     // wp = npcGetWorkPtr(); //inlined
+    total = wp->total;
 
     // unused ------------------------------------------------
-    for (i = 0; i < wp->total; i++) {
-        entry = &wp->entries[i];
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
         if (entry->flags & 1 && !strcmp(entry->description, a1)) {
             break; // found an entry, unused
         }
     }
     // unused ------------------------------------------------
 
-    if (wp->total > 0) {
-        for (i = 0; i < wp->total; i++) {
-            entry = &wp->entries[i];
+    if (total > 0) {
+        for (i = 0, entry = wp->entries; i < total; i++, entry++) {
             if (!(entry->flags & 1)) {
                 break; // unused entry
             }
@@ -386,17 +389,13 @@ s32 npcEntry(const char* a1, const char* animName) {
         entry->poseId = animPoseEntry("hoshi", gp->inBattle != 0);
     }
     animPosePeraOn(entry->poseId);
-    entry->position.x = 0.0f;
-    entry->position.y = 0.0f;
-    entry->position.z = 0.0f;
+    entry->position = *(Vec*)&vec3_802c2f78;
     entry->prevPosition.x = entry->position.x;
     entry->prevPosition.y = entry->position.y;
     entry->prevPosition.z = entry->position.z;
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
-    entry->scale.x = 1.0f;
-    entry->scale.y = 1.0f;
-    entry->scale.z = 1.0f;
+    entry->scale = *(Vec*)&vec3_802c2f78[3];
     entry->field_154 = 1.0f;
     entry->field_108 = 0;
     entry->field_10C = "M_I_2";
@@ -759,12 +758,11 @@ s32 _check(EventEntry* evt) {
     return 2;
 }
 
-// NONMATCHING (80.90%): 9 extra, plus register differences.
 s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
     s32 total;
     NpcEntry* entry;
-    int i;
     s32 count = 0;
     total = wp->total;
     if (mobj == NULL) {
@@ -780,6 +778,8 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     return count;
 }
 
+// dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
+#pragma dont_inline on
 void npcGroupDead(NpcEntry* entry, s32 type) {
     if (entry->master) {
         entry = entry->master;
@@ -789,6 +789,7 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
     }
     _npcGroupDead(entry, type);
 }
+#pragma dont_inline reset
 
 void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     *(s32*)entry->field_140 |= 0x10;
@@ -998,14 +999,15 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (87.67%): 1 instruction differs, 5 missing, 5 extra, plus register differences.
+// NONMATCHING (88.37%): `(s8)name[0]` is needed because the unit is `-char unsigned`; the original's `lbz` is
+// scheduled before the prologue saves (mwcc keeps it after them in the original).  Everything else matches.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
 
-    if (name[0] == 0) {
+    if ((s8)name[0] == 0) {
         return;
     }
     if (!strcmp(name, "(^x^)party")) {
@@ -1045,14 +1047,14 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (87.65%): 1 instruction differs, 5 missing, 5 extra, plus register differences.
+// NONMATCHING (88.35%): same signed-byte check and same prologue-scheduling diff as npcSetStayPose.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
     s32 total;
     int i;
 
-    if (name[0] == 0) {
+    if ((s8)name[0] == 0) {
         return;
     }
     if (!strcmp(name, "(^x^)party")) {
@@ -1114,19 +1116,18 @@ s32 npcCheckBlow(NpcEntry* entry) {
     return cloudGetBreathPower(entry->width, &pos) > 0.0f;
 }
 
-// NONMATCHING (95.66%): 4 missing, plus register differences.
+// NONMATCHING (99.97%): control flow and registers match; only the inline-sqrtf double pool
+// (`double_0p5_802c3138`/`double_3_802c3140`) resolves to a different address than the original.
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;
     f32 dz = z - entry->position.z;
 
     if (y != entry->position.y) {
-        if (y >= entry->position.y) {
-            if (y <= entry->position.y + entry->height) {
-                dy = 0.0f;
-            } else {
-                dy = y - (entry->position.y + entry->height);
-            }
+        if (y >= entry->position.y && y <= entry->position.y + entry->height) {
+            dy = 0.0f;
+        } else if (y > entry->position.y + entry->height) {
+            dy = y - (entry->position.y + entry->height);
         }
     }
     *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
