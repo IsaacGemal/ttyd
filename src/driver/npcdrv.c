@@ -772,7 +772,7 @@ s32 _check(EventEntry* evt) {
 }
 
 // NONMATCHING (81.60%): 1 instruction differs, 8 extra, plus register differences.
-s32 npcKoopaModeMobjBoundDeadCheck(void* mobj) {
+s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     s32 total;
     NpcEntry* entry;

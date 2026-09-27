@@ -18,6 +18,9 @@
 #include <string.h>
 #include <math.h>
 #include "pmario_sound.h"
+#include "eff/eff_starstone.h"
+
+void psndSFX_pit(s32 id, s16 pitch);
 
 // The original sac_deka unit was compiled with -O4,s (optimize for size): the
 // prologues/epilogues use stmw/lmw, which -O4,p never emits. There is no
@@ -25,11 +28,8 @@
 #pragma optimize_for_size on
 
 // ---- local declarations (no header yet) ----
-void test_kururing_mapdisp(CameraId cameraId);
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
-void psndSFX_pit(s32 id, s16 pitch);
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
-void* effStarStoneEntry(s32 a, f32 x, f32 y, f32 z, f32 scale);
 void mapGrpFlagOn(const char* name, u32 flag);
 void mapGrpFlagOff(const char* name, u32 flag);
 void BattleAudienceSoundHandBeat(void);

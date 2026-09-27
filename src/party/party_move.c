@@ -9,6 +9,9 @@
 #include <string.h>
 #include <dolphin/mtx.h>
 #include <math.h>
+#include "party/party_move.h"
+#include "party/party_hit.h"
+#include "driver/mobjdrv.h"
 
 // Local declarations for data that will eventually move to a header.
 extern s32 readId[2];
@@ -26,7 +29,6 @@ typedef struct Footmark {
 
 void partyMoveMain(PartyEntry* party, s32 hosei);
 s32 nokonokoGetStatus(PartyEntry* party);
-void* mobjHitObjPtrToPtr(HitEntry* hit);
 s32 marioChkDeepSleep(void);
 s32 chuchu_searchObject(void);
 void unk_800c90d4(PartyEntry* party, s32 value);
@@ -46,15 +48,13 @@ void partyChgRunMode(PartyEntry* party, s32 mode);
 void marioSetSplash(s32 a, Vec* pos);
 void vivianShadow(PartyEntry* party);
 void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed);
-void* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 speed, f32 angle);
-void* partySearchGround(PartyEntry* party, f32 a, f32 b);
 
 void partySetDir(PartyEntry* party, f32 x, f32 z) {
     PartyEntry* work = party;
     work->dir = angleABf(work->position.x, work->position.z, x, z);
 }
 
-void partyChgMot(PartyEntry* party, u8 mot) {
+void partyChgMot(PartyEntry* party, s32 mot) {
     PartyEntry* work = party;
     if (work->field_36 == 3) {
         work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
@@ -460,7 +460,7 @@ s32 unk_800c8dd0(HitEntry* hit) {
         return 0;
     }
     name = boxNames;
-    obj = mobjHitObjPtrToPtr(hit);
+    obj = (u8*)mobjHitObjPtrToPtr(hit);
     found = 0;
     while (*name != NULL) {
         if (strcmp((const char*)(obj + 0x15), *name) == 0) {

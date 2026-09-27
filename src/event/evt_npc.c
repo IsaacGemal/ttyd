@@ -13,9 +13,10 @@
 #include "mario/mario.h"
 #include "party.h"
 
+s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
+
 // Callers mask these to u8/u16 (clrlwi), but pmario_sound.c's definition only matches with ints, so this
 // prototype can't live in pmario_sound.h yet.
-s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
 extern char* strcat(char* dest, const char* src);
 extern EffectEntry* effKemuri10N64Entry(s32 a1, f32 a2, f32 a3, f32 a4, f32 a5, f32 a6, f32 a7, f32 a8);
@@ -30,8 +31,6 @@ extern s16 marioSetMutekiTime(s32 msec);
 extern void npcBlurOn(const char* name);
 extern void npcBlurOff(const char* name);
 extern void* npcGetBtlSetupWork(NpcEntry* npc, s32 index);
-extern void npcSetBtlSetupWork(NpcEntry* npc, s32 index, s32 value);
-extern s32 partyCtrlOn(void);
 extern s32 marioCtrlOn(void);
 extern s32 marioGetPartyId(void);
 extern SequenceType seqGetSeq(void);
@@ -2138,7 +2137,7 @@ USER_FUNC(evt_npc_set_btlsetup_work) {
     NpcEntry* npc = evtNpcNameToPtr(event, name);
     s32 index = evtGetValue(event, args[1]);
     s32 value = evtGetValue(event, args[2]);
-    npcSetBtlSetupWork(npc, index, value);
+    npcSetBtlSetupWork(npc, index, (void*)value);
     return EVT_RETURN_DONE;
 }
 

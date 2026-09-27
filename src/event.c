@@ -13,13 +13,13 @@
 #include "mario/mario_party.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
+#include "party.h"
 //TODO: put in /evt?
 //funcs sorted backwards aka original source file
 
 extern void badgeShop_init(void);
 extern void yuugijou_init(void);
 extern void johoya_init(void);
-extern void yoshiSetColor(void);
 extern void partyLeft(PartyId partnerId);
 extern void statusWinForceUpdate(void);
 

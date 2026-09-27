@@ -43,3 +43,4 @@ void BattleStageSetAudDark(u8 a, s32 frames, s32 ease);
 void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease);
 void BattleStageReturnStgDarkBase(s32 frames, s32 ease);
 void BattleStageReturnAudDarkBase(s32 frames, s32 ease);
+void BattleStageOffLightInCommand(s32 arg0, s32 arg1);

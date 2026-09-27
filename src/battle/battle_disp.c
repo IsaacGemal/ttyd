@@ -258,7 +258,7 @@ void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 
 
 // Keep btlDispTexPlane2 out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color) {
+void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused) {
 	CameraEntry* camera;
 	Mtx mtx2;
 
@@ -796,5 +796,5 @@ void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scal
 	PSMTXConcat(rotXM, mtx, mtx);
 	PSMTXConcat(rotYM, mtx, mtx);
 	PSMTXConcat(transM, mtx, mtx);
-	btlDispTexPlane2(mtx, id, *color);
+	btlDispTexPlane2(mtx, id, *color, 0);
 }

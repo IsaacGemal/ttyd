@@ -40,10 +40,10 @@ void memcard_probe(void);
 void memcard_mount(void);
 void memcard_unmount(void);
 void memcard_check(void);
-void memcard_format(void);
-void memcard_delete(void);
-void memcard_create(void);
-void memcard_write(void* addr, s32 length, s32 offset);
+static void memcard_format(void);
+static void memcard_delete(void);
+static void memcard_create(void);
+static void memcard_write(void* addr, s32 length, s32 offset);
 void memcard_read(void* addr, s32 length, s32 offset);
 void memcard_set_stat(void);
 void memcard_get_stat(void);
@@ -1176,12 +1176,12 @@ void formatCallback(s32 chan, s32 result) {
 	wp->flags &= ~1;
 }
 
-void memcard_format(void) {
+static void memcard_format(void) {
     wp->flags |= 1;
     CARDFormatAsync(wp->chan, formatCallback);
 }
 
-void memcard_delete(void) {
+static void memcard_delete(void) {
     s32 result;
     s32 i;
     
@@ -1207,7 +1207,7 @@ void createCallback(s32 chan, s32 result) {
 	wp->flags &= ~1;
 }
 
-void memcard_create(void) {
+static void memcard_create(void) {
     wp->flags |= 1;
     CARDCreateAsync(wp->chan, "mariost_save_file", sizeof(CardData) + (sizeof(CardSaveSlot) * 4), &wp->info, createCallback);
 }
@@ -1217,7 +1217,7 @@ void writeCallback(s32 chan, s32 result) {
 	wp->flags &= ~1;
 }
 
-void memcard_write(void* addr, s32 length, s32 offset) {
+static void memcard_write(void* addr, s32 length, s32 offset) {
     wp->flags |= 1;
     CARDWriteAsync(&wp->info, addr, length, offset, writeCallback);
 }

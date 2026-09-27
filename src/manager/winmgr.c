@@ -6,12 +6,12 @@
 #include "system.h"
 #include "data/item_data.h"
 #include <string.h>
+#include "driver/windowdrv.h"
 
 extern ItemData itemDataTable[];
 extern s32 partyChkJoin(s32 id);
 extern u16 party_id_table[];
 extern const char* msgSearch(const char* tag);
-extern void windowDispGX2_Waku_col(Mtx mtx, s16 gxTexMapID, GXColor color, f32 x, f32 y, f32 width, f32 height, f32 curve);
 
 // .sbss2
 GXColor unk_80423330;

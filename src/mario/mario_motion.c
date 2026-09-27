@@ -16,6 +16,8 @@
 #include "mario/mario_pouch.h"
 #include "pmario_sound.h"
 #include "mario/mariost.h"
+#include "koopa.h"
+#include "driver/mobjdrv.h"
 
 // From src/mario/mario.c; no header declares it yet.
 void marioSlitForceCancel(void);
@@ -49,19 +51,14 @@ void camFollowYOn(void);
 void marioResetRollSpd(void);
 void yoshi_jumpStand(void);
 s32 marioChkShipPlace(HitEntry* hit);
-MapObject* mobjHitObjPtrToPtr(HitEntry* hit);
-s32 mobjGetHint(void* entry);
-void* fbatNpcTalkCheck(void);
 s32 kpaHipAttackOk(void);
 s32 marioChkHipAttack(void);
 void mario_plane_cancel(void);
 void allPartyForceRideOn(void);
 void* marioGetTouchNpcPtr(void);
 void peach_talk(void);
-void kpaChgPose(const char* a, const char* b);
 s32 getRollEvtFlag(void);
 void marioSetPeakYpos(void);
-void kpaSetJumpPara(void);
 void kpaClearHitobjRide(void);
 s32 kpaChkHitobjRide(void);
 s32 marioKeyOffChk(void);
@@ -69,7 +66,6 @@ s32 marioCtrlOffChk(void);
 s32 marioPriCheckJabara(void);
 void mot_fall_roll(void);
 void marioLandOn(void);
-void kpaCamFollow(void);
 void set_damage_root_ypos(f32 y);
 s32 kpaFireAttackCheck(void);
 void quake_kpaLandOn(void);

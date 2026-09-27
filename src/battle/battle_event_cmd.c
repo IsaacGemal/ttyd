@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include "pmario_sound.h"
 #include "battle/battle_enemy_item.h"
+#include "battle/battle_ac_help.h"
+#include "battle/battle_stage_object.h"
 
 // The original unit was built for size; without this the neg/or/srawi mask and
 // the /60 reciprocal-multiply codegen differ from the target (verified with the
@@ -2660,10 +2662,8 @@ USER_FUNC(btlevtcmd_ACRGetResult) {
 //=== added by agent: local prototypes for undeclared externals ===
 void BattleStoreExp(BattleWork* wp, s32 exp);
 void BattleStoreCoin(BattleWork* wp, s32 coin);
-void BattleFogForceStop(void);
 void battleSortPhaseMoveTable(BattleWork* wp, s32 mode);
 void BattleAcHelpSetDispType(s32 type);
-void BattleAcHelpSetHelp(s32 help);
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* wp);
 BattleWeapon* BattleGetSelectWeapon(BattleWork* wp);
 void BattleAttackDeclareAll(BattleWork* wp);
@@ -2747,7 +2747,7 @@ USER_FUNC(btlevtcmd_GetResultACDefence) {
 USER_FUNC(btlevtcmd_ACHelpSet) {
     s32 value = evtGetValue(event, *event->args);
 
-    BattleAcHelpSetHelp(*(s32*)((u8*)value + 0x70));
+    BattleAcHelpSetHelp(*(const char**)((u8*)value + 0x70));
     BattleAcHelpSetDispType(EVT_RETURN_DONE);
     return EVT_RETURN_DONE;
 }
@@ -3948,7 +3948,6 @@ USER_FUNC(btlevtcmd_CheckStatus) {
 void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
 void BtlUnit_SetAnimType(BattleUnitPart* part, s32 type);
 void BtlUnit_PoseSoundInit(BattleUnitPart* part);
-void btlDispChangePeraAnime(BattleUnitPart* part, s32 anime);
 void btlDispPoseAnime(BattleUnitPart* part);
 
 //s32* battleId, s32* partId, s32 anime
@@ -3963,7 +3962,7 @@ USER_FUNC(btlevtcmd_AnimeChangePaperAnime) {
     partId = evtGetValue(event, args[1]);
     part = BattleGetUnitPartsPtr(id, partId);
     anime = evtGetValue(event, args[2]);
-    btlDispChangePeraAnime(part, anime);
+    btlDispChangePeraAnime(part, (const char*)anime);
     return EVT_RETURN_DONE;
 }
 

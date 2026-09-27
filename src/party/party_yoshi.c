@@ -16,6 +16,9 @@
 #include <string.h>
 // #include <math.h>  // drags the extern-inline sqrtf/sqrt into .rodata
 #include "matching.h"
+#include "party/party_yoshi.h"
+#include "party/party_move.h"
+#include "party/party_hit.h"
 
 // .sbss
 s32 jumpheight;
@@ -24,12 +27,10 @@ f32 evt_yoshi_spd;
 
 // Local declarations: not yet in a header.
 void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChgMot(PartyEntry* party, s32 mot);
 // NONMATCHING (0.00%): not implemented yet (bulk of the file).
 void yoshi_use(PartyEntry* party);
 void inertia(PartyEntry* party);
 f32 marioGetMoveRate(f32 angle);
-HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 void marioSetSplash(s32 a, Vec* pos);
 void set_damage_root_ypos(f32 y);
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3);

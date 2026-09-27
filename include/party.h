@@ -134,3 +134,8 @@ void partyChgPose(PartyEntry* party, char* pose);
 void party_set_behind_dir(PartyEntry* party, f32 dir);
 
 void partyCtrlOff(void);
+void partyChgPaper(PartyEntry* party, char* paper);
+void partyCtrlOn(void);
+f32 partyGetHeight(PartyEntry* party);
+void partySetForceMove(PartyEntry* party, s32 frames, f32 x, f32 z);
+s32 yoshiSetColor(void);

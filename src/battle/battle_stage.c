@@ -465,7 +465,7 @@ void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
 void BattleStageOnLightInCommand(void) {
 }
 
-void BattleStageOffLightInCommand(void) {
+void BattleStageOffLightInCommand(s32 arg0, s32 arg1) {
 }
 
 void BattleStageOnLightFriendInCommand(void) {

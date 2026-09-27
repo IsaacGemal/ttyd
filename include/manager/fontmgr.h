@@ -97,3 +97,4 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines);
 u16 FontGetMessageWidth(const char* message);
 
 void FontDrawStringMtx(Mtx mtx, const char* msg);
+void FontDrawColorIDX(u32 idx);

@@ -9,10 +9,7 @@
 
 // Prototypes not yet in headers (these functions are defined in driver/mobjdrv.c and driver/npcdrv.c,
 // but no included header declares them). See REPORT.md.
-MapObjectEntry* mobjHitObjPtrToPtr(HitEntry* hitObj);
-BOOL mobjGetHint(MapObjectEntry* entry);
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry);
-NpcEntry* fbatNpcTalkCheck(void);
 EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc);
 
 // Raw-offset accessors for MarioWork fields that are still padding in mario/mario.h:

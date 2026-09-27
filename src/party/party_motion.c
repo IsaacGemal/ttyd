@@ -11,6 +11,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "dolphin/types.h"
 #include "math.h"
+#include "party/party_move.h"
+#include "party/party_hit.h"
 
 // .sbss
 f32 unk_804189e8;
@@ -40,16 +42,12 @@ s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e);
 s32 unk_800d7270(s32 a, char* b, s32 c, s32 d);
 BOOL psndBGMOn(u32 r3, char* bgm_name);
 void partyPaperOff(PartyEntry* party);
-void partyChgPaper(PartyEntry* party, void* paper);
 void partyPaperLightOff(PartyEntry* party);
-void partyChgMot(PartyEntry* party, s32 mot);
-HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle);
 void partyChgRunMode(PartyEntry* party, s32 mode);
 u32 partyGetFootmarkId(u32* flags);
 void partyNextReadId(u32 index);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
-void partySearchFrontWall(PartyEntry* party, Vec* position, f32 a, f32 b);
 void N_partyPlaySfxPartyLanding1(PartyEntry* party);
 void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
 s32 unk_800c8dd0(HitEntry* hit);

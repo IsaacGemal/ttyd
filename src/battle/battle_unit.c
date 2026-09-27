@@ -5,6 +5,10 @@
 #include <string.h>
 #include "pmario_sound.h"
 
+extern void psndSFX_pit(s32 id, s32 pitch);
+extern void psndSFX_vol(s32 id, s32 vol);
+extern s32 psndSFX_get_vol(s32 id);
+
 extern BattleWork* _battleWorkPointer;
 extern u32 _enemy_can_use_item_table[];
 extern f64 pow(f64 x, f64 y);
@@ -1666,9 +1670,6 @@ s32 BtlUnit_snd_se(BattleUnit* unit, const char* name, s32 b, s16 c) {
     return BtlUnit_snd_se_pos(unit, name, b, c, &pos);
 }
 
-extern void psndSFX_pit(s32 id, s32 pitch);
-extern void psndSFX_vol(s32 id, s32 vol);
-extern s32 psndSFX_get_vol(s32 id);
 
 // NONMATCHING (87.75%): register allocation is rotated (target keeps name in r27/val in r30, ours name in r30/val in r29).
 #pragma dont_inline on

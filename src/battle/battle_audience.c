@@ -6,6 +6,11 @@
 #include "system.h"
 #include <string.h>
 #include "pmario_sound.h"
+#include "battle/battle_weapon_power.h"
+
+extern s32 psndSFX_get_vol(s32 id);
+extern void psndSFX_vol(s32 id, s32 vol);
+extern s32 psndSFX_pit(s32 id, s32 pit);
 
 #pragma optimize_for_size on
 
@@ -197,11 +202,7 @@ void BattleAudienceCheer(s32 a);
 void BattleAudienceNoiseMain(void);
 extern s32 psndSFXOn(const char* name);
 extern s32 psndSFXOn_3D(const char* name, Vec* pos);
-extern s32 psndSFX_get_vol(s32 id);
-extern void psndSFX_vol(s32 id, s32 vol);
-extern s32 psndSFX_pit(s32 id, s32 pit);
 extern void BattleStatusWindowAPRecoveryOn(void);
-extern u32 weaponGetPowerFromMarioHammerLv();
 extern void BattleAudienceSoundClap(s32 a, s32 b);
 s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b);
 s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c);

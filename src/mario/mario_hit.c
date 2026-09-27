@@ -5,13 +5,14 @@
 #include "party/party_vivian.h"
 #include "system.h"
 #include <string.h>
+#include "koopa.h"
+#include "party.h"
+#include "driver/mobjdrv.h"
 
 // locals for symbols with no home header
-MapObject* mobjHitObjPtrToPtr(HitEntry* hitObj);
 void kpaClearHitobjRide(void);
 void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d);
 s32 kpaFireAttackCheck(void);
-s32 kpaCamFollow(void);
 void quake_kpaLandOn(void);
 void camFollowYOn(void);
 void set_damage_root_ypos(f32 y);
@@ -664,8 +665,6 @@ void marioSetFallPara(void);
 void marioClearJumpPara(void);
 void marioItemGetDisable(void);
 s32 kpaGetBodyStatus(void);
-void* partyGetPtr(s32 index);
-f32 partyGetHeight(void* party);
 s32 marioGetPartyId(void);
 s32 psndSFXOn_3D(const char* name, Vec* position);
 

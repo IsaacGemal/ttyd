@@ -17,6 +17,8 @@
 
 #include <math.h>
 #include "mario/mario_hit.h"
+#include "koopa.h"
+#include "motion/mot_roll.h"
 
 // Locally declared prototypes (move to headers later).
 extern void mario_plane_cancel(void);
@@ -54,10 +56,8 @@ extern void peachSetStsAngry(void);
 extern void peachSetStsOrdinary(void);
 extern void peachSetStsCarry(void);
 extern s32 marioChkSlitThrouhEnd(void);
-extern void unk_8009f9c8(void);
 extern f32 toMovedirSimple(f32 angle);
 extern void kpaAttackStart(void);
-extern void kpaChgPose(const char* a, const char* b);
 extern void partyShadowOff(PartyEntry* party);
 extern void quake_kpaHipAttack(void);
 extern void marioClearJumpPara(void);

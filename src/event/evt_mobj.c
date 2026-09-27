@@ -15,6 +15,8 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include <string.h>
+#include "koopa.h"
+#include "driver/npcdrv.h"
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 extern s32 kpaGetLevel(void);
@@ -23,7 +25,6 @@ extern void kpaAddScorePos(s32 score, Vec* pos);
 extern void kpaPowUp(void);
 extern void kpaAddCoin(s32 coins);
 extern s32 kpaMutekiCheck(void);
-extern void kpaChgPose(const char* pose);
 extern void hitGrpFlagOn(const char* name, s32 flag);
 extern void hitGrpFlagOff(const char* name, s32 flag);
 
@@ -76,7 +77,6 @@ extern void mobjCalcMtx2(MapObjectEntry* entry);
 extern f32 PSVECMag(const Vec* v);
 extern f32 PSVECDistance(const Vec* a, const Vec* b);
 s32 mobj_rideswitch_lightblue(MapObjectEntry* obj);
-extern void npcKoopaModeMobjBoundDeadCheck(HitEntry* hit);
 extern void effMObjBrokenEntry(s32 type, f32 x, f32 y, f32 z);
 s32 mobj_koopa_blk(MapObjectEntry* obj);
 s32 mobj_float_blk(MapObjectEntry* obj);

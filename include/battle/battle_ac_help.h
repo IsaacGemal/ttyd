@@ -4,6 +4,4 @@
 
 void BattleAcHelpInit(void);
 void BattleAcHelpMain(void);
-
-
-
+void BattleAcHelpSetHelp(const char* msg);

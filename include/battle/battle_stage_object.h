@@ -48,3 +48,4 @@ USER_FUNC(_set_mobj_shake_init);
 
 
 void BattleStageObjectInit(void);
+BOOL BattleFogForceStop(void);

@@ -31,7 +31,7 @@ DispEntry** pSortWork;
 DispEntry* pDispWork;
 
 //local prototypes
-s32 _sort(const void** sortA, const void** sortB);
+static s32 _sort(const void** sortA, const void** sortB);
 
 DispEntry* dispGetCurWork(void) {
 	return currentWorkPtr;
@@ -122,7 +122,7 @@ void dispSort(void) {
 	qqsort(pSortWork, entry_n, 4, (int (*)(void*, void*))_sort);
 }
 
-s32 _sort(const void** sortA, const void** sortB) {
+static s32 _sort(const void** sortA, const void** sortB) {
 	f32 temp_f0;
 	f32 temp_f1;
 

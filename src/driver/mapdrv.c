@@ -67,7 +67,7 @@ void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
 void setColor(MapObject* obj, GXColor* color, s32 a3);
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
 void _mapDispMapGrp(MapObject* obj, void* a2);
-void _mapDispMapObj(MapObject* obj, void* a2);
+void _mapDispMapObj(CameraId camId, MapObject* obj);
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2);
 void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj);
 void mapDispMapObj_bbox(s32 camId, MapObject* obj);
@@ -337,7 +337,7 @@ void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
 	*a = *(u8*)((u8*)obj + 0xF);
 }
 
-void test_kururing_mapdisp(MapObject* arg) {
+void test_kururing_mapdisp(CameraId camId) {
 	MapWork* wp = &mapWork[activeGroup];
 	MapEntry* entry = &wp->entries[0];
 	u32 flags;
@@ -351,7 +351,7 @@ void test_kururing_mapdisp(MapObject* arg) {
 			flags = *(u32*)obj->field_0x0;
 			if (flags & 0x400000) {
 				*(u32*)obj->field_0x0 = flags & ~0x2;
-				_mapDispMapObj(arg, obj);
+				_mapDispMapObj(camId, obj);
 				*(u32*)obj->field_0x0 = flags;
 			}
 		}
@@ -684,8 +684,8 @@ void mapDispMapGrp(MapObject* obj, void* a2) {
 	_mapDispMapGrp(obj, a2);
 }
 
-void mapDispMapObj(MapObject* obj, void* a2) {
-	_mapDispMapObj(obj, a2);
+void mapDispMapObj(CameraId camId, MapObject* obj) {
+	_mapDispMapObj(camId, obj);
 }
 
 void mapDispMapGrp_off(MapObject* obj, void* a2) {
@@ -702,7 +702,7 @@ void mapDispMapGrp_off(MapObject* obj, void* a2) {
 	offscreenAddBoundingBox(*(s16*)((u8*)a2 + 0xDC), v0, v1, v2, v3);
 }
 
-void mapDispMapObj_off(MapObject* obj, void* a2) {
+void mapDispMapObj_off(CameraId camId, MapObject* obj) {
 	u16 v0;
 	u16 v1;
 	u16 v2;
@@ -710,10 +710,10 @@ void mapDispMapObj_off(MapObject* obj, void* a2) {
 
 	sysWaitDrawSync();
 	GXClearBoundingBox();
-	_mapDispMapObj(obj, a2);
+	_mapDispMapObj(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)((u8*)a2 + 0xDC), v0, v1, v2, v3);
+	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
 }
 
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {

@@ -52,3 +52,5 @@ void mobjInit(void);
 void mobjMain(void);
 
 void mobjHitEntry(MapObjectEntry* entry, s32 type);
+BOOL mobjGetHint(MapObjectEntry* entry);
+MapObjectEntry* mobjHitObjPtrToPtr(HitEntry* hit);

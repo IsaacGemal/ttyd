@@ -229,3 +229,7 @@ void npcTuningRy(NpcEntry* npc, f32 angle);
 void npcGetBackItemEntry(NpcEntry* entry);
 void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose);
 s32 npcCalcScore(NpcEntry* entry);
+struct HitEntry;
+NpcEntry* fbatNpcTalkCheck(void);
+s32 npcKoopaModeMobjBoundDeadCheck(struct HitEntry* hit);
+void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work);

@@ -34,7 +34,6 @@ const char* toFrontPose(const char* name);
 extern Vec R_last_position;
 extern const char* marioAnimeGroupData[4][3];
 void partyUsePost(PartyEntry* party);
-void partyCtrlOn(void);
 void partyCtrlOff(void);
 void marioYoshiForceCancel(void);
 void camFollowYOn(void);

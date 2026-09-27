@@ -12,6 +12,7 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "koopa.h"
 
 // locals for symbols with no home header (see REPORT.md)
 f32 marioGetFallSpd(void);

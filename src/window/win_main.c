@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include "evt/evt_yuugijou.h"
+#include "eff/eff_recovery.h"
 
 extern ItemData itemDataTable[];
 extern int sprintf(char* str, const char* format, ...);
@@ -51,7 +52,6 @@ extern s32 winGhostDiaryChk(void);
 extern s32 party_color(EventEntry* event, BOOL isFirstCall);
 extern s32 famicom_check(EventEntry* event, BOOL isFirstCall);
 extern void statusWinForceOpen(void);
-extern void* effRecoveryEntry(s32 type, f32 x, f32 y, f32 z);
 
 // mario_pouch.h declares the pouch accessors with s16 parameters, but the
 // original win_main.c treated them as s32 (the callees sign-extend their own
@@ -440,12 +440,12 @@ USER_FUNC(itemUseFunc) {
         case 0:
             statusWinForceOpen();
             if (event->lwData[11] == 0) {
-                POUCH_SETHP(POUCH_GETHP() + (u8)item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + (u8)item->fp_restored);
+                POUCH_SETHP(POUCH_GETHP() + item->hp_restored);
+                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
                 POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
             } else {
-                POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + (u8)item->hp_restored);
-                POUCH_SETFP(POUCH_GETFP() + (u8)item->fp_restored);
+                POUCH_SETPARTYHP(event->lwData[11], POUCH_GETPARTYHP(event->lwData[11]) + item->hp_restored);
+                POUCH_SETFP(POUCH_GETFP() + item->fp_restored);
                 POUCH_SETAP(POUCH_GETAP() + (u8)item->sp_restored);
             }
             cnt++;
@@ -456,11 +456,11 @@ USER_FUNC(itemUseFunc) {
                 cnt = 0xC8;
                 break;
             }
-            if ((u8)item->hp_restored == 0) {
+            if (item->hp_restored == 0) {
                 cnt = 0x64;
                 break;
             }
-            effRecoveryEntry(0, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
+            effRecoveryEntry(0, item->hp_restored, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
             cnt++;
             break;
 
@@ -473,11 +473,11 @@ USER_FUNC(itemUseFunc) {
             break;
 
         case 0x64:
-            if ((u8)item->fp_restored == 0) {
+            if (item->fp_restored == 0) {
                 cnt = 0x3E7;
                 break;
             }
-            effRecoveryEntry(1, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
+            effRecoveryEntry(1, item->fp_restored, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z);
             /* fallthrough */
         case 0x82:
             cnt = 0x3E7;
@@ -485,11 +485,11 @@ USER_FUNC(itemUseFunc) {
 
         case 0xC8: {
             f32* target;
-            if ((u8)item->hp_restored == 0) {
+            if (item->hp_restored == 0) {
                 cnt = 0x12C;
                 break;
             }
-            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
+            target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
             *target = (-(*(f32*)((u8*)party + 0xF0))) / 2.0f;
             cnt++;
             break;
@@ -504,11 +504,11 @@ USER_FUNC(itemUseFunc) {
             break;
 
         case 0x12C:
-            if ((u8)item->fp_restored == 0) {
+            if (item->fp_restored == 0) {
                 cnt = 0x3E7;
                 break;
             }
-            effRecoveryEntry(1, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z);
+            effRecoveryEntry(1, item->fp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z);
             cnt++;
             break;
 

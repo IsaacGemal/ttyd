@@ -13,6 +13,8 @@
 #include <string.h>
 #include <math.h>
 #include <dolphin/mtx.h>
+#include "eff/eff_recovery.h"
+#include "eff/eff_starstone.h"
 
 extern void statusWinOpen(void);
 extern void BtlUnit_SetAnim(BattleUnitPart* part, const char* animName);
@@ -73,8 +75,6 @@ extern f32 float_1p125_80421e08;
 extern char str_80300470[];
 void main_star0(s32 idx);
 void main_star1(void);
-EffectEntry* effRecoveryEntry(s32 type, s32 arg, f32 x, f32 y, f32 z);
-EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale);
 void disp_3D(CameraId camera, void* param);
 void main_base(void);
 void main_weapon(s32 idx);

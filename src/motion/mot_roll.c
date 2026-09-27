@@ -7,6 +7,7 @@
 #include "driver/camdrv.h"
 #include <string.h>
 #include <math.h>
+#include "motion/mot_roll.h"
 
 // locals for symbols with no home header (see REPORT.md)
 void* marioChkLandon(f32* pos, f32 spd);

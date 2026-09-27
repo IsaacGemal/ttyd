@@ -16,6 +16,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <string.h>
+#include "eff/eff_starstone.h"
 
 extern BattleWork* _battleWorkPointer;
 
@@ -88,7 +89,6 @@ static s32 start_game(EventEntry* event, BOOL isFirstCall);
 static void disp_3D_alpha(CameraId camera, void* param);
 static void disp_3D(CameraId camera, void* param);
 
-EffectEntry* effStarStoneEntry(s32 a, f32 b, f32 c, f32 d, f32 e);
 EffectEntry* effStardustN64Entry(s32 a, f32 b, f32 c, f32 d, f32 e);
 EffectEntry* effCrystalN64Entry(s32 a, s32 b, f32 c, f32 d, f32 e, f32 f);
 void btlGetScreenPoint(Vec* pos, Vec* out);

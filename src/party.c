@@ -6,6 +6,8 @@
 #include "mario/mario_cam.h"
 #include "system.h"
 #include "mario/mario_party.h"
+#include "party/party_yoshi.h"
+#include "party/party_move.h"
 double sin(double x);
 double cos(double x);
 
@@ -17,7 +19,6 @@ double cos(double x);
 #define PF32(p, off) (*(f32*)((u8*)(p) + (off)))
 
 void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChgMot(PartyEntry* party, s32 mot);
 s32 partyEntryMain(s32 memberId);
 s32 partyGetHp(void);
 void N__partyChgRunMode(PartyEntry* party, s32 oldMode, s32 newMode);
@@ -25,7 +26,6 @@ void N_partyForceChgRunMode(PartyEntry* party, s32 mode, s32 unk);
 void bomhei_use_cancel(void);
 void getRidePos(PartyEntry* party, Vec* pos);
 void vivianUnhold(PartyEntry* party);
-void marioGetoffYoshi(void);
 void driveParty(PartyEntry* party);
 void unk_8013be14(void);
 void partyHelloMain(PartyEntry* party);
@@ -584,7 +584,7 @@ s32 partyRideChk(PartyEntry* party) {
     return result;
 }
 
-void partySetForceMove(PartyEntry* party, s16 unk, f32 x, f32 z) {
+void partySetForceMove(PartyEntry* party, s32 unk, f32 x, f32 z) {
     PF32(party, 0x100) = x;
     P16(party, 0x28) = unk;
     PF32(party, 0x104) = z;

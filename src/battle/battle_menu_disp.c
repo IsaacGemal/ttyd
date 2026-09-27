@@ -1,14 +1,14 @@
 #include "battle/battle_menu_disp.h"
 #include "system.h"
+#include "manager/fontmgr.h"
+#include "battle/battle_disp.h"
 
 extern BattleWork* _battleWorkPointer;
 extern int sprintf(char* str, const char* format, ...);
 extern f64 cos(f64 x);
 extern f64 sin(f64 x);
-extern void btlDispTexPlane2(Mtx mtx, u32 id, GXColor* color, s32 arg);
 extern void windowDispGX_Waku_col(s32 texMap, GXColor* color, f32 x, f32 y, f32 h, f32 w, f32 curve);
 extern void FontDrawStart(void);
-extern void FontDrawColorIDX(s32 idx);
 extern void FontDrawScale(f32 scale);
 extern void FontDrawString(const char* str, f32 x, f32 y);
 extern const char* msgSearch(const char* tag);
@@ -244,7 +244,7 @@ void battleMenuDispEnd(void) {
 }
 
 void BattleMenuDisp_MultiItem_Main(void) {}
-void BattleMenuDisp_MultiItem_Disp(void) {
+void BattleMenuDisp_MultiItem_Disp(BattleWork* wp) {
     DrawMultiItemWin();
 }
 void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
@@ -255,7 +255,7 @@ void BattleMenuDisp_MultiItem_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_ChangePartySelect_Main(void) {}
-void BattleMenuDisp_ChangePartySelect_Disp(void) {
+void BattleMenuDisp_ChangePartySelect_Disp(BattleWork* wp) {
     DrawChangePartyWin();
 }
 void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp) {
@@ -266,7 +266,7 @@ void BattleMenuDisp_ChangePartySelect_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_Operation_Main(void) {}
-void BattleMenuDisp_Operation_Disp(void) {
+void BattleMenuDisp_Operation_Disp(BattleWork* wp) {
     DrawOperationWin();
 }
 void BattleMenuDisp_Operation_End(BattleWork* wp) {
@@ -277,7 +277,7 @@ void BattleMenuDisp_Operation_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_WeaponSelect_Main(void) {}
-void BattleMenuDisp_WeaponSelect_Disp(void) {
+void BattleMenuDisp_WeaponSelect_Disp(BattleWork* wp) {
     DrawWeaponWin();
 }
 void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
@@ -288,7 +288,7 @@ void BattleMenuDisp_WeaponSelect_End(BattleWork* wp) {
 }
 
 void BattleMenuDisp_ActSelect_Main(void) {}
-void BattleMenuDisp_ActSelect_Disp(void) {
+void BattleMenuDisp_ActSelect_Disp(BattleWork* wp) {
     DrawMainMenu();
 }
 void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
@@ -466,7 +466,7 @@ void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle) {
     PSMTXTransApply(mtx, mtx, x, y, 0.0f);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-        btlDispTexPlane2(mtx, (u32)tex, &color, 0);
+        btlDispTexPlane2(mtx, (u32)tex, color, 0);
     }
 }
 

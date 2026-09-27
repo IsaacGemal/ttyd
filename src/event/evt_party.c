@@ -11,6 +11,9 @@
 #include "driver/hitdrv.h"
 #include "system.h"
 #include <dolphin/mtx.h>
+#include "party/party_yoshi.h"
+#include "party/party_move.h"
+#include "party/party_hit.h"
 
 // Raw field accessors for PartyEntry fields that aren't declared in the shared header yet.
 #define P8(p, off) (*(u8*)((u8*)(p) + (off)))
@@ -37,13 +40,10 @@ f32 float_100_8041bb34 = 100.0f;
 f32 float_50_8041bb38 = 50.0f;
 
 void partyChgRunMode(PartyEntry* party, s32 mode);
-void partyChgMot(PartyEntry* party, s32 mot);
-void partySetForceMove(PartyEntry* party, s32 unk, f32 x, f32 z);
 void partySetCamId(PartyEntry* party, s32 cameraId);
 void partyInitCamId(PartyEntry* party);
 void partyRun(PartyEntry* party);
 void partyStop(PartyEntry* party);
-void partyCtrlOn(void);
 void partyCtrlOff(void);
 void partyMoveBesideMario(PartyEntry* party, s32 unk);
 void partyMoveBehindMario(PartyEntry* party, s32 unk);
@@ -56,14 +56,12 @@ s32 cloudGetStatus(void);
 void nokotaro_hold_cancel(PartyEntry* party);
 s32 bomheiGetStatus(void);
 s32 yoshiGetStatus(void);
-void marioGetoffYoshi(void);
 void evt_set_yoshi_spd(f32 spd);
 void evt_set_yoshi_frm(s32 frm);
 s32 evt_get_yoshi_frm(void);
 void L_partyVivianTailStart(PartyEntry* party);
 void L_partyVivianTailStop(PartyEntry* party);
 void vivianUnhold(PartyEntry* party);
-HitEntry* partySearchGround(PartyEntry* party, f32 a, f32 b);
 HitEntry* partyHitCheck(PartyEntry* party, Vec* pos, Vec* dir, Vec* hitPos, Vec* hitNormal, f32* dist);
 s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z);
 f32 toMovedirSimple(f32 angle);
