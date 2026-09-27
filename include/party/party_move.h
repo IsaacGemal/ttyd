@@ -29,3 +29,5 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
 void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
 void partyGetAppearPos2(PartyEntry* party, Vec* pos);
+void partyMoveFlyInit(PartyEntry* party, s32 mode);
+void partyFlyMain(PartyEntry* party);
