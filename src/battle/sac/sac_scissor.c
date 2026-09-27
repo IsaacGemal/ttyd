@@ -13,6 +13,12 @@
 #include "system.h"
 #include "battle/sac/sac_scissor.h"
 
+// The original sac_scissor unit was compiled with -O4,s (optimize for size): the
+// comparison idiom (`subi; subic; subfe; and`) and stmw/lmw prologues only come
+// out under size optimization. There is no per-Object flag for this unit, so set
+// it here (matches sac_deka.c; the orchestrator can move it to configure.py).
+#pragma optimize_for_size on
+
 extern BattleWork* _battleWorkPointer;
 
 // Named .sdata2 constants (the original references these symbols, not anonymous literals).
@@ -66,10 +72,10 @@ typedef struct ScissorWork {
 
 
 
-// NONMATCHING (83.93%): 2 instructions differ, 2 extra, plus register differences.
 s32 wait_star_standby(void) {
     ScissorWork* work = GetScissorPtr();
-    return (work->state == 5) ? 2 : 0;
+
+    return (u32)(work->state - 5u) <= 0 ? 2 : 0;
 }
 
 s32 star_stone_appear(void) {
@@ -122,7 +128,6 @@ void scissor_capture(void) {
     GXPixModeSync();
 }
 
-// NONMATCHING (86.96%): 2 instructions differ, 4 extra, plus register differences.
 s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     ScissorWork* work = GetScissorPtr();
@@ -135,30 +140,34 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (21.08%): 6 instructions differ, 25 missing, 54 extra, plus register differences.
+// NONMATCHING (97.69%): logic matches; only float/integer register allocation
+// differs (original: px=f6, py=f3, zero=f1, count=r9; here py=f7, zero=f8, count=r10).
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
+    s32 count = work->field_0x14;
+    f32 px = point->x;
+    f32 py = point->y;
+    f32 zero = float_0_80421734;
     s32 i;
     s32 j;
 
-    for (i = 0; i < work->field_0x14; i++) {
+    for (i = 0; i < count; i++) {
         f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
         for (j = 0; j < 3; j++) {
-            cross[j] = (point->y - tri[j + 3]) * (tri[(j + 1) % 3] - tri[j]) -
-                       (point->x - tri[j]) * (tri[((j + 1) % 3) + 3] - tri[j + 3]);
+            cross[j] = (py - tri[j + 3]) * (tri[(j + 1) % 3] - tri[j]) -
+                       (px - tri[j]) * (tri[((j + 1) % 3) + 3] - tri[j + 3]);
         }
-        if (cross[0] > 0.0f && cross[1] > 0.0f && cross[2] > 0.0f) {
-            return 1;
-        }
-        if (cross[0] < 0.0f && cross[1] < 0.0f && cross[2] < 0.0f) {
+        if ((cross[0] > zero && cross[1] > zero && cross[2] > zero) ||
+            (cross[0] < zero && cross[1] < zero && cross[2] < zero)) {
             return 1;
         }
     }
     return 0;
 }
 
-// NONMATCHING (94.89%): 4 instructions differ, 1 missing, 2 extra, plus register differences.
+// NONMATCHING (94.89%): same instructions, different schedule: case 0's two lfs
+// are hoisted before the stfs in the original; cases 5/15 load f1/f2 before r4.
 s32 scissor_timer_main(void) {
     ScissorWork* work = GetScissorPtr();
 
@@ -334,7 +343,8 @@ s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     return scissor_intersection3(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
 
-// NONMATCHING (94.87%): 1 missing, 2 extra.
+// NONMATCHING (94.87%): same instructions; the original schedules `lfs f0,
+// float_0_80421734` before the prologue's `stw r0, 0x14(r1)`, ours after it.
 s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 diff = bx - ax;
 
