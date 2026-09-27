@@ -153,18 +153,19 @@ USER_FUNC(evt_sub_countdown_start) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (82.45%): 3 instructions differ, 1 missing, 1 extra, plus register differences.
+// NONMATCHING (95.00%): only the zero-test branch layout differs: the original emits
+// `cmpwi; bne default` with the case 0 body as fall-through, this switch emits
+// `cmpwi; beq case0; b default`. Same instructions otherwise.
 USER_FUNC(evt_sub_animgroup_async) {
 	s32* args = event->args;
 	const char* name = (const char*)evtGetValue(event, args[0]);
 	s32 ret = animGroupBaseAsync(name, gp->inBattle != 0, NULL);
-	s32 result;
-	if (ret == 0) {
-		result = EVT_RETURN_BLOCK;
-	} else {
-		result = EVT_RETURN_DONE;
+	switch (ret) {
+	case 0:
+		return EVT_RETURN_BLOCK;
+	default:
+		return EVT_RETURN_DONE;
 	}
-	return result;
 }
 
 USER_FUNC(evt_sub_get_language) {
@@ -458,7 +459,9 @@ USER_FUNC(evt_sub_spline_init) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (85.72%): 2 instructions differ, 5 missing, 6 extra, plus register differences.
+// `#pragma opt_propagation off`: with propagation on, the int->float conversion of `t`
+// is folded into each use and the fp register allocation no longer matches.
+#pragma opt_propagation off
 USER_FUNC(evt_sub_spline_get_value_manual) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -482,6 +485,7 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 }
 
 // NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
+#pragma opt_propagation reset
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
 	SplineWork* work = (SplineWork*)event->lwData[15];
@@ -651,7 +655,11 @@ USER_FUNC(irai_mail_check) {
 
 extern WinMgrDesc coinget_window_desc;
 
-// NONMATCHING (87.09%): 4 instructions differ, 6 missing, 24 extra, plus register differences.
+// NONMATCHING (98.20%): polynomial-coefficient registers differ (target uses f4/f3/f2 for
+// 0.00761/0.16605/1.0 and f1 for the 1.5708 pivot; ours uses f5/f4/f2 and f0). Base instruction
+// sequence matches. `#pragma opt_propagation off` is required: with propagation on the compiler
+// rematerialises the coefficients into every branch and the diff is ~24 instructions larger.
+#pragma opt_propagation off
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
@@ -662,13 +670,16 @@ USER_FUNC(evt_sub_get_coin) {
 	EffectEntry* eff;
 	s32* work;
 	f32 f0, f1, f2, f3, f4, f5, f6, f7;
+	f32 yaw;
 
 	pos1 = mario->position;
 	pos2 = pos1;
 
 	cam = camGetPtr(4);
-	f1 = (100.0f * cam->viewYaw + 5.0f) / 100.0f;
-	f6 = (6.2832f * reviseAngle(f1)) / 360.0f;
+	yaw = cam->viewYaw;
+	f1 = (100.0f * yaw + 5.0f) / 100.0f;
+	f2 = 6.2832f * reviseAngle(f1);
+	f6 = f2 / 360.0f;
 
 	f4 = 0.00761f;
 	f3 = 0.16605f;
@@ -787,7 +798,7 @@ USER_FUNC(evt_sub_get_coin) {
 		event->userdata[0] = 1;
 		return 0;
 	case 1:
-		if (OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime) > event->userdata[2]) {
+		if ((s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime) > event->userdata[2]) {
 			iconFlagOff(str_802C35D8, 2);
 			work[1] = 1;
 			event->userdata[2] = 0x1F4;
@@ -796,7 +807,7 @@ USER_FUNC(evt_sub_get_coin) {
 		}
 		return 0;
 	case 2:
-		if (OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime) > event->userdata[2]) {
+		if ((s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->savedTime) > event->userdata[2]) {
 			event->userdata[0] = 0xA;
 		}
 		return 0;
@@ -827,7 +838,8 @@ USER_FUNC(evt_sub_get_coin) {
 	}
 }
 
-// NONMATCHING (98.25%): same instructions; only register numbers or operands differ.
+// NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
+#pragma opt_propagation off
 USER_FUNC(evt_sub_check_intersect) {
 	s32* args = event->args;
 	f32 a, b, c, d, e, f, g, h;
@@ -884,3 +896,5 @@ USER_FUNC(evt_sub_check_intersect) {
 	evtSetValue(event, args[8], 1);
 	return 2;
 }
+
+#pragma opt_propagation reset
