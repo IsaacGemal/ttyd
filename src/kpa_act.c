@@ -23,7 +23,7 @@ typedef struct KpaScoreDispEntry {
 } KpaScoreDispEntry; // 0x18
 
 // Compiler-pool constants owned by this translation unit (see config/G8MJ01/symbols.txt).
-u32 dat_80420d80 = 0xFFFFFFFF;
+const GXColor dat_80420d80 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const f32 float_0p5_80420d84 = 0.5f;
 const f32 float_10_80420d88 = 10.0f;
 const f32 float_20_80420d8c = 20.0f;
@@ -248,7 +248,7 @@ void kpaScoreDisp(CameraId cameraId, void* param) {
 
     PSMTXScale(scale, float_0p5_80420d84, float_0p5_80420d84, float_0p5_80420d84);
     FontDrawStart();
-    *(u32*)&color = dat_80420d80;
+    color = dat_80420d80;
     FontDrawColor(&color);
     for (i = 0; i < 50; i++) {
         if (ksdp[i].timer != 0) {

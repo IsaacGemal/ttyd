@@ -32,6 +32,10 @@ extern const f32 float_200_8041deb8;
 extern const f32 float_0p66667_8041debc;
 
 extern u8 lbl_80388868[]; // this unit's .data weapon tables
+extern BattleWeapon partyWeapon_VivianNormalAttack;
+extern BattleWeapon partyWeapon_VivianShadowGuard;
+extern BattleWeapon partyWeapon_VivianMagicalPowder;
+extern BattleWeapon partyWeapon_VivianCharmKissAttack;
 const f64 double_to_int_802f8010 = 4503601774854144.0;
 
 // strings used by the majo battle events
@@ -257,21 +261,38 @@ s32 _get_move_frame(EventEntry* event, BOOL isFirstCall) {
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
+// The original addresses the four weapons from one base register (addi r30, r5, lbl_80388868@l, then
+// +0x830/+0x8F0/+0x9B0/+0xA70); naming each weapon scores 89%.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+#ifdef MUST_MATCH
     u8* const weaponBase = lbl_80388868;
+#endif
     s32 techLv = partyGetTechLv(
         BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
 
-    TECH_MENU_ENTRY(weaponBase + 0x830);
+#ifdef MUST_MATCH
+    TECH_MENU_ENTRY(weaponBase + 0x830); // partyWeapon_VivianNormalAttack
     if (techLv >= 0) {
-        TECH_MENU_ENTRY(weaponBase + 0x8F0);
+        TECH_MENU_ENTRY(weaponBase + 0x8F0); // partyWeapon_VivianShadowGuard
     }
     if (techLv >= 1) {
-        TECH_MENU_ENTRY(weaponBase + 0x9B0);
+        TECH_MENU_ENTRY(weaponBase + 0x9B0); // partyWeapon_VivianMagicalPowder
     }
     if (techLv >= 2) {
-        TECH_MENU_ENTRY(weaponBase + 0xA70);
+        TECH_MENU_ENTRY(weaponBase + 0xA70); // partyWeapon_VivianCharmKissAttack
     }
+#else
+    TECH_MENU_ENTRY(&partyWeapon_VivianNormalAttack);
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(&partyWeapon_VivianShadowGuard);
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(&partyWeapon_VivianMagicalPowder);
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(&partyWeapon_VivianCharmKissAttack);
+    }
+#endif
 }
 
 USER_FUNC(_vivian_make_extra_work_area) {

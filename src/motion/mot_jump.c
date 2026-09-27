@@ -33,6 +33,16 @@ const char str_802C5C70[] = "M_J_1C";
 const f64 double_to_int_802c5c78 = 4503601774854144.0;
 const char str_802C5C80[] = "M_J_1B";
 
+// The original addresses these .rodata objects as offsets from one base register (vec3_802c5c40@l);
+// functions that use JUMP_RODATA declare that base with JUMP_RODATA_BASE.
+#ifdef MUST_MATCH
+#define JUMP_RODATA(T, off, name) ((T)(base + (off)))
+#define JUMP_RODATA_BASE const u8* base = (const u8*)&vec3_802c5c40;
+#else
+#define JUMP_RODATA(T, off, name) ((T)&(name))
+#define JUMP_RODATA_BASE
+#endif
+
 // .sdata
 static f32 marioJumpStandData[10] = {
     1.52f, -0.188f, 2.925f, -0.847f, -0.1f, -0.4f, 0.024f, -0.004f, 0.125f, 0.7f
@@ -104,7 +114,7 @@ void mot_fall_post(void) {
 }
 
 void mot_fall(void) {
-    const Vec* base = &vec3_802c5c40;
+    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->characterId == 2) {
@@ -124,9 +134,9 @@ void mot_fall(void) {
         mario->currSubMotionId = 0;
         if (mario->currMotionId != 0xB) {
             if (mario->characterId == 2) {
-                kpaChgPose((char*)base + 0x18, (char*)base + 0x24);
+                kpaChgPose(JUMP_RODATA(char*, 0x18, str_802C5C58), JUMP_RODATA(char*, 0x24, str_802C5C64));
             } else if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                marioChgPose((char*)base + 0x30);
+                marioChgPose(JUMP_RODATA(char*, 0x30, str_802C5C70));
             }
         } else {
             mario->flags |= 0x80;
@@ -334,7 +344,7 @@ void mot_jump(void) {
 }
 
 void mot_jumpNpc(void) {
-    const u8* base = (const u8*)&vec3_802c5c40;
+    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->characterId == 2) {
@@ -372,14 +382,14 @@ void mot_jumpNpc(void) {
             MWF32(mario, 0x88) = MATCH_F32(float_neg0p02_8041abdc);
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose((const char*)(base + 0x40));
+            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
                 f32 dist;
                 Vec pos;
-                Vec tmp = *(const Vec*)(base + 0xC);
+                Vec tmp = *JUMP_RODATA(const Vec*, 0xC, vec3_802c5c4c);
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
@@ -437,7 +447,7 @@ void mot_jumpNpc(void) {
             marioMakeJumpPara();
             if (MWF32(mario, 0x7C) <= 0.0f) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose((const char*)(base + 0x30));
+                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = MATCH_F32(float_neg0p03_8041abf0);
@@ -462,7 +472,7 @@ void mot_jumpNpc(void) {
 }
 
 void mot_jumpSw(void) {
-    const u8* base = (const u8*)&vec3_802c5c40;
+    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
@@ -482,14 +492,14 @@ void mot_jumpSw(void) {
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose((const char*)(base + 0x40));
+            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
                 f32 dist;
                 Vec pos;
-                Vec tmp = *(const Vec*)(base + 0x0);
+                Vec tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
@@ -546,7 +556,7 @@ void mot_jumpSw(void) {
             marioMakeJumpPara();
             if (MWF32(mario, 0x7C) <= 0.0f) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose((const char*)(base + 0x30));
+                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = marioJumpSwData[4];

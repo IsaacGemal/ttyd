@@ -282,4 +282,4 @@ s32 btlataudevtPresentItem_Get[] = {
     0x00000002, 0x00000001,
 };
 
-f32 lbl_80371490[] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_80371490[] = { -1.0f, 1.0f };

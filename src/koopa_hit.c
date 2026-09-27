@@ -12,24 +12,6 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 
-// Koopa's per-character work, allocated at mario->field_0x28C.  This mirrors the copy koopa.c keeps locally;
-// it has no home header yet (see REPORT.md).
-typedef struct KpaWork {
-    u32 flags;              // 0x0
-    s32 level;              // 0x4
-    u8  unk08[0x18 - 0x08]; // 0x8
-    void* unk18;            // 0x18
-    void* unk1C;            // 0x1C
-    void* head[10];         // 0x20
-    u8  unk48[0x4C - 0x48]; // 0x48
-    void* ride[10];         // 0x4C
-    u8  unk74[0x78 - 0x74]; // 0x74
-    f32 headDist[10];       // 0x78
-    u8  unkA0[0xA4 - 0xA0]; // 0xA0
-    f32 rideDist[10];       // 0xA4
-} KpaWork;
-
-#define KPA(m) (*(KpaWork**)((u8*)(m) + 0x28C))
 #define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
@@ -311,19 +293,6 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     return result;
 }
-
-// fire effect userdata (see koopa.c kpaFireMain); nodes are 0x50 bytes apart
-typedef struct KpaFireNode {
-    u8 unk00[0x04];
-    Vec pos;         // 0x04
-    u8 unk10[0x1C - 0x10];
-    s32 unk1C;       // 0x1C
-    u8 unk20[0x40 - 0x20];
-    f32 unk40;       // 0x40
-    s32 unk44;       // 0x44
-    f32 unk48;       // 0x48
-    void* unk4C;     // 0x4C
-} KpaFireNode;
 
 // NONMATCHING (98.1%): one scheduled instruction -- mine hoists `lfs f1,0x90(r31)` (mario y) above the
 // preceding `fadds`; every other instruction matches.
