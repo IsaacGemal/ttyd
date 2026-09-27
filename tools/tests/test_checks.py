@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import label_partials  # noqa: E402
 import lint_patch  # noqa: E402
+import header_patch  # noqa: E402
 import name_offsets  # noqa: E402
 
 
@@ -118,3 +119,23 @@ class LabelText(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HeaderPatch(unittest.TestCase):
+    PATCH = """--- a/include/x.h
++++ b/include/x.h
+@@ -1,2 +1,4 @@
+ #pragma once
++struct HitEntry;
++s32 foo(struct HitEntry* hit, f32 x);
+"""
+
+    def test_added_prototypes_pass(self):
+        self.assertEqual(header_patch.problems(self.PATCH), [])
+
+    def test_changed_line_fails(self):
+        self.assertTrue(header_patch.problems(self.PATCH + "-s32 old(void);\n"))
+
+    def test_struct_definition_fails(self):
+        self.assertTrue(header_patch.problems(self.PATCH + "+typedef struct X { s32 a; } X;\n"))
+

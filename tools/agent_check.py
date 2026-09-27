@@ -38,6 +38,14 @@ if FINAL:
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
     print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
     todo = [l for l in lint.stdout.splitlines() if l.strip()]
+    # Function prototypes belong in the header of the file that defines the function, not in your .c file.
+    sys.path.insert(0, "tools")
+    import local_prototypes
+    src = f"src/{unit_path}.c"
+    exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] == src]
+    protos = local_prototypes.check_sources({src: open(src).read()}, exc)
+    for p in protos:
+        todo.append("PROTOTYPE  " + p + "  -> move it to the defining file's header (include/<path>.h)")
     if not todo:
         print("Merge checks: nothing to fix.")
         sys.exit(0)
@@ -47,7 +55,7 @@ if FINAL:
     print("UNLABELLED: add `// NONMATCHING (NN%): what differs` above it. OFFSET: use the header's field if it has one.\n"
           "EXTERN/STRUCT: a function or struct declared locally should come from its header if one declares it (data\n"
           "externs such as float constants are fine). PRAGMA: give it a reason or remove it.")
-    sys.exit(1 if lint.returncode else 0)
+    sys.exit(1 if lint.returncode or protos else 0)
 if len(sys.argv) == 2:
     rows = sorted(fns.values(), key=lambda f: (f.get("fuzzy_match_percent", 0) >= 100, int(f["size"])))
     done = sum(1 for f in rows if f.get("fuzzy_match_percent", 0) >= 100)

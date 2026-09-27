@@ -1000,10 +1000,11 @@ windowDispGX_Waku_col), a name collision (fadedrv's `z` against the dig REL's), 
 src/ or rels/, and on an exception whose declaration changed or no longer exists. CI passed after every batch
 with all measures unchanged (4,153 functions); an independent count finds exactly the 17 exceptions.
 
-**Before the next wave:** the agent prompts say "don't edit headers; declare what you need locally", which CI
-now rejects. Either let agents add prototypes to the definer's header (the merge script and launcher would
-have to collect and apply header diffs; preferred, because it makes agents find the definition), or have the
-orchestrator move agents' local prototypes into headers at merge.
+**Agents now put prototypes in headers** (Isaac, Sep 26): the prompt and `docs/AGENT_BRIEF.md` (mistake 12) say to
+add a missing prototype to the defining file's header, created if needed, and never to change existing header
+lines. The launcher template collects each agent's header additions as `include.patch`;
+`tools/merge_agent.sh` checks it with `tools/header_patch.py` (added declarations only), applies it and commits
+it with the agent's file. `check.py --final` flags local prototypes, so agents fix them before stopping.
 
 
 ## Bug pattern: a local prototype hiding a missing argument (2026-09-26, Isaac; written up by Claude Opus 5.5)

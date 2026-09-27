@@ -70,9 +70,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    and compare the instructions with `check.py FUNC`.
 11. **Wrong argument order or destination,** e.g. which matrix a `PSMTXConcat` writes to. Map each argument
    register to your C.
-12. **Calling a function with no prototype.** The build rejects it (`-requireprotos`, as in Melee). Include the
-   header that declares it, or add the prototype to the header of the file that defines it, as its definition
-   (or the original's calls) say. Not a local declaration that contradicts a header.
+12. **Calling a function with no prototype, or declaring one in your .c file.** The build rejects a call with no
+   prototype (`-requireprotos`, as in Melee), and CI rejects function prototypes in .c files (static helpers
+   excepted). Include the header that declares the function; if none does, add the prototype to the header of
+   the file that defines it (`include/<path>.h` for `src/<path>.c`, created if missing), copying the
+   definition's signature, or the original's callee and callers if it isn't decompiled yet. Only add lines
+   to headers; never change existing ones. If an existing header declaration looks wrong, report it.
 13. **Writing a data or string address as a number,** or as an offset past a different symbol. Name the
    object (declare it as the original's symbol) instead.
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
