@@ -438,6 +438,7 @@ void btl_camera_set_moveto(s32 id, s32 a, s32 b, f32 f1, f32 f2, f32 f3, f32 f4,
   camera->unk80 = b;
 }
 
+// NONMATCHING (94.22%): 2 missing, 3 extra, plus register differences.
 USER_FUNC(evt_btl_camera_set_homing_unit) {
   BattleWork *wp;
   s32 *args;
@@ -472,6 +473,7 @@ USER_FUNC(evt_btl_camera_set_homing_unit) {
   return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (93.03%): 2 missing, 4 extra, plus register differences.
 USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   s32 *args = event->args;
   s32 priority = evtGetValue(event, args[0]);
@@ -506,6 +508,7 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (85.67%): 3 instructions differ, 7 missing, 5 extra, plus register differences.
 USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   s32 *args = event->args;
   s32 priority, type, partId, memberId;

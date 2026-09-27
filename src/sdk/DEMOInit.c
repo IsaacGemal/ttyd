@@ -37,6 +37,7 @@ static void __NoHangRetraceCallback(u32 count);
 static void __NoHangDoneRender(void);
 static void __DEMODiagnoseHang(void);
 
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void DEMOInit(GXRenderModeObj* mode) {
 	OSInit();
 	DVDInit();
@@ -143,6 +144,7 @@ void DEMOBeforeRender(void) {
 	GXInvalidateTexAll();
 }
 
+// NONMATCHING (97.89%): 2 instructions differ.
 void DEMODoneRender(void) {
 	if (GPHangWorkaround) {
 		__NoHangDoneRender();
@@ -226,6 +228,7 @@ static void __NoHangRetraceCallback(u32 count) {
 	}
 }
 
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 static void __NoHangDoneRender(void) {
 	BOOL abort = FALSE;
 	u16 token = sysGetToken();
@@ -278,6 +281,7 @@ void DEMOSetGPHangMetric(GXBool enable) {
 	}
 }
 
+// NONMATCHING (99.83%): same instructions; only register numbers or operands differ.
 static void __DEMODiagnoseHang(void) {
 	u32 xfTop0, xfBot0, suRdy0, r0Rdy0;
 	u32 xfTop1, xfBot1, suRdy1, r0Rdy1;

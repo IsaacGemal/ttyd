@@ -195,6 +195,7 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
+// NONMATCHING (94.61%): 13 instructions differ, 2 missing, 7 extra, plus register differences.
 s32 animPoseEntry(const char* animName, s32 type) {
     AnimationPose *pose, *temp;
     AnimationPoseFile *file, *tempfile;
@@ -349,6 +350,7 @@ label_5:
     return poseId;
 }
 
+// NONMATCHING (76.80%): 5 instructions differ, 8 missing, 8 extra, plus register differences.
 s32 animPaperPoseEntry(const char* animName, s32 group) {
     AnimationPose* pose;
     s32 i;
@@ -380,6 +382,7 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
     return i;
 }
 
+// NONMATCHING (95.13%): 3 instructions differ, 2 missing, plus register differences.
 BOOL animEffectAsync(const char* animName, u32 group) {
     s32 fileId;
     s32 other;
@@ -483,6 +486,7 @@ void animPoseSetStartTime(s32 poseId, OSTime startTime) {
     pose->localTime = startTime;
 }
 
+// NONMATCHING (95.47%): 4 instructions differ, 3 missing, plus register differences.
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
@@ -533,9 +537,11 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
+// NONMATCHING (0.62%): empty placeholder, not decompiled yet.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
 }
 
+// NONMATCHING (81.02%): 6 instructions differ, 14 missing, plus register differences.
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = *wp->files[wp->poses[pose->paperId].fileId].handle->data;
@@ -559,9 +565,11 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     }
 }
 
+// NONMATCHING (0.63%): empty placeholder, not decompiled yet.
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
 }
 
+// NONMATCHING (95.10%): 5 instructions differ, 2 missing, 1 extra, plus register differences.
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data;
@@ -621,6 +629,7 @@ f32 animPoseGetLoopTimes(s32 id) {
     return pose->loopTime;
 }
 
+// NONMATCHING (78.42%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 BOOL animPoseGetPeraEnd(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
 
@@ -672,12 +681,14 @@ GXColor* animPoseGetMaterialEvtColor(s32 poseId) {
     return (GXColor*)*(u32*)&pose->materialColor;
 }
 
+// NONMATCHING (0.06%): empty placeholder, not decompiled yet.
 void animPoseMain(s32 poseId) {
 }
 
 // pushGXModelMtx_TransformNode__
 // pushGXModelMtx_JointNode__
 
+// NONMATCHING (0.28%): empty placeholder, not decompiled yet.
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
 }
@@ -731,6 +742,7 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
 
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here, good luck finding the separation
+// NONMATCHING (68.93%): 38 instructions differ, 63 missing, 159 extra, plus register differences.
 void renderProc(s32 shapeId) {
     CameraEntry* camera;
     AnimationPoseData* data;
@@ -973,6 +985,7 @@ void renderProc(s32 shapeId) {
 
 // dispProc
 
+// NONMATCHING (32.81%): 18 missing, plus register differences.
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode) {
     Mtx matrix;
 
@@ -982,6 +995,7 @@ void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluM
 
 // _animPoseDrawMtx
 
+// NONMATCHING (0.21%): empty placeholder, not decompiled yet.
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
 }
 
@@ -996,6 +1010,7 @@ void animSetPaperTexObj(GXTexObj* a1, GXTexObj* a2, GXTexObj* a3, void* a4, void
     wp->field_0xDC = a7;
 }
 
+// NONMATCHING (99.36%): same instructions; only register numbers or operands differ.
 void animPoseRelease(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationTextureFile* texture;
@@ -1065,6 +1080,7 @@ void animPaperPoseRelease(s32 poseId) {
 }
 
 // animPoseAutoRelease
+// NONMATCHING (99.43%): same instructions; only register numbers or operands differ.
 void animPoseAutoRelease(s32 type) {
     AnimationPose* pose;
     AnimationTextureFile* texture;
@@ -1120,6 +1136,7 @@ void animPoseAutoRelease(s32 type) {
     animPoseRefresh();
 }
 
+// NONMATCHING (5.47%): 3 instructions differ, 25 missing, 2 extra, plus register differences.
 void animPaperPoseDisp(CameraId camId, void* param) {
     AnimationPose* pose;
     int i;
@@ -1132,6 +1149,7 @@ void animPaperPoseDisp(CameraId camId, void* param) {
     }
 }
 
+// NONMATCHING (0.17%): empty placeholder, not decompiled yet.
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 }
 
@@ -1230,6 +1248,7 @@ BOOL animPoseTestXLU(s32 poseId) {
 }
 
 // evalProc
+// NONMATCHING (94.21%): 4 instructions differ, 3 missing, 1 extra, plus register differences.
 void evalProc(s32 parentGroupId, s32 groupId) {
     AnimPoseGroup* group;
     AnimPoseGroup* parent;

@@ -7,6 +7,7 @@
 
 #define TWO_PI 6.283185307179586f
 
+// NONMATCHING (97.30%): 1 instruction differs, 4 missing, 1 extra, plus register differences.
 EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX, f32 dstY, f32 dstZ, f32 scale, f32 radius) {
     EffectEntry *effect;
     effMahorn2Data *data;

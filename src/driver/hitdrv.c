@@ -102,6 +102,7 @@ void hitReInit(void) {
 }
 
 // This function is cursed, managed to hit 99% - https://decomp.me/scratch/FjwSA
+// NONMATCHING (98.76%): same instructions; only register numbers or operands differ.
 HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapIndex) {
     MapWork* wp = mapGetWork();
     HitEntry* hit = wp->entries[mapIndex].hitEntries;
@@ -264,6 +265,7 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 }
 
 #pragma dont_inline on
+// NONMATCHING (0.33%): empty placeholder, not decompiled yet.
 s16 hitCalcVtxPosition(HitEntry* hit) {
     // TODO
 }
@@ -737,6 +739,7 @@ HitEntry* hitCheckAttr(s32 user0, f32* hitX, f32* hitY, f32* hitZ, f32* distance
     return entry;
 }
 
+// NONMATCHING (99.72%): same instructions; only register numbers or operands differ.
 HitEntry* hitCheckSphereFilter(HitFilterCallback callback, f32 x, f32 y, f32 z,
                                f32 distance) { // almost 1:1, stubborn regalloc
     MapWork* wp = mapGetWork();
@@ -847,6 +850,7 @@ HitEntry* hitNameToPtr(const char* name) { // 1:1
     return NULL;
 }
 
+// NONMATCHING (48.35%): 176 missing, plus register differences.
 void hitObjGetPosSub(HitEntry* hit, Vec* position, s32* counter, BOOL recursion) { // 1:1, awful inlining
     Vec sp8;
 

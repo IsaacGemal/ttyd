@@ -113,6 +113,7 @@ void winOpenDisable(void) {
     }
 }
 
+// NONMATCHING (26.44%): 21 instructions differ, 521 missing, 2 extra, plus register differences.
 void winMain(void) {
     MarioWork* mario;
 
@@ -234,6 +235,7 @@ void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
     }
 }
 
+// NONMATCHING (96.62%): 1 missing, 1 extra, plus register differences.
 void winFontSetPitch(Vec* pos, Vec* scale, GXColor* color, f32 pitch, const char* format, ...) {
     char buf[0x400];
     GXColor c;
@@ -396,6 +398,7 @@ USER_FUNC(famicom_check) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (99.97%): same instructions; only register numbers or operands differ.
 void winDispKoopa(CameraId camId, void* param) {
     winTexTpl = **(TEXPalette***)(*(u8**)((u8*)wp + 0x28) + 0xA0);
     GXSetCullMode(GX_CULL_NONE);
@@ -419,6 +422,7 @@ void winDispKoopa(CameraId camId, void* param) {
     winTexSet(0xB7, (Vec){ 0.0f, 50.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 }
 
+// NONMATCHING (99.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(itemUseFunc) {
     static s32 cnt;
     PartyEntry* party;
@@ -594,6 +598,7 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
+// NONMATCHING (99.98%): same instructions; only register numbers or operands differ.
 void winIconGrayInit(void) {
     winTexTpl = NULL;
     GXSetCullMode(GX_CULL_NONE);

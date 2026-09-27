@@ -38,6 +38,7 @@ void seq_titleExit(SequenceWork* work) {
 	}
 }
 
+// NONMATCHING (0.00%): 20 extra, plus register differences.
 void seq_titleMain(SequenceWork* work) {
 	titleMain(work);
 }
@@ -92,6 +93,7 @@ void titleInit(SequenceWork* work) {
 	camGetPtr(CAMERA_2D)->flags |= 0x400;
 }
 
+// NONMATCHING (4.50%): 11 instructions differ, 509 missing, plus register differences.
 void titleMain(SequenceWork* work) {
 	switch (wp2->field_0x8) {
 		case 0:

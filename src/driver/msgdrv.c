@@ -71,6 +71,7 @@ const char* language_dir[2] = {"msg", "emsg"};
 int msg_compare(const void* a, const void* b);
 void msgDispKeyWait_render(s32 wXluStage);
 
+// NONMATCHING (99.94%): same instructions; only register numbers or operands differ.
 void msgInit(void) {
 	msgw->poseId = animPoseEntry("hoshi_2", 2);
 	animPoseSetAnim(msgw->poseId, "HOS_C_1", TRUE);
@@ -84,6 +85,7 @@ void msgInit(void) {
 	msgLoad("global", 1);
 }
 
+// NONMATCHING (84.33%): 6 instructions differ, 12 missing, 8 extra, plus register differences.
 void msgLoad(const char* filename, s32 index) {
 	MessageEntry* entry;
 	DVDEntry* dvd;
@@ -163,6 +165,7 @@ void msgLoad(const char* filename, s32 index) {
 //s32 msgMain(void* somearray)
 //BOOL msgDisp(unused r3, r4, f32 f1, f32 f2)
 
+// NONMATCHING (3.12%): empty placeholder, not decompiled yet.
 void msgDispKeyWait_render(s32 wXluStage) {
 
 }
@@ -173,10 +176,12 @@ MessageWork* msgGetWork(void) {
 	return &msgWork;
 }
 
+// NONMATCHING (7.78%): empty placeholder, not decompiled yet.
 int msg_compare(const void* a, const void* b) {
 	return 0;
 }
 
+// NONMATCHING (96.79%): 3 instructions differ.
 const char* msgSearch(const char* tag) { //1:1
 	MessageEntry* entry;
 	MsgLookupEntry* lookup;
@@ -229,11 +234,13 @@ BOOL _ismbblead(u32 a1) {
 
 
 
+// NONMATCHING (0.16%): empty placeholder, not decompiled yet.
 BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 
 }
 
 
+// NONMATCHING (3.56%): 2 instructions differ, 422 missing, plus register differences.
 void msgWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param; //cast to correct type
 	CameraEntry* camera = camGetCurPtr();
@@ -253,6 +260,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (4.61%): 25 instructions differ, 1271 missing, plus register differences.
 void msgAnalize(smartEntry* smart, char* msg) {
 	MessageData* data;
 	MsgDataEntry* entry;
@@ -315,6 +323,7 @@ void msgAnalize(smartEntry* smart, char* msg) {
 }
 
 
+// NONMATCHING (93.33%): 2 instructions differ, 1 extra.
 s32 msgIconStr2ID(const char* str) {
 	MsgIcon* icon;
 	int i;
@@ -334,6 +343,7 @@ s32 msgIconStr2ID(const char* str) {
 
 
 
+// NONMATCHING (1.23%): 80 missing.
 void selectWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param; //cast to correct type
 }

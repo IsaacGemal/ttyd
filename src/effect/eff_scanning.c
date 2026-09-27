@@ -46,6 +46,7 @@ EffectEntry* effScanningEntry(s32 int2, f32 float3, f32 float4, f32 float5) {
 	return entry;
 }
 
+// NONMATCHING (76.48%): 3 instructions differ, 18 missing, 2 extra, plus register differences.
 void effScanningMain(EffectEntry* effect) {
 	BOOL inBattle;
 	Vec disp = { 0 }; //loads Vec from .rodata before being overwritten
@@ -85,6 +86,7 @@ void effScanningMain(EffectEntry* effect) {
 	}
 }
 
+// NONMATCHING (1.59%): empty placeholder, not decompiled yet.
 void effScanningDisp(CameraId camId, void* param) {
 
 }

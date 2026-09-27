@@ -36,6 +36,7 @@ void imgCapture(CameraId camId, void* param);
 
 void imgShadowDisp(CameraId camId, void* param);
 
+// NONMATCHING (95.28%): 2 instructions differ, 3 missing, 2 extra, plus register differences.
 static void zFill(void) { //almost 1:1
 	CameraEntry* camera;
 	f32 x0, x1, y0, y1;
@@ -93,6 +94,7 @@ static void zFill(void) { //almost 1:1
 	GXSetColorUpdate(GX_TRUE);
 }
 
+// NONMATCHING (0.20%): 490 missing.
 void imgDisp(CameraId camId, void* param) {
 	ImageEntry* entry = param;
 	int i;
@@ -103,15 +105,18 @@ void imgDisp(CameraId camId, void* param) {
 
 }
 
+// NONMATCHING (0.61%): 164 missing.
 void imgDisp_ProjPlane(CameraId camId, void* param) {
 	ImageEntry* entry = param;
 
 }
 
+// NONMATCHING (0.31%): empty placeholder, not decompiled yet.
 void imgCapture_Prim(ImageEntry* entry, s32 id) {
 
 }
 
+// NONMATCHING (2.22%): empty placeholder, not decompiled yet.
 void imgCapture(CameraId camId, void* param) {
 	//param is NULL
 	
@@ -123,6 +128,7 @@ void imgInit(void) { //1:1
 	memset(wp->entries, 0, wp->count * sizeof(ImageEntry));
 }
 
+// NONMATCHING (1.72%): empty placeholder, not decompiled yet.
 void imgAutoRelease(s32 type) {
 
 }
@@ -189,6 +195,7 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	return i;
 }
 
+// NONMATCHING (99.88%): 3 instructions differ, plus register differences.
 void imgMain(void) { //1:1
 	s32 type = gp->inBattle != 0;
 	int shadow, i, count;
@@ -282,6 +289,7 @@ void imgSetShadow(ImageEntry* entry, s32 shadowId) { //1:1
 	entry->shadowId = shadowId;
 }
 
+// NONMATCHING (0.25%): 402 missing.
 void imgShadowDisp(CameraId camId, void* param) {
 	ImageEntry* entry = param;
 

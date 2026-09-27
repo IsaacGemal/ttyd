@@ -73,6 +73,7 @@ void logoDisp(CameraId camId, void* param);
 void dummy_draw(CameraId camId, void* param);
 void progDisp(CameraId camId, void* param);
 
+// NONMATCHING (91.68%): 1 instruction differs, 7 missing, 1 extra, plus register differences.
 void seq_logoInit(SequenceWork* work) {
 	memset(wp, 0, sizeof(LogoWork));
 	wp->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
@@ -129,6 +130,7 @@ void seq_logoExit(SequenceWork* work) {
 	fileFree(wp->texture);
 }
 
+// NONMATCHING (92.42%): 12 instructions differ, 16 missing, 7 extra, plus register differences.
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1
 	FileEntry* first;
@@ -264,6 +266,7 @@ void seq_logoMain(SequenceWork* work) {
 }
 
 //param is unused
+// NONMATCHING (98.50%): 3 instructions differ, 2 missing, 5 extra, plus register differences.
 void logoDisp(CameraId camId, void* param) {
 	GXRenderModeObj* rmode;
 	f32 width, x, height, y;
@@ -438,6 +441,7 @@ void logoDisp(CameraId camId, void* param) {
 }
 
 //param is unused
+// NONMATCHING (86.85%): 2 missing, 4 extra, plus register differences.
 void dummy_draw(CameraId camId, void* param) {
 	GXRenderModeObj* rmode;
 	f32 scale;
@@ -457,6 +461,7 @@ void dummy_draw(CameraId camId, void* param) {
 }
 
 //param is unused
+// NONMATCHING (93.43%): 1 instruction differs, 10 missing, 10 extra, plus register differences.
 void progDisp(CameraId camId, void* param) {
 	static OSTime time; //time instance 2
 	const char* msg;

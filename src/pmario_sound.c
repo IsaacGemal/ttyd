@@ -4487,6 +4487,7 @@ void psndInit(void) { //1:1
     SoundSLibLoadDVD("sound/proj/pmario");
 }
 
+// NONMATCHING (85.71%): 3 missing, plus register differences.
 void psndMain(void) { //1:1
     u8 temp_r3;
 
@@ -4543,14 +4544,17 @@ BOOL psndPushGroup(void) {
 
 
 
+// NONMATCHING (0.34%): empty placeholder, not decompiled yet.
 void psndBGMMain(void) {
 
 }
 
+// NONMATCHING (0.07%): empty placeholder, not decompiled yet.
 void psndENVMain(void) {
 
 }
 
+// NONMATCHING (0.13%): empty placeholder, not decompiled yet.
 void psndSFXMain(void) {
 
 }
@@ -4564,6 +4568,7 @@ BOOL psndENVOff(u32 r3) { //probably "id"
 	return psndENVOff_f_d(r3, 0x3E8, 0);
 }
 
+// NONMATCHING (91.16%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
 void psndSFXAllOff(void) {
 	int i;
 
@@ -4586,6 +4591,7 @@ s32 psndSFXOn(const char* sfx_name) {
 	return __psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
+// NONMATCHING (0.55%): empty placeholder, not decompiled yet.
 BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch) {
 
 }
@@ -4599,6 +4605,7 @@ BOOL psndBGMStartCheck(s32 id) {
 	return (SoundSSCheck(bgm->streamId) >> 3) & 1;
 }
 
+// NONMATCHING (68.35%): 1 instruction differs, 9 missing, plus register differences.
 void psndSetFlag(s32 flag) { //1:1 except maybe param
     psnd.unk56 |= flag;
     if (psnd.unk56 & 1) {
@@ -4677,6 +4684,7 @@ void psndBGM_rate(s32 id, u16 rate) {
 	SoundSSSetPlayFreqCh(bgm->streamId, rate);
 }
 
+// NONMATCHING (98.86%): 1 instruction differs, plus register differences.
 s32 psndSFXChk(u32 id) {
 	PaperSoundEffect* sfx;
 	u32 sub;
@@ -4771,6 +4779,7 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
 }
 
+// NONMATCHING (10.00%): 9 missing.
 BOOL psndBGMOff(s32 flags) {
 	return psndBGMOff_f_d(flags, 0x3E8, 0);
 }
@@ -4796,6 +4805,7 @@ void psndSetReverb(s32 mode) {
 	}
 }
 
+// NONMATCHING (81.94%): 2 instructions differ, 1 missing, 1 extra, plus register differences.
 s32 psndENV_LPF(s32 id, s32 freq) {
 	u16* env = (u16*)((u8*)&psnd + 0x18);
 	s32 ret;
@@ -4869,6 +4879,7 @@ void psndSFX_pit(s32 id, u16 pitch) {
 	}
 }
 
+// NONMATCHING (84.28%): 1 instruction differs, 8 missing, 2 extra, plus register differences.
 void psndStopAllFadeOut(void) {
 	int i;
 
@@ -4886,6 +4897,7 @@ void psndStopAllFadeOut(void) {
 	*(s16*)((u8*)&psnd + 0x28) = 0x2D;
 }
 
+// NONMATCHING (96.47%): 2 extra, plus register differences.
 void psndMapChange(void) {
 	int i;
 

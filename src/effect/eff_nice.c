@@ -34,6 +34,7 @@ s32* acrobal_tbl[2] = { acrobat_jp, acrobat_us };
 static void rendermodeFunc(s32 wXluStage);
 void effNiceMain(EffectEntry* effect);
 
+// NONMATCHING (98.91%): same instructions; only register numbers or operands differ.
 BOOL effNiceAsync(s32 group) {
 	const char* name;
 	BOOL valid;
@@ -59,6 +60,7 @@ static void rendermodeFunc(s32 wXluStage) {
 	wp->currDispMode = wXluStage;
 }
 
+// NONMATCHING (96.93%): 4 instructions differ, 2 missing, plus register differences.
 EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	NiceEffectWork *userdata, *ptr;
 	EffectEntry* effect;
@@ -119,6 +121,7 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
+// NONMATCHING (0.41%): empty placeholder, not decompiled yet.
 void effNiceMain(EffectEntry* effect) {
 
 }

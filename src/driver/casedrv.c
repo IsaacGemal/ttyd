@@ -18,6 +18,7 @@ void caseInit(void) {
 	memset(wp->entries, 0, wp->count * sizeof(CaseEntry));
 }
 
+// NONMATCHING (72.86%): 3 instructions differ, 1 missing, 1 extra.
 void caseReInit(void) {
 	int i;
 
@@ -26,6 +27,7 @@ void caseReInit(void) {
 	}
 }
 
+// NONMATCHING (81.75%): 3 instructions differ, 3 missing, 6 extra, plus register differences.
 s32 caseEntry(CaseSetup* setup) {
 	CaseEntry* entry;
 	int i;
@@ -59,6 +61,7 @@ void caseDelete(s32 caseId) {
 	wp->entries[caseId].flags &= ~1u;
 }
 
+// NONMATCHING (0.26%): empty placeholder, not decompiled yet.
 void caseMain(void) {
 
 }

@@ -341,6 +341,7 @@ USER_FUNC(chk_shop_point) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (95.56%): 2 instructions differ, 2 extra, plus register differences.
 USER_FUNC(add_shop_point) {
 	const char* str = str_802ECD50;
 	s32* args = event->args;
@@ -429,6 +430,7 @@ void point_disp(WinMgrEntry* entry) {
 	}
 }
 
+// NONMATCHING (88.48%): 4 instructions differ, 10 missing, 3 extra, plus register differences.
 void name_disp(WinMgrEntry* entry) {
 	ShopWork* wp = (ShopWork*)_wp;
 	GXColor iconColor;

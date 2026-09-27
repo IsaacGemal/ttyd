@@ -508,7 +508,7 @@ USER_FUNC(evt_party_move_behind_mario) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (91.54%): float allocation for tx/tz/d vs the dy/tmp temporaries is shifted by
+// NONMATCHING (91.65%): float allocation for tx/tz/d vs the dy/tmp temporaries is shifted by
 // two registers, party/grounded use r31/r28 instead of r28/r29, int->float conversion stack
 // slots differ, and the partySearchGround result is tested with cmpwi instead of cmplwi.
 USER_FUNC(evt_party_jump_pos) {

@@ -44,6 +44,7 @@ f32 bom_ry[10] = {
 void effExpBomMain(EffectEntry* effect);
 void effExpBomDisp(CameraId camId, void* param);
 
+// NONMATCHING (86.29%): 1 instruction differs, 9 missing, 5 extra, plus register differences.
 EffectEntry* effExpBomN64Entry(f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effExpBomData* data;
@@ -81,6 +82,7 @@ EffectEntry* effExpBomN64Entry(f32 x, f32 y, f32 z) {
 	return effect;
 }
 
+// NONMATCHING (64.39%): 4 instructions differ, 24 missing, 6 extra, plus register differences.
 void effExpBomMain(EffectEntry* effect) {
 	BOOL disp;
 	effExpBomData* data;
@@ -111,6 +113,7 @@ void effExpBomMain(EffectEntry* effect) {
 	}
 }
 
+// NONMATCHING (0.23%): 432 missing.
 void effExpBomDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param; //cast to correct type
 

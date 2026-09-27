@@ -10,6 +10,7 @@
 extern BattleWork* _battleWorkPointer;
 extern GlobalWork* gp;
 
+// NONMATCHING (0.00%): 8 instructions differ, 4 missing, 41 extra, plus register differences.
 void BattlePadInit(void) {
 	int i;
 
@@ -18,6 +19,7 @@ void BattlePadInit(void) {
 	}
 }
 
+// NONMATCHING (76.50%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattlePadManager(void) {
 	int i;
 
@@ -26,6 +28,7 @@ void BattlePadManager(void) {
 	}
 }
 
+// NONMATCHING (4.30%): 6 instructions differ, 17 missing, 20 extra, plus register differences.
 void BtlPad_WorkInit(BattleWorkPad* pad) {
 	int i;
 
@@ -52,6 +55,7 @@ void BtlPad_WorkInit(BattleWorkPad* pad) {
 	pad->mHoldRepeatFrameCounter = 0;
 }
 
+// NONMATCHING (17.14%): 6 instructions differ, 23 missing, 126 extra, plus register differences.
 void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan) {
 	int i, repeat;
 
@@ -148,6 +152,7 @@ u32 BattlePadGetNow(void) {
 	return _battleWorkPointer->padWork[0].mButtonsHistory[0];
 }
 
+// NONMATCHING (22.00%): 3 instructions differ, 6 missing.
 u32 BattlePadCheckTrigger(s32 mask) {
 	return BattlePadMultiCheckTrigger(0, mask);
 }
@@ -157,15 +162,18 @@ u32  BattlePadMultiCheckTrigger(s32 chan, s32 mask) {
 	return history[0] & mask;
 }
 
+// NONMATCHING (1.82%): 3 instructions differ, 7 missing, 2 extra.
 u32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
 	return BattlePadMultiCheckRecordTrigger(0, frame, mask);
 }
 
+// NONMATCHING (98.75%): same instructions; only register numbers or operands differ.
 u32 BattlePadMultiCheckRecordTrigger(s32 chan, s32 frame, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsPressedHistory;
 	return mask & history[frame];
 }
 
+// NONMATCHING (22.00%): 3 instructions differ, 6 missing.
 u32 BattlePadCheckNow(s32 mask) {
 	return BattlePadMultiCheckNow(0, mask);
 }
@@ -175,6 +183,7 @@ u32 BattlePadMultiCheckNow(s32 chan, s32 mask) {
 	return history[0] & mask;
 }
 
+// NONMATCHING (22.00%): 3 instructions differ, 6 missing.
 u32 BattlePadCheckUp(s32 mask) {
 	return BattlePadMultiCheckUp(0, mask);
 }
@@ -184,6 +193,7 @@ u32 BattlePadMultiCheckUp(s32 chan, s32 mask) {
 	return history[0] & mask;
 }
 
+// NONMATCHING (22.00%): 3 instructions differ, 6 missing.
 u32 BattlePadCheckRepeat(s32 mask) {
 	return BattlePadMultiCheckRepeat(0, mask);
 }

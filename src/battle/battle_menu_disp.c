@@ -123,6 +123,7 @@ void BattleMenuDisp_ChangePartySelect_Init(BattleWork* wp, u32 flags) {
     }
 }
 
+// NONMATCHING (85.16%): 1 instruction differs, 1 missing, 3 extra.
 void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
     BattleMenuWork* window;
@@ -142,6 +143,7 @@ void BattleMenuDisp_Operation_Init(BattleWork* wp, u32 flags) {
     }
 }
 
+// NONMATCHING (83.10%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* arg, u32 flags) {
     BattleMenuWork* window = 0;
     BattleCursor* cursor = 0;
@@ -157,6 +159,7 @@ void BattleMenuDisp_WeaponSelect_Init(BattleWork* wp, BattleCursor* menu, void* 
 // These are called, never inlined, in the original build. The unit's configure
 // entry still uses the default `-inline auto`, so keep them out of line here.
 #pragma dont_inline on
+// NONMATCHING (7.97%): 11 instructions differ, 6 missing, 53 extra, plus register differences.
 void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, BattleCursor* menu) {
     BattleWork* wp = _battleWorkPointer;
     s32 i;
@@ -295,6 +298,7 @@ void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
     }
 }
 
+// NONMATCHING (49.16%): 4 instructions differ, 22 missing, 46 extra, plus register differences.
 void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 idx, s32 mode) {
     s32 i;
 
@@ -337,6 +341,7 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     }
 }
 
+// NONMATCHING (80.50%): 1 instruction differs, 5 missing, 12 extra, plus register differences.
 void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32 flags) {
     s32 i;
     s32 idx;
@@ -394,6 +399,7 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
+// NONMATCHING (90.09%): 6 instructions differ, 6 missing, 1 extra, plus register differences.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0xCF};
     s8 text[4][0x30];
@@ -464,6 +470,7 @@ void DrawMenuPartyChangeButton_Sub(void* tex, f32 x, f32 y, f32 angle) {
     }
 }
 
+// NONMATCHING (83.93%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.7124f - angle;
     f32 c = 80.0f * (f32)cos(a);

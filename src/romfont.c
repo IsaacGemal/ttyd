@@ -174,6 +174,7 @@ static RomFontChar* romFontFindChar(u16 code) {
 }
 
 // Not quite matched, see: https://decomp.me/scratch/cdEUS
+// NONMATCHING (99.67%): 1 instruction differs, plus register differences.
 void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ...) {
     char buf[1024];  // 0x158
     Mtx mtx;         // 0x128
@@ -270,6 +271,7 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
+// NONMATCHING (2.06%): empty placeholder, not decompiled yet.
 s32 romFontGetWidth(const char* message) {
     return 0;
 }

@@ -17,6 +17,7 @@ static OffscreenWork work[2]; //field, battle
 //local prototypes
 void offscreenDisp(CameraId camId, void* param);
 
+// NONMATCHING (85.77%): 2 instructions differ, 2 missing, 1 extra, plus register differences.
 void offscreenInit(void) { //TODO: fix r31
 	work[0].count = 10;
 	work[0].entries = __memAlloc(HEAP_DEFAULT, work[0].count * sizeof(OffscreenEntry));
@@ -63,6 +64,7 @@ s32 offscreenEntry(const char* name) { //1:1, needs variable names
 	return i;
 }
 
+// NONMATCHING (1.33%): empty placeholder, not decompiled yet.
 void offscreenDisp(CameraId camId, void* param) {
 	//param is null
 
@@ -90,6 +92,7 @@ void offscreenMain(void) { //1:1, need variable names
 	dispEntry(CAMERA_OFFSCREEN2, 0.0f, 7, offscreenDisp, NULL);
 }
 
+// NONMATCHING (99.89%): 2 instructions differ.
 void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom) { //1:1
 	OffscreenEntry* entry;
 

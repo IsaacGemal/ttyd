@@ -3,6 +3,7 @@
 
 extern BattleWork* _battleWorkPointer;
 
+// NONMATCHING (57.38%): 1 instruction differs, 2 missing, 6 extra, plus register differences.
 void btlsubResetMoveColorLvAll(BattleWork* work) {
 	BattleUnit* unit;
 	int i;
@@ -15,6 +16,7 @@ void btlsubResetMoveColorLvAll(BattleWork* work) {
 	}
 }
 
+// NONMATCHING (70.53%): 7 instructions differ, 7 missing, 3 extra, plus register differences.
 s32 BattleTransID(EventEntry* evt, s32 type) {
 	BattleUnit* unit;
 

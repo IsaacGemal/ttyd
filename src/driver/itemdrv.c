@@ -97,6 +97,7 @@ void itemReInit(void) {
 
 
 
+// NONMATCHING (14.78%): 9 instructions differ, 434 missing, 8 extra, plus register differences.
 ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5, f32 a6, f32 a7, f32 a8) {
 	ItemWork* wp = itemGetWork();
 	ItemEntry* entry;
@@ -149,6 +150,7 @@ ItemEntry* itemEntry(const char* name, ItemType type, s32 a3, s32 evtId, s32 a5,
 }
 
 
+// NONMATCHING (0.24%): empty placeholder, not decompiled yet.
 void itemMain(void) {
 
 }

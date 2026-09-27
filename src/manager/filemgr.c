@@ -47,6 +47,7 @@ void fileInit(void) {
 	afp->lastavailable->next = NULL;
 }
 
+// NONMATCHING (16.42%): 3 instructions differ, 350 missing, 1 extra, plus register differences.
 void fileGarbageDataAdrClear(FileEntry* entry) {
 	TEXPalette* tpl;
 	TEXHeader* img;
@@ -89,14 +90,17 @@ void fileGarbageDataAdrClear(FileEntry* entry) {
 	//case 5, AnimationPoseData*, state 1
 }
 
+// NONMATCHING (0.24%): empty placeholder, not decompiled yet.
 void fileGarbageDataAdrSet(void* data, u8 type) {
 
 }
 
+// NONMATCHING (2.00%): empty placeholder, not decompiled yet.
 void fileGarbageMoveMem(void* data, FileEntry* file) {
 	
 }
 
+// NONMATCHING (0.81%): empty placeholder, not decompiled yet.
 void _fileGarbage(BOOL a1) {
 
 }
@@ -224,6 +228,7 @@ FileEntry* _fileAlloc(const char* filename, u8 type, void (*callback)(FileEntry*
 	return newentry;
 }
 
+// NONMATCHING (89.41%): 3 instructions differ.
 void fileFree(FileEntry* handle) {
 	if (handle) {
 		if (handle->data) {
@@ -237,6 +242,7 @@ void fileFree(FileEntry* handle) {
 	}
 }
 
+// NONMATCHING (2.08%): empty placeholder, not decompiled yet.
 void dvdReadDoneCallBack(s32 error, DVDFileInfo* info) {
 
 }
@@ -249,6 +255,7 @@ s32 fileAsyncf(u8 type, FileCallback callback, const char* format, ...) {
 	return fileAsync(_filename, type, callback);
 }
 
+// NONMATCHING (85.73%): 9 instructions differ, 22 missing, 6 extra, plus register differences.
 s32 fileAsync(const char* filename, u8 type, FileCallback callback) {
 	FileEntry *search, *newentry, *temp;
 	smartEntry* smart;

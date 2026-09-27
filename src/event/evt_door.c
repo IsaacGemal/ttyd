@@ -95,6 +95,7 @@ USER_FUNC(evt_door_data_copy) {
 	return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (95.29%): 1 instruction differs, 1 extra, plus register differences.
 USER_FUNC(npc_hide_onoff) {
 	s32* args = event->args;
 	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);

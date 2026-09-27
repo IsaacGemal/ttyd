@@ -87,6 +87,7 @@ USER_FUNC(johoya_data_free) {
     return 2;
 }
 
+// NONMATCHING (97.84%): 2 instructions differ, 2 missing, plus register differences.
 s32 johoya_data_make(const char* prefix, s32 type) {
     InformantWork* wp = &_jdt;
     char label[64];

@@ -6,6 +6,7 @@
 #include <string.h>
 #include "manager/evtmgr_cmd.h"
 
+// NONMATCHING (16.68%): 5 instructions differ, 529 missing, plus register differences.
 USER_FUNC(evt_eff) {
 	s32* args = event->args;
 	EffectEntry* entry = NULL;
@@ -76,6 +77,7 @@ USER_FUNC(evt_eff) {
 
 
 
+// NONMATCHING (11.58%): 7 instructions differ, 996 missing, 4 extra, plus register differences.
 USER_FUNC(evt_eff64) {
 	s32* args = event->args;
 	const char* effName;

@@ -127,6 +127,7 @@ f32 reviseAngle(f32 angle) {
     return result;
 }
 
+// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 f32 distABf(f32 x1, f32 y1, f32 x2, f32 y2) {
     f32 xdiff, ydiff;
 

@@ -492,6 +492,7 @@ inline Vec initializeVec(Vec* input) {
 }
 
 
+// NONMATCHING (99.28%): same instructions; only register numbers or operands differ.
 void effUltraHammerDisp(enum CameraId camId, void *param) { //minor regalloc
     EffectEntry *effect;
     EffUltraHammerData *data;

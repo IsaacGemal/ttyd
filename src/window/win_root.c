@@ -227,6 +227,7 @@ s32 N_compare_func4_2_r(void* a, void* b) {
     }
 }
 
+// NONMATCHING (80.65%): 3 missing, 3 extra.
 s32 N_compare_func4_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -238,6 +239,7 @@ s32 N_compare_func4_1(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
+// NONMATCHING (79.84%): 3 missing, 3 extra, plus register differences.
 s32 N_compare_func4_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -309,6 +311,7 @@ s32 compare_func6_2_r(void* a, void* b) {
     }
 }
 
+// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
 s32 compare_func5_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -320,6 +323,7 @@ s32 compare_func5_1(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
+// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
 s32 compare_func5_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -331,6 +335,7 @@ s32 compare_func5_1_r(void* a, void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
+// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
 s32 compare_func6_1(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -342,6 +347,7 @@ s32 compare_func6_1(void* a, void* b) {
     return strcmp((char*)buf_a, (char*)buf_b);
 }
 
+// NONMATCHING (69.03%): 2 instructions differ, 5 missing, 5 extra.
 s32 compare_func6_1_r(void* a, void* b) {
     u16 buf_a[64];
     u16 buf_b[64];
@@ -353,6 +359,7 @@ s32 compare_func6_1_r(void* a, void* b) {
     return strcmp((char*)buf_b, (char*)buf_a);
 }
 
+// NONMATCHING (92.86%): 1 missing, 1 extra.
 s32 compare_func4(void* a, void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
@@ -362,6 +369,7 @@ s32 compare_func4(void* a, void* b) {
     return strcmp(sa, sb);
 }
 
+// NONMATCHING (92.31%): 1 missing, 1 extra.
 s32 compare_func4_r(void* a, void* b) {
     void* ma = mailGetPtr(*(u8*)((u8*)a + 1));
     void* mb = mailGetPtr(*(u8*)((u8*)b + 1));
@@ -382,6 +390,7 @@ void sort_7_1_func(WindowWork* work) {
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
 }
 
+// NONMATCHING (73.70%): 6 instructions differ, 2 missing, 6 extra, plus register differences.
 void sort_7_3_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);
@@ -417,6 +426,7 @@ void sort_8_2_func(WindowWork* work) {
     WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
 }
 
+// NONMATCHING (73.70%): 6 instructions differ, 2 missing, 6 extra, plus register differences.
 void sort_7_2_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         qqsort((u8*)work + 0x1050, WW_S32(work, 0x1038), 2, compare_func1);

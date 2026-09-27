@@ -113,6 +113,7 @@ static f32 shadow_vtx[12] = {-1.2f, 0.0f, -1.2f, -1.2f, 0.0f, 1.2f, 1.2f, 0.0f, 
 static f32 shadow_vtx_pad[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 static f32 shadow_coord[8] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
+// NONMATCHING (99.69%): same instructions; only register numbers or operands differ.
 void extDrawShadow(void) {
 	ExtWork* wp = extGetWork();
 	s32 i;
@@ -202,6 +203,7 @@ void extLoadTextureExit(void) {
 	GXTexModeSync();
 }
 
+// NONMATCHING (94.53%): 2 extra, plus register differences.
 void extLoadTexture(void) {
 	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
@@ -319,6 +321,7 @@ static s32 compare(void* a, void* b) {
 	return 0;
 }
 
+// NONMATCHING (80.88%): 10 instructions differ, 12 missing, 22 extra, plus register differences.
 void extMain(void) {
 	ExtWork* wp = extGetWork();
 	ExtPose* pose;
@@ -455,6 +458,7 @@ void extReset(void) {
 	memset(wp, 0, 0x70);
 }
 
+// NONMATCHING (69.56%): 11 instructions differ, 35 missing, 20 extra, plus register differences.
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;

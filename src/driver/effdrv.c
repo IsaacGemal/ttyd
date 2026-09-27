@@ -125,6 +125,7 @@ void effInit(void) {
 	effInit64();
 }
 
+// NONMATCHING (83.63%): 2 instructions differ, 5 missing, 5 extra, plus register differences.
 void effTexSetup(void) {
 	DVDEntry* entry;
 	char path[128];
@@ -148,6 +149,7 @@ void effTexSetup(void) {
 	effTexSetupN64();
 }
 
+// NONMATCHING (98.67%): 1 instruction differs, plus register differences.
 void effGetTexObj(u32 id, GXTexObj* obj) {
 #ifdef __MWERKS__
 #pragma explicit_zero_data on
@@ -173,6 +175,7 @@ void effGetTexObj(u32 id, GXTexObj* obj) {
 #endif
 }
 
+// NONMATCHING (48.68%): 3 instructions differ, 4 missing, 11 extra, plus register differences.
 void effAutoRelease(BOOL inBattle) {
 	EffectEntry* entry = wp->entries;
 	int i;
@@ -204,6 +207,7 @@ EffectEntry* effEntry(void) {
 	return entry;
 }
 
+// NONMATCHING (51.61%): 3 instructions differ, 3 missing, 10 extra, plus register differences.
 void effSetName(EffectEntry* effect, const char* name) {
 	EffectEntry* entry = wp->entries;
 	int i;
@@ -216,6 +220,7 @@ void effSetName(EffectEntry* effect, const char* name) {
 	strcpy(effect->name, name);
 }
 
+// NONMATCHING (84.22%): 7 instructions differ, 6 missing, 4 extra, plus register differences.
 void effMain(void) {
 	const char *dvdroot, *prefix;
 	EffectEntry* entry = wp->entries;
@@ -270,6 +275,7 @@ void effSoftDelete(EffectEntry* effect) {
 	}
 }
 
+// NONMATCHING (68.58%): 4 instructions differ, 4 missing, 5 extra, plus register differences.
 EffectEntry* effNameToPtr(const char* name) {
 	EffectEntry* entry = wp->entries;
 	int i;
@@ -287,6 +293,7 @@ EffectEntry* effNameToPtr(const char* name) {
 	}
 }
 
+// NONMATCHING (77.38%): 3 instructions differ, 6 missing, plus register differences.
 EffectSet* effGetSet(const char* name) {
 	EffectSet* set = eff_set_table;
 
