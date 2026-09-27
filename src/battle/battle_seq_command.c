@@ -645,8 +645,14 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	_btlcmd_MakeSelectWeaponTable(wp, (void*)arg);
 	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
+#ifdef MUST_MATCH
+	// the field is already s8; the no-op cast changes the scheduling (98.75% without it)
 	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
 	                    *(s32*)&weapon->field_64[4], (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+#else
+	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
+	                    *(s32*)&weapon->field_64[4], wp->alliances[unit->mAlliance].attackDirection);
+#endif
 
 	work[0xAB7] = 0;
 	if (*(s32*)&weapon->field_64[4] & 0x30000000) {

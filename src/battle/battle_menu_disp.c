@@ -559,7 +559,7 @@ void DrawMenuPartyChangeButton(void) {
 }
 
 void GetRingOffset(f32* x, f32* y, f32 angle) {
-    f32 a = 4.7124f - angle;
+    f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);
     *x = c;
     *y = 35.0f * (f32)sin(a);

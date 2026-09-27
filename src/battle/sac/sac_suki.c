@@ -86,7 +86,7 @@ extern Vec vec3_80300a90;
 extern u8 N_ohko_rate_tbl[6];
 extern u8 weapon[];
 extern s32 nice_event[];
-extern u32 dat_804220a0;
+extern const GXColor dat_804220a0;
 
 static SukiWork* get_ptr(void);
 static void main_base(void);
@@ -119,7 +119,7 @@ void set_tev(SukiTevParam* param) {
     GXSetTevAlphaIn(0, 7, 7, 7, 1);
     {
         GXColor color;
-        color = *(GXColor*)&dat_804220a0;
+        color = dat_804220a0;
         color.r = flash;
         color.g = flash;
         color.b = flash;

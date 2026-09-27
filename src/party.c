@@ -914,7 +914,7 @@ void getRidePos(PartyEntry* party, Vec* pos) {
     u16 id = P16(mario, 0x2E);
 
     if (id == 0x1A) {
-        angle = 3.1416f * toMovedir(PF32(mario, 0x1AC)) / 180.0f;
+        angle = 3.1415927f * toMovedir(PF32(mario, 0x1AC)) / 180.0f;
         if (yoshiGetStatus() != 2) {
             pos->x = PF32(mario, 0x8C) - 10.0f * (f32)sin(angle);
             pos->z = PF32(mario, 0x94) - 10.0f * (f32)cos(angle);

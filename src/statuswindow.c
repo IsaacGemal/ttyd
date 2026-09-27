@@ -211,7 +211,7 @@ void statusWinMain(void) {
         } else {
             f32 c;
 
-            c = (f32)cos(3.1416f * wp->field_0x8 / wp->field_0xC);
+            c = (f32)cos(3.1415927f * wp->field_0x8 / wp->field_0xC);
             wp->field_0x10 = (wp->field_0x18 - *(f32*)((u8*)wp + 0x14)) * (1.0f - c) * 0.5f + *(f32*)((u8*)wp + 0x14);
         }
 

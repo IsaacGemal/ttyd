@@ -192,10 +192,9 @@ void* kpaGetHitobjHead(s32 index) {
     return kpa->head[index];
 }
 
-// The original is a no-op stub (`li r3, 0; blr`).  The return type is void* -- the header previously said
-// `void`, which cannot produce the original's `li r3, 0` (see REPORT.md).
+// The original is a stub that returns NULL (`li r3, 0; blr`); its callers ignore the result.
 void* kpaSearchFrontUnder(void) {
-    return (void*)(s32)0;
+    return NULL;
 }
 
 

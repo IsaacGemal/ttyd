@@ -18,7 +18,6 @@
 #include "matching.h"
 
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.
-// Offsets are listed in REPORT.md.
 #define MW(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MWS32(m, off) (*(s32*)((u8*)(m) + (off)))
 #define MWS16(m, off) (*(s16*)((u8*)(m) + (off)))

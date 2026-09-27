@@ -43,7 +43,7 @@ void* _mapAlloc(u32 size);
 void* _mapAllocTail(u32 size);
 void _mapFree(void* alloc);
 void smartInit(void);
-void smartReInit(void);
+void L_smartReInit(void);
 void smartAutoFree(u32 a1);
 void smartFree(smartEntry* entry);
 smartEntry* smartAlloc(u32 size, u8 type);

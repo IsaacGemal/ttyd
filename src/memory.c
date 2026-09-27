@@ -307,7 +307,8 @@ void smartInit(void) {
 	g_bFirstSmartAlloc = FALSE;
 }
 
-void smartReInit(void) {
+// NONMATCHING (59.39%): 1 instruction differs, 9 missing, 24 extra, plus register differences.
+void L_smartReInit(void) {
 	u32 size;
 	smartEntry* entry;
 	int i;
@@ -328,7 +329,6 @@ void smartReInit(void) {
 	wp->head->prev = NULL;
 	wp->tail = &wp->work[0x7FF];
 	wp->tail->next = NULL;
-	wp->waitsync = 0;
 	g_bFirstSmartAlloc = 0;
 }
 

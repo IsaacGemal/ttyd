@@ -26,7 +26,7 @@ typedef struct StickRotateWork {
     s32 field_0x14;   // 0x14, post-AC timer
 } StickRotateWork;
 
-// Float literals the original unit emitted into .sdata2 (offsets listed in REPORT.md).
+// Float literals the original unit emitted into .sdata2.
 extern const f32 float_neg200_804204d0;
 extern const f32 float_70_804204d4;
 extern const f32 float_1_804204d8;
@@ -59,7 +59,7 @@ void battleAcDelete_StickRotate(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// NONMATCHING (71.69%): 1 instruction differs, 4 missing, 28 extra, plus register differences.
+// NONMATCHING (93.90%): 1 instruction differs, 3 missing, 3 extra, plus register differences.
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -120,7 +120,7 @@ void actionCommandDisp2(f32 x, f32 y) {
     }
 }
 
-// NONMATCHING (25.47%): 4 instructions differ, 5 missing, 104 extra, plus register differences.
+// NONMATCHING (94.53%): 4 instructions differ, 1 missing, 4 extra, plus register differences.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
@@ -179,6 +179,8 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 
+// dont_inline: the original calls _get_icon_id from both display functions.
+#pragma dont_inline on
 s32 _get_icon_id(s32 id) {
     switch ((s8)id) {
         case 1:
@@ -201,10 +203,11 @@ s32 _get_icon_id(s32 id) {
             return 0x79;
     }
 }
+#pragma dont_inline reset
 
 // NONMATCHING (95.67%): the disp pointer is folded into the BattleWork base; everything else matches.
 void battleAcDisp_StickRotate(CameraId camId, void* param) {
-    register BattleACDispParams* disp =
+    BattleACDispParams* disp =
         &((BattleWork*)param)->actionCommands.dispParams;
     void (*disp_fn)(f32, f32);
 

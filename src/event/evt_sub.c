@@ -678,15 +678,15 @@ USER_FUNC(evt_sub_get_coin) {
 	cam = camGetPtr(4);
 	yaw = cam->viewYaw;
 	f1 = (100.0f * yaw + 5.0f) / 100.0f;
-	f2 = 6.2832f * reviseAngle(f1);
+	f2 = 6.2831855f * reviseAngle(f1);
 	f6 = f2 / 360.0f;
 
 	f4 = 0.00761f;
 	f3 = 0.16605f;
 	f2 = 1.0f;
-	f1 = 3.1416f;
+	f1 = 3.1415927f;
 	if (f6 <= f1) {
-		f1 = 1.5708f;
+		f1 = 1.5707964f;
 		if (f6 <= f1) {
 			f0 = f6 * f6;
 			f4 = f4 * f0 - f3;
@@ -701,7 +701,7 @@ USER_FUNC(evt_sub_get_coin) {
 			f4 = f4 * f1;
 		}
 	} else {
-		f0 = 4.7124f;
+		f0 = 4.712389f;
 		if (f6 < f0) {
 			f1 = f6 - f1;
 			f0 = f1 * f1;
@@ -711,7 +711,7 @@ USER_FUNC(evt_sub_get_coin) {
 			f4 = -f4;
 		} else {
 			f0 = f6 - f0;
-			f1 = 1.5708f;
+			f1 = 1.5707964f;
 			f1 = f1 - f0;
 			f0 = f1 * f1;
 			f4 = f4 * f0 - f3;
@@ -721,14 +721,14 @@ USER_FUNC(evt_sub_get_coin) {
 		}
 	}
 
-	f1 = 3.1416f;
+	f1 = 3.1415927f;
 	f0 = 10.0f;
 	f5 = 0.03705f;
 	f4 = f0 * f4;
 	f3 = 0.4967f;
 	f2 = 1.0f;
 	if (f6 <= f1) {
-		f1 = 1.5708f;
+		f1 = 1.5707964f;
 		if (f6 <= f1) {
 			f0 = f6 * f6;
 			f5 = f5 * f0 - f3;
@@ -742,7 +742,7 @@ USER_FUNC(evt_sub_get_coin) {
 			f5 = -f5;
 		}
 	} else {
-		f0 = 4.7124f;
+		f0 = 4.712389f;
 		if (f6 < f0) {
 			f0 = f6 - f1;
 			f0 = f0 * f0;
@@ -751,7 +751,7 @@ USER_FUNC(evt_sub_get_coin) {
 			f5 = -f5;
 		} else {
 			f0 = f6 - f0;
-			f1 = 1.5708f;
+			f1 = 1.5707964f;
 			f0 = f1 - f0;
 			f0 = f0 * f0;
 			f5 = f5 * f0 - f3;
@@ -839,7 +839,6 @@ USER_FUNC(evt_sub_get_coin) {
 }
 
 // NONMATCHING (99.27%): same instructions; only register numbers or operands differ.
-#pragma opt_propagation off
 USER_FUNC(evt_sub_check_intersect) {
 	s32* args = event->args;
 	f32 a, b, c, d, e, f, g, h;

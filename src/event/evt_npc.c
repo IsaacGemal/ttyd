@@ -854,7 +854,7 @@ USER_FUNC(evt_npc_jump_position_nohit) {
 // Full translation; only the callee-saved register assignment differs from the original: ours
 // puts targetY/targetZ/moveTime in f29/f27/f28 and speed/arcHeight in f30/f31, the original uses
 // f27/f28/f29/f31/f30. The rest of the mismatches cascade from those register choices.
-// NONMATCHING (42.26%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
+// NONMATCHING (40.44%): 13 instructions differ, 3 missing, 200 extra, plus register differences.
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
@@ -949,8 +949,8 @@ USER_FUNC(evt_npc_glide_position) {
 
     dy = npc->jumpTargetPos.y - npc->jumpStartPos.y;
     npc->moveOffset.y += dy * delta;
-    t = (f32)sin(3.1416f * b);
-    a = (f32)sin(3.1416f * a);
+    t = (f32)sin(3.1415927f * b);
+    a = (f32)sin(3.1415927f * a);
     npc->moveOffset.y += arcHeight * (a - t);
 
     sfxFlag = 0;
@@ -2384,7 +2384,7 @@ USER_FUNC(evt_npc_add_dirdist) {
     dist = evtGetFloat(event, args[3]);
     x = evtGetFloat(event, outX);
     z = evtGetFloat(event, outZ);
-    rad = angle * 6.2832f / 360.0f;
+    rad = angle * 6.2831855f / 360.0f;
     s = (f32)sin(rad);
     c = (f32)cos(rad);
     x = x + dist * s;
@@ -2421,7 +2421,7 @@ USER_FUNC(evt_npc_set_ry_lr) {
 // use an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into
 // fnmsubs and matches those cases (86.12% -> 90.25%). Cases 7/8/10 still fuse where the original
 // does two separate fmuls, and the case 11/12 operand register differs; logic is equivalent.
-// NONMATCHING (90.25%): fused fnmsubs in cases 7/8/10 and the case 11/12 operand register.
+// NONMATCHING (94.67%): 2 instructions differ, 4 missing, 1 extra, plus register differences.
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
     if (tt > 1.0f) {
@@ -2436,10 +2436,16 @@ f32 _intplGetFloat(s32 type, f32 t) {
             return tt * tt * tt;
         case 3:
             return tt * tt * tt * tt;
-        case 7:
-            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt / 3.1416f));
-        case 8:
-            return 1.0f - (1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 15.0f);
+        case 7: {
+            f32 c = (f32)cos(4.0f * (tt / 3.1415927f));
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * c);
+        }
+        case 8: {
+            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 15.0f);
+            f32 a = 1.0f - tt;
+            return 1.0f - a * (a * c);
+        }
         case 4: {
             f32 a = 1.0f - tt;
             return 1.0f - a * a;
@@ -2452,14 +2458,21 @@ f32 _intplGetFloat(s32 type, f32 t) {
             f32 a = 1.0f - tt;
             return 1.0f - a * (a * (a * a));
         }
-        case 10:
-            return 1.0f - fabsf((1.0f - tt) * (1.0f - tt) * (f32)cos(4.0f * (tt * tt / 3.1416f) / 40.0f));
+        case 10: {
+            f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 40.0f);
+            f32 a = 1.0f - tt;
+            f32 v = a * (a * c);
+            if (v < 0.0f) {
+                v = -v;
+            }
+            return 1.0f - v;
+        }
         case 11:
-            return 0.5f * (1.0f - (f32)cos(3.1416f * tt));
+            return 0.5f * (1.0f - (f32)cos(3.1415927f * tt));
         case 12:
-            return (f32)sin(1.5708f * tt);
+            return (f32)sin(1.5707964f * tt);
         case 13:
-            return 1.0f - (f32)cos(1.5708f * tt);
+            return 1.0f - (f32)cos(1.5707964f * tt);
     }
     return 0.0f;
 }

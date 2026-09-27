@@ -135,8 +135,7 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (97.69%): logic matches; only float/integer register allocation
-// differs (original: px=f6, py=f3, zero=f1, count=r9; here py=f7, zero=f8, count=r10).
+// NONMATCHING (97.82%): same instructions; only register numbers or operands differ.
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
@@ -150,8 +149,8 @@ s32 scissor_damage_sub2(Vec* point) {
     for (i = 0; i < count; i++) {
         f32* tri = (f32*)((u8*)work->field_0x118 + i * 0x18);
         for (j = 0; j < 3; j++) {
-            cross[j] = (py - tri[j + 3]) * (tri[(j + 1) % 3] - tri[j]) -
-                       (px - tri[j]) * (tri[((j + 1) % 3) + 3] - tri[j + 3]);
+            cross[j] = (px - tri[j]) * (tri[((j + 1) % 3) + 3] - tri[j + 3]) -
+                       (py - tri[j + 3]) * (tri[(j + 1) % 3] - tri[j]);
         }
         if ((cross[0] > zero && cross[1] > zero && cross[2] > zero) ||
             (cross[0] < zero && cross[1] < zero && cross[2] < zero)) {

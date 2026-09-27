@@ -888,7 +888,7 @@ USER_FUNC(evt_bero_move_mario_speed) {
 		event->savedTime = now;
 	}
 	sec = sysFrame2SecFloat(speed);
-	rad = 6.2832f * reviseAngle(angleABf(BeroSX, BeroSY, BeroEX, BeroEY)) / 360.0f;
+	rad = 6.2831855f * reviseAngle(angleABf(BeroSX, BeroSY, BeroEX, BeroEY)) / 360.0f;
 	sn = (f32)sin(rad);
 	cs = (f32)cos(rad);
 	frames = sysMsec2Frame((s32)OSTicksToMilliseconds((u64)(s64)(s32)((s32)now - (s32)event->savedTime)));
