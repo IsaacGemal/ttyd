@@ -260,12 +260,10 @@ USER_FUNC(evt_mario_goodbye_party) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.62%): `s8 prev` sign-extension lands in r0 (`extsb. r0,r3`) where the original extends r3 in
-// place (`extsb. r3,r3`), so both partyEntry*Pos calls need an extra `extsb r3,r3`.
 USER_FUNC(evt_mario_set_prev_party_pos) {
     s32* args = event->args;
     s32 first = isFirstCall;
-    s8 prev;
+    s32 prev;
     s32 slot;
     f32 x;
     f32 y;
@@ -301,11 +299,10 @@ USER_FUNC(evt_mario_set_prev_party_pos) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.80%): same `extsb r0` vs `extsb r3` sign-extension issue as set_prev_party_pos.
 USER_FUNC(evt_mario_set_prev_party) {
     s32 slot;
     s32* args = event->args;
-    s8 prev;
+    s32 prev;
     s32 ret;
     MarioWork* mario = marioGetPtr();
     slot = args[0];
@@ -1015,15 +1012,17 @@ USER_FUNC(evt_mario_hello_party) {
     }
 }
 
-// NONMATCHING (80.71%): `extsb` destination, branch layout, and Vec copy scheduling.
+// NONMATCHING (88.35%): the s32 `prev` fix is in; what remains is the 12-byte Vec copy at 0x70: the compiler
+// schedules the second `flags` reload after the first two Vec loads and picks r5 (not r4) for the Vec base.
 USER_FUNC(evt_mario_set_prev_party_dokan) {
     s32 first = isFirstCall;
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 slot = args[0];
-    s8 prev;
+    s32 prev;
     s32 ret;
     PartyEntry* party;
+    Vec* pos;
 
     if (first) {
         if (mario->currPartySlotId[slot] >= 0) {
@@ -1038,15 +1037,15 @@ USER_FUNC(evt_mario_set_prev_party_dokan) {
         } else {
             ret = partyEntry2(prev);
         }
-        if (ret < 0) {
-            return EVT_RETURN_DONE;
+        if (ret >= 0) {
+            mario->currPartySlotId[slot] = ret;
+            party = partyGetPtr(ret);
+            partyChgRunMode(party, 0);
+            party->flags |= 0x04000000;
+            party->flags |= 0x02000000;
+            pos = (Vec*)((u8*)party + 0x70);
+            *pos = vec3_802e58e8;
         }
-        mario->currPartySlotId[slot] = ret;
-        party = partyGetPtr(ret);
-        partyChgRunMode(party, 0);
-        party->flags |= 0x04000000;
-        party->flags |= 0x02000000;
-        *(Vec*)((u8*)party + 0x70) = vec3_802e58e8;
     }
     return EVT_RETURN_DONE;
 }
@@ -1229,7 +1228,6 @@ USER_FUNC(evt_mario_set_dir_npc) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.10%): our compiler folds the original's redundant `beq dec; b final` into `bne final`.
 USER_FUNC(evt_koopa_fire) {
     s32 first = isFirstCall;
     s32* args = event->args;
@@ -1242,11 +1240,13 @@ USER_FUNC(evt_koopa_fire) {
         marioChgMot(0);
     }
 
-    if (event->userdata[0] == 0) {
+    switch (event->userdata[0]) {
+    case 0:
         if (--event->userdata[2] != 0) {
             *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 1;
             return EVT_RETURN_BLOCK;
         }
+        break;
     }
     *(s32*)(*(u8**)((u8*)mario + 0x28C) + 0x144) = 0;
     return EVT_RETURN_YIELD;
