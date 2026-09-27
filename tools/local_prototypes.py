@@ -56,6 +56,17 @@ def prototypes(text):
             continue
         while end < len(code) and code[end].isspace():
             end += 1
+        if end < len(code) and code[end] == ",":
+            # several declarators in one statement: `extern int a(void), b(int);`
+            stop = code.find(";", end)
+            if stop < 0:
+                continue
+            start = m.start("ret")
+            line = code.count("\n", 0, start) + 1
+            yield Prototype(m["name"], text[start:stop + 1], line, "static" in ret)
+            for extra in re.finditer(r",\s*\**\s*([A-Za-z_]\w*)\s*\(", code[end:stop + 1]):
+                yield Prototype(extra[1], text[start:stop + 1], line, "static" in ret)
+            continue
         if end >= len(code) or code[end] != ";":
             continue  # a definition, expression, or function-pointer variable
         start = m.start("ret")

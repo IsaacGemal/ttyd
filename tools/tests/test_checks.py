@@ -196,5 +196,42 @@ class HeaderPatchApply(unittest.TestCase):
         self.assertEqual((self.root / "include/n.h").read_text(), "#pragma once\nvoid g(void);\n")
 
 
+class ReviewTwoInputs(unittest.TestCase):
+    """Inputs review 2 of PR #10 showed getting through."""
+
+    def test_added_line_without_a_header_is_rejected(self):
+        self.assertTrue(header_patch.problems("+void lost(void);\n"))
+
+    def test_a_later_non_header_section_does_not_land_in_the_previous_header(self):
+        patch = ("--- a/include/a.h\n+++ b/include/a.h\n@@ -1 +1,2 @@\n+void ok(void);\n"
+                 "diff --git a/src/x.c b/src/x.c\n+void misplaced(void);\n")
+        self.assertTrue(header_patch.problems(patch))
+        self.assertEqual(header_patch.additions(patch), {"include/a.h": ["void ok(void);"]})
+
+    def test_mismatched_include_delimiters_are_rejected(self):
+        self.assertTrue(header_patch.problems(HeaderPatch.PATCH + '+#include "foo.h>\n'))
+
+    def test_claim_duration_must_be_positive(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            con = claims.connect(Path(d) / "c.sqlite")
+            for bad in (-1, 0, float("nan")):
+                with self.assertRaises(SystemExit):
+                    claims.claim(con, "w1", ["koopa"], hours=bad)
+            con.close()
+
+    def test_unit_spellings_are_one_unit(self):
+        for spelling in ("event/evt_npc", "src/event/evt_npc.c", "./src/event/evt_npc.c", "src//event/evt_npc.c"):
+            self.assertEqual(claims.unit_name(spelling), "event/evt_npc")
+        with self.assertRaises(SystemExit):
+            claims.unit_name("../outside")
+
+    def test_comma_separated_prototypes_are_caught(self):
+        import local_prototypes
+        found = [p.name for p in local_prototypes.prototypes("extern int first(void), second(void);\n")]
+        self.assertEqual(found, ["first", "second"])
+
+
+
 if __name__ == "__main__":
     unittest.main()

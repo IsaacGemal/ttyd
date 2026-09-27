@@ -15,8 +15,6 @@ USER_FUNC(get_ryoukin);
 USER_FUNC(get_to_bed_evt);
 USER_FUNC(msg_no);
 USER_FUNC(offset);
-USER_FUNC(paper_off);
-USER_FUNC(paper_on);
 USER_FUNC(power_chk);
 USER_FUNC(snd_off);
 USER_FUNC(snd_on);

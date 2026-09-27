@@ -23,6 +23,8 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "math_ext.h"
+static USER_FUNC(paper_off);  // local to this file in the original
+static USER_FUNC(paper_on);  // local to this file in the original
 
 
 // itemEntry is defined in driver/itemdrv.c but not declared in any header yet.
@@ -390,13 +392,13 @@ USER_FUNC(offset) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(paper_off) {
+static USER_FUNC(paper_off) {
     marioPaperOff();
     return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (99.78%): prologue allocates the string-pool base and event->args to r6/r5; original uses r5/r6.
-USER_FUNC(paper_on) {
+static USER_FUNC(paper_on) {
     s32* args = event->args;
     const char* str = str_802ECE50;
     f32 val = evtGetFloat(event, args[0]);

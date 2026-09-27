@@ -977,7 +977,7 @@ the earlier one lands.
 **Open:**
 - Predating the PR: iconMain's uninitialized `data`, the empty `iconGX`, `L_getStick`'s -128 case.
 - `mobjHitObjPtrToPtr` returns `MapObject*` but callers use it as `MapObjectEntry*` (retail reads
-  `animName` at 0x15), which means `HitEntry.mapObj`'s type is wrong.
+  `animName` at 0x15), which means `HitEntry.mapObj`'s type is wrong. (Resolved in the cleanup PR, 59abc86: it returns `MapObjectEntry*`.)
 - icondrv's `iconDispGx`/`iconDispGxAlpha` take `Vec` by value where the original passes a pointer.
 - `BtlUnit_CheckStatus` is cast to an `s8` parameter in battle_disp.
 - Unmarked match-only tricks in evt_bero, evt_npc (`_intplGetFloat`'s regrouping rounds differently from the
@@ -992,7 +992,7 @@ the earlier one lands.
 
 Isaac had Codex start with a batch of 100 and then continue; it ran until its usage limit. Result: the ~1,700
 function prototypes that .c files declared for themselves are in the headers of the files that define them
-(94 new headers), and the local copies are gone. 17 remain, listed with reasons in
+(94 new headers), and the local copies are gone. 17 remained at first, 16 after review 1 (below), listed with reasons in
 `tools/local_prototype_exceptions.json`: they are cases where the original's own files disagree (the
 psndSFX_* argument widths three ways, psndSFXOnEx_3D, cloudGetStatus, BattleCheckCounter), two SDK stats
 functions, and one match-only declaration (battle_stage_object's by-pointer windowDispGX_Waku_col, which only
@@ -1000,7 +1000,7 @@ steers register allocation; the original passes the colour by value like everyon
 listed as a name collision, is simply local in the original and is now static (review 1 of PR #10).
 `tools/local_prototypes.py` (run by `tools/ci.py`) fails on any other non-static function declaration in
 src/ or rels/, and on an exception whose declaration changed or no longer exists. CI passed after every batch
-with all measures unchanged (4,153 functions); an independent count finds exactly the 17 exceptions.
+with all measures unchanged (4,153 functions); an independent count found exactly the 17 exceptions of the time.
 
 **Agents now put prototypes in headers** (Isaac, Sep 26): the prompt and `docs/AGENT_BRIEF.md` (mistake 12) say to
 add a missing prototype to the defining file's header, created if needed, and never to change existing header

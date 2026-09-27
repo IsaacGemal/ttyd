@@ -21,7 +21,7 @@ ALLOWED = [
     r"",
     r"//.*",
     r"#\s*pragma\s+once",
-    r'#\s*include\s+[<"](?!.*\.\.)[\w/.]+\.h[>"]',
+    r'#\s*include\s+(?:<(?!.*\.\.)[\w/.]+\.h>|"(?!.*\.\.)[\w/.]+\.h")',
     r"struct\s+\w+\s*;",
     r"typedef\s+struct\s+\w+\s+\w+\s*;",
     r"(?:extern\s+)?(?:const\s+|unsigned\s+|struct\s+)*[A-Za-z_]\w*[\s\*]+\w+\s*\([^;{}]*\)\s*;(\s*//.*)?",
@@ -36,7 +36,9 @@ def additions(patch):
     """{header path: [added lines]} in patch order."""
     out, cur = {}, None
     for line in patch.splitlines():
-        if line.startswith("+++ "):
+        if line.startswith(("diff ", "--- ")):
+            cur = None  # a new file section: nothing belongs to the previous header any more
+        elif line.startswith("+++ "):
             m = TARGET.match(line)
             cur = m.group(1) if m and ".." not in m.group(1) else None
             if cur:
@@ -47,14 +49,21 @@ def additions(patch):
 
 
 def problems(patch):
-    out = []
+    out, cur = [], None
     for n, line in enumerate(patch.splitlines(), 1):
+        if line.startswith(("diff ", "--- ")):
+            cur = None
+            continue
         if line.startswith("+++ "):
             m = TARGET.match(line)
             if not m or ".." in m.group(1):
                 out.append(f"line {n}: patches something other than a header under include/: {line[4:].split(chr(9))[0]}")
+            cur = m.group(1) if m and ".." not in m.group(1) else None
             continue
-        if line.startswith(("--- a/", "--- /", "diff ", "@@", "Only in", "\\ No newline")):
+        if line.startswith(("@@", "Only in", "\\ No newline")):
+            continue
+        if line.startswith("+") and cur is None:
+            out.append(f"line {n}: an added line outside a header section: {line[1:].strip()}")
             continue
         if line.startswith("-"):
             out.append(f"line {n}: removes or changes an existing header line: {line[1:].strip()}")

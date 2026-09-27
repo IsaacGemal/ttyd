@@ -13,8 +13,10 @@ it with the original (build/G8MJ01/**/asm/*.s):
 - LOCAL: the original has the function local to one file (`.fn NAME, local`) and no global of that name
   exists: it belongs as a static forward declaration in that file, not in a header. Checked for every
   prototype, decompiled or not.
-The argument scan is linear up to the first call or return, so it can miss arguments first read later; a clean
-result is not proof. Run after a build.
+The argument scan is linear up to the first call or return, so it can miss arguments first read later, and it
+reports false ARGS where a loop's test sits at the bottom and loads a register the scan meets first (--all shows
+such cases for decompiled functions that match 100%). A clean result is not proof, and every finding needs
+checking by hand in the asm. Run after a build.
 """
 import collections
 import glob
@@ -27,6 +29,7 @@ REG = re.compile(r"\b([rf])(\d{1,2})\b")
 FN = re.compile(r"^\.fn (\w+), (\w+)")
 NOWRITE = re.compile(r"^(st\w*|cmp\w*|fcmp\w*|b\w*|mt\w*|tw\w*|dcb\w*|icbi|sync|isync|psq_st\w*)$")
 PROTO = re.compile(r"^\s*(?:extern\s+)?([A-Za-z_][\w\s\*]*?)\b(\w+)\s*\(([^;{}]*)\)\s*;", re.M)
+USERFUNC = re.compile(r"^\s*USER_FUNC\((\w+)\)\s*;", re.M)
 FLOAT = re.compile(r"^(?:const\s+)?(f32|f64|float|double)$")
 
 
@@ -99,10 +102,14 @@ def return_used(callers, name):
 
 
 def params(args):
+    """(int registers, float registers) the prototype's parameters occupy, as the highest register used: a 64-bit
+    integer takes an aligned pair (r3:r4, r5:r6, ...), skipping a register if needed. None for varargs."""
     args = args.strip()
-    if args in ("", "void") or "..." in args:
-        return (0, 0) if "..." not in args else None
-    ints = floats = 0
+    if "..." in args:
+        return None
+    if args in ("", "void"):
+        return 0, 0
+    reg, floats = 3, 0
     for a in args.split(","):
         toks = a.replace("*", " * ").split()
         if len(toks) > 1 and toks[-1] != "*" and re.fullmatch(r"\w+", toks[-1]):
@@ -111,9 +118,12 @@ def params(args):
         base = t.replace("const ", "").strip()
         if "*" not in t and FLOAT.match(base):
             floats += 1
+        elif "*" not in t and re.fullmatch(r"(s64|u64|OSTime|long long|unsigned long long)", base):
+            reg += (reg - 3) % 2  # pairs start at an odd register: r3, r5, r7, r9
+            reg += 2
         else:
-            ints += 1
-    return ints, floats
+            reg += 1
+    return reg - 3, floats
 
 
 def c_definitions():
@@ -134,8 +144,10 @@ def main():
     for h in sorted(glob.glob(str(ROOT / "include/**/*.h"), recursive=True)):
         text = re.sub(r"//[^\n]*|/\*.*?\*/", "", open(h, errors="ignore").read(), flags=re.S)
         rel = str(Path(h).relative_to(ROOT))
-        for m in PROTO.finditer(text):
-            ret, name, args = " ".join(m.group(1).split()), m.group(2), m.group(3)
+        decls = [(" ".join(m.group(1).split()), m.group(2), m.group(3)) for m in PROTO.finditer(text)]
+        # USER_FUNC(name); is an event function: s32 name(EventEntry* event, BOOL isFirstCall)
+        decls += [("s32", n, "EventEntry* event, BOOL isFirstCall") for n in USERFUNC.findall(text)]
+        for ret, name, args in decls:
             if name not in fns or ret.startswith("typedef"):
                 continue
             scopes = {s for s, _ in fns[name]}

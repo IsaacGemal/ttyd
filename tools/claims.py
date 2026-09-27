@@ -13,6 +13,8 @@ The database is shared by every checkout of the repo (worktrees included): scrat
 checkout. Each claim runs in one transaction, so two launchers claiming at once can't both get a unit.
 """
 import argparse
+import math
+import os
 import re
 import sqlite3
 import subprocess
@@ -29,9 +31,17 @@ def db_path():
 
 
 def unit_name(u):
-    """event/evt_npc, src/event/evt_npc.c and rels/pik/src/unit/x.c all name a unit the same way."""
+    """event/evt_npc, src/event/evt_npc.c, ./src/event/evt_npc.c, an absolute path and rels/pik/src/unit/x.c all
+    name a unit the same way; anything that doesn't reduce to a plain relative unit path is refused."""
+    root = str(Path(__file__).resolve().parent.parent) + "/"
+    u = os.path.normpath(u)
+    if u.startswith(root):
+        u = u[len(root):]
     u = re.sub(r"^(?:rels/[^/]+/)?src/", "", u)
-    return u[:-2] if u.endswith(".c") else u
+    u = u[:-2] if u.endswith(".c") else u
+    if u.startswith(("/", "..")) or not re.fullmatch(r"[\w./-]+", u):
+        raise SystemExit(f"claims.py: not a unit name: {u}")
+    return u
 
 
 def connect(path=None):
@@ -47,6 +57,8 @@ def claim(con, wave, units, hours=24.0, now=None):
     """Claim units for wave. Returns {unit: owning wave}; a unit is ours if its owner is wave. Claiming a unit the
     wave already holds renews its expiry (a wave whose PR is still in review keeps its units)."""
     now = time.time() if now is None else now
+    if not (isinstance(hours, (int, float)) and math.isfinite(hours) and hours > 0):
+        raise SystemExit(f"claims.py: claim duration must be a positive number of hours, not {hours}")
     units = [unit_name(u) for u in units]
     out = {}
     con.execute("BEGIN IMMEDIATE")
