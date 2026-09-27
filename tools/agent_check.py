@@ -14,8 +14,11 @@ if FINAL:
     sys.argv.pop(1)
 unit_path = sys.argv[1]
 unit = "MarioSt/" + unit_path
-import os
-if os.path.exists(f"src/{unit_path}.c") and f"src/{unit_path}.c" not in open("build.ninja").read():
+import glob, os
+# the unit's source: src/UNIT.c, or a library's libs/<lib>/src/UNIT.c
+src = next(iter(glob.glob(f"libs/*/src/{unit_path}.c")), None) if not os.path.exists(f"src/{unit_path}.c") else None
+src = src or f"src/{unit_path}.c"
+if os.path.exists(src) and src not in open("build.ninja").read():
     subprocess.run(["python3", "configure.py"], capture_output=True)  # a new source file needs a build rule
 b = subprocess.run(["ninja", "-j2"], capture_output=True, text=True)  # two waves of agents share the tower's 16 cores
 if b.returncode:
@@ -23,6 +26,9 @@ if b.returncode:
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
     print("BUILD FAILED\n" + "\n".join((errs or out.splitlines())[-40:]))
     sys.exit(1)
+if os.path.exists(src):
+    import shutil
+    shutil.copy(src, "lastgood.c")  # the last version that built: survives an agent cut off mid-edit
 report = json.load(open("build/G8MJ01/report.json"))
 u = next((x for x in report["units"] if x["name"] == unit), None)
 if u is None:
@@ -31,9 +37,9 @@ fns = {f["name"]: f for f in u.get("functions", [])}
 if FINAL:
     # The same checks the merge runs (tools/lint_patch.py), against the clean copy of the file this workspace was
     # made from, or /dev/null for a new file.
-    base = os.path.expanduser(f"~/ttyd/src/{unit_path}.c")
+    base = os.path.join(os.path.expanduser(os.environ.get("TTYD_BASE", "~/ttyd")), src)
     base = base if os.path.exists(base) else "/dev/null"
-    lint = subprocess.run(["python3", "tools/lint_patch.py", unit_path, base], capture_output=True, text=True)
+    lint = subprocess.run(["python3", "tools/lint_patch.py", src, base], capture_output=True, text=True)
     fns = u.get("functions", [])
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
     print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
@@ -41,9 +47,9 @@ if FINAL:
     # Function prototypes belong in the header of the file that defines the function, not in your .c file.
     sys.path.insert(0, "tools")
     import local_prototypes
-    src = f"src/{unit_path}.c"
     exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] in (src, "*")]
-    protos = local_prototypes.check_sources({src: open(src).read()}, exc)
+    # libraries (libs/) keep their own declarations; the header rule is for game code
+    protos = local_prototypes.check_sources({src: open(src).read()}, exc) if src.startswith("src/") else []
     for p in protos:
         if "exception must match" in p:
             todo.append("PROTOTYPE  " + p + "  -> a documented exception no longer matches your file; restore that"

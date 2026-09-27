@@ -44,11 +44,12 @@ def is_stub(body):
 
 def source_path(unit):
     """(source path, report unit name) for UNIT: src/UNIT.c in MarioSt, or a path to a .c file, which may be a
-    REL module's source (rels/<rel>/src/UNIT.c, reported as <rel>/UNIT)."""
+    REL module's source (rels/<rel>/src/UNIT.c, reported as <rel>/UNIT) or a library's (libs/<lib>/src/UNIT.c,
+    reported as MarioSt/UNIT)."""
     if unit.endswith(".c"):
-        m = re.fullmatch(r"(?:rels/([^/]+)/)?src/(.+)\.c", unit)
+        m = re.fullmatch(r"(?:rels/([^/]+)/|libs/[^/]+/)?src/(.+)\.c", unit)
         if not m:
-            sys.exit(f"{unit}: expected src/... or rels/<rel>/src/...")
+            sys.exit(f"{unit}: expected src/..., rels/<rel>/src/... or libs/<lib>/src/...")
         return unit, f"{m.group(1) or 'MarioSt'}/{m.group(2)}"
     return f"src/{unit}.c", f"MarioSt/{unit}"
 

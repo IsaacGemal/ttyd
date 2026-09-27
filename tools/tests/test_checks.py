@@ -317,5 +317,13 @@ class CreatedHeaders(unittest.TestCase):
                 header_patch.apply(self.NEW, root)
 
 
+
+class LibrarySources(unittest.TestCase):
+    def test_a_library_source_path_names_its_main_dol_unit(self):
+        self.assertEqual(lint_patch.source_path("libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/printf.c"),
+                         ("libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/printf.c", "MarioSt/MSL_C.PPCEABI.bare.H.a/printf"))
+        self.assertEqual(lint_patch.source_path("rels/pik/src/unit/x.c"), ("rels/pik/src/unit/x.c", "pik/unit/x"))
+
+
 if __name__ == "__main__":
     unittest.main()
