@@ -8,4 +8,4 @@ s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belon
 typedef struct BattleUnit BattleUnit;
 typedef struct BattleWork BattleWork;
 void BattleGetFirstAttackUnit(BattleWork* wp, BattleUnit** outUnit1, BattleUnit** outUnit2);
-s32 BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId);
+void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId);

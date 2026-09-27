@@ -4417,18 +4417,18 @@ USER_FUNC(btlevtcmd_AudienceDeclareACResult) {
 
     weapon = (BattleWeapon*)evtGetValue(event, args[0]);
     result = evtGetValue(event, args[1]);
-    counter = (u8*)wp + 0x16F3C;
+    counter = &wp->field_16F1C[0x3C - 0x1C];
     if (result != -1) {
         if (counter[0] < 0xC8) {
             counter[0]++;
         }
-        *(u8*)((u8*)wp + 0x19064) = 1;
+        wp->field_19064[0] = 1;
     }
     else {
         if (counter[1] < 0xC8) {
             counter[1]++;
         }
-        *(u8*)((u8*)wp + 0x19064) = 0;
+        wp->field_19064[0] = 0;
     }
     BattleActionCommandDeclareACResult(wp, weapon, result);
     return EVT_RETURN_DONE;

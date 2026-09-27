@@ -71,26 +71,26 @@ s32 offscreenNameToId(const char* name) {
 	return i;
 }
 
-void offscreenGetTexObj(s32 id, void** texObj, u32** imagePtr) {
+void offscreenGetTexObj(s32 id, GXTexObj** texObj, smartEntry** image) {
 	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
 
 	if (!(entry->flags & 1)) {
 		*texObj = NULL;
-		*imagePtr = NULL;
+		*image = NULL;
 		return;
 	}
 	if (!(entry->flags & 2)) {
 		*texObj = NULL;
-		*imagePtr = NULL;
+		*image = NULL;
 		return;
 	}
 	if (!(entry->flags & 4)) {
 		*texObj = NULL;
-		*imagePtr = NULL;
+		*image = NULL;
 		return;
 	}
-	*texObj = entry->field_0x1C;
-	*imagePtr = (u32*)*(u32*)entry->field_0x44;
+	*texObj = &entry->texObj;
+	*image = entry->image;
 }
 
 s32 offscreenGetBoundingBox(s32 id, u16* left, u16* top, u16* right, u16* bottom) {
@@ -185,11 +185,11 @@ void offscreenDisp(CameraId camId, void* param) {
 			height = entry->currBottom - entry->currTop;
 			GXSetTexCopySrc(entry->currLeft, entry->currTop, width, height);
 			GXSetTexCopyDst(width, height, entry->unk3C, GX_FALSE);
-			*(smartEntry**)entry->field_0x44 = smartAlloc(GXGetTexBufferSize(width, height, entry->unk3C, GX_FALSE, 0), 3);
+			entry->image = smartAlloc(GXGetTexBufferSize(width, height, entry->unk3C, GX_FALSE, 0), 3);
 			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
-			GXCopyTex((*(smartEntry**)entry->field_0x44)->address, GX_TRUE);
+			GXCopyTex(entry->image->address, GX_TRUE);
 			GXPixModeSync();
-			GXInitTexObj((GXTexObj*)entry->field_0x1C, (*(smartEntry**)entry->field_0x44)->address, width, height, entry->unk40, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXInitTexObj(&entry->texObj, entry->image->address, width, height, entry->unk40, GX_CLAMP, GX_CLAMP, GX_FALSE);
 			entry->flags |= 4;
 		}
 	}

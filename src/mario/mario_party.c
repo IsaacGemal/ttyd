@@ -204,28 +204,23 @@ s32 marioPartyEntry(s32 memberId) {
     return id;
 }
 
-// NONMATCHING (91.08%): header declares this void, but the original returns s32 (it sets r3).
-void unk_8013be14(void) {
+s32 unk_8013be14(void) {
     MarioWork* wp = marioGetPtr();
     s8* timer = (s8*)((u8*)wp + 0x3B);
-    s8 next;
 
-    if (!(wp->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER)) {
-        return;
+    if (wp->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
+        if (marioKeyOffChk() != 0) {
+            *timer = 0;
+            wp->trigFlags &= ~MARIO_TRIG_FLAG_USE_PARTNER;
+            return 0;
+        }
+        if (--*timer <= 0) {
+            *timer = 0;
+            wp->trigFlags &= ~MARIO_TRIG_FLAG_USE_PARTNER;
+            return partyDoWork();
+        }
     }
-    if (marioKeyOffChk() != 0) {
-        *timer = 0;
-        wp->trigFlags &= ~MARIO_TRIG_FLAG_USE_PARTNER;
-        return;
-    }
-    next = *timer - 1;
-    *timer = next;
-    if (next > 0) {
-        return;
-    }
-    *timer = 0;
-    wp->trigFlags &= ~MARIO_TRIG_FLAG_USE_PARTNER;
-    partyDoWork();
+    return 0;
 }
 
 s32 marioUseParty(void) {

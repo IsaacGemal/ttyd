@@ -29,14 +29,10 @@ USER_FUNC(evt_offscreen_get_boundingbox2) {
     BOOL ok;
 
     id = offscreenNameToId((const char*)id);
-#ifdef MUST_MATCH
-    // Zeroing the locals is only here to reproduce the original's `li r0,0; sth ...` schedule;
-    // offscreenGetBoundingBox_BeforeFrame fills all four when it returns TRUE.
     left = 0;
     top = 0;
     right = 0;
     bottom = 0;
-#endif
     if (isFirstCall) {
         event->userdata[0] = 5;
     }

@@ -59,9 +59,7 @@ struct BakuGameWork {
     s32 field_0xEC;                   // 0xEC
     u8 field_0xF0[0xF4 - 0xF0];       // 0xF0
     s32 field_0xF4;                   // 0xF4
-    u8 field_0xF8[0x80];              // 0xF8, weapon copy
-    s8 field_0x178[8];                // 0x178, inside the copied weapon
-    u8 field_0x180[0x1B8 - 0x180];    // 0x180
+    BattleWeapon weapon;              // 0xF8
     u8 field_0x1B8[0x1C0 - 0x1B8];    // 0x1B8
     s32 field_0x1C0;                  // 0x1C0
     s32 field_0x1C4;                  // 0x1C4
@@ -583,8 +581,8 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
     evtGetFloat(event, args[0]);
     v = evtGetValue(event, args[1]);
     baku = GetBakuGamePtr();
-    p = baku->field_0x178;
-    memcpy(&baku->field_0xF8, &weapon, 0xC0);
+    p = (s8*)&baku->weapon.field_78[0x80 - 0x78];
+    memcpy(&baku->weapon, &weapon, sizeof(BattleWeapon));
     p[2] = 100;
     if (v != -1) {
         if (baku->field_0xD0 >= float_100_80421620) {
@@ -597,7 +595,7 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
         p[2] = 0;
         p[3] = 0;
     }
-    evtSetValue(event, args[2], (s32)((u8*)baku + 0xF8));
+    evtSetValue(event, args[2], (s32)&baku->weapon);
     return EVT_RETURN_DONE;
 }
 

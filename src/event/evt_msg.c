@@ -16,19 +16,6 @@
 
 
 
-// The message window's smart buffer. Only a few fields are named; the rest is
-// unnamed padding because the header does not declare them yet.
-typedef struct MsgWindowWork {
-    const char* field_0x0;            // 0x0
-    u32 field_0x4;                    // 0x4
-    u8 pad_0x08[0x7A00 - 0x8];        // 0x8
-    EventEntry* event;                // 0x7A00
-    char text[0x20];                  // 0x7A04
-    s32 field_0x7A24;                 // 0x7A24
-    u8 pad_0x7A28[0x7A43 - 0x7A28];   // 0x7A28
-    s8 field_0x7A43;                  // 0x7A43
-} MsgWindowWork;
-
 // Window position fields (0x30..0x38) are not declared in windowdrv.h yet.
 typedef struct WindowVec {
     u8 pad_0x0[0x30];
@@ -61,7 +48,7 @@ void evt_msg_init(void) {
 	//stubbed in retail
 }
 
-#define MSGWORK(w) ((MsgWindowWork*)(w)->userdata->address)
+#define MSGWORK(w) ((MessageData*)(w)->userdata->address)
 
 s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* msg, s32 toge, const char* npcName) {
     WindowEntry* window;
@@ -80,7 +67,7 @@ s32 _evt_msg_print(EventEntry* event, BOOL isFirstCall, s32 flags, const char* m
         event->printWindowId = msgWindow_Entry(message, toge, (s16)event->msgPriority);
         event->msgPriority = 0;
         window = windowGetPointer(event->printWindowId);
-        MSGWORK(window)->field_0x0 = msg;
+        MSGWORK(window)->tag = msg;
         MSGWORK(window)->event = event;
 
         if (!(flags & 2)) {
@@ -400,12 +387,12 @@ USER_FUNC(evt_msg_select) {
             msg = "DIRECT";
         }
         event->selectWindowId = msgWindow_Entry(message, 0, 0x14);
-        ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x0 = msg;
+        ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->tag = msg;
     }
     if (windowCheckID(event->selectWindowId)) {
         return EVT_RETURN_BLOCK;
     }
-    event->lwData[0] = ((MsgWindowWork*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x7A43;
+    event->lwData[0] = ((MessageData*)windowGetPointer(event->selectWindowId)->userdata->address)->field_0x7A43;
     windowDeleteID(event->selectWindowId);
     return EVT_RETURN_DONE;
 }
@@ -451,6 +438,6 @@ USER_FUNC(evt_msg_pri) {
 USER_FUNC(evt_msg_npc) {
     const char* name = (const char*)evtGetValue(event, *event->args);
     WindowEntry* window = windowGetPointer(event->printWindowId);
-    strcpy(((MsgWindowWork*)window->userdata->address)->text, name);
+    strcpy(((MessageData*)window->userdata->address)->text, name);
     return EVT_RETURN_DONE;
 }

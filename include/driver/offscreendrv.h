@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/camdrv.h"
+#include "memory.h"
 
 #include <dolphin/types.h>
 
@@ -12,10 +13,10 @@ typedef struct OffscreenEntry {
 	u16 currTop; //0x16
 	u16 currRight; //0x18
 	u16 currBottom; //0x1A
-	u8 field_0x1C[0x3C - 0x1C]; //0x1C
+	GXTexObj texObj; //0x1C
 	s32 unk3C; //0x3C
 	s32 unk40; //0x40
-	u8 field_0x44[0x48 - 0x44]; //0x44
+	smartEntry* image; //0x44
 	u16 prevLeft; //0x48
 	u16 prevTop; //0x4A
 	u16 prevRight; //0x4C
@@ -36,6 +37,6 @@ void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom);
 void offscreenDisp(CameraId camId, void* param);
 void offscreenDelete(const char* name);
 OffscreenEntry* offscreenNameToPtr(const char* name);
-void offscreenGetTexObj(s32 id, void** texObj, u32** imagePtr);
+void offscreenGetTexObj(s32 id, GXTexObj** texObj, smartEntry** image);
 s32 offscreenGetBoundingBox(s32 id, u16* left, u16* top, u16* right, u16* bottom);
 s32 offscreenGetBoundingBox_BeforeFrame(s32 id, u16* left, u16* top, u16* right, u16* bottom);
