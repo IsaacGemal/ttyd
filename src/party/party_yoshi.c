@@ -82,7 +82,12 @@ static const f32 float_neg10 = -10.0f;
 static const f32 float_26 = 26.0f;
 static const f32 float_20 = 20.0f;
 
-// NONMATCHING (85.25%): 2 instructions differ, 9 missing, 6 extra, plus register differences. Known issue: negates then truncates to s8; the original sign-extends first (differs only for -128).
+// NONMATCHING (89.15%): declaring `y` as `s32 y = -(s32)(s8)...` reproduces the
+// original sign-extend-then-negate, and the rest of the body/register layout then
+// lines up. Remaining: `mario` lands in r31 here but r29 in the original (so x is
+// r30 not r31, -y is r29 not r30); the original `dist == 0.0f` is materialized with
+// the mfcr/extrwi/xori/cntlzw/srwi idiom; and one `float_0p75` load is placed
+// before the `mario->flags` load here.
 void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
     MarioWork* mario = party->playerPtr;
 
@@ -94,7 +99,7 @@ void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
 
     {
         s8 x = *(s8*)((u8*)party + 0x158);
-        s8 y = -*(s8*)((u8*)party + 0x159);
+        s32 y = -(s32)*(s8*)((u8*)party + 0x159);
         f32 dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
         f32 ang;
 
@@ -258,32 +263,34 @@ void evt_set_yoshi_frm(s32 msec) {
     evt_yoshi_frm = sysMsec2Frame(msec);
 }
 
-// NONMATCHING (93.55%): the three strcmp literals need to share the vec3
-// rodata base+0x30/0x40/0x50; compiler gives each its own literal.
+// NONMATCHING (99.93%): code matches. Remaining: the PYS_* literals and the
+// int->float double are at different .rodata offsets (target: double at
+// vec3+0x28, PYS_S_2/H_1/R_2/H_2/F_1 at +0x30/0x38/0x40/0x48/0x50). Our
+// object has PYS_S_2 at +0x24 and the double at +0x30; the H_1/H_2 literals
+// are only emitted by the not-yet-written yoshi_use.
 void unk_800b45e0(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    const char* anim = party->field_18;
 
-    if (strcmp(anim, "PYS_S_2") == 0) {
-        u16 t = *(u16*)((u8*)mario + 0x28) + 1;
+    if (strcmp(party->field_18, "PYS_S_2") == 0) {
+        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
         *(u16*)((u8*)mario + 0x28) = t;
-        if (t >= 0x34) {
+        if ((u16)t >= 0x34) {
             *(u16*)((u8*)mario + 0x28) = 0;
         }
         party->field_20 = *(u16*)((u8*)mario + 0x28);
         animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)((u8*)mario + 0x28));
-    } else if (strcmp(anim, "PYS_R_2") == 0) {
-        u16 t = *(u16*)((u8*)mario + 0x28) + 1;
+    } else if (strcmp(party->field_18, "PYS_R_2") == 0) {
+        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
         *(u16*)((u8*)mario + 0x28) = t;
-        if (t >= 0xA) {
+        if ((u16)t >= 0xA) {
             *(u16*)((u8*)mario + 0x28) = 0;
         }
         party->field_20 = *(u16*)((u8*)mario + 0x28);
         animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)((u8*)mario + 0x28));
-    } else if (strcmp(anim, "PYS_F_1") == 0) {
-        u16 t = *(u16*)((u8*)mario + 0x28) + 1;
+    } else if (strcmp(party->field_18, "PYS_F_1") == 0) {
+        s32 t = *(u16*)((u8*)mario + 0x28) + 1;
         *(u16*)((u8*)mario + 0x28) = t;
-        if (t >= 0xA) {
+        if ((u16)t >= 0xA) {
             *(u16*)((u8*)mario + 0x28) = 0;
         }
         party->field_20 = *(u16*)((u8*)mario + 0x28);
@@ -456,9 +463,11 @@ void L_yoshiFlyMove(PartyEntry* party) {
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
 
-// NONMATCHING (95.12%): the t=f4*f4+f5*f5 association and the float_0p01
-// operand order are reproduced. Remaining in the else branch: fmadds register
-// order, `fneg` of float_16 vs a pooled -16, and the `f5 -= 0.0f` position.
+// NONMATCHING (96.19%): the t=f4*f4+f5*f5 association and the float_0p01
+// operand order are reproduced. The else branch now uses one negated-16 temp
+// and subtracts MATCH_F32(float_0) before the fmadds. Remaining: an extra
+// volatile `lfs f2, float_0` (target reuses the top's f2) and thus the
+// 0p01/16 load order.
 void inertia(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     f32 f3 = (f32)(s8)*(u8*)((u8*)party + 0x158);
@@ -493,18 +502,21 @@ void inertia(PartyEntry* party) {
             f5 = f5 - MATCH_F32(float_0);
         } else {
             f5 = f5 - MATCH_F32(float_0);
-            f4 = f3 * float_0p01 + f4;
-            if (f4 < -float_16) {
-                f4 = -float_16;
-            }
-            if (f4 > float_16) {
-                f4 = float_16;
-            }
-            if (f5 < -float_16) {
-                f5 = -float_16;
-            }
-            if (f5 > float_16) {
-                f5 = float_16;
+            f4 = f3 * MATCH_F32(float_0p01) + f4;
+            {
+                f32 n = -MATCH_F32(float_16);
+                if (f4 < n) {
+                    f4 = n;
+                }
+                if (f4 > float_16) {
+                    f4 = float_16;
+                }
+                if (f5 < n) {
+                    f5 = n;
+                }
+                if (f5 > float_16) {
+                    f5 = float_16;
+                }
             }
         }
     }
