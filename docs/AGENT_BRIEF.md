@@ -92,6 +92,11 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
 
+15. **Using code from outside this workspace.** Work only from the files here: the original's assembly, this
+   repository, and any reference files your task gives you. Don't download code or search the internet for it
+   (other projects' licenses may not allow it), and don't search the rest of the machine. If you need something
+   you don't have, say so in your report.
+
 ## Signedness hints from the assembly
 
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.
