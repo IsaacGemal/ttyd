@@ -1058,7 +1058,7 @@ config.libs = [
         "progress_category": "sdk",
         "src_dir": "libs/metrowerks/src/",
         "objects": [
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/abort_exit.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/abort_exit.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/alloc.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/errno.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/ansi_files.c"),
