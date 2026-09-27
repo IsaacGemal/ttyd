@@ -104,6 +104,7 @@ extern files __files = {
     },
 };
 
+// NONMATCHING (90.24%): 4 missing, plus register differences.
 void __close_all(void) {
     FILE* p = &__files._stdin;
     FILE* plast;

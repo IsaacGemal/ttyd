@@ -7,6 +7,7 @@ static DSError TRK_mainError;
  * Address:	80220418
  * Size:	000048
  */
+// NONMATCHING (77.27%): 5 missing.
 DSError TRK_main(void)
 {
 	TRK_mainError = TRKInitializeNub();

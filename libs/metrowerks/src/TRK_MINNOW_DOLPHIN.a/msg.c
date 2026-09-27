@@ -3,6 +3,7 @@
 // Incorrect signature? Should be u8.
 UARTError WriteUART1(s8 arg0);
 
+// NONMATCHING (0.00%): 4 instructions differ, 2 missing, 104 extra, plus register differences.
 DSError TRKMessageSend(TRKBuffer* msg)
 {
     u8 var_r30;

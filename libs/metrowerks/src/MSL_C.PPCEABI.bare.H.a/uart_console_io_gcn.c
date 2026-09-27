@@ -6,6 +6,7 @@ unsigned long InitializeUART(unsigned long baudRate);
 
 static inline int __init_uart_console(void);
 
+// NONMATCHING (93.08%): 1 instruction differs, 3 missing.
 int __write_console(int param_0, unsigned char* data, size_t* size, int param_3) {
     if (__init_uart_console() != 0) {
         return 1;

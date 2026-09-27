@@ -48,12 +48,14 @@ DSError TRKDoUnsupported(TRKBuffer* buffer)
 	                      DSREPLY_UnsupportedCommandError);
 }
 
+// NONMATCHING (0.00%): 8 instructions differ, 2 missing, 24 extra, plus register differences.
 DSError TRKDoConnect(TRKBuffer* buffer)
 {
 	SetTRKConnected(TRUE);
 	return TRKStandardACK(buffer, DSMSG_ReplyACK, DSREPLY_NoError);
 }
 
+// NONMATCHING (0.00%): 8 instructions differ, 27 extra, plus register differences.
 DSError TRKDoDisconnect(TRKBuffer* buffer)
 {
 	DSError error = DS_NoError;
@@ -68,6 +70,7 @@ DSError TRKDoDisconnect(TRKBuffer* buffer)
 	return error;
 }
 
+// NONMATCHING (0.00%): 6 instructions differ, 1 missing, 25 extra, plus register differences.
 DSError TRKDoReset(TRKBuffer* buffer)
 {
 	TRKStandardACK(buffer, DSMSG_ReplyACK, DSREPLY_NoError);
@@ -75,6 +78,7 @@ DSError TRKDoReset(TRKBuffer* buffer)
 	return DS_NoError;
 }
 
+// NONMATCHING (0.00%): 1 instruction differs, 180 extra.
 DSError TRKDoVersions(TRKBuffer* buffer)
 {
 	DSError error;
@@ -102,6 +106,7 @@ DSError TRKDoVersions(TRKBuffer* buffer)
 	}
 }
 
+// NONMATCHING (0.00%): 1 instruction differs, 138 extra.
 DSError TRKDoSupportMask(TRKBuffer* buffer)
 {
 	DSError error;
@@ -160,6 +165,7 @@ DSError TRKDoCPUType(TRKBuffer* buffer)
 		error = TRKSendACK(buffer);
 }
 
+// NONMATCHING (0.00%): 40 instructions differ, 33 missing, 148 extra, plus register differences.
 DSError TRKDoReadMemory(TRKBuffer* buffer)
 {
 	DSError error;
@@ -242,6 +248,7 @@ DSError TRKDoReadMemory(TRKBuffer* buffer)
 	return error;
 }
 
+// NONMATCHING (0.00%): 44 instructions differ, 14 missing, 135 extra, plus register differences.
 DSError TRKDoWriteMemory(TRKBuffer* buffer)
 {
 	DSError error;
@@ -327,6 +334,7 @@ DSError TRKDoWriteMemory(TRKBuffer* buffer)
 	return error;
 }
 
+// NONMATCHING (2.27%): 50 instructions differ, 47 missing, 106 extra, plus register differences.
 DSError TRKDoReadRegisters(TRKBuffer* buffer)
 {
 	DSError error;
@@ -415,6 +423,7 @@ DSError TRKDoReadRegisters(TRKBuffer* buffer)
 	}
 }
 
+// NONMATCHING (0.00%): 23 instructions differ, 40 missing, 118 extra, plus register differences.
 DSError TRKDoWriteRegisters(TRKBuffer* buffer)
 {
 	DSError error;
@@ -558,6 +567,7 @@ DSError TRKDoFlushCache(TRKBuffer* buffer)
 	}
 }
 
+// NONMATCHING (0.00%): 16 instructions differ, 5 missing, 46 extra, plus register differences.
 DSError TRKDoContinue(TRKBuffer* buffer)
 {
 	DSError error;
@@ -573,6 +583,7 @@ DSError TRKDoContinue(TRKBuffer* buffer)
 		error = TRKTargetContinue();
 }
 
+// NONMATCHING (0.00%): 41 instructions differ, 8 missing, 204 extra, plus register differences.
 DSError TRKDoStep(TRKBuffer* buffer)
 {
 	DSError error;
@@ -649,6 +660,7 @@ DSError TRKDoStep(TRKBuffer* buffer)
 		}
 }
 
+// NONMATCHING (31.05%): 4 instructions differ, 2 missing, 24 extra, plus register differences.
 DSError TRKDoStop(TRKBuffer* b)
 {
 	DSReplyError replyError;
@@ -674,6 +686,7 @@ DSError TRKDoStop(TRKBuffer* b)
 	return TRKStandardACK(b, DSMSG_ReplyACK, replyError);
 }
 
+// NONMATCHING (0.00%): 17 instructions differ, 2 missing, 65 extra, plus register differences.
 DSError TRKDoSetOption(TRKBuffer* buffer) {
     DSError error;
     u8 spA;

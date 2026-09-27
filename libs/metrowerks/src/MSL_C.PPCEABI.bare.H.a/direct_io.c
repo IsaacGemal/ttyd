@@ -5,6 +5,7 @@
 
 size_t __fwrite(const void* buffer, size_t size, size_t count, FILE* stream);
 
+// NONMATCHING (25.52%): 23 missing, plus register differences.
 size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream) {
     __fwrite(buffer, size, count, stream);
 }
