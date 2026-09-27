@@ -22,8 +22,7 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 27 after waves 9 and 10, PRs #12 and #11): 4,298 of 9,770 functions matched,
-  21.53% of code; linked code 10.69%, linked data 4.78%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Progress (local build, Sep 27 after wave 11, PR #13): 4,481 of 9,770 functions matched, 22.37% of code; linked code 10.69%, linked data 4.78%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
 - Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
@@ -1143,3 +1142,41 @@ line, which header patches may not do; the structs were moved into the .c files 
 stay writable (const makes MWCC fold them: 99% -> 73%); kpa_act's vec3_802fe200 keeps `__declspec(section)`;
 evt_win reads the u16 fields through puns under MUST_MATCH; symbols.txt gives `kpa_fall` local scope though
 mot_jump calls it; fontmgr (rejected) is back in the queue.
+
+## Wave 11: missing functions first, and three Claude reviews (2026-09-27, Claude Opus 5.5 ("TTYD Claude #2"); agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5 x3)
+
+Ran alongside wave 12 (the other orchestrator, runtime libraries). 24 agents, 45 minutes, 17:19-18:05: 12 on
+started files, told to write the **missing** functions smallest first instead of polishing near-misses, and 12
+new files. Merged 23 of 24; evt_fade's agent died after 36 s on a provider error. **4,298 -> 4,477 (+179) at
+merge, 4,481 after the three reviews' fixes; PR #13, merged first.** About 7.4 functions per agent, against
+about 2.7 per agent on near-misses in wave 10; only 2 agents hit the 45-minute cap.
+
+**Harness.** Each agent's `check.py` now copies the last source that built to `lastgood.c`, so an agent cut off
+mid-edit still leaves a mergeable file. The orchestrator moved battle_break_slot's four struct bodies from a
+header into the .c and replaced eight files' `optimize_for_size` pragmas with `-O4,s` (no score change).
+
+**Codex was out of usage,** so all three reviews were fresh Claude sessions, each given what the previous ones
+covered least. Every finding was checked against the asm before fixing:
+- Review 1 (4 high): missing fall-throughs in seq_battleMain (cases 2-4) and two sac_bakugame switches, and
+  bakugame's weapon left zero-filled where the original is initialised .data; also lightGetNearObj returns its
+  count, and the msgWindow_* functions are void.
+- Review 2 (1 medium): evt_offscreen zeroed its bounding box only under MUST_MATCH, though the original returns
+  the zeros after five failed frames. Also one MessageData in msgdrv.h instead of three overlays, real types for
+  offscreenGetTexObj, a missing smartFree in msgLoad (older than the wave), unk_8013be14 returning s32 (91% ->
+  100% once written that way).
+- Review 3 (3 high): ac_monosiri_target shifted a sprite twice and gave another the wrong z rotation;
+  bakuGameMarioSurprise gave Yoshi Flurrie's pose and Flurrie Yoshi's, **which only the jump table shows**
+  (objdiff doesn't compare jump-table entries; now brief rule 15). Also unit_party_christine didn't compile
+  without MUST_MATCH.
+
+**Lessons.**
+- Pointing started-file agents at missing functions nearly tripled the yield per agent.
+- Switches are a blind spot: fall-throughs and swapped cases both survive high scores. The last two waves'
+  high-severity findings were mostly switch bugs.
+- Compiling each changed file without `-DMUST_MATCH` catches `#else` branches that don't build; review 3 did it
+  by hand.
+
+**Open:** battle_actrecord, offscreendrv, eff_puniballoon, evt_offscreen and evt_light are fully matched but fail
+autolink on a checksum (finisher work); battle_break_slot's .sdata2 constants stay writable (const: 68% -> 64%);
+sac_bakugame's static weapon data is a `void*` array until BattleWeapon names enough fields; the BattleWork
++0x1F2C byte view; vivian_init_801809C0's name; fontmgr and evt_fade go back in the queue.

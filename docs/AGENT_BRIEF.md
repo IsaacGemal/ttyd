@@ -91,6 +91,10 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    object (declare it as the original's symbol) instead.
 14. **Empty or placeholder bodies.** Never write `{}` or `return 0;` in place of real code. If you can't make a
    real attempt, leave the function out.
+15. **Switches read from the code instead of the jump table.** objdiff doesn't compare a jump table's entries,
+   so case bodies can be swapped, and a missing fall-through (`break` where the original runs into the next
+   case) can still score high. Map each case value to its label in the `.obj jumptable_...` data, and check
+   whether each case body ends in a branch or runs on.
 
 ## Signedness hints from the assembly
 
