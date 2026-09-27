@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import label_partials  # noqa: E402
 import lint_patch  # noqa: E402
 import header_patch  # noqa: E402
+import claims  # noqa: E402
 import name_offsets  # noqa: E402
 
 
@@ -138,4 +139,29 @@ class HeaderPatch(unittest.TestCase):
 
     def test_struct_definition_fails(self):
         self.assertTrue(header_patch.problems(self.PATCH + "+typedef struct X { s32 a; } X;\n"))
+
+
+class Claims(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.dir = tempfile.TemporaryDirectory()
+        self.con = claims.connect(Path(self.dir.name) / "c.sqlite")
+
+    def tearDown(self):
+        self.con.close()
+        self.dir.cleanup()
+
+    def test_second_wave_skips_claimed_units(self):
+        claims.claim(self.con, "w9", ["event/evt_npc", "motion/mot_hip"], now=0)
+        got = claims.claim(self.con, "w10", ["event/evt_npc", "koopa"], now=1)
+        self.assertEqual(got, {"event/evt_npc": "w9", "koopa": "w10"})
+
+    def test_release_frees_units(self):
+        claims.claim(self.con, "w9", ["koopa"], now=0)
+        claims.release(self.con, "w9")
+        self.assertEqual(claims.claim(self.con, "w10", ["koopa"], now=1), {"koopa": "w10"})
+
+    def test_expired_claims_are_dropped(self):
+        claims.claim(self.con, "w9", ["koopa"], hours=1, now=0)
+        self.assertEqual(claims.claim(self.con, "w10", ["koopa"], now=2 * 3600), {"koopa": "w10"})
 

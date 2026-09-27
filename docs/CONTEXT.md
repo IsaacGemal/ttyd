@@ -1019,3 +1019,13 @@ now matches). This is why local prototypes are moving into headers and why the a
 carries this example. A near-match whose only differences are argument registers deserves a look for a
 missing argument.
 
+
+## Claims for parallel waves (2026-09-27, Isaac + Claude Opus 5.5)
+
+With more than one orchestrator, two waves could pick the same unit: the agent time of whichever merges second
+is wasted (the ratchet rejects it), and header additions could collide. `tools/claims.py` keeps a shared
+SQLite table of which wave owns which unit (`scratch/claims.sqlite` in the main checkout, shared by every
+worktree). The launcher claims its units before starting agents and skips any another wave holds; the
+orchestrator releases the wave's claims once its PR merges; claims expire after 24 hours so a crashed wave
+doesn't lock files. The design follows itsgrimetime/melee-decomp's claims database for Melee agents.
+
