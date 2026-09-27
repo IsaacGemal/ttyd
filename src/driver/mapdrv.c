@@ -371,80 +371,28 @@ void mapReStartAnimationAll(void) {
 	}
 }
 
-// NONMATCHING (97.61%): MWCC emits beq found+fallthrough, target emits bne continue;b found
+// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
 void mapPauseAnimation(const char* name) {
-	MapEntryAnimData* found;
-	s32 i;
-	s32 j;
-	MapWork* wp;
-	MapEntry* entry;
+	MapEntryAnimData* found = mapSearchAnmObj(name);
 
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		found = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if ((*(u16*)found & 0x1) && strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
-				goto found;
-			}
-		}
-	}
-	found = NULL;
-found:
 	if (found) {
 		*(u16*)found |= 0x10;
 	}
 }
 
-// NONMATCHING (97.61%): MWCC emits beq found+fallthrough, target emits bne continue;b found
+// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
 void mapReStartAnimation(const char* name) {
-	MapEntryAnimData* found;
-	s32 i;
-	s32 j;
-	MapWork* wp;
-	MapEntry* entry;
+	MapEntryAnimData* found = mapSearchAnmObj(name);
 
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		found = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if (*(u16*)found & 0x1) {
-				if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
-					goto found;
-				}
-			}
-		}
-	}
-	found = NULL;
-found:
 	if (found) {
 		*(u16*)found |= 0x20;
 	}
 }
 
-// NONMATCHING (97.66%): MWCC emits beq found+fallthrough, target emits bne continue;b found
+// NONMATCHING (99.13%): inlined mapSearchAnmObj swaps wp/entry (target has wp in the higher register)
 void mapSetPlayRate(const char* name, f32 rate) {
-	MapEntryAnimData* found;
-	s32 i;
-	s32 j;
-	MapWork* wp;
-	MapEntry* entry;
+	MapEntryAnimData* found = mapSearchAnmObj(name);
 
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		found = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if (*(u16*)found & 0x1) {
-				if (strcmp(*(char**)*(void**)((u8*)found + 0x18), name) == 0) {
-					goto found;
-				}
-			}
-		}
-	}
-	found = NULL;
-found:
 	if (found) {
 		*(f32*)((u8*)found + 0x14) = rate;
 	}
@@ -837,12 +785,11 @@ MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isR
 	return obj;
 }
 
-// NONMATCHING (99.21%): wp vs index*0x178 register swap
 MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	MapWork* wp;
 	u32 size;
 
-	wp = &mapWork[activeGroup];
+	wp = mapGetWork();
 
 	wp->entries[index].numJoints = mapGetJoints(joint);
 	size = OSRoundUp32B(wp->entries[index].numJoints * 0x134);
@@ -851,16 +798,20 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
 
+
 // NONMATCHING (0.70%): only the opening/loop skeleton is present
 void makeDisplayList(BOOL group) {
 
 }
 
 MapEntryAnimData* mapSearchAnmObj(const char* animName) {
-	MapWork* wp = &mapWork[activeGroup];
-	MapEntry* entry = &wp->entries[0];
+	MapEntry* entry;
+	MapWork* wp;
 	s32 j;
 	s32 i;
+
+	wp = mapGetWork();
+	entry = &wp->entries[0];
 
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
@@ -875,22 +826,8 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 
 // NONMATCHING (92.24%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
-	MapWork* wp = &mapWork[activeGroup];
-	MapEntry* entry = &wp->entries[0];
-	MapEntryAnimData* found;
-	s32 j;
-	s32 i;
+	MapEntryAnimData* found = mapSearchAnmObj(animName);
 
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		found = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
-			if ((*(u16*)found & 0x1) && !strcmp(*(char**)*(void**)((u8*)found + 0x18), animName)) {
-				goto found;
-			}
-		}
-	}
-	found = NULL;
-found:
 	*valid = FALSE;
 	*a3 = float_0_80419850;
 	if (found) {
