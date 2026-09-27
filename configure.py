@@ -998,7 +998,7 @@ config.libs = [
         "src_dir": "libs/metrowerks/src/",
         "objects": [
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/mainloop.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/nubevent.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/nubevent.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/nubinit.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/msg.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/msgbuf.c"),
