@@ -69,3 +69,5 @@ void BattleAcGaugeSeUpdate(f32);
 void BattleAcGaugeSeDelete(void);
 void BattleActionCommandSetup(BattleWork* wp, s32 acId, BattleUnit* unit, s32 gauge, s32 diff);
 void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 difficulty);
+s32 BattleActionCommandCheckDefence(BattleUnit* unit, int a2);
+s32 BattleActionCommandGetPrizeLv(BattleWork* wp, BattleUnit* unit, s32 index);
