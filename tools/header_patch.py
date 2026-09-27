@@ -49,6 +49,7 @@ def type_line(body, stack):
     """True if body is part of a type definition, given the open definitions (stack of (typedef?, kind)); updates
     the stack. Fields only inside a struct/union, members only inside an enum, and `} name;` only closing a typedef
     or a nested member, so a header can't define global data."""
+    body = re.sub(r"^/\*[^*]*\*/\s*", "", body)  # a leading offset comment: /* 0x00 */ char text[8];
     m = OPEN.fullmatch(body)
     if m and (not stack or stack[-1][1] != "enum"):
         stack.append((bool(m.group(1)), m.group(2)))

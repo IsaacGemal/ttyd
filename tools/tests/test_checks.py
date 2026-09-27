@@ -297,7 +297,7 @@ class CreatedHeaders(unittest.TestCase):
         self.assertTrue(header_patch.problems(self.NEW + '+#include "../src/x.c"\n'))
 
     def test_a_created_header_takes_types_but_not_code(self):
-        ok = ("+typedef enum E {\n+\tE_A = 0x1, // a\n+\tE_B\n+} E;\n+struct S {\n+\tu8 flags : 4;\n"
+        ok = ("+typedef struct K {\n+\t/* 0x00 */ char text[8];\n+} K;\n+typedef enum E {\n+\tE_A = 0x1, // a\n+\tE_B\n+} E;\n+struct S {\n+\tu8 flags : 4;\n"
               "+\tvoid (*cb)(s32 a);\n+\tVec pos[2]; //0x4\n+};\n")
         self.assertEqual(header_patch.problems(self.NEW + ok), [])
         for bad in ("+int injected = 1;\n", "+void body(void) { injected++; }\n", "+#define REWRITE(x) 0\n",
