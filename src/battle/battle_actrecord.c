@@ -70,8 +70,6 @@ s32 _check_use(s32 arg) {
 
 #define WP(i) (f[i])
 
-// optimize_for_size: retail builds the JudgeRuleKeep prologue with stmw/lmw and orders the sums the same way.
-#pragma optimize_for_size on
 void BtlActRec_JudgeRuleKeep(void) {
     BattleWork* wp = _battleWorkPointer;
     u8* f = (u8*)wp + 0x16F00;
@@ -334,10 +332,7 @@ void BtlActRec_JudgeRuleKeep(void) {
 }
 
 #undef WP
-#pragma optimize_for_size off
 
-// optimize_for_size: retail builds the JudgeTurnRuleKeep prologue with stmw/lmw and orders the sums the same way.
-#pragma optimize_for_size on
 #define WP(i) (f[i])
 
 void BtlActRec_JudgeTurnRuleKeep(void) {
@@ -381,7 +376,6 @@ void BtlActRec_JudgeTurnRuleKeep(void) {
 }
 
 #undef WP
-#pragma optimize_for_size off
 
 void BtlActRec_AddPoint(void* p, u8 value) {
     *(u8*)p += value;

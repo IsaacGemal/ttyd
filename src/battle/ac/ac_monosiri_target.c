@@ -60,8 +60,6 @@ extern const f32 float_160_80422094;
 static void actionCommandDisp(f32 x, f32 y);
 
 // NONMATCHING (64.81%): stack-slot reuse and FPR/GPR roles differ (frame 0x140 vs 0x170).
-// optimize_for_size: the original prologue uses stmw/lmw and the wider frame; see REPORT.md.
-#pragma optimize_for_size on
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
@@ -145,7 +143,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 		iconDispGx(&v, 0x10, icon, float_1_80422088);
 	}
 }
-#pragma optimize_for_size reset
 
 void battleAcDelete_MonosiriTarget(BattleWork* work) {
 	work->actionCommands.mAcState = 0x3EA;

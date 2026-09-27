@@ -61,11 +61,8 @@ struct BattleBreakSlot {
 };
 
 
-// The original emits real calls to BattleBreakSlotGetPtr/ReelGetPtr, and its prologues and
-// counted loops are the -O4,s/optimize_for_size shape. This file wants extra_cflags=["-O4,s"]
-// in configure.py; until the orchestrator sets it, the pragma stands in for the flag.
+// The original emits real calls to BattleBreakSlotGetPtr/ReelGetPtr.
 #pragma dont_inline on
-#pragma optimize_for_size on
 
 const char str_802FD6C0[] = "recovery";
 const char str_802FD6CC[] = "msg_slot_HP_max";
@@ -369,4 +366,3 @@ BattleBreakSlot* BattleBreakSlotGetPtr(void) {
 }
 
 #pragma dont_inline reset
-#pragma optimize_for_size reset

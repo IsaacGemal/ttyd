@@ -69,10 +69,6 @@ extern const f32 float_1p5_80421938;
 extern const f32 float_3_8042193c;
 extern const f32 float_10_80421940;
 
-// optimize_for_size: this file was built with -O4,s (all its functions use stmw/lmw / the switch jump
-// table). Needed here: 55.78% at -O4,p, 64.05% at -O4,s; see REPORT.md.
-// don't_inline: the original keeps actionCommandDisp as its own local function.
-#pragma optimize_for_size on
 #pragma dont_inline on
 // NONMATCHING (64.05%): the original materialises st (work+0x1F4C) and the vec3 base in registers;
 // MWCC folds st into the work base and reloads the vec base per call (frame 0x90 vs 0xF0).
@@ -124,7 +120,6 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 #pragma dont_inline reset
-#pragma optimize_for_size reset
 
 // don't_inline: battleAcMain_ShotTarget calls this through the original `bl`.
 #pragma dont_inline on
@@ -189,9 +184,6 @@ s32 battleAcResult_ShotTarget(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: the prologue uses stmw/lmw and the switch jump table, which -O4,p does not emit.
-// This file was built with -O4,s in the original; see REPORT.md.
-#pragma optimize_for_size on
 void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     *period = irand(0x78) + 0x78;
     *timer = *period - 1;
@@ -225,10 +217,7 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
             break;
     }
 }
-#pragma optimize_for_size reset
 
-// optimize_for_size: this file was built with -O4,s; see REPORT.md.
-#pragma optimize_for_size on
 // NONMATCHING (8.29%): state machine and logic match, but MWCC folds the work-area pointer
 // (work+0x1F4C) into the work base and uses different callee-saved registers (work=r27 vs r23), so
 // nearly every instruction differs in its register field.
@@ -376,7 +365,6 @@ s32 battleAcMain_ShotTarget(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset
 
 const f64 double_3_802ff9d0 = 3.0;
 const f64 double_28_802ff9d8 = 28.0;

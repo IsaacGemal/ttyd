@@ -106,8 +106,6 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function (bl from battleAcDisp)
 #pragma dont_inline on
-// optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
-#pragma optimize_for_size on
 // NONMATCHING (89.38%): `baseX` is f27 vs the original f25 (so stack slots/saved regs shift); the loop's
 // `100.0f` load is a local `@371` (const-propagated; a volatile read keeps the name but stops hoisting); the
 // int->float double is @343 and the final divide's operands are scheduled in a different order.
@@ -160,7 +158,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 	v.x = negX + (f32)(dec->rate * 176) / float_100_80420980;
 	iconDispGx(&v, 0x10, 0x96, MATCH_F32(float_1_80420990));
 }
-#pragma optimize_for_size reset
 #pragma dont_inline reset
 
 void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
@@ -209,11 +206,6 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// optimize_for_size: battleAcMain's prologue uses stmw/lmw.
-#pragma optimize_for_size on
-// The implicit int->float magic double compiles to a local `@343`/`@346` symbol instead of the named
-// `double_to_int_802fdbb8`/`double_to_int_mask_802fdbd8`; the L/R-trigger clamp keeps 1.0f in f4 instead of
-// reusing f0; a few state-0 loads are scheduled differently.
 // NONMATCHING (95.60%): see above. The sfx-id and BattlePadCheckTrigger tests both use `cmpwi` (via a
 // `(u32)`/`(s32)` cast) to match the original's `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
@@ -402,4 +394,3 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	}
 	return 1;
 }
-#pragma optimize_for_size reset

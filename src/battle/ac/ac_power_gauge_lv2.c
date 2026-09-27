@@ -58,9 +58,6 @@ static void actionCommandDisp(f32, f32);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function.
 #pragma dont_inline on
-// optimize_for_size: the original keeps the two 4-iteration threshold loops rolled (mtctr/bdnz)
-// instead of unrolling them.
-#pragma optimize_for_size on
 // NONMATCHING (84.40%): the frame/layout now match, but the Vec BaseRemat, the integer register
 // allocation in the two threshold loops, and the icon argument setup still differ. See REPORT.md.
 static void actionCommandDisp(f32 x, f32 y) {
@@ -168,7 +165,6 @@ static void actionCommandDisp(f32 x, f32 y) {
         iconDispGx(&pos, 0x10, *(s32*)((u8*)ac + 0x2D8) != 0 ? 0x95 : 0x91, float_1_80421c2c);
     }
 }
-#pragma optimize_for_size reset
 #pragma dont_inline reset
 
 void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
@@ -217,9 +213,6 @@ s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: the original main saves r27-r31 with `stmw`; the size model reproduces its
-// prologue/register choice for the state machine.
-#pragma optimize_for_size on
 // NONMATCHING (98.44%): `BattleActionCommandGetDifficulty` returns s8 in the header, so the
 // assignment emits `extsb r31, r3`; the original references the named double_to_int_80300200
 // instead of an anonymous @NNN; and a few scheduler/register choices differ. See REPORT.md.
@@ -389,7 +382,6 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset
 
 // --- .sdata2 definitions ---
 const s32 dat_80421c20 = -1;

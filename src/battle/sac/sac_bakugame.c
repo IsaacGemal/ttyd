@@ -1,6 +1,3 @@
-// The original sac_bakugame unit was built with -O4,s (optimize for size): prologues/epilogues use stmw/lmw and
-// small counted loops stay rolled. There is no per-Object flag for this unit in configure.py, so set it here.
-#pragma optimize_for_size on
 #include "battle/sac/sac_bakugame.h"
 #include "battle/battle.h"
 #include "battle/battle_unit.h"
