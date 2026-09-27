@@ -20,16 +20,6 @@ DSError TRKInitializeEventQueue()
 
 /*
  * --INFO--
- * Address:	8021C110
- * Size:	000024
- */
-void TRKCopyEvent(TRKEvent* dstEvent, const TRKEvent* srcEvent)
-{
-	TRK_memcpy(dstEvent, srcEvent, sizeof(TRKEvent));
-}
-
-/*
- * --INFO--
  * Address:	8021C134
  * Size:	0000C0
  */
@@ -38,7 +28,7 @@ BOOL TRKGetNextEvent(TRKEvent* event)
 	BOOL status = 0;
 	TRKAcquireMutex(&gTRKEventQueue);
 	if (0 < gTRKEventQueue.count) {
-		TRKCopyEvent(event, &gTRKEventQueue.events[gTRKEventQueue.next]);
+		TRK_memcpy(event, &gTRKEventQueue.events[gTRKEventQueue.next], sizeof(TRKEvent));
 		gTRKEventQueue.count--;
 		gTRKEventQueue.next++;
 		if (gTRKEventQueue.next == 2)
@@ -66,7 +56,7 @@ DSError TRKPostEvent(TRKEvent* event)
 		ret = DS_EventQueueFull;
 	} else {
 		nextEventID = (gTRKEventQueue.next + gTRKEventQueue.count) % 2;
-		TRKCopyEvent(&gTRKEventQueue.events[nextEventID], event);
+		TRK_memcpy(&gTRKEventQueue.events[nextEventID], event, sizeof(TRKEvent));
 		gTRKEventQueue.events[nextEventID].eventID = gTRKEventQueue.eventID;
 		gTRKEventQueue.eventID++;
 		if (gTRKEventQueue.eventID < 0x100)
@@ -86,7 +76,9 @@ DSError TRKPostEvent(TRKEvent* event)
  */
 void TRKConstructEvent(TRKEvent* event, int eventType)
 {
-	event->eventType = eventType;
+	// TTYD's TRKEvent::eventType is a 4-byte NubEventType (TRKNubMainLoop reads it with lwz),
+	// but the vendored header declares it u8, which would emit stb. Store the full word.
+	*(u32*)event = eventType;
 	event->eventID   = 0;
 	event->msgBufID  = -1;
 }
