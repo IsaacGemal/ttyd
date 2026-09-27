@@ -294,3 +294,4 @@ void BattleAudienceSoundWhistleKind(s32 kind);
 void BattleAudienceNoiseMain(void);
 void BattleAudience_ApRecoveryBuild(StarPowerInfo* info);
 void BattleAudience_Case_Appeal(BattleUnit* unit);
+s32 BattleAudience_GetPresentItemType(void);

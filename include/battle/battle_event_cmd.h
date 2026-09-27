@@ -198,3 +198,4 @@ USER_FUNC(btlevtcmd_ChoiceSamplingEnemy);
 USER_FUNC(btlevtcmd_GetSelectNextEnemy);
 USER_FUNC(btlevtcmd_snd_se);
 void _MoveSoundControlCore(BattleUnit* unit, void* work, void* owner, f32 x, f32 y, f32 z);
+USER_FUNC(btlevtcmd_StopWaitEvent);
