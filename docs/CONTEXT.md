@@ -943,3 +943,46 @@ declaration check (which found a float argument passed through a leftover regist
 Kinopio functions); `BattleSamplingEnemy`'s `s8 attackDirection` may be the wrong width; `BattleAudience_GetExist`
 probably returns `u8`; windowdrv's two `unk_` names replaced descriptive ones; the three MusyX files that match
 but don't link live under libs/musyx/src, which the launcher and merge script don't handle; the REL launcher.
+
+
+## Wave 8: launched before wave 7 merged; reviewers wrong too (2026-09-26, Claude Opus 5.5; agents DeepSeek V4.1 Flash; review GPT-5.6 Sol, Claude Opus 5.5, GPT-5.6 Sol)
+
+Orchestrated by the personal-account session while the work-account session finished wave 7. **4,024 ->
+4,151 functions (+127), 1 file linked (evt_audience).** 18 agents took near-misses and missing functions in
+existing files, 6 wrote new files; 30 minutes, 18:48-19:18. PR #9, merged ~20:10.
+
+**Overlapping waves works.** Wave 8 launched at 18:48 from wave 7's branch tip, on files wave 7 hadn't touched,
+in a separate git worktree (`~/ttyd-wave8`), because the other orchestrator was reviewing in `~/ttyd`. When
+wave 7 merged 20 minutes later, wave 8's branch fast-forwarded: wave 7's last fixes touched none of its files.
+Rules: a worktree per concurrent orchestrator; never sync the tower mid-wave; merge the later wave only after
+the earlier one lands.
+
+**Reviews: most real bugs of any PR so far, and reviewers were wrong too.**
+- Round 1 (Codex): 8 findings. Its most useful one was that the lint file handed to reviewers was empty:
+  `lint_patch.py UNIT origin/main` treated the ref as a file path and crashed on every unit (fixed; BASE is a
+  ref whenever git knows it).
+- Round 2 (Claude): 10 high findings, 9 of them logic bugs in partial functions (reversed colour bytes, swapped
+  operands, `case 7` for `case 6`, a missing `case 3`, a missing reload, a loop one iteration too long,
+  `pouchRemoveItem` always TRUE, a width that was always 0, wrong offsets kept "for the ratchet").
+- **Round 1 was wrong once, and the orchestrator acted on it unchecked:** Codex said `fadedrv`'s "FadeEntry
+  header bug" labels were false. They were right: the header's padding made `FadeEntry` 0xA4 bytes where the
+  original's stride is 0xA8. Round 2 caught it; fixing the header matched 13 functions. Round 3 made one wrong
+  claim too (a 0% function reported at 100%), caught this time by checking first. **Check every reviewer
+  claim against the asm or the report before acting on it.**
+- Round 3 (Codex): header types that code had worked around with casts (`BtlUnit_GetWidth/Height` return
+  s32, `IconEntry.flags`/`iconId` u16, `NpcEntry.balloonType` s8), fixed in the headers.
+- A few fixes cost a partial function a little (at most 0.65%) for correct logic; allowed with
+  `--allow-regress`.
+
+**Open:**
+- Predating the PR: iconMain's uninitialized `data`, the empty `iconGX`, `L_getStick`'s -128 case.
+- `mobjHitObjPtrToPtr` returns `MapObject*` but callers use it as `MapObjectEntry*` (retail reads
+  `animName` at 0x15), which means `HitEntry.mapObj`'s type is wrong.
+- icondrv's `iconDispGx`/`iconDispGxAlpha` take `Vec` by value where the original passes a pointer.
+- `BtlUnit_CheckStatus` is cast to an `s8` parameter in battle_disp.
+- Unmarked match-only tricks in evt_bero, evt_npc (`_intplGetFloat`'s regrouping rounds differently from the
+  original), icondrv, battle_stage(_object), evt_twoddisp, evt_batstage, mario_balloon.
+- Local `IconFrame` struct overlaying `IconBinaryEntry`, a third `CameraParams` copy.
+- `ac_power_gauge_lv`, `ac_timing_wide` and `mot_dokan` are written in the original's function order, but
+  under `-inline auto,deferred` they must be reversed to link.
+
