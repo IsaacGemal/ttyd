@@ -27,3 +27,4 @@ eff_set* effGetSetN64(const char* name);
 u32 effTblRandN64(u32 rand, s32 index);
 void effSetVtxDescN64(effVtxArray* array);
 void tri1(u16 x, u16 y, u16 z);
+void tri2(u16 x1, u16 y1, u16 z1, u16 x2, u16 y2, u16 z2, u16 x3, u16 y3);
