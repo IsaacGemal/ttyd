@@ -1398,6 +1398,12 @@ config.libs = [
         [
             Object(Matching, "unit/unit_purple_teresa.c"),
         ]
+    ),
+    Rel(
+        "tou2",
+        [
+            Object(NonMatching, "tou2.c"),
+        ]
     )
 ]
 
