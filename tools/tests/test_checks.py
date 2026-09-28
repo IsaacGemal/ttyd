@@ -282,16 +282,17 @@ class ReviewThreeInputs(unittest.TestCase):
 
 
 class CreatedHeaders(unittest.TestCase):
-    """A header the patch creates may define types (wave 9's effect headers); existing ones stay declarations-only."""
+    """Headers may gain type definitions (effect work structs), applied as whole blocks."""
     NEW = ("--- a/include/eff/e.h\t1969-12-31\n+++ b/include/eff/e.h\t2026-09-27\n@@ -0,0 +1,5 @@\n"
            "+#pragma once\n+typedef struct effEData {\n+\ts32 a; //0x0\n+} effEData;\n+void effEEntry(void);\n")
 
     def test_a_created_header_may_define_types(self):
         self.assertEqual(header_patch.problems(self.NEW), [])
 
-    def test_an_existing_header_still_takes_only_declarations(self):
-        patch = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n"
-        self.assertTrue(header_patch.problems(patch))
+    def test_an_existing_header_takes_a_whole_type_but_no_data(self):
+        patch = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,4 @@\n+typedef struct Y {\n+\ts32 a;\n+} Y;\n"
+        self.assertEqual(header_patch.problems(patch), [])
+        self.assertTrue(header_patch.problems(patch + "+extern f32 lbl_8039CDA8[];\n"))
 
     def test_a_created_header_still_checks_includes(self):
         self.assertTrue(header_patch.problems(self.NEW + '+#include "../src/x.c"\n'))
@@ -308,13 +309,22 @@ class CreatedHeaders(unittest.TestCase):
     def test_static_is_refused_even_in_a_created_header(self):
         self.assertTrue(header_patch.problems(self.NEW + "+static void f(void);\n"))
 
-    def test_a_created_header_that_already_exists_is_not_merged_line_by_line(self):
+    def test_types_are_applied_whole_or_skipped_whole(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             header_patch.apply(self.NEW, root)
-            with self.assertRaises(SystemExit):
-                header_patch.apply(self.NEW, root)
+            first = (root / "include/eff/e.h").read_text()
+            header_patch.apply(self.NEW, root)  # the same header again (another agent created it too)
+            self.assertEqual((root / "include/eff/e.h").read_text(), first)
+            other = ("--- a/include/eff/e.h\n+++ b/include/eff/e.h\n@@ -1 +1,4 @@\n"
+                     "+typedef struct effEData {\n+\ts32 a; //0x0\n+\tf32 b;\n+} effEData;\n"
+                     "+typedef struct effF {\n+\ts32 a; //0x0\n+} effF;\n")
+            header_patch.apply(other, root)
+            text = (root / "include/eff/e.h").read_text()
+            self.assertEqual(text.count("effEData {"), 1)
+            self.assertNotIn("f32 b;", text)
+            self.assertIn("typedef struct effF {\n\ts32 a; //0x0\n} effF;", text)
 
 
 
