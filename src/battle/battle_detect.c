@@ -329,7 +329,7 @@ s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belon
     return ret;
 }
 
-// NONMATCHING (70.63%): logic follows the asm (checked in review); register allocation is globally shifted
+// NONMATCHING (71.30%): logic follows the asm (checked in review); register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
 void _btlSamplingEnemy(u8* sampling) {
     BattleWork* wp = _battleWorkPointer;
@@ -422,7 +422,7 @@ void _btlSamplingEnemy(u8* sampling) {
     s->count = count;
     entries = (BattleSamplingEntry*)(sampling + 4);
 
-    for (i = 0; i < s->count; i++) {
+    for (i = 0; i < count; i++) {
         BattleSamplingEntry* entry = &entries[i];
         BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
         BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
@@ -457,7 +457,7 @@ void _btlSamplingEnemy(u8* sampling) {
         }
     }
 
-    for (i = 0; i < s->count; i++) {
+    for (i = 0; i < count; i++) {
         BattleSamplingEntry* entry = &entries[i];
         BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
         BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
@@ -514,7 +514,7 @@ void _btlSamplingEnemy(u8* sampling) {
         }
     }
 
-    for (i = 0; i < s->count; i++) {
+    for (i = 0; i < count; i++) {
         BattleSamplingEntry* entry = &entries[i];
         BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
         BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);

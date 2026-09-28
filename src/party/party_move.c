@@ -1183,10 +1183,8 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
-// NONMATCHING (69.05%): the original returns BOOL (li r3,0/1 on the early exits and 1 on success);
-// include/party/party_move.h:30 declares it void, so those return values are missing. The header
-// needs changing to BOOL (callers ignore the result). Vec-literal stack layout also differs.
-void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
+// NONMATCHING (72.32%): the Vec-literal stack layout differs.
+BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;
     Vec pos;
@@ -1200,10 +1198,10 @@ void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 i;
 
     if (hit == NULL) {
-        return;
+        return FALSE;
     }
     if ((hitGetAttr(hit) & 0x80000000) == 0) {
-        return;
+        return FALSE;
     }
     obj = mobjHitObjPtrToPtr(hit);
     pos.x = obj->position.x;
@@ -1230,9 +1228,10 @@ void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
         }
     }
     if (i == 12) {
-        return;
+        return FALSE;
     }
     *position = pos;
+    return TRUE;
 }
 
 // NONMATCHING (90.44%): footmark clear inherits partyClearFootmark's redundant loop-entry test;

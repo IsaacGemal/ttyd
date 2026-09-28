@@ -1031,10 +1031,8 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
 }
 
-// NONMATCHING (93.94%): the header declares this void, but the original leaves a BOOL in r3
-// (`li r3,1` on success, `li r3,0` otherwise), so our void code is missing those two instructions
-// (and consequently uses r3 instead of r4 for temporaries right before the return).
-void npcCheckInterrupt(NpcEntry* npc) {
+// NONMATCHING (94.29%): the remaining differences are not yet analysed.
+BOOL npcCheckInterrupt(NpcEntry* npc) {
     EventEntry* evt;
 
     evtGetPtrID(npc->regularEvtId);
@@ -1075,6 +1073,7 @@ void npcCheckInterrupt(NpcEntry* npc) {
             npc->jumpFlags &= ~0x1000;
             npc->field_188 = 0;
             npc->moveSpeed = 0.0f;
+            return TRUE;
         } else {
             *(s32*)npc->field_140 &= 0xF00;
             npc->jumpFlags &= ~0x1000;
@@ -1083,6 +1082,7 @@ void npcCheckInterrupt(NpcEntry* npc) {
         *(s32*)npc->field_140 &= 0xF00;
         npc->jumpFlags &= ~0x1000;
     }
+    return FALSE;
 }
 
 NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {

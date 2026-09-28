@@ -18,7 +18,7 @@ void marioSearchFrontWall_staying(f32 a);
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 void marioChkGnd(void);
 void* marioLandonChk_old(f32* pos, f32 spd);
-void dou10_yoko_yari(f32* p);
+HitEntry* dou10_yoko_yari(f32* p);
 s32 marioSlitChkWallAround(void);
 HitEntry* dou10_yoko_yari2(f32* out);
 s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z);

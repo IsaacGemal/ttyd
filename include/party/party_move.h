@@ -27,7 +27,7 @@ void partySetDir(PartyEntry* party, f32 x, f32 z);
 void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed);
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position);
 void partyGetAppearPos4(PartyEntry* party, Vec* position);
-void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
+BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
 void partyGetAppearPos2(PartyEntry* party, Vec* pos);
 void partyMoveFlyInit(PartyEntry* party, s32 mode);
 void partyFlyMain(PartyEntry* party);

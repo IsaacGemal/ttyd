@@ -593,10 +593,8 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     return hit;
 }
 
-// NONMATCHING (77.76%): header says void but the original returns the hit pointer in r3
-// from every exit (`mr r3,r28`); those two instructions and the 0xd0 vs 0xc0 frame
-// differ. Logic is faithful (motion gate, 0x1E0 early-out, probes 2.0/8.0).
-void dou10_yoko_yari(f32* out) {
+// NONMATCHING (79.39%): the remaining differences are not yet analysed (the frame is 0xc0 vs the original 0xd0).
+HitEntry* dou10_yoko_yari(f32* out) {
     MarioWork* wp = marioGetPtr();
     Vec pos;
     Vec dir;
@@ -607,19 +605,19 @@ void dou10_yoko_yari(f32* out) {
     f32 dist;
 
     if (wp->currMotionId == 0x16) {
-        return;
+        return NULL;
     }
     toMovedir(wp->unk1A8);
     hit = *(HitEntry**)((u8*)wp + 0x1E0);
     if (hit != NULL) {
-        return;
+        return hit;
     }
     pos = wp->position;
     if (strcmp(gp->currentMapName, str_802C5940) != 0) {
-        return;
+        return hit;
     }
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
-        return;
+        return hit;
     }
     dist = (wp->flags & 0x100000) ? float_2_8041a7e8 : float_8_8041a814;
     pos.y = pos.y + float_60_8041a808;
@@ -653,6 +651,7 @@ void dou10_yoko_yari(f32* out) {
         *(HitEntry**)((u8*)wp + 0x1E0) = hit;
         *out = float_0p8_8041a80c;
     }
+    return hit;
 }
 
 void marioSearchFrontWall_staying(f32 a) {
