@@ -57,3 +57,4 @@ s32 _get_nozzle_attack_index(u8 index);
 void _combine_nozzle_weapon(s32 mode, void* dst, void* src);
 void _mobj_shake_main(BattleStageObject* obj);
 void _disp_escape_wall_message(CameraId cameraId, void* param);
+s32 BattleFogEndCheck(void);
