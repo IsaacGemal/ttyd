@@ -27,3 +27,5 @@ int N_compare_func4_1(void* a, void* b);
 int N_compare_func4_1_r(void* a, void* b);
 int N_compare_func4_2(void* a, void* b);
 int N_compare_func4_2_r(void* a, void* b);
+void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3);
+void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4);

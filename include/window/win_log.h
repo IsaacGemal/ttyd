@@ -9,3 +9,6 @@ void monosiriMain(void* work);
 void monosiriClose(void* work);
 BOOL monosiriCloseWait(void* work);
 void monosiriExit(void* work);
+#include "driver/dispdrv.h"
+void monosiri_disp(CameraId camId, void* param);
+void capture(CameraId camId, void* param);
