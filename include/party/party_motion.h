@@ -28,3 +28,4 @@ void party_force_reset_outofscreen(PartyEntry* party);
 void party_motion_behind_mario_continue(PartyEntry* party);
 void N_partyFollowCloseOn(PartyEntry* party);
 void N_partyFollowCloseOff(PartyEntry* party);
+void L_partyForceSlitOff(PartyEntry* party);
