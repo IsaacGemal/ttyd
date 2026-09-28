@@ -31,3 +31,8 @@ void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
 void partyGetAppearPos2(PartyEntry* party, Vec* pos);
 void partyMoveFlyInit(PartyEntry* party, s32 mode);
 void partyFlyMain(PartyEntry* party);
+void party_move_mode_beside_mario(PartyEntry* party);
+void party_move_mode_behind_mario(PartyEntry* party);
+void party_move_mode_stay(PartyEntry* party);
+void party_move_mode_walk(PartyEntry* party);
+void partyRecordFootmark(PartyEntry* party);
