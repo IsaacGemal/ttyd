@@ -19,6 +19,7 @@
 #include "motion/mot_damage.h"
 #include "motion/mot_stay.h"
 #include "party/party_chuchu.h"
+#include "party/party_bomhei.h"
 
 // Local declarations for data that will eventually move to a header.
 extern s32 readId[2];
@@ -181,6 +182,116 @@ void party_move_mode_behind_mario(PartyEntry* party) {
         break;
     }
     work->field_FC = work->dir;
+}
+
+void party_move_mode_walk(PartyEntry* party) {
+    PartyEntry* work = party;
+
+    if (work->field_8 & 0x4) {
+        work->field_8 &= ~0x4;
+    }
+    switch (work->field_36) {
+    case 0:
+        party_motion_stay(party);
+        break;
+    case 1:
+        if (work->field_32 == 0) {
+            party_motion_homing_walk(party);
+        } else {
+            party_motion_homing_fly(party);
+        }
+        break;
+    case 2:
+        party_motion_jump(party);
+        break;
+    case 3:
+        party_motion_fall(party);
+        break;
+    case 6:
+        party_motion_upstairs(party);
+        break;
+    case 7:
+        party_motion_damage(party);
+        break;
+    default:
+        break;
+    }
+    work->field_FC = work->dir;
+    if (work->field_8 & 0x01000000) {
+        work->field_8 &= ~0x01000000;
+        {
+            Vec pos = party->position;
+            marioSetSplash(0, &pos);
+        }
+        work->field_4C = 0x14;
+    }
+    if (--work->field_4C < 0) {
+        work->field_4C = 0;
+    }
+    if (work->field_34 != 0x0D) {
+        if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        }
+    }
+}
+
+void party_move_mode_stay(PartyEntry* party) {
+    PartyEntry* work = party;
+
+    if (work->field_8 & 0x4) {
+        work->field_8 &= ~0x4;
+        partyChgPoseId(party, 1);
+        if (work->currentMemberId == 5) {
+            unk_801820d0(party);
+        }
+    }
+    switch (work->field_36) {
+    case 0:
+        party_motion_stay(party);
+        if (work->currentMemberId == 5) {
+            unk_8018206c(party);
+        }
+        break;
+    case 1:
+    case 2:
+    case 6:
+        if (work->field_36 == 3) {
+            party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+            party->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+            party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+        }
+        work->field_36 = 0;
+        work->field_8 |= 2;
+        break;
+    case 3:
+        party_motion_fall(party);
+        break;
+    }
+    work->field_FC = work->dir;
+    if (work->field_8 & 0x01000000) {
+        work->field_8 &= ~0x01000000;
+        {
+            Vec pos = party->position;
+            marioSetSplash(0, &pos);
+        }
+        work->field_4C = 0x14;
+    }
+    if (--work->field_4C < 0) {
+        work->field_4C = 0;
+    }
+    if (work->field_34 != 0x0D) {
+        if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+            partyChgRunMode(party, 0x0D);
+        }
+    }
 }
 
 // NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
@@ -725,6 +836,71 @@ void partyChkWall(PartyEntry* party) {
     party->position.z = pos.z;
 }
 
+s32 partyMarioHosei(PartyEntry* party) {
+    PartyEntry* work = party;
+    MarioWork* mario = work->playerPtr;
+    f32 f4;
+    f32 f5;
+    f32 f6;
+    f32 f3;
+    f32 f1;
+    f32 angle;
+    f32 f31;
+    f32 f30;
+
+    if (!(work->field_8 & 0x40000)) {
+        f4 = 0.4f;
+        f5 = 0.3f;
+        f6 = f4;
+    } else {
+        f4 = 0.2f;
+        f5 = 0.15f;
+        f6 = f4;
+    }
+    if (mario->flags & 0x8000) {
+        f4 = 0.2f;
+        f5 = 0.15f;
+        f6 = f4;
+    }
+    f3 = *(f32*)((u8*)work + 0xF4) + mario->wPlayerCollisionBox.x;
+    f1 = mario->wPlayerCollisionBox.y + *(f32*)((u8*)work + 0xF0);
+    *(f32*)((u8*)work + 0xA0) = 0.0f;
+    f4 = f4 * f3;
+    f5 = f5 * f3;
+    *(f32*)((u8*)work + 0xA8) = 0.0f;
+    f6 = f6 * f1;
+    if (fabsf(work->position.x - mario->position.x) <= f4
+        && fabsf(work->position.z - mario->position.z) <= f5
+        && fabsf(work->position.y - mario->position.y) <= f6) {
+        angle = angleABf(mario->position.x, mario->position.z, work->position.x, work->position.z);
+        if (mario->baseSpeed) {
+            if (fabsf(angle - mario->directionView) <= 4.0f) {
+                if (angle - mario->directionView >= 0.0f) {
+                    angle += 90.0f;
+                } else {
+                    angle -= 90.0f;
+                }
+            }
+            if (++*(s16*)((u8*)work + 0x52) > 100) {
+                *(s16*)((u8*)work + 0x52) = 100;
+            }
+            f30 = 1.0f;
+        } else {
+            angle = angleABf(mario->position.x, mario->position.z, work->position.x, work->position.z);
+            f30 = 4.0f;
+        }
+        if (mario->baseSpeed > 1.0f) {
+            f30 = 0.8f * mario->baseSpeed;
+        }
+        f31 = 3.1415927f * angle / 180.0f;
+        *(f32*)((u8*)work + 0xA0) = f30 * (f32)sin(f31);
+        *(f32*)((u8*)work + 0xA8) = f30 * -(f32)cos(f31);
+    } else if (*(s16*)((u8*)work + 0x52) > 0) {
+        *(s16*)((u8*)work + 0x52) -= 1;
+    }
+    return *(s16*)((u8*)work + 0x52);
+}
+
 // NONMATCHING (95.62%): compiler CSEs `id != 0` into r29 across the marioGetPtr calls, so `id`
 // lands in r30 instead of r29 and the second anotherPartyGetPtr reuses the value instead of
 // recomputing it (`srwi r3` vs `mr r3,r29`).
@@ -1005,4 +1181,357 @@ s32 partyGetFootmarkReadId(u32 index) {
 Footmark* partyGetFootmarkPtr(u32 index) {
     u32 id = readId[index];
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
+}
+
+// NONMATCHING (69%): the original returns BOOL (li r3,0/1 on the early exits and 1 on success);
+// include/party/party_move.h:30 declares it void, so those return values are missing. The header
+// needs changing to BOOL (callers ignore the result). Vec-literal stack layout also differs.
+void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
+    s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
+    MapObjectEntry* obj;
+    Vec pos;
+    Vec dir;
+    Vec hitPos;
+    Vec hitNormal;
+    f32 dist;
+    f32 sinv;
+    f32 cosv;
+    HitEntry* h;
+    s32 i;
+
+    if (hit == NULL) {
+        return;
+    }
+    if ((hitGetAttr(hit) & 0x80000000) == 0) {
+        return;
+    }
+    obj = mobjHitObjPtrToPtr(hit);
+    pos.x = obj->position.x;
+    pos.z = obj->position.z;
+    pos.y = 50.0f + obj->position.y;
+    for (i = 0; i < 12; i++) {
+        sincosf(&sinv, &cosv, party->dir + (f32)angles[i]);
+        dir.x = sinv;
+        dir.y = 0.0f;
+        dir.z = cosv;
+        dist = 50.0f;
+        h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
+        if (h == NULL) {
+            dist = 150.0f;
+            pos.x = obj->position.x + sinv * 50.0f;
+            pos.z = obj->position.z + cosv * 50.0f;
+            dir.x = 0.0f;
+            dir.y = -1.0f;
+            dir.z = 0.0f;
+            h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
+            if (h == NULL || (hitGetAttr(h) & 0x200)) {
+                break;
+            }
+        }
+    }
+    if (i == 12) {
+        return;
+    }
+    *position = pos;
+}
+
+// NONMATCHING (90.44%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
+// the inlined partyChgMoveMode switch also drops the original's `cmpwi 4; bge`.
+void partyWalkInit(PartyEntry* party, s32 mode) {
+    PartyEntry* work = party;
+    MarioWork* mario = work->playerPtr;
+    s32 i;
+
+    work->flags |= 2;
+    if (!(work->flags & 0x8)) {
+        Vec pos = marioGetPtr()->position;
+        u32* src = (u32*)&pos;
+        Footmark* f = (Footmark*)footmarkBuf;
+        for (i = 0; i < 0x50; i++) {
+            ((u32*)&f->x)[0] = src[0];
+            ((u32*)&f->x)[1] = src[1];
+            ((u32*)&f->x)[2] = src[2];
+            f->field_0 = 0;
+            f++;
+        }
+        writeId[0] = 0;
+        readId[0] = 0;
+    } else {
+        PartyEntry* target;
+        Vec pos;
+        u32* src = (u32*)&pos;
+        Footmark* f;
+        mario = marioGetPtr();
+        target = partyGetPtr(marioGetPartyId());
+        if (target != NULL) {
+            if (nokonokoGetStatus(target) == 3
+                || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
+                pos = mario->position;
+            } else {
+                pos = target->position;
+            }
+        } else {
+            pos = mario->position;
+        }
+        f = (Footmark*)(footmarkBuf + 0x500);
+        for (i = 0; i < 0x50; i++) {
+            ((u32*)&f->x)[0] = src[0];
+            ((u32*)&f->x)[1] = src[1];
+            ((u32*)&f->x)[2] = src[2];
+            f->field_0 = 0;
+            f++;
+        }
+        writeId[1] = 0;
+        readId[1] = 0;
+    }
+    *(u8*)((u8*)work + 0x3D) = 0;
+    *(u32*)((u8*)work + 0x44) = 0x10;
+    *(f32*)((u8*)work + 0x40) = 50.0f;
+    *(u8*)((u8*)work + 0x3E) = 0;
+    work->jumpPara2 = 1.8f;
+    work->jumpPara1 = 0.0f;
+    if (!(mario->flags & 0x400000)) {
+        partyChgPoseId(party, 1);
+        partyChgMoveMode(party, 1);
+        partyChgMot(party, 0);
+    }
+}
+
+// NONMATCHING (99.74%): all opcodes match; the inlined unk_800c8f24 body allocates the
+// gravity value to f1 instead of f3, so 17 operands show as fp-register `arg_mismatch`.
+void partyForceWalk(PartyEntry* party) {
+    PartyEntry* work = party;
+    Vec pos;
+    HitEntry* ground;
+    HitEntry* wall;
+    s32 attr;
+
+    if (work->field_8 & 0x8) {
+        work->field_8 &= ~0x8;
+        if (work->flags & 0x100) {
+            if (work->currentMemberId == 3) {
+                bomhei_use_cancel();
+            }
+            if (work->currentMemberId == 2) {
+                nokonoko_finish(work);
+            }
+            work->flags &= ~0x100;
+        }
+    }
+    switch (work->field_36) {
+    case 0:
+    case 1:
+        if (work->field_28 <= 0) {
+            work->field_28 = 0;
+            unk_800ba2dc(work);
+        } else {
+            {
+                f32 spd = work->speed;
+                unk_800c8f24(work, spd);
+            }
+            pos = work->position;
+            wall = partySearchFrontWall(work, &pos, work->speed, work->dir);
+            if (wall != NULL) {
+                if (work->field_36 == 3) {
+                    work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+                    work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+                    work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+                }
+                work->field_36 = 2;
+                work->field_8 |= 2;
+            } else {
+                work->position.x = pos.x;
+                work->position.z = pos.z;
+            }
+            if (--work->field_28 <= 0) {
+                work->field_28 = 0;
+                unk_800ba2dc(work);
+            } else {
+                work->flags &= ~0x80;
+                ground = partySearchGround(work, 10.0f, 10.0f);
+                attr = 0;
+                if (ground != NULL) {
+                    attr = hitGetAttr(ground);
+                    if (attr & 0x200) {
+                        ground = NULL;
+                    }
+                }
+                work->field_138 = ground;
+                if (ground == NULL) {
+                    if (work->field_36 == 3) {
+                        work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+                        work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+                        work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+                    }
+                    work->field_36 = 3;
+                    work->field_8 |= 2;
+                    work->jumpPara2 = -1.0f;
+                } else {
+                    if (attr & 0x100) {
+                        work->flags |= 0x80;
+                    } else {
+                        work->flags &= ~0x80;
+                    }
+                }
+                work->position.y = work->field_E4;
+            }
+        }
+        break;
+    case 2:
+        if (--work->field_28 <= 0) {
+            work->field_28 = 0;
+        }
+        party_motion_jump(work);
+        break;
+    case 3:
+        if (--work->field_28 <= 0) {
+            work->field_28 = 0;
+        }
+        party_motion_fall(work);
+        break;
+    default:
+        break;
+    }
+    work->field_FC = work->dir;
+    if (work->currentMemberId == 6) {
+        vivianShadow(work);
+    }
+}
+
+extern int __float_nan[];
+
+static inline s32 partyFpClassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+    case 0x7F800000:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return 1;
+        } else {
+            return 2;
+        }
+        break;
+    case 0:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return 5;
+        } else {
+            return 3;
+        }
+        break;
+    default:
+        return 4;
+    }
+}
+
+static inline f32 partySqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return *(f32*)__float_nan;
+    } else if (partyFpClassifyf(x) == 1) {
+        return *(f32*)__float_nan;
+    }
+    return x;
+}
+
+// NONMATCHING (89.86%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
+// the inlined partyChgMoveMode switch drops `cmpwi 4; bge`; the inline sqrt double pool lands
+// in a fresh @991 instead of str_802CDB20+0x600 and the length/scale fp regs are swapped.
+void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
+    PartyEntry* work = party;
+    MarioWork* mario = work->playerPtr;
+    s32 hosei = partyMarioHosei(work);
+    f32 sinv;
+    f32 cosv;
+    f32 f31;
+    f32 f30;
+    f32 scale;
+
+    if (hosei != 0 && work->field_3B != 2) {
+        if (!(work->flags & 0x8)) {
+            partyClearFootmark();
+        } else {
+            s32 flag = 0;
+            PartyEntry* partner = anotherPartyGetPtr(1);
+
+            if (partner != NULL) {
+                if (nokonokoGetStatus(partner) == 3
+                    || PSVECDistance(&mario->position, &partner->position) >= 150.0f) {
+                    flag = 1;
+                }
+            }
+            if (flag != 0) {
+                MarioWork* m2 = marioGetPtr();
+                PartyEntry* target = partyGetPtr(marioGetPartyId());
+                Vec pos;
+                u32* src;
+                Footmark* f;
+                s32 i;
+
+                if (target == NULL || nokonokoGetStatus(target) == 3
+                    || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
+                    pos = m2->position;
+                } else {
+                    pos = target->position;
+                }
+                src = (u32*)&pos;
+                f = (Footmark*)(footmarkBuf + 0x500);
+                for (i = 0; i < 0x50; i++) {
+                    ((u32*)&f->x)[0] = src[0];
+                    ((u32*)&f->x)[1] = src[1];
+                    ((u32*)&f->x)[2] = src[2];
+                    f->field_0 = 0;
+                    f++;
+                }
+                writeId[1] = 0;
+                readId[1] = 0;
+            }
+        }
+    }
+    if (work->field_8 & 0x200000) {
+        hosei = 0;
+    }
+    if (hosei >= 0x1E) {
+        *(s16*)((u8*)work + 0x52) = 0;
+        if (!(work->currentMemberId == 4 && work->field_34 == 3)) {
+            work->field_3C[1] = 0;
+            {
+                s32 oldMode = work->field_3B;
+                switch (oldMode) {
+                case 4:
+                case 5:
+                    break;
+                case 6:
+                    work->flags &= ~0x8000;
+                    break;
+                default:
+                    break;
+                }
+            }
+            work->field_3B = 2;
+            work->field_8 |= 4;
+            if (work->field_36 == 3) {
+                work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+                work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+                work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+            }
+            work->field_36 = 1;
+            work->field_8 |= 2;
+        }
+    }
+    sincosf(&sinv, &cosv, work->dir);
+    f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
+    f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
+    *angle = angleABf(0.0f, 0.0f, f31, f30);
+    if (work->flags & 0x80) {
+        scale = 0.75f;
+    } else {
+        scale = 1.0f;
+    }
+    *speed = scale * partySqrtf(f31 * f31 + f30 * f30);
 }
