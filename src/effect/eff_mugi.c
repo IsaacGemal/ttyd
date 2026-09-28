@@ -12,7 +12,9 @@
 #include <string.h>
 
 // .rodata constants, declared in their original order so MWCC can address the .rodata base + offset.
-const Vec vec3_802f3498[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
+const Vec vec3_802f3498 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f34a4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
 const char str_802F34BC[12] = "EFF_Hana";
 const char str_802F34C8[12] = "EFF_Mugi";
 const char gap_04_802F34D4_rodata[4] = { 0 };
@@ -130,7 +132,7 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	BOOL anyActive;
 	const char* name;
 
-	pos = vec3_802f3498[2];
+	pos = vec3_802f34b0;
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
@@ -225,7 +227,7 @@ void effMugiKemuriMain(EffectEntry* effect) {
 	BOOL anyActive;
 	const char* name;
 
-	pos = vec3_802f3498[1];
+	pos = vec3_802f34a4;
 	pos.x = work->x;
 	pos.y = work->y;
 	pos.z = work->z;
