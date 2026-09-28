@@ -17,6 +17,7 @@
 #define PI 3.14159265358979323846264338327950288419716939937510f
 
 extern GlobalWork* gp;
+extern const f64 double_10_802c2f20;
 
 // The header's AnimationPoseData padding at 0x1A0 is 4 bytes short: the original
 // binary has groups at 0x1A8 and mpAnims at 0x1AC. Work around it locally.
@@ -539,10 +540,58 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (0.62%): empty placeholder, not decompiled yet.
+// NONMATCHING (93.61%): register allocation only; the logic and stack frame match.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
-}
+    AnimationPose* pose = &wp->poses[poseId];
+    s32 type;
+    s32 i;
+    s32 j;
 
+    if (animName == NULL) {
+        pose->paperId = -1;
+        wp->poses[poseId].flags &= ~1;
+        return;
+    }
+    type = pose->type;
+    for (i = 0; i < wp->totalPoses; i++) {
+        AnimationPose* p = &wp->poses[i];
+
+        if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == type) {
+            if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
+                break;
+            }
+        }
+    }
+    if (i == wp->totalPoses) {
+        i = -1;
+    }
+    pose->paperId = i;
+    if (pose->paperId < 0) {
+        for (j = 0; j < wp->totalPoses; j++) {
+            AnimationPose* p = &wp->poses[j];
+
+            if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == 2) {
+                if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
+                    break;
+                }
+            }
+        }
+        if (j == wp->totalPoses) {
+            j = -1;
+        }
+        pose->paperId = j;
+    }
+    *(s32*)((u8*)pose + 0x94) = -1;
+    pose->mLocalTimeInit = animTimeGetTime(pose->type);
+    if (someflag) {
+        pose->flags |= 2;
+        pose->flags |= 4;
+    } else {
+        pose->flags &= ~2;
+        pose->flags &= ~4;
+    }
+    wp->poses[poseId].flags |= 1;
+}
 // NONMATCHING (81.02%): 6 instructions differ, 14 missing, plus register differences.
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     AnimationPose* pose = &wp->poses[poseId];
@@ -550,15 +599,15 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     s32 top = data->mAnimCount;
     s32 animId = (s32)animName;
 
-    if (animId != 0) {
+    if (animId < 0) {
         for (animId = 0; animId < top; animId++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
                 break;
             }
         }
-        if (animId >= top) {
-            animId = 0;
-        }
+    }
+    if (animId >= top) {
+        animId = 0;
     }
     *(s32*)((u8*)pose + 0x94) = animId;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
@@ -567,8 +616,71 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     }
 }
 
-// NONMATCHING (0.63%): empty placeholder, not decompiled yet.
+// NONMATCHING (95.57%): register allocation differs and the `id != -2` test
+// branches to the create block in the original (bne) vs to the skip block here (beq).
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
+    AnimationPose* pose = &wp->poses[poseId];
+
+    if (pose->paperId != -1) {
+        if (animName != NULL) {
+            AnimationPose* paper = &wp->poses[pose->paperId];
+
+            if (!strcmp(animPoseGetBaseData(paper)->fileName, animName)) {
+                if (((pose->flags & 2) ? 1 : 0) == someflag) {
+                    return;
+                }
+            }
+        }
+        {
+            AnimationPose* paper = &wp->poses[pose->paperId];
+
+            paper->references--;
+            if (paper->references < 0) {
+                AnimationPoseFile* file = &wp->files[paper->fileId];
+
+                file->references--;
+                if (file->references <= 0) {
+                    AnimationTextureFile* texture;
+
+                    file->active = 0;
+                    texture = &wp->textures[file->textureId];
+                    texture->references--;
+                    if (texture->references <= 0) {
+                        fileFree(texture->handle);
+                        texture->active = 0;
+                    }
+                    fileFree(file->handle);
+                }
+                paper->flags = 0;
+            }
+        }
+    }
+    if (animName == NULL) {
+        pose->paperId = -1;
+        wp->poses[poseId].flags &= ~1;
+        return;
+    }
+    {
+        s32 id = animPoseEntry(animName, pose->type);
+
+        if (id != -2) {
+            AnimationPose* p = &wp->poses[id];
+
+            p->typeFlags = 1;
+            p->references = 0;
+            p->flags |= 1;
+        }
+        pose->paperId = id;
+    }
+    *(s32*)((u8*)pose + 0x94) = -1;
+    pose->mLocalTimeInit = animTimeGetTime(pose->type);
+    if (someflag) {
+        pose->flags |= 2;
+        pose->flags |= 4;
+    } else {
+        pose->flags &= ~2;
+    }
+    wp->poses[poseId].flags |= 1;
 }
 
 // NONMATCHING (95.80%): 5 instructions differ, 2 missing, 1 extra, plus register differences.
@@ -630,18 +742,16 @@ f32 animPoseGetLoopTimes(s32 id) {
     return pose->loopTime;
 }
 
-// NONMATCHING (78.42%): 1 instruction differs, 2 missing, 2 extra, plus register differences.
+// NONMATCHING (78.42%): the flags&8 test branches to the compute block in the original;
+// ours branches to the return-TRUE block (branch layout only).
 BOOL animPoseGetPeraEnd(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
 
     if (pose->flags & 8) {
-        goto compute;
+        return fabs(pose->field_0x7C - pose->rotationY) < double_10_802c2f20;
     }
     return TRUE;
-compute:
-    return fabs(pose->field_0x7C - pose->rotationY) < 10.0;
 }
-
 void animPoseSetMaterialFlagOn(s32 poseId, u32 mask) {
     AnimationPose* pose = &wp->poses[poseId];
     pose->materialFlag |= mask;
@@ -687,7 +797,245 @@ void animPoseMain(s32 poseId) {
 }
 
 // pushGXModelMtx_TransformNode__
+// NONMATCHING (96.99%): all logic/constants/offsets and the switch dispatch match; the
+// original keeps every node field live in f14-f31 (frame 0x310) while the compiler here
+// reloads several fields and uses one extra GPR for the void*->AnimPoseNode* cast.
+void pushGXModelMtx_TransformNode__(void* node) {
+    AnimPoseNode* n = node;
+    Mtx mTrans, mScale, mRotX, mRot, t1, t2, t3, t4, t5, t6;
+    f32 (*result)[4];
+    u32 flags = 0;
+    f32 rotX = n->mRot1.x * 2.0f;
+    f32 rotY = n->mRot1.y * 2.0f;
+    f32 rotZ = n->mRot1.z * 2.0f;
+    f32 rcx = n->mRotationCenter.x, rcy = n->mRotationCenter.y, rcz = n->mRotationCenter.z;
+    f32 scx = n->mScaleCenter.x, scy = n->mScaleCenter.y, scz = n->mScaleCenter.z;
+    f32 rtx = n->mRotationTranslation.x, rty = n->mRotationTranslation.y, rtz = n->mRotationTranslation.z;
+    f32 stx = n->mScaleTranslation.x, sty = n->mScaleTranslation.y, stz = n->mScaleTranslation.z;
+    f32 sx = n->mScale.x, sy = n->mScale.y, sz = n->mScale.z;
+    f32 tx = n->mTranslation.x, ty = n->mTranslation.y, tz = n->mTranslation.z;
+
+    if (tx != 0.0f || ty != 0.0f || tz != 0.0f) {
+        PSMTXTrans(mTrans, tx, ty, tz);
+        flags |= 1;
+    }
+    if (sx != 1.0f || sy != 1.0f || sz != 1.0f) {
+        PSMTXScale(mScale, sx, sy, sz);
+        flags |= 2;
+    }
+    if (scx != 0.0f || scy != 0.0f || scz != 0.0f) {
+        if (flags & 2) {
+            PSMTXTrans(t2, -scx, -scy, -scz);
+            PSMTXTrans(t1, scx, scy, scz);
+            PSMTXTrans(t3, stx, sty, stz);
+            PSMTXConcat(t3, t1, mRot);
+            PSMTXConcat(mRot, mScale, mRot);
+            PSMTXConcat(mRot, t2, mScale);
+        } else if (stx != 0.0f || sty != 0.0f || stz != 0.0f) {
+            PSMTXTrans(mScale, stx, sty, stz);
+            flags |= 2;
+        }
+    }
+    PSMTXIdentity(mRotX);
+    if (rotZ != 0.0f) {
+        PSMTXRotRad(mRot, 'z', MTXDegToRad(rotZ));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 4;
+    }
+    if (rotY != 0.0f) {
+        PSMTXRotRad(mRot, 'y', MTXDegToRad(rotY));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 4;
+    }
+    if (rotX != 0.0f) {
+        PSMTXRotRad(mRot, 'x', MTXDegToRad(rotX));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 4;
+    }
+    if (rcx != 0.0f || rcy != 0.0f || rcz != 0.0f) {
+        if (flags & 4) {
+            PSMTXTrans(t5, -rcx, -rcy, -rcz);
+            PSMTXTrans(t4, rcx, rcy, rcz);
+            PSMTXTrans(t6, rtx, rty, rtz);
+            PSMTXConcat(t6, t4, mRot);
+            PSMTXConcat(mRot, mRotX, mRot);
+            PSMTXConcat(mRotX, t5, mRotX);
+        } else if (rtx != 0.0f || rty != 0.0f || rtz != 0.0f) {
+            PSMTXTrans(mRotX, rtx, rty, rtz);
+            flags |= 4;
+        }
+    }
+
+    g_modeling_mtx_lv++;
+    g_modeling_mtx = &g_modeling_mtx_stack[g_modeling_mtx_lv];
+    switch (flags) {
+        case 0:
+            PSMTXIdentity(mRot);
+            result = mRot;
+            break;
+        case 1:
+            result = mTrans;
+            break;
+        case 2:
+            result = mScale;
+            break;
+        case 3:
+            PSMTXConcat(mTrans, mScale, mRot);
+            result = mRot;
+            break;
+        case 4:
+            result = mRotX;
+            break;
+        case 5:
+            PSMTXConcat(mTrans, mRotX, mRot);
+            result = mRot;
+            break;
+        case 6:
+            PSMTXConcat(mRotX, mScale, mRot);
+            result = mRot;
+            break;
+        case 7:
+            PSMTXConcat(mTrans, mRotX, mRot);
+            PSMTXConcat(mRot, mScale, mTrans);
+            result = mTrans;
+            break;
+    }
+    PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
+}
+
 // pushGXModelMtx_JointNode__
+// NONMATCHING (98.03%): struct offsets, matrix order and all switch cases match; only the
+// float-register scheduling (one extra `fmr f1,f5`) and two branch polarities differ.
+void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
+    AnimPoseNode* n = node;
+    Mtx mTrans, mScale, mJointScale, mRotX, mRot;
+    f32 (*result)[4];
+    u32 flags = 0;
+    f32 scaleX = n->mScale.x, scaleY = n->mScale.y, scaleZ = n->mScale.z;
+    f32 rot1X = n->mRot1.x * 2.0f, rot1Y = n->mRot1.y * 2.0f, rot1Z = n->mRot1.z * 2.0f;
+    f32 rot2X = n->mRot2.x, rot2Y = n->mRot2.y, rot2Z = n->mRot2.z;
+    f32 transX = n->mTranslation.x, transY = n->mTranslation.y, transZ = n->mTranslation.z;
+
+    if (transX != 0.0f || transY != 0.0f || transZ != 0.0f) {
+        PSMTXTrans(mTrans, transX, transY, transZ);
+        flags |= 1;
+    }
+    if (x != 1.0f || y != 1.0f || z != 1.0f) {
+        if (x != 0.0f && y != 0.0f && z != 0.0f) {
+            PSMTXScale(mJointScale, 1.0f / x, 1.0f / y, 1.0f / z);
+        } else {
+            PSMTXScale(mJointScale, 1.0f, 1.0f, 1.0f);
+        }
+        flags |= 2;
+    }
+    if (scaleX != 1.0f || scaleY != 1.0f || scaleZ != 1.0f) {
+        PSMTXScale(mScale, scaleX, scaleY, scaleZ);
+        flags |= 4;
+    }
+    PSMTXIdentity(mRotX);
+    if (rot2Z != 0.0f) {
+        PSMTXRotRad(mRot, 'z', MTXDegToRad(rot2Z));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+    if (rot2Y != 0.0f) {
+        PSMTXRotRad(mRot, 'y', MTXDegToRad(rot2Y));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+    if (rot2X != 0.0f) {
+        PSMTXRotRad(mRot, 'x', MTXDegToRad(rot2X));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+    if (rot1Z != 0.0f) {
+        PSMTXRotRad(mRot, 'z', MTXDegToRad(rot1Z));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+    if (rot1Y != 0.0f) {
+        PSMTXRotRad(mRot, 'y', MTXDegToRad(rot1Y));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+    if (rot1X != 0.0f) {
+        PSMTXRotRad(mRot, 'x', MTXDegToRad(rot1X));
+        PSMTXConcat(mRotX, mRot, mRotX);
+        flags |= 8;
+    }
+
+    g_modeling_mtx_lv++;
+    g_modeling_mtx = &g_modeling_mtx_stack[g_modeling_mtx_lv];
+    switch (flags) {
+        case 0:
+            PSMTXIdentity(mRot);
+            result = mRot;
+            break;
+        case 1:
+            result = mTrans;
+            break;
+        case 2:
+            result = mJointScale;
+            break;
+        case 3:
+            PSMTXConcat(mTrans, mJointScale, mRot);
+            result = mRot;
+            break;
+        case 4:
+            result = mScale;
+            break;
+        case 5:
+            PSMTXConcat(mTrans, mScale, mRot);
+            result = mRot;
+            break;
+        case 6:
+            PSMTXConcat(mJointScale, mScale, mRot);
+            result = mRot;
+            break;
+        case 7:
+            PSMTXConcat(mTrans, mJointScale, mRot);
+            PSMTXConcat(mRot, mScale, mTrans);
+            result = mTrans;
+            break;
+        case 8:
+            result = mRotX;
+            break;
+        case 9:
+            PSMTXConcat(mTrans, mRotX, mRot);
+            result = mRot;
+            break;
+        case 10:
+            PSMTXConcat(mJointScale, mRotX, mRot);
+            result = mRot;
+            break;
+        case 11:
+            PSMTXConcat(mTrans, mJointScale, mRot);
+            PSMTXConcat(mRot, mRotX, mTrans);
+            result = mTrans;
+            break;
+        case 12:
+            PSMTXConcat(mRotX, mScale, mRot);
+            result = mRot;
+            break;
+        case 13:
+            PSMTXConcat(mTrans, mRotX, mRot);
+            PSMTXConcat(mRot, mScale, mTrans);
+            result = mTrans;
+            break;
+        case 14:
+            PSMTXConcat(mJointScale, mRotX, mRot);
+            PSMTXConcat(mRot, mScale, mTrans);
+            result = mTrans;
+            break;
+        case 15:
+            PSMTXConcat(mTrans, mJointScale, mRot);
+            PSMTXConcat(mRot, mRotX, mTrans);
+            PSMTXConcat(mTrans, mScale, mRot);
+            result = mRot;
+            break;
+    }
+    PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
+}
 
 // NONMATCHING (0.28%): empty placeholder, not decompiled yet.
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
@@ -744,7 +1092,7 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here, good luck finding the separation
 // NONMATCHING (68.93%): 38 instructions differ, 63 missing, 159 extra, plus register differences.
-void renderProc(s32 shapeId) {
+void renderProc(s32 shapeId, s32 field_0x28) {
     CameraEntry* camera;
     AnimationPoseData* data;
     AnimPoseShape *shapes, *shape;
@@ -990,7 +1338,7 @@ void renderProc(s32 shapeId) {
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode) {
     Mtx matrix;
 
-    MTXTrans(matrix, x, y, z);
+    PSMTXTrans(matrix, x, y, z);
     animPoseDrawMtx(poseId, matrix, xluMode, rotY, scale);
 }
 
@@ -1386,6 +1734,90 @@ void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData)
 }
 
 // animPoseDrawShape
+// NONMATCHING (83.95%): register allocation differs (pose in a caller-saved register, shapeId
+// spilled; frame 0x40 vs 0x50) and the animPoseMain calls are inlined away because that
+// function is still an empty stub.
+void animPoseDrawShape(s32 poseId, s32 shapeId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPose* prevPose = wp->mpCurPose;
+    AnimData* prevAnimData = wp->mpCurAnimData;
+    AnimationPoseData* prevPoseData = wp->mpCurPoseData;
+    GXTexObj* prevTexObj0 = wp->mpTexObjs[0];
+    GXTexObj* prevTexObj1 = wp->mpTexObjs[1];
+    GXTexObj* prevCurTexObj = wp->mpCurTexObj;
+    void* prevTexData0 = wp->mpTexDatas[0];
+    void* prevTexData1 = wp->mpTexDatas[1];
+    void* prevCurTexData = wp->mpCurTexData;
+    Mtx* prevPaperMtx0 = wp->paperMtxPtr[0];
+    Mtx* prevPaperMtx1 = wp->paperMtxPtr[1];
+    Mtx* prevPaperMtx2 = wp->paperMtxPtr[2];
+    u32 prevD8 = wp->field_0xD8;
+    u32 prevDC = wp->field_0xDC;
+
+    wp->mpCurPose = pose;
+    wp->mpCurAnimData = ANIM_POSE_DATA_ANIMS(animPoseGetBaseData(pose))[pose->animId].data;
+    wp->mpCurPoseData = animPoseGetBaseData(pose);
+
+    wp->mpTexObjs[0] = NULL;
+    wp->mpTexObjs[1] = NULL;
+    wp->mpCurTexObj = NULL;
+    wp->mpTexDatas[0] = NULL;
+    wp->mpTexDatas[1] = NULL;
+    wp->mpCurTexData = NULL;
+    wp->paperMtxPtr[0] = NULL;
+    wp->paperMtxPtr[1] = NULL;
+    wp->paperMtxPtr[2] = NULL;
+    wp->field_0xD8 = 0;
+    wp->field_0xDC = 0;
+
+    if (pose->lastFrameZero == -1) {
+        if (pose->typeFlags & 2) {
+            AnimationPoseData* data = animPoseGetBaseData(pose);
+            s32 total = data->mBufferPosNum + data->mBufferNrmNum;
+
+            if (total <= (s32)wp->mFloatScratchRP) {
+                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
+                    wp->mFloatScratchWP = 0;
+                }
+                wp->mbUseFloatScratch = 1;
+                wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
+                wp->mFloatScratchWP += data->mBufferPosNum;
+                wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
+                wp->mFloatScratchWP += data->mBufferNrmNum;
+            }
+#ifdef MUST_MATCH
+            // The original loses poseId to the `mulli` and recovers it from the pointer
+            // (magic division by 0x170); pose - wp->poses reproduces that.
+            animPoseMain(pose - wp->poses);
+#else
+            animPoseMain(poseId);
+#endif
+            wp->mbUseFloatScratch = 0;
+        } else {
+#ifdef MUST_MATCH
+            animPoseMain(pose - wp->poses);
+#else
+            animPoseMain(poseId);
+#endif
+        }
+    }
+    renderProc(shapeId, *(s32*)((u8*)pose + 0x28));
+
+    wp->mpCurPose = prevPose;
+    wp->mpCurAnimData = prevAnimData;
+    wp->mpCurPoseData = prevPoseData;
+    wp->mpTexObjs[0] = prevTexObj0;
+    wp->mpTexObjs[1] = prevTexObj1;
+    wp->mpCurTexObj = prevCurTexObj;
+    wp->mpTexDatas[0] = prevTexData0;
+    wp->mpTexDatas[1] = prevTexData1;
+    wp->mpCurTexData = prevCurTexData;
+    wp->paperMtxPtr[0] = prevPaperMtx0;
+    wp->paperMtxPtr[1] = prevPaperMtx1;
+    wp->paperMtxPtr[2] = prevPaperMtx2;
+    wp->field_0xD8 = prevD8;
+    wp->field_0xDC = prevDC;
+}
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name) {
     AnimPoseShape* shape;
