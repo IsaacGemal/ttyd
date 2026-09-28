@@ -9,3 +9,5 @@ typedef struct BattleUnit BattleUnit;
 typedef struct BattleWork BattleWork;
 void BattleGetFirstAttackUnit(BattleWork* wp, BattleUnit** outUnit1, BattleUnit** outUnit2);
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId);
+void BattleSamplingEnemyUpdate(u8* sampling);
+void _btlSamplingEnemy(u8* sampling);

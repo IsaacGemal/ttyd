@@ -47,3 +47,4 @@ void itemFlagOff(ItemEntry* item, u16 flag);
 void itemModeChange(ItemEntry* item, u16 mode);
 void itemForceGet(ItemEntry* item);
 ItemEntry* itemNearDistCheck(f32 x, f32 y, f32 z, f32 maxDist);
+void itemNokoForceGet(ItemEntry* item);

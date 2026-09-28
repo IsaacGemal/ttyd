@@ -35,3 +35,5 @@ void caseDelete(s32 caseId);
 void caseMain(void);
 CaseEntry* caseCheckHitObj(void* obj); // Takes HitEntry
 CaseEntry* caseIdToPtr(s32 caseId);
+struct HitEntry;
+CaseEntry* caseCheckHitObj2(struct HitEntry* hit);

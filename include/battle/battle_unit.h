@@ -735,3 +735,6 @@ void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z);
 BOOL BtlUnit_CheckWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 s32 BtlUnit_GetACPossibility(BattleUnit* unit);
 void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
+struct BtlUnitSeMode;
+void BtlUnit_SetSeMode(struct BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g);
+void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d);
