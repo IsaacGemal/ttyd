@@ -427,30 +427,56 @@ class Semcheck(unittest.TestCase):
         import semcheck
         a = [("li r3, 0x1", 5), ("bl GXSetTevColor", 5)]
         b = [("li r3, 0x2", 9), ("bl GXSetTevColor", 9)]
-        self.assertEqual(semcheck.check_calls(a, b), ["CALL   GXSetTevColor (line 9): r3: original 0x1, yours 0x2"])
+        self.assertEqual(semcheck.check_calls(a, b), ["CALL   GXSetTevColor (near line 9): r3: original 0x1, yours 0x2"])
 
-    def test_a_missing_call_is_flagged(self):
+    def test_missing_calls_constants_passed_as_variables_and_stack_aliasing(self):
         import semcheck
-        a = [("bl camGetPtr", 1), ("bl PSMTXConcat", 2)]
-        b = [("bl PSMTXConcat", 7)]
-        self.assertTrue(any("camGetPtr" in f for f in semcheck.check_calls(a, b)))
+        self.assertTrue(any("camGetPtr" in f for f in semcheck.check_calls([("bl camGetPtr", 1), ("bl f", 2)], [("bl f", 7)])))
+        var = semcheck.check_calls([("li r4, 0x2", 1), ("bl dispEntry", 1)], [("lwz r4, 0x0(r31)", 3), ("bl dispEntry", 3)])
+        self.assertEqual(var, ["CALL   dispEntry (near line 3): r4: original passes 0x2, yours a variable"])
+        concat = lambda d: [("addi r3, r1, 0x8", 1), ("addi r4, r1, 0x38", 1), (f"addi r5, r1, {d}", 1), ("bl PSMTXConcat", 1)]
+        self.assertTrue(semcheck.check_calls(concat("0x38"), concat("0x8")))  # (a, b, b) vs (a, b, a)
+        self.assertEqual(semcheck.check_calls(concat("0x38"), concat("0x38")), [])
 
-    def test_a_wrong_constant_is_flagged_but_a_register_swap_or_reorder_is_not(self):
+    def test_wrong_constants_and_swapped_arguments_are_flagged_but_reorders_are_not(self):
         import semcheck
-        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x100", 1)], [("addi r5, r6, 0xe8", 3)]),
-                         ["VALUE  original `addi R, R, 0x100`, yours `addi R, R, 0xe8` (line 3)"])
-        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x10", 1)], [("addi r5, r6, 0x10", 3)]), [])
-        swapped = semcheck.check_values([("li r3, 0x3c", 1), ("li r4, 0x28", 1)], [("li r3, 0x28", 2), ("li r4, 0x3c", 2)])
-        self.assertEqual(swapped, [])
+        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x100", 1)], [("addi r5, r6, 0xe8", 3)], set()),
+                         ["VALUE  original `addi R, R, 0x100`, yours `addi R, R, 0xe8` (near line 3)"])
+        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x10", 1)], [("addi r5, r6, 0x10", 3)], set()), [])
+        reorder = [("li r3, 0x3c", 1), ("li r4, 0x28", 1)]
+        self.assertEqual(semcheck.check_values(reorder, list(reversed(reorder)), set()), [])
+        swapped = semcheck.check_values([("lfs f1, 0x4(r31)", 1), ("lfs f2, 0x8(r31)", 1)],
+                                        [("lfs f1, 0x8(r31)", 2), ("lfs f2, 0x4(r31)", 2)], set())
+        self.assertEqual(len(swapped), 2)
 
-    def test_field_accesses_and_operation_counts(self):
+    def test_a_constant_stored_from_a_hoisted_register(self):
+        import semcheck
+        a = [("li r5, -0xc", 1), ("sth r5, -0x8000(r31)", 2)]
+        b = [("li r6, 0xc", 1), ("sth r6, -0x8000(r31)", 2)]
+        self.assertEqual(semcheck.check_stores(a, b), ["VALUE  `sth R, -0x8000(R)` stores -0xc in the original, 0xc in yours (near line 2)"])
+
+    def test_floats_are_compared_by_value_not_count(self):
+        import semcheck
+        va = {"float_a": ("f", 0.5), "float_b": ("f", 1.0)}
+        vb = {"@1": ("f", 0.5), "@2": ("f", 2.0)}
+        self.assertEqual(semcheck.check_floats([("lfs f1, float_a@sda21(r0)", 1), ("lfs f2, float_a@sda21(r0)", 1)],
+                                               [("lfs f1, @1@sda21(r0)", 4)], va, vb), [])
+        self.assertEqual(semcheck.check_floats([("lfs f1, float_b@sda21(r0)", 1)], [("lfs f1, @2@sda21(r0)", 4)], va, vb),
+                         ["FLOAT  original loads more: 1 x1; yours loads more: 2 x1 (near line 4)"])
+
+    def test_field_accesses_and_test_counts(self):
         import semcheck
         a = [("lwz r3, 0x28(r4)", 1), ("bge 0x10", 1)]
         b = [("lwz r5, 0x1c(r6)", 2), ("blt 0x10", 2), ("lwz r0, 0x8(r1)", 2)]
         mem = semcheck.check_mem(a, b)
         self.assertIn("MEM    `lwz ..., 0x28(base)`: original 1, yours 0", mem)
         self.assertFalse(any("0x8(base)" in f for f in mem))  # stack frame traffic is not a field access
-        self.assertEqual(semcheck.check_ops(a, b), ["OPS    original has more: bge x1; yours has more: blt x1, lwz x1"])
+        self.assertEqual(semcheck.check_ops(a, b), ["OPS    original has more: bge x1; yours has more: blt x1"])
+
+    def test_strings_compare_up_to_their_terminator(self):
+        import semcheck
+        self.assertEqual(semcheck.value("str_1", b"Fire\0\0\0\0"), b"Fire")
+        self.assertEqual(semcheck.value("tbl", b"\x80\x80\x81\x7f"), b"\x80\x80\x81\x7f")
 
 
 if __name__ == "__main__":

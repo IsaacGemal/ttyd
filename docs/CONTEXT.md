@@ -1346,8 +1346,14 @@ every reviewer claim, including simple-looking constants, gets checked.
 
 **What changed.** Star Fox Adventures' decomp (CC0) treats wrong computations in partial functions as a known risk
 with dedicated scans. Their tools are vendored in tools/sfa/ (wrongvalue_scan.py, a71_mnhist_scan.py, ndiff.py,
-function_objdump.py); on our rough partials the wrongvalue scan finds nothing (it needs near-matching functions),
-the instruction-count scan works. `tools/semcheck.py` runs their rules per unit over objdiff's diff, with source
-line numbers, plus call-argument and data-byte checks: on wave 13 as the agents left it, it flagged every one of
-review 1's eff_fire findings with the right line. `check.py --final` shows it to agents (brief rule 17: fix the
+function_objdump.py); upstream's wrongvalue scan can never report a constant (its signature keeps immediates, so
+two instructions that differ in one never pair up), fixed in our copy. `tools/semcheck.py` runs their rules per unit
+over objdiff's diff, with source line numbers, plus call arguments (constants, constant vs variable, which arguments
+share a stack buffer), float constants by value, constants stored from hoisted registers, and data bytes. PR #18's
+first review planted 27 bugs in a fully matched file and caught semcheck missing 7 (wrong floats, callees and
+strings were invisible under objdiff's `functionRelocDiffs=none`); now all 26 real ones are flagged and the unchanged
+file gets none (`tools/tests/semcheck_mutants.py`). On wave 13 as the agents left it, it flags every one of review
+1's eff_fire findings; on main it still raises leads three reviews didn't report (eff_fire Disp's vertex colour
+stores near line 644, and five float constants the original loads that ours never does), unverified: they are the
+kind of thing the next cleanup wave checks. `check.py --final` shows it to agents (brief rule 17: fix the
 real ones and use leftover time on the list), and merge_agent.sh saves it per agent for the reviews.

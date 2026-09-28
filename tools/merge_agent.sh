@@ -111,7 +111,9 @@ Co-Authored-By: $ORCH
 MSG
 echo "MERGED $TAG: $n0 -> $n1 ($(git log --oneline -1))"
 # likely wrong code left in partly matched functions, for the review (tools/semcheck.py; leads, not verdicts)
-python3 tools/semcheck.py "$UNIT" > "$D/semcheck.txt" 2>&1 && echo "SEMCHECK $TAG: $(tail -1 "$D/semcheck.txt") -> $D/semcheck.txt"
+SEMUNIT=$UNIT; case $F in rels/*) SEMUNIT="$(echo "$F" | cut -d/ -f2)/$UNIT" ;; esac  # a REL unit names its module
+python3 tools/semcheck.py "$SEMUNIT" > "$D/semcheck.txt" 2>&1
+echo "SEMCHECK $TAG: $(tail -1 "$D/semcheck.txt") -> $D/semcheck.txt"
 
 # Link the file if this merge finished it (tools/autolink.py keeps the flip only if the checksums pass).
 if python3 tools/autolink.py --list | grep -qx "$UNIT.c"; then

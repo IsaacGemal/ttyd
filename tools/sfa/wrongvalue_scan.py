@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Ported from SFA-Decomp (CC0 1.0) tools/wrongvalue_scan.py at 3753ef0b07; adapted for TTYD (G8MJ01, MarioSt/ units, an optional
-# unit filter, TTYD_ROOT/OBJDUMP overrides). Local reference checkout: ~/SFA-Decomp.
+# unit filter, TTYD_ROOT/OBJDUMP overrides, and immediates masked in sig(): see there). Local reference checkout: ~/SFA-Decomp.
 """Scan sub-100 fns for WRONG-VALUE bugs: regions where target and current share
 the same mnemonic sequence but differ in an IMMEDIATE constant or a SYMBOL
 reference (not reg-perm, not @NNN-vs-lbl pool-reloc noise). These are correctness
@@ -45,7 +45,9 @@ def norm_pool(tok):
     return tok
 
 def sig(instr):
-    return maskreg(instr.split("#")[0]).strip()
+    # TTYD: immediates are masked too. Upstream masks only registers, so two instructions that differ in a constant
+    # never share a signature and the IMM check below can never fire.
+    return imm_re.sub(lambda m: m.group(0).replace(m.group(1), "N"), maskreg(instr.split("#")[0])).strip()
 
 hits = []
 for fz, un, sym in targets:

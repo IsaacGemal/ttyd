@@ -104,11 +104,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 
 17. **Leaving wrong code in a function that doesn't match.** A function below 100% is only checked by reviewers,
    and in waves 13 and 14 they found a wrong constant, an inverted test, a missing call or a wrong offset in
-   between one in three and one in seven partly matched functions. `python3 check.py --final UNIT` lists the likely ones (tools/semcheck.py:
-   CALL, VALUE, MEM, OPS and DATA lines, with your source line). Each is a lead, not a verdict: a reordered block
-   can show up as two flags, so read the asm at that spot before changing anything. Fix the real ones, even when
-   a fix lowers the score a little: correct code at 97% is worth more than wrong code at 98%. When you've been
-   through your function list, spend the time you have left on this list rather than stopping early.
+   between one in three and one in five partly matched functions. `python3 check.py --final UNIT` lists the likely
+   ones (tools/semcheck.py: CALL, SYMBOL, FLOAT, VALUE, MEM, OPS and DATA lines, near your source line). Each is a
+   lead, not a verdict: read the asm at that spot. Fix what the asm shows is wrong, even when the fix lowers the
+   score a little (correct code at 97% is worth more than wrong code at 98%), and leave what the asm confirms,
+   even if it stays flagged. When you've been through your function list, spend the time you have left on this
+   list rather than stopping early.
 
 ## Signedness hints from the assembly
 

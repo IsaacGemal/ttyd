@@ -1,5 +1,5 @@
-# Ported from SFA-Decomp (CC0 1.0) tools/function_objdump.py at 3753ef0b07; adapted for TTYD (G8MJ01, MarioSt/ units, an optional
-# unit filter, TTYD_ROOT/OBJDUMP overrides). Local reference checkout: ~/SFA-Decomp.
+# Ported from SFA-Decomp (CC0 1.0) tools/function_objdump.py at 3753ef0b07; adapted for TTYD: the default version is G8MJ01 and
+# the repo root is two levels up (tools/sfa/). Local reference checkout: ~/SFA-Decomp.
 from __future__ import annotations
 
 import argparse
@@ -79,7 +79,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parent.parent.parent
     config_path = repo_root / "build" / args.version / "config.json"
     if not config_path.is_file():
         raise SystemExit(f"Missing config: {config_path}")
