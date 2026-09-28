@@ -1763,9 +1763,10 @@ void* mapSearchDmdJointSub(void* a, void* b) {
 }
 
 #ifdef MUST_MATCH
+// The original passes the caller's own Vec where the by-value argument would take a copy.
 #define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
 #else
-#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj((p), (e), (n), (f))
+#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
 #endif
 
 // NONMATCHING (99.65%): branch-2 loop only: `e` and the compiler-generated i*4 induction
