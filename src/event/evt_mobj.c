@@ -2014,7 +2014,12 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= 6;
+#ifdef MUST_MATCH
+    // The original addresses vec3_802c40b8 from the vec3_802c3dc8 base.
     pos = *(Vec*)((u8*)vec3_802c3dc8 + 0x2F0);
+#else
+    pos = vec3_802c40b8[0];
+#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -2033,7 +2038,7 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (77.22%): missing unit .rodata base shifts the callee-saved register allocation.
+// NONMATCHING (77.23%): missing unit .rodata base shifts the callee-saved register allocation.
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2068,7 +2073,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     scale.z = vec3_802c405c[0].z;
     obj->scale2 = scale;
     mobjCalcMtx2(obj);
-    mapGrpFlagOn((const char*)r30, 0x40000);
+    mapGrpFlagOn((const char*)r30, 0x400000);
     animPoseSetAnim(obj->poseId, "S_1", 1);
     animPoseWorldPositionEvalOn(obj->poseId);
     return 2;

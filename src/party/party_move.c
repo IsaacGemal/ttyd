@@ -1183,7 +1183,7 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
-// NONMATCHING (69%): the original returns BOOL (li r3,0/1 on the early exits and 1 on success);
+// NONMATCHING (69.05%): the original returns BOOL (li r3,0/1 on the early exits and 1 on success);
 // include/party/party_move.h:30 declares it void, so those return values are missing. The header
 // needs changing to BOOL (callers ignore the result). Vec-literal stack layout also differs.
 void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
@@ -1224,7 +1224,7 @@ void partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
             dir.y = -1.0f;
             dir.z = 0.0f;
             h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
-            if (h == NULL || (hitGetAttr(h) & 0x200)) {
+            if (h == NULL || !(hitGetAttr(h) & 0x200)) {
                 break;
             }
         }

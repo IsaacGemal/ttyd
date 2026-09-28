@@ -19,6 +19,7 @@
 #include "math_ext.h"
 #include <dolphin/mtx.h>
 #include "motion/mot_slit.h"
+#include "mario/mariost.h"
 
 // locals for symbols with no home header
 
@@ -205,6 +206,23 @@ BOOL chkFilterAttr2(HitCheckQuery* query, HitEntry* entry) {
     return (entry->attributes & query->user0) == 0 || (entry->attributes & query->user1) != 0;
 }
 
+// The original addresses these .rodata objects as offsets from one base symbol.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+extern const char str_802C5950[];
+extern const char str_802C5964[];
+extern const char str_802C5974[];
+extern const char str_802C5988[];
+extern const char str_802C59A4[];
+extern const char str_802C59BC[];
+extern const char str_802C59D4[];
+extern const Vec vec3_802c588c;
+extern const Vec vec3_802c58a4;
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+
+
 // strings/rodata with no home header (addressed from the rodata base symbol)
 extern const u8 vec3_802c5730[];
 extern const u8 vec3_802c573c[];
@@ -221,9 +239,9 @@ BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
+    if (strcmp((const char*)(obj + 0x15), RO(base, 0x274, str_802C59A4)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x28C, str_802C59BC)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x2A4, str_802C59D4)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -245,9 +263,9 @@ BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
+    if (strcmp((const char*)(obj + 0x15), RO(base, 0x274, str_802C59A4)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x28C, str_802C59BC)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x2A4, str_802C59D4)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -269,9 +287,9 @@ BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = (u8*)mobjHitObjPtrToPtr(entry);
-    if (strcmp((const char*)(obj + 0x15), (char*)base + 0x274) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x28C) == 0 ||
-        strcmp((const char*)(obj + 0x15), (char*)base + 0x2A4) == 0) {
+    if (strcmp((const char*)(obj + 0x15), RO(base, 0x274, str_802C59A4)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x28C, str_802C59BC)) == 0 ||
+        strcmp((const char*)(obj + 0x15), RO(base, 0x2A4, str_802C59D4)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -462,7 +480,6 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     return NULL;
 }
 
-extern s32 gp;
 extern const char str_802C5940[];
 extern const Vec vec3_802c5874;
 extern const f32 float_60_8041a808;
@@ -490,7 +507,7 @@ HitEntry* N_dou10_yoko_yari3(void) {
     f32 cs;
     HitEntry* hit;
 
-    if (strcmp((char*)(gp + 0x12C), (char*)base + 0x210) != 0) {
+    if (strcmp(gp->currentMapName, RO(base, 0x210, str_802C5940)) != 0) {
         return NULL;
     }
 
@@ -499,7 +516,7 @@ HitEntry* N_dou10_yoko_yari3(void) {
     v.y = v.y + float_5_8041a7b8;
     query.targetPos = v;
     sincosf(&sn, &cs, float_0_8041a7a4);
-    dir = *(const Vec*)(base + 0x15C);
+    dir = *(const Vec*)(RO(base, 0x15C, vec3_802c588c));
     dir.x = sn;
     dir.z = cs;
     query.targetDir = dir;
@@ -514,7 +531,7 @@ HitEntry* N_dou10_yoko_yari3(void) {
     v.y = v.y + float_5_8041a7b8;
     query.targetPos = v;
     sincosf(&sn, &cs, float_0_8041a7a4);
-    dir = *(const Vec*)(base + 0x174);
+    dir = *(const Vec*)(RO(base, 0x174, vec3_802c58a4));
     dir.x = sn;
     dir.z = cs;
     query.targetDir = dir;
@@ -526,7 +543,7 @@ HitEntry* N_dou10_yoko_yari3(void) {
     return hit;
 }
 
-// NONMATCHING (78.96%): 0xc0 frame in the original vs 0xb0 here (toMovedir's result
+// NONMATCHING (78.97%): 0xc0 frame in the original vs 0xb0 here (toMovedir's result
 // is dead in both); pos/hitPos copies and the round blocks schedule differently.
 HitEntry* dou10_yoko_yari2(f32* out) {
     MarioWork* wp = marioGetPtr();
@@ -539,7 +556,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
 
     toMovedir(wp->unk1A8);
     pos = wp->position;
-    if (strcmp((char*)(gp + 0x12C), str_802C5940) != 0) {
+    if (strcmp(gp->currentMapName, str_802C5940) != 0) {
         return NULL;
     }
     pos.y = pos.y + float_60_8041a808;
@@ -576,7 +593,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
     return hit;
 }
 
-// NONMATCHING (77.74%): header says void but the original returns the hit pointer in r3
+// NONMATCHING (77.76%): header says void but the original returns the hit pointer in r3
 // from every exit (`mr r3,r28`); those two instructions and the 0xd0 vs 0xc0 frame
 // differ. Logic is faithful (motion gate, 0x1E0 early-out, probes 2.0/8.0).
 void dou10_yoko_yari(f32* out) {
@@ -598,7 +615,7 @@ void dou10_yoko_yari(f32* out) {
         return;
     }
     pos = wp->position;
-    if (strcmp((char*)(gp + 0x12C), str_802C5940) != 0) {
+    if (strcmp(gp->currentMapName, str_802C5940) != 0) {
         return;
     }
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
@@ -671,7 +688,7 @@ void marioSearchFrontWall_staying(f32 a) {
             *(void**)((u8*)wp + 0x1E0) = NULL;
         }
     } else {
-        if (strcmp((char*)(gp + 0x12C), str_802C5940) == 0) {
+        if (strcmp(gp->currentMapName, str_802C5940) == 0) {
             if (vivianGetStatus() != 2 && vivianGetStatus() != 1 && vivianGetStatus() != 3) {
                 angle = toMovedir(wp->unk1A8);
                 v = wp->position;
@@ -889,10 +906,10 @@ f32 marioChkOverhead(void) {
         if (hitGetAttr(hit) & 0x80000000) {
             u8* obj = (u8*)mobjHitObjPtrToPtr(hit);
 
-            if (strcmp((const char*)(obj + 0x15), (char*)base + 0x220) == 0 ||
-                strcmp((const char*)(obj + 0x15), (char*)base + 0x234) == 0 ||
-                strcmp((const char*)(obj + 0x15), (char*)base + 0x244) == 0 ||
-                strcmp((const char*)(obj + 0x15), (char*)base + 0x258) == 0) {
+            if (strcmp((const char*)(obj + 0x15), RO(base, 0x220, str_802C5950)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x234, str_802C5964)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x244, str_802C5974)) == 0 ||
+                strcmp((const char*)(obj + 0x15), RO(base, 0x258, str_802C5988)) == 0) {
                 ok = 1;
             } else {
                 ok = 0;

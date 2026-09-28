@@ -21,9 +21,9 @@ typedef struct BattleAudienceFallOffsetTable1 {
 typedef struct BattleAudienceFallOffsetTable2 {
     s32 v[48];
 } BattleAudienceFallOffsetTable2;
-extern BattleAudienceKind audience_kind[];
 
-// Data extern defined in battle_audience_kind_data.c.
+// Defined in battle_audience_kind_data.c.
+extern BattleAudienceKind audience_kind[];
 
 // LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
 extern s32 psndSFX_get_vol(s32 id);
@@ -186,7 +186,7 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (77.73%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
+// NONMATCHING (98.58%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
 // dropped); the resulting liveness difference also shifts the loop registers.
 void BattleAudience_Init(void) {
 	BattleAudience* audience;

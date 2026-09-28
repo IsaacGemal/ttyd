@@ -502,14 +502,14 @@ static s32 main_star(EventEntry* event, BOOL isFirstCall) {
             work->starCur.y = intplGetValue(0, work->starCounter, 0x64, work->starStart.y, work->starEnd.y);
             work->starCur.z = intplGetValue(0, work->starCounter, 0x64, work->starStart.z, work->starEnd.z);
             scale = intplGetValue(0, work->starCounter, 0x64, float_0_804217e0, float_2_80421810);
-            work->scale2.x = scale;
-            work->scale2.y = scale;
-            work->scale2.z = scale;
+            work->scale1.x = scale;
+            work->scale1.y = scale;
+            work->scale1.z = scale;
         } else {
             work->starCur = work->starEnd;
-            work->scale2.x = float_2_80421810;
-            work->scale2.y = float_2_80421810;
-            work->scale2.z = float_2_80421810;
+            work->scale1.x = float_2_80421810;
+            work->scale1.y = float_2_80421810;
+            work->scale1.z = float_2_80421810;
         }
         work->scale2.y = intplGetValue(4, work->starCounter, 0x78, float_0_804217e0, float_2160_80421868);
         if (work->starCounter >= 0x78) {

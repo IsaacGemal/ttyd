@@ -3,7 +3,7 @@
 void kpa_dash(void);
 void kpa_walk(void);
 void quake_kpaHipAttack(void);
-void kpaPowUp(void);
+s32 kpaPowUp(void);
 void kpaSetSpec(void);
 void quake_kpaLandOn(void);
 s32 kpaHipAttackOk(void);

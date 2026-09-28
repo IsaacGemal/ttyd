@@ -244,7 +244,7 @@ static MukiWork* get_ptr(void) {
     return (MukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
 
-// NONMATCHING (88%): the original keeps the angle in f30 across cos/sin; otherwise the
+// NONMATCHING (87.63%): the original keeps the angle in f30 across cos/sin; otherwise the
 // switch and transforms match.
 // .text:0x1A4 | 0x80246F70 | size: 0x38C
 static void disp_3D_alpha(CameraId cameraId, void* param) {
@@ -304,7 +304,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (87%): the table initializers land 0xC later in .rodata, so the base-relative
+// NONMATCHING (87.35%): the table initializers land 0xC later in .rodata, so the base-relative
 // copies use 0xBC instead of 0xB0; the rest matches.
 // .text:0x530 | 0x802472FC | size: 0x2F8
 static void disp_3D(CameraId cameraId, void* param) {
@@ -345,7 +345,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (81%): the stack frame is 0x10 smaller (one fewer saved temp) and the
+// NONMATCHING (81.26%): the stack frame is 0x10 smaller (one fewer saved temp) and the
 // Vec copy from .rodata is materialised differently; bodies otherwise match.
 // .text:0x908 | 0x802475F4 | size: 0x6EC
 static void disp_2D(CameraId cameraId, void* param) {
@@ -385,7 +385,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         frac = work->field_18 - (f32)(s32)work->field_18;
         left = sx - float_32_80421fb8 - float_8_80421fbc;
         btlDispGXInit2DRasta();
-        GXLoadPosMtxImm((f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
+        GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         if (d != float_0_80421fb4) {
             btlDispGXQuads2DRasta(left, float_8_80421fbc + sy, frac * float_80_80421fcc + left,
                                   sy - float_8_80421fbc, 0xFF, 0xB4, 0xB4, 0xFF);
@@ -432,7 +432,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         frac = work->field_20 - (f32)(s32)work->field_20;
         left = sx - float_32_80421fb8 - float_8_80421fbc;
         btlDispGXInit2DRasta();
-        GXLoadPosMtxImm((f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
+        GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         if (d != float_0_80421fb4) {
             btlDispGXQuads2DRasta(left, float_8_80421fbc + sy, frac * float_80_80421fcc + left,
                                   sy - float_8_80421fbc, 0xB4, 0xB4, 0xFF, 0xFF);
@@ -459,7 +459,7 @@ static void disp_2D(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (98%): the entry-loop induction variables land in different registers
+// NONMATCHING (97.96%): the entry-loop induction variables land in different registers
 // (r30/r31 swapped); every instruction otherwise matches.
 // .text:0xF80 | 0x80247CE0 | size: 0x6C
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
@@ -477,7 +477,7 @@ s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (56%): the init case's float loads and the vector copies are scheduled
+// NONMATCHING (55.91%): the init case's float loads and the vector copies are scheduled
 // differently, and the int->float magic constant uses an anonymous pool symbol.
 // .text:0xF80 | 0x80247D4C | size: 0x320
 static void main_star(void) {
@@ -561,7 +561,7 @@ static void main_star(void) {
     }
 }
 
-// NONMATCHING (81%): float argument loads are hoisted before the field_04 stores in the
+// NONMATCHING (81.46%): float argument loads are hoisted before the field_04 stores in the
 // original; only scheduling differs.
 // .text:0x12A0 | 0x8024806C | size: 0x288
 void main_icon(s32 index) {
@@ -643,7 +643,19 @@ void main_icon(s32 index) {
     }
 }
 
-// NONMATCHING (82%): the stack frame is 0x10 smaller (the int->float temporaries are laid
+// The original addresses these .rodata objects as offsets from one base symbol.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+extern const char str_80300830[];
+extern const char str_80300844[];
+extern const char str_80300858[];
+extern const char str_8030086C[];
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+
+
+// NONMATCHING (81.87%): the stack frame is 0x10 smaller (the int->float temporaries are laid
 // out differently); instructions otherwise match.
 // .text:0x1528 | 0x802482F4 | size: 0x2AC
 void main_point(s32 index) {
@@ -660,10 +672,10 @@ void main_point(s32 index) {
         point->field_04 = irand(0x1E) + 0x1E;
         point->pos.x = (f32)((index % 3) * 0x30 - 0x30);
         point->pos.y = (f32)(0x7D - (index / 3) * 0x30);
-        point->pos.z = ((const Vec*)(base + 0x48))->z;
-        point->field_14 = ((const Vec*)(base + 0x54))->x;
-        point->field_18 = ((const Vec*)(base + 0x54))->y;
-        point->field_1C = ((const Vec*)(base + 0x54))->z;
+        point->pos.z = ((const Vec*)(RO(base, 0x48, vec3_80300720)))->z;
+        point->field_14 = ((const Vec*)(RO(base, 0x54, vec3_8030072c)))->x;
+        point->field_18 = ((const Vec*)(RO(base, 0x54, vec3_8030072c)))->y;
+        point->field_1C = ((const Vec*)(RO(base, 0x54, vec3_8030072c)))->z;
         point->field_20 = NULL;
         /* fallthrough */
     case 2:
@@ -729,7 +741,7 @@ void main_point(s32 index) {
     }
 }
 
-// NONMATCHING (83%): the original hoists `str_803006D8+0x158` into r29 for the whole
+// NONMATCHING (82.73%): the original hoists `RO(str_803006D8, 0x158, str_80300830)` into r29 for the whole
 // function; the rest differs only in register/scheduling choices.
 // .text:0x14BC | 0x802485A0 | size: 0x638
 void main_cursor(void) {
@@ -753,7 +765,7 @@ void main_cursor(void) {
         work->field_44.x = work->points[4].pos.x;
         work->field_44.y = work->points[4].pos.y;
         work->field_44.z = work->points[4].pos.z + float_5_80422014;
-        work->field_68 = *(Vec*)(str_803006D8 + 0x3C);
+        work->field_68 = *(Vec*)(RO(str_803006D8, 0x3C, vec3_80300714));
         work->field_40 = 4;
         work->field_74 = dat_80421f50;
         /* fallthrough */
@@ -779,7 +791,7 @@ void main_cursor(void) {
                     }
                     if ((s32)work->field_14 > (s32)old) {
                         work->field_24 = 0x3C;
-                        psndSFXOn(str_803006D8 + 0x158);
+                        psndSFXOn(RO(str_803006D8, 0x158, str_80300830));
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
                         }
@@ -795,7 +807,7 @@ void main_cursor(void) {
                             BattleAudienceSoundHandBeat();
                         }
                     }
-                    psndSFXOn(str_803006D8 + 0x16C);
+                    psndSFXOn(RO(str_803006D8, 0x16C, str_80300844));
                     break;
                 case 1:
                     old = work->field_1C;
@@ -805,7 +817,7 @@ void main_cursor(void) {
                     }
                     if ((s32)work->field_1C > (s32)old) {
                         work->field_28 = 0x3C;
-                        psndSFXOn(str_803006D8 + 0x158);
+                        psndSFXOn(RO(str_803006D8, 0x158, str_80300830));
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
                         }
@@ -821,7 +833,7 @@ void main_cursor(void) {
                             BattleAudienceSoundHandBeat();
                         }
                     }
-                    psndSFXOn(str_803006D8 + 0x16C);
+                    psndSFXOn(RO(str_803006D8, 0x16C, str_80300844));
                     break;
                 case 2:
                     BtlUnit_SetAnim(part, str_8042201C);
@@ -835,7 +847,7 @@ void main_cursor(void) {
                     p[0x3D] = 0;
                     work->field_34 = 0;
                     work->field_00 |= 1;
-                    psndSFXOn(str_803006D8 + 0x180);
+                    psndSFXOn(RO(str_803006D8, 0x180, str_80300858));
                     if (audienceNum >= 1 && audienceNum <= 0x31) {
                         BattleAudienceSoundBooingKind(1);
                     }
@@ -882,7 +894,7 @@ void main_cursor(void) {
         work->field_3C = 0;
         work->field_50 = work->field_44;
         work->field_5C = work->points[work->field_40].pos;
-        psndSFXOn(str_803006D8 + 0x194);
+        psndSFXOn(RO(str_803006D8, 0x194, str_8030086C));
         /* fallthrough */
     case 4:
         work->field_3C++;
@@ -917,7 +929,7 @@ void main_cursor(void) {
     }
 }
 
-// NONMATCHING (87%): float-constant loads are scheduled differently throughout;
+// NONMATCHING (87.05%): float-constant loads are scheduled differently throughout;
 // the switch/jump table and calls match.
 // .text:0x1D0C | 0x80248BD8 | size: 0x484
 static void main_base(void) {

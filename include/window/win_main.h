@@ -17,3 +17,6 @@ s32 party_color(EventEntry* event, BOOL isFirstCall);
 s32 famicom_check(EventEntry* event, BOOL isFirstCall);
 void winFontInit(void);
 void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
+void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag);
+void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
+void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);

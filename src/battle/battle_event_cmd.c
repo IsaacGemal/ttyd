@@ -4509,8 +4509,8 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z, s32* moveFrame, s32* a, s32* b
-// NONMATCHING (88.12%): same instructions; MWCC in mine drops into r26-r31 (6 saved regs) where the
-// target uses r25-r31 (7); unit lands in r31 vs the target r30, shifting every callee-saved register.
+// NONMATCHING (88.12%): our build inlines _UnitMoveSoundControl/_UnitMoveSoundControlEnd, which the original
+// calls; the saved registers also differ (r26-r31 vs the target r25-r31).
 USER_FUNC(btlevtcmd_MovePosition) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -4539,25 +4539,25 @@ USER_FUNC(btlevtcmd_MovePosition) {
         *(f32*)((u8*)unit + 0x178) = angleABf(x, z, tx, tz);
         *(f32*)((u8*)unit + 0x17C) = distABf(x, z, tx, tz);
         if (tx - x > float_0_8041bf98) {
-            *(s8*)((u8*)unit + 0x184) = 1;
+            unit->moveDirection = 1;
         } else if (tx - x < float_0_8041bf98) {
-            *(s8*)((u8*)unit + 0x184) = -1;
+            unit->moveDirection = -1;
         }
         if (*(s32*)((u8*)unit + 0x168) == 0) {
-            *(s32*)((u8*)unit + 0x168) = (s32)(*(f32*)((u8*)unit + 0x17C) / *(f32*)((u8*)unit + 0x16C));
+            *(s32*)((u8*)unit + 0x168) = (s32)(*(f32*)((u8*)unit + 0x17C) / unit->mMoveSpeedXZ);
             if (*(s32*)((u8*)unit + 0x168) == 0) {
                 *(s32*)((u8*)unit + 0x168) = 1;
             }
-            speed = *(f32*)((u8*)unit + 0x16C);
+            speed = unit->mMoveSpeedXZ;
             dist = *(f32*)((u8*)unit + 0x17C);
             n = (f32)*(s32*)((u8*)unit + 0x168);
-            *(f32*)((u8*)unit + 0x16C) = speed + (dist - n * speed) / n;
+            unit->mMoveSpeedXZ = speed + (dist - n * speed) / n;
         } else {
-            *(f32*)((u8*)unit + 0x16C) = *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
+            unit->mMoveSpeedXZ = *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
         }
         BtlUnit_LoadSeMode(b, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
     }
-    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, *(f32*)((u8*)unit + 0x16C), *(f32*)((u8*)unit + 0x178));
+    btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ, *(f32*)((u8*)unit + 0x178));
     BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
     (*((s32*)((u8*)unit + 0x168)))--;
     if (*(s32*)((u8*)unit + 0x168) > 0) {
@@ -4569,14 +4569,25 @@ USER_FUNC(btlevtcmd_MovePosition) {
     return 1;
 }
 
+// The original addresses its sound names from the vec3_802ede88 base.
+#ifdef MUST_MATCH
+#define ACSE_STR(off, sym) (base + (off))
+#else
+extern const char str_802EE048[], str_802EE064[], str_802EE080[], str_802EE094[], str_802EE0A8[], str_802EE0BC[],
+    str_802EE0D4[];
+#define ACSE_STR(off, sym) (sym)
+#endif
+
 //s32* type, s32* x, s32* y, s32* z
-// NONMATCHING (81.74%): correct logic, but MWCC keeps `angle` in f30 (an extra saved FPR) and
+// NONMATCHING (91.24%): correct logic, but MWCC keeps `angle` in f30 (an extra saved FPR) and
 // reloads the double_to_int constant via lis/lfd instead of the target's base-relative 0x1b0(r30).
 USER_FUNC(btlevtcmd_ACSuccessEffect) {
     s32* args = event->args;
+#ifdef MUST_MATCH
     const char* base = (const char*)&vec3_802ede88;
+#endif
     s32 type;
-    f32 x, y, z;
+    Vec pos;
     f32 scale;
     f32 angle;
     const char* sfx;
@@ -4585,64 +4596,64 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
 
     type = evtGetValue(event, args[0]);
     scale = float_0p75_8041bfa8;
-    x = (f32)evtGetValue(event, args[1]);
-    y = (f32)evtGetValue(event, args[2]);
-    z = (f32)evtGetValue(event, args[3]);
+    pos.x = (f32)evtGetValue(event, args[1]);
+    pos.y = (f32)evtGetValue(event, args[2]);
+    pos.z = (f32)evtGetValue(event, args[3]);
     switch (type) {
     case 0:
         id = 0;
-        sfx = base + 0x1C0;
+        sfx = ACSE_STR(0x1C0, str_802EE048);
         angle = float_90_8041bfb0;
         scale *= float_0p3_8041bfac;
         break;
     case 1:
         id = 0;
-        sfx = base + 0x1DC;
+        sfx = ACSE_STR(0x1DC, str_802EE064);
         angle = float_90_8041bfb0;
         scale *= float_0p6_8041bfb4;
         break;
     case 2:
         id = 0;
-        sfx = base + 0x1F8;
+        sfx = ACSE_STR(0x1F8, str_802EE080);
         angle = float_90_8041bfb0;
         scale *= float_1p2_8041bfb8;
         break;
     case 3:
         id = 1;
-        sfx = base + 0x20C;
+        sfx = ACSE_STR(0x20C, str_802EE094);
         angle = float_90_8041bfb0;
         scale *= float_1p2_8041bfb8;
         break;
     case 4:
         id = 2;
-        sfx = base + 0x220;
-        angle = float_90_8041bfb0;
+        sfx = ACSE_STR(0x220, str_802EE0A8);
+        angle = float_120_8041bfbc;
         scale *= float_1p2_8041bfb8;
         break;
     case 5:
         id = 3;
-        sfx = base + 0x234;
+        sfx = ACSE_STR(0x234, str_802EE0BC);
         angle = float_150_8041bfc0;
         break;
     case 6:
         id = 4;
-        sfx = base + 0x24C;
+        sfx = ACSE_STR(0x24C, str_802EE0D4);
         angle = float_180_8041bfc4;
         break;
     default:
         return 2;
     }
     angle *= scale * float_0p5_8041bfc8;
-    if (x + angle > float_160_8041bfcc) {
-        x = float_160_8041bfcc - angle;
+    if (pos.x + angle > float_160_8041bfcc) {
+        pos.x = float_160_8041bfcc - angle;
     }
-    if (y < float_80_8041bfd4) {
-        entry = effNiceEntry(id, x - angle, float_50_8041bfd0 + y, z);
+    if (pos.y < float_80_8041bfd4) {
+        entry = effNiceEntry(id, pos.x - angle, float_50_8041bfd0 + pos.y, pos.z);
     } else {
-        entry = effNiceEntry(id, x - angle, y - float_50_8041bfd0, z);
+        entry = effNiceEntry(id, pos.x - angle, pos.y - float_50_8041bfd0, pos.z);
     }
     ((NiceEffectWork*)entry->userdata)->field_0x1C = scale;
-    psndSFX_pit(psndSFXOn_3D(sfx, (Vec*)&x), 0);
+    psndSFX_pit(psndSFXOn_3D(sfx, &pos), 0);
     return 2;
 }
 
@@ -5352,7 +5363,6 @@ USER_FUNC(btlevtcmd_AnimeChangePaperAnime) {
 }
 
 //s32* battleId, s32* partId, s32* poseName
-//s32* battleId, s32* partId, s32* poseName
 // NONMATCHING (98.05%): same instructions; `id` is staged through r0 in mine
 // (`mr r0,r3; mr r31,r0`) where the target moves it straight to r31 (`mr r31,r3`).
 USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
@@ -5547,18 +5557,8 @@ USER_FUNC(btlevtcmd_AnimeWaitPlayLoopTiming) {
     }
 }
 
-typedef struct {
-    u8 field_0x00[0x10];
-    u16 usable_locations; // 0x10
-    u16 field_0x12;
-    u16 field_0x14;
-    u16 field_0x16;
-    u16 field_0x18;
-    u16 sell_price;       // 0x1A
-} ItemDataU16;
-
 //s32* battleId, s32* itemId
-// NONMATCHING (~80%): correct logic; the inventory pointer arithmetic and coin math pick different
+// NONMATCHING (95.18%): correct logic; the inventory pointer arithmetic and coin math pick different
 // callee-saved registers than the target.
 USER_FUNC(btlevtcmd_ConsumeItem) {
     BattleWork* wp = _battleWorkPointer;
@@ -5573,11 +5573,11 @@ USER_FUNC(btlevtcmd_ConsumeItem) {
         s32* cmd = (s32*)((u8*)wp + 0x171C + *(s32*)((u8*)wp + 0x1C38) * 0x1C);
         itemId = cmd[0x94 / 4];
         slot = cmd[0x90 / 4];
-        if (((ItemDataU16*)itemDataTable)[itemId].usable_locations & 1) {
+        if (itemDataTable[itemId].usable_locations & 1) {
             pouchRemoveItemIndex(itemId, slot);
         }
         if (unit->badgesEquipped.Refund != 0) {
-            coins = (s32)((f32)(unit->badgesEquipped.Refund * 5 + 0x46) * (f32)((ItemDataU16*)itemDataTable)[itemId].sell_price / float_100_8041bff0);
+            coins = (s32)((f32)(unit->badgesEquipped.Refund * 5 + 0x46) * (f32)itemDataTable[itemId].sell_price / float_100_8041bff0);
             if (coins > 0) {
                 pouchAddCoin(coins);
                 BtlUnit_GetPos(unit, &x, &y, &z);

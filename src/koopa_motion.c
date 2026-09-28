@@ -135,8 +135,7 @@ void quake_kpaLandOn(void) {
     }
 }
 
-// NONMATCHING (0%): first-pass transcription.
-// NONMATCHING (94%): big function; the three periodic effMizutama blocks and the switch dispatch still differ, and the irand int->float conversion loads a folded @N double instead of double_to_int_802fe278. Structure/register allocation otherwise close.
+// NONMATCHING (94.54%): big function; the three periodic effMizutama blocks and the switch dispatch still differ, and the irand int->float conversion loads a folded @N double instead of double_to_int_802fe278. Structure/register allocation otherwise close.
 void kpa_swim(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -364,7 +363,7 @@ void kpa_swim(void) {
             MW_F32(mario, 0x80) = float_0_80420da0;
             MW_F32(mario, 0x84) = float_0_80420da0;
             MW_F32(mario, 0x88) = float_0_80420da0;
-            if (MW_F32(mario, 0x7C) <= float_0_80420da0) {
+            if (MW_F32(mario, 0x7C) >= float_0_80420da0) {
                 MW_F32(mario, 0x7C) = float_neg0p08_80420dfc;
                 MW_F32(mario, 0x80) = float_neg0p03_80420de4;
                 MW_F32(mario, 0x84) = float_0p009_80420e00;
@@ -439,7 +438,7 @@ void kpa_swim(void) {
 
 // dont_inline keeps kpaSwimMove out of kpa_swim (retail emits a real `bl kpaSwimMove`).
 #pragma dont_inline on
-// NONMATCHING (97%): only the folded double_to_int_802fe278 conversion magic differs.
+// NONMATCHING (97.07%): only the folded double_to_int_802fe278 conversion magic differs.
 void kpaSwimMove(void) {
     MarioWork* mario = marioGetPtr();
     f32 stick = (f32)(s8)mario->wStickDir1;
@@ -480,7 +479,7 @@ void kpaSwimMove(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
+// NONMATCHING (99.24%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
 void kpa_powdown(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -546,7 +545,7 @@ void kpa_powdown(void) {
     }
 }
 
-// NONMATCHING (99%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
+// NONMATCHING (99.28%): the folded double_to_int_802fe278 conversion and the `if (currSubMotionId == 0) {...return;} if (--multiTimer > 0) return;` branch layout.
 void kpa_powup(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -643,17 +642,17 @@ s32 kpaPowDown(void) {
     return 0;
 }
 
-// NONMATCHING (92%): the header declares it void but the original returns s32.
-void kpaPowUp(void) {
+s32 kpaPowUp(void) {
     MarioWork* mario = marioGetPtr();
     if (kpaGetLevel() < 3) {
         KPA(mario)->level++;
         kpaCancelAttackMode();
         marioChgMot(0x26);
-        return;
+        return 1;
     }
     kpaMSetMutekiTimer();
     kpaMutekiOn();
+    return 0;
 }
 
 void kpa_hip(void) {
@@ -740,7 +739,7 @@ void kpa_hip(void) {
     }
 }
 
-// NONMATCHING (99%): only the outer `if (currSubMotionId == 0 && y <= x)` layout differs (target `beq body; b skip`, ours `bne skip`).
+// NONMATCHING (99.08%): only the outer `if (currSubMotionId == 0 && y <= x)` layout differs (target `beq body; b skip`, ours `bne skip`).
 void kpa_fall_80213C38(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -795,7 +794,7 @@ void kpa_fall_80213C38(void) {
     }
 }
 
-// NONMATCHING (99%): only the second `MW_F32(mario,0x7C) <= 0` test, whose field/zero land in f0/f1 instead of the target f1/f0.
+// NONMATCHING (99.72%): only the second `MW_F32(mario,0x7C) <= 0` test, whose field/zero land in f0/f1 instead of the target f1/f0.
 void kpa_jump(void) {
     MarioWork* mario = marioGetPtr();
     f32 f31;
@@ -839,7 +838,7 @@ void kpa_jump(void) {
     }
 }
 
-// NONMATCHING (97%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`.
+// NONMATCHING (97.02%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`.
 void kpa_dash(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -925,7 +924,8 @@ void kpa_dash(void) {
     }
 }
 
-// NONMATCHING (97%): the folded double_to_int_802fe278 conversion magic.
+// NONMATCHING (96.79%): the folded double_to_int_802fe278 conversion magic, and kpaGetLevel is called twice
+// where the original calls it once and indexes both tables with the result.
 void kpa_walk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -1084,7 +1084,7 @@ void kpa_stay(void) {
     }
 }
 
-// NONMATCHING (96%): the folded double_to_int_802fe278 conversion magic.
+// NONMATCHING (96.20%): the folded double_to_int_802fe278 conversion magic.
 f32 kpaStickSpd(s32 arg) {
     MarioWork* mario = marioGetPtr();
     f32 stick = (f32)(s8)mario->wStickDir1;

@@ -137,6 +137,13 @@ const char str_802EDA1C[] = "msg_savefile_copy_point";
 const char str_802EDA34[] = "%s/w/jp/name.tpl\000\000\000";
 const char str_8041BDDC[] = "next";
 
+// The original addresses these .rodata objects as offsets from one base symbol.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+
 void continueGame(void) {
     MarioWork* mario;
     const char* base = (const char*)&vec3_802ed670;
@@ -155,6 +162,7 @@ void continueGame(void) {
     countDownSaveReStart();
     gp->flags |= 1;
 
+
     switch (swByteGet(4)) {
         case 0:
             gp->areaFadeInType = 0;
@@ -164,112 +172,112 @@ void continueGame(void) {
         case 1:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x214, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
             break;
         case 2:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x21C, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x21C, str_802ED88C), NULL);
             break;
         case 3:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x224, base + 0x22C);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x224, str_802ED894), RO(base, 0x22C, str_802ED89C));
             break;
         case 4:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x214, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
             break;
         case 5:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x238, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x238, str_802ED8A8), NULL);
             break;
         case 6:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x240, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x240, str_802ED8B0), NULL);
             break;
         case 7:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x214, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
             break;
         case 8:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x248, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x248, str_802ED8B8), NULL);
             break;
         case 9:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x250, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x250, str_802ED8C0), NULL);
             break;
         case 10:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x258, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
             break;
         case 11:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x260, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x260, str_802ED8D0), NULL);
             break;
         case 12:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x258, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
             break;
         case 13:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x268, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x268, str_802ED8D8), NULL);
             break;
         case 14:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x258, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
             break;
         case 15:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x270, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x270, str_802ED8E0), NULL);
             break;
         case 16:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x278, str_8041BDDC);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x278, str_802ED8E8), str_8041BDDC);
             break;
         case 17:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x280, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x280, str_802ED8F0), NULL);
             break;
         case 18:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x260, base + 0x288);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x260, str_802ED8D0), RO(base, 0x288, str_802ED8F8));
             break;
         case 19:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x298, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x298, str_802ED908), NULL);
             break;
         case 20:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x2A0, base + 0x2A8);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2A0, str_802ED910), RO(base, 0x2A8, str_802ED918));
             break;
         case 21:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x2B0, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2B0, str_802ED920), NULL);
             break;
         case 22:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x2B8, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2B8, str_802ED928), NULL);
             break;
         case 23:
             stg0_00_init();
@@ -282,12 +290,12 @@ void continueGame(void) {
             gp->areaFadeOutType = 0x19;
             swInit();
             swByteSet(0, 0);
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x2C0, base + 0x2C8);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2C0, str_802ED930), RO(base, 0x2C8, str_802ED938));
             break;
         case 24:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, base + 0x214, NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
             break;
     }
 }

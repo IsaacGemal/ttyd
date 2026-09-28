@@ -129,7 +129,7 @@ extern const f32 float_31_8041aab0;
 extern const f32 float_neg6_8041aab4;
 extern const f32 float_28_8041aab8;
 
-// NONMATCHING (85%): frame/stack layout of the HitCheckQuery and dir vectors differs (0xc0 vs 0xd0
+// NONMATCHING (84.84%): frame/stack layout of the HitCheckQuery and dir vectors differs (0xc0 vs 0xd0
 // frame), plus a few fmadds/fneg operand-order swaps. Structure, calls and constants are correct.
 HitEntry* hitEstimate(s32* type) {
     HitCheckQuery query;
@@ -290,7 +290,7 @@ f32 marioGetAngleKaitenHammer(void) {
     return revise360(float_270_8041a9b4 - mario->unk1A8);
 }
 
-// NONMATCHING (93%): the clamp/accumulate float sequences use a shifted f-register assignment
+// NONMATCHING (95.45%): the clamp/accumulate float sequences use a shifted f-register assignment
 // (f0/f1/f2) and the marioGetRub out-param stack slots sit lower than the original.
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
@@ -482,8 +482,8 @@ void mot_hammer2(void) {
             goto common_6320;
         } else if (!(level & 0x10)) {
             M_F32(mario, 0x2B0) += float_1_8041aa38;
-            if (M_F32(mario, 0x2B0) >= float_18_8041aa48) {
-                M_F32(mario, 0x2B0) = float_18_8041aa48;
+            if (M_F32(mario, 0x2B0) >= float_24_8041aa54) {
+                M_F32(mario, 0x2B0) = float_24_8041aa54;
                 M_S16(mario, 0x2B4) |= 0x10;
             }
             goto common_6320;
@@ -567,10 +567,14 @@ void mot_hammer2(void) {
         f31 = revise360(float_270_8041a9b4 - M_F32(mario, 0x1A8));
         m2 = marioGetPtr();
         sincosf(&sa, &ca, f31);
+        dist = float_2_8041a9a0 * m2->wPlayerCollisionBox.x;
         hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz,
                              m2->position.x,
                              float_0p5_8041a9a4 * m2->wPlayerCollisionBox.y + m2->position.y,
                              m2->position.z, sa, float_0_8041a9a8, ca);
+        // The original tests the wall's attributes here and does nothing with the result.
+        if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
+        }
         if (hit != NULL) {
             M_S32(mario, 0x1FC) = (s32)hit;
         }
@@ -688,7 +692,7 @@ s32 marioChkHammer2(void) {
     return 1;
 }
 
-// NONMATCHING (86%): the directional/sfx blocks and clamp sequences differ in float register
+// NONMATCHING (88.29%): the directional/sfx blocks and clamp sequences differ in float register
 // assignment and stack naming; the jump table and constants match.
 void mot_hammer(void) {
     MarioWork* mario = marioGetPtr();
@@ -747,10 +751,18 @@ void mot_hammer(void) {
                 mario->directionView = toMovedir2(float_0_8041a9a8, f31);
             }
             f30 = M_F32(mario, 0x1A8);
-            if (marioGetPtr()->dispFlags & 0x80000000) {
-                f31 = float_neg30_8041aa6c;
-            } else {
-                f31 = float_0_8041a9a8;
+            {
+                MarioWork* m = marioGetPtr();
+                if (m->dispFlags & 0x80000000) {
+                    f32 ang = m->unk1A8;
+                    s32 facing = 0;
+                    if (ang >= float_90_8041a9b0 && ang <= float_270_8041a9b4) {
+                        facing = 1;
+                    }
+                    f31 = facing ? float_30_8041a9d4 : float_neg30_8041aa6c;
+                } else {
+                    f31 = float_0_8041a9a8;
+                }
             }
             if (f30 >= float_90_8041a9b0 && f30 <= float_270_8041a9b4) {
                 M_F32(mario, 0x2A4) = revise360(float_180_8041a9b8 + f31);

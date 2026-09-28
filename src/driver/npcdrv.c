@@ -12,6 +12,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
 #include "system.h"
+#include "manager/fontmgr.h"
+#include "driver/windowdrv.h"
 #include <string.h>
 #include "koopa.h"
 #include "koopa_hit.h"
@@ -695,14 +697,32 @@ void fbatHitCheckAll(void) {
     fbatHitCheck(0x13F1, 0);
 }
 
-// NONMATCHING (7.65%): placeholder body only searches the message. The original also measures the
-// string (FontGetMessageWidth), jitters the position with two irand(0x2710) calls and draws the
-// window with windowDispGX_Waku_col/FontDraw*. The asm symbol is misspelled `...AnnouceDisp`.
+// The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
+// NONMATCHING (99.62%): same instructions; only register numbers or operands differ.
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     FirstStrikeInfo* firstStrike = param;
     const char* message;
+    f32 x;
+    f32 y;
+    f32 width;
+    f32 frameX;
+    f32 frameY;
+    GXColor white;
 
     message = msgSearch(firstStrike->msg_tag);
+    x = firstStrike->field_0x10;
+    y = firstStrike->field_0x14;
+    width = FontGetMessageWidth(message);
+    frameX = x + (f32)(irand(10000) % 5);
+    frameY = y + (f32)(irand(10000) % 5);
+    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), 0.1f * frameY,
+                          0.1f * (20.0f + width), 3.2f, 1.0f);
+    FontDrawStart();
+    FontDrawEdge();
+    white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+    FontDrawColor(&white);
+    FontDrawScale(0.1f);
+    FontDrawStringShake(message, 0.1f * (x - width * 0.5f), 0.1f * (y - 3.0f));
 }
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {

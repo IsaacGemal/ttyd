@@ -368,7 +368,7 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (91.05%): the inline-sqrtf double pool lands in its own .rodata section instead of
+// NONMATCHING (91.06%): the inline-sqrtf double pool lands in its own .rodata section instead of
 // right after vec3_802c12d0, and the angle/max accumulation uses different FPR allocation.
 // Control flow, constants and the branch structure match.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
@@ -383,7 +383,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     f32 dist;
     f32 cand;
 
-    if (prev->unk_00 != 0) {
+    if (prev->unk_00 == 0) {
         return 0;
     }
     if (cur->unk_24 == prev->unk_24) {

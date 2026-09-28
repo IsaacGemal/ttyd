@@ -105,6 +105,25 @@ void monosiriClose(void* work) {
     }
 }
 
+// The original addresses these .rodata objects as offsets from one base symbol.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+extern const char str_802F62F0[];
+extern const char str_802F6300[];
+extern const char str_802F6314[];
+extern const char str_802F6360[];
+extern const char str_802F636C[];
+extern const char str_802F6378[];
+extern const char str_802F6384[];
+extern const char str_802F6390[];
+extern const char str_802F639C[];
+extern const char str_802F63A8[];
+extern const char str_802F63B4[];
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+
+
 // NONMATCHING (87.44%): the language table indexed by gp->language is not part of
 // the str_802F5EB8 base in our object (the original addresses it as
 // str_802F5EB8+0x350), and register allocation of work/inBattle/gp differs.
@@ -123,10 +142,10 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if (fileAsyncf(4, NULL, str_802F5EB8 + 0x438, getMarioStDvdRoot(), lang[gp->language]) != 0) {
-            if (fileAsyncf(0, NULL, str_802F5EB8 + 0x448, getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, str_802F5EB8 + 0x438, getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, str_802F5EB8 + 0x448, getMarioStDvdRoot());
+        if (fileAsyncf(4, NULL, RO(str_802F5EB8, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]) != 0) {
+            if (fileAsyncf(0, NULL, RO(str_802F5EB8, 0x448, str_802F6300), getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(4, RO(str_802F5EB8, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(0, RO(str_802F5EB8, 0x448, str_802F6300), getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
                 height = GXGetTexObjHeight(&texObj);
@@ -138,7 +157,7 @@ void monosiriMain(void* work) {
     case 1:
         tattle = battleGetUnitMonosiriPtr(w->unitKind);
         if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
-            if (w->unitKind != 0x6B || animGroupBaseAsync(str_802F5EB8 + 0x45C, inBattle, NULL)) {
+            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(str_802F5EB8, 0x45C, str_802F6314), inBattle, NULL)) {
                 w->alpha += 0x14;
                 if (w->alpha > 0xFF) {
                     w->alpha = 0xFF;
@@ -149,7 +168,7 @@ void monosiriMain(void* work) {
                         animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
                         animPoseWorldPositionEvalOn(w->poseId);
                         animPoseMain(w->poseId);
-                        w->poseId2 = animPoseEntry(str_802F5EB8 + 0x45C, inBattle);
+                        w->poseId2 = animPoseEntry(RO(str_802F5EB8, 0x45C, str_802F6314), inBattle);
                         animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
                         animPoseMain(w->poseId2);
                     } else {
@@ -198,27 +217,27 @@ const char* winGetMapTplName(void) {
     const char* base = str_802F5EB8;
 
     if (swByteGet(0) < 0x13) {
-        return base + 0x4A8;
+        return RO(base, 0x4A8, str_802F6360);
     }
     if (swByteGet(0) < 0x41) {
-        return base + 0x4B4;
+        return RO(base, 0x4B4, str_802F636C);
     }
     if (swByteGet(0) < 0x79) {
-        return base + 0x4C0;
+        return RO(base, 0x4C0, str_802F6378);
     }
     if (swByteGet(0) < 0xAF) {
-        return base + 0x4CC;
+        return RO(base, 0x4CC, str_802F6384);
     }
     if (swByteGet(0) < 0xDE) {
-        return base + 0x4D8;
+        return RO(base, 0x4D8, str_802F6390);
     }
     if (swByteGet(0) < 0x110) {
-        return base + 0x4E4;
+        return RO(base, 0x4E4, str_802F639C);
     }
     if (swByteGet(0) >= 0x15C) {
-        return base + 0x4FC;
+        return RO(base, 0x4FC, str_802F63B4);
     }
-    return base + 0x4F0;
+    return RO(base, 0x4F0, str_802F63A8);
 }
 
 void winLogExit(WindowWork* work) {

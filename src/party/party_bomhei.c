@@ -63,7 +63,7 @@ HitEntry* check_front(PartyEntry* party) {
     f32 limit;
 
     f29 = 0.8f * *(f32*)((u8*)party + 0xF0);
-    base = partyToMovedir(party, *(f32*)((u8*)party + 0x10C));
+    base = partyToMovedir(party, party->field_10C);
     for (i = 0; i < 8; i++) {
         sincosf(&query.targetDir.x, &query.targetDir.z, base + (f32)angles[i]);
         query.targetDir.y = 0.0f;

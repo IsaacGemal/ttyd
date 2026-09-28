@@ -1069,7 +1069,8 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 }
 
-extern f32 float_0_804198cc;
+// An empty string; symbols.txt names it as a float.
+extern const char float_0_804198cc[4];
 
 // NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches
 void mapUnLoad(void) {
@@ -1126,7 +1127,7 @@ void mapUnLoad(void) {
 			_mapFree(*(void**)entry->field_0x8C);
 			*(void**)entry->field_0x8C = NULL;
 		}
-		strncpy(entry->name, (char*)&float_0_804198cc, 0x10);
+		strncpy(entry->name, float_0_804198cc, 0x10);
 	}
 	arcDelete(1);
 	memset(wp, 0, 0x2F4);
@@ -1204,7 +1205,7 @@ void bmapLoad(const char* map1, const char* map2) {
 }
 
 // NONMATCHING (95.45%): entry/i (r29/r30) register swap in the first two loops and one extra
-// activeGroup reload; all memory traffic, calls and frees match.
+// activeGroup reload; our build also inlines makeDisplayList, which the original calls.
 void bmapUnLoad(void) {
 	MapWork* wp;
 	MapEntry* entry;
@@ -1253,7 +1254,7 @@ void bmapUnLoad(void) {
 			_mapFree(*(void**)entry->field_0x8C);
 			*(void**)entry->field_0x8C = NULL;
 		}
-		strncpy(entry->name, (char*)&float_0_804198cc, 0x10);
+		strncpy(entry->name, float_0_804198cc, 0x10);
 	}
 	arcDelete(1);
 	arcDelete(2);

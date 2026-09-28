@@ -202,7 +202,7 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     return hit;
 }
 
-// NONMATCHING (68.78%): frame is 0x30 smaller; query/Vec locals differ.
+// NONMATCHING (68.79%): frame is 0x30 smaller; query/Vec locals differ.
 HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     HitCheckQuery query1;
     HitCheckQuery query2;
@@ -250,7 +250,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     }
 
     h = 11.0f;
-    if (party->currentMemberId == PARTY_MEMBER_YOSHI && (party->flags & 0x100)) {
+    if (party->currentMemberId == PARTY_MEMBER_BOBBERY && (party->flags & 0x100)) {
         h = 1.0f;
     }
     f31 = 0.5f * *(f32*)((u8*)party + 0xF4) + dist;
@@ -400,21 +400,25 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     return NULL;
 }
 
-// NONMATCHING (49.80%): builds the downward/forward query and runs the step/slope
-// angle math; register and stack scheduling of the last block differ.
+// Rounds v to three decimal places.
+#define ROUND_MILLI(v) \
+    ((f32)(s32)(float_1000_8041b408 * (v) + ((v) >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) / \
+     float_1000_8041b408)
+
+// NONMATCHING (73.53%): logic follows the asm; register and stack allocation differ, and the inline sqrtf
+// constants are pooled differently.
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     HitCheckQuery query;
     HitEntry* hit;
     f32 h;
     f32 f24;
-    f32 dist;
     f32 px, py, pz;
     f32 angle;
     f32 s, c;
     f32 off;
     f32 rad;
-    f32 hx, hz;
-    f32 slope;
+    f32 hx, hy, hz;
+    Vec n;
 
     *(f32*)((u8*)party + 0xC4) = 0.0f;
     *(f32*)((u8*)party + 0xC8) = 0.0f;
@@ -454,133 +458,27 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     if (hit == NULL) {
         return 0;
     }
-    dist = (f32)(s32)(float_1000_8041b408 * query.targetDistance +
-                      (query.targetDistance >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) /
-           float_1000_8041b408;
-    hx = (f32)(s32)(float_1000_8041b408 * query.hitPos.x +
-                    (query.hitPos.x >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) /
-         float_1000_8041b408;
-    hz = (f32)(s32)(float_1000_8041b408 * query.hitPos.z +
-                    (query.hitPos.z >= float_0_8041b3ec ? float_0p5_8041b3f4 : float_neg0p5_8041b404)) /
-         float_1000_8041b408;
+    hx = ROUND_MILLI(query.hitPos.x);
+    hy = ROUND_MILLI(query.hitPos.y);
+    hz = ROUND_MILLI(query.hitPos.z);
+    n = query.hitNormal;
 
-    slope = angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * hx, float_100_8041b3f8 * h);
-    *(f32*)((u8*)party + 0xC4) = slope - float_180_8041b424;
+    *(f32*)((u8*)party + 0xC4) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.z,
+                                                     float_100_8041b3f8 * n.y) - float_180_8041b424);
     *(f32*)((u8*)party + 0xC8) = float_0_8041b3ec;
-    slope = angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * hx, float_100_8041b3f8 * hz);
-    *(f32*)((u8*)party + 0xCC) = slope - float_180_8041b424;
-    *(f32*)((u8*)party + 0xE0) = angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * h,
-                                          float_100_8041b3f8 * hz);
-    if (dist < h) {
-        if (__fabsf(dist - h) <= float_2_8041b428) {
-            *out2 = h - dist;
-            *out3 = angleABf(s, f24, dist, hz);
-            return (u32)hit;
-        }
+    *(f32*)((u8*)party + 0xCC) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.x,
+                                                     float_100_8041b3f8 * n.y) - float_180_8041b424);
+    *(f32*)((u8*)party + 0xE0) =
+        angleABf(float_0_8041b3ec, float_0_8041b3ec, sqrtf(n.x * n.x + n.z * n.z), -n.y);
+    if (hy < py && __fabsf(hy - py) >= float_2_8041b428) {
+        *out2 = py - hy;
+        *out3 = angleABf(px, pz, hx, hz);
+        return 0;
     }
-    *out1 = dist;
+    *out1 = hy;
     *out2 = float_0_8041b3ec;
-    *out3 = angleABf(s, f24, dist, hz);
+    *out3 = angleABf(px, pz, n.x, n.z);
     return (u32)hit;
-}
-
-// NONMATCHING (35.44%): five downward rays fanned around the party; the post-loop
-// ground-selection block is approximated.
-HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
-    HitCheckQuery query;
-    HitEntry* hit;
-    HitEntry* best;
-    f32 f22, f20, f24, f23, f27, f28, f26, f19, f21;
-    f32 f31, f30;
-    f32 dy;
-    f32 angle;
-    f32 s, c;
-    s32 i;
-
-    if ((party->flags & 0x02000000) != 0) {
-        return NULL;
-    }
-    *(f32*)((u8*)party + 0xC4) = 0.0f;
-    *(f32*)((u8*)party + 0xC8) = 0.0f;
-    *(f32*)((u8*)party + 0xCC) = 0.0f;
-    f22 = __fabsf(up) + float_0p1_8041b42c;
-    *(f32*)((u8*)party + 0xE0) = float_0_8041b3ec;
-    if (*(u16*)((u8*)marioGetPtr() + 0x2E) == 0x1A) {
-        f20 = float_5_8041b430;
-    } else {
-        f20 = float_0p75_8041b400 * partyGetHeight(party);
-    }
-    party->field_E4 = party->position.y;
-    *(f32*)((u8*)party + 0xE8) = float_neg1_8041b414;
-    if (party->speed != float_0_8041b3ec) {
-        angle = party->dir;
-    } else {
-        angle = partyToMovedir(party, party->field_10C);
-    }
-    angle = (float_3p1416_8041b420 * angle) / float_180_8041b424;
-    s = (f32)sin((f64)angle);
-    c = (f32)cos((f64)angle);
-    f24 = float_0p375_8041b434 * (*(f32*)((u8*)party + 0xF4) * s);
-    f23 = float_0p375_8041b434 * (*(f32*)((u8*)party + 0xF4) * -c);
-    f27 = -f24;
-    f28 = -f23;
-    f21 = party->position.y;
-    f19 = f21 + f20;
-    f26 = f20 + f22;
-    f22 = party->position.x;
-    f20 = party->position.z;
-    best = NULL;
-    dy = float_neg10000_8041b438;
-    for (i = 0; i < 5; i++) {
-        if (i == 0) {
-            f31 = float_0_8041b3ec;
-            f30 = float_0_8041b3ec;
-        } else if (i == 1) {
-            f31 = f24;
-            f30 = f23;
-        } else if (i == 2) {
-            f31 = f28;
-            f30 = f24;
-        } else if (i == 3) {
-            f31 = f23;
-            f30 = f27;
-        } else {
-            f31 = f27;
-            f30 = f28;
-        }
-        query.targetPos.x = f22 + f31;
-        query.targetPos.y = f19;
-        query.targetPos.z = f20 + f30;
-        query.targetDir.x = 0.0f;
-        query.targetDir.y = float_neg1_8041b414;
-        query.targetDir.z = 0.0f;
-        query.targetDistance = f26;
-
-        if (yoshiGetStatus() != 0) {
-            hit = hitCheckVecFilter(&query, chkfilterYoshi);
-        } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-            hit = hitCheckVecFilter(&query, chkfilterNokotaro);
-        } else {
-            hit = hitCheckVecFilter(&query, chkfilter);
-        }
-        if (hit != NULL) {
-            f32 d = (f32)(s32)(float_1000_8041b408 * query.targetDistance +
-                               (query.targetDistance >= float_0_8041b3ec ? float_0p5_8041b3f4
-                                                                         : float_neg0p5_8041b404)) /
-                    float_1000_8041b408;
-            f32 hy = (f32)(s32)(float_1000_8041b408 * query.hitPos.y +
-                                (query.hitPos.y >= float_0_8041b3ec ? float_0p5_8041b3f4
-                                                                    : float_neg0p5_8041b404)) /
-                     float_1000_8041b408;
-            if (d > dy) {
-                best = hit;
-                dy = d;
-                party->field_E4 = hy;
-            }
-        }
-    }
-    (void)down;
-    return best;
 }
 
 void partyChkGnd(PartyEntry* party) {
@@ -673,6 +571,14 @@ HitEntry* partyHitCheck(PartyEntry* party, Vec* pos, Vec* dir, Vec* hitPos, Vec*
     return hit;
 }
 
+// The original addresses these .rodata objects as offsets from one base symbol.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+
+
 BOOL chkfilterNokotaro(HitCheckQuery* query, HitEntry* entry) {
     s32 attr;
     MapObjectEntry* obj;
@@ -690,9 +596,9 @@ BOOL chkfilterNokotaro(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp(obj->animName, (char*)base + 0xE0) == 0 ||
-        strcmp(obj->animName, (char*)base + 0xF8) == 0 ||
-        strcmp(obj->animName, (char*)base + 0x110) == 0) {
+    if (strcmp(obj->animName, RO(base, 0xE0, str_802CD400)) == 0 ||
+        strcmp(obj->animName, RO(base, 0xF8, str_802CD418)) == 0 ||
+        strcmp(obj->animName, RO(base, 0x110, str_802CD430)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -719,9 +625,9 @@ BOOL chkfilterYoshi(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp(obj->animName, (char*)base + 0xE0) == 0 ||
-        strcmp(obj->animName, (char*)base + 0xF8) == 0 ||
-        strcmp(obj->animName, (char*)base + 0x110) == 0) {
+    if (strcmp(obj->animName, RO(base, 0xE0, str_802CD400)) == 0 ||
+        strcmp(obj->animName, RO(base, 0xF8, str_802CD418)) == 0 ||
+        strcmp(obj->animName, RO(base, 0x110, str_802CD430)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }
@@ -745,9 +651,9 @@ BOOL chkfilter(HitCheckQuery* query, HitEntry* entry) {
         return TRUE;
     }
     obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp(obj->animName, (char*)base + 0xE0) == 0 ||
-        strcmp(obj->animName, (char*)base + 0xF8) == 0 ||
-        strcmp(obj->animName, (char*)base + 0x110) == 0) {
+    if (strcmp(obj->animName, RO(base, 0xE0, str_802CD400)) == 0 ||
+        strcmp(obj->animName, RO(base, 0xF8, str_802CD418)) == 0 ||
+        strcmp(obj->animName, RO(base, 0x110, str_802CD430)) == 0) {
         mobjHitObjPtrToPtr(entry);
         return FALSE;
     }

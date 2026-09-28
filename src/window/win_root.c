@@ -86,7 +86,7 @@ void unk_8014d338(s32 unused, WindowWork* work) {
         GXSetZCompLoc(1);
         GXSetAlphaCompare(7, 0, 0, 7, 0);
         GXSetZMode(0, 7, 0);
-        GXLoadPosMtxImm((f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
+        GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         GXSetCurrentMtx(0);
         GXInitTexObj(&texObj, (void*)*(u32*)((u8*)work + 0x34), gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
         GXLoadTexObj(&texObj, 0);

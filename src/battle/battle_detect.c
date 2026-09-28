@@ -94,7 +94,7 @@ void BattleGetFirstAttackUnit(BattleWork* wp, BattleUnit** outUnit1, BattleUnit*
     *outUnit2 = out2;
 }
 
-// NONMATCHING (86.7%): same logic/control flow; register allocation differs globally (params/flags land
+// NONMATCHING (88.06%): same logic/control flow; register allocation differs globally (params/flags land
 // in r15-r18/r19-r24 vs retail r16-r19/r14,r23-r28), so most instructions differ only by register.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     BattleWork* wp = _battleWorkPointer;
@@ -110,7 +110,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     u32 f0x4;
     u32 f0x8;
     u32 f0x10;
-    u32 f0x40;
+    u32 f0x20;
     u32 f0x100;
     u32 f0x200;
     u32 f0x400;
@@ -131,13 +131,14 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     for (i = 0; i < 74; i++) {
         weights[i] = 0;
     }
+    weights[(s8)s->order[0]] += 10;
 
     f0x1 = flags & 0x1;
     f0x2 = flags & 0x2;
     f0x4 = flags & 0x4;
     f0x8 = flags & 0x8;
     f0x10 = flags & 0x10;
-    f0x40 = flags & 0x40;
+    f0x20 = flags & 0x20;
     f0x100 = flags & 0x100;
     f0x200 = flags & 0x200;
     f0x400 = flags & 0x400;
@@ -166,7 +167,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
         if (f0x10 && baseUnit->mAlliance == unit->mAlliance) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
-        if (f0x40 && baseUnit->mAlliance != unit->mAlliance && unit->mAlliance != 2) {
+        if (f0x20 && baseUnit->mAlliance != unit->mAlliance && unit->mAlliance != 2) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
         }
         if (f0x100) {
@@ -195,32 +196,32 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
             }
             switch (*(s32*)(s->weapon->field_0x0 + 0x8)) {
                 case 0x86:
-                    if (BtlUnit_CheckStatus(unit, 0x12) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x12)) weights[e] = 1;
                     break;
                 case 0x87:
-                    if (BtlUnit_CheckStatus(unit, 0x06) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x06)) weights[e] = 1;
                     break;
                 case 0x88:
-                    if (BtlUnit_CheckStatus(unit, 0x07) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x07)) weights[e] = 1;
                     break;
                 case 0x89:
-                    if (BtlUnit_CheckStatus(unit, 0x05) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x05)) weights[e] = 1;
                     break;
                 case 0x8E:
                     if (BtlUnit_CanActStatus(unit) == 0) {
                         weights[e] = 1;
-                    } else if (BtlUnit_CheckStatus(unit, 0x0A) == 0) {
+                    } else if (BtlUnit_CheckStatus(unit, 0x0A)) {
                         weights[e] = 1;
                     }
                     break;
                 case 0x8F:
-                    if (BtlUnit_CheckStatus(unit, 0x0E) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x0E)) weights[e] = 1;
                     break;
                 case 0x92:
-                    if (BtlUnit_CheckStatus(unit, 0x0B) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x0B)) weights[e] = 1;
                     break;
                 case 0x93:
-                    if (BtlUnit_CheckStatus(unit, 0x0F) == 0) weights[e] = 1;
+                    if (BtlUnit_CheckStatus(unit, 0x0F)) weights[e] = 1;
                     break;
                 case 0x99:
                     if (BtlUnit_CheckStatus(unit, 0x01) == 0 &&
@@ -328,7 +329,7 @@ s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belon
     return ret;
 }
 
-// NONMATCHING (62.3%): full logic present and frame/stmw match; register allocation is globally shifted
+// NONMATCHING (70.63%): logic follows the asm (checked in review); register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
 void _btlSamplingEnemy(u8* sampling) {
     BattleWork* wp = _battleWorkPointer;
@@ -400,7 +401,7 @@ void _btlSamplingEnemy(u8* sampling) {
             }
 
             if ((unit->mAttributeFlags & kUnknown_0x1) &&
-                !(part->attributes & kIsBombFlippable)) {
+                !(part->attributes & 0x20000)) {
                 entries->field_0x18 += s->attackDirection * 300;
             }
             entries->field_0x18 += part->field_0x1A0 * faceDirection;
@@ -438,9 +439,9 @@ void _btlSamplingEnemy(u8* sampling) {
             ((ac0 & 0x1000) && s->unitId == unit->unitId) ||
             ((ac0 & 0x100) && s->belong == unit->mAlliance) ||
             ((ac0 & 0x200) && s->belong != unit->mAlliance && unit->mAlliance != 2) ||
-            ((ac0 & 0x4000) && s->unitId != unit->unitId &&
+            ((ac0 & 0x2000) && s->unitId != unit->unitId &&
              unit->currentKind == BattleGetUnitPtr(wp, s->unitId)->currentKind) ||
-            ((ac0 & 0x40000) && s->unitId != unit->unitId) ||
+            ((ac0 & 0x4000) && s->unitId != unit->unitId) ||
             ((ac0 & 0x100000) &&
              (!((part->attributes & kMainPart) || (part->attributes & kImportantPart)) ||
               (part->attributes & 0x40000))) ||
@@ -475,12 +476,41 @@ void _btlSamplingEnemy(u8* sampling) {
             ((ac4 & 0x4000) && (part->attributes & 0x400000)) ||
             ((ac4 & 0x8000) && !(part->attributes & 0x400000)) ||
             ((ac4 & 0x2000000) && (unit->mAttributeFlags & 0x20)) ||
-            ((ac4 & 0x4000000) && (part->attributes & 0x20))) {
+            ((ac4 & 0x4000000) && (part->attributes & 0x2000000))) {
             for (j = i; j < count - 1; j++) {
                 entries[j] = entries[j + 1];
             }
             count--;
             i--;
+        }
+    }
+
+    // A unit's important part is dropped when the same unit also has its main part in the list.
+    if (s->field_0xAC0 & 0x100000) {
+        for (i = 0; i < count; i++) {
+            BattleSamplingEntry* entry = &entries[i];
+            BattleUnitPart* part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(wp, entry->unitId), entry->partId);
+            s32 keep = 1;
+
+            if (part->attributes & kImportantPart) {
+                for (j = 0; j < count; j++) {
+                    BattleSamplingEntry* other = &entries[j];
+
+                    if (other != entry && entry->unitId == other->unitId &&
+                        (BtlUnit_GetPartsPtr(BattleGetUnitPtr(wp, other->unitId), other->partId)->attributes &
+                         kMainPart)) {
+                        keep = 0;
+                        break;
+                    }
+                }
+            }
+            if (!keep) {
+                for (j = i; j < count - 1; j++) {
+                    entries[j] = entries[j + 1];
+                }
+                count--;
+                i--;
+            }
         }
     }
 
@@ -523,8 +553,7 @@ void _btlSamplingEnemy(u8* sampling) {
                         BattleUnit* u3;
 
                         if (p2->attributes & 0x10) {
-                            noDup = 2;
-                            break;
+                            continue;
                         }
                         if (p2->attributes & 0x400000) {
                             continue;
@@ -538,12 +567,8 @@ void _btlSamplingEnemy(u8* sampling) {
                         break;
                     }
                 }
-                if (noDup == 2) {
-                    remove = 0;
-                } else if (noDup == 0) {
+                if (noDup == 0) {
                     remove = 1;
-                } else {
-                    remove = 0;
                 }
             }
         }
