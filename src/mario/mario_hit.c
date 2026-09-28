@@ -480,6 +480,249 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     return NULL;
 }
 
+extern const f32 float_9_8041a83c;
+extern const f32 float_3_8041a7f0;
+extern const f32 float_90_8041a81c;
+extern const Vec vec3_802c5808;
+extern const Vec vec3_802c5814;
+
+// NONMATCHING (83.62%): stack frame 0x100 vs 0x110; one extra callee-saved GPR; the dead
+// ours and removed, and the query/out1 locals land at different offsets.
+void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
+    MarioWork* wp = marioGetPtr();
+    f32 ox;
+    f32 oz;
+    Vec dir;
+    Vec p;
+    Vec out2;
+    Vec out1;
+    HitCheckQuery query;
+    HitEntry* hit;
+    f32 y;
+    f32 dist;
+    s32 i;
+
+    *outY = float_neg1_8041a7dc;
+    y = wp->wPlayerCollisionBox.y;
+    dist = y + a;
+    for (i = 0; i < 5; i++) {
+        f32 rad;
+
+        switch (i) {
+        case 0:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 1:
+            rad = float_3p1416_8041a7e0 * (float_90_8041a81c + wp->directionView) / float_180_8041a7cc;
+            ox = float_9_8041a83c * (f32)sin(rad);
+            oz = float_9_8041a83c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, wp->directionView);
+            break;
+        case 2:
+            rad = float_3p1416_8041a7e0 * (wp->directionView - float_90_8041a81c) / float_180_8041a7cc;
+            ox = float_9_8041a83c * (f32)sin(rad);
+            oz = float_9_8041a83c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, wp->directionView);
+            break;
+        case 3:
+            rad = float_3p1416_8041a7e0 * (float_90_8041a81c + wp->directionView) / float_180_8041a7cc;
+            ox = float_9_8041a83c * (f32)sin(rad);
+            oz = float_9_8041a83c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, float_180_8041a7cc + wp->directionView);
+            break;
+        case 4:
+            rad = float_3p1416_8041a7e0 * (wp->directionView - float_90_8041a81c) / float_180_8041a7cc;
+            ox = float_9_8041a83c * (f32)sin(rad);
+            oz = float_9_8041a83c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, float_180_8041a7cc + wp->directionView);
+            break;
+        }
+        dir = vec3_802c5814;
+        p.x = pos->x + ox;
+        p.y = pos->y + float_1_8041a7bc;
+        p.z = pos->z + oz;
+        query.targetPos = p;
+        query.targetDir = dir;
+        query.targetDistance = dist;
+
+        if (marioGetPtr()->currMotionId == 0x1C) {
+            hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+        } else if (marioGetPtr()->flags & 0x1000000) {
+            hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+        } else {
+            hit = hitCheckVecFilter(&query, chkfilterVec);
+        }
+        if (hit != NULL) {
+            out1 = query.hitPos;
+            out1.x = (f32)(s32)(float_1000_8041a7a0 * out1.x +
+                                (out1.x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                      float_1000_8041a7a0;
+            out1.y = (f32)(s32)(float_1000_8041a7a0 * out1.y +
+                                (out1.y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                      float_1000_8041a7a0;
+            out1.z = (f32)(s32)(float_1000_8041a7a0 * out1.z +
+                                (out1.z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                      float_1000_8041a7a0;
+            out2 = query.hitNormal;
+            if (pos->y + y >= out1.y) {
+                pos->y = out1.y - y - float_1_8041a7bc;
+                *outY = float_0_8041a7a4;
+                return hit;
+            } else {
+                f32 d = (out1.y - pos->y) - y;
+
+                if (*outY < float_0_8041a7a4) {
+                    *outY = d;
+                } else if (*outY > d) {
+                    *outY = d;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+extern const f32 float_100_8041a7f8;
+extern const f32 float_0p05_8041a848;
+extern const f32 float_75_8041a840;
+extern const f32 float_50_8041a844;
+extern const Vec vec3_802c57fc;
+
+// NONMATCHING (56.43%): stack/register layout differs; the dead sqrtf block is omitted.
+void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
+    MarioWork* wp = marioGetPtr();
+    Vec p;
+    Vec up;
+    Vec hitPos;
+    Vec normal;
+    HitEntry* hit;
+    f32 x0;
+    f32 y0;
+    f32 f25;
+    f32 f24;
+    f32 f27;
+    f32 f28;
+    f32 f26;
+    f32 f22;
+    f32 rad;
+    f32 angle;
+    f32 s;
+    f32 c;
+    f32 dist;
+    s32 i;
+
+    if (wp->baseSpeed != float_0_8041a7a4) {
+        angle = wp->directionView;
+    } else {
+        angle = toMovedir(wp->unk1A8);
+    }
+    rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
+    s = (f32)sin(rad);
+    c = (f32)cos(rad);
+    x0 = wp->wPlayerCollisionBox.x - float_0p5_8041a7c4;
+    f25 = float_0p5_8041a7c4 * (x0 * s);
+    f24 = float_0p5_8041a7c4 * (x0 * -c);
+    f27 = -f25;
+    f28 = -f24;
+    y0 = *outY;
+    f26 = float_0p5_8041a7c4 * y0;
+    f22 = y0 + a;
+    *outY = float_neg1_8041a7dc;
+    up = vec3_802c57fc;
+    for (i = 0; i < 5; i++) {
+        f32 ox;
+        f32 oz;
+
+        switch (i) {
+        case 0:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 1:
+            ox = f25;
+            oz = f24;
+            break;
+        case 2:
+            ox = f28;
+            oz = f25;
+            break;
+        case 3:
+            ox = f24;
+            oz = f27;
+            break;
+        case 4:
+            ox = f27;
+            oz = f28;
+            break;
+        }
+        p.x = pos->x + ox;
+        p.y = pos->y + f26;
+        p.z = pos->z + oz;
+        dist = f22;
+        hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
+        if (hit != NULL) {
+            MarioWork* wp2 = marioGetPtr();
+            f32 ang;
+
+            *(f32*)&wp2->field_0x1F0[0x28] =
+                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            float_100_8041a7f8 * normal.z,
+                                                            float_100_8041a7f8 * normal.y) -
+                                                  float_180_8041a7cc) +
+                          float_0p5_8041a7c4) /
+                float_100_8041a7f8;
+            *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
+            *(f32*)&wp2->field_0x1F0[0x30] =
+                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                                                            float_100_8041a7f8 * normal.x,
+                                                            float_100_8041a7f8 * normal.y) -
+                                                  float_180_8041a7cc) +
+                          float_0p5_8041a7c4) /
+                float_100_8041a7f8;
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, normal.x, -normal.y);
+            if (!(wp->flags & 0x1000000)) {
+                f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
+
+                if (ang >= float_180_8041a7cc - lim && ang <= lim) {
+                    hit = NULL;
+                }
+            }
+        }
+        if (wp->flags & 0x1000000) {
+            if (hit != NULL) {
+                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
+
+                y = y - float_0p05_8041a848 * y0;
+                hitPos.y = y;
+                if (pos->y + y0 >= y) {
+                    pos->y = y;
+                    *outY = float_0_8041a7a4;
+                    return hit;
+                } else {
+                    *outY = (y - pos->y) - y0;
+                    return NULL;
+                }
+            }
+        } else {
+            if (hit != NULL) {
+                f32 y = (f32)(s32)(float_100_8041a7f8 * hitPos.y + f26) / float_100_8041a7f8;
+
+                hitPos.y = y;
+                if (pos->y + y0 >= y) {
+                    pos->y = y;
+                    *outY = float_0_8041a7a4;
+                    return hit;
+                } else {
+                    *outY = (y - pos->y) - y0;
+                    return NULL;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
 extern const char str_802C5940[];
 extern const Vec vec3_802c5874;
 extern const f32 float_60_8041a808;
