@@ -7,3 +7,8 @@ BOOL marioRollKeyDisable(void);
 void marioResetRollSpd(void);
 void mot_fall_roll(void);
 BOOL getRollEvtFlag(void);
+BOOL marioRollCancel(void);
+void rollEvtJumpSetup(void);
+void setRollEvtFlag(void);
+void clrRollEvtFlag(void);
+void marioRollForceCancel(void);

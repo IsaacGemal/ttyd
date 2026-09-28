@@ -184,3 +184,4 @@ void bomhei_use_post(PartyEntry* party);
 void bomhei_exit(PartyEntry* party);
 void bomhei_init_800BFBB0(PartyEntry* party);
 void bomhei_bye(PartyEntry* party);
+s32 partyRideChk(PartyEntry* party);

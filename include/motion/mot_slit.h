@@ -14,3 +14,4 @@ BOOL marioChkSlitEnd(void);
 #include <dolphin/mtx.h>
 BOOL marioChkSlitThrouh(void);
 BOOL marioGetSlitFloorPos(Vec* pos);
+void motSlitCancel2(void);

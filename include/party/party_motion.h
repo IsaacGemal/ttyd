@@ -26,3 +26,5 @@ void party_motion_jump(PartyEntry* party);
 s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle);
 void party_force_reset_outofscreen(PartyEntry* party);
 void party_motion_behind_mario_continue(PartyEntry* party);
+void N_partyFollowCloseOn(PartyEntry* party);
+void N_partyFollowCloseOff(PartyEntry* party);
