@@ -58,3 +58,8 @@ void _combine_nozzle_weapon(s32 mode, void* dst, void* src);
 void _mobj_shake_main(BattleStageObject* obj);
 void _disp_escape_wall_message(CameraId cameraId, void* param);
 s32 BattleFogEndCheck(void);
+void BattleStage_IronFrameFallCheck(void);
+void BattleStage_NozzleDirChangeCheck(void);
+void BattleStage_DestroyA1(void);
+void BattleStage_DestroyA2(void);
+void BattleStage_DestroyB(void);
