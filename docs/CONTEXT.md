@@ -22,7 +22,7 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 27 after wave 11, PR #13): 4,481 of 9,770 functions matched, 22.37% of code; linked code 10.69%, linked data 4.78%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Progress (local build, Sep 27 after wave 14, PR #15): 4,840 of 9,770 functions matched, 24.66% of code; linked code 11.19%, linked data 4.94%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
 - Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
@@ -1267,6 +1267,49 @@ taken the easy functions from; the import itself (+131) took no agent time.
 version reaches about 97% with two one-line asm dcbi); `__cvt_sll_flt` (hand-written asm); float.c's link error;
 the 14 unlinked library files; 16 small MSL and 4 TRK files never started.
 
-*Footnote (2026-09-27): upstream (doldecomp/ttyd) made its first commit since July 5 while waves 13 and 14 ran:
-62131fc, NWPlayer123, "Decompile Glitz Pit Rankings" (rels/tou2 plus a configure.py Rel block). With Isaac's OK,
-TTYD Claude #2 cherry-picked it as PR #17 (99ca3f8, with 8f4a847 making rankingControll static): 4,713 -> 4,715.*
+## Upstream's first commit since the fork (2026-09-27, Isaac; done by Claude Opus 5.5)
+
+doldecomp/ttyd had no commits between our fork point (2df569d, Jul 5) and 62131fc on Sep 27 ("Decompile Glitz
+Pit Rankings", NWPlayer123, MIT: rels/tou2 and its configure.py entry). Isaac: cherry-pick it. Merged as PR #17
+with `-x`, plus one commit making `rankingControll` static (the original has it local, and our CI rejects a
+local prototype for a non-static function). +2 functions. Upstream commits can be taken the same way.
+
+## Wave 14: most bugs any review has found (2026-09-27, Claude Opus 5.5 ("TTYD Claude #2"); agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+Ran alongside wave 13 (the other orchestrator, effect/ files). 24 agents, 45-minute cap, 20:04-20:44: 16 new
+files and 8 started files (missing functions first). **All 24 stopped on their own after 12-40 minutes**; none
+hit the cap. Merged 24/24 (three header rejects salvaged by moving structs and data externs into the .c).
+**4,713 -> 4,837 at merge; 4,840 on main after the fixes and upstream's tou2; PR #15.**
+
+Six agents fetched from doldecomp/ttyd. It is MIT and the fork's own upstream, and upstream had nothing in these
+files past our fork point, so nothing was reused.
+
+**Review 1 found 16 high-severity logic bugs, all in partial functions**, against 3-4 in earlier waves:
+inverted tests (eight status checks in BattleChoiceSamplingEnemy, compareCamRoad's early return, kpa_swim's
+`>=`), wrong masks and constants (0x40000 for 0x400000, 0x40 for 0x20, four in _btlSamplingEnemy, Yoshi for
+Bobbery, 18 for 24, 90 for 120), a store to the wrong Vec, ConsumeItem striding itemDataTable by 0x1C instead
+of 0x28, missing calls and passes, an uninitialised ray distance, and two placeholder bodies
+(_fbatFirstAttackAnnouceDisp, written from the asm: 7.65% -> 99.6%; partySearchGround, removed and back in the
+queue). Reviews 2 (Codex) and 3 (Claude) found five more: _btlSamplingEnemy's loops ran to a stale count,
+sac_muki read its sound names past the end of its .rodata, evt_mobj_switch_float_blk posed the wrong object,
+and three return types. Every file the wave changed now compiles without `-DMUST_MATCH` (mapdrv and
+unit_party_christine-style breakage caught before review this time).
+
+**Why so many.** Every one sits in a function below 100%, where nothing but a review reads the logic, and this
+wave wrote more of those from scratch than any before (16 new files). The agents also stopped early instead of
+rechecking their partial functions.
+
+**What the reference repos do (Isaac asked).** Melee and Animal Crossing avoid the problem: a function is done
+only at 100%, and partial attempts are rarely merged (Melee's build has 3 partial functions of ~19,800).
+SFA-Decomp, which is agent-driven like us, keeps partial functions and built scans for exactly this bug class:
+`tools/wrongvalue_scan.py` (same instruction sequence, different immediate or symbol: a wrong constant, mask,
+offset or argument), `tools/a71_mnhist_scan.py` (per-function opcode histograms: an extra or missing
+operation, not register colouring) and a whole-function load/store comparison keyed on displacement
+(docs/aug05-A103-wrong-computation-sweep.md). SFA-Decomp is CC0. Nearly all of wave 14's high findings are of
+the kinds these catch. Claude #1 is porting them (Isaac), to run in `check.py --final` and at merge.
+
+**Open:** partySearchGround (513 instructions) and evt_fade/fontmgr back in the queue; calcCamRoad reads a
+seventh float its caller never sets; MarioWork.poseTime is read with lhz though the header says s16;
+lightGetNearObj takes a Vec by value where both callers pass their own Vec (maybe `Vec*`); BattleUnit+0x188 is a
+0x1C-byte sound-mode record, not the header's guessed Vec; kpa_dash/kpa_walk compare the stick magnitude
+unsigned where the original is signed (an s32 scores lower).
