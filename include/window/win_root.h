@@ -37,3 +37,18 @@ void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h);
 void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b);
 s32 winSortWait(WindowWork* work);
+void winMailDisp(WindowWork* work);
+void winMsgDisp(WindowWork* work, f32 x, f32 y);
+void winSortGX(WindowWork* work);
+// Menu-display rodata block that starts at the msg_menu_* strings.  winRootDisp
+// reads the Vec constants at the listed offsets through this one base so MWCC
+// emits the same single lis/addi + offset loads as the original.
+typedef struct WinRootVecs {
+    u8 pad[0x54]; // 0x00: msg_menu_* strings
+    Vec v0;       // 0x54
+    Vec v1;       // 0x60
+    Vec v2;       // 0x6C
+    Vec v3;       // 0x78
+    Vec v4;       // 0x84
+    Vec v5;       // 0x90
+} WinRootVecs;
