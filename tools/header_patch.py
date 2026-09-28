@@ -153,13 +153,20 @@ def blocks(lines):
         yield "type", cur
 
 
-def type_name(block):
+def type_names(block):
+    """The block's struct/union/enum tag and its typedef name (either may be missing)."""
     m = CLOSE.fullmatch(block[-1].strip())
-    return (m and m.group(1)) or (re.match(r"\s*(?:typedef\s+)?(?:struct|union|enum)\s+(\w+)", block[0]) or [None, None])[1]
+    tag = re.match(r"\s*(?:typedef\s+)?(?:struct|union|enum)\s+(\w+)", block[0])
+    return [n for n in ((tag and tag.group(1)), (m and m.group(1))) if n]
+
+
+def code(text):
+    """text without comments, so a commented-out definition doesn't count as one."""
+    return re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S)
 
 
 def defines(text, name):
-    return bool(name) and bool(re.search(rf"(?:\b(?:struct|union|enum)\s+{name}\s*\{{|\}}\s*{name}\s*;)", text))
+    return bool(re.search(rf"(?:\b(?:struct|union|enum)\s+{name}\s*\{{|\}}\s*{name}\s*;)", code(text)))
 
 
 def squash(lines):
@@ -179,11 +186,11 @@ def apply(patch, root, counts=None):
                 if item.strip() and item.strip() not in have:
                     new.append(item)
                     have.add(item.strip())
-            elif squash(item) in squash((text + "\n" + "\n".join(new)).splitlines()):
+            elif squash(code("\n".join(item)).splitlines()) in squash(code(text + "\n" + "\n".join(new)).splitlines()):
                 continue  # exactly this definition is already there (another agent's identical patch)
-            elif defines(text + "\n".join(new), type_name(item)):
-                raise SystemExit(f"header_patch.py: {path} already defines {type_name(item)} differently; "
-                                 "reconcile the two definitions by hand")
+            elif any(defines(text + "\n".join(new), n) for n in type_names(item)):
+                raise SystemExit(f"header_patch.py: {path} already defines {' or '.join(type_names(item))} "
+                                 "differently; reconcile the two definitions by hand")
             else:
                 new += item
         if not new:

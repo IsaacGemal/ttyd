@@ -29,7 +29,7 @@ void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	data->field_0x1C = camId;
 }
 
-// NONMATCHING (91.6%): retail duplicates the per-quad mat/pos/scale/draw block into both
+// NONMATCHING (98.37%): retail duplicates the per-quad mat/pos/scale/draw block into both
 // branches of the `j == 0` test; this compiler merges them, and the quad extent is
 // constant-folded to -16 instead of kept as a hoisted -32 * 0.5.
 void effKemuTestDisp(CameraId camId, void* param) {
@@ -134,6 +134,14 @@ void effKemuTestDisp(CameraId camId, void* param) {
 					if (j == 0) {
 						GXSetChanMatColor(4, dat_80420ab4);
 						PSMTXTrans(mtx, data->posX + 2.0f, data->posY - 2.0f, data->posZ);
+						PSMTXScale(scale, data->scale, data->scale, data->scale);
+						PSMTXConcat(view, mtx, mtx);
+						if (type == 0xB) {
+							PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
+							PSMTXConcat(mtx, rot, mtx);
+						}
+						PSMTXConcat(mtx, scale, mtx);
+						GXLoadPosMtxImm(mtx, 0);
 					}
 					else {
 						GXColor color = unk_804232d8;
@@ -144,15 +152,15 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						color.a = alpha;
 						GXSetChanMatColor(4, color);
 						PSMTXTrans(mtx, data->posX, data->posY, data->posZ);
+						PSMTXScale(scale, data->scale, data->scale, data->scale);
+						PSMTXConcat(view, mtx, mtx);
+						if (type == 0xB) {
+							PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
+							PSMTXConcat(mtx, rot, mtx);
+						}
+						PSMTXConcat(mtx, scale, mtx);
+						GXLoadPosMtxImm(mtx, 0);
 					}
-					PSMTXScale(scale, data->scale, data->scale, data->scale);
-					PSMTXConcat(view, mtx, mtx);
-					if (type == 0xB) {
-						PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
-						PSMTXConcat(mtx, rot, mtx);
-					}
-					PSMTXConcat(mtx, scale, mtx);
-					GXLoadPosMtxImm(mtx, 0);
 					GXBegin(0x80, 0, 4);
 					GXPosition3f32(dsize * 0.5f, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
@@ -350,6 +358,7 @@ void effKemuTestMain(EffectEntry* effect) {
 static f32 bom_dir[10] = { 10.0f, 40.0f, 80.0f, 170.0f, 140.0f, 100.0f, 25.0f, 155.0f, 60.0f, 120.0f };
 static f32 bom_spd[10] = { 2.2f, 2.7f, 3.0f, 2.2f, 2.7f, 3.0f, 1.9f, 1.9f, 1.5f, 1.5f };
 const f32 dat_802fdcac[4] = { 0.0f, 120.0f, 180.0f, 240.0f };
+const f32 vec3_802fdcbc[3] = { 0.0f, 120.0f, 240.0f };
 const f32 vec3_802fdc88[3] = { 0.5f, 0.3f, 0.8f };
 const f32 vec3_802fdc94[3] = { 0.0f, 10.0f, 10.0f };
 const f32 vec3_802fdca0[3] = { 0.0f, 5.0f, 20.0f };
@@ -357,9 +366,7 @@ const f32 vec3_802fdcc8[3] = { 0.0f, 5.0f, -5.0f };
 const f32 vec3_802fdcd4[3] = { 5.0f, 0.0f, -2.0f };
 const f32 vec3_802fdce0[3] = { 0.0f, 1.0f, 2.0f };
 
-// NONMATCHING (68.3%): retail interleaves per-type initialisers through a walking set of
-// local constant arrays; this is a faithful re-implementation of the same values but
-// the compiler schedules/allocates it differently.
+// NONMATCHING (68.02%): 58 instructions differ, 156 missing, 80 extra, plus register differences.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -562,13 +569,13 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				}
 			}
 			else if (type == 5) {
-				angle = 6.2831855f * dat_802fdcac[0] / 360.0f;
+				angle = 6.2831855f * dat_802fdcac[i - 1] / 360.0f;
 				work->velX = 3.0f * (f32)sin(angle);
 				work->velY = -3.0f * (f32)cos(angle);
 				work->scale = 0.5f;
 			}
 			else if (type == 21) {
-				angle = 6.2831855f * vec3_802fdcd4[0] / 360.0f;
+				angle = 6.2831855f * vec3_802fdcbc[i - 1] / 360.0f;
 				work->velX = 3.0f * (f32)sin(angle);
 				work->velY = -3.0f * (f32)cos(angle);
 				work->scale = 0.5f;

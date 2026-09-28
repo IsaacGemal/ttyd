@@ -328,6 +328,19 @@ class CreatedHeaders(unittest.TestCase):
             header_patch.apply(anon, root)
             self.assertEqual((root / "include/eff/e.h").read_text().count("enum {"), 1)
 
+    def test_a_tag_or_a_commented_out_definition_is_checked(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "include").mkdir()
+            (root / "include/x.h").write_text("typedef struct Existing {\n\ts32 a;\n} Existing;\n/* typedef struct Hidden {\n\ts32 f;\n} Hidden; */\n")
+            alias = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,3 @@\n+typedef struct Existing {\n+\ts32 other;\n+} Alias;\n"
+            with self.assertRaises(SystemExit):
+                header_patch.apply(alias, root)
+            hidden = "--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,3 @@\n+typedef struct Hidden {\n+\ts32 f;\n+} Hidden;\n"
+            header_patch.apply(hidden, root)
+            self.assertEqual(header_patch.code((root / "include/x.h").read_text()).count("struct Hidden {"), 1)
+
     def test_an_unclosed_type_is_refused(self):
         self.assertTrue(header_patch.problems("--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n+\ts32 a;\n"))
 

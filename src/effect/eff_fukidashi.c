@@ -540,7 +540,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 				GXSetNumChans(1);
-				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_REG, 0, 2, 2);
+				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, 1, 2, 2);
 				color = *(GXColor*)&dat_8041c5c0;
 				color.a = alphaB;
 				GXSetChanAmbColor(GX_COLOR0A0, color);

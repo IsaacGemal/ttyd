@@ -83,7 +83,7 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
-// NONMATCHING (64.68%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
+// NONMATCHING (64.87%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
@@ -173,15 +173,15 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		GXSetCurrentMtx(0);
 
 		switch (type) {
-		case 3:
-			effGetTexObj(0x43, &tex);
-			GXLoadTexObj(&tex, GX_TEXMAP0);
-			break;
 		case 0:
 		case 1:
 		case 2:
 		case 4:
 			effGetTexObj(0x41, &tex);
+			GXLoadTexObj(&tex, GX_TEXMAP0);
+			break;
+		case 3:
+			effGetTexObj(0x43, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			break;
 		}
