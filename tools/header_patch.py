@@ -39,7 +39,7 @@ ALLOWED = [
 C = r"(\s*//.*)?"
 OPEN = re.compile(r"(typedef\s+)?(struct|union|enum)(?:\s+\w+)?\s*\{" + C)
 FIELD = re.compile(r"(?:(?:const|unsigned|signed|volatile|struct|union|enum)\s+)*\w+[\s\*]+\w+"
-                   r"(?:\s*\[[\w\s+\-*/()]+\])*(?:\s*:\s*\d+)?\s*;" + C)
+                   r"(?:\s*\[[\w\s+\-*/()]*\])*(?:\s*:\s*\d+)?\s*;" + C)  # [] too: a flexible array member
 FNPTR = re.compile(r"(?:(?:const|unsigned|struct)\s+)*\w+[\s\*]*\(\s*\*\s*\w+\s*\)\s*\([^;{}]*\)\s*;" + C)
 MEMBER = re.compile(r"\w+(?:\s*=\s*[-+\w\s()<>|&~]+)?\s*,?" + C)
 CLOSE = re.compile(r"\}\s*(\w*)\s*;" + C)
