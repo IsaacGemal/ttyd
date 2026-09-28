@@ -131,7 +131,7 @@ RankData* rank_wp = &rank_work;
 const char* suuji[] = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９" };
 
 // local prototypes
-void rankingControll(void);
+static void rankingControll(void);
 
 void rankingInit(void) {
     s32 temp;
@@ -226,7 +226,7 @@ static void insert(s32* arr, s32 n, s32 from, s32 to) {
 #pragma dont_inline reset
 
 // TODO: this is mostly there
-void rankingControll(void) {
+static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
     s32 nAbove;
