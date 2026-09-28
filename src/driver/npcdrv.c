@@ -1,10 +1,16 @@
 #include "driver/npcdrv.h"
 #include "dolphin/gx/GXStruct.h"
+#include "data/mapdata.h"
+#include "driver/dispdrv.h"
+#include "driver/offscreendrv.h"
 #include "driver/animdrv.h"
+#include "driver/swdrv.h"
+#include "evt/evt_cmd.h"
 #include "driver/effdrv.h"
 #include "driver/itemdrv.h"
 #include "driver/msgdrv.h"
 #include "mario/mario.h"
+#include "mario/mario_hit.h"
 #include "mario/mario_party.h"
 #include "mario/mariost.h"
 #include "party.h"
@@ -300,24 +306,353 @@ void npcDisp_xlu(CameraId cameraId, void* param) {
     animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
 }
 
-// NONMATCHING (0.55%): 180 missing.
+// NONMATCHING (98.81%): npcDisp_xlu plus a dispGetCurWork()->renderMode switch; case 0 does the
+// color/billboard setup and part 1, cases 1/2 draw parts 2/3. Remaining diffs are MWCC register
+// allocation and literal-pool symbol names.
 void npcDisp(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    DispEntry* disp;
+
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+    disp = dispGetCurWork();
+    switch (disp->renderMode) {
+        case 0:
+            color = entry->color;
+            if (entry->jumpFlags & 0x400000) {
+                color.r /= 2;
+                color.g /= 2;
+                color.b /= 2;
+                animPoseSetMaterialEvtColor(entry->poseId, color);
+                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+            }
+            if (entry->flags & 0x800000) {
+                AnimTableEntry* anim;
+                AnimationPose* animPose;
+                CameraEntry* camera;
+                f32 dx, dz;
+                f32 angle;
+                u32 i;
+
+                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+                animPose = animPoseGetAnimPosePtr(entry->poseId);
+                anim = animPoseGetCurrentAnim(entry->poseId);
+
+                camera = camGetPtr(CAMERA_3D);
+                dx = camera->cameraAt.x - camera->cameraPos.x;
+                dz = camera->cameraAt.z - camera->cameraPos.z;
+                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                if (angle < 0.0f) {
+                    angle += 360.0f;
+                }
+                angle = reviseAngle((angle - animPose->rotationY));
+
+                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][0], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+                    }
+                } else {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][1], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+                    }
+                }
+            }
+            animPoseMain(entry->poseId);
+            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+            break;
+        case 1:
+            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+            break;
+        case 2:
+            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+            break;
+    }
 }
 
-// NONMATCHING (0.55%): 181 missing.
+// NONMATCHING (98.76%): npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
+// GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue. Remaining diffs
+// are register allocation and literal-pool symbol names.
 void npcDisp_offscreen_xlu(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    u16 left, top, right, bottom;
+
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+    color = entry->color;
+    if (entry->jumpFlags & 0x400000) {
+        color.r /= 2;
+        color.g /= 2;
+        color.b /= 2;
+        animPoseSetMaterialEvtColor(entry->poseId, color);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+    }
+
+    if (entry->flags & 0x800000) {
+        AnimTableEntry* anim;
+        AnimationPose* animPose;
+        CameraEntry* camera;
+        f32 dx, dz;
+        f32 angle;
+        u32 i;
+
+        anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+        animPose = animPoseGetAnimPosePtr(entry->poseId);
+        anim = animPoseGetCurrentAnim(entry->poseId);
+
+        camera = camGetPtr(CAMERA_3D);
+        dx = camera->cameraAt.x - camera->cameraPos.x;
+        dz = camera->cameraAt.z - camera->cameraPos.z;
+        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        if (angle < 0.0f) {
+            angle += 360.0f;
+        }
+        angle = reviseAngle((angle - animPose->rotationY));
+
+        if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][0], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+            }
+        } else {
+            for (i = 0; i < 14; i++) {
+                if (!strcmp(luigi_pose[i][1], anim->name)) {
+                    break;
+                }
+            }
+            if (i < 14) {
+                animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+            }
+        }
+    }
+    animPoseMain(entry->poseId);
+    animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+    animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+    sysWaitDrawSync();
+    GXReadBoundingBox(&left, &top, &right, &bottom);
+    offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
 }
 
-// NONMATCHING (0.51%): 194 missing.
+// NONMATCHING (98.85%): npcDisp with the offscreen bounding-box prologue/epilogue; remaining
+// diffs are register allocation and literal-pool symbol names.
 void npcDisp_offscreen(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    DispEntry* disp;
+    u16 left, top, right, bottom;
+
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+    rotY = reviseAngle(-entry->direction);
+    mtx_setup(entry, mtx, -1);
+
+    disp = dispGetCurWork();
+    switch (disp->renderMode) {
+        case 0:
+            color = entry->color;
+            if (entry->jumpFlags & 0x400000) {
+                color.r /= 2;
+                color.g /= 2;
+                color.b /= 2;
+                animPoseSetMaterialEvtColor(entry->poseId, color);
+                animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+            }
+            if (entry->flags & 0x800000) {
+                AnimTableEntry* anim;
+                AnimationPose* animPose;
+                CameraEntry* camera;
+                f32 dx, dz;
+                f32 angle;
+                u32 i;
+
+                anim = animPoseGetCurrentAnim(entry->poseId); // stale store
+                animPose = animPoseGetAnimPosePtr(entry->poseId);
+                anim = animPoseGetCurrentAnim(entry->poseId);
+
+                camera = camGetPtr(CAMERA_3D);
+                dx = camera->cameraAt.x - camera->cameraPos.x;
+                dz = camera->cameraAt.z - camera->cameraPos.z;
+                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                if (angle < 0.0f) {
+                    angle += 360.0f;
+                }
+                angle = reviseAngle((angle - animPose->rotationY));
+
+                if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][0], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][1], FALSE);
+                    }
+                } else {
+                    for (i = 0; i < 14; i++) {
+                        if (!strcmp(luigi_pose[i][1], anim->name)) {
+                            break;
+                        }
+                    }
+                    if (i < 14) {
+                        animPoseSetAnim(entry->poseId, luigi_pose[i][0], FALSE);
+                    }
+                }
+            }
+            animPoseMain(entry->poseId);
+            animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+            break;
+        case 1:
+            animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+            break;
+        case 2:
+            animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+            break;
+    }
+    sysWaitDrawSync();
+    GXReadBoundingBox(&left, &top, &right, &bottom);
+    offscreenAddBoundingBox(entry->field_110, left, top, right, bottom);
 }
 
-// NONMATCHING (0.53%): 186 missing.
+// Inline degree/radian sine and cosine approximations from the original blur path; only used
+// to keep npcDisp_blur's arithmetic in one place.
+static inline f32 npcSinf(f32 rad) {
+    const f32 c0 = 0.00761f;
+    const f32 c1 = 0.16605f;
+    const f32 c2 = 1.0f;
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, f1, sinv = c0;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            f0 = rad * rad;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - halfpi;
+            f1 = halfpi - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < threehalves) {
+        f1 = rad - pi;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - threehalves;
+        f1 = halfpi - f0;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 npcCosf(f32 rad) {
+    const f32 c0 = 0.03705f;
+    const f32 c1 = 0.4967f;
+    const f32 c2 = 1.0f;
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, cosv = c0;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - halfpi;
+            f0 = halfpi - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < threehalves) {
+        f0 = rad - pi;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - threehalves;
+        f0 = halfpi - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// NONMATCHING (76.7%): blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4
+// draws with history 4..1 and alpha 0x80-100..0x80-25, flag save/restore). Diffs: MWCC schedules
+// the inline sin/cos constants per branch, li-forms the color, entry/flag in r31/r30 vs r30/r28.
 void npcDisp_blur(CameraId camId, void* param) {
     NpcEntry* entry = param; // cast to proper type
+    Mtx mtx;
+    GXColor color;
+    f32 rotY;
+    f32 offX, offZ;
+    u32 flag;
+    s32 i;
+    s32 alpha;
+
+    rotY = reviseAngle(-entry->direction);
+    flag = animPoseGetMaterialFlag(entry->poseId);
+    offX = 2.0f * npcSinf((6.2831855f * camGetPtr(camId)->viewYaw) / 360.0f);
+    offZ = -(2.0f * npcCosf((6.2831855f * camGetPtr(camId)->viewYaw) / 360.0f));
+    animPoseMain(entry->poseId);
+    alpha = 100;
+    for (i = 4; i > 0; i--) {
+        mtx_setup(entry, mtx, i);
+        PSMTXTransApply(mtx, mtx, offX, 0.0f, offZ);
+        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+        *(u32*)&color = 0xFFFFFF00;
+        color.a = 0x80 - alpha;
+        animPoseSetMaterialEvtColor(entry->poseId, color);        animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+        animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
+        animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
+        alpha -= 25;
+    }
+    animPoseSetMaterialFlagOff(entry->poseId, 0x40);
+    animPoseSetMaterialFlagOn(entry->poseId, flag);
 }
 
 void npcInit(void) { // 1:1
@@ -1027,8 +1362,131 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     }
 }
 
-// NONMATCHING (1.61%): empty placeholder, not decompiled yet.
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
+    BattleGroupSetup* setup;
+    s32 i;
+
+    if (battleInfoId == -1) {
+        setup = NULL;
+    } else {
+        char areaName[4];
+        AreaData* area;
+
+        areaName[0] = gp->currentMapName[0];
+        areaName[1] = gp->currentMapName[1];
+        areaName[2] = gp->currentMapName[2];
+        areaName[3] = 0;
+        area = areaDataPtr(areaName);
+        setup = (BattleGroupSetup*)area->field_8;
+        while (battleInfoId > 0) {
+            setup++;
+            battleInfoId--;
+        }
+    }
+    npcSetupBattleInfo(npc, setup);
+    for (i = 0; i < 4; i++) {
+        if (npc->slaves[i] != NULL) {
+            npc->slaves[i]->battleInfo = npc->battleInfo;
+        }
+    }
+}
+
+// NONMATCHING (86%): logic is complete; MWCC picks a different callee-saved register
+// allocation (p/sel/i land in r26/r28/r25 instead of the original's r27/r27/r28) and the
+// level-range test/branch layout differs. All constants and offsets checked against the asm.
+void npcSetupBattleInfo(NpcEntry* npc, BattleGroupSetup* setup) {
+    NpcBattleInfo* info = &npc->battleInfo;
+    NpcBattleSetupEntry* sel;
+    NpcBattleSetupEntry* entry;
+    NpcItemDropEntry* list;
+    NpcItemDropEntry* d;
+    BattleUnitSetup* enemy;
+    s8* p;
+    s32 evt;
+    s32 pick;
+    s32 sum;
+    s32 num;
+    s32 i;
+
+    memset(info, 0, 0xC8);
+    memset(info->recoveredItems, 0, 0x20);
+    if (setup == NULL) {
+        return;
+    }
+    if (*(u32*)((u8*)setup + 0x0) == 0) {
+        return;
+    }
+    *(s32*)((u8*)info + 0xAC) = *(s32*)((u8*)setup + 0x1C);
+    if (*(s32*)((u8*)info + 0xAC) == 0 || *(s32*)((u8*)info + 0xAC) < 0 ||
+        *(s32*)((u8*)info + 0xAC) >= 3) {
+        p = (s8*)setup;
+        for (i = 0; i < 0x10; i++) {
+            ((u8*)info)[0xB0 + i] = p[0x20] + irand(p[0x21] - p[0x20] + 1);
+            p += 2;
+        }
+    }
+    info->field_4 = *(s32*)((u8*)setup + 0x18);
+    *(s32*)((u8*)info + 0x8) = *(s32*)((u8*)setup + 0x8);
+    info->itemDropped = 0;
+    info->heartsDropped = 0;
+    info->flowersDropped = 0;
+    *(s32*)((u8*)info + 0xC0) = *(s32*)((u8*)setup + 0x40);
+    evt = *(s32*)((u8*)setup + 0xC);
+    if (evt >= GSWF(0) && evt <= EVTDAT_GSWF_MAX) {
+        if (swGet(evt + EVTDAT_GSWF_BASE)) {
+            sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x10);
+        } else {
+            sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x14);
+        }
+    } else {
+        sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x14);
+    }
+    info->groupSetup = NULL;
+    if (sel != NULL) {
+        entry = sel;
+        sum = 0;
+        while (entry->weight > 0) {
+            sum += entry->weight;
+            entry++;
+        }
+        if (sum > 0) {
+            pick = irand(sum);
+            while ((pick -= sel->weight) >= 0) {
+                sel++;
+            }
+            info->groupSetup = sel->setup;
+            *(s32*)info = sel->field_8;
+        }
+    }
+    if (info->groupSetup != NULL) {
+        num = info->groupSetup->numEnemies;
+        enemy = info->groupSetup->enemyData;
+        memset(info->heldItems, 0, 0x20);
+        for (i = 0; i < num; i++, enemy++) {
+            list = *(NpcItemDropEntry**)((u8*)enemy + 0x2C);
+            if (list != NULL) {
+                d = list;
+                sum = 0;
+                while (d->weight > 0 || d->field_0 != 0) {
+                    sum += d->weight;
+                    d++;
+                }
+                if (sum > 0) {
+                    pick = irand(sum);
+                    while ((pick -= list->weight) >= 0) {
+                        list++;
+                    }
+                    info->heldItems[i] = list->field_0;
+                    info->itemDropLists[i] = *(ItemDropData**)((u8*)enemy + 0x2C);
+                }
+            }
+        }
+    }
+    npc->field_316 = 0;
+    if (info->groupSetup != NULL) {
+        npc->field_316 = *(u8*)((u8*)info->groupSetup->enemyData->mUnitKindParams + 0x12);
+    }
+    npc->flags |= 0x10000000;
 }
 
 // NONMATCHING (94.29%): the remaining differences are not yet analysed.
@@ -1396,6 +1854,54 @@ s32 npcCheckBlow(NpcEntry* entry) {
     return cloudGetBreathPower(entry->width, &pos) > 0.0f;
 }
 
+// NONMATCHING (92.7%): hammer sweep over 12 elevation angles placing a point radius from Mario
+// along (sin/cos of angle, elevation from the shared table), then the _npcHitCheckSphere test.
+// Diffs: local angle table pools to a different rodata symbol, and register/float allocation.
+NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
+    f32 dist = 0.0f;
+    f32 i;
+    NpcEntry* npc = NULL;
+
+    for (i = 0.0f; i <= 11.0f; i += 1.0f) {
+        s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
+        f32 idx = i;
+        f32 s1, c1, s2, c2;
+        MarioWork* mario;
+        f32 px, py, pz;
+        f32 dx, dy, dz;
+
+        if (i < 0.0f) {
+            idx = 0.0f;
+        }
+        if (idx >= 11.0f) {
+            idx = 10.0f;
+        }
+        mario = marioGetPtr();
+        sincosf(&s1, &c1, angle);
+        sincosf(&s2, &c2, (f32)angles[(s32)idx]);
+        px = s2 * (s1 * radius) + mario->position.x;
+        pz = s2 * (c1 * radius) + mario->position.z;
+        py = radius * c2 + mario->position.y;
+        dx = px - entry->position.x;
+        dy = py - entry->position.y;
+        dz = pz - entry->position.z;
+        if (py != entry->position.y) {
+            if (py >= entry->position.y && py <= entry->position.y + entry->height) {
+                dy = 0.0f;
+            } else if (py > entry->position.y + entry->height) {
+                dy = py - (entry->position.y + entry->height);
+            }
+        }
+        dist = sqrtf(dx * dx + dy * dy + dz * dz);
+        npc = (dist < entry->width * 0.5f + 12.0f) ? entry : NULL;
+        if (npc != NULL) {
+            break;
+        }
+    }
+    *outDist = dist;
+    return npc;
+}
+
 // NONMATCHING (99.97%): control flow and registers match; only the inline-sqrtf double pool
 // (`double_0p5_802c3138`/`double_3_802c3140`) resolves to a different address than the original.
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
@@ -1440,4 +1946,68 @@ NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
         }
     }
     return found;
+}
+
+// NONMATCHING (76.6%): vertical overlap gate, two horizontal dist checks (position then
+// prevPosition), mario->field_0x1D8 = entry, close/far branch at |compAngle(angle, directionView)|
+// < 40, inline sin/cos push offset clamped to length 2, then marioChkWallAround. Registers differ.
+s32 npcCheckHitMarioSide(NpcEntry* entry) {
+    MarioWork* mario = marioGetPtr();
+    Vec pos;
+    f32 d1, d2;
+    f32 radius;
+    f32 angle;
+    f32 offX, offZ;
+    f32 sinv, cosv;
+    f32 rad;
+    f32 dist;
+
+    if (entry->position.y > mario->position.y + mario->wPlayerCollisionBox.y) {
+        return 0;
+    }
+    if (mario->position.y > entry->position.y + entry->height) {
+        return 0;
+    }
+    pos.x = mario->position.x;
+    pos.z = mario->position.z;
+    pos.y = entry->position.y;
+    d1 = PSVECDistance(&pos, &entry->position);
+    radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) * 0.5f;
+    if (d1 > radius) {
+        return 0;
+    }
+    entry->position.x = entry->prevPosition.x;
+    entry->position.z = entry->prevPosition.z;
+    d2 = PSVECDistance(&pos, &entry->position);
+    if (d2 > radius) {
+        return 0;
+    }
+    mario->field_0x1D8 = (s32)entry;
+    angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
+    if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
+        rad = (6.2831855f * mario->directionView) / 360.0f;
+        sinv = npcSinf(rad);
+        cosv = npcCosf(rad);
+        offX = (radius - d2) * -sinv;
+        offZ = (radius - d2) * cosv;
+    } else {
+        rad = (6.2831855f * angle) / 360.0f;
+        sinv = npcSinf(rad);
+        offX = (entry->position.x - radius * sinv) - mario->position.x;
+        cosv = npcCosf(rad);
+        offZ = (entry->position.z + radius * cosv) - mario->position.z;
+    }
+    dist = sqrtf(offX * offX + offZ * offZ);
+    {
+        f32 limit = mario->wPlayerCollisionBox.z > 4.0f ? 3.0f : 1.5f;
+        if (dist > limit) {
+            f32 scale = 2.0f / dist;
+            offX *= scale;
+            offZ *= scale;
+        }
+    }
+    mario->position.x += offX;
+    mario->position.z += offZ;
+    marioChkWallAround(&mario->position, 0, 0.0f, 160.0f + angle, 20.0f, mario->wPlayerCollisionBox.y);
+    return 1;
 }
