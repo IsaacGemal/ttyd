@@ -1313,3 +1313,71 @@ seventh float its caller never sets; MarioWork.poseTime is read with lhz though 
 lightGetNearObj takes a Vec by value where both callers pass their own Vec (maybe `Vec*`); BattleUnit+0x188 is a
 0x1C-byte sound-mode record, not the header's guessed Vec; kpa_dash/kpa_walk compare the stick magnitude
 unsigned where the original is signed (an s32 scores lower).
+
+## Wave 13: effect files, and why reviews started finding so many bugs (2026-09-27, Claude Opus 5.5; agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+Ran alongside wave 14. 24 agents, 45 minutes, on the 24 largest effect files nobody had started (all new files).
+**4,713 -> 4,745 (+32) on the branch; 4,840 -> 4,872 on main (PR #16, merged second).** Few whole functions (about
+1.3 per agent) but code matched 23.72 -> 24.25% and fuzzy 32.06 -> 35.57%: effect functions are large and
+float-heavy, and most ended at 80-98%.
+
+**Merging.** 11 merged on the first pass. 12 were rejected because agents put their effect structs in existing
+include/eff/ headers, which only created headers could do; `tools/header_patch.py` now lets any header gain whole
+type definitions, applied as blocks and refused when a header already defines the name differently (reviews 1-3
+closed further holes: tags vs typedef names, commented-out definitions, context lines inside a new struct). Data
+externs agents put in headers were moved into their .c files. Four prototype clashes between agents in shared
+headers (effSnowDustN64Entry, tri2, unk_80224298, effNumberGX) were resolved in favour of the defining file.
+
+**Reviews found the most wrong code of any wave**, every item in a partly matched function where no score can see
+it: 9 high in review 1 (GX arguments one register too high, ONE for ZERO, wrong vertex formats, missing calls, a
+signed range test), 3 medium from Codex, and 13 logic bugs plus 8 wrong data tables in review 3 (three tables had
+every word byte-reversed; a loop counter shared by nested loops so a pass never drew; a degenerate quad). Two of the
+fixes were themselves wrong until checked against the asm (review 1's "light mask 0"; review 2's `[i - 1]`), so
+every reviewer claim, including simple-looking constants, gets checked.
+
+**Why so many (Isaac asked).**
+- Detection: waves 13 and 14's reviewers scripted comparisons (call arguments, call order, data bytes, loads and
+  stores) over every partial function; wave 11's review read by hand. Rerun after review 1's fixes, the same
+  script still found missed bugs (kemutest's Disp 91.62 -> 98.37 once its duplicated branches were restored).
+- Volume: waves 13/14 left 71 and 107 partly matched functions (wave 11: 53) and about twice the code. Effect code
+  is mostly GX calls with enum arguments, which agents mistranslated systematically.
+- Agents stopped at a median 18-21 minutes of 45 (wave 11: 29) but made more tool calls: the per-unit check.py made
+  checks faster, and agents declare themselves done after one pass in every wave.
+
+
+## semcheck: a wrong-code checker for agents, tried and dropped (2026-09-28, Claude Opus 5.5; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+**The idea.** Reviews of waves 13 and 14 found wrong code (constants, inverted tests, missing calls, wrong tables) in
+one partly matched function in three to five, all invisible to a match score. Star Fox Adventures' decomp (CC0) has
+scans for this (tools/wrongvalue_scan.py, a71_mnhist_scan.py, the sweep in docs/aug05-A103-wrong-computation-sweep.md),
+so PR #18 built `tools/semcheck.py` on their rules: per partly matched function, flags for call arguments, constants,
+float values, loads/stores by offset, instruction counts and data bytes, with source lines, shown to agents in
+`check.py --final` (brief rule 17: fix what the asm confirms, spend spare time on the list).
+
+**What the three reviews measured.**
+- Review 1 planted 27 bugs in a fully matched file: the first version caught 15 of 22 (wrong floats, callees and
+  strings were invisible under objdiff's `functionRelocDiffs=none`). After fixes, 26/26.
+- Review 2 (Codex) planted bugs in five other units and found more gaps (pointer tables, a float changed to one
+  already used, indirect calls, reordered GX writes, arithmetic swaps), and that objdiff leaves some unchanged
+  symbols' bytes out of its JSON, which had produced false leads; semcheck grew its own ELF reader.
+- Review 3 replayed two past reviews from before and after their fixes: **about 70% of the reviewers' real findings
+  were flagged, but 951 of 989 flags were still there once every real bug was fixed** (roughly 9 in 10 are noise).
+  Some noise would make an agent break correct code (nine switch-order flags asking to swap correct status IDs). It
+  also found blind spots left after two rounds of fixes (tables starting with a zero byte, float `>=`/`<=` inverted,
+  strings reached through a base register, stack-buffer aliasing on real code).
+
+**Why it was dropped (Isaac).** The finished decomps are the source of truth: if they don't hand agents a one-size
+checker, there is probably a reason, and here it was measurable. SFA uses these scans as a one-off sweep read by a
+person; their own sweep of 204 partial functions found zero wrong computations. This codebase is large and varied,
+and a general checker either misses things or buries the real ones in noise. Agents are capable of the grunt work if
+told what to look for, so the brief lists the bug types reviews keep finding (rule 17), with no tool behind it.
+PR #18 was closed unmerged; the branch `semcheck` keeps the code, the mutation harness
+(tools/tests/semcheck_mutants.py) and the reviews' notes, should a narrower version be worth trying later.
+
+**Lessons.**
+- Before building a tool the reference projects don't have, find out why they don't. The sweep doc said it: fuzzy
+  is a summary, and no gate can see a wrong computation.
+- Measure precision on real history (before/after a review's fixes), not only recall on planted bugs: 26/26 planted
+  bugs looked like success while nine flags in ten were noise.
+- Things that did hold up: the planted-bug method for testing a checker, and that objdiff's JSON omits unchanged
+  symbols' bytes (`data_diff`), which matters to any tool reading it.

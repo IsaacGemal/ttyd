@@ -102,6 +102,19 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    anything you download or clone inside ./tmp in this directory (never /tmp or elsewhere), and don't search the
    rest of the machine. The merge lists everything you fetched.
 
+17. **The other wrong code reviews keep finding** in partly matched functions (waves 13-14; add to 9-11). Before
+   you stop, go back over your partial functions for these, each checked against the asm:
+   - Data tables: the asm's `.4byte 0x8080817F` is the bytes 80 80 81 7F in that order. Three effect tables had
+     every word byte-reversed; compare your initializer with the `.obj` block byte by byte.
+   - GX enums by number: the original passes plain integers, so check the enum's value, not its name
+     (`GX_TEVREG0` is 1, not 0; `GX_CC_ZERO` is 0xF and `GX_CC_ONE` 0xC; `GX_INDEX8` is 2).
+   - Signed or unsigned: `cmplwi`/`cmplw` is an unsigned test (`(u32)x <= 1` also rejects negatives); `cmpwi` is
+     signed. The same for `srwi` vs `srawi` and `mulhwu` vs `mulhw` in a division by a constant.
+   - Nested loops need their own counters: an inner loop that reuses the outer counter ends the outer loop early.
+   - Every case of a switch, including the ones that share a body (rule 15), and a table walked one entry per
+     iteration (`addi rN, rN, 4` in the loop) is `tbl[i]`, not `tbl[0]`.
+   - A float compare's direction (`cror eq, gt, eq` vs `lt`), and a subtraction's operand order.
+
 ## Signedness hints from the assembly
 
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.
