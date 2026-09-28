@@ -9,8 +9,8 @@
 # a REL module, and for a unit that exists in several RELs.
 # RESULTS_DIR is the agent's result folder: final.c (the agent's whole file; used for new files and finishers)
 # or src.patch (a diff against the file on main), plus other_changes.txt (source files the agent changed besides
-# its own) and include.patch (prototypes the agent added to headers; tools/header_patch.py checks it only adds
-# declarations).
+# its own) and include.patch (what the agent added to headers; tools/header_patch.py checks it only adds
+# declarations and type definitions).
 # UNIT is the source path without src/ and .c, e.g. event/evt_map. The wave name in the commit is RESULTS_DIR's
 # parent folder name. ORCHESTRATOR (env) names the model doing the merge in the commit trailer.
 # Prints MERGED, REJECT or SKIP. Run on a clean tree.
@@ -49,7 +49,7 @@ HDR=0; HDRS=""
 if [ -s "$D/include.patch" ]; then
   BAD=$(python3 tools/header_patch.py "$D/include.patch") || {
     if [ $NEW = 1 ]; then git rm -q --cached "$F" 2>/dev/null; rm -f "$F"; else git checkout -q "$F"; fi
-    echo "REJECT $TAG: header changes other than added declarations:"; echo "$BAD"; exit 1; }
+    echo "REJECT $TAG: header changes other than added declarations and type definitions:"; echo "$BAD"; exit 1; }
   # append-only: each added line goes to the end of its header unless the header already has it
   APPLIED=$(python3 tools/header_patch.py --apply "$D/include.patch") || {
     git checkout -q -- include; git ls-files --others --exclude-standard include | xargs rm -f
@@ -96,7 +96,7 @@ elif [ -s "$D/provenance.txt" ]; then echo "WARN $TAG: fetched or looked outside
 $(head -40 "$D/provenance.txt")"; [ $(grep -c . "$D/provenance.txt") -gt 40 ] && PROV="$PROV
 ... $(( $(grep -c . "$D/provenance.txt") - 40 )) more lines"; fi
 HDRNOTE=""
-[ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations only): $HDRLINES lines."
+[ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations and type definitions): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG
 $SUBJECT
 

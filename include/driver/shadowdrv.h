@@ -61,5 +61,6 @@ typedef struct CharShadowWork {
 
 void shadowInit(void);
 void shadowMain(void);
-void shadowEntry(f32 x, f32 y, f32 z, f32 size);
+s32 shadowEntry(f32 x, f32 y, f32 z, f32 size);
 void shadowDisp(CameraId cameraId, void* param);
+void U_shadowSetMode(s32 id, s32 mode);

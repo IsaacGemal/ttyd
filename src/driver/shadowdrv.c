@@ -282,9 +282,7 @@ s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
     return id;
 }
 
-// NONMATCHING (95.08%): instruction sequence and addresses identical; the whole body is shifted one register
-// (entries r5 vs r4, entry r10 vs r9) because the allocator reuses cswp's r4 for the entries load.
-void shadowEntry(f32 x, f32 y, f32 z, f32 size) {
+s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     ShadowEntry* entries = cswp->entries;
     s32 id = cswp->unk104;
     ShadowEntry* entry = &entries[id];
@@ -310,6 +308,7 @@ void shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     entry->decayZ = 0.4f;
     entry->mode = 0xFF;
     cswp->unk104++;
+    return id;
 }
 
 // NONMATCHING (99.31%): body is identical; only FP scratch register allocation differs.

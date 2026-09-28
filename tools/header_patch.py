@@ -10,13 +10,13 @@ their patches overlap, and all they may do is add lines. Appending (skipping lin
 or reorder anything, and a line two agents both added appears once.
 
 Agents may add prototypes to the header of the file that defines a function (include/<path>.h), creating the
-header if needed; they may not change or remove existing lines. Allowed lines added to an existing header: blank
-lines, comments, `#pragma once`, `#include`, function prototypes, `struct X;` forward declarations and
-`typedef struct X X;`. A header the patch creates (`@@ -0,0 ...`) may also define types, as the codebase's own
-headers do (e.g. an effect's work struct): struct/union/enum bodies, their fields and enum members. Function
-bodies, initialized data, macros and other directives are refused everywhere.
-Applying a created header that already exists (another agent created it first) is refused unless all its lines
-are of the kinds allowed in an existing header, since skipping already-present lines would mangle a struct body.
+header if needed; they may not change or remove existing lines. Allowed added lines: blank lines, comments,
+`#pragma once`, `#include`, function prototypes, `struct X;` forward declarations, `typedef struct X X;`, and type
+definitions, as the codebase's own headers hold them (e.g. an effect's work struct): struct/union/enum bodies,
+their fields and enum members. Function bodies, data, macros and other directives are refused everywhere.
+A type definition is applied as one block, never line by line: appended whole, or skipped when the header already
+has exactly that block. If the header already defines the name differently, applying fails (two agents' layouts for
+one struct must be reconciled by hand), since skipping already-present lines would mangle a body.
 Prints what's wrong and exits 1 if anything else is in the patch.
 """
 import re
@@ -34,8 +34,8 @@ ALLOWED = [
 ]
 
 
-# Extra lines a header the patch creates may hold: type definitions (struct/union/enum bodies, their fields and
-# enum members), as the codebase's own headers define an effect's work struct.
+# Type definitions (struct/union/enum bodies, their fields and enum members), as the codebase's own headers define
+# an effect's work struct.
 C = r"(\s*//.*)?"
 OPEN = re.compile(r"(typedef\s+)?(struct|union|enum)(?:\s+\w+)?\s*\{" + C)
 FIELD = re.compile(r"(?:(?:const|unsigned|signed|volatile|struct|union|enum)\s+)*\w+[\s\*]+\w+"
@@ -98,6 +98,9 @@ def problems(patch):
         if line.startswith(("diff ", "--- ")):
             cur = None
             continue
+        if line.startswith(("+++ ", "diff ")) and stack:
+            out.append(f"line {n}: a type definition is never closed before the next file")
+            stack = []
         if line.startswith("+++ "):
             m = TARGET.match(line)
             if not m or ".." in m.group(1):
@@ -114,6 +117,9 @@ def problems(patch):
         if line.startswith("+") and cur is None:
             out.append(f"line {n}: an added line outside a header section: {line[1:].strip()}")
             continue
+        if stack and not line.startswith("+"):
+            out.append(f"line {n}: an existing line inside a new type definition (only whole new definitions may be added)")
+            stack = []
         if line.startswith("-"):
             out.append(f"line {n}: removes or changes an existing header line: {line[1:].strip()}")
         elif line.startswith("+"):
@@ -122,27 +128,74 @@ def problems(patch):
                 out.append(f"line {n}: static declarations belong in the .c file: {body}")
             elif body.endswith("\\"):
                 out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
-            elif not (new and type_line(body, stack)) and (stack or not declaration(body)):
-                out.append(f"line {n}: not a declaration" + (" or type definition" if new else "") + f": {body}")
+            elif not type_line(body, stack) and (stack or not declaration(body)):
+                out.append(f"line {n}: not a declaration or type definition: {body}")
+    if stack:
+        out.append("a type definition is never closed at the end of the patch")
     if patch.strip() and not sections and not out:
         out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
     return out
 
 
+def blocks(lines):
+    """The added lines as ("line", text) and ("type", [lines of one whole struct/union/enum definition])."""
+    stack, cur = [], None
+    for l in lines:
+        if cur is None and not type_line(l.strip(), stack):
+            yield "line", l
+            continue
+        if cur is None:
+            cur = []
+        else:
+            type_line(l.strip(), stack)
+        cur.append(l)
+        if not stack:
+            yield "type", cur
+            cur = None
+    if cur:
+        yield "type", cur
+
+
+def type_names(block):
+    """The block's struct/union/enum tag and its typedef name (either may be missing)."""
+    m = CLOSE.fullmatch(block[-1].strip())
+    tag = re.match(r"\s*(?:typedef\s+)?(?:struct|union|enum)\s+(\w+)", block[0])
+    return [n for n in ((tag and tag.group(1)), (m and m.group(1))) if n]
+
+
+def code(text):
+    """text without comments, so a commented-out definition doesn't count as one."""
+    return re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S)
+
+
+def defines(text, name):
+    return bool(re.search(rf"(?:\b(?:struct|union|enum)\s+{name}\s*\{{|\}}\s*{name}\s*;)", code(text)))
+
+
+def squash(lines):
+    return "\n".join(re.sub(r"\s+", " ", l.strip()) for l in lines if l.strip())
+
+
 def apply(patch, root, counts=None):
     """Append the patch's new lines; returns the headers changed (and fills counts with lines added per header)."""
-    changed, created = [], set()
-    for path, lines in additions(patch, created).items():
+    changed = []
+    for path, lines in additions(patch).items():
         f = root / path
-        if f.exists() and path in created and not all(declaration(l.strip()) for l in lines):
-            raise SystemExit(f"header_patch.py: {path} already exists (another agent created it first), and this "
-                             "patch's version defines types; merge it by hand")
-        if f.exists():
-            text = f.read_text()
-            have = {l.strip() for l in text.splitlines()}
-            new = [l for l in lines if l.strip() and l.strip() not in have]
-        else:
-            text, new = "", lines
+        text = f.read_text() if f.exists() else ""
+        have = {l.strip() for l in text.splitlines()}
+        new = []
+        for kind, item in blocks(lines):
+            if kind == "line":
+                if item.strip() and item.strip() not in have:
+                    new.append(item)
+                    have.add(item.strip())
+            elif squash(code("\n".join(item)).splitlines()) in squash(code(text + "\n" + "\n".join(new)).splitlines()):
+                continue  # exactly this definition is already there (another agent's identical patch)
+            elif any(defines(text + "\n".join(new), n) for n in type_names(item)):
+                raise SystemExit(f"header_patch.py: {path} already defines {' or '.join(type_names(item))} "
+                                 "differently; reconcile the two definitions by hand")
+            else:
+                new += item
         if not new:
             continue
         f.parent.mkdir(parents=True, exist_ok=True)

@@ -41,3 +41,7 @@ void effDelete(EffectEntry* effect);
 void effSoftDelete(EffectEntry* effect);
 EffectEntry* effNameToPtr(const char* name);
 EffectSet* effGetSet(const char* name);
+void* effMayaAnimAlloc(void* animData);
+void effPlayMayaAnim(void* anim);
+void effCalcMayaAnim(void* anim);
+void effDeleteMayaAnim(void* anim);

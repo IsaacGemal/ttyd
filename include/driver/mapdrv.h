@@ -238,6 +238,7 @@ MapObject* mapEntrySub(MapFileJoint* joint, MapObject* parent, Mtx mtx, BOOL isR
 MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index);
 void bmapLoad(const char* map1, const char* map2);
 void bmapUnLoad(void);
+void mapGetBlend(GXColor* out);
 #include "driver/lightdrv.h"
 s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);
