@@ -14,6 +14,8 @@
 #include "system.h"
 #include <string.h>
 #include "koopa.h"
+#include "koopa_hit.h"
+#include "koopa_motion.h"
 #include "eff/eff_majinai.h"
 #include "kpa_act.h"
 #include "party/party_cloud.h"
@@ -635,11 +637,68 @@ void fbatSetAttackAnnounceEnable(void) {
     gp->fbatData->firstStrike.enabled = TRUE;
 }
 
+// NONMATCHING (95.81%): control flow matches; `entry`/`mario` land in r29/r30 swapped, the
+// `mode == 3` test uses `bne` where the original uses `beq`+`b`, and the arg_mismatch float/rodata
+// pool names resolve once the file's data section is written.
+void fbatTalkMode(void) {
+    FieldBattleData* fbatData = gp->fbatData;
+    NpcEntry* entry = *(NpcEntry**)(fbatData->field_2 + 2);
+    MarioWork* mario = marioGetPtr();
+    NpcWork* wp;
+    EventEntry* evt;
+
+    switch (fbatData->field_2[0]) {
+        case 0:
+            evtStopID(entry->regularEvtId);
+            if (!(entry->flags & 0x1000000)) {
+                entry->direction = reviseAngle(angleABf(entry->position.x, entry->position.z, mario->position.x,
+                                                          mario->position.z));
+            }
+            marioKeyOff();
+            partyKeyOff();
+            if (fbatData->mode == 3) {
+                evt = evtEntry(entry->deadEvent, 0, 0);
+                evt->wNpcEventType = 6;
+            } else {
+                evt = evtEntry(entry->talkEvt, 0, 0);
+                evt->wNpcEventType = 6;
+                marioChgTalkMotion();
+            }
+            evt->ownerNPC = entry;
+            *(s32*)fbatData->field_C = evt->eventId;
+            fbatData->field_2[0]++;
+            break;
+        case 1:
+            if (!evtCheckID(*(s32*)fbatData->field_C)) {
+                if (!(entry->jumpFlags & 0x20000000)) {
+                    evtStartID(entry->regularEvtId);
+                    entry->direction = *(f32*)entry->field_148;
+                }
+                if (entry->flags & 0x400) {
+                    entry->field_108 = 0;
+                }
+                if (entry->flags & 0x200) {
+                    animPoseSetAnim(entry->poseId, entry->currentAnim, 1);
+                }
+                marioKeyOn();
+                partyKeyOn();
+                marioChgStayMotion();
+                fbatData->mode = 1;
+                wp = gp->inBattle ? &work.battle : &work.field;
+                wp->field_0x10 = NULL;
+            }
+            break;
+    }
+}
+
 void fbatHitCheckAll(void) {
     fbatHitCheck(0x13F1, 0);
 }
 
-void _fbatFirstAttackAnnounceDisp(CameraId camId, void* param) {
+// NONMATCHING (7.65%): placeholder body only searches the message. The original also measures the
+// string (FontGetMessageWidth), jitters the position with two irand(0x2710) calls and draws the
+// window with windowDispGX_Waku_col/FontDraw*. The asm symbol is misspelled `...AnnouceDisp`.
+void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     FirstStrikeInfo* firstStrike = param;
     const char* message;
 
@@ -683,6 +742,77 @@ s32 N_fbatPreventMarioEventChk(void) {
 
 void npcTuningRy(NpcEntry* npc, f32 angle) {
     npc->direction = reviseAngle(angle);
+}
+
+// NONMATCHING (96.81%): logic matches; `jflags`/`flags`/`unkFlag` land in r5/r4/r3 instead of
+// r3/r5/r4 and __fabsf has no frsp. The float-pool symbol mismatches go away once the file's rodata is defined.
+void npcMoveG(NpcEntry* entry) {
+    f32 moveY;
+    f32 force;
+    u32 unkFlag;
+    u32 flags;
+    u32 jflags;
+
+    moveY = entry->moveOffset.y;
+    entry->moveOffset.y = 0.0f;
+    jflags = entry->jumpFlags;
+    unkFlag = jflags & 0x100000;
+    if ((jflags & 0x100000) && !(jflags & 0x10000000)) {
+        moveY *= 0.5f;
+    }
+    force = 0.0f;
+    flags = entry->flags;
+    if (flags & 0x20000) {
+        f32 d = entry->field_180 - entry->moveDt;
+        if (unkFlag == 0 || (jflags & 0x10000000)) {
+            force = entry->jumpVelY * entry->moveDt +
+                    (-980.0f * entry->jumpGravity) * (entry->field_180 * entry->field_180 - d * d);
+        } else {
+            force = 0.4f * (entry->jumpVelY * entry->moveDt) +
+                    (0.15f * (-980.0f * entry->jumpGravity)) * (entry->field_180 * entry->field_180 - d * d);
+        }
+        force *= entry->jumpYScale;
+        if (entry->field_1D0 > 0.0f) {
+            f32 limit;
+            if (unkFlag != 0) {
+                limit = 0.5f * (-entry->field_1D0 * entry->moveDt);
+            } else {
+                limit = -entry->field_1D0 * entry->moveDt;
+            }
+            if (force < limit) {
+                force = limit;
+            }
+        }
+    }
+    moveY += force;
+    if (!(flags & 0x10)) {
+        entry->position.y += moveY;
+        if (entry->position.y < -1000.0f) {
+            entry->position.y = -1000.0f;
+        }
+    } else if (moveY != 0.0f) {
+        if (moveY > 0.0f) {
+            entry->jumpFlags |= 1;
+            entry->position.y += moveY;
+        } else {
+            f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+            f32 yOffset = 0.8f * entry->height;
+            HitEntry* hit;
+
+            distance = yOffset + __fabsf(moveY);
+            hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, entry->position.x,
+                                 entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f);
+            *(HitEntry**)entry->field_300 = hit;
+            if (hit == NULL) {
+                entry->jumpFlags |= 1;
+                entry->position.y += moveY;
+            } else {
+                entry->jumpFlags &= ~1;
+                entry->position.y = hitY;
+                entry->field_178 = 0;
+            }
+        }
+    }
 }
 
 f32 npcTransRytoFaceDir(NpcEntry* npc) {
@@ -794,6 +924,51 @@ s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
     return count;
 }
 
+// NONMATCHING (94.16%): same structure; `gp`/`work` land in r3/r4 swapped so every entry pointer
+// register differs, and the fbatData load is scheduled after the mode test instead of before it.
+void npcKoopaModeEncountCheck(void) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    s32 i;
+
+    total = wp->total;
+    if (gp->fbatData->mode != 1) {
+        return;
+    }
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4)) {
+            switch (kpaEnemyHitChk(entry->position.x, entry->position.y, entry->position.z, entry->height,
+                                   entry->width)) {
+                case 1:
+                    if (!(*(u16*)entry->field_31E & 1)) {
+                        npcGroupDead(entry, 1);
+                    }
+                    break;
+                case 2:
+                    if (!(*(u16*)entry->field_31E & 2)) {
+                        npcGroupDead(entry, 2);
+                    }
+                    break;
+                case 3:
+                    if (!(*(u16*)entry->field_31E & 4)) {
+                        npcGroupDead(entry, 4);
+                    }
+                    break;
+                case 4:
+                    kpaPowDown();
+                    break;
+                default:
+                    if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
+                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
+                        npcGroupDead(entry, 0x10);
+                    }
+                    break;
+            }
+        }
+    }
+}
+
 // dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
 #pragma dont_inline on
 void npcGroupDead(NpcEntry* entry, s32 type) {
@@ -807,6 +982,22 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (85.50%): recursive list walk is right; the compiler unrolls the 4-slave loop into a
+// 2x2 mtctr loop where the original keeps a simple counter, and it inlines _npcDead at a different depth.
+void _npcGroupDead(NpcEntry* entry, s32 type) {
+    int i;
+
+    if (entry->next) {
+        _npcGroupDead(entry->next, type);
+    }
+    for (i = 0; i < 4; i++) {
+        if (entry->slaves[i]) {
+            _npcDead(entry->slaves[i], type);
+        }
+    }
+    _npcDead(entry, type);
+}
+
 void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     *(s32*)entry->field_140 |= 0x10;
     entry->jumpFlags |= 4;
@@ -818,6 +1009,60 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
 
 // NONMATCHING (1.61%): empty placeholder, not decompiled yet.
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
+}
+
+// NONMATCHING (93.94%): the header declares this void, but the original leaves a BOOL in r3
+// (`li r3,1` on success, `li r3,0` otherwise), so our void code is missing those two instructions
+// (and consequently uses r3 instead of r4 for temporaries right before the return).
+void npcCheckInterrupt(NpcEntry* npc) {
+    EventEntry* evt;
+
+    evtGetPtrID(npc->regularEvtId);
+    if (*(s32*)npc->field_140 & ~0xF00) {
+        evt = NULL;
+        if ((*(s32*)npc->field_140 & 0x10) && npc->deadEvent) {
+            evt = evtEntry(npc->deadEvent, 0, 0x20);
+            evt->wNpcEventType = 8;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 0x10000000) && npc->moveEvent) {
+            evt = evtEntry(npc->moveEvent, 0, 0x20);
+            evt->wNpcEventType = 1;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 0x8) && npc->blowEvent) {
+            evt = evtEntry(npc->blowEvent, 0, 0x20);
+            evt->wNpcEventType = 5;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000) && !(*(s32*)npc->field_140 & 0x100)) {
+            evt = evtEntry(npc->findEvent, 0, 0x20);
+            evt->wNpcEventType = 2;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000)) {
+            evt = evtEntry(npc->lostEvent, 0, 0x20);
+            evt->wNpcEventType = 3;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000)) {
+            evt = evtEntry(npc->returnEvent, 0, 0x20);
+            evt->wNpcEventType = 4;
+            evt->ownerNPC = npc;
+        }
+        if (evt != NULL) {
+            evtDeleteID(npc->regularEvtId);
+            npc->regularEvtId = evt->eventId;
+            *(s32*)npc->field_140 &= 0xF00;
+            npc->jumpFlags &= ~0x1000;
+            npc->field_188 = 0;
+            npc->moveSpeed = 0.0f;
+        } else {
+            *(s32*)npc->field_140 &= 0xF00;
+            npc->jumpFlags &= ~0x1000;
+        }
+    } else {
+        *(s32*)npc->field_140 &= 0xF00;
+        npc->jumpFlags &= ~0x1000;
+    }
 }
 
 NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {
@@ -1150,4 +1395,29 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
         return entry;
     }
     return NULL;
+}
+
+// NONMATCHING (98.39%): the `dx2 + dy*dy + dz2 > 0.0f` test leaves a dead `fcmpo` with no branch in
+// the original; our compiler drops the branch too but also reorders dy/dx2/dz2 into f9/f10/f11.
+NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    NpcEntry* found = NULL;
+    s32 total = wp->total;
+    s32 i;
+
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry->flags & 1) {
+            f32 dx = x - entry->position.x;
+            f32 dz = z - entry->position.z;
+            f32 dy = y - entry->position.y;
+            f32 dx2 = dx * dx;
+            f32 dz2 = dz * dz;
+            f32 dist = sqrtf(dx2 + dz2);
+            if (dx2 + dy * dy + dz2 > 0.0f && dist < radius) {
+                found = entry;
+            }
+        }
+    }
+    return found;
 }
