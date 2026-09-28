@@ -421,5 +421,37 @@ class Provenance(unittest.TestCase):
             self.run_on([{"type": "message_end"}])
 
 
+class Semcheck(unittest.TestCase):
+    """tools/semcheck.py's passes over (instruction, source line) lists: original first, ours second."""
+    def test_a_wrong_call_argument_is_named_with_its_line(self):
+        import semcheck
+        a = [("li r3, 0x1", 5), ("bl GXSetTevColor", 5)]
+        b = [("li r3, 0x2", 9), ("bl GXSetTevColor", 9)]
+        self.assertEqual(semcheck.check_calls(a, b), ["CALL   GXSetTevColor (line 9): r3: original 0x1, yours 0x2"])
+
+    def test_a_missing_call_is_flagged(self):
+        import semcheck
+        a = [("bl camGetPtr", 1), ("bl PSMTXConcat", 2)]
+        b = [("bl PSMTXConcat", 7)]
+        self.assertTrue(any("camGetPtr" in f for f in semcheck.check_calls(a, b)))
+
+    def test_a_wrong_constant_is_flagged_but_a_register_swap_or_reorder_is_not(self):
+        import semcheck
+        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x100", 1)], [("addi r5, r6, 0xe8", 3)]),
+                         ["VALUE  original `addi R, R, 0x100`, yours `addi R, R, 0xe8` (line 3)"])
+        self.assertEqual(semcheck.check_values([("addi r3, r4, 0x10", 1)], [("addi r5, r6, 0x10", 3)]), [])
+        swapped = semcheck.check_values([("li r3, 0x3c", 1), ("li r4, 0x28", 1)], [("li r3, 0x28", 2), ("li r4, 0x3c", 2)])
+        self.assertEqual(swapped, [])
+
+    def test_field_accesses_and_operation_counts(self):
+        import semcheck
+        a = [("lwz r3, 0x28(r4)", 1), ("bge 0x10", 1)]
+        b = [("lwz r5, 0x1c(r6)", 2), ("blt 0x10", 2), ("lwz r0, 0x8(r1)", 2)]
+        mem = semcheck.check_mem(a, b)
+        self.assertIn("MEM    `lwz ..., 0x28(base)`: original 1, yours 0", mem)
+        self.assertFalse(any("0x8(base)" in f for f in mem))  # stack frame traffic is not a field access
+        self.assertEqual(semcheck.check_ops(a, b), ["OPS    original has more: bge x1; yours has more: blt x1, lwz x1"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -82,6 +82,13 @@ if FINAL:
             todo.append("PROTOTYPE  " + p)
         else:
             todo.append("PROTOTYPE  " + p + "  -> move it to the defining file's header (include/<path>.h)")
+    # Likely wrong code the score can't show (wrong constants, missing calls, wrong offsets, inverted tests).
+    sem = subprocess.run(["python3", "tools/semcheck.py", unit.split("/", 1)[1]], capture_output=True, text=True,
+                         env={**os.environ, "RAYON_NUM_THREADS": "1"})
+    if sem.stdout.strip() and not sem.stdout.strip().endswith(" 0 flag(s) in " + unit.split("/", 1)[1]):
+        print("Possible wrong code (tools/semcheck.py). A match score can't see these, and reviewers find them as"
+              " bugs.\nCheck each against the asm, fix the real ones, and spend any time you have left on this list:")
+        print("  " + sem.stdout.strip().replace("\n", "\n  "))
     if not todo:
         print("Merge checks: nothing to fix.")
         sys.exit(0)
