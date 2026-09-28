@@ -62,3 +62,5 @@ BattleSpotEntry* batSpotEntry(void);
 void BattleStageDispDark(CameraId camId, void* param);
 void BattleStageDispLight(CameraId camId, void* param);
 void tou_gamen_screen_tev(void* param);
+void BattleStageOnLightFriendInCommand(void);
+void BattleStageOnLightEnemyInCommand(void);
