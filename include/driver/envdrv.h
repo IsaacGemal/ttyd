@@ -56,14 +56,36 @@ typedef struct EnvironmentWork {
     u8 unkC0[0xF0 - 0xC0]; //0xC0
 } EnvironmentWork;
 
+typedef struct EnvironmentBlur {
+    u16 flags; //0x0
+    u8 unk2[6]; //0x2
+    u64 renderTime; //0x8
+    s32 unk10; //0x10
+    s32 unk14; //0x14
+} EnvironmentBlur;
+
+typedef struct EnvironmentYami {
+    void* unk0; //0x0
+    MtxPtr unk4; //0x4
+    s32 unk8; //0x8
+    s32 tevStage; //0xC
+    s32 texMap; //0x10
+    s32 texCoord; //0x14
+    s32 unk18; //0x18
+} EnvironmentYami;
+
 void envInit(void);
 void envReInit(void);
 void envTexSetup(void);
 void envMain(void);
-//envBlurOn
-//envBlurOff
+void envBlurOn(s32 flag, s32 value);
+void envBlurOff(void);
 void envGlare(EnvironmentGlare* glare);
+void envGlareFilterZ(f32 z);
+void envSetYamiView(Mtx mtx);
+void envGlareFilter(s32 type, s32 x0, s32 y0, s32 x1, s32 y1);
 void envDisp_DepthOfField(void);
+void envDisp_FF(void);
 void envCapture(CameraId camId, void* param);
 void envCapture2(CameraId camId, void* param);
 void envDisp(CameraId camId, void* param);
