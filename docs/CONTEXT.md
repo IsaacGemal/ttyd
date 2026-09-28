@@ -1353,7 +1353,8 @@ share a stack buffer), float constants by value, constants stored from hoisted r
 first review planted 27 bugs in a fully matched file and caught semcheck missing 7 (wrong floats, callees and
 strings were invisible under objdiff's `functionRelocDiffs=none`); now all 26 real ones are flagged and the unchanged
 file gets none (`tools/tests/semcheck_mutants.py`). On wave 13 as the agents left it, it flags every one of review
-1's eff_fire findings; on main it still raises leads three reviews didn't report (eff_fire Disp's vertex colour
-stores near line 644, and five float constants the original loads that ours never does), unverified: they are the
-kind of thing the next cleanup wave checks. `check.py --final` shows it to agents (brief rule 17: fix the
+1's eff_fire findings. Review 2 (Codex) planted bugs in other units and found more gaps (pointer tables, a float
+changed to one already used elsewhere, an indirect call, reordered GX vertex writes, fsubs for fadds, a wrong
+constant in an unfinished function), now flagged; it also found that objdiff leaves some unchanged symbols' bytes out
+of its diff, which had produced a false "floats never loaded" lead, so semcheck now reads both objects itself. `check.py --final` shows it to agents (brief rule 17: fix the
 real ones and use leftover time on the list), and merge_agent.sh saves it per agent for the reviews.

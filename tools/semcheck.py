@@ -28,7 +28,6 @@ memory-access sweep in docs/aug05-A103-wrong-computation-sweep.md), run here ove
 each flag can name a source line; tools/sfa/ has their project-wide versions. CALL follows a script from a wave 13
 review; SYMBOL uses objdiff's data_value relocation comparison.
 """
-import base64
 import struct
 import difflib
 import json
@@ -46,7 +45,53 @@ MEM = re.compile(r"^(l[bhwf]\w*|st[bhwf]\w*|psq_\w+)\s+[rf]\d+,\s*(-?(?:0x[0-9a-
 ARGS = [f"r{n}" for n in range(3, 11)] + [f"f{n}" for n in range(1, 9)]
 LOCAL_BASES = ("r1", "r2", "r13", "r0")  # stack frame and small-data bases: frame layout, not field accesses
 MEM_DETAIL = 8  # more differing offsets than this is an addressing difference, summarised in one line
+ARITH = re.compile(r"^(f(?:add|sub|mul|div|madd|msub|nmadd|nmsub)s?|fneg|fabs|subf\w*|mullw|mulhw\w*|divw\w*|neg|"
+                   r"and|andc|or|orc|xor|nand|nor|slw|srw|sraw\w*|rlwinm|mulli|subfic)$")
 TEST_OPS = re.compile(r"^(b(?!l\b|lr\b|ctr\b|ctrl\b)\w*|cmp\w*|cror|crnor|crand|creqv|crxor|crorc|crandc|crnand)$")
+
+
+class Elf:
+    """Just enough of a big-endian ELF32 relocatable object: symbols, their bytes, and the relocations inside them."""
+    def __init__(self, path):
+        d = self.d = Path(path).read_bytes()
+        shoff, = struct.unpack_from(">I", d, 0x20)
+        shentsize, shnum, shstrndx = struct.unpack_from(">HHH", d, 0x2E)
+        self.sh = [struct.unpack_from(">IIIIIIIIII", d, shoff + i * shentsize) for i in range(shnum)]
+        names = self.sh[shstrndx]
+        self.secname = [self._str(names[4], h[0]) for h in self.sh]
+        self.syms, self.symlist = {}, []
+        for i, h in enumerate(self.sh):
+            if h[1] == 2:  # SHT_SYMTAB
+                strtab = self.sh[h[6]][4]
+                for k in range(h[5] // 16):
+                    nm, val, size, info, other, shndx = struct.unpack_from(">IIIBBH", d, h[4] + k * 16)
+                    name = self._str(strtab, nm)
+                    self.symlist.append((name, shndx, val))
+                    if name and 0 < shndx < len(self.sh):
+                        self.syms[name] = (shndx, val, size)
+        self.relocs = {}  # section index -> {offset: (symbol, addend)}
+        for h in self.sh:
+            if h[1] == 4:  # SHT_RELA
+                target = self.relocs.setdefault(h[7], {})
+                for k in range(h[5] // 12):
+                    off, info, add = struct.unpack_from(">IIi", d, h[4] + k * 12)
+                    name, shndx, val = self.symlist[info >> 8]
+                    if not name and shndx < len(self.secname):  # a section-relative reference
+                        name = f"{self.secname[shndx]}+{val + add:#x}"
+                        add = 0
+                    target[off] = (name, add)
+
+    def _str(self, off, i):
+        return self.d[off + i:self.d.index(b"\0", off + i)].decode(errors="replace")
+
+    def data(self, name):
+        shndx, val, size = self.syms[name]
+        h = self.sh[shndx]
+        return b"\0" * size if h[1] == 8 else self.d[h[4] + val:h[4] + val + size]  # SHT_NOBITS: .bss
+
+    def pointers(self, name):
+        shndx, val, size = self.syms[name]
+        return {o - val: r for o, r in self.relocs.get(shndx, {}).items() if val <= o < val + size}
 
 
 def unit_objects(unit):
@@ -93,8 +138,8 @@ def calls(ins):
             regs[m.group(1)] = ("sym", m.group(2))
         elif dest and not op.startswith(("st", "cmp", "b", "psq_st")):
             regs[dest.group(1)] = "var"
-        if (m := re.match(r"bl (\S+)", text)):
-            out.append((m.group(1), dict(regs), ln))
+        if (m := re.match(r"bl (\S+)", text)) or text.startswith("bctrl"):
+            out.append((m.group(1) if m else "(indirect call)", dict(regs), ln))
             regs = {}
         elif is_branch(text):
             regs = {}
@@ -109,8 +154,9 @@ def stack_groups(args):
     return sorted(tuple(sorted(g)) for g in by.values() if len(g) > 1)
 
 
-def check_calls(a, b):
+def check_calls(a, b, fa=None, fb=None):
     ca, cb = calls(a), calls(b)
+    fa, fb = fa or {}, fb or {}
     flags = []
     sm = difflib.SequenceMatcher(None, [c[0] for c in ca], [c[0] for c in cb], autojunk=False)
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
@@ -121,7 +167,10 @@ def check_calls(a, b):
                     va, vb = x[1].get(r), y[1].get(r)
                     if va is None or vb is None:
                         continue
-                    if va[0:1] == ("const",) and vb[0:1] == ("const",) and va != vb:
+                    if va[0:1] == ("sym",) and vb[0:1] == ("sym",) and va[1] in fa and vb[1] in fb \
+                            and round(fa[va[1]][1], 6) != round(fb[vb[1]][1], 6):
+                        d.append(f"{r}: original {fa[va[1]][1]:g}, yours {fb[vb[1]][1]:g}")
+                    elif va[0:1] == ("const",) and vb[0:1] == ("const",) and va != vb:
                         d.append(f"{r}: original {va[1]:#x}, yours {vb[1]:#x}")
                     elif (va[0:1] == ("const",)) != (vb[0:1] == ("const",)) and "stack" not in (va[0], vb[0]):
                         d.append(f"{r}: original passes {'%#x' % va[1] if va[0] == 'const' else 'a variable'}, "
@@ -162,20 +211,13 @@ def check_symbols(r_left, r_right, dl, dr):
     return flags
 
 
-def data_by_name(side):
-    return {s["name"]: data_bytes(s) for s in side["symbols"] if s.get("kind") == "SYMBOL_OBJECT"}
-
-
-def float_values(side):
-    """name -> value of the side's 4- and 8-byte data symbols (float constants, pooled @NNN ones included)."""
+def float_values(elf):
+    """name -> value of the object's 4- and 8-byte data symbols (float constants, pooled @NNN ones included)."""
     out = {}
-    for s in side["symbols"]:
-        if s.get("kind") == "SYMBOL_OBJECT":
-            b = data_bytes(s)
-            if len(b) == 4:
-                out[s["name"]] = ("f", struct.unpack(">f", b)[0])
-            elif len(b) == 8:
-                out[s["name"]] = ("d", struct.unpack(">d", b)[0])
+    for name, (shndx, val, size) in elf.syms.items():
+        if size in (4, 8) and not elf.secname[shndx].startswith(".text"):
+            b = elf.data(name)
+            out[name] = ("f", struct.unpack(">f", b)[0]) if size == 4 else ("d", struct.unpack(">d", b)[0])
     return out
 
 
@@ -192,10 +234,11 @@ def check_floats(a, b, va, vb):
         return c, where
     ca, _ = loads(a, va)
     cb, wb = loads(b, vb)
-    # a value one side never loads is a different literal; the same values loaded a different number of times is
-    # the compiler reusing a register
-    more = Counter({k: v for k, v in ca.items() if k not in cb})
-    fewer = Counter({k: v for k, v in cb.items() if k not in ca})
+    # a value only one side loads is a different literal, and so is a substitution (one value loaded less, another
+    # more); the same values loaded a different number of times on one side only is the compiler reusing a register
+    more, fewer = ca - cb, cb - ca
+    if not (set(more) - set(cb) or set(fewer) - set(ca) or (more and fewer)):
+        return []
     if not more and not fewer:
         return []
     fmt = lambda c, w=None: ", ".join(f"{k:g} x{v}" + (f" (near line {min(l for l in w[k] if l)})" if w and any(w[k]) else "")
@@ -219,8 +262,18 @@ def check_values(a, b, reported):
         pairs = [(x, y) for x, y in zip(a[i1:i2], b[j1:j2])
                  if REG.sub("R", x[0]) != REG.sub("R", y[0]) and not is_branch(x[0])
                  and not re.search(r"\((?:r1|r2|r13)\)|\br1\b", x[0])]
-        if not pairs or Counter(x[0] for x, _ in pairs) == Counter(y[0] for _, y in pairs):
+        if not pairs:
             continue
+        if Counter(x[0] for x, _ in pairs) == Counter(y[0] for _, y in pairs):
+            fifo = [x for x, _ in pairs if MEM.match(x[0]) and x[0].startswith("st")]
+            if len({REG.sub("R", x[0].split(",", 1)[1]) for x in fifo}) < len(fifo):
+                flags.append(f"VALUE  stores to the same address in a different order than the original (a GX vertex "
+                             f"written out of order?){near(pairs[0][1][1])}")
+            continue
+        ca_ = Counter(REG.sub("R", x[0]) for x, _ in pairs if x[0].startswith("cmp"))
+        cb_ = Counter(REG.sub("R", y[0]) for _, y in pairs if y[0].startswith("cmp"))
+        if ca_ and ca_ == cb_:  # the same compares in another order (an || chain); a changed test shows in OPS
+            pairs = [(x, y) for x, y in pairs if not x[0].startswith("cmp")]
         deltas = {int(NUM.findall(REG.sub("R", y[0]))[-1], 0) - int(NUM.findall(REG.sub("R", x[0]))[-1], 0)
                   for x, y in pairs if MEM.match(x[0]) and MEM.match(y[0])}
         walking = len(pairs) > 2 and len(deltas) == 1 and all(MEM.match(x[0]) for x, _ in pairs)
@@ -291,19 +344,22 @@ def check_mem(a, b):
 
 
 def check_ops(a, b):
-    """SFA's a71 mnemonic histogram, kept to compares and branches: a different count there is a different test in
-    the source (moves, loads and adds shift with allocation)."""
+    """SFA's a71 mnemonic histogram, kept to compares and branches (a different count there is a different test in
+    the source), plus arithmetic substitutions: one operation fewer and another more (fsubs where the original has
+    fadds). Moves, loads and plain adds shift with allocation and aren't counted."""
+    flags = []
     ha = Counter(t.split()[0] for t, _ in a if TEST_OPS.match(t.split()[0]))
     hb = Counter(t.split()[0] for t, _ in b if TEST_OPS.match(t.split()[0]))
     more, fewer = ha - hb, hb - ha
-    if not more and not fewer:
-        return []
     fmt = lambda c: ", ".join(f"{k} x{v}" for k, v in sorted(c.items()))
-    return [f"OPS    original has more: {fmt(more) or '-'}; yours has more: {fmt(fewer) or '-'}"]
-
-
-def data_bytes(symbol):
-    return b"".join(base64.b64decode(c.get("data", "")) for c in symbol.get("data_diff", []) if c.get("data"))
+    if more or fewer:
+        flags.append(f"OPS    original has more: {fmt(more) or '-'}; yours has more: {fmt(fewer) or '-'}")
+    ma = Counter(t.split()[0].rstrip(".") for t, _ in a if ARITH.match(t.split()[0].rstrip(".")))
+    mb = Counter(t.split()[0].rstrip(".") for t, _ in b if ARITH.match(t.split()[0].rstrip(".")))
+    more, fewer = ma - mb, mb - ma
+    if more and fewer:
+        flags.append(f"OPS    arithmetic: original has more {fmt(more)}; yours has more {fmt(fewer)}")
+    return flags
 
 
 def value(name, b):
@@ -321,24 +377,34 @@ def show(b):
     return b[:8].hex(" ") or "(end)"
 
 
-def check_data(d):
-    """Data symbols whose bytes differ; a string is compared up to its terminator (the rest is padding)."""
-    right = {s["name"]: s for s in d["right"]["symbols"]}
+def check_data(ea, eb):
+    """Data symbols whose bytes or pointers differ; a string is compared up to its terminator (the rest is padding).
+    Pointers are compared by target name (a table entry pointing at col_poison instead of col_normal)."""
     flags = []
-    for s in d["left"]["symbols"]:
-        if s.get("kind") != "SYMBOL_OBJECT" or s["name"] not in right:
+    for name, (shndx, val, size) in sorted(ea.syms.items()):
+        if name not in eb.syms or ea.secname[shndx].startswith(".text") or size == 0 or name.startswith("@"):
             continue
-        x, y = data_bytes(s), data_bytes(right[s["name"]])
-        if not x or not y:
+        if eb.syms[name][2] == 0 or eb.secname[eb.syms[name][0]].startswith(".text"):
             continue
-        x, y = value(s["name"], x), value(s["name"], y)
-        if x == y:
+        x, y = value(name, ea.data(name)), value(name, eb.data(name))
+        pa, pb = ea.pointers(name), eb.pointers(name)
+        named = lambda p: {o: r for o, r in p.items() if not r[0].startswith((".", "@"))}
+        wrong = sorted(o for o in set(named(pa)) | set(named(pb)) if named(pa).get(o) != named(pb).get(o)
+                       and not (o in pa and o in pb and (pa[o][0].startswith((".", "@")) or pb[o][0].startswith((".", "@")))))
+        if wrong:
+            o = wrong[0]
+            flags.append(f"DATA   {name}: +{o:#x} points at {pa.get(o, ('nothing',))[0]} in the original, "
+                         f"{pb.get(o, ('nothing',))[0]} in yours" + (f" (+{len(wrong) - 1} more)" if len(wrong) > 1 else ""))
+            continue
+        relocated = set(pa) | set(pb)
+        if x == y or all(any(r <= i < r + 4 for r in relocated) for i in range(min(len(x), len(y))) if x[i] != y[i]) \
+                and len(x) == len(y):
             continue
         if len(x) == len(y) in (4, 8):
-            flags.append(f"DATA   {s['name']}: original {show(x)}, yours {show(y)}")
+            flags.append(f"DATA   {name}: original {show(x)}, yours {show(y)}")
         else:
             i = next((k for k in range(min(len(x), len(y))) if x[k] != y[k]), min(len(x), len(y)))
-            flags.append(f"DATA   {s['name']}: differs from byte {i:#x} (original {x[i:i + 8].hex(' ') or '(end)'}, "
+            flags.append(f"DATA   {name}: differs from byte {i:#x} (original {x[i:i + 8].hex(' ') or '(end)'}, "
                          f"yours {y[i:i + 8].hex(' ') or '(end)'})")
     return flags
 
@@ -361,8 +427,11 @@ def main():
         sys.exit(f"semcheck.py: objdiff-cli failed on {name}: {r.stderr.strip()[:300]}")
     d = json.loads(r.stdout)
     left = {s["name"]: s for s in d["left"]["symbols"] if "instructions" in s}
-    fl, fr = float_values(d["left"]), float_values(d["right"])
-    dl, dr = data_by_name(d["left"]), data_by_name(d["right"])
+    ea, eb = Elf(ROOT / target), Elf(ROOT / base)
+    fl = float_values(ea)
+    fr = {**fl, **float_values(eb)}  # an extern constant in yours resolves to the original's symbol of that name
+    dl = {n: ea.data(n) for n in ea.syms}
+    dr = {**dl, **{n: eb.data(n) for n in eb.syms}}
     total = 0
     for s in d["right"]["symbols"]:
         if "instructions" not in s or s["name"] not in left:
@@ -374,13 +443,22 @@ def main():
         a = [(t, ln) for t, ln, _ in rl if t]
         b = [(t, ln) for t, ln, _ in rr if t]
         if pct < 20 or len(b) < len(a) / 2:
+            # unfinished: only the checks that stay precise on partial code (arguments of calls both make, stored
+            # constants); the note isn't counted as a flag
             print(f"{s['name']} ({pct:.2f}%): not written yet ({len(b)} of the original's {len(a)} instructions)")
-            total += 1
+            early = ([f for f in check_calls(a, b, fl, fr) if not f.startswith("CALL   original calls")] + check_stores(a, b)
+                     + [f for f in check_values(a, b, set()) if f.startswith("VALUE  original `cmp")])
+            for f in early:
+                print("  " + f)
+            total += len(early)
             continue
-        cf = check_calls(a, b)
+        cf = check_calls(a, b, fl, fr)
         reported = {(int(m.group(1), 16), int(m.group(2), 16))
                     for f in cf for m in re.finditer(r"original (0x[0-9a-f]+), yours (0x[0-9a-f]+)", f)}
         values = check_values(a, b, reported)
+        if Counter(REG.sub("R", t) for t, _ in a if t.startswith("cmp")) == \
+                Counter(REG.sub("R", t) for t, _ in b if t.startswith("cmp")):
+            values = [f for f in values if not f.startswith("VALUE  original `cmp")]  # same compares, other order
         has_switch = any(t.startswith("bctr") for t, _ in a)
         cmps = [f + ("  [may be switch case order]" if has_switch else "") for f in values if f.startswith("VALUE  original `cmp")]
         values = [f for f in values if not f.startswith("VALUE  original `cmp")]
@@ -391,7 +469,7 @@ def main():
             print(f"{s['name']} ({pct:.2f}%)")
             for f in flags:
                 print("  " + f)
-    data = check_data(d)
+    data = check_data(ea, eb)
     for f in data:
         print(f)
     total += len(data)

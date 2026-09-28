@@ -86,7 +86,8 @@ if FINAL:
     sem = subprocess.run(["python3", "tools/semcheck.py", unit], capture_output=True, text=True,
                          env={**os.environ, "RAYON_NUM_THREADS": "1"})
     if sem.returncode:
-        print("tools/semcheck.py could not check this unit: " + (sem.stderr.strip() or sem.stdout.strip())[-500:])
+        todo.append("SEMCHECK   tools/semcheck.py could not check this unit: "
+                    + (sem.stderr.strip() or sem.stdout.strip())[-300:] + "  -> say so in your report")
     elif " 0 flag(s) in " not in sem.stdout:
         print("Possible wrong code (tools/semcheck.py; brief rule 17). A match score can't see these. Read the asm\n"
               "at each one, fix what the asm shows is wrong, and spend the time you have left on this list:")
