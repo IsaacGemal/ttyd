@@ -198,7 +198,7 @@ static WinMgrDesc window_desc[2] = {
         (void*)itemUseDisp,
     },
     {
-        {0},
+        {0, 0, 0, 2},
         8, // camId
         -0x118,
         0x91,

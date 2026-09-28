@@ -2431,7 +2431,7 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (96.70%): unit .rodata is not defined locally, so each pooled anim-name gets its own
+// NONMATCHING (96.77%): unit .rodata is not defined locally, so each pooled anim-name gets its own
 // lis/addi instead of the retail vec3_802c3dc8 base register (costs one callee-saved register).
 s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -2490,9 +2490,9 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
                              *(f32*)((u8*)obj2 + 0x40), float_0_8041a150, float_neg1_8041a214,
                              float_0_8041a150);
         if (hit != NULL) {
-            animPoseSetAnim(obj2->poseId, "S_1", 1);
+            animPoseSetAnim(obj->poseId, "S_1", 1);
         } else {
-            animPoseSetAnim(obj2->poseId, "A_3", 1);
+            animPoseSetAnim(obj->poseId, "A_3", 1);
         }
     }
     return 2;

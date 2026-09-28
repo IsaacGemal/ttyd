@@ -12,6 +12,7 @@
 #include "battle/battle_weapon_power.h"
 #include <stdio.h>
 
+#ifdef MUST_MATCH
 // For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
 // tables; MWCC only emits the paired lwzu/stwu copy loop for a struct assignment, not for memcpy.
 typedef struct BattleAudienceFallOffsetTable1 {
@@ -21,9 +22,8 @@ typedef struct BattleAudienceFallOffsetTable1 {
 typedef struct BattleAudienceFallOffsetTable2 {
     s32 v[48];
 } BattleAudienceFallOffsetTable2;
+#endif
 
-// Defined in battle_audience_kind_data.c.
-extern BattleAudienceKind audience_kind[];
 
 // LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
 extern s32 psndSFX_get_vol(s32 id);
@@ -1800,12 +1800,18 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	s32 id;
 	f32 one = float_1_8041e620;
 
+#ifdef MUST_MATCH
+	// Struct assignment gives the original's lwzu/stwu copy loop; memcpy doesn't.
 	{
 		*(BattleAudienceFallOffsetTable1*)tbl1 = *(const BattleAudienceFallOffsetTable1*)dat_802f98fc;
 	}
 	{
 		*(BattleAudienceFallOffsetTable2*)tbl2 = *(const BattleAudienceFallOffsetTable2*)dat_802f993c;
 	}
+#else
+	memcpy(tbl1, dat_802f98fc, sizeof(tbl1));
+	memcpy(tbl2, dat_802f993c, sizeof(tbl2));
+#endif
 
 	switch (type) {
 	case 0:

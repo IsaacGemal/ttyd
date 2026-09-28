@@ -36,6 +36,14 @@ const Vec vec3_8030075c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300768 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300774 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300780 = {0.0f, 0.0f, 0.0f};
+// disp_3D's local tables (dat_8030078c, dat_803007ac, dat_803007cc) sit here in the original.
+const char str_803007EC[] = "SFX_BTL_SAC_START1";
+const char str_80300800[] = "SFX_BTL_SAC_START2";
+const char str_80300814[] = "SFX_BTL_SAC_START3";
+const char str_80300830[] = "SFX_BTL_SAC_BODY6";
+const char str_80300844[] = "SFX_BTL_SAC_BODY4";
+const char str_80300858[] = "SFX_BTL_SAC_BODY5";
+const char str_8030086C[] = "SFX_BTL_SAC_BODY3";
 
 // The Muki action-command work area, at _battleWorkPointer + 0x1F4C. No header declares it.
 typedef struct MukiEntry {
@@ -647,10 +655,6 @@ void main_icon(s32 index) {
 #ifdef MUST_MATCH
 #define RO(base, off, sym) ((const char*)(base) + (off))
 #else
-extern const char str_80300830[];
-extern const char str_80300844[];
-extern const char str_80300858[];
-extern const char str_8030086C[];
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
 
@@ -741,7 +745,7 @@ void main_point(s32 index) {
     }
 }
 
-// NONMATCHING (82.73%): the original hoists `RO(str_803006D8, 0x158, str_80300830)` into r29 for the whole
+// NONMATCHING (84.28%): the original hoists `str_80300830` into r29 for the whole
 // function; the rest differs only in register/scheduling choices.
 // .text:0x14BC | 0x802485A0 | size: 0x638
 void main_cursor(void) {
@@ -791,7 +795,7 @@ void main_cursor(void) {
                     }
                     if ((s32)work->field_14 > (s32)old) {
                         work->field_24 = 0x3C;
-                        psndSFXOn(RO(str_803006D8, 0x158, str_80300830));
+                        psndSFXOn(str_80300830);
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
                         }
@@ -807,7 +811,7 @@ void main_cursor(void) {
                             BattleAudienceSoundHandBeat();
                         }
                     }
-                    psndSFXOn(RO(str_803006D8, 0x16C, str_80300844));
+                    psndSFXOn(str_80300844);
                     break;
                 case 1:
                     old = work->field_1C;
@@ -817,7 +821,7 @@ void main_cursor(void) {
                     }
                     if ((s32)work->field_1C > (s32)old) {
                         work->field_28 = 0x3C;
-                        psndSFXOn(RO(str_803006D8, 0x158, str_80300830));
+                        psndSFXOn(str_80300830);
                         if (audienceNum >= 1 && audienceNum <= 0x31) {
                             BattleAudienceSoundCallKind(1);
                         }
@@ -833,7 +837,7 @@ void main_cursor(void) {
                             BattleAudienceSoundHandBeat();
                         }
                     }
-                    psndSFXOn(RO(str_803006D8, 0x16C, str_80300844));
+                    psndSFXOn(str_80300844);
                     break;
                 case 2:
                     BtlUnit_SetAnim(part, str_8042201C);
@@ -847,7 +851,7 @@ void main_cursor(void) {
                     p[0x3D] = 0;
                     work->field_34 = 0;
                     work->field_00 |= 1;
-                    psndSFXOn(RO(str_803006D8, 0x180, str_80300858));
+                    psndSFXOn(str_80300858);
                     if (audienceNum >= 1 && audienceNum <= 0x31) {
                         BattleAudienceSoundBooingKind(1);
                     }
@@ -894,7 +898,7 @@ void main_cursor(void) {
         work->field_3C = 0;
         work->field_50 = work->field_44;
         work->field_5C = work->points[work->field_40].pos;
-        psndSFXOn(RO(str_803006D8, 0x194, str_8030086C));
+        psndSFXOn(str_8030086C);
         /* fallthrough */
     case 4:
         work->field_3C++;

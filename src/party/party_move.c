@@ -1234,7 +1234,7 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     return TRUE;
 }
 
-// NONMATCHING (90.44%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
+// NONMATCHING (91.17%): footmark clear inherits partyClearFootmark's redundant loop-entry test;
 // the inlined partyChgMoveMode switch also drops the original's `cmpwi 4; bge`.
 void partyWalkInit(PartyEntry* party, s32 mode) {
     PartyEntry* work = party;
@@ -1260,17 +1260,17 @@ void partyWalkInit(PartyEntry* party, s32 mode) {
         Vec pos;
         u32* src = (u32*)&pos;
         Footmark* f;
-        mario = marioGetPtr();
+        MarioWork* player = marioGetPtr();
         target = partyGetPtr(marioGetPartyId());
         if (target != NULL) {
             if (nokonokoGetStatus(target) == 3
-                || PSVECDistance(&mario->position, &target->position) >= 150.0f) {
-                pos = mario->position;
+                || PSVECDistance(&player->position, &target->position) >= 150.0f) {
+                pos = player->position;
             } else {
                 pos = target->position;
             }
         } else {
-            pos = mario->position;
+            pos = player->position;
         }
         f = (Footmark*)(footmarkBuf + 0x500);
         for (i = 0; i < 0x50; i++) {

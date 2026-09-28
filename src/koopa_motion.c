@@ -135,7 +135,7 @@ void quake_kpaLandOn(void) {
     }
 }
 
-// NONMATCHING (94.54%): big function; the three periodic effMizutama blocks and the switch dispatch still differ, and the irand int->float conversion loads a folded @N double instead of double_to_int_802fe278. Structure/register allocation otherwise close.
+// NONMATCHING (94.58%): big function; the three periodic effMizutama blocks and the switch dispatch still differ, and the irand int->float conversion loads a folded @N double instead of double_to_int_802fe278. Structure/register allocation otherwise close.
 void kpa_swim(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -213,7 +213,7 @@ void kpa_swim(void) {
             }
             kpaClearHitobjRide();
             mario->currSubMotionId = 1;
-            mario->flags &= ~0x00030000;
+            mario->flags &= ~0x00020000;
             mario->flags |= 0x00010000;
             psndSFXOn_3D(str_802FE218, &mario->position);
             if (kpaGetAttackMode() == 0) {
@@ -253,7 +253,7 @@ void kpa_swim(void) {
             MW_F32(mario, 0x84) = float_0_80420da0;
             MW_F32(mario, 0x88) = float_0_80420da0;
             mario->currSubMotionId = 0xB;
-            mario->flags &= ~0x00030000;
+            mario->flags &= ~0x00020000;
             mario->flags |= 0x00010000;
             if (kpaGetAttackMode() == 0) {
                 kpaChgPose(str_802FE228, str_802FE230);
@@ -276,7 +276,7 @@ void kpa_swim(void) {
             break;
         case 0x14:
             KPA(mario)->flags |= 0x100;
-            mario->flags &= ~0x00030000;
+            mario->flags &= ~0x00020000;
             mario->flags |= 0x00010000;
             kpaChgPose(str_802FE23C, str_802FE248);
             psndSFXOn_3D(str_802FE254, &mario->position);
@@ -310,7 +310,7 @@ void kpa_swim(void) {
         if (kpaGetAttackMode() == 0) {
             kpaChgPose(str_802FE228, str_802FE268);
         }
-        mario->flags &= ~0x00030000;
+        mario->flags &= ~0x00010000;
         mario->flags |= 0x00020000;
         if (MW_F32(mario, 0x7C) < float_0_80420da0) {
             mario->currSubMotionId = 0x1F;
@@ -415,7 +415,7 @@ void kpa_swim(void) {
         if (kpaGetAttackMode() == 0) {
             kpaChgPose(str_802FE228, str_802FE268);
         }
-        mario->flags &= ~0x00030000;
+        mario->flags &= ~0x00010000;
         mario->flags |= 0x00020000;
         MW_F32(mario, 0x7C) = float_neg0p283_80420e0c;
         MW_F32(mario, 0x80) = float_neg0p023_80420e10;
@@ -838,7 +838,8 @@ void kpa_jump(void) {
     }
 }
 
-// NONMATCHING (97.02%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`.
+// NONMATCHING (97.02%): the folded double_to_int_mask_802fe2e8 conversion and an extrwi-vs-srawi for `poseTime = MW_U16(0x2A0) >> 1`; the
+// stick-magnitude compare is unsigned here and signed (cmpwi) in the original (an s32 `angle` scores lower).
 void kpa_dash(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -925,7 +926,8 @@ void kpa_dash(void) {
 }
 
 // NONMATCHING (96.79%): the folded double_to_int_802fe278 conversion magic, and kpaGetLevel is called twice
-// where the original calls it once and indexes both tables with the result.
+// where the original calls it once and indexes both tables with the result; the stick-magnitude compare is
+// unsigned here and signed (cmpwi) in the original.
 void kpa_walk(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;

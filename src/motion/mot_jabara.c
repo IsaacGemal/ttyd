@@ -129,7 +129,7 @@ void mot_grasp(void) {
     }
 }
 
-// NONMATCHING (96%): the three switch dispatches are missing the original's
+// NONMATCHING (95.95%): the three switch dispatches are missing the original's
 // `extsb` on the signed state byte and a `bge` guard, and a few constant reloads
 // differ (compiler reuses the compared float instead of reloading it).
 void swingMain(void) {
@@ -312,8 +312,8 @@ end:
     ;
 }
 
-// NONMATCHING (59%): register allocation and float load ordering differ; the
-// original also saves f31 (unused) and reshapes the marioClearJumpPara branch.
+// NONMATCHING (59.09%): register allocation and float load ordering differ; the original calls marioGetPtr a
+// second time for the 0x148/0x158 stores and keeps vec3_802c5b88 in a base register for the Vec copies.
 void mot_jabara_post(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -364,7 +364,7 @@ s32 jabaraNoHitChk(void) {
     return 0;
 }
 
-// NONMATCHING (99%): only the `check` local's register differs (r4 vs the
+// NONMATCHING (98.79%): only the `check` local's register differs (r4 vs the
 // original r0); identical instructions otherwise.
 BOOL marioChkJabara(void) {
     MarioWork* mario = marioGetPtr();

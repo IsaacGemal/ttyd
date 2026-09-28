@@ -16,7 +16,6 @@
 // .bss. The original's symbols are compiler-tagged (`tmp2$708`); the `$` cannot
 // be spelled in C, so the name here is cosmetic and the address is what matters.
 char unk_803dfbf8[0x100];
-char tmp2_708[0x100];
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
 extern const char str_8041D630[];
@@ -64,7 +63,7 @@ extern const f32 float_0p89_8041d728;
 const char* hammer_help[4] = { NULL, "msg_hammer_1", "msg_hammer_2", "msg_hammer_3" };
 const char* boots_help[4] = { NULL, "msg_boots_1", "msg_boots_2", "msg_boots_3" };
 
-// NONMATCHING (69.65%): the original copies its digit table from
+// NONMATCHING (72.63%): the original copies its digit table from
 // jumptable_802F57D4 and this file's .rodata pool is still incomplete, so the
 // pool base/offsets differ; `out` also stays in a register instead of reloading.
 char* unk_8016af5c(s32 num, s32 width) {
@@ -84,7 +83,7 @@ char* unk_8016af5c(s32 num, s32 width) {
     }
     sprintf(buf, str_8041D638, num);
     for (i = 0; i < width; i++) {
-        if (i < width - (s32)strlen(buf)) {
+        if (i < width - strlen(buf)) {
             strcat(out, str_8041D5A8);
         } else {
             strcat(out, tbl[buf[i - (width - (s32)strlen(buf))] - 0x30]);
@@ -101,7 +100,8 @@ char* winZenkakuStr(s32 num) {
         str_8041D5A8, str_8041D5AC, str_8041D5B0, str_8041D5B4, str_8041D5B8,
         str_8041D5BC, str_8041D5C0, str_8041D5C4, str_8041D5C8, str_8041D5CC,
     };
-    char* out = tmp2_708;
+    static char tmp2[0x100];
+    char* out = tmp2;
     s32 i;
 
     if (num < 0) {
@@ -121,9 +121,9 @@ void winMarioMain2(WindowWork* work) {
     (void)work;
 }
 
-// NONMATCHING (0%): the compile has the same 901 instructions as the original
-// but they align differently; the original's literals pool into str_802F5650
-// (only complete once the whole unit exists) and its sda2 names are objects.
+// NONMATCHING (0.00%): logic checked against the asm by hand (review 3); ours is 488 instructions to the
+// original's 505, the marioGetColor switches are laid out without an explicit `case 0`, the original's
+// literals pool into str_802F5650 (only complete once the whole unit exists) and its sda2 names are objects.
 s32 winMarioMain(WindowWork* work) {
     const char* anim;
     LinkDt* d;
