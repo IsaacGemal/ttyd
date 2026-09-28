@@ -22,3 +22,7 @@ void party_motion_stay(PartyEntry* party);
 void party_motion_homing_walk(PartyEntry* party);
 void party_motion_homing_fly(PartyEntry* party);
 void party_motion_jump(PartyEntry* party);
+#include <dolphin/mtx.h>
+s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle);
+void party_force_reset_outofscreen(PartyEntry* party);
+void party_motion_behind_mario_continue(PartyEntry* party);

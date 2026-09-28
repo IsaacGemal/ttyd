@@ -11,3 +11,6 @@ s32 marioGetMotSlitCancel3(void);
 void marioClearSlitFloor(void);
 BOOL marioChkSlitThrouhEnd(void);
 BOOL marioChkSlitEnd(void);
+#include <dolphin/mtx.h>
+BOOL marioChkSlitThrouh(void);
+BOOL marioGetSlitFloorPos(Vec* pos);
