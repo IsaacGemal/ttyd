@@ -3,8 +3,7 @@
 #include <dolphin/types.h>
 #include "driver/effdrv.h"
 
-// Local view of the akari charge effect's work data, used by eff_thunder_n64.c. Only the fields this
-// file reads are modelled; the effect's own source does not have a header in this tree yet.
+// The akari charge effect's work data, as eff_thunder_n64.c reads it; only those fields are modelled.
 typedef struct EffAkariChargeData {
 	u8 pad_0x0[0x18];
 	s32 field_0x18; //0x18

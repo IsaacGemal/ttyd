@@ -12,8 +12,7 @@ typedef struct DamageStarData {
     f32 vy;         // 0x14
     f32 vz;         // 0x18
     f32 rot;        // 0x1C
-    u8 alpha;       // 0x20
-    u8 pad_0x21[0x24 - 0x21];
+    s32 alpha;      // 0x20
     s32 field_0x24; // 0x24
     s32 frame;      // 0x28
     f32 scaleX;     // 0x2C

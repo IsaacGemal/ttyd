@@ -73,14 +73,14 @@ extern const ScaleEntry scale1[13];
 extern const ScaleEntry scale2[4];
 
 static u8 scale_dt[] = {
-	0x7F, 0x81, 0x80, 0x80, 0x7E, 0x83, 0x7F, 0x82, 0x7E, 0x84, 0x7E, 0x84, 0x7D, 0x86, 0x7D, 0x85,
-	0x7C, 0x88, 0x7C, 0x87, 0x7B, 0x8A, 0x7C, 0x89, 0x7B, 0x8B, 0x7B, 0x8A, 0x7A, 0x8D, 0x7B, 0x8C,
-	0x7A, 0x8E, 0x7A, 0x8D, 0x79, 0x8F, 0x79, 0x8F, 0x79, 0x91, 0x79, 0x90, 0x78, 0x92, 0x78, 0x92,
-	0x77, 0x94, 0x78, 0x93, 0x77, 0x95, 0x77, 0x95, 0x76, 0x97, 0x76, 0x96, 0x76, 0x98, 0x76, 0x98,
-	0x75, 0x9A, 0x75, 0x99, 0x74, 0x9C, 0x74, 0x9B, 0x73, 0x9E, 0x74, 0x9D, 0x73, 0xA0, 0x73, 0x9F,
-	0x72, 0xA2, 0x72, 0xA1, 0x71, 0xA5, 0x71, 0xA3, 0x70, 0xA7, 0x70, 0xA6, 0x6F, 0xAA, 0x6F, 0xA9,
-	0x6D, 0xAD, 0x6E, 0xAB, 0x6C, 0xB0, 0x6D, 0xAE, 0x6B, 0xB4, 0x6B, 0xB2, 0x69, 0xB7, 0x6A, 0xB5,
-	0x68, 0xBB, 0x68, 0xB9, 0x66, 0xC0, 0x67, 0xBD,
+	0x80, 0x80, 0x81, 0x7F, 0x82, 0x7F, 0x83, 0x7E, 0x84, 0x7E, 0x84, 0x7E, 0x85, 0x7D, 0x86, 0x7D,
+	0x87, 0x7C, 0x88, 0x7C, 0x89, 0x7C, 0x8A, 0x7B, 0x8A, 0x7B, 0x8B, 0x7B, 0x8C, 0x7B, 0x8D, 0x7A,
+	0x8D, 0x7A, 0x8E, 0x7A, 0x8F, 0x79, 0x8F, 0x79, 0x90, 0x79, 0x91, 0x79, 0x92, 0x78, 0x92, 0x78,
+	0x93, 0x78, 0x94, 0x77, 0x95, 0x77, 0x95, 0x77, 0x96, 0x76, 0x97, 0x76, 0x98, 0x76, 0x98, 0x76,
+	0x99, 0x75, 0x9A, 0x75, 0x9B, 0x74, 0x9C, 0x74, 0x9D, 0x74, 0x9E, 0x73, 0x9F, 0x73, 0xA0, 0x73,
+	0xA1, 0x72, 0xA2, 0x72, 0xA3, 0x71, 0xA5, 0x71, 0xA6, 0x70, 0xA7, 0x70, 0xA9, 0x6F, 0xAA, 0x6F,
+	0xAB, 0x6E, 0xAD, 0x6D, 0xAE, 0x6D, 0xB0, 0x6C, 0xB2, 0x6B, 0xB4, 0x6B, 0xB5, 0x6A, 0xB7, 0x69,
+	0xB9, 0x68, 0xBB, 0x68, 0xBD, 0x67, 0xC0, 0x66,
 };
 
 static u32 col_tbl[24] = {
@@ -191,7 +191,7 @@ void effFireSmokeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireSmokeDisp, effect);
 }
 
-// NONMATCHING (83.25%): 22 instructions differ, 68 missing, 48 extra, plus register differences.
+// NONMATCHING (83.79%): 22 instructions differ, 68 missing, 48 extra, plus register differences.
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -313,8 +313,9 @@ void effFireDisp3(CameraId camId, void* param) {
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0xC);
 		for (j = 0; j < 3; j++) {
 			f32 yA = f27 * (f32)(j + 1);
-			f32 yB = f27 * (f32)(3 - j);
+			f32 yB = f27 * (f32)j;
 			f32 tA = f29 * (f32)(2 - j);
+			f32 tB = f29 * (f32)(3 - j);
 			u8* c0 = colEntry + j * 4;
 			u8* c1 = colEntry + (j + 1) * 4;
 			GXPosition3f32(f26, yA, float_0_8041e108);
@@ -325,10 +326,10 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXTexCoord2f32(float_1_8041e100, tA);
 			GXPosition3f32(f30, yB, float_0_8041e108);
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(float_1_8041e100, yA);
+			GXTexCoord2f32(float_1_8041e100, tB);
 			GXPosition3f32(f26, yB, float_0_8041e108);
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(float_0_8041e108, yA);
+			GXTexCoord2f32(float_0_8041e108, tB);
 		}
 
 		v = vec3_802f8c1c;
@@ -383,7 +384,7 @@ void effFireDisp3(CameraId camId, void* param) {
 	data->field_0x64 = 1;
 }
 
-// NONMATCHING (88.18%): 9 instructions differ, 49 missing, 17 extra, plus register differences.
+// NONMATCHING (88.21%): 9 instructions differ, 49 missing, 17 extra, plus register differences.
 void effFireDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -491,7 +492,7 @@ void effFireDisp2(CameraId camId, void* param) {
 		PSMTXRotRad(rotMtx, 'z', float_0p7854_8041e144);
 		PSMTXConcat(transMtx, rotMtx, transMtx);
 	}
-	PSMTXConcat(mtx, transMtx, mtx);
+	PSMTXConcat(mtx, transMtx, transMtx);
 	GXLoadPosMtxImm(transMtx, 0);
 	GXSetCurrentMtx(0);
 	GXSetNumChans(1);
@@ -537,7 +538,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (86.33%): 5 instructions differ, 47 missing, 23 extra, plus register differences.
+// NONMATCHING (86.09%): 5 instructions differ, 47 missing, 23 extra, plus register differences.
 void effFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -628,10 +629,10 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0c0);
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight * 0.5f, float_0_8041e108);
+	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight * 0.5f, float_0_8041e108);
+	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(float_1_8041e100, float_0_8041e108);
 	GXPosition3f32((f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);
@@ -669,10 +670,10 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE3, 4, 0, 1, 0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE3, 4, 7, 0, 0);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight * 0.5f, float_0_8041e108);
+	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(float_0_8041e108, float_0_8041e108);
-	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight * 0.5f, float_0_8041e108);
+	GXPosition3f32((f32)texWidth * 0.5f, (f32)texHeight, float_0_8041e108);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(float_1_8041e100, float_0_8041e108);
 	GXPosition3f32((f32)texWidth * 0.5f, float_0_8041e108, float_0_8041e108);

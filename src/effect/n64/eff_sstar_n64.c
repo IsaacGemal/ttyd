@@ -266,8 +266,7 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.99%): .text bytes are identical; objdiff only reports the pool/symbol
-// anchor used for the three sqrtf doubles and the sdata2 constant names.
+// NONMATCHING (99.99%): same instructions; only register numbers or operands differ.
 void effSstarMain(EffectEntry* effect) {
     SstarWork* data = effect->userdata;
     MarioWork* mario;

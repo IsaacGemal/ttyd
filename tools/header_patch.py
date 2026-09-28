@@ -117,6 +117,9 @@ def problems(patch):
         if line.startswith("+") and cur is None:
             out.append(f"line {n}: an added line outside a header section: {line[1:].strip()}")
             continue
+        if stack and not line.startswith("+"):
+            out.append(f"line {n}: an existing line inside a new type definition (only whole new definitions may be added)")
+            stack = []
         if line.startswith("-"):
             out.append(f"line {n}: removes or changes an existing header line: {line[1:].strip()}")
         elif line.startswith("+"):

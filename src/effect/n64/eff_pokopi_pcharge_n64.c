@@ -75,8 +75,7 @@ u32 size128x10_tex32x32_2_vtx[56] = {
 };
 
 
-// NONMATCHING (98.15%): two fused-multiply opcodes (target `fnmadds`, mwcc `fnmsubs`) and
-// pervasive register-number differences.
+// NONMATCHING (98.36%): 1 missing, 2 extra, plus register differences.
 EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32 b) {
 	EffectEntry* effect;
 	effPokopiPchargeData* data;
@@ -126,7 +125,7 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 		case 0:
 		case 1:
 		case 2:
-			data->field_0x38 = 0.2f - 0.2f * (f32)(rand() % 10);
+			data->field_0x38 = -(0.2f + 0.2f * (f32)(rand() % 10));
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.1f * (f32)(i % 3);
 			data->field_0x40 = 0.0f;
@@ -157,7 +156,7 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 			data->field_0x40 = -1.0f;
 			break;
 		case 9:
-			data->field_0x38 = 0.6f - 0.2f * (f32)(rand() % 10);
+			data->field_0x38 = -(0.6f + 0.2f * (f32)(rand() % 10));
 			data->lifetime = 20;
 			data->scale = 1.0f - 0.3f * (f32)(i % 3);
 			data->field_0x40 = -2.0f;

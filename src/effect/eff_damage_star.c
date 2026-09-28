@@ -142,7 +142,7 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
-// NONMATCHING (85.45%): 4 instructions differ, 102 missing, 11 extra, plus register differences.
+// NONMATCHING (85.47%): 4 instructions differ, 102 missing, 11 extra, plus register differences.
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     DamageStarData* data;
@@ -330,7 +330,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
     GXSetTevAlphaIn(0, 7, 7, 7, 4);
-    GXSetTevColor(1, (GXColor){0xFF, 0x00, 0xFF, 0xFF});
+    GXSetTevColor(1, (GXColor){0xFF, 0xFF, 0x00, 0xFF});
     if (type == 1) {
         effGetTexObj(0x13, &texObj);
         GXLoadTexObj(&texObj, 2);
@@ -441,7 +441,7 @@ void effDamageStarMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
 }
 
-// NONMATCHING (75.16%): control flow/order match; the original keeps count in r27 and origCount in r30,
+// NONMATCHING (75.42%): control flow/order match; the original keeps count in r27 and origCount in r30,
 // ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
 // described in REPORT.md
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {

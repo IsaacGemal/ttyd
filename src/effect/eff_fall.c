@@ -102,7 +102,7 @@ s32 effFallCheckHit(EffectEntry* effect) {
 // Full GX state, quad display list and both shibuki splash passes transcribed. Diffs are register
 // allocation (original keeps cameraId/effect/work/base/camView in r27-r31 and uses `stmw r27`; ours
 // needs one fewer GPR and a 0x10-smaller frame) plus a few commutative float operand orders.
-// NONMATCHING (89.55%): see above.
+// NONMATCHING (90.07%): 16 instructions differ, 19 missing, 18 extra, plus register differences.
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
@@ -158,7 +158,7 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 	PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-	PSMTXScale(mtxScale, work[1].unk2C, work[1].unk2C, work[1].unk2C);
+	PSMTXScale(mtxScale, work[1].unk2C, float_1_80420f80, float_1_80420f80);
 	PSMTXConcat(mtxPos, mtxScale, mtxPos);
 	PSMTXConcat(mtxView, mtxPos, mtxPos);
 	GXLoadPosMtxImm(mtxPos, 0);
@@ -167,14 +167,14 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	w = f31 * float_0p5_80420f7c;
 	GXPosition3f32(-w, f30, float_0_80420f84);
 	GXColor4u8(0xff, 0xff, 0xff, 0xff);
-	GXTexCoord2f32(float_0_80420f84, w);
+	GXTexCoord2f32(float_0_80420f84, float_0_80420f84);
 	GXPosition3f32(w, f30, float_0_80420f84);
 	GXColor4u8(0xff, 0xff, 0xff, 0xff);
 	GXTexCoord2f32(float_2_80420f88, float_0_80420f84);
-	GXPosition3f32(w, f30, float_0_80420f84);
+	GXPosition3f32(w, float_0_80420f84, float_0_80420f84);
 	GXColor4u8(0xff, 0xff, 0xff, 0x00);
 	GXTexCoord2f32(float_2_80420f88, float_1_80420f80);
-	GXPosition3f32(-w, f30, float_0_80420f84);
+	GXPosition3f32(-w, float_0_80420f84, float_0_80420f84);
 	GXColor4u8(0xff, 0xff, 0xff, 0x00);
 	GXTexCoord2f32(float_0_80420f84, float_1_80420f80);
 

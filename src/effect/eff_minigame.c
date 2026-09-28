@@ -10,10 +10,11 @@
 u8 start_tbl[16] = "hifgdez{}~jkwx}~";
 u8 finish_tbl[12] = "norsuvrs|{pq";
 u8 retire_tbl[12] = {
-	0x6D, 0x6C, 0x78, 0x79, 0x73, 0x74,
-	0x7E, 0x7F, 0x6D, 0x6C, 0x78, 0x79
+	0x79, 0x78, 0x6C, 0x6D, 0x7F, 0x7E, 0x74, 0x73, 0x79, 0x78, 0x6C, 0x6D,
 };
-u8 start_type[8] = { 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14 };
+u8 start_type[8] = {
+	0x00, 0x00, 0x00, 0x14, 0x14, 0x14, 0x14, 0x14,
+};
 u8 finish_type[8] = { 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x00, 0x00 };
 u8 retire_type[8] = { 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x00, 0x00 };
 u8* type_tbl[3] = { start_type, finish_type, retire_type };
@@ -28,7 +29,7 @@ u8 poyon_scale[40] = {
 GXColor unk_80423308;
 const GXColor dat_804212b0 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-// NONMATCHING (88.19%): matrix locals land at 0x98/0x68 swapped (rot/tmp), an extra f26 is spilled,
+// NONMATCHING (83.71%): matrix locals land at 0x98/0x68 swapped (rot/tmp), an extra f26 is spilled,
 // and the table pointers are not strength-reduced into the outer loop.
 void effMiniGameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -105,17 +106,17 @@ void effMiniGameDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			switch (type) {
 			case 0:
-				texId = start_tbl[1 - i];
+				texId = start_tbl[2 * (j - 1) + 1 - i];
 				break;
 			case 1:
-				texId = finish_tbl[1 - i];
+				texId = finish_tbl[2 * (j - 1) + 1 - i];
 				break;
 			case 2:
-				texId = retire_tbl[1 - i];
+				texId = retire_tbl[2 * (j - 1) + 1 - i];
 				break;
 			}
 			effGetTexObj(texId, &tex);
-			if (i != 0 && entry->field_0x10 < 1.0f) {
+			if (i != 0 && entry->field_0x10 <= 1.0f) {
 				GXInitTexObjLOD(&tex, 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
 			}
 			GXLoadTexObj(&tex, 0);

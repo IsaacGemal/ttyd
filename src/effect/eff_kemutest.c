@@ -14,7 +14,7 @@
 extern GXColor unk_804232d8;
 
 const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
-const GXColor dat_80420ab4 = { 0x60, 0x00, 0x00, 0x00 };
+const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
 
 void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	effKemuTestData* data = effect->userdata;
@@ -366,7 +366,7 @@ const f32 vec3_802fdcc8[3] = { 0.0f, 5.0f, -5.0f };
 const f32 vec3_802fdcd4[3] = { 5.0f, 0.0f, -2.0f };
 const f32 vec3_802fdce0[3] = { 0.0f, 1.0f, 2.0f };
 
-// NONMATCHING (68.02%): 58 instructions differ, 156 missing, 80 extra, plus register differences.
+// NONMATCHING (68.41%): 58 instructions differ, 156 missing, 80 extra, plus register differences.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -492,7 +492,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->posX = vec3_802fdc94[i - 1];
 				work->posY = vec3_802fdca0[i - 1];
 				work->scale = vec3_802fdc88[i - 1];
-				work->field_0x44 = 4;
+				work->field_0x44 = 4 * i;
 				work->field_0x4C = 0x78;
 				work->field_0x4D = 0x78;
 				work->field_0x4E = 0x78;
@@ -569,13 +569,13 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				}
 			}
 			else if (type == 5) {
-				angle = 6.2831855f * dat_802fdcac[i - 1] / 360.0f;
+				angle = 6.2831855f * dat_802fdcac[i] / 360.0f;
 				work->velX = 3.0f * (f32)sin(angle);
 				work->velY = -3.0f * (f32)cos(angle);
 				work->scale = 0.5f;
 			}
 			else if (type == 21) {
-				angle = 6.2831855f * vec3_802fdcbc[i - 1] / 360.0f;
+				angle = 6.2831855f * vec3_802fdcbc[i] / 360.0f;
 				work->velX = 3.0f * (f32)sin(angle);
 				work->velY = -3.0f * (f32)cos(angle);
 				work->scale = 0.5f;
@@ -586,11 +586,11 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				angle = 6.2831855f * (f32)irand(0x168) / 360.0f;
 				if (i < (count - 1) / 2 + 1) {
 					spd = 4.5f;
-					work->field_0x44 = 8;
+					work->field_0x44 = 0;
 				}
 				else {
 					spd = 3.0f;
-					work->field_0x44 = 0;
+					work->field_0x44 = 8;
 				}
 				work->velX = spd * (f32)sin(angle);
 				work->velY = -spd * (f32)cos(angle);

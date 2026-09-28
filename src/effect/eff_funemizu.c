@@ -291,7 +291,7 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (83.46%): 64 instructions differ, 11 missing, 49 extra, plus register differences.
+// NONMATCHING (80.40%): 64 instructions differ, 11 missing, 49 extra, plus register differences.
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
@@ -305,6 +305,7 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	u32 colorVal;
 	GXColor color;
 	s32 type;
+	s32 j;
 	s32 i;
 
 	effect = param;
@@ -407,8 +408,8 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (i = 0; i < 3; i++) {
-				GXCallDisplayList(funemizu_dl_0_tbl[i], funemizu_dl_0_size_tbl[i] << 5);
+			for (j = 0; j < 3; i++) {
+				GXCallDisplayList(funemizu_dl_0_tbl[j], funemizu_dl_0_size_tbl[j] << 5);
 			}
 		}
 		else {
@@ -425,8 +426,8 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			for (i = 0; i < 2; i++) {
-				GXCallDisplayList(gor_fune_dl_0_tbl[i], gor_fune_dl_0_size_tbl[i] << 5);
+			for (j = 0; j < 2; i++) {
+				GXCallDisplayList(gor_fune_dl_0_tbl[j], gor_fune_dl_0_size_tbl[j] << 5);
 			}
 		}
 
@@ -451,8 +452,8 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
-			for (i = 0; i < 4; i++) {
-				GXCallDisplayList(funemizu_dl_1_tbl[i], funemizu_dl_1_size_tbl[i] << 5);
+			for (j = 0; j < 4; i++) {
+				GXCallDisplayList(funemizu_dl_1_tbl[j], funemizu_dl_1_size_tbl[j] << 5);
 			}
 		}
 		else {
@@ -469,8 +470,8 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
-			for (i = 0; i < 2; i++) {
-				GXCallDisplayList(gor_fune_dl_1_tbl[i], gor_fune_dl_1_size_tbl[i] << 5);
+			for (j = 0; j < 2; i++) {
+				GXCallDisplayList(gor_fune_dl_1_tbl[j], gor_fune_dl_1_size_tbl[j] << 5);
 			}
 		}
 	}

@@ -341,6 +341,11 @@ class CreatedHeaders(unittest.TestCase):
             header_patch.apply(hidden, root)
             self.assertEqual(header_patch.code((root / "include/x.h").read_text()).count("struct Hidden {"), 1)
 
+    def test_context_lines_inside_a_new_type_are_refused(self):
+        patch = ("--- a/include/x.h\n+++ b/include/x.h\n@@ -1,3 +1,6 @@\n+typedef struct B {\n+\ts32 q;\n"
+                 " typedef struct A {\n \ts32 a;\n } A;\n+\ts32 r;\n+} B;\n")
+        self.assertTrue(header_patch.problems(patch))
+
     def test_an_unclosed_type_is_refused(self):
         self.assertTrue(header_patch.problems("--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n+\ts32 a;\n"))
 

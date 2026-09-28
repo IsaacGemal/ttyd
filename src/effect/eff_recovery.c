@@ -715,7 +715,7 @@ void effRecoveryMain(EffectEntry* effect) {
 					break;
 				}
 				{
-					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * 6.2832f / 360.0f;
+					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * float_6p2832_8041cb30 / 360.0f;
 					ptr->velX = 12.0f * (f32)sin(ang);
 					ptr->velY = 0.0f;
 					ptr->velZ = -12.0f * (f32)cos(ang);
@@ -753,7 +753,7 @@ void effRecoveryMain(EffectEntry* effect) {
 					t = intplGetValue(0xB, ptr->timer, 0x28, 0.0f, 360.0f);
 					{
 						f32 radius = distABf(0.0f, 0.0f, ptr->x, ptr->z) * 0.99f;
-						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * 6.2832f / 360.0f;
+						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * float_6p2832_8041cb30 / 360.0f;
 						ptr->x = radius * (f32)sin(ang);
 						ptr->z = radius * -(f32)cos(ang);
 					}

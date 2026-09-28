@@ -174,7 +174,7 @@ void effKissDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (95.63%): MWCC allocates a 0x20-smaller frame and keeps 11 callee-saved GPRs where
+// NONMATCHING (95.65%): MWCC allocates a 0x20-smaller frame and keeps 11 callee-saved GPRs where
 // retail keeps 13 (r19-r31); the bulk of the remaining diff is callee-saved/stack-slot choice. All
 // control flow, GX/MTX calls and the vertex stream match.
 void effKissDisp(CameraId camId, void* param) {
@@ -245,6 +245,8 @@ void effKissDisp(CameraId camId, void* param) {
 			offset = 0.0f;
 			switch (type) {
 			case 0:
+			case 1:
+			case 2:
 				effGetTexObj(0x14, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
@@ -341,6 +343,8 @@ void effKissDisp(CameraId camId, void* param) {
 			elem = effect->userdata;
 			switch (type) {
 			case 0:
+			case 1:
+			case 2:
 				effGetTexObj(0x42, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {

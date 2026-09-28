@@ -34,7 +34,7 @@ s8 geso_trans_dt[] = {
 	-92, 12, -93, 12, -94, 12, -95, 12, -97, 12, -98, 12,
 	-99, 12, -100, 12, -102, 12, -103, 12, -104, 12, -106, 12,
 	-107, 12, -108, 12, -109, 12, -111, 12, -112, 12, -113, 12,
-	-114, 12, -116, 12, -117, 12, -118, 12, -120, 0
+	-114, 12, -116, 12, -117, 12, -118, 12, -120, 12, 0, 0,
 };
 
 const Vec vec3_802fe728 = { 0.0f, 0.0f, 0.0f };
@@ -83,7 +83,7 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
-// NONMATCHING (64.87%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
+// NONMATCHING (65.05%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
@@ -189,6 +189,7 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		switch (type) {
 		case 0:
 		case 1:
+		case 4:
 			PSMTXTrans(mtxA, (f32)gp->retraceCount / 20.0f, 0.0f, 0.0f);
 			break;
 		case 2:

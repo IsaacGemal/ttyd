@@ -136,7 +136,7 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
     }
 }
 
-// NONMATCHING (95.49%): register allocation of the cached colour bytes and
+// NONMATCHING (97.62%): register allocation of the cached colour bytes and
 // effect/cam/data pointers differs, plus a branch-sense and stack-slot delta.
 void effKemuri11Disp(CameraId camId, void* param) {
     EffectEntry* effect;
@@ -237,7 +237,6 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.r = d3;
         color.g = d4;
         color.b = d5;
-        color.a = data->field_0x38;
         GXSetTevColor(GX_TEVREG1, color);
     }
     GXSetCullMode(GX_CULL_BACK);
@@ -255,7 +254,6 @@ void effKemuri11Disp(CameraId camId, void* param) {
         color.r = c3;
         color.g = c4;
         color.b = c5;
-        color.a = data->field_0x38;
         GXSetTevColor(GX_TEVREG1, color);
     }
     GXSetCullMode(GX_CULL_FRONT);

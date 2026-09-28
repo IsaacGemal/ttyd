@@ -356,12 +356,7 @@ void effItemGetMain(EffectEntry* effect) {
 		return;
 	}
 	data->field_0x1C++;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail uses an unsigned compare here (cmplwi). */
 	if ((u32)data->field_0x1C < 12) {
-#else
-	if (data->field_0x1C < 12) {
-#endif
 		data->field_0x10 = (f32)scale_data[data->field_0x1C] / 100.0f;
 	}
 	if (data->field_0x1C > 1000) {
