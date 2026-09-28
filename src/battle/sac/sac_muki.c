@@ -184,9 +184,6 @@ static void disp_2D(CameraId cameraId, void* param);
 static void main_star(void);
 static void main_base(void);
 
-// The whole file was compiled with -O4,s; without this every constant-trip loop is unrolled.
-// configure.py should carry extra_cflags=["-O4,s"] for it.
-#pragma optimize_for_size on
 // The original never inlines its own helpers: every call to one is a real `bl`.
 #pragma dont_inline on
 
@@ -1114,4 +1111,3 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
 }
 
 #pragma dont_inline reset
-#pragma optimize_for_size reset

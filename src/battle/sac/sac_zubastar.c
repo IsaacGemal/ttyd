@@ -1,6 +1,3 @@
-// The original object was built with -O4,s: optimize_for_size is required to match its codegen
-// (see REPORT.md). Remove this pragma once configure.py sets extra_cflags=["-O4,s"].
-#pragma optimize_for_size on
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_database_common.h"

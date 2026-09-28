@@ -35,8 +35,6 @@ extern s32 psndSFX_pit(s32 id, s32 pit);
 extern void psndSFX_vol(s32 id, s32 vol);
 
 
-#pragma optimize_for_size on
-
 const char str_802F9578[] = "btl_msg_audience_puni_escape";
 const char str_802F9598[] = "btl_msg_audience_puni_meeting";
 const char str_802F95B8[] = "btl_msg_audience_pansy_sleep";

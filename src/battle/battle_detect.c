@@ -94,7 +94,6 @@ void BattleGetFirstAttackUnit(BattleWork* wp, BattleUnit** outUnit1, BattleUnit*
     *outUnit2 = out2;
 }
 
-#pragma optimize_for_size on // file builds with -O4,s codegen; see report
 // NONMATCHING (86.7%): same logic/control flow; register allocation differs globally (params/flags land
 // in r15-r18/r19-r24 vs retail r16-r19/r14,r23-r28), so most instructions differ only by register.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
@@ -295,13 +294,11 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
         *outPartId = (*(BattleSamplingEntry*)(sampling + 4 + i * 0x24)).partId;
     }
 }
-#pragma optimize_for_size reset
 
 void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-#pragma optimize_for_size on // retail saves r30/r31 with stmw/lmw here
 s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belong, s32 arg4,
                         s32 arg5, s8 attackDirection) {
     BattleSampling* s = (BattleSampling*)sampling;
@@ -330,9 +327,7 @@ s32 BattleSamplingEnemy(u8* sampling, BattleWeapon* weapon, s32 unitId, s8 belon
     _btlSamplingEnemy(sampling);
     return ret;
 }
-#pragma optimize_for_size reset
 
-#pragma optimize_for_size on // file builds with -O4,s codegen; see report
 // NONMATCHING (62.3%): full logic present and frame/stmw match; register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
 void _btlSamplingEnemy(u8* sampling) {
