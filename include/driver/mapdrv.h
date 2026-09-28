@@ -242,3 +242,4 @@ void mapGetBlend(GXColor* out);
 #include "driver/lightdrv.h"
 s32 mapSetLight(MapObject* obj, LightEntry** entries);
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh);
+void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* joint);

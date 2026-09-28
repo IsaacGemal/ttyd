@@ -96,3 +96,7 @@ void hitGrpFlagOn(const char* name, s32 flag);
 void hitGrpFlagOff(const char* name, s32 flag);
 void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion);
 void hitObjGetPosSub(HitEntry* hit, Vec* position, s32* counter, BOOL recursion);
+void hitFlgOn(HitEntry* hit, s32 flag, BOOL recursion);
+void hitFlgOff(HitEntry* hit, s32 flag, BOOL recursion);
+void hitAtrOn(HitEntry* hit, s32 attr, BOOL recursion);
+void hitAtrOff(HitEntry* hit, s32 attr, BOOL recursion);
