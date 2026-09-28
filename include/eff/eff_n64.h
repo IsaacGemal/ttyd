@@ -32,3 +32,4 @@ void tri2(u16 a, u16 b, u16 c, u16 d, u16 e, u16 f, u16 g, u16 h);
 void tri2(u16 x1, u16 y1, u16 z1, u16 pad1, u16 x2, u16 y2, u16 z2, u16 pad2);
 void tri2(u16 x1, u16 y1, u16 z1, u16 unused1, u16 x2, u16 y2, u16 z2, u16 unused2);
 void tri2(u16 a, u16 b, u16 c, u16 unused1, u16 d, u16 e, u16 f, u16 unused2);
+void tri2(u16 x1, u16 y1, u16 z1, u16 a, u16 x2, u16 y2, u16 z2, u16 b);
