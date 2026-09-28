@@ -7,6 +7,7 @@
 #include "driver/animdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/dispdrv.h"
+#include "driver/itemdrv.h"
 #include "evt/evt_cmd.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
@@ -43,7 +44,23 @@ extern const char str_802C46E4[];
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
 extern Vec vec3_802c40ac[];
+extern Vec vec3_802c40b8[];
+extern Vec vec3_802c40c4[];
+extern Vec vec3_802c4050[];
+extern Vec vec3_802c405c[];
+extern const char str_802C41D0[];
+extern const char str_802C42E8[];
+extern const char str_802C42FC[];
 extern u32 dat_8041a134;
+extern u32 dat_8041a130;
+extern f32 float_0p45_8041a1c4;
+extern f32 float_0p7_8041a1c8;
+extern f32 float_500_8041a1cc;
+extern f32 float_120_8041a1d0;
+extern f32 float_25_8041a140;
+extern f32 float_7p5_8041a1bc;
+extern f32 float_40_8041a1ec;
+extern s32 kpa_powerup_evt[];
 
 // Prototypes missing from manager/fontmgr.h
 
@@ -1772,6 +1789,706 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, unk1E4) != 0) {
         obj->unk1DC = 0x5a;
         animPoseSetAnim(obj->poseId, "S_2", 1);
+    }
+    return 2;
+}
+
+// The original's `psndSFXOn_3D` argument is the literal 0x401E8; `animPoseGetMaterialEvtColor`
+// returns a GXColor* in the header but retail treats r3 as the colour value itself, so the
+// value is reinterpreted rather than dereferenced.
+s32 mobj_breaking_floor(MapObjectEntry* obj) {
+    GXColor color2;
+    GXColor color;
+
+    marioGetPtr();
+    color = *(GXColor*)&dat_8041a130;
+    color2 = *(GXColor*)&dat_8041a130;
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                psndSFXOn_3D((const char*)0x401E8, &obj->position);
+                animPoseSetAnim(obj->poseId, "A_1", 1);
+                if (obj->unk1D4 != NULL) {
+                    mobjRunEvent(obj, obj->unk1D4);
+                }
+                if (obj->hitObj[0].hitObject != NULL) {
+                    *(u16*)obj->hitObj[0].hitObject |= 1;
+                }
+                obj->flags |= 2;
+                evtSetValue(NULL, obj->unk1E4, 1);
+                obj->unk1DC = 1;
+                animPoseSetMaterialFlagOn(obj->poseId, 0x40);
+                animPoseSetMaterialEvtColor(obj->poseId, color);
+                *(s32*)((u8*)obj + 0x1B0) = 0x40;
+            }
+            break;
+        case 1: {
+
+            // MUST_MATCH: the header declares animPoseGetMaterialEvtColor as returning GXColor*, but
+            // retail treats the returned r3 as the colour value (it stores r3 and reads its high byte).
+#ifdef MUST_MATCH
+            *(u32*)&color2 = (u32)animPoseGetMaterialEvtColor(obj->poseId);
+#else
+            color2 = *animPoseGetMaterialEvtColor(obj->poseId);
+#endif
+            if (color2.a >= 4) {
+                color2.a -= 4;
+            } else {
+                color2.a = 0;
+                obj->unk1DC = 0x63;
+            }
+            animPoseSetMaterialEvtColor(obj->poseId, color2);
+            *(s32*)((u8*)obj + 0x1B0) -= 1;
+            if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
+                obj->unk1DC = 0x63;
+            }
+            break;
+        }
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f31 = evtGetFloat(event, args[3]);
+    s32 unk1D4 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[5];
+    MapObjectEntry* obj;
+    Vec pos;
+
+    if (!animGroupBaseAsync(str_802C41D0, gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, str_802C41D0);
+    obj = mobjNameToPtr(name);
+    obj->flags |= 0x84;
+    pos = vec3_802c40c4[0];
+    pos.x = f29;
+    pos.y = f30;
+    pos.z = f31;
+    obj->position = pos;
+    obj->unk1D0 = mobj_koopa_sango_evt;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = 0;
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x63;
+    }
+    return 2;
+}
+
+s32 evt_mobj_breaking_floor(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 type = evtGetValue(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[5]);
+    s32 unk1E4 = args[6];
+    BOOL inBattle = gp->inBattle != 0;
+    char animName[0x80];
+    MapObjectEntry* obj;
+
+    switch (type) {
+        case 0:
+            strcpy(animName, str_802C42E8);
+            break;
+        case 1:
+            strcpy(animName, str_802C42FC);
+            break;
+        default:
+            strcpy(animName, str_802C42E8);
+            break;
+    }
+    if (!animGroupBaseAsync(animName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, animName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_breaking_floor;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0x1000000;
+    obj->unk1E4 = unk1E4;
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x63;
+    } else {
+        obj->unk1DC = 0;
+    }
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    return 2;
+}
+
+// NONMATCHING (99.96%): base+offset immediates for the 4 pooled anim names differ (unit .rodata is not defined locally).
+s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    s32 unk1A0 = evtGetValue(event, args[4]);
+    s32 type = args[5];
+    s32 unk1D4 = evtGetValue(event, args[6]);
+    s32 unk1E4 = args[7];
+    BOOL inBattle = gp->inBattle != 0;
+    const char* asyncName;
+    MapObjectEntry* obj;
+
+    switch (type) {
+        case 0:
+            asyncName = "MOBJ_FlowBrickBlock";
+            break;
+        case 1:
+            asyncName = "MOBJ_block_ky";
+            break;
+        case 2:
+            asyncName = "MOBJ_bigblock_01";
+            break;
+        case 3:
+        default:
+            asyncName = "MOBJ_bigblock_02";
+            break;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_koopa_brickblk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    *(s32*)obj->unk1A0 = unk1A0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    if (evtGetValue(event, unk1E4) != 0) {
+        animPoseSetAnim(obj->poseId, "S_1", 1);
+        obj->unk1DC = 0x63;
+    }
+    return 2;
+}
+
+// NONMATCHING (97.01%): missing unit .rodata base, so the asyncName base register and arg registers shift.
+s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
+    f32 f29 = evtGetFloat(event, args[2]);
+    f32 f30 = evtGetFloat(event, args[3]);
+    f32 f31 = evtGetFloat(event, args[4]);
+    s32 unk1D4 = evtGetValue(event, args[5]);
+    s32 unk1E4 = args[6];
+    BOOL inBattle = gp->inBattle != 0;
+    const char* asyncName;
+    MapObjectEntry* obj;
+    Vec pos;
+
+    switch (type) {
+        case 0:
+            asyncName = "MOBJ_GreenPipe_ks";
+            break;
+        case 1:
+            asyncName = "MOBJ_GreenPipe_kl";
+            break;
+        case 2:
+            asyncName = "MOBJ_GreenPipe_ky";
+            break;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    obj->flags |= 6;
+    pos = *(Vec*)((u8*)vec3_802c3dc8 + 0x2F0);
+    pos.x = f29;
+    pos.y = f30;
+    pos.z = f31;
+    obj->position = pos;
+    obj->unk1D0 = mobj_koopa_dokan_evt;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->unk1D8 = 0;
+    mobjCalcMtx(obj);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    obj->flags |= 0x3c000000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    if (evtGetValue(event, unk1E4) != 0) {
+        obj->unk1DC = 0x63;
+    }
+    return 2;
+}
+
+// NONMATCHING (77.22%): missing unit .rodata base shifts the callee-saved register allocation.
+s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f29 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f31 = evtGetFloat(event, args[3]);
+    s32 r30 = evtGetValue(event, args[4]);
+    s32 unk1E4 = args[6];
+    MapObjectEntry* obj;
+    Vec pos;
+    Vec scale;
+
+    evtGetValue(event, args[5]);
+    if (!animGroupBaseAsync("MOBJ_KururinFloor", gp->inBattle != 0, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, "MOBJ_KururinFloor");
+    obj = mobjNameToPtr(name);
+    pos = vec3_802c4050[0];
+    pos.x = f29;
+    pos.y = f30 + 0.1f;
+    pos.z = f31;
+    obj->position = pos;
+    obj->unk1D0 = mobj_kururing_floor;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    obj->flags |= 0x1010000;
+    obj->flags |= 2;
+    mobjCalcMtx(obj);
+    scale = obj->scale2;
+    scale.x = vec3_802c405c[0].x;
+    scale.z = vec3_802c405c[0].z;
+    obj->scale2 = scale;
+    mobjCalcMtx2(obj);
+    mapGrpFlagOn((const char*)r30, 0x40000);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
+    animPoseWorldPositionEvalOn(obj->poseId);
+    return 2;
+}
+
+// NONMATCHING (93.84%): item-field store scheduling differs and `kpa_powerup_evt` is `.sdata` but the extern is
+// emitted lis/addi rather than SDA21.
+s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
+    s32 flag = 0;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 0:
+                    case 1:
+                        if (obj->unk1E0 == 0x20000000 || obj->unk1E0 == 0x4000000) {
+                            flag = 1;
+                        }
+                        break;
+                    case 2:
+                        if (obj->unk1E0 == 0x20000000 || obj->unk1E0 == 0x10000000 ||
+                            obj->unk1E0 == 0x4000000) {
+                            flag = 1;
+                        }
+                        break;
+                    case 3:
+                        flag = 1;
+                        break;
+                }
+                if (flag == 0) {
+                    obj->flags &= ~8;
+                } else {
+                    mobjRunEvent(obj, obj->unk1D4);
+                    evtSetValue(NULL, obj->unk1E4, 1);
+                    if (obj->unk1E0 == 0x4000000) {
+                        npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                    }
+                    if (obj->hitObj[0].hitObject != NULL) {
+                        *(u16*)obj->hitObj[0].hitObject |= 1;
+                    }
+                    obj->flags |= 2;
+                    kpaAddScore(kpaMutekiCheck() ? 500 : 400);
+                    obj->unk1DC = 0xa;
+                }
+            }
+            break;
+        case 0xa: {
+            ItemEntry* item;
+
+            psndSFXOn_3D((const char*)0x1C4, &obj->position);
+            effMObjBrokenEntry(5, obj->position.x, float_25_8041a140 + obj->position.y,
+                               float_25_8041a140 + obj->position.z);
+            if ((item = itemEntry(obj->name, (ItemType)0x59, 4, -1, (s32)kpa_powerup_evt,
+                                  obj->position.x, float_25_8041a140 + obj->position.y,
+                                  obj->position.z)) != NULL) {
+                itemStatusOn(item, 0x10);
+                itemFlagOn(item, 0x14);
+                *(s32*)((u8*)item + 0x7C) = 0x2710;
+                *(s32*)((u8*)item + 0x78) = 0;
+                *(f32*)((u8*)item + 0x80) = float_0p45_8041a1c4;
+                *(f32*)((u8*)item + 0x84) = float_0p7_8041a1c8;
+                *(f32*)((u8*)item + 0x58) = float_500_8041a1cc;
+                *(f32*)((u8*)item + 0x50) = float_120_8041a1d0;
+                *(s32*)((u8*)item + 0x54) = 0x5a;
+                *(s32*)((u8*)item + 0x88) = 0;
+                psndSFXOn_3D((const char*)0x836, &obj->position);
+            }
+            obj->unk1DC = 0x63;
+            break;
+        }
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+// NONMATCHING (99.95%): only pooled string/float symbol offsets differ.
+s32 mobj_powerupblk(MapObjectEntry* obj) {
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                if (marioKeyOffChk() != 0 || marioCtrlOffChk() != 0) {
+                    obj->flags &= ~8;
+                } else {
+                    marioKeyOff();
+                    if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                        marioCtrlOff();
+                    } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
+                               strcmp(gp->currentMapName, "dou_10") == 0) {
+                        if (obj->unk1E0 == 0x800000) {
+                            marioCtrlOff();
+                        }
+                    }
+                    gp->systemLevelFlags |= 3;
+                    psndSFXOn_3D((const char*)0x201C0, &obj->position);
+                    animPoseSetAnim(obj->poseId, "A_1", 1);
+                    itemEntry("pwrblk1", (ItemType)0x57, 0xf, -1, 0, obj->position.x, obj->position.y,
+                              obj->position.z);
+                    obj->unk1DC++;
+                }
+            }
+            break;
+        case 1:
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
+                break;
+            }
+            animPoseSetAnim(obj->poseId, "A_2", 1);
+            obj->flags &= ~8;
+            *(s32*)((u8*)obj + 0x1A4) = 1;
+            obj->unk1DC++;
+            break;
+        case 2:
+            if (*(s32*)((u8*)obj + 0x1A4) != 0) {
+                (*(s32*)((u8*)obj + 0x1A4))--;
+            } else {
+                itemForceGet(itemEntry("pwrblk2", (ItemType)0x57, 0x11, -1, 0, obj->position.x,
+                                       float_40_8041a1ec + obj->position.y, obj->position.z));
+                evtSetValue(NULL, obj->unk1E4, 1);
+                marioKeyOn();
+                if (strcmp(gp->currentMapName, "dou_02") == 0) {
+                    marioCtrlOn();
+                } else if (strcmp(gp->currentMapName, "dou_05") == 0 ||
+                           strcmp(gp->currentMapName, "dou_10") == 0) {
+                    if (obj->unk1E0 == 0x800000) {
+                        marioCtrlOn();
+                    }
+                }
+                obj->unk1DC = 0x5a;
+            }
+            break;
+        case 0x5a:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+s32 mobj_10countblk(MapObjectEntry* obj) {
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                if (obj->flags & 0x800) {
+                    obj->flags &= ~0x800;
+                    strcpy(obj->animName, "MOBJ_Block");
+                }
+                animPoseSetAnim(obj->poseId, "A_1", 1);
+                psndSFXOn_3D((const char*)0x1BE, &obj->position);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                if (obj->unk1D4 != NULL) {
+                    mobjRunEvent(obj, obj->unk1D4);
+                } else {
+                    pouchAddCoin(1);
+                    itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
+                              obj->position.z);
+                    *(s32*)((u8*)obj + 0x1B0) = 0xC8;
+                }
+                obj->unk1DC++;
+                obj->flags &= ~8;
+            }
+            break;
+        case 1:
+            if (*(s32*)((u8*)obj + 0x1B0) > 0) {
+                (*(s32*)((u8*)obj + 0x1B0))--;
+            }
+            if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
+                obj->unk1DC = 0x5a;
+                animPoseSetAnim(obj->poseId, "S_2", 1);
+                strcpy(obj->animName, "MOBJ_Block");
+            } else if (obj->flags & 8) {
+                psndSFXOn_3D((const char*)0x1BF, &obj->position);
+                pouchAddCoin(1);
+                itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
+                          obj->position.z);
+                obj->flags &= ~8;
+                animPoseSetAnim(obj->poseId, "A_1", 1);
+            }
+            break;
+        case 0x5a:
+            if (obj->flags & 8) {
+                psndSFXOn_3D((const char*)0x1B7, &obj->position);
+                animPoseSetAnim(obj->poseId, "A_3", 1);
+                obj->flags &= ~8;
+                obj->unk1DC++;
+            }
+            break;
+        case 0x5b:
+            if (!(obj->flags & 8)) {
+                obj->unk1DC = 0x5a;
+            } else {
+                if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
+                    break;
+                }
+                animPoseSetAnim(obj->poseId, "S_2", 1);
+                obj->unk1DC = 0x5a;
+                obj->flags &= ~8;
+            }
+            break;
+    }
+    return 0;
+}
+
+// NONMATCHING (93.76%): `kpa_powerup_evt` is `.sdata` but extern emits lis/addi, plus item-field f32 load/store
+// scheduling.
+s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
+    BOOL flag = FALSE;
+
+    marioGetPtr();
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                if (obj->unk1E0 != 0x4000000) {
+                    obj->flags &= ~8;
+                } else {
+                    if (obj->flags & 0x800) {
+                        mobjHitEntry(obj, 0);
+                    }
+                    animPoseSetAnim(obj->poseId, "A_1", 1);
+                    if (obj->unk1D4 != NULL) {
+                        mobjRunEvent(obj, obj->unk1D4);
+                    } else {
+                        if (*(s32*)((u8*)obj + 0x1A0) == 0x59) {
+                            ItemEntry* item;
+                            itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, -1,
+                                      (s32)kpa_powerup_evt, obj->position.x,
+                                      float_12p5_8041a178 + obj->position.y, obj->position.z);
+                            item = itemNameToPtr(obj->name);
+                            itemStatusOn(item, 0x10);
+                            itemFlagOn(item, 0x14);
+                            *(s32*)((u8*)item + 0x7C) = 0x2710;
+                            *(s32*)((u8*)item + 0x78) = 0;
+                            *(f32*)((u8*)item + 0x80) = float_0p45_8041a1c4;
+                            *(f32*)((u8*)item + 0x84) = float_0p7_8041a1c8;
+                            *(s32*)((u8*)item + 0x88) = 0;
+                            *(f32*)((u8*)item + 0x58) = float_500_8041a1cc;
+                            *(f32*)((u8*)item + 0x50) = float_120_8041a1d0;
+                            *(s32*)((u8*)item + 0x54) = 0x5a;
+                            psndSFXOn_3D((const char*)0x836, &obj->position);
+                        } else {
+                            kpaAddCoin(1);
+                            itemEntry(NULL, (ItemType)0x79, 0xf, -1, 0, obj->position.x, obj->position.y,
+                                      obj->position.z);
+                            evtSetValue(NULL, obj->unk1E4, 1);
+                            psndSFXOn_3D((const char*)0x5B, &obj->position);
+                        }
+                    }
+                    if (obj->unk1E0 == 0x4000000) {
+                        npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                    }
+                    obj->unk1DC++;
+                }
+            }
+            break;
+        case 1:
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
+                break;
+            }
+            animPoseSetAnim(obj->poseId, "S_2", 1);
+            obj->flags &= ~8;
+            obj->unk1DC = 0x5a;
+            strcpy(obj->animName, "MOBJ_Block");
+            break;
+        case 0x5a:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 3:
+                        flag = TRUE;
+                        break;
+                }
+                if (!flag) {
+                    obj->flags &= ~8;
+                } else {
+                    if (obj->unk1E0 == 0x4000000) {
+                        npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                    }
+                    if (obj->hitObj[0].hitObject != NULL) {
+                        obj->hitObj[0].hitObject->flags |= 1;
+                    }
+                    obj->flags |= 2;
+                    obj->unk1DC++;
+                }
+            }
+            break;
+        case 0x5b:
+            psndSFXOn_3D((const char*)0x1B8, &obj->position);
+            effMObjBrokenEntry(2, obj->position.x, float_12p5_8041a178 + obj->position.y,
+                               float_12p5_8041a178 + obj->position.z);
+            obj->unk1DC = 0x63;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+// NONMATCHING (99.06%): pooled string symbol names differ and one f32 load order is swapped.
+s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
+    BOOL flag = FALSE;
+
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                switch (kpaGetLevel()) {
+                    case 0:
+                        break;
+                    case 1:
+                    case 2:
+                        if (obj->unk1E0 == 0x20000000) {
+                            flag = TRUE;
+                        }
+                        break;
+                    case 3:
+                        flag = TRUE;
+                        break;
+                }
+                if (!flag) {
+                    obj->flags &= ~8;
+                } else {
+                    mobjRunEvent(obj, obj->unk1D4);
+                    evtSetValue(NULL, obj->unk1E4, 1);
+                    if (obj->unk1E0 == 0x4000000) {
+                        npcKoopaModeMobjBoundDeadCheck(obj->hitObj[0].hitObject);
+                    }
+                    if (obj->hitObj[0].hitObject != NULL) {
+                        obj->hitObj[0].hitObject->flags |= 1;
+                    }
+                    obj->flags |= 2;
+                    kpaAddScore(kpaMutekiCheck() ? 500 : 400);
+                    obj->unk1DC = 0xa;
+                }
+            }
+            break;
+        case 0xa:
+            if (strcmp(obj->animName, "MOBJ_GreenPipe_ks") == 0) {
+                effMObjBrokenEntry(6, obj->position.x, float_25_8041a140 + obj->position.y,
+                                   float_25_8041a140 + obj->position.z);
+            } else if (strcmp(obj->animName, "MOBJ_GreenPipe_kl") == 0) {
+                effMObjBrokenEntry(6, obj->position.x,
+                                   float_7p5_8041a1bc + (float_25_8041a140 + obj->position.y),
+                                   float_25_8041a140 + obj->position.z);
+            } else {
+                effMObjBrokenEntry(6, obj->position.x - float_25_8041a140,
+                                   float_25_8041a140 + obj->position.y,
+                                   float_25_8041a140 + obj->position.z);
+            }
+            psndSFXOn_3D((const char*)0x834, &obj->position);
+            obj->unk1DC = 0x63;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
+// NONMATCHING (96.70%): unit .rodata is not defined locally, so each pooled anim-name gets its own
+// lis/addi instead of the retail vec3_802c3dc8 base register (costs one callee-saved register).
+s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 f31 = evtGetFloat(event, args[1]);
+    f32 f30 = evtGetFloat(event, args[2]);
+    f32 f29 = evtGetFloat(event, args[3]);
+    const char* childName = (const char*)evtGetValue(event, args[4]);
+    s32 type = args[5];
+    s32 unk1D4 = evtGetValue(event, args[6]);
+    s32 unk1E4 = args[7];
+    BOOL inBattle = gp->inBattle != 0;
+    const char* asyncName;
+    MapObjectEntry* obj;
+
+    switch (type) {
+        case 0:
+            asyncName = "MOBJ_green_FlowBlockSwitch";
+            break;
+        case 1:
+            asyncName = "MOBJ_purple_FlowBlockSwitch";
+            break;
+        case 2:
+            asyncName = "MOBJ_orange_FlowBlockSwitch";
+            break;
+        case 3:
+            asyncName = "MOBJ_red_FlowBlockSwitch";
+            break;
+        default:
+            asyncName = "MOBJ_green_FlowBlockSwitch";
+            break;
+    }
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
+        return 0;
+    }
+    mobjEntry(name, asyncName);
+    obj = mobjNameToPtr(name);
+    mobjSetPosition(name, f31, f30, f29);
+    obj->unk1D0 = mobj_switch_float_blk;
+    obj->unk1D4 = (s32*)unk1D4;
+    obj->flags |= 4;
+    obj->flags |= 0xe10000;
+    obj->unk1E4 = unk1E4;
+    obj->unk1DC = 0;
+    *(s32*)((u8*)obj + 0x1B0) = 0;
+    mobjCalcMtx(obj);
+    strcpy((char*)((u8*)obj + 0x1B8), childName);
+    if (*(char*)((u8*)obj + 0x1B8)) {
+        f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
+        MapObjectEntry* obj2 = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
+        HitEntry* hit;
+        strcpy((char*)((u8*)obj2 + 0x1B8), obj->name);
+        distance = float_1_8041a160 + (f32)__fabs(*(f32*)((u8*)obj2 + 0x60));
+        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                             *(f32*)((u8*)obj2 + 0x38), float_0p5_8041a15c + *(f32*)((u8*)obj2 + 0x3c),
+                             *(f32*)((u8*)obj2 + 0x40), float_0_8041a150, float_neg1_8041a214,
+                             float_0_8041a150);
+        if (hit != NULL) {
+            animPoseSetAnim(obj2->poseId, "S_1", 1);
+        } else {
+            animPoseSetAnim(obj2->poseId, "A_3", 1);
+        }
     }
     return 2;
 }
