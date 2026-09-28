@@ -57,6 +57,7 @@ extern f32 float_1_80419860;
 extern Vec vec3_802c18f4[];
 extern Vec vec3_802c1900[];
 extern const char str_8041986C[];
+const char str_8041986C[] = "|";
 
 //.sdata
 f32 scrl_uv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -91,7 +92,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	color.a = a;
 	obj = mapGetMapObjSub(name);
 	if (obj) {
-		*(u32*)((u8*)obj + 0xC) = *(u32*)&color;
+		*(u32*)obj->field_0xC = *(u32*)&color;
 		*(u32*)obj->field_0x0 |= 0x40;
 	}
 	mapObjFlagOff(name, 0x40);
@@ -236,7 +237,7 @@ void mapGrpClearOffScreen(const char* name) {
 void mapObjClearOffScreen(const char* name) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	*(s16*)((u8*)obj + 0xDC) = -1;
+	*(s16*)obj->field_0xDC = -1;
 	*(u32*)obj->field_0x0 &= ~0x80;
 }
 
@@ -248,7 +249,7 @@ void mapGrpSetOffScreen(const char* name, const char* offName) {
 void mapObjSetOffScreen(const char* name, const char* offName) {
 	MapObject* obj = mapGetMapObjSub(name);
 
-	*(s16*)((u8*)obj + 0xDC) = offscreenNameToId(offName);
+	*(s16*)obj->field_0xDC = offscreenNameToId(offName);
 	*(u32*)obj->field_0x0 |= 0x80;
 }
 
@@ -638,7 +639,7 @@ void mapDispMapObj_off(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
+	offscreenAddBoundingBox(*(s16*)obj->field_0xDC, v0, v1, v2, v3);
 }
 
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
@@ -655,6 +656,94 @@ BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
 		return TRUE;
 	}
 	return FALSE;
+}
+
+// NONMATCHING (93.88%): the spline arithmetic and control flow match instruction-for-instruction; only
+// MWCC's register coloring differs (target keeps u/dt in f1/f2 and uses r4/r6/r8 as point/tangent/knot pointers).
+void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
+	f32* points = (f32*)a;
+	f32* knots = (f32*)b;
+	f32* tangents = (f32*)c;
+	s32 lo;
+	s32 hi;
+	s32 mid;
+	f32 f0, f1, f2, f3, f4, f5, f6, f7, f8;
+
+	if (type == 2) {
+		out[0] = t * (points[3] - points[0]) + points[0];
+		out[1] = t * (points[4] - points[1]) + points[1];
+		out[2] = t * (points[5] - points[2]) + points[2];
+		return;
+	}
+
+	lo = 0;
+	hi = type - 1;
+	while (lo < hi) {
+		mid = (lo + hi) / 2;
+		if (knots[mid] < t) {
+			lo = mid + 1;
+		}
+		else {
+			hi = mid;
+		}
+	}
+	if (lo > 0) {
+		lo--;
+	}
+
+	f2 = knots[lo];
+	f6 = 2.0f;
+	f7 = tangents[lo * 3 + 0];
+	f4 = tangents[lo * 3 + 3];
+	f1 = t - f2;
+	f0 = knots[lo + 1];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 0];
+	f3 = points[lo * 3 + 3];
+	f2 = f0 - f2;
+	f4 = f6 * f7 + f4;
+	f0 = 3.0f;
+	f5 = f1 * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = f1 * f5 + f3;
+	f3 = f1 * f3 + f8;
+	out[0] = f3;
+
+	f7 = tangents[lo * 3 + 1];
+	f4 = tangents[lo * 3 + 4];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 1];
+	f3 = points[lo * 3 + 4];
+	f4 = f6 * f7 + f4;
+	f5 = f1 * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = f1 * f5 + f3;
+	f3 = f1 * f3 + f8;
+	out[1] = f3;
+
+	f7 = tangents[lo * 3 + 2];
+	f4 = tangents[lo * 3 + 5];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 2];
+	f3 = points[lo * 3 + 5];
+	f4 = f6 * f7 + f4;
+	f5 = f1 * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = f1 * f5 + f3;
+	f3 = f1 * f3 + f8;
+	out[2] = f3;
 }
 
 //heavily inlined
@@ -745,13 +834,49 @@ void mapInit(void) {
 	mapClipOffFlag = FALSE;
 }
 
-// NONMATCHING (0.00%): not implemented
+// NONMATCHING (94.96%): texture-table search register permutation (target walks table in r20, idx in r22)
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 	int i;
-	MapFileJointPart* part;
+	int j;
 
 	for (i = 0; i < obj->joints->partCount; i++) {
-		part = &obj->joints->parts[i];
+		u8* material = (u8*)obj->joints->parts[i].material;
+
+		for (j = 0; j < *(u8*)(material + 0xB); j++) {
+			u8** ref = *(u8***)(material + 0xC + j * 4);
+			const char* name = *(const char**)(*ref);
+			TEXDescriptor* desc;
+			s32 idx;
+
+			for (idx = 0; idx < *(s32*)table; idx++) {
+				if (strcmp(((const char**)table)[idx + 1], name) == 0) {
+					break;
+				}
+			}
+			if (idx == *(s32*)table) {
+				idx = -1;
+			}
+			if (idx == -1) {
+				idx = 0;
+			}
+			desc = TEXGet(texture, idx);
+			*(u32*)(*ref + 0xC) = (u32)desc->textureHeader->data;
+			*(u16*)(*ref + 8) = desc->textureHeader->width;
+			*(u16*)(*ref + 0xA) = desc->textureHeader->height;
+			switch (desc->textureHeader->format) {
+				case 4: (*ref)[4] = 0; break;
+				case 5: (*ref)[4] = 1; break;
+				case 6: (*ref)[4] = 2; break;
+				case 14: (*ref)[4] = 3; break;
+				case 0: (*ref)[4] = 4; break;
+				case 1: (*ref)[4] = 5; break;
+				case 2: (*ref)[4] = 6; break;
+				case 3: (*ref)[4] = 7; break;
+				case 8: (*ref)[4] = 8; break;
+				case 9: (*ref)[4] = 9; break;
+				case 10: (*ref)[4] = 10; break;
+			}
+		}
 	}
 	if (obj->child) {
 		mapBuildTexture(obj->child, texture, table);
@@ -944,7 +1069,8 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 }
 
-extern f32 float_0_804198cc;
+// An empty string; symbols.txt names it as a float.
+extern const char float_0_804198cc[4];
 
 // NONMATCHING (98.06%): entry vs i register swap (target r29=entry, r30=i); opening load now matches
 void mapUnLoad(void) {
@@ -968,7 +1094,7 @@ void mapUnLoad(void) {
 		}
 		if (entry->animData) {
 			_mapFree(entry->animData);
-			*(s32*)((u8*)entry + 0x160) = 0;
+			*(s32*)entry->field_0x160 = 0;
 			entry->animData = NULL;
 		}
 		if (*(void**)((u8*)entry + 0x16C)) {
@@ -997,11 +1123,11 @@ void mapUnLoad(void) {
 			}
 			entry->tpl = NULL;
 		}
-		if (*(void**)((u8*)entry + 0x8C)) {
-			_mapFree(*(void**)((u8*)entry + 0x8C));
-			*(void**)((u8*)entry + 0x8C) = NULL;
+		if (*(void**)entry->field_0x8C) {
+			_mapFree(*(void**)entry->field_0x8C);
+			*(void**)entry->field_0x8C = NULL;
 		}
-		strncpy(entry->name, (char*)&float_0_804198cc, 0x10);
+		strncpy(entry->name, float_0_804198cc, 0x10);
 	}
 	arcDelete(1);
 	memset(wp, 0, 0x2F4);
@@ -1078,10 +1204,85 @@ void bmapLoad(const char* map1, const char* map2) {
 	}
 }
 
+// NONMATCHING (95.45%): entry/i (r29/r30) register swap in the first two loops and one extra
+// activeGroup reload; our build also inlines makeDisplayList, which the original calls.
+void bmapUnLoad(void) {
+	MapWork* wp;
+	MapEntry* entry;
+	s32 i;
 
+	sysWaitDrawSync();
+	activeGroup = 1;
+	wp = &mapWork[1];
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (entry->objects) {
+			_mapFree(entry->objects);
+			entry->numJoints = 0;
+			entry->objects = NULL;
+		}
+		if (entry->animData) {
+			_mapFree(entry->animData);
+			*(s32*)entry->field_0x160 = 0;
+			entry->animData = NULL;
+		}
+		if (*(void**)((u8*)entry + 0x16C)) {
+			_mapFree(*(void**)((u8*)entry + 0x16C));
+			*(void**)((u8*)entry + 0x16C) = NULL;
+			*(void**)((u8*)entry + 0x168) = NULL;
+		}
+	}
+	unk_80418458 = 0;
+	hitReInit();
+	lightReInit();
+	envReInit();
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (entry->dat) {
+			if (!arcDataCheck(entry->dat)) {
+				_mapFree(entry->dat);
+			}
+			entry->dat = NULL;
+		}
+		if (entry->tpl) {
+			if (!arcDataCheck(entry->tpl)) {
+				_mapFree(entry->tpl);
+			}
+			entry->tpl = NULL;
+		}
+		if (*(void**)entry->field_0x8C) {
+			_mapFree(*(void**)entry->field_0x8C);
+			*(void**)entry->field_0x8C = NULL;
+		}
+		strncpy(entry->name, float_0_804198cc, 0x10);
+	}
+	arcDelete(1);
+	arcDelete(2);
+	memset(&mapWork[1], 0, 0x2F4);
 
-
-
+	activeGroup = 0;
+	wp = mapWork;
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (*(void**)((u8*)entry + 0x170)) {
+			entry->dat = _mapAllocTail(entry->datSize);
+			entry->tpl = _mapAllocTail(entry->tplSize);
+			aramMgrToMram(*(void**)((u8*)entry + 0x170), entry->dat);
+			aramMgrToMram(*(void**)((u8*)entry + 0x178), entry->tpl);
+			*(void**)((u8*)entry + 0x170) = NULL;
+			*(void**)((u8*)entry + 0x178) = NULL;
+		}
+		else {
+			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
+			aramMgrToMram(*(void**)(entry->field_0x168 + 0xC), *(void**)entry->field_0x8C);
+			*(void**)(entry->field_0x168 + 0xC) = NULL;
+		}
+		makeDisplayList(i);
+	}
+	if (*(void**)wp->entries[0].field_0x8C) {
+		arcEntry(1, *(void**)wp->entries[0].field_0x8C, *(u32*)(wp->entries[0].field_0x8C + 4));
+	}
+}
 
 // NONMATCHING (42.11%): partial TEV setup; large body still differs
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
@@ -1449,4 +1650,222 @@ void mapSetMaterialFog(void) {
 	else {
 		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419820);
 	}
+}
+
+// NONMATCHING (85.28%): GX setup order/constants all match; only MWCC register coloring differs
+// (target keeps mesh in r27, obj in r26 and the two array pointers in r29/r30).
+void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
+	MapWork* wp = &mapWork[activeGroup];
+	u32* vcd = (u32*)mesh->vcdTableOffset;
+	u32 mask = mesh->elementMask;
+	void* pos = (void*)(vcd[0] + 4);
+	void* nrm = (void*)(vcd[1] + 4);
+	s32 i;
+	u8* material;
+
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+	material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
+	GXSetArray(GX_VA_POS, pos, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, nrm, 3);
+
+	for (i = 0; i < 2; i++) {
+		if (!(mask & (1 << (i + 2)))) {
+			break;
+		}
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, (void*)(vcd[3 + i] + 4), 4);
+	}
+
+	for (i = 0; i < 8; i++) {
+		if (!(mask & (1 << (i + 4)))) {
+			break;
+		}
+		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+		material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(material + 0x48 + i * 4));
+		GXSetArray(GX_VA_TEX0 + i, (void*)(vcd[6 + i] + 4), 4);
+	}
+}
+
+// NONMATCHING (99.21%): obj/o (r30/r31) register swap only
+void _mapDispMapGrp(MapObject* obj, void* a2) {
+	_mapDispMapObj((s32)obj, (MapObject*)a2);
+	if (((MapObject*)a2)->child) _mapDispMapGrp(obj, ((MapObject*)a2)->child);
+	if ((*(u32*)((MapObject*)a2)->field_0x0 & 0x20) && ((MapObject*)a2)->next) _mapDispMapGrp(obj, ((MapObject*)a2)->next);
+}
+
+// NONMATCHING (98.00%): inlined _mapDispMapObj_NoMaterial keeps an extra camId copy and one extra callee-saved reg
+void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
+	MapObject* o = (MapObject*)a2;
+
+	_mapDispMapObj_NoMaterial((s32)obj, o);
+	if (o->child) _mapDispMapGrp_NoMaterial(obj, o->child);
+	if ((*(u32*)o->field_0x0 & 0x20) && o->next) _mapDispMapGrp_NoMaterial(obj, o->next);
+}
+
+void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
+	*(u32*)obj->field_0x0 &= ~flag;
+	if (obj->child) mapFlgOff(obj->child, flag, 1);
+	if (a3 && obj->next) mapFlgOff(obj->next, flag, 1);
+}
+
+void mapFlgOn(MapObject* obj, u32 flag, s32 a3) {
+	if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
+		*(u32*)obj->field_0x0 |= flag;
+	}
+	if (obj->child) mapFlgOn(obj->child, flag, 1);
+	if (a3 && obj->next) mapFlgOn(obj->next, flag, 1);
+}
+
+void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
+	*(s16*)obj->field_0xDC = id;
+	if (id != -1) {
+		*(u32*)obj->field_0x0 |= 0x80;
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~0x80;
+	}
+	if (obj->child) _setOffScrnId(obj->child, id, 1);
+	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
+}
+
+// NONMATCHING (75.99%): local GXColor copy changes the frame/register layout vs target keeping the color pointer live
+void setColor(MapObject* obj, GXColor* color, s32 a3) {
+	GXColor c;
+	if (obj == 0) return;
+	c = *color;
+	*(u32*)obj->field_0xC = *(u32*)&c;
+	*(u32*)obj->field_0x0 |= 0x40;
+	if (obj->child) setColor(obj->child, &c, 1);
+	if (a3 && obj->next) setColor(obj->next, &c, 1);
+}
+
+// NONMATCHING (48.38%): MWCC inlines one fewer recursion level than the target; all register colors differ
+void* mapSearchDmdJointSub(void* a, void* b) {
+	MapFileJoint* joint = (MapFileJoint*)a;
+
+	if (!strcmp(joint->name, (const char*)b)) {
+		return joint;
+	}
+	if (joint->child) {
+		MapFileJoint* r = mapSearchDmdJointSub(joint->child, b);
+		if (r) return r;
+	}
+	if (joint->next) {
+		MapFileJoint* r = mapSearchDmdJointSub(joint->next, b);
+		if (r) return r;
+	}
+	return NULL;
+}
+
+#ifdef MUST_MATCH
+// The original passes the caller's own Vec where the by-value argument would take a copy.
+#define LIGHT_GET_NEAR(p, e, n, f) ((s32 (*)(Vec*, LightEntry**, s32, LightEntryFlags))lightGetNearObj)((p), (e), (n), (f))
+#else
+#define LIGHT_GET_NEAR(p, e, n, f) lightGetNearObj(*(p), (e), (n), (f))
+#endif
+
+// NONMATCHING (99.65%): branch-2 loop only: `e` and the compiler-generated i*4 induction
+// accumulate in r30/r31 swapped vs the target. Both pointer walks are otherwise identical.
+s32 mapSetLight(MapObject* obj, LightEntry** entries) {
+	Vec pos;
+	s32 count = 0;
+	s32 i;
+	LightEntry** e;
+
+	PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &pos);
+
+	if (obj->joints->drawMode->unk2[0] & 0x8) {
+		if (*(u32*)(obj->joints->drawMode->unk2 + 2) == 0) {
+			count = LIGHT_GET_NEAR(&pos, entries, 8, 0);
+		}
+		else {
+			e = entries;
+
+			for (i = 0; i < 0x20; i++) {
+				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
+					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
+					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
+
+					if (!(l->flags & LIGHT_AMBIENT)) {
+						count++;
+						*e = l;
+						e++;
+						if (count >= 8) break;
+					}
+				}
+			}
+			if (count < 8) count += LIGHT_GET_NEAR(&pos, entries + count, 8 - count, 0);
+		}
+	}
+	else {
+		if (*(u32*)(obj->joints->drawMode->unk2 + 2) != 0) {
+			e = entries;
+
+			for (i = 0; i < 0x20; i++) {
+				if (*(u32*)(obj->joints->drawMode->unk2 + 2) & (1 << i)) {
+					MapEntry* entry = &mapWork[activeGroup].entries[*(s16*)(obj->field_0xDC + 2)];
+					void* list = *(void**)(entry->field_0x8C + 0x0C);
+					LightEntry* l = lightNameToPtr(*(const char**)*(void**)((u8*)list + i * 4 + 4));
+
+					if (!(l->flags & LIGHT_AMBIENT)) {
+						count++;
+						*e = l;
+						e++;
+						if (count >= 8) break;
+					}
+				}
+			}
+		}
+		else {
+			count = 0;
+		}
+	}
+	return count;
+}
+
+void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* count, void* a4) {
+	if (obj->child) {
+		mapObjGetPosSub(obj->child, pos, count, (void*)1);
+	}
+	else {
+		Vec v;
+
+		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &v);
+		PSVECAdd(pos, &v, pos);
+		(*count)++;
+	}
+	if ((s32)a4 && obj->next) {
+		mapObjGetPosSub(obj->next, pos, count, (void*)1);
+	}
+}
+
+// NONMATCHING (98.53%): a/c callee-saved swap (target a->r29, c->r30; mine reversed) plus an
+// extra `mr r0,r3` in the prologue. All strcpy/strcat/strcmp/recursion instructions match.
+void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
+	MapFileJoint* joint = (MapFileJoint*)a;
+	const char* name = (const char*)b;
+	char buf[256];
+	void* result;
+
+	strcpy(buf, c);
+	strcat(buf, joint->name);
+	if (!strcmp(buf, name)) return joint;
+
+	if (joint->child) {
+		strcat(buf, str_8041986C);
+		result = mapSearchDmdJointSub2(joint->child, b, buf);
+		if (result) return result;
+	}
+	if (joint->next) {
+		result = mapSearchDmdJointSub2(joint->next, b, c);
+		if (result) return result;
+	}
+	return NULL;
 }

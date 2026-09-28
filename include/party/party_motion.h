@@ -18,3 +18,7 @@ void party_motion_damage(PartyEntry* party);
 void party_motion_behind_mario(PartyEntry* party);
 void party_motion_behind_mario_fly(PartyEntry* party);
 void unk_8014bbc8(PartyEntry* party);
+void party_motion_stay(PartyEntry* party);
+void party_motion_homing_walk(PartyEntry* party);
+void party_motion_homing_fly(PartyEntry* party);
+void party_motion_jump(PartyEntry* party);

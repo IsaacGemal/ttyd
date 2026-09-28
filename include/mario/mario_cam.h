@@ -16,3 +16,5 @@ void camFollowYOff(void);
 void marioCamMain(void);
 void marioSetCamId(CameraId camId);
 void marioSetCamFollowRate(f32 followRate);
+void marioResetCamShiftRate(void);
+void marioCamZoomOffReq(void);

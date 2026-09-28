@@ -7,3 +7,4 @@ s32 nokonoko_holdItem(void);
 s32 nokonokoGetStatus(PartyEntry* party);
 void nokotaro_hold_cancel(PartyEntry* party);
 void unk_800cd9a0(void);
+void nokonoko_finish(PartyEntry* party);

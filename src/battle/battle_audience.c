@@ -1,13 +1,29 @@
 #include "battle/battle_audience.h"
 #include "battle/battle.h"
+#include "battle/battle_audience_kind_data.h"
+#include "battle/battle_break_slot.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "mario/mario_pouch.h"
+#include "math_ext.h"
 #include "system.h"
 #include <string.h>
 #include "pmario_sound.h"
 #include "battle/battle_weapon_power.h"
 #include <stdio.h>
+
+#ifdef MUST_MATCH
+// For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
+// tables; MWCC only emits the paired lwzu/stwu copy loop for a struct assignment, not for memcpy.
+typedef struct BattleAudienceFallOffsetTable1 {
+    s32 v[16];
+} BattleAudienceFallOffsetTable1;
+
+typedef struct BattleAudienceFallOffsetTable2 {
+    s32 v[48];
+} BattleAudienceFallOffsetTable2;
+#endif
+
 
 // LOCAL_PROTO(psndSFX_get_vol): retail battle callers consume a full-width result; sharing the u8 implementation signature adds a mask and regresses BtlUnit_snd_se_pos.
 extern s32 psndSFX_get_vol(s32 id);
@@ -18,8 +34,6 @@ extern s32 psndSFX_pit(s32 id, s32 pit);
 // LOCAL_PROTO(psndSFX_vol): retail units disagree on volume width; a shared u8 prototype adds narrowing instructions in battle callers.
 extern void psndSFX_vol(s32 id, s32 vol);
 
-
-#pragma optimize_for_size on
 
 const char str_802F9578[] = "btl_msg_audience_puni_escape";
 const char str_802F9598[] = "btl_msg_audience_puni_meeting";
@@ -136,6 +150,7 @@ f32 float_neg0p2_8041e638 = -0.2f;
 f32 float_0p02_8041e61c = 0.02f;
 f32 float_5_8041e62c = 5.0f;
 f32 float_0p01_8041e628 = 0.01f;
+f32 float_1p5_8041e670 = 1.5f;
 
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
@@ -171,7 +186,7 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (77.73%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
+// NONMATCHING (98.58%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
 // dropped); the resulting liveness difference also shifts the loop registers.
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
@@ -993,12 +1008,18 @@ s32 BattleAudience_GetAudienceNum(void) {
 	return BattleAudienceBaseGetPtr()->mCurrentAudienceIntCount;
 }
 
+// Keep this call out of line: the original's BattleAudience_Case_Appeal emits `bl
+// BattleAudience_GetPPAudienceNum`, and MWCC would otherwise inline the wrapper.
+#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum(void) {
 	s32 left = BattleAudience_GetPPAudienceNum_L();
 	s32 right = BattleAudience_GetPPAudienceNum_R();
 	return right + left;
 }
+#pragma dont_inline reset
 
+// Keep out of line: BattleAudience_ApRecoveryBuild emits `bl BattleAudience_GetPPAudienceNumKind`.
+#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 i, count = 0;
@@ -1012,6 +1033,7 @@ s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 	}
 	return count;
 }
+#pragma dont_inline reset
 
 #pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_R(void) {
@@ -1124,6 +1146,73 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 
 
 
+// NONMATCHING (98.72%): register allocation only; the outer counter and the inner weighted-pick accumulator
+// land in r26/r25 instead of r25/r26, shifting the rest of the body.
+s32 BattleAudienceAddAudienceNum(s32 num) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 sum;
+	s32 total = 0;
+	u8 type;
+	s32 result = 0;
+	s32 j;
+	s32 i;
+	s32 id;
+	s32 waitlist[200];
+
+	if (pouchGetPtr()->mStarPowersObtained == 0) {
+		return 0;
+	}
+	if (num == 0) {
+		return 0;
+	}
+	if (wp->flags & 0x100) {
+		return 0;
+	}
+	if (num > 0) {
+		for (i = 0; i < 12; i++) {
+			total += *(s32*)((u8*)audience + 0x13794 + i * 4);
+		}
+		for (j = 0; j < num; j++) {
+			sum = 0;
+			id = irand(total);
+			for (i = 0; i < 12; i++) {
+				sum += *(s32*)((u8*)audience + 0x13794 + i * 4);
+				if (id < sum) {
+					type = (u8)i;
+					break;
+				}
+			}
+			id = BattleAudience_NoUsedFCHaitiRand();
+			if (id == -1) {
+				break;
+			}
+			if (BattleAudience_Entry(id, type, 0xb) == 1) {
+				result++;
+				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = result;
+			}
+		}
+	}
+	else {
+		s32 count = 0;
+		for (; count > num; count--) {
+			s32 n = 0;
+			for (i = 0; i < 200; i++) {
+				if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
+					waitlist[n++] = i;
+				}
+			}
+			if (n >= 1) {
+				id = waitlist[irand(n)];
+				BattleAudience_ChangeStatus(id, 0xc);
+				result--;
+				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = -result;
+			}
+		}
+	}
+	return result;
+}
+
 //1:1
 // keep AddTargetNumSub out of AddTargetNum (original has a `bl`)
 #pragma dont_inline on
@@ -1219,16 +1308,63 @@ void BattleAudienceAddTargetNum(f32 value, f32 delta) {
 
 
 
+void BattleAudienceNoiseMain(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
+	s32 pp = BattleAudience_GetPPAudienceNum();
+
+	if (!(audience->flags & 0x10000) && (wp->flags & 0x80)) {
+		BattleAudienceSoundSetVol(2, 0x3C, 0x50);
+	}
+	if ((audience->flags & 0x10000) && !(wp->flags & 0x80)) {
+		BattleAudienceSoundSetVol(2, 0, 0x50);
+	}
+	if (pp == 0 && *(u8*)((u8*)sound + 8) != 0) {
+		psndSFXOff(*(s32*)((u8*)sound + 4));
+		*(u8*)((u8*)sound + 8) = 0;
+	}
+	if (pp >= 1 && pp <= 0x31 && *(u8*)((u8*)sound + 8) != 1) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 1;
+	}
+	if (pp >= 0x32 && pp <= 0x63 && *(u8*)((u8*)sound + 8) != 2) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 2;
+	}
+	if (pp >= 0x64 && pp <= 0x95 && *(u8*)((u8*)sound + 8) != 3) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 3;
+	}
+	if (pp >= 0x96 && pp <= 0xC8 && *(u8*)((u8*)sound + 8) != 4) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 4;
+	}
+	if (!(audience->flags & 0x2000)) {
+		sound->mCurrentBaseSfxVolume = 0;
+	}
+	else if (pp == 0) {
+		sound->mCurrentBaseSfxVolume = 0;
+	}
+	else {
+		sound->mCurrentBaseSfxVolume = (s32)(float_63_8041e644 + float_63_8041e644 * (f32)pp / float_200_8041e648);
+	}
+}
+
 // NONMATCHING (0.82%): 121 missing.
 void BattleAudienceSoundMain(void) {
 
 }
 
 
+// Keep the call out of line: the original emits `bl BattleAudienceSoundNoiseAlways` in
+// BattleAudienceNoiseMain and BattleAudience_Init.
 // NONMATCHING (1.12%): 88 missing.
+#pragma dont_inline on
 void BattleAudienceSoundNoiseAlways(void) {
 
 }
+#pragma dont_inline reset
 
 #pragma dont_inline on
 void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
@@ -1243,6 +1379,9 @@ void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
 }
 #pragma dont_inline reset
 
+// Keep BattleAudienceNumToTarget as an out-of-line `bl`: both original callers (Main,
+// Case_TurnEnd) call it, and MWCC would otherwise inline it into them.
+#pragma dont_inline on
 void BattleAudienceNumToTarget(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 target;
@@ -1257,6 +1396,7 @@ void BattleAudienceNumToTarget(void) {
 		BattleAudienceAddAudienceNum(target - BattleAudienceNumToTargetSub());
 	}
 }
+#pragma dont_inline reset
 
 // Keep BattleAudience_WinSetActive out of line: the original calls it rather than inlining.
 #pragma dont_inline on
@@ -1265,6 +1405,80 @@ void BattleAudience_WinSetActive(u8 active) {
 }
 #pragma dont_inline reset
 
+// NONMATCHING (93.45%): MWCC CSEs audience + 0x10000 into r25 across the BattleAlloc call where the
+// original recomputes addis, and the f-register allocation is shifted by one (crowdKindSum f30 vs f31).
+void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	BattleUnit* mario;
+	BattleUnit* party;
+	BattleBreakSlot* slot;
+	s32 i;
+	f32 crowdKindSum;
+	f32 sqrtWeight;
+	f32 spAcMultiplier;
+	f32 stylishMultiplier;
+	f32 marioMultiplier;
+	f32 partyMultiplier;
+
+	if (*(void**)((u8*)audience + 0x137C8) == NULL) {
+		*(void**)((u8*)audience + 0x137C8) = BattleAlloc(0xC);
+	}
+	memcpy(*(void**)((u8*)audience + 0x137C8), info, 0xC);
+	mario = BattleGetMarioPtr(wp);
+	party = BattleGetPartyPtr(wp);
+	crowdKindSum = float_0_8041e618;
+	for (i = 0; i < 13; i++) {
+		crowdKindSum += audience_kind[i].field_0x14 * (f32)BattleAudience_GetPPAudienceNumKind(i);
+	}
+	sqrtWeight = (f32)sqrt(crowdKindSum);
+	spAcMultiplier = info->mSpAcSuccessMultiplier;
+	stylishMultiplier = (f32)(u8)info->mStylishCommandMultiplier;
+	crowdKindSum = float_0_8041e618;
+	if (spAcMultiplier > float_0_8041e618) {
+		crowdKindSum += float_1_8041e620;
+	}
+	if (stylishMultiplier > float_0_8041e618) {
+		crowdKindSum += float_1_8041e620;
+	}
+	if (mario->mStatusFlags & 0x20000000) {
+		marioMultiplier = float_3_8041e65c;
+	}
+	else if (mario->mStatusFlags & 0x10000000) {
+		marioMultiplier = float_2_8041e660;
+	}
+	else {
+		marioMultiplier = float_1_8041e620;
+	}
+	if (party != NULL) {
+		if (party->mStatusFlags & 0x20000000) {
+			partyMultiplier = float_2_8041e660;
+		}
+		else if (party->mStatusFlags & 0x10000000) {
+			partyMultiplier = float_1p5_8041e670;
+		}
+		else {
+			partyMultiplier = float_1_8041e620;
+		}
+	}
+	else {
+		partyMultiplier = float_1_8041e620;
+	}
+	if (BattleBreakSlot_GetBreakTurn() >= 1) {
+		slot = BattleBreakSlotGetPtr();
+		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		                                            crowdKindSum * marioMultiplier * partyMultiplier *
+		                                            *(f32*)((u8*)slot + 0x14));
+	}
+	else {
+		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		                                            crowdKindSum * marioMultiplier * partyMultiplier);
+	}
+	if (irand(100) < (u8)info->mBingoSlotChance) {
+		BattleBreakSlot_PointInc();
+	}
+}
+
 void BattleAudience_Case_JumpNewRecord(void) {
 }
 
@@ -1272,6 +1486,75 @@ void BattleAudience_Case_FinalAttack(void) {
 }
 
 void BattleAudience_Case_Escape(void) {
+}
+
+// NONMATCHING (99.85%): MWCC names the int->float magic double `@1313@` instead of the named
+// `double_to_int_802f9a00`, and the final fmuls has its two source operands swapped.
+void BattleAudience_Case_Appeal(BattleUnit* unit) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+
+	if ((f32)BattleAudience_GetPPAudienceNum() > float_0_8041e618) {
+		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_0p25_8041e63c * (f32)BattleAudience_GetPPAudienceNum()) + 0x19;
+		if (unit->badgesEquipped.SuperAppeal != 0) {
+			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
+		}
+		BattleAudienceSoundCheer(0xB4, 0x3C);
+		BattleAudienceSoundClap(0xB4, 0x3C);
+		BattleAudienceJoy(0);
+	}
+	BattleAudienceAddTargetNum(float_0p05_8041e624 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	                           float_0_8041e618);
+}
+
+// NONMATCHING (99.94%): only the absolute target address printed for the flag-test branch differs
+// (same relative branch, different object base).
+void BattleAudience_Case_TurnEnd(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* mario = BattleGetMarioPtr(wp);
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 expected;
+	BattleGroupSetup* setup;
+	BattleUnitSetup* enemy;
+	s32 i;
+
+	pouchGetPtr();
+	expected = 0;
+	setup = wp->fbatInfo->setup->groupSetup;
+	enemy = setup->enemyData;
+	if (!(audience->flags & 0x40000)) {
+		audience->mTurnEndPhaseEventChance += 3;
+		if (audience->mTurnEndPhaseEventChance > 100) {
+			audience->mTurnEndPhaseEventChance = 100;
+		}
+		for (i = 0; i < setup->numEnemies; i++) {
+			expected += enemy->mUnitKindParams->mLevel;
+			enemy++;
+		}
+		expected = (expected * 2) / mario->mLevel;
+		if (expected < 5) {
+			expected = 5;
+		}
+		if (wp->turnCount >= expected) {
+			BattleAudienceAddTargetNum(float_neg0p05_8041e614 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			                           float_0_8041e618);
+		}
+		if (wp->turnCount == expected) {
+			BattleAudienceAddPhaseEvtList(6);
+		}
+		if (irand(100) < audience->mTurnEndPhaseEventChance) {
+			if (wp->turnCount >= expected) {
+				BattleAudienceAddPhaseEvtList(1);
+			}
+			BattleAudienceAddPhaseEvtList(4);
+			BattleAudienceAddPhaseEvtList(9);
+			BattleAudienceAddPhaseEvtList(10);
+			BattleAudienceAddPhaseEvtList(11);
+			BattleAudienceAddPhaseEvtList(12);
+			BattleAudienceAddPhaseEvtList(13);
+			audience->mTurnEndPhaseEventChance = 0;
+		}
+	}
+	BattleAudienceNumToTarget();
 }
 
 s32 BattleAudienceSound0(const char* name) {
@@ -1318,8 +1601,135 @@ void BattleAudience_SetPresentItemType(s32 value) {
 	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
 }
 
+// NONMATCHING (99.51%): after the waiting-member collection loop the allocator puts the picked
+// member in r27/r28 instead of the original r28/r30; the body is otherwise identical.
+void BattleAudienceSoundWhistleKind(s32 kind) {
+	s32 waiting[200];
+	s32 i;
+	s32 count = 0;
+	s32 vol;
+	s32 member;
+	s32 kindIdx;
+	Vec pos;
+	BattleAudienceSound* sound;
+
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			waiting[count++] = i;
+		}
+	}
+	if (count == 0) {
+		return;
+	}
+	member = waiting[irand(count)];
+	BattleAudienceSoundGetInfo2(member, &pos);
+	if (pos.x <= float_0_8041e618) {
+		kindIdx = 6;
+	}
+	else {
+		kindIdx = 7;
+	}
+	sound = BattleAudienceSoundGetPtr(kindIdx);
+	BattleAudienceSoundStop(kindIdx);
+	switch (kind) {
+	case 1:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9B94, member);
+		break;
+	case 2:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BAC, member);
+		break;
+	case 3:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BC4, member);
+		break;
+	}
+	if (*(s32*)((u8*)sound + 4) != -1) {
+		*(s32*)sound |= 1;
+		*(s32*)((u8*)sound + 0xC) = -1;
+		sound->mFadeoutTime = 0;
+		vol = psndSFX_get_vol(*(s32*)((u8*)sound + 4));
+		sound->mCurrentBaseSfxVolume = vol;
+		sound->mBaseSfxVolume = vol;
+		sound->mForceFadeLength = 0;
+		sound->mForceFadeTimer = 0;
+		sound->mVolumeMultiplier = 100;
+	}
+}
+
 void BattleAudienceSoundWhistle(void) {
 	BattleAudienceSoundWhistleKind(irand(3) + 1);
+}
+
+void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
+	BattleAudienceSound* sound;
+	BattleAudienceSound* snd4;
+	BattleAudienceSound* snd5;
+	s32 r;
+	s32 l;
+	s32 flag;
+	s32 vol;
+	char name[0x40];
+
+	BattleAudienceBaseGetPtr();
+	flag = 0;
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	snd4 = BattleAudienceSoundGetPtr(4);
+	snd5 = BattleAudienceSoundGetPtr(5);
+	if ((*(s32*)snd4 & 1) && (*(s32*)snd5 & 1)) {
+		if (*(s32*)((u8*)snd4 + 0xC) <= *(s32*)((u8*)snd5 + 0xC)) {
+			BattleAudienceSoundStop(4);
+			sound = BattleAudienceSoundGetPtr(4);
+		}
+		else {
+			BattleAudienceSoundStop(5);
+			sound = BattleAudienceSoundGetPtr(5);
+		}
+	}
+	else if (*(s32*)snd4 & 1) {
+		sound = BattleAudienceSoundGetPtr(5);
+		flag = 1;
+	}
+	else if (*(s32*)snd5 & 1) {
+		sound = BattleAudienceSoundGetPtr(4);
+		flag = 1;
+	}
+	else {
+		sound = BattleAudienceSoundGetPtr(4);
+	}
+	if (kind == 1) {
+		strcpy(name, str_802F9BDC);
+		*(u8*)((u8*)sound + 8) = 1;
+	}
+	if (kind == 2) {
+		strcpy(name, str_802F9BF8);
+		*(u8*)((u8*)sound + 8) = 2;
+	}
+	if (kind == 3) {
+		strcpy(name, str_802F9C14);
+		*(u8*)((u8*)sound + 8) = 3;
+	}
+	if (kind == 4) {
+		strcpy(name, str_802F9C30);
+		*(u8*)((u8*)sound + 8) = 4;
+	}
+	if (flag == 1) {
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound1(name, r, l);
+		psndSFX_pit(*(s32*)((u8*)sound + 4), 0x7F);
+	}
+	else {
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound1(name, r, l);
+	}
+	if (*(s32*)((u8*)sound + 4) != -1) {
+		*(s32*)sound |= 1;
+		*(s32*)((u8*)sound + 0xC) = a + b;
+		sound->mFadeoutTime = b;
+		vol = psndSFX_get_vol(*(s32*)((u8*)sound + 4));
+		sound->mCurrentBaseSfxVolume = vol;
+		sound->mBaseSfxVolume = vol;
+		sound->mForceFadeLength = 0;
+		sound->mForceFadeTimer = 0;
+		sound->mVolumeMultiplier = 100;
+	}
 }
 
 void BattleAudience_Case_KillEnemy(void) {
@@ -1380,6 +1790,87 @@ void BattleAudience_Case_GreatVictory(void) {
 	f32 delta = audience->mAudienceDeltaMultiplier;
 	delta = float_0p15_8041e630 * delta;
 	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+}
+
+void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 tbl1[16];
+	s32 tbl2[48];
+	s32 i;
+	s32 id;
+	f32 one = float_1_8041e620;
+
+#ifdef MUST_MATCH
+	// Struct assignment gives the original's lwzu/stwu copy loop; memcpy doesn't.
+	{
+		*(BattleAudienceFallOffsetTable1*)tbl1 = *(const BattleAudienceFallOffsetTable1*)dat_802f98fc;
+	}
+	{
+		*(BattleAudienceFallOffsetTable2*)tbl2 = *(const BattleAudienceFallOffsetTable2*)dat_802f993c;
+	}
+#else
+	memcpy(tbl1, dat_802f98fc, sizeof(tbl1));
+	memcpy(tbl2, dat_802f993c, sizeof(tbl2));
+#endif
+
+	switch (type) {
+	case 0:
+	case 1:
+	case 3:
+	case 4:
+	case 5:
+	case 8:
+		if ((u8)BattleAudience_GetSysCtrl(index) == 1) {
+			if (BattleAudienceGetPtr(index)->status != 0xF) {
+				BattleAudience_ChangeStatus(index, 0xA);
+			}
+		}
+		for (i = 0; i < 8; i++) {
+			id = BattleAudience_GetAudienceNoFromOffset(index, tbl1[i * 2], tbl1[i * 2 + 1]);
+			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
+				BattleAudience_ChangeStatus(id, 0xC);
+				audience->mTargetAudienceCount -= float_1_8041e620;
+			}
+		}
+		break;
+	case 7:
+		if ((u8)BattleAudience_GetSysCtrl(index) == 1) {
+			if (BattleAudienceGetPtr(index)->status != 0xF) {
+				BattleAudience_ChangeStatus(index, 0xA);
+			}
+		}
+		for (i = 0; i < 0x18; i++) {
+			id = BattleAudience_GetAudienceNoFromOffset(index, tbl2[i * 2], tbl2[i * 2 + 1]);
+			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
+				BattleAudience_ChangeStatus(id, 0xC);
+				audience->mTargetAudienceCount -= float_1_8041e620;
+			}
+		}
+		break;
+	case 6:
+		if ((u8)BattleAudience_GetSysCtrl(index) == 1) {
+			if (BattleAudienceGetPtr(index)->status != 0xF) {
+				BattleAudience_ChangeStatus(index, 0xA);
+			}
+		}
+		one = float_1_8041e620;
+		for (i = 0; i < 200; i++) {
+			if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
+				BattleAudience_ChangeStatus(i, 0xC);
+				audience->mTargetAudienceCount -= one;
+			}
+		}
+		/* falls through */
+	default:
+		if ((u8)BattleAudience_GetSysCtrl(index) == 1) {
+			if (BattleAudienceGetPtr(index)->status != 0xF) {
+				BattleAudience_ChangeStatus(index, 0xA);
+			}
+		}
+		audience->mTargetAudienceCount -= float_1_8041e620;
+		break;
+	}
+	BattleAudiencePuniAllEscape();
 }
 
 void BattleAudience_Case_FallObject_Stage(void) {

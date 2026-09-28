@@ -14,6 +14,8 @@
 #include "data/mail_data.h"
 #include "window/win_item.h"
 #include "window/win_badge.h"
+#include "battle/battle_monosiri.h"
+#include "manager/evtmgr_cmd.h"
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -37,13 +39,75 @@ extern const f32 float_neg600_8041d0fc;
 extern const f32 float_30_8041d100;
 extern const f32 float_40_8041d0e8;
 extern const f32 float_0p125_8041d104;
+extern const f32 float_0p5_8041d06c;
+extern const f32 float_1_8041d070;
 extern ItemData itemDataTable[];
 
 static char msgbuf[0x3C];
 
+const char str_802F4510[] = "menu_monosiri_%s";
+const char str_802F44F0[] = "btl_un_hatena";
+const char str_802F4500[] = "btl_un_rampell";
+
+static const char* const tbl[] = {
+    "nara", "gor",  "tik", "shiga", "hei", "nok", "stn", "gon", "win",
+    "hou",  "mri",  "tou", "usu",   "gra", "jin", "muj", "dou", "hom",
+    "eki",  "rsh",  "pik", "sin",   "bom", "moo", "aji", "las",
+};
+
+const GXColor dat_8041d064 = {0xFF, 0xFF, 0xFF, 0xFF};
+
 
 s32 winSortWait(WindowWork* work) {
     return WW_S32(work, 0x17C) != 0;
+}
+
+// Full-screen textured quad. Values/branches match; MWCC keeps w/h and the 0/1
+// constants in different FPRs than the original (target reloads float_0/float_1
+// per vertex, ours caches them) and the u16->f32 magic double is pooled as
+// @1158@ instead of double_to_int_mask_802f44c8.
+// NONMATCHING (88.73%): FPR allocation and the pooled conversion constant differ.
+void unk_8014d338(s32 unused, WindowWork* work) {
+    GXTexObj texObj;
+    f32 w;
+    f32 h;
+
+    if (WW_S32(work, 0x38) != 0) {
+        GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068,
+                 dat_8041d064);
+        GXSetNumChans(0);
+        GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(0, 0, 0, 0xFF);
+        GXSetTevOp(0, 3);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+        GXSetBlendMode(1, 4, 5, 0);
+        GXSetZCompLoc(1);
+        GXSetAlphaCompare(7, 0, 0, 7, 0);
+        GXSetZMode(0, 7, 0);
+        GXLoadPosMtxImm(camGetPtr(8)->view, 0);
+        GXSetCurrentMtx(0);
+        GXInitTexObj(&texObj, (void*)*(u32*)((u8*)work + 0x34), gp->fbWidth, gp->efbHeight, 4, 0, 0, 0);
+        GXLoadTexObj(&texObj, 0);
+        GXSetCullMode(0);
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(13, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 13, 1, 4, 0);
+        GXBegin(0x80, 0, 4);
+        w = (f32)gp->fbWidth;
+        h = (f32)gp->efbHeight;
+        GXPosition3f32(-w * float_0p5_8041d06c, -h * float_0p5_8041d06c, float_0_8041d068);
+        GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
+        GXPosition3f32(w * float_0p5_8041d06c, -h * float_0p5_8041d06c, float_0_8041d068);
+        GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
+        GXPosition3f32(w * float_0p5_8041d06c, h * float_0p5_8041d06c, float_0_8041d068);
+        GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+        GXPosition3f32(-w * float_0p5_8041d06c, h * float_0p5_8041d06c, float_0_8041d068);
+        GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+    }
 }
 
 void unk_8014d5dc(s32 unused, WindowWork* work) {
@@ -405,6 +469,60 @@ void sort_8_2_func(WindowWork* work) {
     WW_S32(work, 0x25C) = WW_S32(work, 0x258) / 5;
 }
 
+int compare_func3_r(void* a, void* b) {
+    u16 buf_a[64];
+    u16 buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
+    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+
+    unk_800d06b4((char*)msgSearch(ea->enemyTag), (char*)buf_a);
+    unk_800d06b4((char*)msgSearch(eb->enemyTag), (char*)buf_b);
+
+    if (*(u8*)((u8*)a + 1) == 0x4D || *(u8*)((u8*)a + 1) == 0x87) {
+        if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
+            unk_800d06b4((char*)msgSearch(str_802F44F0), (char*)buf_a);
+        } else {
+            unk_800d06b4((char*)msgSearch(str_802F4500), (char*)buf_a);
+        }
+    }
+    if (*(u8*)((u8*)b + 1) == 0x4D || *(u8*)((u8*)b + 1) == 0x87) {
+        if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
+            unk_800d06b4((char*)msgSearch(str_802F44F0), (char*)buf_b);
+        } else {
+            unk_800d06b4((char*)msgSearch(str_802F4500), (char*)buf_b);
+        }
+    }
+
+    return strcmp((char*)buf_b, (char*)buf_a);
+}
+
+int compare_func3(void* a, void* b) {
+    u16 buf_a[64];
+    u16 buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
+    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+
+    unk_800d06b4((char*)msgSearch(ea->enemyTag), (char*)buf_a);
+    unk_800d06b4((char*)msgSearch(eb->enemyTag), (char*)buf_b);
+
+    if (*(u8*)((u8*)a + 1) == 0x4D || *(u8*)((u8*)a + 1) == 0x87) {
+        if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
+            unk_800d06b4((char*)msgSearch(str_802F44F0), (char*)buf_a);
+        } else {
+            unk_800d06b4((char*)msgSearch(str_802F4500), (char*)buf_a);
+        }
+    }
+    if (*(u8*)((u8*)b + 1) == 0x4D || *(u8*)((u8*)b + 1) == 0x87) {
+        if (evtGetValue(0, 0xF5DE0180) < 0xD2) {
+            unk_800d06b4((char*)msgSearch(str_802F44F0), (char*)buf_b);
+        } else {
+            unk_800d06b4((char*)msgSearch(str_802F4500), (char*)buf_b);
+        }
+    }
+
+    return strcmp((char*)buf_a, (char*)buf_b);
+}
+
 void sort_7_2_func(WindowWork* work) {
     if (WW_S32(work, 0x180) == 0) {
         qqsort(&work->field_40[0x1010], WW_S32(work, 0x1038), 2, compare_func1);
@@ -416,6 +534,92 @@ void sort_7_2_func(WindowWork* work) {
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0x1040) = 0;
     WW_S32(work, 0x1044) = WW_S32(work, 0x1040) / 16;
+}
+
+// Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
+// NONMATCHING (94.86%): only MWCC register allocation (table base/tag/index FPRs)
+// and the compiler-generated table symbol differ.
+int compare_func2_r(void* a, void* b) {
+    u8 buf_a[64];
+    u8 buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
+    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+    const char* tag_a = ea->locationTag;
+    const char* tag_b;
+    s32 i;
+    s32 j;
+
+    for (i = 0; (u32)i < 0x1A; i++) {
+        sprintf((char*)buf_a, str_802F4510, tbl[i]);
+        if (strcmp((char*)buf_a, tag_a) == 0) {
+            break;
+        }
+    }
+    if ((u32)i >= 0x1A) {
+        i = 0;
+    }
+
+    tag_b = eb->locationTag;
+    for (j = 0; (u32)j < 0x1A; j++) {
+        sprintf((char*)buf_b, str_802F4510, tbl[j]);
+        if (strcmp((char*)buf_b, tag_b) == 0) {
+            break;
+        }
+    }
+    if ((u32)j >= 0x1A) {
+        j = 0;
+    }
+
+    if (i < j) {
+        return 1;
+    } else if (i > j) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+// Two `menu_monosiri_%s` lookups over the 26-entry enemy-code table.
+// NONMATCHING (94.86%): only MWCC register allocation (table base/tag/index FPRs)
+// and the compiler-generated table symbol differ.
+int compare_func2(void* a, void* b) {
+    u8 buf_a[64];
+    u8 buf_b[64];
+    TattleEntry* ea = battleGetUnitMonosiriPtr(*(u8*)((u8*)a + 1));
+    TattleEntry* eb = battleGetUnitMonosiriPtr(*(u8*)((u8*)b + 1));
+    const char* tag_a = ea->locationTag;
+    const char* tag_b;
+    s32 i;
+    s32 j;
+
+    for (i = 0; (u32)i < 0x1A; i++) {
+        sprintf((char*)buf_a, str_802F4510, tbl[i]);
+        if (strcmp((char*)buf_a, tag_a) == 0) {
+            break;
+        }
+    }
+    if ((u32)i >= 0x1A) {
+        i = 0;
+    }
+
+    tag_b = eb->locationTag;
+    for (j = 0; (u32)j < 0x1A; j++) {
+        sprintf((char*)buf_b, str_802F4510, tbl[j]);
+        if (strcmp((char*)buf_b, tag_b) == 0) {
+            break;
+        }
+    }
+    if ((u32)j >= 0x1A) {
+        j = 0;
+    }
+
+    if (i > j) {
+        return 1;
+    } else if (i < j) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 void sort_6_1_func(WindowWork* work) {

@@ -340,7 +340,7 @@ config.libs = [
             Object(Matching, "battle/battle_evt_cmd.c"),
             Object(NonMatching, "battle/battle_ac.c"),
             Object(NonMatching, "battle/battle_damage.c"),
-            Object(NonMatching, "battle/battle_detect.c"),
+            Object(NonMatching, "battle/battle_detect.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_disp.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_event_cmd.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_event_default.c", extra_cflags=["-O4,s"]),
@@ -367,7 +367,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_audience_kinopio.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_acrobat.c"),
             Object(NonMatching, "battle/battle_status_effect.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_audience.c"),
+            Object(NonMatching, "battle/battle_audience.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_icon.c"),
             Object(NonMatching, "battle/battle_message.c"),
             Object(Matching, "battle/battle_enemy_item.c"),
@@ -415,11 +415,11 @@ config.libs = [
         "objects": [
             Object(NonMatching, "battle/sac/sac_bakugame.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_scissor.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/sac/sac_zubastar.c"),
+            Object(NonMatching, "battle/sac/sac_zubastar.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_genki.c"),
             Object(NonMatching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_deka.c"),
-            Object(NonMatching, "battle/sac/sac_muki.c"),
+            Object(NonMatching, "battle/sac/sac_muki.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_suki.c", extra_cflags=["-O4,s"]),
         ],
     },
@@ -1397,6 +1397,12 @@ config.libs = [
         "pik",
         [
             Object(Matching, "unit/unit_purple_teresa.c"),
+        ]
+    ),
+    Rel(
+        "tou2",
+        [
+            Object(NonMatching, "tou2.c"),
         ]
     )
 ]
