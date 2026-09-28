@@ -35,3 +35,5 @@ void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
 void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h);
 void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h);
+void winSortEntry(WindowWork* work, s32 idx, f32 a, f32 b);
+s32 winSortWait(WindowWork* work);
