@@ -263,3 +263,4 @@ void npcKoopaModeEncountCheck(void);
 void npcMoveG(NpcEntry* entry);
 void fbatTalkMode(void);
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param);
+void fbatSandersBombTriggerOn(void);

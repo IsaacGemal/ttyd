@@ -36,3 +36,5 @@ void party_move_mode_behind_mario(PartyEntry* party);
 void party_move_mode_stay(PartyEntry* party);
 void party_move_mode_walk(PartyEntry* party);
 void partyRecordFootmark(PartyEntry* party);
+void partyMoveNoHosei(PartyEntry* party);
+void partyGetAppearPos(PartyEntry* party, Vec* position);
