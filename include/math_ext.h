@@ -15,3 +15,4 @@ double fmod(double x, double y);
 double floor(double x);
 float __fabsf(float x);
 double acos(double x);
+double log(double x);
