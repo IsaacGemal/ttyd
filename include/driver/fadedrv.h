@@ -95,3 +95,4 @@ void disp_texture(CameraId camId, void* param);
 void disp_maku(CameraId camId, void* param);
 void disp_tec(CameraId camId, void* param);
 void disp_dummy_black(CameraId camId, void* param);
+void fadeSetAnimVirtualPos(f32 x, f32 y, f32 z);
