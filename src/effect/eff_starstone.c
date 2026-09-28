@@ -323,9 +323,7 @@ void effStarStoneMain(EffectEntry* effect) {
 	}
 
 	if (data->field_0x3C < 3 && camId == CAMERA_3D) {
-		// shadowdrv.h declares shadowEntry() void, but the ROM leaves the new shadow id in r3 and
-		// U_shadowSetMode consumes it. The cast is a shim until that header returns s32.
-		U_shadowSetMode(((s32 (*)(f32, f32, f32, f32))shadowEntry)(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
+		U_shadowSetMode(shadowEntry(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
 	}
 
 	if (!(data->field_0x4 & 0x20)) {
@@ -568,8 +566,7 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 		GXCallDisplayList(dl[i], sz[i] << 5); \
 	}
 
-// NONMATCHING (92.81%): same address re-materialisation and 4-byte frame skew as Disp_2, plus a
-// different display-list loop register rotation.
+// NONMATCHING (98.63%): 25 instructions differ, 3 missing, plus register differences.
 void effStarStoneDisp_1(CameraId camId, void* param) {
 	u8* base = lbl_803AC080;
 	EffectEntry* effect = param;
@@ -626,6 +623,8 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x2a4, diamond_1_dl_0_size_tbl, 0x22);
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
+		GXSetVtxDesc(0xb, 2);
+		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x32c, diamond_1_dl_1_size_tbl, 0x22);
 	} else {
@@ -634,6 +633,7 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 		STARSTONE_VTX_TAIL(0x7c0);
 		STARSTONE_DL_LOOP(0x92c, diamond_7_dl_0_size_tbl, 0x22);
 		STARSTONE_VTX_COMMON(0x640, 0x740, 0x7c0);
+		STARSTONE_VTX_CLR(0x8e0);
 		STARSTONE_VTX_TAIL(0x7c0);
 		STARSTONE_DL_LOOP(0x9b4, diamond_7_dl_1_size_tbl, 0x21);
 	}
@@ -701,10 +701,13 @@ void effStarStoneDisp_1(CameraId camId, void* param) {
 
 	if (type == 0) {
 		STARSTONE_VTX_COMMON(0x40, 0x140, 0x1c0);
+		GXSetVtxDesc(0xb, 2);
+		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
 		STARSTONE_VTX_TAIL(0x1c0);
 		STARSTONE_DL_LOOP(0x32c, diamond_1_dl_1_size_tbl, 0x22);
 	} else {
 		STARSTONE_VTX_COMMON(0x640, 0x740, 0x7c0);
+		STARSTONE_VTX_CLR(0x8e0);
 		STARSTONE_VTX_TAIL(0x7c0);
 		STARSTONE_DL_LOOP(0x9b4, diamond_7_dl_1_size_tbl, 0x21);
 	}

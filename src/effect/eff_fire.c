@@ -191,8 +191,7 @@ void effFireSmokeMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireSmokeDisp, effect);
 }
 
-// NONMATCHING (83.24%): the loop keeps v/out/screen and the index in more registers than the target (r14-r24/f24-f25
-// vs r25-r31/f26-f31), inflating the frame to 0x240; the FIFO float constants also pool as @nnn.
+// NONMATCHING (83.25%): 22 instructions differ, 68 missing, 48 extra, plus register differences.
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -272,12 +271,12 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 			GXSetTevColorIn(GX_TEVSTAGE3, (GXTevColorArg)0xF, (GXTevColorArg)0, (GXTevColorArg)4, (GXTevColorArg)0xF);
 			GXSetTevAlphaIn(GX_TEVSTAGE3, (GXTevAlphaArg)7, (GXTevAlphaArg)0, (GXTevAlphaArg)2, (GXTevAlphaArg)7);
-			GXSetTevColor(GX_TEVREG2, blend);
+			GXSetTevColor(GX_TEVREG1, blend);
 		}
 	}
 	k = *(GXColor*)&unk_80423060;
 	k.a = data->alpha;
-	GXSetTevColor(GX_TEVREG1, k);
+	GXSetTevColor(GX_TEVREG0, k);
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -384,8 +383,7 @@ void effFireDisp3(CameraId camId, void* param) {
 	data->field_0x64 = 1;
 }
 
-// NONMATCHING (88.18%): register/stack-slot allocation differs (frame 0x240 vs 0x210-equivalent); the
-// signed int->float conversion pools double_to_int_802f8c70 as a local @ constant.
+// NONMATCHING (88.18%): 9 instructions differ, 49 missing, 17 extra, plus register differences.
 void effFireDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -441,11 +439,11 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, (GXTevColorArg)4, (GXTevColorArg)2, (GXTevColorArg)0xA, (GXTevColorArg)0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)7, (GXTevAlphaArg)4);
 	if (type == 3 || type == 4) {
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0d0);
-		GXSetTevColor(GX_TEVREG2, *(GXColor*)&dat_8041e0d4);
+		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d0);
+		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0d4);
 	} else if (type == 8) {
-		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0d8);
-		GXSetTevColor(GX_TEVREG2, *(GXColor*)&dat_8041e0dc);
+		GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0d8);
+		GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0dc);
 	}
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -539,8 +537,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (86.32%): the two GXBegin vertex blocks keep the tex size products in f29-f31 instead of
-// recomputing them per block, leaving the frame 0x1b0 instead of 0x180; the FIFO float constants pool as @nnn.
+// NONMATCHING (86.33%): 5 instructions differ, 47 missing, 23 extra, plus register differences.
 void effFireDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFireData* data = effect->userdata;
@@ -623,12 +620,12 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, (GXTevAlphaArg)4, (GXTevAlphaArg)1, (GXTevAlphaArg)6, (GXTevAlphaArg)7);
 	GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
 	GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
 	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0bc);
-	GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041e0c0);
+	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041e0c0);
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	GXPosition3f32(-(f32)texWidth * 0.5f, (f32)texHeight * 0.5f, float_0_8041e108);
@@ -646,15 +643,15 @@ void effFireDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetNumTevStages(4);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE0, (GXTevOp)0xE, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 	GXSetTevColorIn(GX_TEVSTAGE0, 0xC, 0xE, 0xA, 0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, 7, 7, 7, 7);
 	GXSetTevKColorSel(GX_TEVSTAGE0, 0xC);
 	GXSetTevKColor(GX_KCOLOR0, *(GXColor*)&dat_8041e0c4);
 	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
 	GXSetTevColorIn(GX_TEVSTAGE1, 0xC, 0xE, 0xA, 0xF);
 	GXSetTevAlphaIn(GX_TEVSTAGE1, 7, 7, 7, 7);
 	GXSetTevKColorSel(GX_TEVSTAGE1, 0xD);

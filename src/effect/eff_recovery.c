@@ -89,7 +89,11 @@ extern const u32 dat_8041cac8;
 extern const u32 dat_8041cacc;
 extern GXColor unk_80423040;
 extern GXColor unk_80423044;
-extern const u8 color_rotation_data[];
+static u8 color_rotation_data[] = {
+	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
+	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
+	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
+};
 extern u8 recovery_effAnimDt[];
 
 // .rodata (0x802F3508..0x802F3678)
@@ -362,7 +366,7 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (78.13%): frame is 0x120 vs the target 0x130 (one extra callee-
+// NONMATCHING (78.53%): frame is 0x120 vs the target 0x130 (one extra callee-
 // saved GPR), so every stack-relative matrix offset is 4 bytes low.
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
@@ -454,9 +458,7 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (0.00%): the compiler keeps float_0/float_1 and 20/-20/54/-54
-// live in f25-f30 (7 callee-saved floats) instead of the target's f27-f31,
-// giving a 0x190 frame instead of 0x170.
+// NONMATCHING (0.00%): 4 instructions differ, 177 missing, 178 extra, plus register differences.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -542,7 +544,7 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (80.02%): several matrix-stack slot choices and the second
+// NONMATCHING (81.32%): several matrix-stack slot choices and the second
 // render pass differ from the target.
 void effRecoveryDisp(CameraId camId, void* param) {
 	EffectEntry* entry = param;
@@ -601,7 +603,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXTrans(scale, float_0_8041cadc, float_2_8041cae8, float_0_8041cadc);
 	PSMTXConcat(mtx, scale, mtx);
-	if (type <= 1 || (type - 7) <= 1 || type == 4 || type == 5) {
+	if ((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) {
 		PSMTXConcat(mtx, data->anim->mtx, mtx);
 	}
 	PSMTXConcat(cam->view, mtx, mtx);
@@ -664,7 +666,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (79.62%): state-machine register allocation and the tail
+// NONMATCHING (79.98%): state-machine register allocation and the tail
 // dispEntry slots differ from the target.
 void effRecoveryMain(EffectEntry* effect) {
 	RecoveryData* data = effect->userdata;
@@ -786,7 +788,7 @@ void effRecoveryMain(EffectEntry* effect) {
 				break;
 			}
 		}
-		if ((type <= 1 || (type - 7) <= 1 || type == 4 || type == 5) && total >= field_1) {
+		if (((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) && total >= field_1) {
 			if (type != 7 && type != 8) {
 				effStardustEntry(2, 2, 0x1E, f31, f30 - 20.0f, f29, 30.0f, 30.0f);
 				pos = vec3_802f3514;
@@ -827,7 +829,7 @@ void effRecoveryMain(EffectEntry* effect) {
 	pos.y = f30;
 	pos.z = f29;
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 1, effRecoveryDisp, effect);
-	if (type <= 1 || type == 7 || type == 8) {
+	if ((u32)type <= 1 || type == 7 || type == 8) {
 		pos = vec3_802f352c;
 		pos.x = f31;
 		pos.y = f30;

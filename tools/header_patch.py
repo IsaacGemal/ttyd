@@ -14,8 +14,9 @@ header if needed; they may not change or remove existing lines. Allowed added li
 `#pragma once`, `#include`, function prototypes, `struct X;` forward declarations, `typedef struct X X;`, and type
 definitions, as the codebase's own headers hold them (e.g. an effect's work struct): struct/union/enum bodies,
 their fields and enum members. Function bodies, data, macros and other directives are refused everywhere.
-A type definition is applied as one block, never line by line: appended whole, or skipped whole (with a note on
-stderr) when the header already defines that name, since skipping already-present lines would mangle its body.
+A type definition is applied as one block, never line by line: appended whole, or skipped when the header already
+has exactly that block. If the header already defines the name differently, applying fails (two agents' layouts for
+one struct must be reconciled by hand), since skipping already-present lines would mangle a body.
 Prints what's wrong and exits 1 if anything else is in the patch.
 """
 import re
@@ -97,6 +98,9 @@ def problems(patch):
         if line.startswith(("diff ", "--- ")):
             cur = None
             continue
+        if line.startswith(("+++ ", "diff ")) and stack:
+            out.append(f"line {n}: a type definition is never closed before the next file")
+            stack = []
         if line.startswith("+++ "):
             m = TARGET.match(line)
             if not m or ".." in m.group(1):
@@ -123,6 +127,8 @@ def problems(patch):
                 out.append(f"line {n}: a line ending in a backslash continues into the next one: {body}")
             elif not type_line(body, stack) and (stack or not declaration(body)):
                 out.append(f"line {n}: not a declaration or type definition: {body}")
+    if stack:
+        out.append("a type definition is never closed at the end of the patch")
     if patch.strip() and not sections and not out:
         out.append("no header sections (`+++ b/include/...h`) found: not a unified diff of include/")
     return out
@@ -156,6 +162,10 @@ def defines(text, name):
     return bool(name) and bool(re.search(rf"(?:\b(?:struct|union|enum)\s+{name}\s*\{{|\}}\s*{name}\s*;)", text))
 
 
+def squash(lines):
+    return "\n".join(re.sub(r"\s+", " ", l.strip()) for l in lines if l.strip())
+
+
 def apply(patch, root, counts=None):
     """Append the patch's new lines; returns the headers changed (and fills counts with lines added per header)."""
     changed = []
@@ -169,9 +179,11 @@ def apply(patch, root, counts=None):
                 if item.strip() and item.strip() not in have:
                     new.append(item)
                     have.add(item.strip())
+            elif squash(item) in squash((text + "\n" + "\n".join(new)).splitlines()):
+                continue  # exactly this definition is already there (another agent's identical patch)
             elif defines(text + "\n".join(new), type_name(item)):
-                print(f"header_patch.py: {path} already defines {type_name(item)}; this patch's definition skipped",
-                      file=sys.stderr)
+                raise SystemExit(f"header_patch.py: {path} already defines {type_name(item)} differently; "
+                                 "reconcile the two definitions by hand")
             else:
                 new += item
         if not new:

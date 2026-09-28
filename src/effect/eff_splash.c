@@ -83,9 +83,7 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
-// NONMATCHING (64.66%): both loops, the type-3 display-list path and the strip/quad
-// emission are translated. Remaining diff is the stack frame (0x2B0 vs 0x250: the
-// colour bytes stay in GPRs r15-r21 instead of stfd/lwz slots) plus scheduling/regs.
+// NONMATCHING (64.68%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	SplashData* data = effect->userdata;
@@ -151,15 +149,15 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_ST, GX_RGBA8, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_TEX_ST, GX_RGBA6, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	ptr = data + 1;
 	for (i = 1; i <= mode; i++, ptr++) {
@@ -259,16 +257,16 @@ void effSplashDisp(enum CameraId camId, void* param) {
 			geso_shibuki_color0_tbl[0] = color;
 			GXClearVtxDesc();
 			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA4, 8);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 8);
 			GXSetArray(GX_VA_POS, geso_shibuki_vertex_tbl, 6);
 			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_S, GX_RGB8, 6);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, geso_shibuki_normal_tbl, 3);
 			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_TEX_ST, GX_RGBA8, 0);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, geso_shibuki_color0_tbl, 4);
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA4, 0xE);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
 			GXSetArray(GX_VA_TEX0, geso_shibuki_texcoord0_tbl, 4);
 			for (j = 0; j < 5; j++) {
 				GXCallDisplayList(geso_shibuki_dl_0_tbl[j], geso_shibuki_dl_0_size_tbl[j] * 32);
@@ -296,12 +294,12 @@ void effSplashDisp(enum CameraId camId, void* param) {
 
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA4, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_TEX_ST, GX_RGBA8, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_TEX_ST, GX_RGBA4, 0);
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	ptr = data + (mode + 1);
 	for (i = mode + 1; i < effect->count; i++, ptr++) {
@@ -380,9 +378,7 @@ void effSplashGetCol(enum CameraId camId, void* param) {
 	data->color.b = ((u8*)&palette)[2];
 }
 
-// NONMATCHING (97.51%): code shape is identical; only register allocation differs
-// (data r7 vs target r6, loop index r8 vs r7, counter r4 vs r8). Tried separate
-// max/shared i, declaration order, block scoping, `register`; none changed it.
+// NONMATCHING (97.51%): 2 instructions differ, plus register differences.
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;

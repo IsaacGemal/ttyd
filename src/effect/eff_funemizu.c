@@ -291,9 +291,7 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (83.43%): two extra callee-saved float registers shift the frame, the original pools the
-// .data tables through the lbl_803B0200 base (this file declares them extern), and the small color/normal
-// tables are addressed through sda21 in the original rather than a full lis/addi.
+// NONMATCHING (83.46%): 64 instructions differ, 11 missing, 49 extra, plus register differences.
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
@@ -397,16 +395,16 @@ found:
 
 		if (type == 0) {
 			GXClearVtxDesc();
-			GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 9);
 			GXSetArray(GX_VA_POS, funemizu_vertex_tbl, 6);
-			GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, funemizu_normal_tbl, 3);
-			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, funemizu_color0_tbl, 4);
-			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
 			for (i = 0; i < 3; i++) {
@@ -415,16 +413,16 @@ found:
 		}
 		else {
 			GXClearVtxDesc();
-			GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 8);
 			GXSetArray(GX_VA_POS, gor_fune_vertex_tbl, 6);
-			GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, gor_fune_normal_tbl, 3);
-			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, gor_fune_color0_tbl, 4);
-			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
 			for (i = 0; i < 2; i++) {
@@ -441,16 +439,16 @@ found:
 
 		if (type == 0) {
 			GXClearVtxDesc();
-			GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 9);
 			GXSetArray(GX_VA_POS, funemizu_vertex_tbl, 6);
-			GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, funemizu_normal_tbl, 3);
-			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, funemizu_color0_tbl, 4);
-			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, funemizu_texcoord0_tbl, 4);
 			for (i = 0; i < 4; i++) {
@@ -459,16 +457,16 @@ found:
 		}
 		else {
 			GXClearVtxDesc();
-			GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 8);
 			GXSetArray(GX_VA_POS, gor_fune_vertex_tbl, 6);
-			GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 			GXSetArray(GX_VA_NRM, gor_fune_normal_tbl, 3);
-			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 			GXSetArray(GX_VA_CLR0, gor_fune_color0_tbl, 4);
-			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX16);
+			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
 			GXSetArray(GX_VA_TEX0, gor_fune_texcoord0_tbl, 4);
 			for (i = 0; i < 2; i++) {

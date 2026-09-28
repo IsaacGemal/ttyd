@@ -271,8 +271,7 @@ void effPokopiPchargeMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (85.64%): structurally complete; remaining differences are register allocation, the
-// common .data base symbol chosen for the vertex arrays, and stack-slot offsets.
+// NONMATCHING (83.27%): 18 instructions differ, 4 missing, 36 extra, plus register differences.
 void effPokopiPchargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effPokopiPchargeData* data = effect->userdata;
@@ -318,12 +317,12 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 	color.g = data->g;
 	color.b = data->b;
 	color.a = alpha;
-	GXSetTevColor(GX_TEVREG1, color);
+	GXSetTevColor(GX_TEVREG0, color);
 	color = unk_8042320c;
 	color.r = data->r2;
 	color.g = data->g2;
 	color.b = data->b2;
-	GXSetTevColor(GX_TEVREG2, color);
+	GXSetTevColor(GX_TEVREG1, color);
 
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -355,7 +354,7 @@ void effPokopiPchargeDisp(CameraId camId, void* param) {
 		lcolor.g = g;
 		lcolor.b = b;
 		lcolor.a = a;
-		GXSetTevColor(GX_TEVREG1, lcolor);
+		GXSetTevColor(GX_TEVREG0, lcolor);
 
 		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x3C);
 		PSMTXTrans(mtx, data->x + field38, 0.0f, 0.0f);

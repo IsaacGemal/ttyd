@@ -1231,7 +1231,7 @@ Runtime.PPCEABI.H.a: 91 files in TTYD's splits) were never started, and ac-decom
   new file under libs/ (CircleBuffer +14, main +9, UDP_Stubs +9, alloc, math_ppc, critical_regions). msghndlr made
   no change; MWCriticalSection_gc wrote a .cpp beside its .c and was rejected; ansi_fp's +5 was dropped (below).
   About 4.2 functions per agent.
-- **Reviews: +1 net** (ansi_fp -5, then +3, +2, +1 from fixes). 46 library files are linked; 14 fully matched ones
+- **Reviews: +1 net** (ansi_fp -5, then +3, +2, +1 from fixes). 45 library files are linked; 14 fully matched ones
   fail the checksum or the link (listed in a8165a1), several from the CircleBuffer/main split disagreement.
 
 **Harness.** check.py now builds only the agent's object (`ninja -j2 <object>`) and scores it with a one-unit copy

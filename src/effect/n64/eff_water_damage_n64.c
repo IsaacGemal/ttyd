@@ -131,7 +131,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (96.09%): stack frame is 4 B larger; unk_803a8a00 base offset, color slot and register allocation differ.
+// NONMATCHING (96.10%): 3 instructions differ, 4 missing, 5 extra, plus register differences.
 void effWaterDamageDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -215,8 +215,8 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(GX_PNMTX0);
 
 		color.a = alpha * data->field_0x30 / 255;
-		GXSetTevColor(GX_TEVREG1, color);
-		GXSetTevColor(GX_TEVREG2, color2);
+		GXSetTevColor(GX_TEVREG0, color);
+		GXSetTevColor(GX_TEVREG1, color2);
 
 		kind = ((gp->retraceCount >> 1) + i) & 3;
 		switch (kind) {

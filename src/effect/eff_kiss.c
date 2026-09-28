@@ -84,21 +84,18 @@ u32 kiss_col[] = {
 	0xEB263400, 0xF56B7500, 0xDA000000,
 };
 
-u32 color_rotation_data[] = {
+static u32 color_rotation_data[] = {
 	0xFEACACFE, 0xACD5FEB4, 0x9AD5B4FE, 0xB4B4FEB4, 0xDDFEB4FE,
 	0xFEB4FED5, 0xB4FEB4D5, 0xFEB4FEFE, 0xB4FED5AC,
 };
 
-// .sdata2 of other translation units.
+// This file's own .sbss2 (eff_kiss.s).
 extern u32 unk_80423310;
 extern u32 unk_80423314;
 extern u32 unk_80423318;
 extern u32 unk_8042331c;
 
-// opt_propagation off keeps the .sdata2 constant loads referring to the original symbols instead of
-// MWCC folding the const values into its own pool (matches battle_break_slot.c).
-#pragma opt_propagation off
-// NONMATCHING (93.65%): register allocation of the four loop constants and the GXColor stack
+// NONMATCHING (94.71%): register allocation of the four loop constants and the GXColor stack
 // slots differ; MWCC also CSEs some float_0/float_1/float_2 loads that retail reloads. All GX/MTX
 // calls and the emitted vertex stream match.
 void effKissDisp2(CameraId camId, void* param) {
@@ -177,7 +174,7 @@ void effKissDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (95.35%): MWCC allocates a 0x20-smaller frame and keeps 11 callee-saved GPRs where
+// NONMATCHING (95.63%): MWCC allocates a 0x20-smaller frame and keeps 11 callee-saved GPRs where
 // retail keeps 13 (r19-r31); the bulk of the remaining diff is callee-saved/stack-slot choice. All
 // control flow, GX/MTX calls and the vertex stream match.
 void effKissDisp(CameraId camId, void* param) {
@@ -403,7 +400,7 @@ void effKissDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (97.25%): the frame++/type/angle/life load-store schedule and the callee-saved
+// NONMATCHING (97.43%): the frame++/type/angle/life load-store schedule and the callee-saved
 // register choice differ; every branch and call matches.
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;

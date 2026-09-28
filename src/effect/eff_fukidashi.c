@@ -98,7 +98,7 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (88.6%): stack frame is 0x10 smaller and the axis Vec is not copied to the second
+// NONMATCHING (88.59%): stack frame is 0x10 smaller and the axis Vec is not copied to the second
 // temporary slot the original keeps for the PSMTXRotAxisRad call.
 void calc_pos(effFukidashiData* data, s32 index) {
 	CameraEntry* cam;
@@ -151,7 +151,7 @@ end:
 	data->field_0x2C = 0.5f * (data->field_0x20 / 12.0f) + 0.5f;
 }
 
-// NONMATCHING (81.6%): stack frame is 0x30 smaller; the original gives each per-branch Vec
+// NONMATCHING (81.62%): stack frame is 0x30 smaller; the original gives each per-branch Vec
 // temporary its own slot instead of reusing one, and register allocation differs.
 EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i) {
 	EffectEntry* entry;
@@ -328,9 +328,7 @@ void effFukidashiMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (91.1%): the 5980-byte draw callback. Same operations, but the stack frame is 0x90
-// smaller (missing one of the original's ten Mtx temporaries) and the .data base register the
-// original keeps in r29 is loaded per-reference here.
+// NONMATCHING (94.33%): 26 instructions differ, 33 missing, 29 extra, plus register differences.
 void effFukidashiDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFukidashiData* data = effect->userdata;
@@ -419,11 +417,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
 					color = *(GXColor*)&dat_8041c5b0;
+					color.a = alpha;
+					GXSetChanMatColor(GX_COLOR0A0, color);
 				} else {
 					color = *(GXColor*)&dat_8041c5b4;
+					color.a = alpha;
+					GXSetChanMatColor(GX_COLOR0A0, color);
 				}
-				color.a = alpha;
-				GXSetChanMatColor(GX_COLOR0A0, color);
 				PSMTXTrans(m0, 0.0f, 0.0f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
@@ -453,26 +453,29 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE, GX_CC_C0);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 				switch (data->field_0x0) {
 					case 0:
 						effGetTexObj(6, &tex);
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.16666667f, 1.0f, 1.0f);
+						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
+						PSMTXConcat(m3, m0, m3);
+						GXLoadTexMtxImm(m3, 0x1E, 1);
 						break;
 					case 1:
 						effGetTexObj(7, &tex);
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.25f, 1.0f, 1.0f);
+						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
+						PSMTXConcat(m3, m0, m3);
+						GXLoadTexMtxImm(m3, 0x1E, 1);
 						break;
 				}
-				PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
-				PSMTXConcat(m3, m0, m3);
-				GXLoadTexMtxImm(m3, 0x1E, 1);
 				color = *(GXColor*)&unk_80422ffc;
 				color.a = alphaA;
-				GXSetTevColor(GX_TEVREG1, color);
+				GXSetTevColor(GX_TEVREG0, color);
 				PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 				GXLoadPosMtxImm(m8, 0);
 				if (data->field_0x0 == 0) {
@@ -498,11 +501,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				}
 				if (i == 0) {
 					color = *(GXColor*)&dat_8041c5b8;
+					color.a = alphaB;
+					GXSetTevColor(GX_TEVREG0, color);
 				} else {
 					color = *(GXColor*)&dat_8041c5bc;
+					color.a = alphaB;
+					GXSetTevColor(GX_TEVREG0, color);
 				}
-				color.a = alphaB;
-				GXSetTevColor(GX_TEVREG1, color);
 				GXLoadPosMtxImm(m5, 0);
 				if (data->field_0x0 == 0) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -532,10 +537,10 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, 4);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE, GX_CC_A0);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A1);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 				GXSetNumChans(1);
-				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_REG, GX_TRUE, 2, 2);
+				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_REG, 0, 2, 2);
 				color = *(GXColor*)&dat_8041c5c0;
 				color.a = alphaB;
 				GXSetChanAmbColor(GX_COLOR0A0, color);
@@ -590,11 +595,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					PSMTXConcat(m8, m0, m8);
 					if (i == 0) {
 						color = *(GXColor*)&dat_8041c5c8;
+						color.a = alpha;
+						iconDispGxCol(m8, 0x400, 0x18B, color);
 					} else {
 						color = *(GXColor*)&dat_8041c5cc;
+						color.a = alpha;
+						iconDispGxCol(m8, 0x800, 0x18B, color);
 					}
-					color.a = alpha;
-					iconDispGxCol(m8, i == 0 ? 0x400 : 0x800, 0x18B, color);
 					PSMTXTrans(m0, 10.0f, 22.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
 					FontDrawStart_alpha(alpha);
@@ -615,11 +622,11 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 				color = *(GXColor*)&unk_80423000;
 				color.a = alphaB;
-				GXSetTevColor(GX_TEVREG1, color);
+				GXSetTevColor(GX_TEVREG0, color);
 				effGetTexObj(8, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				for (j = 0; j < data->field_0x38; j++) {
@@ -642,7 +649,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE, GX_CC_ONE);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 				effGetTexObj(9, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
@@ -652,7 +659,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXLoadTexMtxImm(m3, 0x1E, 1);
 				color = *(GXColor*)&unk_80423004;
 				color.a = alphaB;
-				GXSetTevColor(GX_TEVREG1, color);
+				GXSetTevColor(GX_TEVREG0, color);
 				GXLoadPosMtxImm(m5, 0);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				GXPosition3f32(-7.0f, 7.0f, 0.0f);
@@ -678,14 +685,14 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ONE, GX_CC_C0, GX_CC_TEXC, GX_CC_ONE);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 				effGetTexObj(0xA, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
 					color = *(GXColor*)&unk_80423008;
 					color.a = alphaA;
-					GXSetTevColor(GX_TEVREG1, color);
+					GXSetTevColor(GX_TEVREG0, color);
 					PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
 					GXLoadPosMtxImm(m8, 0);
@@ -700,11 +707,13 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXTexCoord2f32(0.0f, 1.0f);
 					if (i == 0) {
 						color = *(GXColor*)&dat_8041c5d0;
+						color.a = alphaB;
+						GXSetTevColor(GX_TEVREG0, color);
 					} else {
 						color = *(GXColor*)&dat_8041c5d4;
+						color.a = alphaB;
+						GXSetTevColor(GX_TEVREG0, color);
 					}
-					color.a = alphaB;
-					GXSetTevColor(GX_TEVREG1, color);
 					PSMTXConcat(m5, m0, m8);
 					GXLoadPosMtxImm(m8, 0);
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);

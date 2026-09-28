@@ -11,7 +11,7 @@
 #include <string.h>
 
 // .rodata constants.
-__declspec(section ".rodata") Vec vec3_802f3448 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3448 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802f3458 = 4503601774854144.0;
 const f64 double_to_int_mask_802f3460 = 4503599627370496.0;
 const char str_802F3468[] = "DamageStar";
@@ -142,8 +142,7 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
-// NONMATCHING (84.34%): full body; remaining diff is the local Mtx stack-slot order and frame/flag/type
-// register colouring, which shifts the address operands throughout.
+// NONMATCHING (85.45%): 4 instructions differ, 102 missing, 11 extra, plus register differences.
 void effDamageStarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     DamageStarData* data;
@@ -168,7 +167,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     s32 count;
     s32 flag;
     f32 angle;
-    u32 i;
+    s32 i;
     char buf[16];
 
     cam = camGetPtr(camId);
@@ -305,7 +304,7 @@ void effDamageStarDisp(CameraId camId, void* param) {
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xF);
-    GXSetTevAlphaIn(0, 0, 0, 0, 4);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
     GXSetCullMode(0);
     if (type == 1) {
         effGetTexObj(0x27, &texObj);

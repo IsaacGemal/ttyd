@@ -320,11 +320,16 @@ class CreatedHeaders(unittest.TestCase):
             other = ("--- a/include/eff/e.h\n+++ b/include/eff/e.h\n@@ -1 +1,4 @@\n"
                      "+typedef struct effEData {\n+\ts32 a; //0x0\n+\tf32 b;\n+} effEData;\n"
                      "+typedef struct effF {\n+\ts32 a; //0x0\n+} effF;\n")
-            header_patch.apply(other, root)
-            text = (root / "include/eff/e.h").read_text()
-            self.assertEqual(text.count("effEData {"), 1)
-            self.assertNotIn("f32 b;", text)
-            self.assertIn("typedef struct effF {\n\ts32 a; //0x0\n} effF;", text)
+            with self.assertRaises(SystemExit):  # effEData with a different layout
+                header_patch.apply(other, root)
+            self.assertEqual((root / "include/eff/e.h").read_text(), first)
+            anon = "--- a/include/eff/e.h\n+++ b/include/eff/e.h\n@@ -1 +1,4 @@\n+enum {\n+\tA,\n+\tB\n+};\n"
+            header_patch.apply(anon, root)
+            header_patch.apply(anon, root)
+            self.assertEqual((root / "include/eff/e.h").read_text().count("enum {"), 1)
+
+    def test_an_unclosed_type_is_refused(self):
+        self.assertTrue(header_patch.problems("--- a/include/x.h\n+++ b/include/x.h\n@@ -1 +1,2 @@\n+typedef struct Y {\n+\ts32 a;\n"))
 
 
 
