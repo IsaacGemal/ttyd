@@ -1266,3 +1266,7 @@ taken the easy functions from; the import itself (+131) took no agent time.
 **Open:** the CircleBuffer/main split (main.c and CircleBuffer.c fail to link); the two ARAM functions (tp's CC0
 version reaches about 97% with two one-line asm dcbi); `__cvt_sll_flt` (hand-written asm); float.c's link error;
 the 14 unlinked library files; 16 small MSL and 4 TRK files never started.
+
+*Footnote (2026-09-27): upstream (doldecomp/ttyd) made its first commit since July 5 while waves 13 and 14 ran:
+62131fc, NWPlayer123, "Decompile Glitz Pit Rankings" (rels/tou2 plus a configure.py Rel block). With Isaac's OK,
+TTYD Claude #2 cherry-picked it as PR #17 (99ca3f8, with 8f4a847 making rankingControll static): 4,713 -> 4,715.*
