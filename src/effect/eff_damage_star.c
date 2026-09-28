@@ -1,0 +1,571 @@
+#include "eff/eff_damage_star.h"
+#include "driver/animdrv.h"
+#include "driver/dispdrv.h"
+#include "eff/eff_number.h"
+#include "mario/mariost.h"
+#include "memory.h"
+#include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <stdio.h>
+#include <string.h>
+
+// .rodata constants.
+__declspec(section ".rodata") Vec vec3_802f3448 = { 0.0f, 0.0f, 0.0f };
+const f64 double_to_int_802f3458 = 4503601774854144.0;
+const f64 double_to_int_mask_802f3460 = 4503599627370496.0;
+const char str_802F3468[] = "DamageStar";
+
+// .data
+u32 damageStar_effHermit_0[312] = {
+	0x0000FD80, 0x00000008, 0x00000000, 0x0000000C, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000,
+	0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000008, 0xFDC00005, 0x00050000, 0x00600000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x0012FDE0, 0x00010001, 0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000040,
+	0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000019, 0xFDE20000, 0x00000000,
+	0x00400000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x001EFDE0, 0x00060006, 0x00000000, 0xFFFCFFFC, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000,
+	0x00000040, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000028, 0xFE400009,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000, 0x00400000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x0041FE40, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040,
+	0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+u32 damageStar_effHermit_1[445] = {
+	0x00000000, 0x00000000, 0x00000100, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000000, 0x00000000, 0x01000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00070000, 0x00000000, 0x00070000, 0x00000000, 0x00070000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x000A0000, 0x00000000, 0x00000100, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00040004, 0x00000040,
+	0x00010001, 0x00000040, 0x00040004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000012, 0x00000000, 0x00000000,
+	0x01000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00530000, 0x00000000, 0x00190001, 0x00010000, 0x00530000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00190000, 0x00000000, 0x00000100, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000033, 0xFFFFFFFF,
+	0x00000059, 0x00030003, 0x00000033, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000001E, 0x00000000,
+	0x00000000, 0x01000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x0000FFF0, 0xFFF00000, 0x00400000, 0x00000000, 0x0040FFFF, 0xFFFF0000, 0x00400000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00280000, 0x00000000, 0x00000100, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000FF0B, 0xFFF5FFF6, 0x00000040,
+	0xFFFFFFFF, 0x00000040, 0xFFFFFFFF, 0x00000040, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000002A,
+	0x00000000, 0x00000000, 0x01000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0xFF730013, 0x00120000, 0x002C0000, 0x00000000, 0x002C0000, 0x00000000,
+	0x002C0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x002E0000, 0x00000000, 0x00000100, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000FF7A, 0x00000000,
+	0x00000040, 0xFFFFFFFF, 0x00000040, 0xFFFFFFFF, 0x00000040, 0xFFFFFFFF, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000041, 0x00000000, 0x00000000, 0x01000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0xFF7A0000, 0x00000000, 0x0000FFFD, 0x00000000, 0x0000FFFD,
+	0x00000000, 0x0000FFFD, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// .sdata
+static u8 scale_data[20] = {
+	0x32, 0x37, 0x3C, 0x46, 0x50, 0x64, 0x96, 0xDC, 0xF0, 0xC8,
+	0x8C, 0x64, 0x8C, 0xA0, 0x8C, 0x96, 0x9B, 0x96, 0x94, 0x96,
+};
+static u8 color_rotation_data[36] = {
+	0xFE, 0xAC, 0xAC, 0xFE, 0xAC, 0xD5, 0xFE, 0xB4, 0x9A, 0xD5, 0xB4, 0xFE,
+	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
+	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
+};
+
+u32 damageStar_effFace_pPlane168_0[11] = {
+	0x0004FC00, 0xFC000000, 0x00000200, 0x0400FC00, 0x00000200, 0x02000400, 0x04000000, 0x02000000,
+	0xFC000400, 0x00000000, 0x00000000,
+};
+
+u32 damageStar_effFaceDt_pPlane168[1] = { (u32)damageStar_effFace_pPlane168_0 };
+u32 damageStar_effAnimRST[8] = {
+	7, (u32)damageStar_effHermit_0, 0, 0,
+	10, (u32)damageStar_effHermit_1, 1, (u32)damageStar_effFaceDt_pPlane168,
+};
+u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
+u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
+
+// NONMATCHING (84.34%): full body; remaining diff is the local Mtx stack-slot order and frame/flag/type
+// register colouring, which shifts the address operands throughout.
+void effDamageStarDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    DamageStarData* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    GXColor color;
+    Mtx mtx58;
+    Mtx mtx88;
+    Mtx mtxB8;
+    Mtx mtxE8;
+    Mtx mtx118;
+    Mtx mtx148;
+    Mtx mtx178;
+    Mtx mtx1A8;
+    Mtx mtx1D8;
+    Mtx mtx208;
+    Mtx mtx238;
+    Mtx mtx268;
+    Mtx mtx298;
+    s32 type;
+    s32 frame;
+    s32 count;
+    s32 flag;
+    f32 angle;
+    u32 i;
+    char buf[16];
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+    angle = data->angle;
+    frame = data->frame;
+    if (angle > 0.0f) {
+        flag = 1;
+    } else {
+        flag = 0;
+    }
+    count = data->field_0x3C;
+    type = data->type;
+
+    PSMTXRotRad(mtx268, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
+    PSMTXTrans(mtx208, data->position.x, data->position.y, data->position.z);
+    PSMTXScale(mtx238, 0.8f, 0.8f, 0.8f);
+    PSMTXConcat(mtx208, mtx268, mtx298);
+    PSMTXConcat(mtx298, mtx238, mtx298);
+
+    effGetTexObj(0, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    effGetTexObj(1, &texObj);
+    GXLoadTexObj(&texObj, 1);
+    effGetTexObj(2, &texObj);
+    GXLoadTexObj(&texObj, 2);
+    effGetTexObj(3, &texObj);
+    GXLoadTexObj(&texObj, 3);
+
+    GXSetNumTexGens(2);
+    GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+    GXSetTexCoordGen2(1, 1, 4, 60, 0, 125);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetChanAmbColor(4, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 1, 2, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xA, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 5, 4, 7);
+
+    if (type == 1) {
+        effGetTexObj(0x15, &texObj);
+        GXLoadTexObj(&texObj, 2);
+    }
+
+    for (i = 2; i < effect->count; i++) {
+        DamageStarData* elem = &data[i];
+        s32 idx = (i + frame) % 12;
+
+        color.r = color_rotation_data[idx * 3 + 0];
+        color.g = color_rotation_data[idx * 3 + 1];
+        color.b = color_rotation_data[idx * 3 + 2];
+        color.a = elem->alpha;
+        GXSetChanMatColor(4, color);
+
+        PSMTXIdentity(mtx1D8);
+        PSMTXScaleApply(mtx1D8, mtx1D8, elem->scaleX, elem->scaleY, elem->scaleZ);
+        PSMTXTransApply(mtx1D8, mtx1D8, elem->position.x, elem->position.y, elem->position.z);
+        PSMTXRotRad(mtx1A8, 'y', MTXDegToRad(elem->rot));
+        PSMTXConcat(mtx1D8, mtx1A8, mtx1D8);
+        PSMTXScale(mtx178, 0.8f, 0.8f, 0.8f);
+        PSMTXConcat(mtx1D8, mtx178, mtx1D8);
+        PSMTXConcat(mtx298, mtx1D8, mtx178);
+        PSMTXConcat(cam->view, mtx178, mtx178);
+        GXLoadPosMtxImm(mtx178, 0);
+        GXSetCurrentMtx(0);
+
+        GXSetCullMode(2);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXBegin(0x80, 0, 4);
+        GXPosition3f32(-8.0f, 8.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(8.0f, 8.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 0.0f);
+        GXPosition3f32(8.0f, -8.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 1.0f);
+        GXPosition3f32(-8.0f, -8.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXSetCullMode(1);
+        GXSetTevColorOp(0, 0, 0, 3, 1, 0);
+        GXBegin(0x80, 0, 4);
+        GXPosition3f32(-8.0f, 8.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(8.0f, 8.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 0.0f);
+        GXPosition3f32(8.0f, -8.0f, 0.0f);
+        GXTexCoord2f32(2.0f, 1.0f);
+        GXPosition3f32(-8.0f, -8.0f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+    }
+
+    data = effect->userdata;
+    PSMTXRotRad(mtxB8, 'y', MTXDegToRad(-camGetPtr(camId)->viewYaw));
+    PSMTXTrans(mtx88, data->position.x, data->position.y, data->position.z);
+    PSMTXConcat(mtx88, mtxB8, mtx148);
+    if (flag == 0) {
+        PSMTXScale(mtx58, 12.0f, 12.0f, 12.0f);
+    } else {
+        PSMTXScale(mtx58, -12.0f, 12.0f, 12.0f);
+    }
+    PSMTXConcat(mtx148, mtx58, mtx148);
+    PSMTXTrans(mtx88, 10.0f, -1.5f, 0.0f);
+    PSMTXConcat(mtx148, mtx88, mtx148);
+    {
+        Mtx* animMtx = (Mtx*)((u8*)data->anim + 0x14);
+
+        PSMTXConcat(mtx148, *animMtx, mtx148);
+        animMtx = (Mtx*)((u8*)data->anim + 0x48);
+        PSMTXConcat(mtx148, *animMtx, mtx148);
+    }
+    GXSetCurrentMtx(0);
+    PSMTXTransApply(mtx148, mtx118, 2.5f, -2.5f, 0.0f);
+    PSMTXConcat(cam->view, mtx118, mtx118);
+    GXLoadPosMtxImm(mtx118, 0);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 1, 3, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xF);
+    GXSetTevAlphaIn(0, 0, 0, 0, 4);
+    GXSetCullMode(0);
+    if (type == 1) {
+        effGetTexObj(0x27, &texObj);
+        GXLoadTexObj(&texObj, 3);
+        GXBegin(0x80, 0, 4);
+    } else {
+        GXBegin(0x80, 0, 4);
+    }
+    GXPosition3f32(-2.0f, 2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(2.0f, 2.0f, 0.0f);
+    GXTexCoord2f32(2.0f, 0.0f);
+    GXPosition3f32(2.0f, -2.0f, 0.0f);
+    GXTexCoord2f32(2.0f, 1.0f);
+    GXPosition3f32(-2.0f, -2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+
+    PSMTXConcat(cam->view, mtx148, mtx118);
+    GXLoadPosMtxImm(mtx118, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 1, 2, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    GXSetTevColor(1, (GXColor){0xFF, 0x00, 0xFF, 0xFF});
+    if (type == 1) {
+        effGetTexObj(0x13, &texObj);
+        GXLoadTexObj(&texObj, 2);
+        GXSetTevOp(0, 3);
+        GXBegin(0x80, 0, 4);
+    } else {
+        GXBegin(0x80, 0, 4);
+    }
+    GXPosition3f32(-2.0f, 2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(2.0f, 2.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(2.0f, -2.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-2.0f, -2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+
+    mtxGetRotationElement(mtx148, mtxE8, 'y', 'x');
+    PSMTXInverse(mtxE8, mtxE8);
+    PSMTXConcat(mtx148, mtxE8, mtx148);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    sprintf(buf, "%d", count);
+    {
+        s32 len = strlen(buf);
+        f32 x = 24.0f * (f32)(-(len - 1)) * 0.5f;
+
+        PSMTXScale(mtx58, 0.04f, 0.04f, 0.04f);
+        PSMTXTrans(mtx88, x, 0.0f, 0.0f);
+        PSMTXConcat(mtx58, mtx88, mtx88);
+        PSMTXConcat(mtx148, mtx88, mtx118);
+        effNumberGX(&mtx118, 2, count, 0xFF, 1);
+    }
+}
+
+void effDamageStarMain(EffectEntry* effect) {
+    DamageStarData* data;
+    Vec position;
+    Vec disp;
+    u32 count = 0;
+    s32 i;
+
+    data = effect->userdata;
+
+    disp = vec3_802f3448;
+    disp.x = data->position.x;
+    disp.y = data->position.y;
+    disp.z = data->position.z;
+    position = disp;
+
+    effCalcMayaAnim(data->anim);
+
+    if (gp->retraceCount > (u32)data->field_0x40) {
+        count = gp->retraceCount - data->field_0x40;
+    }
+    if (count < 1) {
+        count = 1;
+    }
+
+    while (count--) {
+        data = effect->userdata;
+        if (data->field_0x24 < 100) {
+            data->field_0x24--;
+        }
+        data->frame++;
+        if (data->field_0x24 < 0) {
+            effDeleteMayaAnim(data->anim);
+            effDelete(effect);
+            return;
+        }
+        {
+            s32 frame = data->frame;
+
+            i = 2;
+            data = &data[2];
+            for (; i < effect->count; i++, data++) {
+                if (frame < 0x14) {
+                    f32 v = 0.01f * (f32)scale_data[frame];
+
+                    data->scaleX = data->scaleY = data->scaleZ = v;
+                } else if (frame < 0x28) {
+                    data->rot = intplGetValue(0xB, frame - 0x14, 0x13, 0.0f, 720.0f);
+                } else if (frame < 0x32) {
+                    data->scaleX = intplGetValue(4, frame - 0x28, 9, 1.0f, 1.5f);
+                    data->scaleY = intplGetValue(4, frame - 0x28, 9, 1.0f, 0.5f);
+                } else if (frame < 0x3C) {
+                    data->scaleX = intplGetValue(1, frame - 0x32, 9, 1.5f, 0.1f);
+                    data->scaleY = intplGetValue(1, frame - 0x32, 9, 0.5f, 1.0f);
+                    data->position.y = intplGetValue(1, frame - 0x32, 9, data->position.y, 10.0f + data->position.y);
+                } else {
+                    data->scaleX = data->scaleY = data->scaleZ = 0.0f;
+                }
+
+                data->vx *= 0.75f;
+                data->vy *= 0.75f;
+                data->vz *= 0.75f;
+                data->position.x += data->vx;
+                data->position.y += data->vy;
+                data->position.z += data->vz;
+            }
+        }
+    }
+
+    data = effect->userdata;
+    data->field_0x40 = gp->retraceCount;
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effDamageStarDisp, effect);
+}
+
+// NONMATCHING (75.16%): control flow/order match; the original keeps count in r27 and origCount in r30,
+// ours swaps them (r28/r27), and the s32->f32 conversion uses this TU's pool copy not the named symbol.
+// described in REPORT.md
+EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
+    EffectEntry* entry;
+    DamageStarData* data;
+    s32 num;
+    s32 origCount;
+    s32 i;
+    f32 f0, f1, f2, f3, f4, sinv, cosv;
+
+    entry = effEntry();
+    origCount = count;
+    if (count > 20) {
+        count = 20;
+    }
+    entry->type = str_802F3468;
+    num = count + 2;
+    entry->count = num;
+    data = __memAlloc(HEAP_EFFECT, num * sizeof(DamageStarData));
+    entry->userdata = data;
+    memset(data, 0, num * sizeof(DamageStarData));
+    entry->callback = effDamageStarMain;
+    data->anim = effMayaAnimAlloc(damageStar_effAnimDt);
+    effPlayMayaAnim(data->anim);
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->rot = speed;
+    data->angle = angle;
+    data->field_0x24 = 99;
+    data->frame = 0;
+    data->field_0x3C = origCount;
+    data->field_0x40 = gp->retraceCount;
+
+    f4 = 30.0f - (f32)num;
+    i = 1;
+    data = &data[1];
+    for (; i < num; i++, data++) {
+        s32 spiral = i * ((i & 1) * 2 - 1) / 2;
+        f32 a = f4 * (f32)spiral + angle;
+        f32 rad = (6.2831855f * a) / 360.0f;
+
+        data->angle = a;
+        data->position.x = 0.0f;
+        data->position.y = 0.0f;
+        data->position.z = 0.0f;
+
+        // sin
+        sinv = 0.00761f;
+        if (rad <= 3.1415927f) {
+            if (rad <= 1.5707964f) {
+                f0 = rad * rad;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * rad;
+            } else {
+                f0 = rad - 1.5707964f;
+                f1 = 1.5707964f - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+            }
+        } else {
+            if (rad < 4.712389f) {
+                f1 = rad - 3.1415927f;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            } else {
+                f0 = rad - 4.712389f;
+                f1 = 1.5707964f - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - 0.16605f;
+                sinv = sinv * f0 + 1.0f;
+                sinv = sinv * f1;
+                sinv = -sinv;
+            }
+        }
+        data->vx = 1.5f * (speed * -sinv);
+
+        // cos
+        cosv = 0.03705f;
+        if (rad <= 3.1415927f) {
+            if (rad <= 1.5707964f) {
+                f0 = rad * rad;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+            } else {
+                f0 = rad - 1.5707964f;
+                f0 = 1.5707964f - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+                cosv = -cosv;
+            }
+        } else {
+            if (rad < 4.712389f) {
+                f0 = rad - 3.1415927f;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+                cosv = -cosv;
+            } else {
+                f0 = rad - 4.712389f;
+                f0 = 1.5707964f - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - 0.4967f;
+                cosv = cosv * f0 + 1.0f;
+            }
+        }
+        data->vy = 1.5f * (speed * cosv);
+
+        data->vz = 0.0f;
+        data->rot = 0.0f;
+        data->alpha = 0xFF;
+        data->scaleX = 0.2f;
+        data->scaleY = 0.2f;
+        data->scaleZ = 0.2f;
+    }
+
+    return entry;
+}

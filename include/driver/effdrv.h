@@ -45,3 +45,4 @@ void* effMayaAnimAlloc(void* animData);
 void effPlayMayaAnim(void* anim);
 void effCalcMayaAnim(void* anim);
 void effDeleteMayaAnim(void* anim);
+// Defined in driver/effdrv.c; the effect work type is not yet named.
