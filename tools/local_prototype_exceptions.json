@@ -48,5 +48,41 @@
     "name": "DEMOPrintStats",
     "declaration": "extern void DEMOPrintStats(void);",
     "reason": "the SDK stats header conflicts with the custom DemoStatEnable declaration."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "BattleCheckCounter",
+    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32* flags);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "_getRegistStatus",
+    "declaration": "u8 _getRegistStatus(BattleUnit* unit, s32 type);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "_getSickStatusParam",
+    "declaration": "void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "_getSickStatusRate",
+    "declaration": "s32 _getSickStatusRate(BattleWeapon* weapon, s32 type);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "BattleSetStatusDamage",
+    "declaration": "s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, s32 type, s32 rate, s32 levelDiff, u8 arg8, u8 arg9);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
+  },
+  {
+    "path": "src/battle/battle_damage.c",
+    "name": "BattleSetStatusDamageFromWeapon",
+    "declaration": "s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags);",
+    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
   }
 ]
