@@ -64,22 +64,19 @@ static BeroEntry bero_data_c[3] = {
     {NULL},
 };
 
-// TODO: type
-static u32 door_3[7] = {
-    (u32)"heya_3", (u32)"haikei_3", (u32)"tobira_3", (u32)"a_tobira_3",
-    (u32)"3_door_open", (u32)"a_tobira_3_heya", (u32)"3_door_close",
+static char* door_3[7] = {
+    "heya_3", "haikei_3", "tobira_3", "a_tobira_3", "3_door_open", "a_tobira_3_heya",
+    "3_door_close",
 };
 
-// TODO: type
-static u32 door_4[7] = {
-    (u32)"heya_4", (u32)"haikei_4", (u32)"tobira_4", (u32)"a_tobira_4",
-    (u32)"4_door_open", (u32)"a_tobira_4_heya", (u32)"4_door_close",
+static char* door_4[7] = {
+    "heya_4", "haikei_4", "tobira_4", "a_tobira_4", "4_door_open", "a_tobira_4_heya",
+    "4_door_close",
 };
 
-// TODO: type
-static u32 door_5[7] = {
-    (u32)"heya_5", (u32)"haikei_5", (u32)"tobira_5", (u32)"a_tobira_5",
-    (u32)"5_door_open", (u32)"a_tobira_5_heya", (u32)"5_door_close",
+static char* door_5[7] = {
+    "heya_5", "haikei_5", "tobira_5", "a_tobira_5", "5_door_open", "a_tobira_5_heya",
+    "5_door_close",
 };
 
 EVT_BEGIN(evt_rsh_konarikin_irai_party_talk)
@@ -1159,9 +1156,8 @@ EVT_BEGIN(rsh_04_b_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 window_tbl[4] = {
-    (u32)"mado_uturi_1", (u32)"mado_uturi_2", (u32)"mado_uturi_3", 0x00000000,
+static char* window_tbl[4] = {
+    "mado_uturi_1", "mado_uturi_2", "mado_uturi_3", NULL,
 };
 
 EVT_BEGIN(rsh_04_c_init_evt)

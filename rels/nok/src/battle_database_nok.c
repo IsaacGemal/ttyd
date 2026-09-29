@@ -115,9 +115,8 @@ BattleSetupData btlsetup_nok_tbl[2] = {
     },
 };
 
-// TODO: type
-u32 btl_nok_setup_no_tbl[4] = {
-    (u32)"BTLNO_HEI_TEST1", 0x00000000, 0x00000000, 0x00000000,
+char* btl_nok_setup_no_tbl[4] = {
+    "BTLNO_HEI_TEST1", NULL, NULL, NULL,
 };
 // clang-format on
 #pragma force_active off

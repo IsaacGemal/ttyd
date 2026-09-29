@@ -327,30 +327,20 @@ static EVT_BEGIN(evt_attack_other_arm)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 A_of_A_Attack_front[10] = {
-    (u32)"M_1A_1", (u32)"A_1A_1", (u32)"A_1A_2", 0x00000000,
-    (u32)"A_1A_3", 0x00000000, (u32)"A_1A_4", (u32)"M_1A_2",
-    (u32)"S_1A_1", 0x00000000,
+char* A_of_A_Attack_front[10] = {
+    "M_1A_1", "A_1A_1", "A_1A_2", NULL, "A_1A_3", NULL, "A_1A_4", "M_1A_2", "S_1A_1", NULL,
 };
 
-// TODO: type
-u32 A_of_A_Attack_back[10] = {
-    (u32)"M_1A_1", (u32)"A_1A_5", (u32)"A_1A_6", 0x00000000,
-    (u32)"A_1A_7", 0x00000000, (u32)"A_1A_8", (u32)"M_1A_2",
-    (u32)"S_1A_1", 0x00000000,
+char* A_of_A_Attack_back[10] = {
+    "M_1A_1", "A_1A_5", "A_1A_6", NULL, "A_1A_7", NULL, "A_1A_8", "M_1A_2", "S_1A_1", NULL,
 };
 
-// TODO: type
-u32 B_of_A_Attack[6] = {
-    (u32)"M_1B_1", (u32)"S_1B_2", 0x00000000, (u32)"M_1B_2",
-    (u32)"S_1B_1", 0x00000000,
+char* B_of_A_Attack[6] = {
+    "M_1B_1", "S_1B_2", NULL, "M_1B_2", "S_1B_1", NULL,
 };
 
-// TODO: type
-u32 C_of_A_Attack[6] = {
-    (u32)"M_1C_1", (u32)"S_1C_2", 0x00000000, (u32)"M_1C_2",
-    (u32)"S_1C_1", 0x00000000,
+char* C_of_A_Attack[6] = {
+    "M_1C_1", "S_1C_2", NULL, "M_1C_2", "S_1C_1", NULL,
 };
 
 static EVT_BEGIN(evt_attack)

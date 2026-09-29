@@ -97,6 +97,8 @@ LAYOUTS = {
             'fpRegenTime fpRegenStrength'.split())] +
         [(0xB0, 'ptr', 'mAttackEvtScript', None), (0xB4, 'arr', 'field_B4', ('u8', 12))]),
 }
+LAYOUTS['char*'] = (0x4, [(0x0, 'str', '')])  # a raw table of nothing but strings (and NULLs); const trips MWCC in PTR()
+STRUCTS_RE = '|'.join(t for t in LAYOUTS if t.isidentifier())  # the struct names, for patterns
 SIZES = {'hex': 4, 's8': 1, 'u8': 1, 's16': 2, 'u16': 2, 's32': 4, 'u32': 4, 'x32': 4, 'f32': 4, 'enum': 4, 'ptr': 4,
          'str': 4, 'vec': 12}
 def _align(fields):
@@ -341,6 +343,8 @@ class Renderer:
         elems = [self.element(typ, o['data'], o['rel'], i * stride) for i in range(n)]
         many = len(LAYOUTS[typ][1]) > 8 and typ not in ONE_LINE
         def one(vals, ind):
+            if len(vals) == 1 and not vals[0][1]:
+                return vals[0][0]
             if typ in ONE_LINE:
                 vs = [v for v, _ in vals]
                 while vs and vs[-1] in ('0', 'NULL', '0x00'):
@@ -351,7 +355,18 @@ class Renderer:
             w = max(len(v) for v, _ in vals) + 1
             inner = '\n'.join(f'{ind}    {(v + ","):<{w}} // {name}' for v, name in vals)
             return '{\n' + inner + '\n' + ind + '}'
-        if is_array:
+        if is_array and len(LAYOUTS[typ][1]) == 1 and not LAYOUTS[typ][1][0][2]:
+            lines, cur = [], ''
+            for e in elems:  # plain values (a string list): as many to a line as fit in 100 columns
+                v = one(e, '') + ','
+                if cur and len(cur) + 1 + len(v) > 96:
+                    lines.append(cur)
+                    cur = ''
+                cur = (cur + ' ' + v) if cur else v
+            lines.append(cur)
+            body = '{\n' + ''.join('    ' + l + '\n' for l in lines) + '}'
+            head = f'{qual}{typ} {sym}[{n}] = '
+        elif is_array:
             body = '{\n' + ''.join('    ' + one(e, '    ') + ',\n' for e in elems) + '}'
             head = f'{qual}{typ} {sym}[{n}] = '
         else:
@@ -363,7 +378,7 @@ class Renderer:
 
 # single objects are written as scalars, lists as arrays (even of one), whatever the old declaration was
 ONE_LINE = {'BeroEntry'}  # rows written on one line, trailing zero fields left off (the style map files use)
-RAW_ONLY = {'BeroEntry'}  # rendered only where the table is still a raw array
+RAW_ONLY = {'BeroEntry', 'char*'}  # rendered only where the table is still a raw array
 LISTS = {'BattleSetupData', 'BeroEntry', 'ItemDropData', 'BattleUnitKindPart', 'BattleDispPose', 'BattleDataEntry', 'BattleUnitSetup', 'NpcBattleSetupEntry',
          'BattleStageObjectData'}
 RESHAPED = {}  # (file, symbol): (now_array, is_static), for fix_refs
@@ -542,7 +557,7 @@ def rewrite(cfile, mapping, objs=None, alias=None):
         done.append(sym)
         GLOBAL_TYPED[sym] = (typ, int(n.group(1)) if n else None) if not dm[2].startswith('static') else None
     if done:
-        src = add_includes(src, {mapping[d] for d in done})
+        src = add_includes(src, {mapping[d] for d in done if mapping[d].isidentifier()})
     open(cfile, 'w').write(src)
     return done, failed
 
@@ -606,6 +621,12 @@ def auto_types(cfile, objs):
                                                      objs[sym]['size'] == LAYOUTS[typ][0]):
                 todo.append((sym, typ))
                 break
+    for sym, o in objs.items():
+        c = alias.get(sym, sym)
+        if c in raw and o['data'] is not None and o['size'] % 4 == 0 and o['sec'] == '.data' and o['rel'] and \
+                all((i in o['rel'] and o['rel'][i][1] == 0 and objs.get(o['rel'][i][0], {}).get('string') is not None) or
+                    (i not in o['rel'] and not any(o['data'][i:i + 4])) for i in range(0, o['size'], 4)):
+            todo.append((sym, 'char*'))
     while todo:
         sym, typ = todo.pop()
         if sym in bad:
@@ -677,7 +698,7 @@ def run_all(skip=()):
                 open(p, 'w').write(new)
     typed, seen = {}, collections.defaultdict(set)
     for f in c_files():
-        for m in re.finditer(r'^(const )?(' + '|'.join(LAYOUTS) + r') (\w+)(?:\[(\d+)\])? = ', open(f).read(), re.M):
+        for m in re.finditer(r'^(const )?(' + STRUCTS_RE + r') (\w+)(?:\[(\d+)\])? = ', open(f).read(), re.M):
             v = (m.group(2), int(m.group(4)) if m.group(4) else None)
             seen[m.group(3)].add(v)
             typed[m.group(3)] = v
@@ -725,7 +746,7 @@ def run_all(skip=()):
         text = open(f).read()
         text = re.sub(r'^// TODO: type\n(?=(?:static |const )*(?![su]32 |u8 |s8 |u16 |s16 |char )[A-Za-z_]\w* \w+(?:\[\w*\])? = )', '',
                       text, flags=re.M)
-        used = {t for t in LAYOUTS if re.search(r'^(?:static |const )*' + t + r' \w+', text, re.M)}
+        used = {t for t in LAYOUTS if t.isidentifier() and re.search(r'^(?:static |const )*' + t + r' \w+', text, re.M)}
         new = add_includes(text, used) if used else text
         if new != open(f).read():
             open(f, 'w').write(new)
@@ -739,6 +760,8 @@ def check_layouts():
              '#include "battle/battle_stage_object.h"', '#include "battle/battle_database_common.h"',
              '#include "driver/npcdrv.h"', '#include "evt/evt_bero.h"', '#include <stddef.h>']
     for t, (size, fields) in LAYOUTS.items():
+        if not t.isidentifier():
+            continue
         lines.append(f'char chk_{t}_size[sizeof({t}) == {size:#x} || sizeof({t}) == {(size + 3) & ~3:#x} ? 1 : -1];')
         for off, kind, name, *x in fields:
             lines.append(f'char chk_{t}_{name}[offsetof({t}, {name}) == {off:#x} ? 1 : -1];')
