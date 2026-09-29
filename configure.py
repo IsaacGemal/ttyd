@@ -1757,6 +1757,8 @@ config.libs = [
             Object(Matching, "unit/unit_barriern_satellite.c", modules=["mri"], extra_cflags=["-DUNIT_DATA_SYM=unit_barriern_satellite_19_data_30B08"]),
             Object(Matching, "unit/unit_barriern_z_satellite.c", modules=["moo"], extra_cflags=["-DUNIT_DATA_SYM=unit_barriern_z_satellite_18_data_6DB0"]),
             Object(Matching, "unit/unit_barriern_z_satellite.c", modules=["aji"], extra_cflags=["-DUNIT_DATA_SYM=unit_barriern_z_satellite_2_data_2FE88"]),
+            Object(Matching, "unit/unit_borodo.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_borodo_15_data_211F8"]),
+            Object(Matching, "unit/unit_borodo.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_borodo_28_data_1AEF0"]),
         ],
     ),
 ]
