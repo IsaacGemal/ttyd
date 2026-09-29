@@ -17,6 +17,8 @@
 #include "manager/evtmgr_cmd.h"
 #include "party/party_motion.h"
 #include "system.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 
 #pragma pool_data off
 // REL modules are built without -fp_contract on, but this function needs the target's fmadds/fnmsubs fusion.
@@ -24,14 +26,14 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 unit_boss_gesso_left_arm[];
-extern s32 unit_boss_gesso_right_arm[];
-static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+extern BattleUnitKind unit_boss_gesso_left_arm;
+extern BattleUnitKind unit_boss_gesso_right_arm;
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts[1];
 static s32 init_event[121];
-u32 entry_gesso_left_arm_entry_data[12];
-u32 entry_gesso_right_arm_entry_data[12];
+BattleUnitSetup entry_gesso_left_arm_entry_data[1];
+BattleUnitSetup entry_gesso_right_arm_entry_data[1];
 static s32 damage_event[34];
 static s32 phase_event[488];
 static s32 attack_event[48];
@@ -58,112 +60,205 @@ extend_data(61,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_gesso[49] = {
-    0x00000008, (u32)"btl_un_gesso", 0x000C0000, 0x01012900,
-    0x00640032, 0x00090078, 0x0078002E, 0xFFB50000,
-    0x00000000, 0x00000000, 0x00000000, 0x0005FF51,
-    0x00000000, 0x00000000, 0x00000000, 0x42700000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42700000,
-    0x00000000, 0x00000000, 0x42700000, 0x429C0000,
-    0x00000000, 0x00000000, 0x42F00000, 0x00000000,
-    0x42F00000, 0x42DC0000, 0x0000FF00, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_GESSO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00200000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_gesso = {
+    UNIT_BLOOPER,               // mUnitType
+    "btl_un_gesso",             // name
+    12,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    41,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    120,                        // width
+    120,                        // height
+    { 46, -75 },                // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 5, -175 },                // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 60.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 60.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 60.0f, 78.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 120.0f, 0.0f },     // cutBaseOffset
+    120.0f,                     // cutWidth
+    110.0f,                     // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    0,                          // field_0x8C
+    0,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_GESSO_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00200000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+BattleUnitDefense defence_ceil = { { 2, 2, 2, 2, 2 } };
+
+BattleUnitDefenseAttr defence_attr_ceil = { { 0, 0, 0, 0, 0 } };
+
+BattleVulnerableStatus regist_ceil = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646400,
-    0x00646400, 0x00000000,
+BattleUnitDefense R_defence_turn = { { 0, 0, 0, 0, 0 } };
+
+BattleUnitDefenseAttr R_defence_attr_turn = { { 0, 0, 0, 0, 0 } };
+
+BattleVulnerableStatus R_regist_turn = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-u32 defence_ceil[2] = {
-    0x02020202, 0x02000000,
+static BattleDispPose pose_table[11] = {
+    { 0x01, "GSO_N2_1" },
+    { 0x02, "GSO_D2_2" },
+    { 0x09, "GSO_D2_2" },
+    { 0x05, "GSO_K2_1" },
+    { 0x04, "GSO_X2_1" },
+    { 0x03, "GSO_K2_1" },
+    { 0x1C, "GSO_S2_1" },
+    { 0x1D, "GSO_Q2_1" },
+    { 0x1F, "GSO_S2_1" },
+    { 0x27, "GSO_D2_1" },
+    { 0x45, "GSO_S2_1" },
 };
 
-// TODO: type
-u32 defence_attr_ceil[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table_ceil[12] = {
+    { 0x01, "GSO_N1_1" },
+    { 0x02, "GSO_D1_3" },
+    { 0x09, "GSO_D1_3" },
+    { 0x05, "GSO_K1_1" },
+    { 0x04, "GSO_X1_1" },
+    { 0x03, "GSO_K1_1" },
+    { 0x1C, "GSO_S1_1" },
+    { 0x1D, "GSO_Q1_2" },
+    { 0x1F, "GSO_S1_1" },
+    { 0x27, "GSO_D1_2" },
+    { 0x41, "GSO_K1_1" },
+    { 0x45, "GSO_S1_1" },
 };
 
-// TODO: type
-u32 regist_ceil[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleDispPose gesso_pose_table_turn[10] = {
+    { 0x01, "GSO_N3_1" },
+    { 0x02, "GSO_D3_2" },
+    { 0x09, "GSO_D3_2" },
+    { 0x05, "GSO_K3_1" },
+    { 0x04, "GSO_K3_1" },
+    { 0x03, "GSO_K3_1" },
+    { 0x1C, "GSO_V_1" },
+    { 0x1F, "GSO_D3_1" },
+    { 0x27, "GSO_D3_1" },
+    { 0x45, "GSO_V_1" },
 };
 
-// TODO: type
-u32 R_defence_turn[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[2] = {
+    { 0x32, dead_subevent },
+    { 0x00, NULL },
 };
 
-// TODO: type
-u32 R_defence_attr_turn[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 R_regist_turn[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646400,
-    0x00646400, 0x00000000,
-};
-
-// TODO: type
-static u32 pose_table[22] = {
-    0x00000001, (u32)"GSO_N2_1", 0x00000002, (u32)"GSO_D2_2",
-    0x00000009, (u32)"GSO_D2_2", 0x00000005, (u32)"GSO_K2_1",
-    0x00000004, (u32)"GSO_X2_1", 0x00000003, (u32)"GSO_K2_1",
-    0x0000001C, (u32)"GSO_S2_1", 0x0000001D, (u32)"GSO_Q2_1",
-    0x0000001F, (u32)"GSO_S2_1", 0x00000027, (u32)"GSO_D2_1",
-    0x00000045, (u32)"GSO_S2_1",
-};
-
-// TODO: type
-static u32 pose_table_ceil[24] = {
-    0x00000001, (u32)"GSO_N1_1", 0x00000002, (u32)"GSO_D1_3",
-    0x00000009, (u32)"GSO_D1_3", 0x00000005, (u32)"GSO_K1_1",
-    0x00000004, (u32)"GSO_X1_1", 0x00000003, (u32)"GSO_K1_1",
-    0x0000001C, (u32)"GSO_S1_1", 0x0000001D, (u32)"GSO_Q1_2",
-    0x0000001F, (u32)"GSO_S1_1", 0x00000027, (u32)"GSO_D1_2",
-    0x00000041, (u32)"GSO_K1_1", 0x00000045, (u32)"GSO_S1_1",
-};
-
-// TODO: type
-u32 gesso_pose_table_turn[20] = {
-    0x00000001, (u32)"GSO_N3_1", 0x00000002, (u32)"GSO_D3_2",
-    0x00000009, (u32)"GSO_D3_2", 0x00000005, (u32)"GSO_K3_1",
-    0x00000004, (u32)"GSO_K3_1", 0x00000003, (u32)"GSO_K3_1",
-    0x0000001C, (u32)"GSO_V_1", 0x0000001F, (u32)"GSO_D3_1",
-    0x00000027, (u32)"GSO_D3_1", 0x00000045, (u32)"GSO_V_1",
-};
-
-// TODO: type
-static u32 data_table[4] = {
-    0x00000032, (u32)&dead_subevent, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_gesso", (u32)"c_gesso", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0067FF51, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                    // partNum
+        "btl_un_gesso",       // partName
+        "c_gesso",            // modelName
+        { 0.0f, 0.0f, 0.0f }, // positionOffset
+        { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
+        103,                  // field_0x30
+        -175,                 // field_0x32
+        255,                  // baseAlpha
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
+        0x00000009,           // attributes
+        0,                    // counterAttributes
+        pose_table,           // poseTable
+    },
 };
 
 USER_FUNC(_test_rtn) {
@@ -328,9 +423,9 @@ static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetStatusIconOffset, -2, 46, -75)
     CALL(btlevtcmd_SetHitOffset, -2, 1, 9, -122, 30)
     CALL(btlevtcmd_SetHitCursorOffset, -2, 1, 9, -122, 30)
-    CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_ceil))
-    CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_ceil))
-    CALL(btlevtcmd_SetRegistStatus, -2, PTR(regist_ceil))
+    CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_ceil))
+    CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_ceil))
+    CALL(btlevtcmd_SetRegistStatus, -2, PTR(&regist_ceil))
     CALL(btlevtcmd_SetStatusIconOffset, -2, 46, -75)
     CALL(btlevtcmd_OnAttribute, -2, 16777216)
     CALL(btlevtcmd_SetEventEntry, -2, PTR(battle_entry_event))
@@ -338,18 +433,12 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_gesso_left_arm_entry_data[12] = {
-    (u32)unit_boss_gesso_left_arm, 0x01000000, 0x04000004, 0x00000000,
-    0xC47A0000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_gesso_left_arm_entry_data[1] = {
+    { &unit_boss_gesso_left_arm, 1, 0x04000004, { 0.0f, -1000.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 entry_gesso_right_arm_entry_data[12] = {
-    (u32)unit_boss_gesso_right_arm, 0x01000000, 0x04000004, 0x00000000,
-    0xC47A0000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_gesso_right_arm_entry_data[1] = {
+    { &unit_boss_gesso_right_arm, 1, 0x04000004, { 0.0f, -1000.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(damage_event)
@@ -386,9 +475,9 @@ static EVT_BEGIN(phase_event)
                 CALL(btlevtcmd_AnimeSetPoseTable, -2, 1, PTR(pose_table))
                 CALL(btlevtcmd_SetHpGaugeOffset, -2, 0, 0)
                 CALL(btlevtcmd_SetStatusIconOffset, -2, 46, 118)
-                CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence))
-                CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr))
-                CALL(btlevtcmd_SetRegistStatus, -2, PTR(regist))
+                CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence))
+                CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr))
+                CALL(btlevtcmd_SetRegistStatus, -2, PTR(&regist))
                 CALL(btlevtcmd_SetStatusIconOffset, -2, 55, 113)
                 CALL(btlevtcmd_SetUnitWork, -2, 0, 2)
                 CALL(btlevtcmd_SetUnitWork, -2, 3, 0)
@@ -416,9 +505,9 @@ static EVT_BEGIN(phase_event)
                 CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
                 CALL(btlevtcmd_SetHitOffset, -2, 1, 9, -122, 30)
                 CALL(btlevtcmd_SetHitCursorOffset, -2, 1, 9, -122, 30)
-                CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(defence_ceil))
-                CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(defence_attr_ceil))
-                CALL(btlevtcmd_SetRegistStatus, -2, PTR(regist_ceil))
+                CALL(btlevtcmd_SetPartsDefenceTable, -2, 1, PTR(&defence_ceil))
+                CALL(btlevtcmd_SetPartsDefenceAttrTable, -2, 1, PTR(&defence_attr_ceil))
+                CALL(btlevtcmd_SetRegistStatus, -2, PTR(&regist_ceil))
                 CALL(btlevtcmd_SetStatusIconOffset, -2, 46, -75)
                 CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("GSO_J_1"))
                 WAIT_FRAMES(48)
@@ -512,20 +601,82 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 weapon_gesso_ikasumi_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x000D0302,
-    0x00000000, 0x00000087, 0x000007FF, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_gesso_ikasumi_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    13,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 USER_FUNC(_ikasumi_effect) {
@@ -554,7 +705,7 @@ USER_FUNC(_ikasumi_effect) {
 }
 
 EVT_BEGIN(gesso_ikasumi_attack)
-    SET_VALUE(LW(12), PTR(weapon_gesso_ikasumi_attack))
+    SET_VALUE(LW(12), PTR(&weapon_gesso_ikasumi_attack))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(12))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(12), LW(3), LW(4))

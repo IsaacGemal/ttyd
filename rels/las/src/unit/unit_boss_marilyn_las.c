@@ -11,13 +11,15 @@
 #include "forcedata.h"
 #include "party/party_motion.h"
 #include "unit/party/unit_party_vivian.h"
+#include "battle/battle_unit.h"
+#include "battle/battle_database_common.h"
 
 #pragma force_active on
 extern s32 btl_marilyn_zoom_17_data_5C2B8[];
 extern s32 btldefaultevt_Confuse[];
 extern s32 majo3_shadow_tail_event_17_data_5E094[];
 extern s32 majo_unison_phase_event_17_data_5C5E4[];
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
 static s32 init_event[37];
@@ -49,114 +51,360 @@ extend_data(209,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_marilyn_las[49] = {
-    0x00000086, (u32)"btl_un_marilyn4", 0x00280000, 0x01013900,
-    0x00640032, 0x00070028, 0x00360000, 0x00360000,
-    0x00000000, 0x41D80000, 0x00000000, 0x00000000,
-    0x40C00000, 0x41C00000, 0x00000000, 0x41A00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A00000,
-    0x00000000, 0x00000000, 0x41800000, 0x420C6666,
-    0x00000000, 0x00000000, 0x41D80000, 0x00000000,
-    0x42200000, 0x42580000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_MARI_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_marilyn_las = {
+    UNIT_MARILYN_CHAPTER8,      // mUnitType
+    "btl_un_marilyn4",          // name
+    40,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    57,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    7,                          // field_0x14
+    40,                         // width
+    54,                         // height
+    { 0, 54 },                  // statusIconOffset
+    { 0.0f, 27.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 6.0f, 24.0f, 0.0f },      // talkTogeBaseOffset
+    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 20.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 16.0f, 35.1f, 0.0f },     // kissHitOffset
+    { 0.0f, 27.0f, 0.0f },      // cutBaseOffset
+    40.0f,                      // cutWidth
+    54.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_MARI_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence = {0};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefenseAttr defence_attr = {0};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x32323264, 0x32646428, 0x643C643C, 0x64502800,
-    0x00642864, 0x64050000,
+static BattleVulnerableStatus regist = {
+    50,  // sleepRate
+    50,  // stopRate
+    50,  // dizzyRate
+    100, // poisonRate
+    50,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    40,  // freezeRate
+    100, // hugeRate
+    60,  // tinyRate
+    100, // attackUpRate
+    60,  // attackDownRate
+    100, // defenseUpRate
+    80,  // defenseDownRate
+    40,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    40,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    5,   // instaKillRate
 };
 
 static BattleDispPose pose_table[18] = {
-    {0x01, "MRR_N_1"}, {0x02, "MRR_Z_1"},
-    {0x09, "MRR_Z_1"}, {0x05, "MRR_X_1"},
-    {0x04, "MRR_X_1"}, {0x03, "MRR_X_1"},
-    {0x1C, "MRR_S_1"}, {0x1D, "MRR_Q_2"},
-    {0x1E, "MRR_Q_2"}, {0x1F, "MRR_D_1"},
-    {0x27, "MRR_D_1"}, {0x32, "MRR_S_1"},
-    {0x2A, "MRR_R_1"}, {0x28, "MRR_W_1"},
-    {0x38, "MRR_S_1"}, {0x39, "MRR_S_1"},
-    {0x41, "MRR_T_1"}, {0x45, "MRR_S_1"},
+    { 0x01, "MRR_N_1" },
+    { 0x02, "MRR_Z_1" },
+    { 0x09, "MRR_Z_1" },
+    { 0x05, "MRR_X_1" },
+    { 0x04, "MRR_X_1" },
+    { 0x03, "MRR_X_1" },
+    { 0x1C, "MRR_S_1" },
+    { 0x1D, "MRR_Q_2" },
+    { 0x1E, "MRR_Q_2" },
+    { 0x1F, "MRR_D_1" },
+    { 0x27, "MRR_D_1" },
+    { 0x32, "MRR_S_1" },
+    { 0x2A, "MRR_R_1" },
+    { 0x28, "MRR_W_1" },
+    { 0x38, "MRR_S_1" },
+    { 0x39, "MRR_S_1" },
+    { 0x41, "MRR_T_1" },
+    { 0x45, "MRR_S_1" },
 };
 
 static BattleDataEntry data_table[2] = {
-    {0x31, dead_event},
-    {0, NULL},
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts[1] = {
     {
-        1,
-        "btl_un_marilyn4",
-        "c_maririn",
-        {0.0f, 0.0f, 0.0f},
-        {15.0f, 45.0f, 0.0f},
-        // header hides 0x24-0x37 (a Vec at 0x24, two s16 at 0x30, alpha 0xFF at 0x34); bytes kept as-is
-        {0x00, 0x00, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x00, 0x00,
-         0x00, 0x00, 0x00, 0x26, 0x00, 0x38, 0x00, 0xFF, 0x00, 0x00},
-        &defence,
-        &defence_attr,
-        9,
-        0,
-        pose_table,
+        1,                      // partNum
+        "btl_un_marilyn4",      // partName
+        "c_maririn",            // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 45.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 50.0f, 0.0f },  // hitCursorBaseOffset
+        38,                     // field_0x30
+        56,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
     },
 };
 
-// TODO: type
-static u32 weapon_marilyn_kagenuke_attack1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000007, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000002, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_marilyn_kagenuke_attack1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 7, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_marilyn_thunder_attack1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000007, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00020044, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_marilyn_thunder_attack1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 7, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020044,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_marilyn_charge1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000007,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_marilyn_charge1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    7,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(marilyn_down)
@@ -312,17 +560,17 @@ static EVT_BEGIN(attack_event)
     SWITCH(LW(0))
         CASE_EQUAL(0)
         CALL(btlevtcmd_SetUnitWork, -2, 9, 0)
-        SET_VALUE(LW(9), PTR(weapon_marilyn_kagenuke_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_marilyn_kagenuke_attack1))
         CALL_CHILD(kagenuke_attack_event)
         CASE_EQUAL(1)
         CALL(btlevtcmd_SetUnitWork, -2, 9, 0)
-        SET_VALUE(LW(9), PTR(weapon_marilyn_thunder_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_marilyn_thunder_attack1))
         CALL_CHILD(thunder_attack_event)
         CASE_EQUAL(2)
         CALL(btlevtcmd_GetUnitWork, -2, 9, LW(0))
         ADD(LW(0), 1)
         CALL(btlevtcmd_SetUnitWork, -2, 9, LW(0))
-        SET_VALUE(LW(9), PTR(weapon_marilyn_charge1))
+        SET_VALUE(LW(9), PTR(&weapon_marilyn_charge1))
         CALL_CHILD(charge_attack_event)
     END_SWITCH
     LABEL(90)

@@ -103,10 +103,10 @@ static EVT_BEGIN(door_matigai_evt)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_06", "e_bero", 5, 5, (s32)w1_door_close, (s32)w1_door_open},
-    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_1", 5, 5, (s32)e1_door_close, (s32)e1_door_open},
-    {"w_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "e_bero_2", 5, 5, (s32)w2_door_close, (s32)w2_door_open},
-    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_2", 5, 5, (s32)e2_door_close, (s32)e2_door_open},
+    {"w_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_06", "e_bero", 5, 5, w1_door_close, w1_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_1", 5, 5, e1_door_close, e1_door_open},
+    {"w_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "e_bero_2", 5, 5, w2_door_close, w2_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_2", 5, 5, e2_door_close, e2_door_open},
     {NULL},
 };
 

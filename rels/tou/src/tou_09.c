@@ -108,10 +108,10 @@ EVT_END()
 
 static BeroEntry bero_data[] = {
     {"n_bero", 1, 4, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tou_04", "s_bero_2", 5, 5,
-     (s32)n_door_close, (s32)n_door_open},
+     n_door_close, n_door_open},
     {"dokan", 2, 0, 9, 100000, 0, 0, 100, toile_in, 6, toile_out, "tou_04", "toire", 1, 1, 0, 0},
     {"a_door_9_omote", 1, 0x10, 6, 100000, 0, 0, -1, evt_in, -1, NULL, "tou_11", "e_bero", 5, 5,
-     (s32)w_door_close, (s32)w_door_open},
+     w_door_close, w_door_open},
     {NULL},
 };
 

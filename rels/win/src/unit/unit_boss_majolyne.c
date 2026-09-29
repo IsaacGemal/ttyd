@@ -12,14 +12,16 @@
 #include "forcedata.h"
 #include "party/party_motion.h"
 #include "unit/party/unit_party_vivian.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(majo3_sort);
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
-static u32 parts[19];
+static BattleUnitKindPart parts[1];
 static s32 init_event[45];
 static s32 damage_event[22];
 static s32 dead_event[122];
@@ -51,127 +53,438 @@ extend_data(57,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_majolyne[49] = {
-    0x0000001F, (u32)"btl_un_majolyne1", 0x00090000, 0x01011A00,
-    0x00640032, 0x0009001A, 0x00220000, 0x00220000,
-    0x00000000, 0x41880000, 0x00000000, 0x00000000,
-    0x40C00000, 0x40000000, 0x00000000, 0x41500000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0x00000000, 0x41000000, 0x41B0CCCD,
-    0x00000000, 0x00000000, 0x41880000, 0x00000000,
-    0x41D00000, 0x42080000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_MAJO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_majolyne = {
+    UNIT_BELDAM_CHAPTER2,       // mUnitType
+    "btl_un_majolyne1",         // name
+    9,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    26,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    26,                         // width
+    34,                         // height
+    { 0, 34 },                  // statusIconOffset
+    { 0.0f, 17.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 6.0f, 2.0f, 0.0f },       // talkTogeBaseOffset
+    { 13.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 8.0f, 22.1f, 0.0f },      // kissHitOffset
+    { 0.0f, 17.0f, 0.0f },      // cutBaseOffset
+    26.0f,                      // cutWidth
+    34.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_MAJO_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    70,  // sleepRate
+    80,  // stopRate
+    70,  // dizzyRate
+    100, // poisonRate
+    70,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    50,  // freezeRate
+    100, // hugeRate
+    80,  // tinyRate
+    100, // attackUpRate
+    80,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    70,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 regist[6] = {
-    0x46504664, 0x46646432, 0x64506450, 0x645F4600,
-    0x00644664, 0x64000000,
-};
-
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"MJR_N_1", 0x00000002, (u32)"MJR_Z_1",
-    0x00000009, (u32)"MJR_Z_1", 0x00000005, (u32)"MJR_X_1",
-    0x00000004, (u32)"MJR_X_1", 0x00000003, (u32)"MJR_X_1",
-    0x0000001C, (u32)"MJR_S_1", 0x0000001D, (u32)"MJR_Q_1",
-    0x0000001E, (u32)"MJR_Q_1", 0x0000001F, (u32)"MJR_D_1",
-    0x00000027, (u32)"MJR_D_1", 0x00000032, (u32)"MJR_S_1",
-    0x0000002A, (u32)"MJR_R_1", 0x00000028, (u32)"MJR_W_1",
-    0x00000038, (u32)"MJR_S_1", 0x00000039, (u32)"MJR_S_1",
-    0x00000041, (u32)"MJR_T_1", 0x00000045, (u32)"MJR_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "MJR_N_1" },
+    { 0x02, "MJR_Z_1" },
+    { 0x09, "MJR_Z_1" },
+    { 0x05, "MJR_X_1" },
+    { 0x04, "MJR_X_1" },
+    { 0x03, "MJR_X_1" },
+    { 0x1C, "MJR_S_1" },
+    { 0x1D, "MJR_Q_1" },
+    { 0x1E, "MJR_Q_1" },
+    { 0x1F, "MJR_D_1" },
+    { 0x27, "MJR_D_1" },
+    { 0x32, "MJR_S_1" },
+    { 0x2A, "MJR_R_1" },
+    { 0x28, "MJR_W_1" },
+    { 0x38, "MJR_S_1" },
+    { 0x39, "MJR_S_1" },
+    { 0x41, "MJR_T_1" },
+    { 0x45, "MJR_S_1" },
 };
 
 static BattleDataEntry data_table[2] = {
-    {0x00000031, dead_event}, {0x00000000, NULL},
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_majolyne1", (u32)"c_majyorin", 0x00000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x41A00000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_majolyne1",    // partName
+        "c_majyorin",          // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 5.0f, 20.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 weapon_majolyne_kagenuke_attack1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x02000302,
-    0x00000000, 0x00000007, 0x00000002, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_majolyne_kagenuke_attack1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    2,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000007,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_majolyne_blizzard_attack1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x02000302,
-    0x00000000, 0x00000043, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_majolyne_blizzard_attack1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    2,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000043,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_majolyne_powder_attack1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000004, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01100160, 0x10000000, 0x00000302,
-    0x00000000, 0x0000008F, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000064, 0x03020000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_majolyne_powder_attack1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 2, 2, 3, 3, 4, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01100160,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x0000008F,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    100,                                      // sizeChangeChance
+    3,                                        // sizeChangeTime
+    2,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_majolyne_powder_attack2[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000002, 0x00000002, 0x00000003,
-    0x00000003, 0x00000004, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000064, 0x03FE0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_majolyne_powder_attack2 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 2, 2, 3, 3, 4, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    100,                                      // sizeChangeChance
+    3,                                        // sizeChangeTime
+    -2,                                       // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(majolyne_down)
@@ -567,26 +880,26 @@ static EVT_BEGIN(attack_event)
     SWITCH(LW(0))
         CASE_EQUAL(0)
         CALL(btlevtcmd_SetUnitWork, -2, 8, 1)
-        SET_VALUE(LW(9), PTR(weapon_majolyne_kagenuke_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_kagenuke_attack1))
         CALL_CHILD(kagenuke_attack_event)
         CASE_EQUAL(1)
         CALL(btlevtcmd_SetUnitWork, -2, 8, 2)
-        SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack2))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack2))
         CALL_CHILD(powder_attack_check)
         CALL_CHILD(powder_attack_event)
         CASE_EQUAL(2)
         CALL(btlevtcmd_SetUnitWork, -2, 8, 4)
-        SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack1))
         CALL_CHILD(powder_attack_check)
         CALL_CHILD(powder_attack_event)
         CASE_EQUAL(3)
         CALL(btlevtcmd_SetUnitWork, -2, 8, 4)
         CALL(btlevtcmd_SetUnitWork, -2, 9, 2)
-        SET_VALUE(LW(9), PTR(weapon_majolyne_blizzard_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_blizzard_attack1))
         CALL_CHILD(blizzard_attack_event)
         CASE_EQUAL(4)
         SET_VALUE(LW(14), 40)
-        SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack1))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack1))
         CALL_CHILD(powder_attack_check)
         IF_INT_NOT_EQUAL(LW(3), -1)
             SET_VALUE(LW(10), LW(3))
@@ -596,7 +909,7 @@ static EVT_BEGIN(attack_event)
                 ADD(LW(14), 20)
             END_IF
         END_IF
-        SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack2))
+        SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack2))
         CALL_CHILD(powder_attack_check)
         IF_INT_NOT_EQUAL(LW(3), -1)
             SET_VALUE(LW(12), LW(3))
@@ -617,13 +930,13 @@ static EVT_BEGIN(attack_event)
         CALL(evt_sub_random, LW(14), LW(0))
         SET_VALUE(LW(1), 40)
         IF_INT_LESS(LW(0), LW(1))
-            SET_VALUE(LW(9), PTR(weapon_majolyne_kagenuke_attack1))
+            SET_VALUE(LW(9), PTR(&weapon_majolyne_kagenuke_attack1))
             CALL_CHILD(kagenuke_attack_event)
             GOTO(90)
         END_IF
         ADD(LW(1), 20)
         IF_INT_LESS(LW(0), LW(1))
-            SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack1))
+            SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack1))
             SET_VALUE(LW(3), LW(10))
             SET_VALUE(LW(4), LW(11))
             CALL_CHILD(powder_attack_event)
@@ -631,14 +944,14 @@ static EVT_BEGIN(attack_event)
         END_IF
         ADD(LW(1), 20)
         IF_INT_LESS(LW(0), LW(1))
-            SET_VALUE(LW(9), PTR(weapon_majolyne_powder_attack2))
+            SET_VALUE(LW(9), PTR(&weapon_majolyne_powder_attack2))
             SET_VALUE(LW(3), LW(12))
             SET_VALUE(LW(4), LW(13))
             CALL_CHILD(powder_attack_event)
             GOTO(90)
         ELSE
             CALL(btlevtcmd_SetUnitWork, -2, 9, 2)
-            SET_VALUE(LW(9), PTR(weapon_majolyne_blizzard_attack1))
+            SET_VALUE(LW(9), PTR(&weapon_majolyne_blizzard_attack1))
             CALL_CHILD(blizzard_attack_event)
         END_IF
     END_SWITCH
@@ -819,7 +1132,7 @@ static EVT_BEGIN(powder_attack_event)
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
     CALL(btlevtcmd_PayWeaponCost, -2, LW(9))
-    IF_INT_EQUAL(LW(9), PTR(weapon_majolyne_powder_attack1))
+    IF_INT_EQUAL(LW(9), PTR(&weapon_majolyne_powder_attack1))
         CALL(evt_btl_camera_set_mode, 0, 9)
         CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
         CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)

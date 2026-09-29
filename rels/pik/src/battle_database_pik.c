@@ -1,11 +1,13 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default2[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_purple_teresa[];
+extern ItemDropData battle_item_purple_teresa[10];
 extern s32 unit_purple_teresa_22_data_E620[];
 
 // clang-format off
@@ -66,271 +68,256 @@ u32 pik_btlstage_data[109] = {
     0x00000000,
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_01_off_1[24] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+BattleUnitSetup btlparty_pik_pik_06_01_off_1[2] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_pik_pik_06_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_pik_pik_06_01_off_1 = { 2, btlparty_pik_pik_06_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_02_off_1[3] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_02_off_1[36] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+BattleGroupSetup btlgrp_pik_pik_06_02_off_1 = { 3, btlparty_pik_pik_06_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_03_off_1[1] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_pik_pik_06_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_pik_pik_06_03_off_1 = { 1, btlparty_pik_pik_06_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_04_off_1[2] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_03_off_1[12] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+BattleGroupSetup btlgrp_pik_pik_06_04_off_1 = { 2, btlparty_pik_pik_06_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_05_off_1[2] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_03_off_1[8] = {
-    0x00000001, (u32)&btlparty_pik_pik_06_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_pik_pik_06_05_off_1 = { 2, btlparty_pik_pik_06_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_06_off_1[4] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_04_off_1[24] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+BattleGroupSetup btlgrp_pik_pik_06_06_off_1 = { 4, btlparty_pik_pik_06_06_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_07_off_1[1] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_pik_pik_06_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_pik_pik_06_07_off_1 = { 1, btlparty_pik_pik_06_07_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_08_off_1[3] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_05_off_1[24] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+BattleGroupSetup btlgrp_pik_pik_06_08_off_1 = { 3, btlparty_pik_pik_06_08_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_pik_pik_06_09_off_1[4] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_pik_pik_06_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_pik_pik_06_09_off_1 = { 4, btlparty_pik_pik_06_09_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_test1_off[2] = {
+    { 50, &btlgrp_pik_pik_06_01_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_06_off_1[48] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_01_off[2] = {
+    { 20, &btlgrp_pik_pik_06_01_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_06_off_1[8] = {
-    0x00000004, (u32)&btlparty_pik_pik_06_06_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_02_off[2] = {
+    { 20, &btlgrp_pik_pik_06_02_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_07_off_1[12] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_03_off[2] = {
+    { 20, &btlgrp_pik_pik_06_03_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_07_off_1[8] = {
-    0x00000001, (u32)&btlparty_pik_pik_06_07_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_04_off[2] = {
+    { 20, &btlgrp_pik_pik_06_04_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_08_off_1[36] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_05_off[2] = {
+    { 20, &btlgrp_pik_pik_06_05_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_08_off_1[8] = {
-    0x00000003, (u32)&btlparty_pik_pik_06_08_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_06_off[2] = {
+    { 20, &btlgrp_pik_pik_06_06_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_pik_pik_06_09_off_1[48] = {
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_22_data_E620, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_07_off[2] = {
+    { 20, &btlgrp_pik_pik_06_07_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_pik_pik_06_09_off_1[8] = {
-    0x00000004, (u32)&btlparty_pik_pik_06_09_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_08_off[2] = {
+    { 20, &btlgrp_pik_pik_06_08_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_pik_pik_06_01_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_03_09_off[2] = {
+    { 20, &btlgrp_pik_pik_06_09_off_1, (struct BattleStageData*)pik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_01_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_01_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_02_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_02_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_03_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_03_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_04_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_04_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_05_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_05_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_06_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_06_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_07_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_07_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_08_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_08_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_pik_btlno_pik_03_09_off[6] = {
-    0x00000014, (u32)&btlgrp_pik_pik_06_09_off_1, (u32)&pik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_pik_tbl[187] = {
-    (u32)"マップstg_06_4", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_pik_btlno_pik_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_01_off, 0x00000000,
-    0x00000000, 0x03030303, 0x0A0A0303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_02_off,
-    0x00000000, 0x00000000, 0x03030303, 0x0A0A0303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_pik_btlno_pik_03_03_off, 0x00000000, 0x00000000, 0x03030303,
-    0x0A0A0303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"pik_03パープルテレサ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_04_off, 0x00000000, 0x00000000,
-    0x03030303, 0x0A0A0303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_05_off, 0x00000000,
-    0x00000000, 0x03030303, 0x0A0A0303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_06_off,
-    0x00000000, 0x00000000, 0x03030303, 0x0A0A0303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_pik_btlno_pik_03_07_off, 0x00000000, 0x00000000, 0x03030303,
-    0x0A0A0303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"pik_03パープルテレサ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_08_off, 0x00000000, 0x00000000,
-    0x03030303, 0x0A0A0303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"pik_03パープルテレサ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_pik_btlno_pik_03_09_off, 0x00000000,
-    0x00000000, 0x03030303, 0x0A0A0303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+BattleSetupData btlsetup_pik_tbl[11] = {
+    {
+        "マップstg_06_4",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_pik_btlno_pik_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_05_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_06_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_07_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_08_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "pik_03パープルテレサ",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_pik_btlno_pik_03_09_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

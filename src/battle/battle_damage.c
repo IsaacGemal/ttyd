@@ -157,7 +157,7 @@ void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
         if (!BtlUnit_CanGuardStatus(unit)) {
             continue;
         }
-        numParts = unit->mKindParams->field_0x10[0xB4 - 0x10];
+        numParts = unit->mKindParams->numParts;
         part = unit->mParts;
         for (j = 0; j < numParts; j++) {
             if (part->attributes & 0x8) {
@@ -217,7 +217,7 @@ void BattleAttackDeclare(s32* out1, s32* out2) {
         if (!BtlUnit_CanGuardStatus(unit)) {
             continue;
         }
-        numParts = unit->mKindParams->field_0x10[0xB4 - 0x10];
+        numParts = unit->mKindParams->numParts;
         part = unit->mParts;
         for (j = 0; j < numParts; j++) {
             if (part->attributes & 0x8) {
@@ -531,7 +531,7 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     if (target->mAttributeFlags & 0x10) {
         return 4;
     }
-    if ((part->counterAttributes & 0x2) && !(*(u32*)weapon->field_78 & 0x4) &&
+    if ((part->counterAttributes & 0x2) && !(weapon->counterResistanceFlags & 0x4) &&
         attacker->badgesEquipped.SpikeShield == 0) {
         return 5;
     }

@@ -82,15 +82,15 @@ static EVT_BEGIN(e2_door_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_1", 5, 5, (s32)w_door_close, (s32)w_door_open},
-    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_26", "w_bero", 5, 5, (s32)e1_door_close, (s32)e1_door_open},
-    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_27", "w_bero", 5, 5, (s32)e2_door_close, (s32)e2_door_open},
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_1", 5, 5, w_door_close, w_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_26", "w_bero", 5, 5, e1_door_close, e1_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_27", "w_bero", 5, 5, e2_door_close, e2_door_open},
     {"n_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_24", "s_bero_2", 1, 1, 0, 0},
     {NULL},
 };
 
 static BeroEntry w_bero_mapchg[] = {
-    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_2", 5, 5, (s32)w_door_close, (s32)w_door_open},
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_2", 5, 5, w_door_close, w_door_open},
 };
 
 // TODO: type

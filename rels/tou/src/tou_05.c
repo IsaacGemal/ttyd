@@ -100,20 +100,10 @@ EVT_BEGIN(unk_evt_tou_0002b6c8)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[45] = {
-    (u32)"n_bero", 0x00010004, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, (u32)&unk_evt_tou_0002b6c8, (u32)"tou_04", (u32)"s_bero_5",
-    0x00050005, (u32)&n_door_close, (u32)&n_door_open, (u32)"w_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, (u32)&evt_dakuto, 0xFFFFFFFF,
-    0x00000000, (u32)"tou_13", (u32)"w_bero_", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_data[3] = {
+    {"n_bero", 1, 4, 0x4E20, 100000, 0, 0, -1, NULL, -1, unk_evt_tou_0002b6c8, "tou_04", "s_bero_5", 5, 5, n_door_close, n_door_open},
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, evt_dakuto, -1, NULL, "tou_13", "w_bero_"},
+    {NULL},
 };
 
 EVT_BEGIN(evt_takurami)

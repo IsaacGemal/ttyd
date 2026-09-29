@@ -966,7 +966,7 @@ static BeroEntry bero_entry_data[5] = {
     {"s_bero", 0, 0, 0x00004E20, 0x000186A0, 0, 0, 0xFFFFFFFF, NULL, 0xFFFFFFFF, NULL, "gor_03", "n_bero", 0x0001, 0x0001, 0, 0},
     {"dokan_1", 0x0002, 0, 0x00000009, 0x000186A0, 0, 0, 0xFFFFFFFF, NULL, 0x00000006, NULL, NULL, "A_dokan_h00", 0x0001, 0x0001, 0, 0},
     {"A_dokan_h00", 0x1002, 0, 0x00000009, 0x000186A0, 0, 0, 0xFFFFFFFF, NULL, 0x00000006, NULL, NULL, "dokan_1", 0x0001, 0x0001, 0, 0},
-    {"n_bero", 0x0001, 0x0008, 0x00004E20, 0x000186A0, 0, 0, 0xFFFFFFFF, NULL, 0xFFFFFFFF, NULL, "rsh_01_a", "s_bero", 0x0001, 0x0001, (s32)"n_1_door_close", (s32)"n_1_door_open"},
+    {"n_bero", 0x0001, 0x0008, 0x00004E20, 0x000186A0, 0, 0, 0xFFFFFFFF, NULL, 0xFFFFFFFF, NULL, "rsh_01_a", "s_bero", 0x0001, 0x0001, "n_1_door_close", "n_1_door_open"},
     {NULL},
 };
 

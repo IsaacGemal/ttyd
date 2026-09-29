@@ -79,7 +79,7 @@ EVT_BEGIN(evt_slit2)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"s_bero_1", 0x0001, 0x000A, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "aji_01", "n_bero_3", 5, 5, (s32)s_door_close, (s32)s_door_open},
+    {"s_bero_1", 0x0001, 0x000A, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "aji_01", "n_bero_3", 5, 5, s_door_close, s_door_open},
     {"s_bero_2", 0x0F00, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, 0, evt_slit0, "aji_06", "tenjo", 1, 1},
     {"s_bero_3", 0x0F00, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, 0, evt_slit1, "aji_07", "tenjo", 1, 1},
     {"s_bero_4", 0x0F00, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, 0, evt_slit2, "aji_09", "tenjo", 1, 1},

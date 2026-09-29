@@ -1,4 +1,5 @@
 #pragma once
 
 #include <dolphin/types.h>
-extern u32 unit_killer[];
+#include "battle/battle_unit.h"
+extern BattleUnitKind unit_killer;

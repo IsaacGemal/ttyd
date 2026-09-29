@@ -93,7 +93,7 @@ EVT_BEGIN(gra_06_ido_in)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"n_bero", 1, 6, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "jin_00", "w_bero", 5, 5, (s32)&ne_close, (s32)&ne_open},
+    {"n_bero", 1, 6, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "jin_00", "w_bero", 5, 5, &ne_close, &ne_open},
     {"sw_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gra_05", "e_bero", 1, 1, 0, 0},
     {"ana", 0x0F00, 0, 0x4E20, 0x186A0, 0, 0, -1, gra_06_ido_in, 0, gra_06_ido, "jin_09", NULL, 4, 4, 0, 0},
     {NULL},

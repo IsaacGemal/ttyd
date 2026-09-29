@@ -1915,3 +1915,54 @@ unit's header on rerun.
   and index-assignment forms above make them unnecessary; NONMATCHING labels added to the unlinked units. The
   `mri_puni:evt_make_texbuf` -0.01 (64.86 -> 64.85) is a side effect of compiling mri without deferral; that unit is still
   NonMatching.
+## Wave 20: the battle structs completed, and the tables typed by a renderer instead of agents (2026-09-29, Claude Opus 5.5)
+
+Isaac's go, via Claude #1: complete the battle structs, then type the ~2,000 raw `u32` tables (the generators' `// TODO: type`)
+with them. Claude #1 suggested an agent wave for the second half; it turned out not to need one.
+
+**The structs, each field from the code that reads it in the original asm.** BattleUnitKind (BtlUnit_Entry copies
+most of it into BattleUnit, whose names it inherits; BtlUnit_GetCoin, BtlUnit_GetTalkTogePos, BSE_Fire,
+btlseqTurnFirstProcess, _get_itemsteal_param, BattleDamageDirect name the rest), BattleUnitKindPart (btlDispMain's
+base alpha), BattleWeapon (the 46 status bytes mapped case by case through _getSickStatusParam's jump table;
+chances and costs u8, turns and strengths s8), BattleUnitSetup (its item drop table from npcSetupBattleInfo),
+BattleGroupSetup, BattleSetupData (npcSetupBattleInfo reads nearly all of it), ItemDropData (merged with npcdrv's
+duplicate NpcItemDropEntry). BeroEntry.animeArg3/4 and NpcBattleSetupEntry.stageData are pointers. The defence
+tables (5 bytes) and BattleVulnerableStatus (0x16) were right all along: the "8 / 0x18" wave 18 saw is alignment
+padding. Two corrections fell out: BattlePartyAnimeLoad reads the part's model name (the old mParts type pointed
+it at the part name), and the part count is u8 (making it s8 cost two functions' scores, caught by the ratchet).
+
+**tools/struct_render.py.** Renders a table as a typed initializer straight from dtk's disassembly of the original
+(bytes, relocations, `.rel` labels; strings dtk calls vec3 recognized), so a rendered table can't hold a wrong
+value; the checksum proves the rest. `--all` types the battle graph: roots by name and size (units, groups, party
+setups, weapons, group selections, setup tables, spawn entries, the named tables scripts hand to btlevtcmd_*),
+then every typed pointer out of them. Single objects become scalars, lists arrays; references (`x` / `&x`, index
+arithmetic in the old raw element size), externs and casts are fixed across the tree, and a second pass renders
+from the updated declarations. It is idempotent. `--check-layouts` compiles its layouts against the headers as
+offsetof assertions.
+- **1,834 tables typed** (245 weapons, 203 party setups and spawn entries, 183 groups, 146 group selections,
+  110 units with their parts and defence/status/pose/data tables, 110 item lists, 18 string lists, 10 setup
+  tables, ...). Raw tables: 1,973 -> 311. All 32 checksums pass; scores don't move (the bytes don't).
+- **Left raw:** 214 audience animation bytecode lists (opcodes, want macros, not structs), ~30 item/key lists (want
+  ITEM_* names), and ~65 mixed tables: stage data that dtk merged with the weapons after it (each REL's
+  `*_btlstage_data` holds several stage records and hazard weapons; the fix is symbols in that REL's symbols.txt,
+  then the renderer), pose_sound_timing_table (5-word records, no struct yet), btl_*_setup_no_tbl, map-specific
+  shop/quiz/elevator data. None of these fit an existing struct, so an agent wave under wave 18's rules (no new
+  structs) had little to do and wasn't run.
+- **Skipped:** unit_purple_teresa (hand-built in wave 6: strings as named char arrays, scripts as hex) needs redoing
+  before the renderer can touch it.
+
+**Surprises and lessons.**
+- Index arithmetic changes meaning with the type: nok's scripts spawn `&entry_unit_data[12]` in u32 units; typed as
+  BattleUnitSetup that is entry 1. The checksum caught it; the renderer now converts such uses and refuses others.
+- Casts in a non-linked unit aren't proven by any checksum: for NonMatching files the objdiff ratchet is the only
+  guard (it caught the numParts signedness), and review 1 compiled battle_mario.c separately to prove its data.
+- MWCC rejects a `const char**` inside a script's `PTR()`, so string lists are `char*`.
+- The CI baseline in a long-lived worktree goes stale: re-accept it on main before judging a branch.
+
+**Review (one fresh Claude).** 0 wrong names on ~60 checked against the asm; 2 high (the u8/s8 weapon bytes;
+fix_refs could mangle sizeof, arithmetic, comments), 7 medium, 10 low; fixed except those listed next.
+
+**Follow-ups:** stage-data symbol splits (then ~200 casts go away); BattleSetupData.field_0x20 is `[16][2]` in the
+header but rendered flat; unit_system's split points its tables into the middle of `regist`; some BattleUnitType
+names look swapped against the unit files (unit_boss_cortez_claw is UNIT_CORTEZ_SWORD, moamoa tentacle a/c) and want
+checking against the game; audience bytecode macros; item-list ITEM_* names; unit_purple_teresa.

@@ -4,6 +4,8 @@
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma pool_data off
 
@@ -11,12 +13,12 @@
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_heart_drop_param_default[];
 extern s32 battle_heart_drop_param_default2[];
-extern s32 battle_item_barriern_z[];
-extern s32 battle_item_default_param_list[];
-extern s32 battle_item_sinemon[];
-extern s32 unit_barriern_z_18_data_72F0[];
-extern s32 unit_kuriboo_18_data_4608[];
-extern s32 unit_sinemon_18_data_5D28[];
+extern ItemDropData battle_item_barriern_z[1];
+extern ItemDropData battle_item_default_param_list[1];
+extern ItemDropData battle_item_sinemon[8];
+extern BattleUnitKind unit_barriern_z_18_data_72F0;
+extern BattleUnitKind unit_kuriboo_18_data_4608;
+extern BattleUnitKind unit_sinemon_18_data_5D28;
 static USER_FUNC(_space_rotate);
 s32 bgset_moo_space_event[35];
 
@@ -79,617 +81,484 @@ u32 moo_btlstage_data[109] = {
     0x00000000,
 };
 
-// TODO: type
-u32 btlparty_moo_moo_00_01_off_1[36] = {
-    (u32)unit_kuriboo_18_data_4608, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_default_param_list,
-    (u32)unit_kuriboo_18_data_4608, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_kuriboo_18_data_4608, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_00_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_00_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_01_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_01_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_02_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_01_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_02_off_2[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_01_02_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_03_off_1[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_01_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_04_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_01_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_04_off_2[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_01_04_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_04_off_3[48] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_04_off_3[8] = {
-    0x00000004, (u32)&btlparty_moo_moo_01_04_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_01_05_off_1[48] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_01_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_moo_moo_01_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_02_01_off_1[24] = {
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_02_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_02_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_02_02_off_1[24] = {
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_02_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_02_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_02_03_off_1[24] = {
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_02_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_02_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_02_04_off_1[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_02_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_02_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_02_05_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_barriern_z_18_data_72F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_02_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_02_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_01_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_05_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_01_off_2[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_05_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_01_off_3[48] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_01_off_3[8] = {
-    0x00000004, (u32)&btlparty_moo_moo_05_01_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_02_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_05_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_03_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_05_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_03_off_2[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_05_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_04_off_1[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_05_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_05_off_1[24] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_moo_moo_05_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_05_off_2[36] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_moo_moo_05_05_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_moo_moo_05_05_off_3[48] = {
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_18_data_5D28, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_moo_moo_05_05_off_3[8] = {
-    0x00000004, (u32)&btlparty_moo_moo_05_05_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_moo_moo_00_01_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_01_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_01_01_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_01_02_off[9] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_01_02_off_1, (u32)&moo_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_moo_moo_01_02_off_2, (u32)&moo_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_01_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_01_03_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_01_04_off[12] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_01_04_off_1, (u32)&moo_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_moo_moo_01_04_off_2, (u32)&moo_btlstage_data, 0x00000005, (u32)&btlgrp_moo_moo_01_04_off_3,
-    (u32)&moo_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_01_05_off[6] = {
-    0x00000005, (u32)&btlgrp_moo_moo_01_05_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_02_01_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_02_01_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_02_02_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_02_02_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_02_03_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_02_03_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_02_04_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_02_04_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_02_05_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_02_05_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_05_01_off[12] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_05_01_off_1, (u32)&moo_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_moo_moo_05_01_off_2, (u32)&moo_btlstage_data, 0x00000005, (u32)&btlgrp_moo_moo_05_01_off_3,
-    (u32)&moo_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_05_02_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_05_02_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_05_03_off[9] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_05_03_off_1, (u32)&moo_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_moo_moo_05_03_off_2, (u32)&moo_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_05_04_off[6] = {
-    0x00000014, (u32)&btlgrp_moo_moo_05_04_off_1, (u32)&moo_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_moo_btlno_moo_05_05_off[12] = {
-    0x0000000A, (u32)&btlgrp_moo_moo_05_05_off_1, (u32)&moo_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_moo_moo_05_05_off_2, (u32)&moo_btlstage_data, 0x00000005, (u32)&btlgrp_moo_moo_05_05_off_3,
-    (u32)&moo_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_moo_tbl[289] = {
-    (u32)"マップstg_07_4", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_moo_btlno_moo_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"moo01シンエモン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_01_01_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo01シンエモン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_01_02_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo01シンエモン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_moo_btlno_moo_01_03_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"moo01シンエモン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_moo_btlno_moo_01_04_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"moo01シンエモン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_01_05_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo02バリアーンZ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_02_01_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo02バリアーンZ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_moo_btlno_moo_02_02_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"moo02バリアーンZ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_moo_btlno_moo_02_03_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"moo02シンエモン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_02_04_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo02シンエモン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_02_05_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo05シンエモン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_moo_btlno_moo_05_01_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"moo05シンエモン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_moo_btlno_moo_05_02_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"moo05シンエモン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_05_03_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo05シンエモン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_moo_btlno_moo_05_04_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"moo05シンエモン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_moo_btlno_moo_05_05_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+BattleUnitSetup btlparty_moo_moo_00_01_off_1[3] = {
+    { &unit_kuriboo_18_data_4608, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_default_param_list },
+    { &unit_kuriboo_18_data_4608, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_kuriboo_18_data_4608, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+BattleGroupSetup btlgrp_moo_moo_00_01_off_1 = { 3, btlparty_moo_moo_00_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_01_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_01_off_1 = { 2, btlparty_moo_moo_01_01_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_02_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_02_off_1 = { 2, btlparty_moo_moo_01_02_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_02_off_2[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_02_off_2 = { 3, btlparty_moo_moo_01_02_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_03_off_1[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_03_off_1 = { 3, btlparty_moo_moo_01_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_04_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_04_off_1 = { 2, btlparty_moo_moo_01_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_04_off_2[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_04_off_2 = { 3, btlparty_moo_moo_01_04_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_04_off_3[4] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_04_off_3 = { 4, btlparty_moo_moo_01_04_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_01_05_off_1[4] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_01_05_off_1 = { 4, btlparty_moo_moo_01_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_02_01_off_1[2] = {
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+};
+
+BattleGroupSetup btlgrp_moo_moo_02_01_off_1 = { 2, btlparty_moo_moo_02_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_02_02_off_1[2] = {
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_02_02_off_1 = { 2, btlparty_moo_moo_02_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_02_03_off_1[2] = {
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+};
+
+BattleGroupSetup btlgrp_moo_moo_02_03_off_1 = { 2, btlparty_moo_moo_02_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_02_04_off_1[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_02_04_off_1 = { 3, btlparty_moo_moo_02_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_02_05_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
+};
+
+BattleGroupSetup btlgrp_moo_moo_02_05_off_1 = { 2, btlparty_moo_moo_02_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_01_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_01_off_1 = { 2, btlparty_moo_moo_05_01_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_01_off_2[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_01_off_2 = { 3, btlparty_moo_moo_05_01_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_01_off_3[4] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_01_off_3 = { 4, btlparty_moo_moo_05_01_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_02_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_02_off_1 = { 2, btlparty_moo_moo_05_02_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_03_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_03_off_1 = { 2, btlparty_moo_moo_05_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_03_off_2[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_03_off_2 = { 3, btlparty_moo_moo_05_03_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_04_off_1[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_04_off_1 = { 3, btlparty_moo_moo_05_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_05_off_1[2] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_05_off_1 = { 2, btlparty_moo_moo_05_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_05_off_2[3] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_05_off_2 = { 3, btlparty_moo_moo_05_05_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_moo_moo_05_05_off_3[4] = {
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_moo_moo_05_05_off_3 = { 4, btlparty_moo_moo_05_05_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_test1_off[2] = {
+    { 50, &btlgrp_moo_moo_00_01_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_01_01_off[2] = {
+    { 10, &btlgrp_moo_moo_01_01_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_01_02_off[3] = {
+    { 10, &btlgrp_moo_moo_01_02_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 10, &btlgrp_moo_moo_01_02_off_2, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_01_03_off[2] = {
+    { 10, &btlgrp_moo_moo_01_03_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_01_04_off[4] = {
+    { 10, &btlgrp_moo_moo_01_04_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 10, &btlgrp_moo_moo_01_04_off_2, (struct BattleStageData*)moo_btlstage_data },
+    { 5, &btlgrp_moo_moo_01_04_off_3, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_01_05_off[2] = {
+    { 5, &btlgrp_moo_moo_01_05_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_02_01_off[2] = {
+    { 20, &btlgrp_moo_moo_02_01_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_02_02_off[2] = {
+    { 20, &btlgrp_moo_moo_02_02_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_02_03_off[2] = {
+    { 20, &btlgrp_moo_moo_02_03_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_02_04_off[2] = {
+    { 20, &btlgrp_moo_moo_02_04_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_02_05_off[2] = {
+    { 20, &btlgrp_moo_moo_02_05_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_05_01_off[4] = {
+    { 10, &btlgrp_moo_moo_05_01_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 10, &btlgrp_moo_moo_05_01_off_2, (struct BattleStageData*)moo_btlstage_data },
+    { 5, &btlgrp_moo_moo_05_01_off_3, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_05_02_off[2] = {
+    { 20, &btlgrp_moo_moo_05_02_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_05_03_off[3] = {
+    { 10, &btlgrp_moo_moo_05_03_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 10, &btlgrp_moo_moo_05_03_off_2, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_05_04_off[2] = {
+    { 20, &btlgrp_moo_moo_05_04_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_05_05_off[4] = {
+    { 10, &btlgrp_moo_moo_05_05_off_1, (struct BattleStageData*)moo_btlstage_data },
+    { 10, &btlgrp_moo_moo_05_05_off_2, (struct BattleStageData*)moo_btlstage_data },
+    { 5, &btlgrp_moo_moo_05_05_off_3, (struct BattleStageData*)moo_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+BattleSetupData btlsetup_moo_tbl[17] = {
+    {
+        "マップstg_07_4",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo01シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_01_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo01シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_01_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo01シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_01_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo01シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_01_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo01シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_01_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo02バリアーンZ",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_02_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo02バリアーンZ",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_02_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo02バリアーンZ",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_02_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo02シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_02_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo02シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_02_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo05シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_05_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo05シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_05_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo05シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_05_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo05シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_05_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "moo05シンエモン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_moo_btlno_moo_05_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

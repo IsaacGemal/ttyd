@@ -28,19 +28,19 @@ extend_data(41,
 
 BeroEntry bero_data_a_nidome[2] = {
     {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_a", "e_bero", 1, 1,
-     (s32)"e_door_close", (s32)"e_door_open"},
+     "e_door_close", "e_door_open"},
     {NULL},
 };
 
 BeroEntry bero_data_b_nidome[2] = {
     {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_b", "e_bero", 1, 1,
-     (s32)"e_door_close", (s32)"e_door_open"},
+     "e_door_close", "e_door_open"},
     {NULL},
 };
 
 BeroEntry bero_data_c_nidome[2] = {
     {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "e_bero", 1, 1,
-     (s32)"e_door_close", (s32)"e_door_open"},
+     "e_door_close", "e_door_open"},
     {NULL},
 };
 

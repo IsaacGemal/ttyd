@@ -7,15 +7,18 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
 extern s32 weaponGetFPPowerDefault[];
-static u32 regist[6];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[1];
 static s32 magic_attack_event[269];
-static u32 pose_table[36];
-static u32 data_table[28];
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[14];
 static s32 init_event[39];
 static s32 damage_event[10];
 static s32 counter_damage_event[41];
@@ -42,94 +45,334 @@ extend_data(flower_chorobon_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000057, (u32)"btl_un_flower_chorobon", 0x00060000, 0x01011300,
-    0x0346003C, 0x270F001C, 0x00200005, 0x00200000,
-    0x00000000, 0x41800000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41600000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41600000,
-    0x00000000, 0x00000000, 0x41100000, 0x41A00000,
-    0x00000000, 0x00000000, 0x41800000, 0x00000000,
-    0x41E00000, 0x42000000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_CHORO2_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00040000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_FLOWER_FUZZY,          // mUnitType
+    "btl_un_flower_chorobon",   // name
+    6,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    19,                         // mLevel
+    0,                          // mBonusExp
+    3,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    0,                          // baseCoin
+    60,                         // field_0x13
+    9999,                       // field_0x14
+    28,                         // width
+    32,                         // height
+    { 5, 32 },                  // statusIconOffset
+    { 0.0f, 16.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 14.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 14.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 9.0f, 20.0f, 0.0f },      // kissHitOffset
+    { 0.0f, 16.0f, 0.0f },      // cutBaseOffset
+    28.0f,                      // cutWidth
+    32.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_CHORO2_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00040000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    85,  // sleepRate
+    85,  // stopRate
+    80,  // dizzyRate
+    100, // poisonRate
+    85,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    60,  // allergicRate
+    85,  // frightRate
+    80,  // galeForceRate
+    100, // fastRate
+    80,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                        // partNum
+        "btl_un_flower_chorobon", // partName
+        "c_chorobon_f",           // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 25.0f, 0.0f },    // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },    // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x00000009,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x55555064, 0x55646446, 0x645A645A, 0x645F3C55,
-    0x50645064, 0x645F0000,
+static BattleWeapon weapon_chorobon_drain_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_flower_chorobon", (u32)"c_chorobon_f", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleWeapon weapon_chorobon_drain_attack_fp = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    weaponGetFPPowerDefault,                  // fpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_chorobon_drain_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00000047, 0x00000000, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_chorobon_drain_attack_fp[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)weaponGetFPPowerDefault, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00000047, 0x00000000, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_chorobon_magic_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000047, 0x000007FF, 0x00002000,
-    0x00050000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_chorobon_magic_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    5,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(attack_event)
@@ -165,8 +408,8 @@ EVT_END()
 
 static EVT_BEGIN(magic_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_chorobon_magic_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_chorobon_magic_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_chorobon_magic_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_chorobon_magic_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -175,10 +418,10 @@ static EVT_BEGIN(magic_attack_event)
         END_IF
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_chorobon_magic_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_chorobon_magic_attack))
     CALL(btlevtcmd_AttackDeclareAll, -2)
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_chorobon_magic_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_chorobon_magic_attack))
     SET_VALUE(LW(0), 2)
     MULTIPLY(LW(0), -1)
     CALL(btlevtcmd_RecoverFp, -2, 1, LW(0))
@@ -199,7 +442,7 @@ static EVT_BEGIN(magic_attack_event)
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     SET_VALUE(LW(10), 0)
     LABEL(0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_chorobon_magic_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_chorobon_magic_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -225,9 +468,9 @@ static EVT_BEGIN(magic_attack_event)
     GOTO(97)
     LABEL(91)
     IF_INT_EQUAL(LW(10), 0)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_chorobon_magic_attack))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_chorobon_magic_attack))
     END_IF
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_chorobon_magic_attack), 256, LW(5))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_chorobon_magic_attack), 256, LW(5))
     GOTO(97)
     LABEL(97)
     CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
@@ -240,44 +483,120 @@ static EVT_BEGIN(magic_attack_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 weapon_chorobon_drain_attack_biribiri_counterd[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000000, 0x00000000, 0x00002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_chorobon_drain_attack_biribiri_counterd = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0,                                        // special
+    0,                                        // counterResistanceFlags
+    0x00002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"CBN_N_1", 0x00000002, (u32)"CBN_Y_1",
-    0x00000009, (u32)"CBN_Y_1", 0x00000005, (u32)"CBN_K_1",
-    0x00000004, (u32)"CBN_X_1", 0x00000003, (u32)"CBN_X_1",
-    0x0000001C, (u32)"CBN_S_1", 0x0000001D, (u32)"CBN_Q_1",
-    0x0000001E, (u32)"CBN_Q_1", 0x0000001F, (u32)"CBN_S_1",
-    0x00000027, (u32)"CBN_D_1", 0x00000032, (u32)"CBN_A_1",
-    0x0000002A, (u32)"CBN_R_1", 0x00000028, (u32)"CBN_W_1",
-    0x00000038, (u32)"CBN_X_1", 0x00000039, (u32)"CBN_X_1",
-    0x00000041, (u32)"CBN_T_1", 0x00000045, (u32)"CBN_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "CBN_N_1" },
+    { 0x02, "CBN_Y_1" },
+    { 0x09, "CBN_Y_1" },
+    { 0x05, "CBN_K_1" },
+    { 0x04, "CBN_X_1" },
+    { 0x03, "CBN_X_1" },
+    { 0x1C, "CBN_S_1" },
+    { 0x1D, "CBN_Q_1" },
+    { 0x1E, "CBN_Q_1" },
+    { 0x1F, "CBN_S_1" },
+    { 0x27, "CBN_D_1" },
+    { 0x32, "CBN_A_1" },
+    { 0x2A, "CBN_R_1" },
+    { 0x28, "CBN_W_1" },
+    { 0x38, "CBN_X_1" },
+    { 0x39, "CBN_X_1" },
+    { 0x41, "CBN_T_1" },
+    { 0x45, "CBN_S_1" },
 };
 
-// TODO: type
-static u32 data_table[28] = {
-    0x0000001A, (u32)&counter_damage_event, 0x00000019, (u32)&counter_damage_event,
-    0x0000001B, (u32)&counter_damage_event, 0x0000001C, (u32)&counter_damage_event,
-    0x0000001D, (u32)&counter_damage_event, 0x0000001E, (u32)&counter_damage_event,
-    0x0000001F, (u32)&counter_damage_event, 0x00000020, (u32)&counter_damage_event,
-    0x00000021, (u32)&counter_damage_event, 0x00000022, (u32)&counter_damage_event,
-    0x00000023, (u32)&counter_damage_event, 0x00000024, (u32)&counter_damage_event,
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[14] = {
+    { 0x1A, counter_damage_event },
+    { 0x19, counter_damage_event },
+    { 0x1B, counter_damage_event },
+    { 0x1C, counter_damage_event },
+    { 0x1D, counter_damage_event },
+    { 0x1E, counter_damage_event },
+    { 0x1F, counter_damage_event },
+    { 0x20, counter_damage_event },
+    { 0x21, counter_damage_event },
+    { 0x22, counter_damage_event },
+    { 0x23, counter_damage_event },
+    { 0x24, counter_damage_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(rabbit_move)
@@ -379,8 +698,8 @@ EVT_END()
 
 static EVT_BEGIN(drain_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_chorobon_drain_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_chorobon_drain_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_chorobon_drain_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_chorobon_drain_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -389,10 +708,10 @@ static EVT_BEGIN(drain_attack_event)
         END_IF
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_chorobon_drain_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_chorobon_drain_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_chorobon_drain_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_chorobon_drain_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     CALL(evt_btl_camera_set_mode, 0, 8)
@@ -416,7 +735,7 @@ static EVT_BEGIN(drain_attack_event)
     SUBTRACT(LW(1), 10)
     SUBTRACT(LW(2), 2)
     CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 20, -1)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_chorobon_drain_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_chorobon_drain_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -455,7 +774,7 @@ static EVT_BEGIN(drain_attack_event)
     GOTO(98)
     LABEL(91)
     SET_VALUE(LF(0), 0)
-    CALL(btlevtcmd_PreCheckCounter, -2, LW(3), LW(4), PTR(weapon_chorobon_drain_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckCounter, -2, LW(3), LW(4), PTR(&weapon_chorobon_drain_attack), 256, LW(5))
     IF_INT_EQUAL(LW(5), 17)
         SET_VALUE(LF(0), 1)
     END_IF
@@ -464,8 +783,8 @@ static EVT_BEGIN(drain_attack_event)
     END_IF
     IF_INT_EQUAL(LF(0), 1)
         CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_chorobon_drain_attack))
-        SET_VALUE(LW(9), PTR(weapon_chorobon_drain_attack_biribiri_counterd))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_chorobon_drain_attack))
+        SET_VALUE(LW(9), PTR(&weapon_chorobon_drain_attack_biribiri_counterd))
         CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
         RETURN
     END_IF
@@ -524,14 +843,14 @@ static EVT_BEGIN(drain_attack_event)
     CALL(evt_btl_camera_add_zoom, 0, -50)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_CHORO2_ATTACK2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_chorobon_drain_attack))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_chorobon_drain_attack))
     CALL(btlevtcmd_GetFp, LW(3), LW(0))
     IF_INT_GREATER(LW(0), 0)
-        SET_VALUE(LW(9), PTR(weapon_chorobon_drain_attack_fp))
+        SET_VALUE(LW(9), PTR(&weapon_chorobon_drain_attack_fp))
         CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
         CALL(btlevtcmd_GetFpDamage, LW(3), LW(10))
     ELSE
-        SET_VALUE(LW(9), PTR(weapon_chorobon_drain_attack))
+        SET_VALUE(LW(9), PTR(&weapon_chorobon_drain_attack))
         CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
         CALL(btlevtcmd_GetHpDamage, LW(3), LW(10))
     END_IF
@@ -574,7 +893,7 @@ static EVT_BEGIN(drain_attack_event)
         CALL(btlevtcmd_GetPos, -2, LW(5), LW(6), LW(7))
         ADD(LW(6), 45)
         ADD(LW(7), 10)
-        IF_INT_EQUAL(LW(9), PTR(weapon_chorobon_drain_attack))
+        IF_INT_EQUAL(LW(9), PTR(&weapon_chorobon_drain_attack))
             CALL(btlevtcmd_RecoverHp, -2, LW(1), LW(10))
             CALL(evt_eff, STRING(""), STRING("recovery"), 7, LW(5), LW(6), LW(7), LW(10), 0, 0, 0, 0, 0, 0, 0)
         ELSE
