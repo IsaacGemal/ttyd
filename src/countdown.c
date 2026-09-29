@@ -17,6 +17,11 @@ void countDownInit(void) {
 void countDownSaveReStart(void) {
 }
 
+void countDownSetRestartTime(s32 time) {
+    // offset 0x1C is unnamed in CountdownWork (inside field_0x2 padding)
+    *(s32*)((u8*)wp + 0x1C) = time;
+}
+
 // NONMATCHING (0.72%): empty placeholder, not decompiled yet.
 void countDownMain(void) {
 }

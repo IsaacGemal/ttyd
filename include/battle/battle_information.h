@@ -20,3 +20,4 @@ void BattleInformationInit(FieldBattleInfo* info);
 void BattleInfomationSetBattleSetupInfo(FieldBattleInfo* info, NpcBattleInfo* setup);
 void BattleInformationSetResult(FieldBattleInfo* info, u32 result);
 u32 BattleInformationGetResult(FieldBattleInfo* info);
+void BattleInformationSetDropMaterial(FieldBattleInfo* info);

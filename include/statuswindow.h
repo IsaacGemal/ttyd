@@ -58,3 +58,5 @@ BOOL statusWinCheckUpdate(void);
 
 typedef struct StatusWindowValue StatusWindowValue;
 void statusGetValue(StatusWindowValue* values);
+void statusWinDispOff(void);
+void statusWinDispOn(void);

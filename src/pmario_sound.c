@@ -4577,6 +4577,18 @@ void psndSFXAllOff(void) {
 }
 
 
+void L_psndBGM_stop(void) {
+	s32 i;
+
+	psnd.unk56 &= ~0x10;
+	for (i = 0; i < 40; i++) {
+		if ((u32)pssfx[i].unk0 == -1) continue;
+		if (!(((u16*)&pssfx[i])[3] & 0x10)) continue;
+		if (((u16*)&pssfx[i])[3] & 0x820) continue;
+		psndSFXOff(i);
+	}
+}
+
 s32 psndSFXOn(const char* sfx_name) {
 	return __psndSFXOn((s32)sfx_name, 0xFF, 0xFF, 0, 0, 0, 0x10, 0);
 }

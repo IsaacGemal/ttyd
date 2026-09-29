@@ -13,6 +13,11 @@ extern const Vec vec3_802c1ae4;
 extern Vec testKagePosArray[];
 extern GXColor unk_80422f98;
 extern GXColor unk_80422f9c;
+extern GXColor unk_80422fa0;
+extern GXColor unk_80422fa4;
+extern u8 cube_dl_top[0x40];
+extern u8 cube_dl_bottom[0x20];
+extern u8 cube_dl_side[0x20];
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
 extern const f32 float_1_80419904;
@@ -353,6 +358,86 @@ void cylinder(ShadowEntry* entry) {
         }
         GXCallDisplayList(base + 0x180, 0x40);
         GXCallDisplayList(base + 0x1C0, 0x40);
+    }
+}
+
+// The three material passes each draw the cube display lists for type 1 and the cylinder otherwise; the
+// original expands this identically three times, so it was a macro in the source.
+#define SHADOW_ENTRY_DRAW(entry)                    \
+    do {                                            \
+        switch ((entry)->type) {                    \
+        case 0: break;                              \
+        case 1:                                     \
+            GXSetArray(0xB, color_tbl_cube, 4);     \
+            GXCallDisplayList(cube_dl_top, 0x40);   \
+            GXCallDisplayList(cube_dl_bottom, 0x20);\
+            GXCallDisplayList(cube_dl_side, 0x20);  \
+            break;                                  \
+        }                                           \
+        cylinder(entry);                            \
+    } while (0)
+
+void cylinderShadowDraw(CameraId camId, void* param) {
+    ShadowEntry* entry = cswp->entries;
+    f32 (*view)[4];
+    Mtx mtx;
+    u16 left, top, right, bottom;
+    f32 zero;
+    s32 i;
+    GXColor color;
+
+    (void)param;
+    view = camGetCurPtr()->view;
+    zero = float_0_804198f4;
+    for (i = 0; i < cswp->unk104; i++, entry++) {
+        if (entry->size == zero) {
+            continue;
+        }
+        if (entry->unk2 != 2) {
+            continue;
+        }
+        if (!(entry->flags & 2)) {
+            continue;
+        }
+        if (*(s16*)&entry->camId != camId) {
+            continue;
+        }
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXClearBoundingBox();
+        }
+        PSMTXConcat(view, entry->matrix, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        color = unk_80422fa0;
+        color.a = entry->mode;
+        GXSetTevColor(1, color);
+        GXSetZMode(1, 3, 0);
+        GXSetCullMode(2);
+        GXSetBlendMode(1, 1, 1, 0);
+        GXSetBlendMode(2, 1, 1, 7);
+        GXSetAlphaUpdate(1);
+        GXSetColorUpdate(0);
+        GXSetChanCtrl(4, 0, 0, 1, 0, 2, 2);
+        SHADOW_ENTRY_DRAW(entry);
+        GXSetZMode(1, 3, 0);
+        GXSetCullMode(1);
+        GXSetBlendMode(0, 4, 5, 0);
+        GXSetAlphaUpdate(1);
+        GXSetColorUpdate(0);
+        GXSetChanMatColor(4, unk_80422fa4);
+        GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+        SHADOW_ENTRY_DRAW(entry);
+        GXSetCullMode(2);
+        GXSetBlendMode(1, 6, 7, 0);
+        GXSetAlphaUpdate(0);
+        GXSetColorUpdate(1);
+        GXSetChanMatColor(4, cswp->unk100);
+        SHADOW_ENTRY_DRAW(entry);
+        if (camId == 1) {
+            sysWaitDrawSync();
+            GXReadBoundingBox(&left, &top, &right, &bottom);
+            offscreenAddBoundingBox(entry->unk18, left, top, right, bottom);
+        }
     }
 }
 

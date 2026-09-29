@@ -295,6 +295,19 @@ void BtlUnit_ChangeStayAnim(s32 unitId) {
                        ((BattleUnitAnimFields*)unit)->mStayPoseName, FALSE);
 }
 
+void BtlUnit_GetTalkTogePos(s32 unitId, f32* x, f32* y, f32* z) {
+    BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+    f32 x2, y2, z2;
+
+    BtlUnit_GetPos(unit, &x2, &y2, &z2);
+    x2 += (unit->mKindParams->talkTogeBaseOffset.x + unit->togeOffset.x) * (f32)unit->faceDirection;
+    y2 += unit->mKindParams->talkTogeBaseOffset.y + unit->togeOffset.y;
+    z2 += unit->mKindParams->talkTogeBaseOffset.z + unit->togeOffset.z;
+    *x = x2;
+    *y = y2;
+    *z = z2;
+}
+
 void BtlUnit_ChangeTalkAnim(s32 unitId) {
     BattleUnit* unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
 

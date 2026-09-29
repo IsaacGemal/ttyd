@@ -2017,3 +2017,24 @@ of other games are there for agents to learn from. One concern to watch: agents 
 Claude #1 checks each workspace's provenance.txt at collection and surfaces anything outside the repo.
 Size estimate asked for tonight: the finished decomp is roughly 0.8-1.2 million lines (about 450k today: src 157k,
 rels 183k, libs 99k, include 12k), about half of it event scripts and data tables.
+
+## Wave 21: one untouched function per agent (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Isaac's idea: skip the scaffolding, give each agent one function nobody had touched, and see. The queue was the
+smallest 0% function of each dol game file up to 1.5 KB (200 files, median 342 bytes; 136 files had no source, so
+the agent created the file with just that function). 24 agents at a time, 30 minutes each, 17:44-19:32, from a
+fresh base on the tower (with its own copy of build/tools: rebuilding a base re-downloads the tools, and
+overwriting the shared ones fails while other agents run them). **158 of 200 functions at 100%, 32 at 90-99%, 9 at
+50-89%, 1 dropped** (eff_syuryou: its data struct clashed with the one wave 19 put in eff_syuryou.h). **Functions
+5,465 -> 5,623.** Small functions took 2-5 minutes.
+
+Collected in one batch (all files, header additions unioned, one build, scores from the report) rather than
+merge_agent.sh per unit, which runs CI 200 times. Fixed at collection: two agents declared effHokoriN64Entry with
+different argument orders (ABI-identical; kept the order its caller uses); one agent's mobjdrv.c edit dropped three
+other functions from 99.9% to 84-88% (the file keeps main's version; its mobjCalcMtx attempt was 83.6%).
+Web access: 33 agents fetched other TTYD decomps (doldecomp/ttyd, MIT; one also cloned Rainchus/ttyd-decomp-us,
+whose license we haven't checked) to see whether a function already existed upstream; their reports say nothing
+was copied. Several also listed or read paths outside their workspace (~/ttyd, other agents' workspaces), which the
+brief forbids; the per-agent provenance.txt files in scratch/wave21 have the details. Worth tightening in the
+prompt: say what's allowed to fetch.
+Near-misses (90-99%) for Claude #3: scratch/wave21/scores.json.

@@ -3,6 +3,7 @@
  */
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
+#include "driver/himo.h"
 #include "driver/mapdrv.h"
 #include "mario/mariost.h"
 #include "memory.h"
@@ -50,6 +51,16 @@ s32 g_modeling_mtx_lv;
 Mtx* g_modeling_mtx;
 Mtx g_modeling_mtx_stack[32];
 extern Vec vec3_802c2dd4[];
+extern Vec vec3_802c2dc8[];
+
+// .sdata2 constants this unit references by name in retail
+extern const f32 float_0_80419a48;
+extern const f32 float_1_80419a44;
+extern const f32 float_0p04_80419ac0;
+extern const f32 float_0p5_80419a64;
+extern const f32 float_neg1_80419a8c;
+extern const f32 float_neg2_80419ab8;
+extern const f32 float_neg3_80419abc;
 u32 zero_80419a50 = 0;
 
 
@@ -1333,6 +1344,95 @@ void renderProc(s32 shapeId, s32 field_0x28) {
 }
 
 // dispProc
+// NONMATCHING (99.88%): only the first block's register allocation differs (mulli r4 vs r0, `data` r6 vs r4).
+void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f32 f1) {
+    AnimPoseGroup* group;
+    AnimationPoseData* data;
+    f32* nodes;
+    f32* node;
+    f32 x, y, z;
+
+    if (groupId == -1) {
+        return;
+    }
+    data = wp->mpCurPoseData;
+    group = &ANIM_POSE_DATA_GROUPS(data)[groupId];
+    if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
+        nodes = (f32*)wp->mpCurPose->mpNodes;
+        node = &nodes[group->nodeId];
+        if (group->useSSC) {
+            if (parentGroupId == -1) {
+                x = y = z = float_1_80419a44;
+            } else {
+                AnimPoseGroup* parent = &ANIM_POSE_DATA_GROUPS(data)[parentGroupId];
+                if (!parent->useSSC) {
+                    x = y = z = float_1_80419a44;
+                } else {
+                    x = nodes[parent->nodeId + 3];
+                    y = nodes[parent->nodeId + 4];
+                    z = nodes[parent->nodeId + 5];
+                }
+            }
+            pushGXModelMtx_JointNode__(node, x, y, z);
+        } else {
+            pushGXModelMtx_TransformNode__(node);
+        }
+
+        if (wp->mpCurPose->flags & 0x40) {
+            Vec pos = vec3_802c2dc8[0];
+            Vec* buffer = (Vec*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x15C))->address;
+            pos.x = (*g_modeling_mtx)[0][3];
+            pos.y = (*g_modeling_mtx)[1][3];
+            pos.z = (*g_modeling_mtx)[2][3];
+            buffer[groupId] = pos;
+        }
+        if (wp->mpCurPose->flags & 0x80) {
+            Mtx* dest = (Mtx*)(*(smartEntry**)((u8*)wp->mpCurPose + 0x164))->address;
+            PSMTXCopy(*g_modeling_mtx, dest[groupId]);
+        }
+        if ((wp->mpCurPose->flags & 0x20) && groupId == *wp->mpCurPose->vivianGroupNo) {
+            Mtx* mtx = g_modeling_mtx;
+            f32 (*matrix)[4] = wp->mpCurPose->matrix;
+            f32* params = (f32*)((u8*)vivihimoData[wp->mpCurPose->vivianType] + wp->mpCurPose->animId * 8);
+            f32 v1 = float_0_80419a48;
+            f32 v2 = v1;
+            int i, j;
+
+            switch (wp->mpCurPose->vivianType) {
+                case 1:
+                    v1 = float_neg2_80419ab8;
+                    v2 = float_0p5_80419a64;
+                    break;
+                case 2:
+                    v1 = float_neg3_80419abc;
+                    v2 = float_0p5_80419a64;
+                    break;
+                case 3:
+                    v1 = float_neg1_80419a8c;
+                    v2 = float_0p5_80419a64;
+                    break;
+            }
+            materialProc(group->shapeId, field_0x28);
+            vivihimo(*mtx, matrix, params[0], params[1], v1, v2);
+            wp->mpCurPose->flags &= ~0x20;
+            for (i = 0; i < 3; i++) {
+                for (j = 0; j < 3; j++) {
+                    matrix[i][j] += float_0p04_80419ac0 * ((*mtx)[i][j] - matrix[i][j]);
+                }
+            }
+        } else {
+            if (wp->mpCurPose->dispCallback != NULL) {
+                ((void (*)(void*, s32, Mtx))wp->mpCurPose->dispCallback)(wp->mpCurPose->dispUserDataCallback, groupId,
+                                                                          *g_modeling_mtx);
+            }
+            renderProc(group->shapeId, field_0x28);
+            dispProc(groupId, group->childGroupId, field_0x28, field_0x2c, f1);
+        }
+        g_modeling_mtx_lv--;
+        g_modeling_mtx = &g_modeling_mtx_stack[g_modeling_mtx_lv];
+    }
+    dispProc(groupId, group->brotherGroupId, field_0x28, field_0x2c, f1);
+}
 
 // NONMATCHING (32.81%): 18 missing, plus register differences.
 void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluMode) {

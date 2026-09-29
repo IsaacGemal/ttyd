@@ -926,6 +926,91 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	return 0;
 }
 
+USER_FUNC(bero_get_position_normal) {
+	s32* args = event->args;
+	MarioWork* mario = marioGetPtr();
+	s32 a;
+	f32 b;
+	s32 kind;
+	s32* p;
+	const char* c;
+	Vec start, end;
+#ifdef MUST_MATCH
+	// MUST_MATCH: the compiler lays locals out in reverse declaration order, so this order
+	// reproduces the original's stack map (hitX at 0x08, e at 0x30). Usage below is unchanged.
+	Vec e, ray;
+	f32 hitNZ, hitNY, hitNX, distance;
+	f32 hitZ, hitY, hitX;
+#else
+	Vec ray, e;
+	f32 hitX, hitY, hitZ, distance;
+	f32 hitNX, hitNY, hitNZ;
+#endif
+	f32 sn, cs, rad;
+	f32 angle;
+	f32 len;
+
+	a = evtGetValue(event, args[0]);
+	b = evtGetFloat(event, args[1]);
+	p = (s32*)event->lwData[6];
+	c = (const char*)event->lwData[3];
+	kind = event->lwData[5];
+
+	start.x = (f32)p[0];
+	start.y = (f32)p[1];
+	start.z = (f32)p[2];
+	end.x = (f32)p[0];
+	end.y = (f32)p[1];
+	end.z = (f32)p[2];
+
+	if (p[0] == 0x186A0) {
+		hitObjGetPos(c, &start);
+	}
+	if (b != 0.0f) {
+		hitX = 0.0f;
+		hitY = 0.0f;
+		hitZ = 0.0f;
+		distance = 1000000.0f;
+		angle = 360.0f * (f32)kind / 8.0f;
+		if (a == 1) {
+			angle += 180.0f;
+		}
+		rad = 6.2831855f * angle / 360.0f;
+		sn = (f32)sin(rad);
+		ray.x = start.x - 30.0f * sn;
+		ray.y = start.y;
+		cs = (f32)cos(rad);
+		ray.z = start.z - 30.0f * -cs;
+#ifdef MUST_MATCH
+		// MUST_MATCH: the original writes distance twice; the compiler keeps both stores.
+		distance = 1000000.0f;
+#endif
+		if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, ray.x,
+		                   ray.y, ray.z, 0.0f, -1.0f, 0.0f) != NULL) {
+			ray.y = hitY;
+		}
+		e = ray;
+		sn = (f32)sin(rad);
+		len = 30.0f + b;
+		e.x += len * sn;
+		cs = (f32)cos(rad);
+		e.z += len * -cs;
+		start = ray;
+		end = e;
+	}
+	BeroSX = start.x;
+	BeroSY = start.y;
+	BeroSZ = start.z;
+	BeroEX = end.x;
+	BeroEY = end.y;
+	BeroEZ = end.z;
+	N_marioSetBottomlessRespawnPosOnBeroEntry(BeroEX, BeroEY, BeroEZ);
+	if (mario->currMotionId == MARIO_MOTION_SHIP) {
+		N_marioReloadMapOnBottomlessOn();
+	}
+	return EVT_RETURN_DONE;
+}
+
 // NONMATCHING (98.83%): 1 instruction differs, 2 extra, plus register differences.
 void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end) {
 	f32 hitX = 0.0f;

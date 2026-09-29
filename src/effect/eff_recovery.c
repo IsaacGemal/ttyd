@@ -52,8 +52,8 @@ extern const char str_8041CB08[];
 extern const f32 float_deg2rad_8041cad0;
 extern const f32 float_32_8041cad4;
 extern const f32 float_90_8041cad8;
-extern const f32 float_0_8041cadc;
-extern const f32 float_1_8041cae0;
+const f32 float_0_8041cadc = 0.0f;
+const f32 float_1_8041cae0 = 1.0f;
 extern const f32 float_8_8041cae4;
 extern const f32 float_2_8041cae8;
 extern const f32 float_0p5_8041caec;
@@ -458,7 +458,9 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (0.00%): 4 instructions differ, 177 missing, 178 extra, plus register differences.
+// NONMATCHING (98.92%): the int->float conversion magic and the 0.0f/1.0f pool entries are emitted as
+// anonymous @NNN symbols instead of double_to_int_802f3550/float_0_8041cadc/float_1_8041cae0, and the
+// +-20 pair lands in f27/f28 swapped.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* data = entry->userdata;
@@ -468,8 +470,7 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	Mtx tmp2;
 	Mtx base;
 	GXTexObj tex;
-	GXColor c;
-	s8 type;
+	s32 type;
 	s32 i;
 	f32 f30;
 	f32 f29;
@@ -515,20 +516,17 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 		if (i == 0) {
 			effGetTexObj(0x8b, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-			*(u32*)&c = dat_8041cac0;
-			GXSetChanMatColor(GX_COLOR0A0, c);
+			GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041cac0);
 		} else {
 			effGetTexObj(0x8a, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			if (type == 4) {
-				*(u32*)&c = dat_8041cac4;
-				GXSetChanMatColor(GX_COLOR0A0, c);
+				GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041cac4);
 			} else {
-				*(u32*)&c = dat_8041cac8;
-				GXSetChanMatColor(GX_COLOR0A0, c);
+				GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041cac8);
 			}
 		}
-		PSMTXTrans(mtx, (f32)((1 - i) * 2), (f32)((i - 1) * 2), float_0_8041cadc);
+		PSMTXTrans(mtx, (f32)((1 - i) * 2), (f32)(-(1 - i) * 2), float_0_8041cadc);
 		PSMTXConcat(base, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);

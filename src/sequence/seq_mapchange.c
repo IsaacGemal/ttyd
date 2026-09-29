@@ -148,3 +148,14 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
         mario->field_EC = mario->position = gp->savePlayerPos;
     }
 }
+
+void _relUnLoad(void) {
+    if (gp->relocationBase) {
+        ((void (*)(void))((OSModuleHeader*)gp->relocationBase)->epilog)();
+        OSUnlink(gp->relocationBase);
+        if (gp->relocationBase != gp->mapAlloc) {
+            _mapFree(gp->relocationBase);
+        }
+        gp->relocationBase = NULL;
+    }
+}

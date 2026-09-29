@@ -4,3 +4,6 @@ typedef struct EffectEntry EffectEntry;
 
 #include <dolphin/types.h>
 EffectEntry* effStampN64Entry(s32 type, f32 x, f32 y, f32 z);
+#include "driver/camdrv.h"
+void effStampMain(EffectEntry* effect);
+void effStampDisp(CameraId camId, void* param);

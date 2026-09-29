@@ -33,15 +33,17 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING: a local function, so the report gives it no score; the frame and register allocation differ.
 static void actionCommandDisp(f32 x, f32 y) {
+	Vec* vecs = (Vec*)vec3_802fd630;
 	BattleWork* work = _battleWorkPointer;
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	TimingWideDecWork* dec = (TimingWideDecWork*)((u8*)work + 0x1F4C);
-	s32 up;
-	s32 down;
+	BattleActions* ac = &work->actionCommands;
+	BattleACDispParams* disp = &ac->dispParams;
+	TimingWideDecWork* dec;
+	s16 up;
+	s16 down;
 
 	camGetPtr(CAMERA_2D);
+	dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
 
 	switch (dec->field_0x00) {
 	case 0x100:
@@ -77,85 +79,16 @@ static void actionCommandDisp(f32 x, f32 y) {
 	switch (dec->field_0x0C) {
 	case 0:
 		if (dec->field_0x04 > 0) {
-			Vec v;
-			v.x = vec3_802fd630[0].x;
-			v.y = vec3_802fd630[0].y;
-			v.z = vec3_802fd630[0].z;
+			Vec v = vecs[0];
 			v.x = float_neg200_80420508 + x;
 			v.y = float_50_8042050c + y;
 			iconDispGx(&v, 0x10, down, float_1_80420510);
 		}
 		else {
-			Vec v;
-			v.x = vec3_802fd630[1].x;
-			v.y = vec3_802fd630[1].y;
-			v.z = vec3_802fd630[1].z;
+			Vec v = vecs[1];
 			v.x = float_neg200_80420508 + x;
 			v.y = float_50_8042050c + y;
 			iconDispGx(&v, 0x10, up, float_1_80420510);
-		}
-		break;
-	case 1:
-		if (dec->field_0x04 == -1) {
-			if (dec->field_0x08 >= *(s32*)&work->actionCommands.field_34[0x0C]) {
-				Vec v;
-				v.x = vec3_802fd630[10].x;
-				v.y = vec3_802fd630[10].y;
-				v.z = vec3_802fd630[10].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
-			}
-			else {
-				Vec v;
-				v.x = vec3_802fd630[11].x;
-				v.y = vec3_802fd630[11].y;
-				v.z = vec3_802fd630[11].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
-			}
-		}
-		else if (dec->field_0x08 >= *(s32*)&work->actionCommands.field_34[0x0C] &&
-		         dec->field_0x08 < *(s32*)&work->actionCommands.field_34[0x10]) {
-			if (dec->field_0x04 > 0) {
-				Vec v;
-				v.x = vec3_802fd630[6].x;
-				v.y = vec3_802fd630[6].y;
-				v.z = vec3_802fd630[6].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
-			}
-			else {
-				Vec v;
-				v.x = vec3_802fd630[7].x;
-				v.y = vec3_802fd630[7].y;
-				v.z = vec3_802fd630[7].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
-			}
-		}
-		else {
-			if (dec->field_0x04 > 0) {
-				Vec v;
-				v.x = vec3_802fd630[8].x;
-				v.y = vec3_802fd630[8].y;
-				v.z = vec3_802fd630[8].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
-			}
-			else {
-				Vec v;
-				v.x = vec3_802fd630[9].x;
-				v.y = vec3_802fd630[9].y;
-				v.z = vec3_802fd630[9].z;
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
-			}
 		}
 		break;
 	case 2:
@@ -163,41 +96,76 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 4:
 	case 5:
 	case 6:
-		if (*(s32*)&work->actionCommands.field_34[0x00] & 0x10) {
+		if (!(*(s32*)&ac->field_34[0x00] & 0x10)) {
 			if (dec->field_0x04 > 0) {
-				Vec v;
-				v.x = vec3_802fd630[4].x;
-				v.y = vec3_802fd630[4].y;
-				v.z = vec3_802fd630[4].z;
+				Vec v = vecs[2];
+				v.x = float_neg200_80420508 + x;
+				v.y = float_50_8042050c + y;
+				iconDispGx(&v, 0x10, down, float_1_80420510);
+			}
+			else {
+				Vec v = vecs[3];
+				v.x = float_neg200_80420508 + x;
+				v.y = float_50_8042050c + y;
+				iconDispGx(&v, 0x10, up, float_1_80420510);
+			}
+		}
+		else {
+			if (dec->field_0x04 > 0) {
+				Vec v = vecs[4];
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
 				iconDispGx(&v, 0x10, up, float_1_80420510);
 			}
 			else {
-				Vec v;
-				v.x = vec3_802fd630[5].x;
-				v.y = vec3_802fd630[5].y;
-				v.z = vec3_802fd630[5].z;
+				Vec v = vecs[5];
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
 				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 		}
+		break;
+	case 1:
+		if (dec->field_0x04 != -1) {
+			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
+			    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+				if (dec->field_0x04 > 0) {
+					Vec v = vecs[6];
+					v.x = float_neg200_80420508 + x;
+					v.y = float_50_8042050c + y;
+					iconDispGx(&v, 0x10, up, float_1_80420510);
+				}
+				else {
+					Vec v = vecs[7];
+					v.x = float_neg200_80420508 + x;
+					v.y = float_50_8042050c + y;
+					iconDispGx(&v, 0x10, down, float_1_80420510);
+				}
+			}
+			else {
+				if (dec->field_0x04 > 0) {
+					Vec v = vecs[8];
+					v.x = float_neg200_80420508 + x;
+					v.y = float_50_8042050c + y;
+					iconDispGx(&v, 0x10, down, float_1_80420510);
+				}
+				else {
+					Vec v = vecs[9];
+					v.x = float_neg200_80420508 + x;
+					v.y = float_50_8042050c + y;
+					iconDispGx(&v, 0x10, up, float_1_80420510);
+				}
+			}
+		}
 		else {
-			if (dec->field_0x04 > 0) {
-				Vec v;
-				v.x = vec3_802fd630[2].x;
-				v.y = vec3_802fd630[2].y;
-				v.z = vec3_802fd630[2].z;
+			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C]) {
+				Vec v = vecs[10];
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
 				iconDispGx(&v, 0x10, down, float_1_80420510);
 			}
 			else {
-				Vec v;
-				v.x = vec3_802fd630[3].x;
-				v.y = vec3_802fd630[3].y;
-				v.z = vec3_802fd630[3].z;
+				Vec v = vecs[11];
 				v.x = float_neg200_80420508 + x;
 				v.y = float_50_8042050c + y;
 				iconDispGx(&v, 0x10, up, float_1_80420510);

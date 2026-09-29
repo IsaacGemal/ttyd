@@ -20,3 +20,6 @@ typedef struct EffUltraHammerData {
 EffectEntry* effUltraHammerEntry(BOOL arg0, s32 counter, f32 x, f32 y, f32 z, f32 scale);
 void effUltraHammerMain(EffectEntry* effect);
 void effUltraHammerDisp(enum CameraId camId, void *param);
+#include <dolphin/os/OSError.h>
+void N_setupErrorHandler(void);
+void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar);

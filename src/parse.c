@@ -24,6 +24,13 @@ BOOL parsePush(const char* tag) {
 
 
 
+// .text:0x320 | 0x80083D8C | size: 0x18
+void parsePop(void) {
+	parse.field_0x54--;
+}
+
+
+
 
 
 // NONMATCHING (2.89%): 2 instructions differ, 158 missing, plus register differences.

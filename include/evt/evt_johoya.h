@@ -47,3 +47,4 @@ USER_FUNC(johoya_keti_oldspeak_makelabel);
 USER_FUNC(johoya_keti_oldspeak_setreadflag);
 USER_FUNC(johoya_luigi_newjoho_setreadflag);
 USER_FUNC(johoya_perfect_newjoho_setreadflag);
+extern InformantWork _jdt;

@@ -8,3 +8,7 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 	}
 }
 
+void battleAcDelete_TimingA(BattleWork* work) {
+	work->actionCommands.mAcState = 1000;
+}
+

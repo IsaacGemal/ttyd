@@ -24,3 +24,11 @@ typedef struct ItemData {
 } ItemData;
 
 extern ItemData itemDataTable[];
+// winMgrSelectOther reads ItemData.buy_price with `lhz` (unsigned), while the field above is s16. This view has
+// the field unsigned; use it for that one read and fix ItemData.buy_price (then delete this) when the header is
+// corrected.
+typedef struct ItemDataView {
+	u8 pad_0x0[0x14];
+	u16 buy_price; //0x14
+	u8 pad_0x16[0x28 - 0x16];
+} ItemDataView;

@@ -9,6 +9,9 @@
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
 
+// dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
+#pragma dont_inline on
+
 // NONMATCHING (0.00%): 3 instructions differ, 29 extra, plus register differences.
 BattleIcon* BtlIconGetPtr(s32 index) {
 	BattleIcon* icon;
@@ -22,6 +25,7 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 	}
 	return NULL;
 }
+#pragma dont_inline reset
 
 // NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
 void BattleIconInit(void) {
@@ -95,6 +99,9 @@ BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	}
 }
 
+// dont_inline keeps BtlIcon_Delete a real `bl` from the evt commands as in retail.
+#pragma dont_inline on
+
 // NONMATCHING (90.53%): 3 instructions differ.
 void BtlIcon_Delete(BattleIcon* icon) {
 	if (icon->flags & 1) {
@@ -102,6 +109,7 @@ void BtlIcon_Delete(BattleIcon* icon) {
 		icon->flags &= ~1;
 	}
 }
+#pragma dont_inline reset
 
 //s32 iconId, f32 x, f32 y, f32 z, s32 evtIndex
 // NONMATCHING (0.00%): 4 instructions differ, 1 missing, 104 extra, plus register differences.
@@ -140,7 +148,6 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 }
 
 //s32 index for BtlIconGetPtr
-// NONMATCHING (0.00%): 2 instructions differ, 52 extra, plus register differences.
 USER_FUNC(btlevtcmd_BtlIconDelete) {
 	BattleIcon* icon;
 	s32 value;

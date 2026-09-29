@@ -3,3 +3,4 @@
 #include "evt/evt_cmd.h"
 
 EVT_DEF(evt_gazigazi_entry);
+USER_FUNC(camdir);

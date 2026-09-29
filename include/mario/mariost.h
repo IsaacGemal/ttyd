@@ -106,3 +106,4 @@ void viPostCallback(u32 retraceCount);
 void* gcDvdCheckThread(void* param);
 void gcRumbleCheck(void);
 void gcResetCheck(void);
+void L_gcResetCheck(void);

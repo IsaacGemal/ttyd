@@ -1,5 +1,6 @@
 #include "battle/battle_seq_command.h"
 #include "battle/battle.h"
+#include "battle/battle_mario.h"
 #include "battle/battle_monosiri.h"
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
@@ -22,8 +23,6 @@
 #include <stdio.h>
 #include "battle/battle_database_common.h"
 
-extern BattleWeapon badgeWeapon_2KaiItem;
-extern BattleWeapon badgeWeapon_3KaiItem;
 extern ItemData itemDataTable[];
 
 
@@ -1361,6 +1360,145 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 		}
 	}
 	return 0;
+}
+
+// NONMATCHING (99.97%): only the eight pooled string offsets differ (the target's
+// str_802EF640 base vs this file's local .rodata pool, all shifted 0xa8); they should
+// line up once the rest of the file's string literals are present.
+void _btlcmd_MakeOperationTable(BattleWork* wp) {
+	BattleWeapon* weapon;
+	NpcBattleInfo* setup;
+	BattleUnit* mario;
+	BattleCommand* cmd;
+	PouchData* pouch;
+	BattleWorkCommand* wcmd;
+	BattleCursor* cursor;
+	BattleUnit* party;
+	s32 count;
+	s32 escapeIdx;
+
+	mario = BattleGetUnitPtr(wp, wp->activeUnitId);
+	cmd = &wp->commandMenu;
+	setup = wp->fbatInfo->setup;
+	pouch = pouchGetPtr();
+	wcmd = (BattleWorkCommand*)cmd;
+
+	if (cmd == NULL) {
+		return;
+	}
+	_btlcmd_GetCursorPtr(cmd, 5, &cursor);
+	count = 0;
+	if (_btlcmd_MakePartyTable(wp) >= 2) {
+		wcmd->mOperationTable[0].mType = 0;
+		if (mario->flippedTurns) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		} else {
+			wcmd->mOperationTable[0].mEnabled = 1;
+			wcmd->mOperationTable[0].field_0x8 = 0;
+		}
+		wcmd->mOperationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
+		party = mario;
+		if (!(mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
+			party = BattleGetPartnerPtr(wp, mario);
+		}
+		BtlUnit_CanActStatus(party);
+		wcmd->mOperationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
+		wcmd->mOperationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		if (setup->field_4 & 0x04000000) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		wcmd->mOperationTable[0].mWeaponCost = 0;
+		count = 1;
+	}
+	if (pouch->mStarPowersObtained != 0) {
+		wcmd->mOperationTable[count].mType = 5;
+		wcmd->mOperationTable[count].mEnabled = 1;
+		wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
+		wcmd->mOperationTable[count].mIcon = 0x164;
+		wcmd->mOperationTable[count].field_0x8 = 0;
+		wcmd->mOperationTable[count].mWeaponCost = 0;
+		wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
+		count++;
+	}
+	if (mario->badgesEquipped.Charge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_Charge : &badgeWeapon_ChargeP;
+		wcmd->mOperationTable[count].mType = 1;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x166;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	if (mario->badgesEquipped.SuperCharge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_SuperCharge : &badgeWeapon_SuperChargeP;
+		wcmd->mOperationTable[count].mType = 2;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x167;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	wcmd->mOperationTable[count].mType = 6;
+	wcmd->mOperationTable[count].mEnabled = 1;
+	wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
+	wcmd->mOperationTable[count].mIcon = 0x165;
+	wcmd->mOperationTable[count].field_0x8 = 0;
+	wcmd->mOperationTable[count].mWeaponCost = 0;
+	wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[count].mEnabled = 0;
+		wcmd->mOperationTable[count].field_0x8 = 3;
+	}
+	escapeIdx = count + 1;
+	wcmd->mOperationTable[escapeIdx].mType = 3;
+	wcmd->mOperationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
+	wcmd->mOperationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
+	wcmd->mOperationTable[escapeIdx].mIcon = 0x163;
+	wcmd->mOperationTable[escapeIdx].mWeaponCost = 0;
+	if (wcmd->mOperationTable[escapeIdx].mEnabled != 0) {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 0;
+	} else {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 1;
+	}
+	wcmd->mOperationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	if (wp->fbatInfo->setup->field_4 & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	cursor->unk8 = count + 2;
+	if (cursor->field_0 >= cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
+	}
 }
 
 // Keeping the original `bl _battleGetPartyIcon` needs the dont_inline pragma on that callee.

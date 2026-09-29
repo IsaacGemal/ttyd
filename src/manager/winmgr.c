@@ -14,6 +14,7 @@
 #include "driver/icondrv.h"
 #include "mario/mariost.h"
 #include "evt/evt_lottery.h"
+#include "evt/evt_johoya.h"
 #include "pmario_sound.h"
 #include "statuswindow.h"
 
@@ -170,11 +171,17 @@ char str_804219E8[] = "_chu";
 char str_804219F0[] = "_hp";
 char str_804219F4[] = "_fp";
 char str_804219F8[] = "_bp";
+char str_804219FC[] = "\x82\x67\x82\x6f";
+char str_80421A04[] = "\x82\x65\x82\x6f";
+char str_80421A0C[] = "\x82\x61\x82\x6f";
 char str_80421A78[] = "help";
 
 //.sdata
 static char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
 static char* mario_status_labelname_table[3] = { str_804219F0, str_804219F4, str_804219F8 };
+static char* mario_status_name_table[3] = { str_804219FC, str_80421A04, str_80421A0C };
+static s32 mario_status_henka_table[3] = { 5, 5, 3 };
+static s16* mario_status_point_table[3];
 
 //.data
 WinMgrSelectTbl select_desc_tbl[] = { { 3, NULL } };
@@ -569,6 +576,159 @@ s32 unk_80237448(WinMgrSelect* select) {
 void winMgrSelectDelete(s32 select) {
     __memFree(HEAP_DEFAULT, (void*)((WinMgrSelect*)select)->field_0x30);
     __memFree(HEAP_DEFAULT, (void*)select);
+}
+
+s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event) {
+    u16 flags = *(u16*)&select->flags;
+    WinMgrSelectItem* items;
+    InformantWork* jdt = &_jdt;
+    s32 itemId;
+    const char* msg;
+    char buf[0x40];
+
+    if (flags & 0x1000) {
+        if (flags & 0x2000) {
+            return -1;
+        }
+
+        items = (WinMgrSelectItem*)select->field_0x30;
+        itemId = items[select->field_0xC].field_0x2;
+
+        switch (select->field_0x4) {
+        case 6:
+        case 7:
+            event->lwData[1] = party_id_table[itemId];
+            switch (itemId) {
+            case 0:
+                msg = msgSearch(str_802FFD38);
+                break;
+            case 1:
+                msg = msgSearch(str_802FFD44);
+                break;
+            case 2:
+                msg = msgSearch(str_802FFD50);
+                break;
+            case 3:
+                msg = pouchGetYoshiName();
+                break;
+            case 4:
+                msg = msgSearch(str_802FFD5C);
+                break;
+            case 5:
+                msg = msgSearch(str_802FFD68);
+                break;
+            case 6:
+                msg = msgSearch(str_802FFD74);
+                break;
+            }
+            event->lwData[3] = (s32)msg;
+            break;
+        case 8:
+            event->lwData[2] = party_id_table[itemId];
+            switch (itemId) {
+            case 0:
+                msg = msgSearch(str_802FFD38);
+                break;
+            case 1:
+                msg = msgSearch(str_802FFD44);
+                break;
+            case 2:
+                msg = msgSearch(str_802FFD50);
+                break;
+            case 3:
+                msg = pouchGetYoshiName();
+                break;
+            case 4:
+                msg = msgSearch(str_802FFD5C);
+                break;
+            case 5:
+                msg = msgSearch(str_802FFD68);
+                break;
+            case 6:
+                msg = msgSearch(str_802FFD74);
+                break;
+            }
+            event->lwData[4] = (s32)msg;
+            break;
+        case 9:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)mario_status_name_table[itemId];
+            event->lwData[5] = *mario_status_point_table[0];
+            event->lwData[6] = *mario_status_point_table[1];
+            event->lwData[7] = *mario_status_point_table[2];
+            event->lwData[5 + itemId] += mario_status_henka_table[itemId];
+            break;
+        case 10:
+            event->lwData[1] = itemId;
+            event->lwData[3] = (s32)mario_status_name_table[itemId];
+            event->lwData[5 + itemId] -= mario_status_henka_table[itemId];
+            break;
+        case 11:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price;
+            event->lwData[4] = itemDataTable[itemId].bp_cost;
+            break;
+        case 12:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = (u16)itemDataTable[itemId].sell_price;
+            event->lwData[4] = select->field_0xC;
+            break;
+        case 13:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = (u16)itemDataTable[itemId].star_piece_price;
+            event->lwData[4] = itemDataTable[itemId].bp_cost;
+            break;
+        case 14:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price * 12 / 10;
+            event->lwData[4] = itemDataTable[itemId].bp_cost;
+            break;
+        case 15:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = ((ItemDataView*)itemDataTable)[itemId].buy_price * (evtGetValue(0, 0xF5DE06A9) + 11) / 10;
+            event->lwData[4] = itemDataTable[itemId].bp_cost;
+            break;
+        case 16:
+            event->lwData[1] = itemId;
+            event->lwData[2] = (s32)itemDataTable[itemId].id;
+            event->lwData[3] = (((ItemDataView*)itemDataTable)[itemId].buy_price * 2 + 2) / 3;
+            event->lwData[4] = itemDataTable[itemId].bp_cost;
+            break;
+        case 17:
+            sprintf((char*)jdt->infoEnd, str_802FFFB0, jdt->prefix, jdt->info[itemId].storyId);
+            sprintf(buf, str_802FFFB8, jdt->info[itemId].storyId);
+            *(s32*)&jdt->unk10 = itemId;
+            msg = msgSearch(buf);
+            event->lwData[1] = (s32)jdt->infoEnd;
+            event->lwData[2] = (s32)msg;
+            event->lwData[3] = strlen(msg);
+            if (johoya_get(jdt->unk14.unkD, jdt->info[itemId].storyId) != 0) {
+                event->lwData[4] = 0;
+            } else {
+                event->lwData[4] = jdt->info[itemId].unkA;
+            }
+            break;
+        case 18:
+            sprintf((char*)jdt->infoEnd, str_802FFFB0, jdt->prefix, jdt->info[itemId].storyId);
+            *(s32*)&jdt->unk10 = itemId;
+            event->lwData[1] = (s32)jdt->infoEnd;
+            event->lwData[2] = jdt->info[itemId].initEndPos;
+            event->lwData[3] = jdt->info[itemId].tagEndPos;
+            if (johoya_get(jdt->unk14.unk1A, jdt->info[itemId].storyId) != 0) {
+                event->lwData[4] = 0;
+            } else {
+                event->lwData[4] = 1;
+            }
+            break;
+        }
+        return 1;
+    }
+    return 0;
 }
 
 s32 winMgrSelect(WinMgrSelect* select) {
