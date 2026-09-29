@@ -1452,6 +1452,8 @@ config.libs = [
             Object(Matching, "unit/unit_boss_koopa_tou.c"),
             Object(Matching, "unit/unit_kamec_green.c"),
             Object(Matching, "unit/unit_kamec_white.c"),
+            Object(Matching, "unit/unit_boss_champion.c"),
+            Object(Matching, "unit/unit_kamec_red.c"),
         ]
     ),
     Rel(
@@ -1467,6 +1469,7 @@ config.libs = [
             Object(Matching, "gor_04.c"),
             Object(Matching, "event/evt_goryuugijo.c"),
             Object(Matching, "event/evt_keijiban.c"),
+            Object(Matching, "unit/unit_lecture_christine.c"),
         ],
     ),
     Rel(
@@ -1696,6 +1699,9 @@ config.libs = [
             Object(Matching, "las_00.c"),
             Object(Matching, "las_28.c"),
             Object(Matching, "data/battle/battle_database_las.c"),
+            Object(Matching, "unit/unit_boss_kamec_obaba.c"),
+            Object(Matching, "unit/unit_boss_koopa.c"),
+            Object(Matching, "unit/unit_boss_rampell_las.c"),
         ],
     ),
     Rel(
@@ -1796,6 +1802,7 @@ config.libs = [
             Object(Matching, "tik_12.c"),
             Object(Matching, "data/battle/battle_database_tik.c"),
             Object(Matching, "unit/unit_boss_gesso.c"),
+            Object(Matching, "unit/unit_kamec.c"),
         ],
     ),
     Rel(
