@@ -985,10 +985,10 @@ EVT_BEGIN(subsetevt_shot_damage)
     CALL(btlevtcmd_OnToken, LW(10), 32)
     CALL(btlevtcmd_CheckDamagePattern, LW(10), 14, LW(0))
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(12), PTR(marioWeapon_KaitenHammerInvolved))
+        SET_VALUE(LW(12), PTR(&marioWeapon_KaitenHammerInvolved))
         CALL_CHILD(subsetevt_shot_damage_kaiten)
     ELSE
-        SET_VALUE(LW(12), PTR(marioWeapon_UltraHammerInvolved))
+        SET_VALUE(LW(12), PTR(&marioWeapon_UltraHammerInvolved))
         CALL_CHILD(subsetevt_shot_damage_ultra)
     END_IF
     RETURN

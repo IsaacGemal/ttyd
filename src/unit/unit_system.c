@@ -1,40 +1,82 @@
 #include "battle/battle_event_cmd.h"
 #include "evt/evt_cmd.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 static s32 init_event[21];
-static u32 defence[2];
-static u32 defence_attr[2];
+static BattleUnitDefense defence;
+static BattleUnitDefenseAttr defence_attr;
 static u32 regist[6];
 static s32 damage_event[2];
 static s32 attack_event[2];
 static s32 wait_event[2];
 
 // clang-format off
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_system", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x03010009, 0x00000000, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                    // partNum
+        "btl_un_system",      // partName
+        NULL,                 // modelName
+        { 0.0f, 0.0f, 0.0f }, // positionOffset
+        { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
+        20,                   // field_0x30
+        30,                   // field_0x32
+        255,                  // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x03010009,           // attributes
+        0,                    // counterAttributes
+        NULL,                 // poseTable
+    },
 };
 
-// TODO: type
-u32 unit_system[49] = {
-    0x000000DC, (u32)"btl_un_system", 0x03E70000, 0x01010000,
-    0x00000000, 0x00090018, 0x00180000, 0x00140000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0x00000000, 0x41400000, 0x4179999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BTL_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x52003000,
-    (u32)((u8*)&regist + 0x8), 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&regist,
+BattleUnitKind unit_system = {
+    UNIT_SYSTEM,                                                // mUnitType
+    "btl_un_system",                                            // name
+    999,                                                        // maxHp
+    0,                                                          // maxFp
+    1,                                                          // mDangerHP
+    1,                                                          // mPerilHP
+    0,                                                          // mLevel
+    0,                                                          // mBonusExp
+    0,                                                          // bonusCoinRolls
+    0,                                                          // bonusCoinRate
+    0,                                                          // baseCoin
+    0,                                                          // field_0x13
+    9,                                                          // field_0x14
+    24,                                                         // width
+    24,                                                         // height
+    { 0, 20 },                                                  // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },                                       // centerOffset
+    { 0, 0 },                                                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },                                       // talkTogeBaseOffset
+    { 0.0f, 0.0f, 0.0f },                                       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },                                       // burnFlameOffset
+    0.0f,                                                       // field_0x54
+    0.0f,                                                       // field_0x58
+    { 12.0f, 0.0f, 0.0f },                                      // bintaHitOffset
+    { 12.0f, 15.6f, 0.0f },                                     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },                                       // cutBaseOffset
+    0.0f,                                                       // cutWidth
+    0.0f,                                                       // cutHeight
+    0,                                                          // turnOrder
+    0,                                                          // turnOrderVariance
+    -1,                                                         // swallowRate
+    0,                                                          // swallowAttribute
+    100,                                                        // field_0x8C
+    20,                                                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },                                       // starPointDispOffset
+    "SFX_BTL_DAMAGE1",                                          // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",                                     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",                                      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",                                 // electricDamageSfxName
+    0x52003000,                                                 // attributeFlags
+    (struct BattleVulnerableStatus*)(void*)((u8*)regist + 0x8), // vulnStatus
+    1,                                                          // numParts
+    parts,                                                      // mParts
+    init_event,                                                 // initEvtScript
+    (struct BattleDataEntry*)regist,                            // dataTable
 };
 
 static EVT_BEGIN(init_event)
@@ -46,15 +88,9 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x02020202, 0x02000000,
-};
+static BattleUnitDefenseAttr defence_attr = { { 2, 2, 2, 2, 2 } };
 
 // TODO: type
 static u32 regist[6] = {
@@ -62,9 +98,8 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(damage_event)

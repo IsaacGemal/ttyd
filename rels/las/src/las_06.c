@@ -84,8 +84,8 @@ static BeroEntry bero_entry_data[3] = {
         "e_bero_1",
         0x0005,
         0x0005,
-        (s32)w_door_close,
-        (s32)w_door_open,
+        w_door_close,
+        w_door_open,
     },
     {
         "e_bero",
@@ -103,8 +103,8 @@ static BeroEntry bero_entry_data[3] = {
         "w_bero_1",
         0x0005,
         0x0005,
-        (s32)e_door_close,
-        (s32)e_door_open,
+        e_door_close,
+        e_door_open,
     },
     {
         0x00000000,

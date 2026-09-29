@@ -64,7 +64,7 @@ EVT_BEGIN(evt_dokan)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero", 1, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_06", "e_bero", 4, 4, (s32)bero_s_doa_close, (s32)bero_s_doa_open},
+    {"w_bero", 1, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_06", "e_bero", 4, 4, bero_s_doa_close, bero_s_doa_open},
     {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, evt_dokan, "mri_14", "dokan", 1, 1},
     {NULL},
 };

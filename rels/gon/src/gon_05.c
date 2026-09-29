@@ -99,12 +99,12 @@ EVT_BEGIN(door05_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero_1", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "e_bero_1", 5, 5, (s32)&door01_close, (s32)&door01_open},
+    {"w_bero_1", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "e_bero_1", 5, 5, &door01_close, &door01_open},
     {"w_bero_2", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "e_bero_2", 1, 1, 0, 0},
-    {"w_bero_3", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "e_bero_3", 5, 5, (s32)&door02_close, (s32)&door02_open},
-    {"w_bero_4", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_09", "e_bero", 5, 5, (s32)&door03_close, (s32)&door03_open},
-    {"w_bero_5", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_10", "e_bero", 5, 5, (s32)&door04_close, (s32)&door04_open},
-    {"e_bero", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_06", "w_bero", 5, 5, (s32)&door05_close, (s32)&door05_open},
+    {"w_bero_3", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "e_bero_3", 5, 5, &door02_close, &door02_open},
+    {"w_bero_4", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_09", "e_bero", 5, 5, &door03_close, &door03_open},
+    {"w_bero_5", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_10", "e_bero", 5, 5, &door04_close, &door04_open},
+    {"e_bero", 1, 0xC, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_06", "w_bero", 5, 5, &door05_close, &door05_open},
     {NULL},
 };
 

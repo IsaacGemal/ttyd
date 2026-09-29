@@ -7,12 +7,13 @@
 #include "evt/evt_msg.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_disp.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 pose_table_clauda_stay[];
+extern BattleDispPose pose_table_clauda_stay[];
 extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
-static u32 regist_clauda[6];
+static BattleVulnerableStatus regist_clauda;
 static BattleDataEntry data_table_clauda[2];
 static BattleUnitKindPart parts_clauda;
 static s32 init_event_clauda[50];
@@ -40,77 +41,181 @@ extend_data(61,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_gullible_clauda[49] = {
-    0x00000053, (u32)"btl_un_gullible_clauda", 0x000A0000, 0x01010000,
-    0x00640032, 0x0009002A, 0x002E000C, 0x00280000,
-    0x00000000, 0x41B80000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x41A80000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A80000,
-    0x00000000, 0x00000000, 0x41A80000, 0x41EF3333,
-    0x00000000, 0x00000000, 0x41B80000, 0x00000000,
-    0x42280000, 0x42380000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x10000000,
-    (u32)&regist_clauda, 0x01000000, (u32)&parts_clauda, (u32)&init_event_clauda,
-    (u32)&data_table_clauda,
+BattleUnitKind unit_gullible_clauda = {
+    UNIT_FLURRIE_CHAPTER4,      // mUnitType
+    "btl_un_gullible_clauda",   // name
+    10,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    0,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    42,                         // width
+    46,                         // height
+    { 12, 40 },                 // statusIconOffset
+    { 0.0f, 23.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
+    { 21.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 21.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 21.0f, 29.9f, 0.0f },     // kissHitOffset
+    { 0.0f, 23.0f, 0.0f },      // cutBaseOffset
+    42.0f,                      // cutWidth
+    46.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",        // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x10000000,                 // attributeFlags
+    &regist_clauda,              // vulnStatus
+    1,                          // numParts
+    &parts_clauda,              // mParts
+    init_event_clauda,          // initEvtScript
+    data_table_clauda,          // dataTable
 };
 
 static BattleWeapon enemyWeapon_ClaudaNormalAttack = {
-    {0,    0,    0,    0,    0,    0,    0,    0,
-     0,    0,    0,    0,    0,    0,    0,    0,
-     0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00},
-    1,
-    1,
-    1,
-    1,
-    weaponGetPowerFromGulliblePartyAttackLv,
-    {2, 4, 6, 0, 0, 0, 0, 0},
-    NULL,
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0x01, 0x00, 0x12, 0x60, 0x20, 0x00, 0x10, 0x04,
-     0x00, 0x0A, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00},
-    0x00014087,
-    {0x00, 0x00, 0x00, 0x0C, 0x80, 0x00, 0x20, 0x04},
-    NULL,
-    {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerFromGulliblePartyAttackLv,  // hpDamageFn
+    { 2, 4, 6, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    10,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00014087,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 defence_clauda[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence_clauda = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 defence_attr_clauda[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr_clauda = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist_clauda[6] = {
-    0x3C506964, 0x46646446, 0x64466446, 0x645A4600,
-    0x00644664, 0x64000000,
+static BattleVulnerableStatus regist_clauda = {
+    60,  // sleepRate
+    80,  // stopRate
+    105, // dizzyRate
+    100, // poisonRate
+    70,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    70,  // tinyRate
+    100, // attackUpRate
+    70,  // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    70,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    0,   // instaKillRate
 };
 
 static BattleDataEntry data_table_clauda[2] = {
-    {0x31, dead_event_clauda},
-    {0, NULL},
+    { 0x31, dead_event_clauda },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts_clauda = {
-    1,
-    "btl_un_clauda",
-    "c_windy",
-    {0.0f, 0.0f, 0.0f},
-    {15.0f, 25.0f, 0.0f},
-    {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
-    (BattleUnitDefense*)defence_clauda,
-    (BattleUnitDefenseAttr*)defence_attr_clauda,
-    9,
-    0,
-    pose_table_clauda_stay,
+    1,                                              // partNum
+    "btl_un_clauda",                                // partName
+    "c_windy",                                      // modelName
+    { 0.0f, 0.0f, 0.0f },                           // positionOffset
+    { 15.0f, 25.0f, 0.0f },                         // hitBaseOffset
+    { 0.0f, 30.0f, 0.0f },                          // hitCursorBaseOffset
+    20,                                             // field_0x30
+    30,                                             // field_0x32
+    255,                                            // baseAlpha
+    &defence_clauda,                                 // defense
+    &defence_attr_clauda,                            // defenseAttr
+    0x00000009,                                     // attributes
+    0,                                              // counterAttributes
+    pose_table_clauda_stay, // poseTable
 };
 
 static EVT_BEGIN(init_event_clauda)

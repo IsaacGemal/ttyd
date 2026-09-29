@@ -7,11 +7,13 @@
 #include "evt/evt_cmd.h"
 #include "evt/evt_msg.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 extern s32 btldefaultevt_Dummy[];
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];
 static BattleUnitKindPart parts;
 static s32 init_event[37];
@@ -41,76 +43,182 @@ extend_data(133,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_kanbu2[49] = {
-    0x000000BC, (u32)"btl_un_kanbu2", 0x000F0000, 0x0101010A,
-    0x00640064, 0x00090038, 0x003B0038, 0x003B0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A80000,
-    0x00000000, 0x00000000, 0x41E00000, 0x42196666,
-    0x00000000, 0x00000000, 0x41D00000, 0x00000000,
-    0x42280000, 0x42500000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BTL_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_kanbu2 = {
+    UNIT_UNUSED_CRUMP2,         // mUnitType
+    "btl_un_kanbu2",            // name
+    15,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    1,                          // mLevel
+    10,                         // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    100,                        // field_0x13
+    9,                          // field_0x14
+    56,                         // width
+    59,                         // height
+    { 56, 59 },                 // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 0.0f, 0.0f, 0.0f },       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 21.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 28.0f, 38.35f, 0.0f },    // kissHitOffset
+    { 0.0f, 26.0f, 0.0f },      // cutBaseOffset
+    42.0f,                      // cutWidth
+    52.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BTL_DAMAGE1",          // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                     // vulnStatus
+    1,                          // numParts
+    &parts,                     // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646400,
-    0x00646464, 0x64000000,
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    0,   // instaKillRate
 };
 
 static BattleDataEntry data_table[3] = {
     { 0x31, dead_event },
     { 0x30, btldefaultevt_Dummy },
-    { 0, NULL },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts = {
-    1,
-    "btl_un_kanbu2",
-    "c_kanbu",
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 45.0f, 0.0f },
-    { 0, 0, 0, 0, 0x42, 0x48, 0, 0, 0, 0, 0, 0, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
-    (BattleUnitDefense*)defence,
-    (BattleUnitDefenseAttr*)defence_attr,
-    kMainPart | kUnknown_0x8,
-    (PartsCounterAttribute_Flags)0,
-    pose_table,
+    1,                     // partNum
+    "btl_un_kanbu2",       // partName
+    "c_kanbu",             // modelName
+    { 0.0f, 0.0f, 0.0f },  // positionOffset
+    { 0.0f, 45.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 50.0f, 0.0f }, // hitCursorBaseOffset
+    20,                    // field_0x30
+    30,                    // field_0x32
+    255,                   // baseAlpha
+    &defence,               // defense
+    &defence_attr,          // defenseAttr
+    0x00000009,            // attributes
+    0,                     // counterAttributes
+    pose_table,            // poseTable
 };
 
-BattleWeapon weapon_kanbu2_attack[1] = {
-    {
-        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x64, 0, 0, 1, 0x3F, 0x80, 0, 0 },
-        1,
-        1,
-        1,
-        1,
-        (void*)weaponGetPowerDefault,
-        { 2, 0, 0, 0, 0, 0, 0, 0 },
-        NULL,
-        { 0 },
-        { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00, 0x00, 0x00, 0x03, 0x02, 0, 0, 0, 0 },
-        (BattleWeaponSpecialFlags)0x1087,
-        { 0, 0, 0, 0, 0, 0, 0, 4 },
-        NULL,
-        { 0, 0, 0, 0x64, 0, 0, 0, 0, 0, 0, 0, 0 },
-    },
+BattleWeapon weapon_kanbu2_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00001087,                               // special
+    0,                                        // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(init_event)
@@ -146,7 +254,7 @@ static EVT_BEGIN(attack_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    SET_VALUE(LW(9), PTR(weapon_kanbu2_attack))
+    SET_VALUE(LW(9), PTR(&weapon_kanbu2_attack))
     CALL_CHILD(normal_attack_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN

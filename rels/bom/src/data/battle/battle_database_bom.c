@@ -3,6 +3,8 @@
 #include "eff/n64/eff_snowfall_n64.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma pool_data off
 
@@ -10,12 +12,12 @@
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_flower_drop_param_default3[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_bllizard[];
-extern s32 battle_item_default_param_list[];
-extern s32 battle_item_ice_pakkun[];
-extern s32 unit_bllizard_3_data_B7F0[];
-extern s32 unit_ice_pakkun_3_data_CDB0[];
-extern s32 unit_kuriboo_3_data_AC58[];
+extern ItemDropData battle_item_bllizard[9];
+extern ItemDropData battle_item_default_param_list[1];
+extern ItemDropData battle_item_ice_pakkun[5];
+extern BattleUnitKind unit_bllizard_3_data_B7F0;
+extern BattleUnitKind unit_ice_pakkun_3_data_CDB0;
+extern BattleUnitKind unit_kuriboo_3_data_AC58;
 s32 bgset_bom_snow_event[4];
 
 // clang-format off
@@ -90,226 +92,119 @@ u32 bom_btlstage_data[109] = {
     0x00010101,
 };
 
-// TODO: type
-u32 btlparty_bom_bom_00_01_off_1[12] = {
-    (u32)unit_kuriboo_3_data_AC58, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_default_param_list,
+BattleUnitSetup btlparty_bom_bom_00_01_off_1[1] = {
+    { &unit_kuriboo_3_data_AC58, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_default_param_list },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_00_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_bom_bom_00_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_bom_bom_00_01_off_1 = { 1, btlparty_bom_bom_00_01_off_1, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_bom_bom_03_01_off_1[2] = {
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_03_01_off_1[24] = {
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
+BattleGroupSetup btlgrp_bom_bom_03_01_off_1 = { 2, btlparty_bom_bom_03_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_bom_bom_03_01_off_2[3] = {
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_03_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_bom_bom_03_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_bom_bom_03_01_off_2 = { 3, btlparty_bom_bom_03_01_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_bom_bom_03_03_off_1[2] = {
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_03_01_off_2[36] = {
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
+BattleGroupSetup btlgrp_bom_bom_03_03_off_1 = { 2, btlparty_bom_bom_03_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_bom_bom_03_03_off_2[3] = {
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_03_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_bom_bom_03_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_bom_bom_03_03_off_2 = { 3, btlparty_bom_bom_03_03_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_bom_bom_04_01_off_1[2] = {
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_03_03_off_1[24] = {
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
+BattleGroupSetup btlgrp_bom_bom_04_01_off_1 = { 2, btlparty_bom_bom_04_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_bom_bom_04_01_off_2[3] = {
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_03_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_bom_bom_03_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+BattleGroupSetup btlgrp_bom_bom_04_01_off_2 = { 3, btlparty_bom_bom_04_01_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_bom_bom_04_02_off_1[2] = {
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_03_03_off_2[36] = {
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
+BattleGroupSetup btlgrp_bom_bom_04_02_off_1 = { 2, btlparty_bom_bom_04_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_bom_bom_04_02_off_2[3] = {
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_bllizard_3_data_B7F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_03_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_bom_bom_03_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+BattleGroupSetup btlgrp_bom_bom_04_02_off_2 = { 3, btlparty_bom_bom_04_02_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_bom_bom_04_03_off_1[4] = {
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_3_data_CDB0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_04_01_off_1[24] = {
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
+BattleGroupSetup btlgrp_bom_bom_04_03_off_1 = { 4, btlparty_bom_bom_04_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_test1_off[2] = {
+    { 50, &btlgrp_bom_bom_00_01_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_04_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_bom_bom_04_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_03_01_off[3] = {
+    { 20, &btlgrp_bom_bom_03_01_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 10, &btlgrp_bom_bom_03_01_off_2, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_04_01_off_2[36] = {
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_03_02_off[3] = {
+    { 10, &btlgrp_bom_bom_03_01_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 20, &btlgrp_bom_bom_03_01_off_2, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_04_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_bom_bom_04_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_03_03_off[3] = {
+    { 10, &btlgrp_bom_bom_03_03_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 10, &btlgrp_bom_bom_03_03_off_2, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_04_02_off_1[24] = {
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_04_01_off[3] = {
+    { 10, &btlgrp_bom_bom_04_01_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 10, &btlgrp_bom_bom_04_01_off_2, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_bom_bom_04_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_bom_bom_04_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_04_02_off[3] = {
+    { 10, &btlgrp_bom_bom_04_02_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 10, &btlgrp_bom_bom_04_02_off_2, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_bom_bom_04_02_off_2[36] = {
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_bllizard_3_data_B7F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_bom_bom_04_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_bom_bom_04_02_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_bom_bom_04_03_off_1[48] = {
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_3_data_CDB0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-};
-
-// TODO: type
-u32 btlgrp_bom_bom_04_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_bom_bom_04_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_bom_bom_00_01_off_1, (u32)&bom_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_03_01_off[9] = {
-    0x00000014, (u32)&btlgrp_bom_bom_03_01_off_1, (u32)&bom_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_bom_bom_03_01_off_2, (u32)&bom_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_03_02_off[9] = {
-    0x0000000A, (u32)&btlgrp_bom_bom_03_01_off_1, (u32)&bom_btlstage_data, 0x00000014,
-    (u32)&btlgrp_bom_bom_03_01_off_2, (u32)&bom_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_03_03_off[9] = {
-    0x0000000A, (u32)&btlgrp_bom_bom_03_03_off_1, (u32)&bom_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_bom_bom_03_03_off_2, (u32)&bom_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_04_01_off[9] = {
-    0x0000000A, (u32)&btlgrp_bom_bom_04_01_off_1, (u32)&bom_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_bom_bom_04_01_off_2, (u32)&bom_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_04_02_off[9] = {
-    0x0000000A, (u32)&btlgrp_bom_bom_04_02_off_1, (u32)&bom_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_bom_bom_04_02_off_2, (u32)&bom_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_bom_btlno_bom_04_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_bom_bom_04_03_off_1, (u32)&bom_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_bom_btlno_bom_04_03_off[2] = {
+    { 10, &btlgrp_bom_bom_04_03_off_1, (struct BattleStageData*)bom_btlstage_data },
+    { 0, NULL, NULL },
 };
 
 // TODO: type

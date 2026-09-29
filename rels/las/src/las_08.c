@@ -124,19 +124,19 @@ static BeroEntry bero_entry_data[5] = {
     {"w_bero_1", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_matigai_evt, "las_07", "e_bero_1",
-     5, 5, (s32)&w1_door_close, (s32)&w1_door_open},
+     5, 5, &w1_door_close, &w1_door_open},
     {"e_bero_1", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_seikai_evt, "las_09", "w_bero",
-     5, 5, (s32)&e1_door_close, (s32)&e1_door_open},
+     5, 5, &e1_door_close, &e1_door_open},
     {"w_bero_2", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_matigai_evt, "las_07", "e_bero_2",
-     5, 5, (s32)&w2_door_close, (s32)&w2_door_open},
+     5, 5, &w2_door_close, &w2_door_open},
     {"e_bero_2", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_matigai_evt, "las_07", "w_bero_2",
-     5, 5, (s32)&e2_door_close, (s32)&e2_door_open},
+     5, 5, &e2_door_close, &e2_door_open},
     {NULL},
 };
 
@@ -144,21 +144,21 @@ BeroEntry e_bero_1_matigai[] = {
     {"e_bero_1", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_matigai_evt, "las_07", "w_bero_1",
-     5, 5, (s32)&e1_door_close, (s32)&e1_door_open},
+     5, 5, &e1_door_close, &e1_door_open},
 };
 
 BeroEntry e_bero_1_seikai[] = {
     {"e_bero_1", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_seikai_evt, "las_08", "w_bero_1",
-     5, 5, (s32)&e1_door_close, (s32)&e1_door_open},
+     5, 5, &e1_door_close, &e1_door_open},
 };
 
 BeroEntry e_bero_2_seikai[] = {
     {"e_bero_2", 1, 6, 0x00004E20, 0x000186A0,
      0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
      0xFFFFFFFF, door_seikai_evt, "las_08", "w_bero_2",
-     5, 5, (s32)&e2_door_close, (s32)&e2_door_open},
+     5, 5, &e2_door_close, &e2_door_open},
 };
 
 char* taimatu_data[16] = {

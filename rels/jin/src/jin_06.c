@@ -49,7 +49,7 @@ static EVT_BEGIN(w_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_07", "e_bero", 5, 5, (s32)w_close, (s32)w_open},
+    {"w_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_07", "e_bero", 5, 5, w_close, w_open},
     {NULL},
 };
 

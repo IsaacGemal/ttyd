@@ -240,7 +240,7 @@ static EVT_BEGIN(bero_s_doa_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[8] = {
-    {"e_bero", 1, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "mri_15", "w_bero", 4, 4, (s32)&bero_s_doa_close, (s32)&bero_s_doa_open},
+    {"e_bero", 1, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "mri_15", "w_bero", 4, 4, &bero_s_doa_close, &bero_s_doa_open},
     {"w_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "mri_07", "e_bero", 1, 1},
     {"e_bero02", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "mri_08", "w_bero", 1, 1},
     {"w_bero02", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "mri_11", "e_bero", 1, 1},

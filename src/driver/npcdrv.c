@@ -1398,8 +1398,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     NpcBattleInfo* info = &npc->battleInfo;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
-    NpcItemDropEntry* list;
-    NpcItemDropEntry* d;
+    ItemDropData* list;
+    ItemDropData* d;
     BattleUnitSetup* enemy;
     s8* p;
     s32 evt;
@@ -1455,7 +1455,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                 sel++;
             }
             info->groupSetup = sel->setup;
-            *(s32*)info = sel->field_8;
+            *(s32*)info = (s32)sel->stageData;
         }
     }
     if (info->groupSetup != NULL) {
@@ -1463,21 +1463,21 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         enemy = info->groupSetup->enemyData;
         memset(info->heldItems, 0, 0x20);
         for (i = 0; i < num; i++, enemy++) {
-            list = *(NpcItemDropEntry**)((u8*)enemy + 0x2C);
+            list = enemy->itemDropTable;
             if (list != NULL) {
                 d = list;
                 sum = 0;
-                while (d->weight > 0 || d->field_0 != 0) {
-                    sum += d->weight;
+                while (d->holdWeight > 0 || d->type != 0) {
+                    sum += d->holdWeight;
                     d++;
                 }
                 if (sum > 0) {
                     pick = irand(sum);
-                    while ((pick -= list->weight) >= 0) {
+                    while ((pick -= list->holdWeight) >= 0) {
                         list++;
                     }
-                    info->heldItems[i] = list->field_0;
-                    info->itemDropLists[i] = *(ItemDropData**)((u8*)enemy + 0x2C);
+                    info->heldItems[i] = list->type;
+                    info->itemDropLists[i] = enemy->itemDropTable;
                 }
             }
         }

@@ -9,13 +9,16 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-extern s32 marioWeapon_UltraHammerFinish[];
-static u32 regist[6];
-static u32 data_table[16];
-static u32 parts[95];
+extern BattleWeapon marioWeapon_UltraHammerFinish;
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[8];
+static BattleUnitKindPart parts[5];
 static s32 init_event[54];
 static s32 dmg_avoid_counter_thorn_side_event[51];
 static s32 damage_event[34];
@@ -52,246 +55,817 @@ extend_data(sambo_mummy_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000068, (u32)"btl_un_sambo_mummy", 0x00080000, 0x01011700,
-    0x02460132, 0x270F001A, 0x0050000E, 0x00500000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0x00000000, 0x41500000, 0x42500000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x41D00000, 0x42A00000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_SAMBO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x05000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_POISON_POKEY,          // mUnitType
+    "btl_un_sambo_mummy",       // name
+    8,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    23,                         // mLevel
+    0,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    1,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    26,                         // width
+    80,                         // height
+    { 14, 80 },                 // statusIconOffset
+    { 0.0f, 40.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 13.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 13.0f, 52.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 40.0f, 0.0f },      // cutBaseOffset
+    26.0f,                      // cutWidth
+    80.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_SAMBO_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                     // vulnStatus
+    5,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    75,  // sleepRate
+    60,  // stopRate
+    60,  // dizzyRate
+    100, // poisonRate
+    70,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    40,  // freezeRate
+    100, // hugeRate
+    85,  // tinyRate
+    100, // attackUpRate
+    85,  // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    70,  // allergicRate
+    80,  // frightRate
+    70,  // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_head_attack_4 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21000004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    60,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x4B3C3C64, 0x46646428, 0x64556455, 0x645A4650,
-    0x46644664, 0x645F0000,
+static BattleWeapon weapon_sambo_mummy_head_attack_3 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21000004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    60,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_head_attack_4[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21000004, 0x00000302,
-    0x00000000, 0x00000087, 0x00000000, 0x80002004,
-    0x00000000, 0x00003C0A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_head_attack_2 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21004004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    60,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_head_attack_3[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21000004, 0x00000302,
-    0x00000000, 0x00000087, 0x00000000, 0x80002004,
-    0x00000000, 0x00003C0A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_head_attack_1 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21004004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00001087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    60,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_head_attack_2[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21004004, 0x00000302,
-    0x00000000, 0x00000087, 0x00000000, 0x80002004,
-    0x00000000, 0x00003C0A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_spike_attack_4 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_head_attack_1[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21004004, 0x00000302,
-    0x00000000, 0x00001087, 0x00000000, 0x80002004,
-    0x00000000, 0x00003C0A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_spike_attack_3 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_spike_attack_4[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sambo_mummy_spike_attack_2 = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_spike_attack_3[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleDispPose pose_table_body4[18] = {
+    { 0x01, "SNB_N_1" },
+    { 0x02, "SNB_Y_1" },
+    { 0x09, "SNB_Y_1" },
+    { 0x05, "SNB_K_1" },
+    { 0x04, "SNB_X_1" },
+    { 0x03, "SNB_X_1" },
+    { 0x1C, "SNB_S_1" },
+    { 0x1D, "SNB_Q_1" },
+    { 0x1E, "SNB_Q_1" },
+    { 0x1F, "SNB_S_1" },
+    { 0x27, "SNB_D_1" },
+    { 0x2F, "SNB_W_1" },
+    { 0x2A, "SNB_W_1" },
+    { 0x28, "SNB_W_1" },
+    { 0x38, "SNB_X_1" },
+    { 0x39, "SNB_X_1" },
+    { 0x41, "SNB_T_1" },
+    { 0x45, "SNB_S_1" },
 };
 
-// TODO: type
-static u32 weapon_sambo_mummy_spike_attack_2[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleDispPose pose_table_body3[20] = {
+    { 0x01, "SNB_N_2" },
+    { 0x02, "SNB_Y_2" },
+    { 0x09, "SNB_Y_2" },
+    { 0x05, "SNB_K_2" },
+    { 0x04, "SNB_X_2" },
+    { 0x03, "SNB_X_2" },
+    { 0x1C, "SNB_S_2" },
+    { 0x1D, "SNB_Q_2" },
+    { 0x1E, "SNB_Q_2" },
+    { 0x1F, "SNB_S_2" },
+    { 0x27, "SNB_D_2" },
+    { 0x2F, "SNB_W_2" },
+    { 0x32, "SNB_A_1A" },
+    { 0x33, "SNB_A_1B" },
+    { 0x2A, "SNB_W_2" },
+    { 0x28, "SNB_W_2" },
+    { 0x38, "SNB_X_2" },
+    { 0x39, "SNB_X_2" },
+    { 0x41, "SNB_T_2" },
+    { 0x45, "SNB_S_2" },
 };
 
-// TODO: type
-static u32 pose_table_body4[36] = {
-    0x00000001, (u32)"SNB_N_1", 0x00000002, (u32)"SNB_Y_1",
-    0x00000009, (u32)"SNB_Y_1", 0x00000005, (u32)"SNB_K_1",
-    0x00000004, (u32)"SNB_X_1", 0x00000003, (u32)"SNB_X_1",
-    0x0000001C, (u32)"SNB_S_1", 0x0000001D, (u32)"SNB_Q_1",
-    0x0000001E, (u32)"SNB_Q_1", 0x0000001F, (u32)"SNB_S_1",
-    0x00000027, (u32)"SNB_D_1", 0x0000002F, (u32)"SNB_W_1",
-    0x0000002A, (u32)"SNB_W_1", 0x00000028, (u32)"SNB_W_1",
-    0x00000038, (u32)"SNB_X_1", 0x00000039, (u32)"SNB_X_1",
-    0x00000041, (u32)"SNB_T_1", 0x00000045, (u32)"SNB_S_1",
+static BattleDispPose pose_table_body2[20] = {
+    { 0x01, "SNB_N_3" },
+    { 0x02, "SNB_Y_3" },
+    { 0x09, "SNB_Y_3" },
+    { 0x05, "SNB_K_3" },
+    { 0x04, "SNB_X_3" },
+    { 0x03, "SNB_X_3" },
+    { 0x1C, "SNB_S_3" },
+    { 0x1D, "SNB_Q_3" },
+    { 0x1E, "SNB_Q_3" },
+    { 0x1F, "SNB_S_3" },
+    { 0x27, "SNB_D_3" },
+    { 0x2F, "SNB_W_3" },
+    { 0x32, "SNB_A_2A" },
+    { 0x33, "SNB_A_2B" },
+    { 0x2A, "SNB_W_3" },
+    { 0x28, "SNB_W_3" },
+    { 0x38, "SNB_X_3" },
+    { 0x39, "SNB_X_3" },
+    { 0x41, "SNB_T_3" },
+    { 0x45, "SNB_S_3" },
 };
 
-// TODO: type
-static u32 pose_table_body3[40] = {
-    0x00000001, (u32)"SNB_N_2", 0x00000002, (u32)"SNB_Y_2",
-    0x00000009, (u32)"SNB_Y_2", 0x00000005, (u32)"SNB_K_2",
-    0x00000004, (u32)"SNB_X_2", 0x00000003, (u32)"SNB_X_2",
-    0x0000001C, (u32)"SNB_S_2", 0x0000001D, (u32)"SNB_Q_2",
-    0x0000001E, (u32)"SNB_Q_2", 0x0000001F, (u32)"SNB_S_2",
-    0x00000027, (u32)"SNB_D_2", 0x0000002F, (u32)"SNB_W_2",
-    0x00000032, (u32)"SNB_A_1A", 0x00000033, (u32)"SNB_A_1B",
-    0x0000002A, (u32)"SNB_W_2", 0x00000028, (u32)"SNB_W_2",
-    0x00000038, (u32)"SNB_X_2", 0x00000039, (u32)"SNB_X_2",
-    0x00000041, (u32)"SNB_T_2", 0x00000045, (u32)"SNB_S_2",
+static BattleDispPose pose_table_body1[20] = {
+    { 0x01, "SNB_N_4" },
+    { 0x02, "SNB_Y_4" },
+    { 0x09, "SNB_Y_4" },
+    { 0x05, "SNB_K_4" },
+    { 0x04, "SNB_X_4" },
+    { 0x03, "SNB_X_4" },
+    { 0x1C, "SNB_S_4" },
+    { 0x1D, "SNB_Q_4" },
+    { 0x1E, "SNB_Q_4" },
+    { 0x1F, "SNB_S_4" },
+    { 0x27, "SNB_D_4" },
+    { 0x2F, "SNB_W_4" },
+    { 0x32, "SNB_A_3A" },
+    { 0x33, "SNB_A_3B" },
+    { 0x2A, "SNB_W_4" },
+    { 0x28, "SNB_W_4" },
+    { 0x38, "SNB_X_4" },
+    { 0x39, "SNB_X_4" },
+    { 0x41, "SNB_T_4" },
+    { 0x45, "SNB_S_4" },
 };
 
-// TODO: type
-static u32 pose_table_body2[40] = {
-    0x00000001, (u32)"SNB_N_3", 0x00000002, (u32)"SNB_Y_3",
-    0x00000009, (u32)"SNB_Y_3", 0x00000005, (u32)"SNB_K_3",
-    0x00000004, (u32)"SNB_X_3", 0x00000003, (u32)"SNB_X_3",
-    0x0000001C, (u32)"SNB_S_3", 0x0000001D, (u32)"SNB_Q_3",
-    0x0000001E, (u32)"SNB_Q_3", 0x0000001F, (u32)"SNB_S_3",
-    0x00000027, (u32)"SNB_D_3", 0x0000002F, (u32)"SNB_W_3",
-    0x00000032, (u32)"SNB_A_2A", 0x00000033, (u32)"SNB_A_2B",
-    0x0000002A, (u32)"SNB_W_3", 0x00000028, (u32)"SNB_W_3",
-    0x00000038, (u32)"SNB_X_3", 0x00000039, (u32)"SNB_X_3",
-    0x00000041, (u32)"SNB_T_3", 0x00000045, (u32)"SNB_S_3",
+static BattleDispPose pose_table_parts[3] = {
+    { 0x1C, "SNB_B_1" },
+    { 0x27, "SNB_B_1" },
+    { 0x45, "SNB_B_1" },
 };
 
-// TODO: type
-static u32 pose_table_body1[40] = {
-    0x00000001, (u32)"SNB_N_4", 0x00000002, (u32)"SNB_Y_4",
-    0x00000009, (u32)"SNB_Y_4", 0x00000005, (u32)"SNB_K_4",
-    0x00000004, (u32)"SNB_X_4", 0x00000003, (u32)"SNB_X_4",
-    0x0000001C, (u32)"SNB_S_4", 0x0000001D, (u32)"SNB_Q_4",
-    0x0000001E, (u32)"SNB_Q_4", 0x0000001F, (u32)"SNB_S_4",
-    0x00000027, (u32)"SNB_D_4", 0x0000002F, (u32)"SNB_W_4",
-    0x00000032, (u32)"SNB_A_3A", 0x00000033, (u32)"SNB_A_3B",
-    0x0000002A, (u32)"SNB_W_4", 0x00000028, (u32)"SNB_W_4",
-    0x00000038, (u32)"SNB_X_4", 0x00000039, (u32)"SNB_X_4",
-    0x00000041, (u32)"SNB_T_4", 0x00000045, (u32)"SNB_S_4",
+static BattleDataEntry data_table[8] = {
+    { 0x25, dmg_avoid_counter_thorn_side_event },
+    { 0x27, dmg_avoid_counter_thorn_side_event },
+    { 0x13, damage_event_bodylost },
+    { 0x12, damage_event_bodylost_blow },
+    { 0x10, damage_event_bodylost },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x36, damage_swallow_body },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table_parts[6] = {
-    0x0000001C, (u32)"SNB_B_1", 0x00000027, (u32)"SNB_B_1",
-    0x00000045, (u32)"SNB_B_1",
-};
-
-// TODO: type
-static u32 data_table[16] = {
-    0x00000025, (u32)&dmg_avoid_counter_thorn_side_event, 0x00000027, (u32)&dmg_avoid_counter_thorn_side_event,
-    0x00000013, (u32)&damage_event_bodylost, 0x00000012, (u32)&damage_event_bodylost_blow,
-    0x00000010, (u32)&damage_event_bodylost, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000036, (u32)&damage_swallow_body, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 parts[95] = {
-    0x00000001, (u32)"btl_un_sambo_mummy", (u32)"c_sanbo_m", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42A80000,
-    0x00000000, 0x00000000, 0x42B40000, 0x00000000,
-    0x0014005A, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000005, (u32)&pose_table_body4, 0x00000002,
-    (u32)"btl_un_sambo_mummy", (u32)"c_sanbo_m", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x42800000, 0x00000000,
-    0x00000000, 0x428C0000, 0x00000000, 0x00140046,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x03010000,
-    0x00000005, (u32)&pose_table_body3, 0x00000003, (u32)"btl_un_sambo_mummy",
-    (u32)"c_sanbo_m", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x42300000, 0x00000000, 0x00000000,
-    0x42480000, 0x00000000, 0x00140032, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x03010000, 0x00000005,
-    (u32)&pose_table_body2, 0x00000004, (u32)"btl_un_sambo_mummy", (u32)"c_sanbo_m",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x41C00000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x03010000, 0x00000005, (u32)&pose_table_body1,
-    0x00000005, (u32)"btl_un_sambo_mummy", (u32)"c_sanbo_m", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x13010000, 0x00000000, (u32)&pose_table_parts,
+static BattleUnitKindPart parts[5] = {
+    {
+        1,                     // partNum
+        "btl_un_sambo_mummy",  // partName
+        "c_sanbo_m",           // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 84.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 90.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        90,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00000009,            // attributes
+        0x00000005,            // counterAttributes
+        pose_table_body4,      // poseTable
+    },
+    {
+        2,                     // partNum
+        "btl_un_sambo_mummy",  // partName
+        "c_sanbo_m",           // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 64.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 70.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        70,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03010000,            // attributes
+        0x00000005,            // counterAttributes
+        pose_table_body3,      // poseTable
+    },
+    {
+        3,                     // partNum
+        "btl_un_sambo_mummy",  // partName
+        "c_sanbo_m",           // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 44.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 50.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        50,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03010000,            // attributes
+        0x00000005,            // counterAttributes
+        pose_table_body2,      // poseTable
+    },
+    {
+        4,                     // partNum
+        "btl_un_sambo_mummy",  // partName
+        "c_sanbo_m",           // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 24.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03010000,            // attributes
+        0x00000005,            // counterAttributes
+        pose_table_body1,      // poseTable
+    },
+    {
+        5,                    // partNum
+        "btl_un_sambo_mummy", // partName
+        "c_sanbo_m",          // modelName
+        { 0.0f, 0.0f, 0.0f }, // positionOffset
+        { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
+        20,                   // field_0x30
+        30,                   // field_0x32
+        255,                  // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x13010000,           // attributes
+        0,                    // counterAttributes
+        pose_table_parts,     // poseTable
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -510,9 +1084,9 @@ static EVT_BEGIN(damage_event_bodylost_blow)
         CALL(btlevtcmd_OffPartsAttribute, LW(10), 5, 16777216)
         CALL(btlevtcmd_CheckDamagePattern, LW(10), 15, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
-            SET_VALUE(LW(13), PTR(marioWeapon_KaitenHammerInvolved))
+            SET_VALUE(LW(13), PTR(&marioWeapon_KaitenHammerInvolved))
         ELSE
-            SET_VALUE(LW(13), PTR(marioWeapon_UltraHammerInvolved))
+            SET_VALUE(LW(13), PTR(&marioWeapon_UltraHammerInvolved))
         END_IF
         CALL(btlevtcmd_GetFriendBelong, LW(10), LW(0))
         CALL(btlevtcmd_SamplingEnemy, LW(10), LW(0), LW(13))
@@ -548,7 +1122,7 @@ static EVT_BEGIN(damage_event_bodylost_blow)
         CALL(btlevtcmd_OnPartsAttribute, LW(10), 5, 16777216)
         CALL(btlevtcmd_CheckDamagePattern, LW(10), 16, LW(5))
         IF_INT_NOT_EQUAL(LW(5), 0)
-            CALL(btlevtcmd_CheckDamage, -2, LW(10), LW(11), PTR(marioWeapon_UltraHammerFinish), 131328, LW(5))
+            CALL(btlevtcmd_CheckDamage, -2, LW(10), LW(11), PTR(&marioWeapon_UltraHammerFinish), 131328, LW(5))
         END_IF
     END_IF
     RETURN
@@ -668,16 +1242,16 @@ static EVT_BEGIN(attack_event)
             SWITCH(LW(10))
                 CASE_EQUAL(4)
                 CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_4))
-                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_4), LW(3), LW(4))
+                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_4))
+                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_4), LW(3), LW(4))
                 CASE_EQUAL(3)
                 CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_3))
-                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_3), LW(3), LW(4))
+                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_3))
+                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_3), LW(3), LW(4))
                 CASE_EQUAL(2)
                 CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_2))
-                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_2), LW(3), LW(4))
+                CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_2))
+                CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_2), LW(3), LW(4))
             END_SWITCH
             IF_INT_NOT_EQUAL(LW(3), -1)
                 CALL_CHILD(attack_head_2_event)
@@ -700,16 +1274,16 @@ static EVT_BEGIN(attack_head_2_event)
     SWITCH(LW(10))
         CASE_EQUAL(4)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_4))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_4), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_4))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_4), LW(3), LW(4))
         CASE_EQUAL(3)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_3))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_3), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_3))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_3), LW(3), LW(4))
         CASE_EQUAL(2)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_2))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_2), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_2))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_2), LW(3), LW(4))
     END_SWITCH
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -723,14 +1297,14 @@ static EVT_BEGIN(attack_head_2_event)
     CALL(btlevtcmd_WaitGuardMove)
     SWITCH(LW(10))
         CASE_EQUAL(4)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_head_attack_4))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_head_attack_4))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_head_attack_4))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_head_attack_4))
         CASE_EQUAL(3)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_head_attack_3))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_head_attack_3))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_head_attack_3))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_head_attack_3))
         CASE_EQUAL(2)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_head_attack_2))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_head_attack_2))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_head_attack_2))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_head_attack_2))
     END_SWITCH
     CALL(evt_btl_camera_set_mode, 0, 8)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
@@ -797,11 +1371,11 @@ static EVT_BEGIN(attack_head_2_event)
     END_IF
     SWITCH(LW(10))
         CASE_EQUAL(4)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_4), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_4), 256, LW(5))
         CASE_EQUAL(3)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_3), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_3), 256, LW(5))
         CASE_EQUAL(2)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_2), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_2), 256, LW(5))
     END_SWITCH
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
@@ -843,14 +1417,14 @@ static EVT_BEGIN(attack_head_2_event)
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
     SWITCH(LW(10))
         CASE_EQUAL(4)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_sambo_mummy_head_attack_4))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_4), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_sambo_mummy_head_attack_4))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_4), 256, LW(5))
         CASE_EQUAL(3)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_sambo_mummy_head_attack_3))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_3), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_sambo_mummy_head_attack_3))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_3), 256, LW(5))
         CASE_EQUAL(2)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_sambo_mummy_head_attack_2))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_2), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_sambo_mummy_head_attack_2))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_2), 256, LW(5))
     END_SWITCH
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 90)
     CALL(btlevtcmd_AnimeChangePoseType, -2, LW(6), 43)
@@ -882,8 +1456,8 @@ EVT_END()
 
 static EVT_BEGIN(attack_head_1_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_head_attack_1))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_head_attack_1), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_head_attack_1))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_head_attack_1), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -892,10 +1466,10 @@ static EVT_BEGIN(attack_head_1_event)
         END_IF
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_head_attack_1))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_head_attack_1))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_head_attack_1))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_head_attack_1))
     CALL(evt_btl_camera_set_mode, 0, 8)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
@@ -908,7 +1482,7 @@ static EVT_BEGIN(attack_head_1_event)
     SET_VALUE(LW(8), 35)
     CALL_CHILD(sambo_rabbit_move)
     WAIT_FRAMES(10)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_1), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_1), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -1008,8 +1582,8 @@ static EVT_BEGIN(attack_head_1_event)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
     WAIT_FRAMES(2)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_sambo_mummy_head_attack_1))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_head_attack_1), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_sambo_mummy_head_attack_1))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_head_attack_1), 256, LW(5))
     CALL(evt_btl_camera_set_mode, 0, 0)
     CALL(btlevtcmd_SetFallAccel, -2, FLOAT(0.9f))
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
@@ -1047,16 +1621,16 @@ static EVT_BEGIN(attack_spike_event)
     SWITCH(LW(10))
         CASE_EQUAL(4)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_spike_attack_4))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_spike_attack_4), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_spike_attack_4))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_spike_attack_4), LW(3), LW(4))
         CASE_EQUAL(3)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_spike_attack_3))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_spike_attack_3), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_spike_attack_3))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_spike_attack_3), LW(3), LW(4))
         CASE_EQUAL(2)
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_sambo_mummy_spike_attack_2))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_sambo_mummy_spike_attack_2), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_sambo_mummy_spike_attack_2))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_sambo_mummy_spike_attack_2), LW(3), LW(4))
     END_SWITCH
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -1070,14 +1644,14 @@ static EVT_BEGIN(attack_spike_event)
     CALL(btlevtcmd_WaitGuardMove)
     SWITCH(LW(10))
         CASE_EQUAL(4)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_spike_attack_4))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_spike_attack_4))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_spike_attack_4))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_spike_attack_4))
         CASE_EQUAL(3)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_spike_attack_3))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_spike_attack_3))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_spike_attack_3))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_spike_attack_3))
         CASE_EQUAL(2)
-        CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_sambo_mummy_spike_attack_2))
-        CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_sambo_mummy_spike_attack_2))
+        CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_sambo_mummy_spike_attack_2))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_sambo_mummy_spike_attack_2))
     END_SWITCH
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
@@ -1146,11 +1720,11 @@ static EVT_BEGIN(attack_spike_event)
     WAIT_FRAMES(5)
     SWITCH(LW(10))
         CASE_EQUAL(3)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_spike_attack_4), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_spike_attack_4), 256, LW(5))
         CASE_EQUAL(2)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_spike_attack_3), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_spike_attack_3), 256, LW(5))
         CASE_EQUAL(1)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_sambo_mummy_spike_attack_2), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_sambo_mummy_spike_attack_2), 256, LW(5))
     END_SWITCH
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
@@ -1195,11 +1769,11 @@ static EVT_BEGIN(attack_spike_event)
     CALL(evt_btl_camera_add_zoom, 0, -50)
     SWITCH(LW(10))
         CASE_EQUAL(3)
-        SET_VALUE(LW(12), PTR(weapon_sambo_mummy_spike_attack_4))
+        SET_VALUE(LW(12), PTR(&weapon_sambo_mummy_spike_attack_4))
         CASE_EQUAL(2)
-        SET_VALUE(LW(12), PTR(weapon_sambo_mummy_spike_attack_3))
+        SET_VALUE(LW(12), PTR(&weapon_sambo_mummy_spike_attack_3))
         CASE_EQUAL(1)
-        SET_VALUE(LW(12), PTR(weapon_sambo_mummy_spike_attack_2))
+        SET_VALUE(LW(12), PTR(&weapon_sambo_mummy_spike_attack_2))
     END_SWITCH
     CALL(btlevtcmd_ResultACDefence, LW(3), LW(12))
     CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 256, LW(5))

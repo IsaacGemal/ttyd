@@ -7,12 +7,14 @@
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 extern s32 moamoa1_weakness_pose_table[];
 extern s32 moamoa_defence_no_parts[];
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
 static s32 init_event[26];
@@ -41,71 +43,190 @@ extend_data(61,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_moamoa_mouth[49] = {
-    0x0000006F, (u32)"btl_un_moamoa_mouth", 0x00060000, 0x01010000,
-    0x00640032, 0x000A00C8, 0x00780028, 0x00640000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x438C0000, 0x42200000, 0x00000000, 0x42C80000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42C80000,
-    0x00000000, 0x00000000, 0x42A00000, 0x42A00000,
-    0x41A00000, 0x00000000, 0x42F00000, 0x00000000,
-    0x43480000, 0x42F00000, 0x0000FF00, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_MOA_G_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00240000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_moamoa_mouth = {
+    UNIT_SMORG_MIASMA_CLAW,     // mUnitType
+    "btl_un_moamoa_mouth",      // name
+    6,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    0,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    10,                         // field_0x14
+    200,                        // width
+    120,                        // height
+    { 40, 100 },                // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 280.0f, 40.0f, 0.0f },    // talkTogeBaseOffset
+    { 100.0f, 0.0f, -10.0f },   // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 100.0f, 0.0f, 0.0f },     // bintaHitOffset
+    { 80.0f, 80.0f, 20.0f },    // kissHitOffset
+    { 0.0f, 120.0f, 0.0f },     // cutBaseOffset
+    200.0f,                     // cutWidth
+    120.0f,                     // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    0,                          // field_0x8C
+    0,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_MOA_G_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00240000,                 // attributeFlags
+    &regist,                     // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence = { {1, 1, 1, 1, 1} };
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
 
-static BattleUnitDefenseAttr defence_attr = { {0, 0, 0, 0, 0} };
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
 };
 
-static BattleDispPose pose_table[] = {
-    {0x1C, "S_2"}, {0x1F, "D_2_1"}, {0x27, "D_2_1"}, {0x45, "S_2"},
+static BattleDispPose pose_table[4] = {
+    { 0x1C, "S_2" },
+    { 0x1F, "D_2_1" },
+    { 0x27, "D_2_1" },
+    { 0x45, "S_2" },
 };
 
 static BattleDataEntry data_table[2] = {
-    {0x31, dead_event}, {0, NULL},
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts[1] = {
     {
-        1, "btl_un_moamoa_mouth", "c_g_moamoa_b",
-        {0.0f, 0.0f, 0.0f},
-        {67.0f, 82.0f, 10.0f},
-        {0x42, 0x7C, 0x00, 0x00, 0x42, 0xBE, 0x00, 0x00, 0x41, 0x20, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF,
-         0x00, 0x00},
-        &defence,
-        &defence_attr,
-        kMainPart | kHammerlikeCannotTarget | kShellTosslikeCannotTarget,
-        0,
-        pose_table,
+        1,                       // partNum
+        "btl_un_moamoa_mouth",   // partName
+        "c_g_moamoa_b",          // modelName
+        { 0.0f, 0.0f, 0.0f },    // positionOffset
+        { 67.0f, 82.0f, 10.0f }, // hitBaseOffset
+        { 63.0f, 95.0f, 10.0f }, // hitCursorBaseOffset
+        20,                      // field_0x30
+        30,                      // field_0x32
+        255,                     // baseAlpha
+        &defence,                // defense
+        &defence_attr,           // defenseAttr
+        0x00600001,              // attributes
+        0,                       // counterAttributes
+        pose_table,              // poseTable
     },
 };
 
-static BattleWeapon weapon_moamoa_attack[1] = {
-    {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x64, 0, 0, 0, 0x3F, 0x80, 0, 0},
-    1, 1, 1, 1,
-    (void*)weaponGetPowerDefault,
-    {0x0A, 0, 0, 0, 0, 0, 0, 0},
-    NULL,
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0x02, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00},
-    (BattleWeaponSpecialFlags)0x87,
-    {0x00, 0x00, 0x07, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    NULL,
-    {0, 0, 0, 0x64, 0, 0, 0, 0, 0, 0, 0, 0},
-    },
+static BattleWeapon weapon_moamoa_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 10, 0, 0, 0, 0, 0, 0, 0 },              // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(init_event)
@@ -202,7 +323,7 @@ char* mouth_Attack_front[7] = {
 
 static EVT_BEGIN(evt_attack)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_moamoa_attack))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_moamoa_attack))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -215,10 +336,10 @@ static EVT_BEGIN(evt_attack)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_set_zoom, 0, 100)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_moamoa_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_moamoa_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_moamoa_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_moamoa_attack))
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(6))
     CALL(btlevtcmd_SetUnitWork, LW(6), 0, 0)
     CALL(btlevtcmd_AnimeChangePose, LW(6), 1, STRING("S_1_1"))
@@ -273,13 +394,13 @@ static EVT_BEGIN(evt_attack)
     CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
     SET_VALUE(LW(10), 0)
     LOOP(0)
-        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_moamoa_attack), 256, LW(5))
+        CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_moamoa_attack), 256, LW(5))
         SWITCH(LW(5))
             CASE_EQUAL(1)
             IF_INT_EQUAL(LW(10), 0)
-                CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_moamoa_attack))
+                CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_moamoa_attack))
             END_IF
-            CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_moamoa_attack), 256, LW(5))
+            CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_moamoa_attack), 256, LW(5))
             CASE_EQUAL(4)
             CASE_EQUAL(3)
             CALL(btlevtcmd_StartAvoid, LW(3), 38)

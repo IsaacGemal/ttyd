@@ -72,23 +72,11 @@ EVT_BEGIN(door_dummy)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[60] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_20", (u32)"e_bero",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open, (u32)"e_bero",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"las_24", (u32)"w_bero", 0x00050005,
-    (u32)&e_door_close, (u32)&e_door_open, (u32)"s_bero", 0x00000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_23", (u32)"n_bero_1", 0x00010001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[4] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_20", "e_bero", 5, 5, w_door_close, w_door_open},
+    {"e_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_24", "w_bero", 5, 5, e_door_close, e_door_open},
+    {"s_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "n_bero_1", 1, 1},
+    {NULL},
 };
 
 // TODO: type

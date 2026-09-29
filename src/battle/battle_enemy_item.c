@@ -88,7 +88,7 @@ void* _check_hp_recover_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     for (i = 0; i < (s8)sampling[0xa6c]; i++) {
@@ -118,7 +118,7 @@ void* _check_fp_recover_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     for (i = 0; i < (s8)sampling[0xa6c]; i++) {
@@ -150,7 +150,7 @@ void* _check_attack_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     if ((s8)sampling[0xa6c] <= 0) {
@@ -191,7 +191,7 @@ void* _check_status_attack_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     if ((s8)sampling[0xa6c] <= 0) {
@@ -248,7 +248,7 @@ void* _check_status_support_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     if ((s8)sampling[0xa6c] <= 0) {
@@ -307,7 +307,7 @@ void* _check_status_recover_item(BattleUnit* unit) {
     weapon = itemDataTable[item].battle_params;
 
     BattleSamplingEnemy(sampling, weapon, unit->unitId, BtlUnit_GetEnemyBelong(unit),
-                        *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4],
+                        weapon->targetClassFlags, weapon->targetPropertyFlags,
                         (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 
     if ((s8)sampling[0xa6c] <= 0) {

@@ -46,24 +46,21 @@ extend_data(21,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
 static BeroEntry bero_data_a[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_a", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_a", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 
-// TODO: type
 static BeroEntry bero_data_b[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_b", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_b", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 
-// TODO: type
 static BeroEntry bero_data_c[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_c", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_05_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_c", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 
@@ -846,7 +843,6 @@ static EVT_BEGIN(talk_powan)
     RETURN
 EVT_END()
 
-// TODO: type
 static NpcSetupInfo npc_data[7] = {
     {"車掌", 0x40020610, 0, init_syashou, 0, talk_syashou},
     {"サラリーマン", 0x40020610, 0, init_sarary, 0, talk_sarary},
@@ -1196,24 +1192,21 @@ EVT_BEGIN(rsh_04_c_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
 static BeroEntry bero_data_a_return[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_a", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_a", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 
-// TODO: type
 static BeroEntry bero_data_b_return[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_b", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_b", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_b", "w_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_b", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 
-// TODO: type
 static BeroEntry bero_data_c_return[3] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_c", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_c", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_07_c", "w_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_c", "w_bero", 1, 1, "e_door_close", "e_door_open"},
     {NULL},
 };
 

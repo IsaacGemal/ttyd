@@ -9,15 +9,16 @@
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
 #include "math_trig.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 unit_super_killer[];
+extern BattleUnitKind unit_super_killer;
 static USER_FUNC(killer_get_angle);
 static USER_FUNC(killer_copy_status);
-static u32 regist[6];
-static u32 parts[57];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[3];
 static BattleDispPose pose_table[16];
 static BattleDataEntry data_table[1];
 static s32 init_event[63];
@@ -46,78 +47,162 @@ extend_data(173,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_super_killer_cannon[49] = {
-    0x0000007D, (u32)"btl_un_super_killer_cannon", 0x000A0000, 0x01011F00,
-    0x01460332, 0x270F0034, 0x00260005, 0x00260000,
-    0x00000000, 0x41980000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41D00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x41A00000, 0x41200000, 0x41D00000,
-    0x00000000, 0x00000000, 0x41D00000, 0x41C5999A,
-    0x00000000, 0xC1200000, 0x41980000, 0x00000000,
-    0x42500000, 0x42180000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_KILLER_CANON_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x03000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_super_killer_cannon = {
+    UNIT_BOMBSHELL_BILL_BLASTER,     // mUnitType
+    "btl_un_super_killer_cannon",    // name
+    10,                              // maxHp
+    0,                               // maxFp
+    1,                               // mDangerHP
+    1,                               // mPerilHP
+    31,                              // mLevel
+    0,                               // mBonusExp
+    1,                               // bonusCoinRolls
+    70,                              // bonusCoinRate
+    3,                               // baseCoin
+    50,                              // field_0x13
+    9999,                            // field_0x14
+    52,                              // width
+    38,                              // height
+    { 5, 38 },                       // statusIconOffset
+    { 0.0f, 19.0f, 0.0f },           // centerOffset
+    { 0, 0 },                        // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },            // talkTogeBaseOffset
+    { 26.0f, 0.0f, -10.0f },         // field_0x3C
+    { 0.0f, 0.0f, 0.0f },            // burnFlameOffset
+    20.0f,                           // field_0x54
+    10.0f,                           // field_0x58
+    { 26.0f, 0.0f, 0.0f },           // bintaHitOffset
+    { 26.0f, 24.7f, 0.0f },          // kissHitOffset
+    { -10.0f, 19.0f, 0.0f },         // cutBaseOffset
+    52.0f,                           // cutWidth
+    38.0f,                           // cutHeight
+    0,                               // turnOrder
+    0,                               // turnOrderVariance
+    0,                               // swallowRate
+    2,                               // swallowAttribute
+    100,                             // field_0x8C
+    20,                              // itemStealParam
+    { 0.0f, 0.0f, 0.0f },            // starPointDispOffset
+    "SFX_ENM_KILLER_CANON_DAMAGED1", // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",          // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",           // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",      // electricDamageSfxName
+    0,                               // attributeFlags
+    &regist,                          // vulnStatus
+    3,                               // numParts
+    parts,                           // mParts
+    init_event,                      // initEvtScript
+    data_table,                      // dataTable
 };
 
-// TODO: type (original symbol is 8 bytes; BattleUnitDefense/BattleUnitDefenseAttr are only 5)
-static u32 defence[2] = {
-    0x04040404, 0x04000000,
+static BattleUnitDefense defence = { { 4, 4, 4, 4, 4 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0,   // sleepRate
+    0,   // stopRate
+    0,   // dizzyRate
+    0,   // poisonRate
+    0,   // confuseRate
+    150, // electricRate
+    100, // burnRate
+    90,  // freezeRate
+    100, // hugeRate
+    80,  // tinyRate
+    100, // attackUpRate
+    80,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    40,  // allergicRate
+    0,   // frightRate
+    5,   // galeForceRate
+    100, // fastRate
+    40,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    90,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x0096645A, 0x64506450, 0x645F2800,
-    0x05642864, 0x645A0000,
-};
-
-// TODO: type
-static u32 parts[57] = {
-    0x00000001, (u32)"btl_un_super_killer_cannon", (u32)"c_killtai_g", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x00000000, 0x420C0000, 0x00000000,
-    0x0023001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_super_killer_cannon", (u32)"c_killtai_g", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x00010000,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_super_killer_cannon",
-    (u32)"c_killtai_g", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x00010000, 0x00000000,
-    (u32)&pose_table,
+static BattleUnitKindPart parts[3] = {
+    {
+        1,                            // partNum
+        "btl_un_super_killer_cannon", // partName
+        "c_killtai_g",                // modelName
+        { 0.0f, 0.0f, 0.0f },         // positionOffset
+        { 0.0f, 30.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f },        // hitCursorBaseOffset
+        35,                           // field_0x30
+        30,                           // field_0x32
+        255,                          // baseAlpha
+        &defence,                      // defense
+        &defence_attr,                 // defenseAttr
+        0x00000009,                   // attributes
+        0,                            // counterAttributes
+        pose_table,                   // poseTable
+    },
+    {
+        2,                            // partNum
+        "btl_un_super_killer_cannon", // partName
+        "c_killtai_g",                // modelName
+        { 0.0f, 0.0f, 0.0f },         // positionOffset
+        { 0.0f, 0.0f, 0.0f },         // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },         // hitCursorBaseOffset
+        0,                            // field_0x30
+        0,                            // field_0x32
+        255,                          // baseAlpha
+        &defence,                      // defense
+        &defence_attr,                 // defenseAttr
+        0x00010000,                   // attributes
+        0,                            // counterAttributes
+        pose_table,                   // poseTable
+    },
+    {
+        3,                            // partNum
+        "btl_un_super_killer_cannon", // partName
+        "c_killtai_g",                // modelName
+        { 0.0f, 0.0f, 0.0f },         // positionOffset
+        { 0.0f, 0.0f, 0.0f },         // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },         // hitCursorBaseOffset
+        0,                            // field_0x30
+        0,                            // field_0x32
+        255,                          // baseAlpha
+        &defence,                      // defense
+        &defence_attr,                 // defenseAttr
+        0x00010000,                   // attributes
+        0,                            // counterAttributes
+        pose_table,                   // poseTable
+    },
 };
 
 // TODO: type
 static u32 entry_killer[12] = {
-    (u32)unit_super_killer, 0x01000000, 0x04000004, 0xC47A0000,
+    (u32)&unit_super_killer, 0x01000000, 0x04000004, 0xC47A0000,
     0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
 static BattleDispPose pose_table[16] = {
-    { 0x01, "KTA_N_1" }, { 0x02, "KTA_Y_1" },
-    { 0x09, "KTA_Y_1" }, { 0x05, "KTA_K_1" },
-    { 0x04, "KTA_X_1" }, { 0x03, "KTA_X_1" },
-    { 0x1C, "KTA_S_1" }, { 0x1D, "KTA_Q_1" },
-    { 0x1E, "KTA_Q_1" }, { 0x1F, "KTA_A_1" },
-    { 0x27, "KTA_D_1" }, { 0x38, "KTA_X_1" },
-    { 0x39, "KTA_X_1" }, { 0x32, "KTA_A_1" },
-    { 0x41, "KTA_T_1" }, { 0x45, "KTA_S_1" },
+    { 0x01, "KTA_N_1" },
+    { 0x02, "KTA_Y_1" },
+    { 0x09, "KTA_Y_1" },
+    { 0x05, "KTA_K_1" },
+    { 0x04, "KTA_X_1" },
+    { 0x03, "KTA_X_1" },
+    { 0x1C, "KTA_S_1" },
+    { 0x1D, "KTA_Q_1" },
+    { 0x1E, "KTA_Q_1" },
+    { 0x1F, "KTA_A_1" },
+    { 0x27, "KTA_D_1" },
+    { 0x38, "KTA_X_1" },
+    { 0x39, "KTA_X_1" },
+    { 0x32, "KTA_A_1" },
+    { 0x41, "KTA_T_1" },
+    { 0x45, "KTA_S_1" },
 };
 
 static BattleDataEntry data_table[1] = {
-    { 0, NULL },
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(init_event)

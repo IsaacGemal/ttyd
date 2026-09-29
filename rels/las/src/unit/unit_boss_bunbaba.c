@@ -12,15 +12,18 @@
 #include "eff/n64/eff_kemuri9_n64.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 static USER_FUNC(_leg_smoke_effect);
-static u32 regist[6];
-static u32 data_table[6];
-static u32 parts[38];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[3];
+static BattleUnitKindPart parts[2];
 static s32 init_event[53];
 static s32 damage_event[10];
 s32 bunbaba_damage_sub_event[45];
@@ -48,162 +51,602 @@ extend_data(165,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_bunbaba[49] = {
-    0x00000084, (u32)"btl_un_bunbaba", 0x00500000, 0x01014C00,
-    0x00640032, 0x000600E6, 0x00AAFF2E, 0x002D0000,
-    0x00000000, 0x00000000, 0x00000000, 0xFF060000,
-    0x438C0000, 0x42200000, 0x00000000, 0x42E60000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x41A00000, 0x00000000, 0x437A0000,
-    0x00000000, 0x42480000, 0x43BE0000, 0x42DC0000,
-    0x42480000, 0xC3910000, 0x42AA0000, 0x00000000,
-    0x43660000, 0x432A0000, 0x0000FF00, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_GNB_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00200000,
-    (u32)&regist, 0x02000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_bunbaba = {
+    UNIT_GLOOMTAIL,             // mUnitType
+    "btl_un_bunbaba",           // name
+    80,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    76,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    6,                          // field_0x14
+    230,                        // width
+    170,                        // height
+    { -210, 45 },               // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { -250, 0 },                // hpGaugeOffset
+    { 280.0f, 40.0f, 0.0f },    // talkTogeBaseOffset
+    { 115.0f, 0.0f, -10.0f },   // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    20.0f,                      // field_0x54
+    0.0f,                       // field_0x58
+    { 250.0f, 0.0f, 50.0f },    // bintaHitOffset
+    { 380.0f, 110.0f, 50.0f },  // kissHitOffset
+    { -290.0f, 85.0f, 0.0f },   // cutBaseOffset
+    230.0f,                     // cutWidth
+    170.0f,                     // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    0,                          // field_0x8C
+    0,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_GNB_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00200000,                 // attributeFlags
+    &regist,                     // vulnStatus
+    2,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x02020202, 0x02000000,
+static BattleUnitDefense defence = { { 2, 2, 2, 2, 2 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    30,  // sleepRate
+    30,  // stopRate
+    30,  // dizzyRate
+    100, // poisonRate
+    30,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    0,   // freezeRate
+    0,   // hugeRate
+    0,   // tinyRate
+    100, // attackUpRate
+    0,   // attackDownRate
+    100, // defenseUpRate
+    70,  // defenseDownRate
+    30,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    30,  // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    1,   // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[9] = {
+    { 0x01, "GNB_N_1" },
+    { 0x05, "GNB_X_1" },
+    { 0x03, "GNB_X_1" },
+    { 0x02, "GNB_D2_1" },
+    { 0x1C, "GNB_S_3" },
+    { 0x41, "GNB_T_3" },
+    { 0x1F, "GNB_S_3" },
+    { 0x27, "GNB_D_1" },
+    { 0x45, "GNB_S_3" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x1E1E1E64, 0x1E646400, 0x00006400, 0x64461E00,
-    0x00641E00, 0x00010000,
+static BattleDataEntry data_table[3] = {
+    { 0x09, bunbaba_damage_sub_event },
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table[18] = {
-    0x00000001, (u32)"GNB_N_1", 0x00000005, (u32)"GNB_X_1",
-    0x00000003, (u32)"GNB_X_1", 0x00000002, (u32)"GNB_D2_1",
-    0x0000001C, (u32)"GNB_S_3", 0x00000041, (u32)"GNB_T_3",
-    0x0000001F, (u32)"GNB_S_3", 0x00000027, (u32)"GNB_D_1",
-    0x00000045, (u32)"GNB_S_3",
+static BattleUnitKindPart parts[2] = {
+    {
+        1,                        // partNum
+        "btl_un_bunbaba",         // partName
+        "c_gonbaba_b",            // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 230.0f, 36.0f, 60.0f }, // hitBaseOffset
+        { 230.0f, 36.0f, 60.0f }, // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                  // defense
+        &defence_attr,             // defenseAttr
+        0x00000002,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        2,                         // partNum
+        "btl_un_bunbaba",          // partName
+        "c_gonbaba_b",             // modelName
+        { 100.0f, 0.0f, 0.0f },    // positionOffset
+        { 250.0f, 110.0f, 25.0f }, // hitBaseOffset
+        { 250.0f, 110.0f, 25.0f }, // hitCursorBaseOffset
+        20,                        // field_0x30
+        30,                        // field_0x32
+        255,                       // baseAlpha
+        &defence,                   // defense
+        &defence_attr,              // defenseAttr
+        0x01600009,                // attributes
+        0,                         // counterAttributes
+        pose_table,                // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x00000009, (u32)&bunbaba_damage_sub_event, 0x00000031, (u32)&dead_event,
-    0x00000000, 0x00000000,
+BattleWeapon weapon_bunbaba_fumituke_attack = {
+    NULL,                                      // name
+    0,                                         // icon
+    ITEM_NULL,                                 // item
+    NULL,                                      // description
+    100,                                       // baseAccuracy
+    0,                                         // baseFpCost
+    0,                                         // baseSpCost
+    0,                                         // superguardsAllowed
+    1.0f,                                      // field_0x14
+    1,                                         // mStylishCommandMultiplier
+    1,                                         // field_0x19
+    1,                                         // mBingoSlotChance
+    1,                                         // field_0x1B
+    weaponGetPowerDefault,                     // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },                // hpDamageWork
+    NULL,                                      // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                // fpDamageWork
+    0x01101260,                                // targetClassFlags
+    0x21002000,                                // targetPropertyFlags
+    0,                                         // element
+    11,                                        // field_0x6D
+    3,                                         // actionLevel
+    2,                                         // field_0x6F
+    NULL,                                      // acHelpMsg
+    0x00000007,                                // special
+    0x000007FF,                                // counterResistanceFlags
+    0x00002004,                                // targetWeightingFlags
+    0,                                         // sleepChance
+    0,                                         // sleepTime
+    0,                                         // stopChance
+    0,                                         // stopTime
+    0,                                         // dizzyChance
+    0,                                         // dizzyTime
+    0,                                         // poisonChance
+    0,                                         // poisonTime
+    0,                                         // poisonStrength
+    0,                                         // confuseChance
+    0,                                         // confuseTime
+    0,                                         // electricChance
+    0,                                         // electricTime
+    0,                                         // dodgyChance
+    0,                                         // dodgyTime
+    0,                                         // burnChance
+    0,                                         // burnTime
+    0,                                         // freezeChance
+    0,                                         // freezeTime
+    0,                                         // sizeChangeChance
+    0,                                         // sizeChangeTime
+    0,                                         // sizeChangeStrength
+    0,                                         // atkChangeChance
+    0,                                         // atkChangeTime
+    0,                                         // atkChangeStrength
+    0,                                         // defChangeChance
+    0,                                         // defChangeTime
+    0,                                         // defChangeStrength
+    0,                                         // allergicChance
+    0,                                         // allergicTime
+    0,                                         // ohkoChance
+    0,                                         // chargeStrength
+    0,                                         // fastChance
+    0,                                         // fastTime
+    0,                                         // slowChance
+    0,                                         // slowTime
+    0,                                         // frightChance
+    0,                                         // galeForceChance
+    0,                                         // paybackTime
+    0,                                         // holdFastTime
+    0,                                         // invisibleChance
+    0,                                         // invisibleTime
+    0,                                         // hpRegenTime
+    0,                                         // hpRegenStrength
+    0,                                         // fpRegenTime
+    0,                                         // fpRegenStrength
+    NULL,                                      // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 10, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[38] = {
-    0x00000001, (u32)"btl_un_bunbaba", (u32)"c_gonbaba_b", 0x00000000,
-    0x00000000, 0x00000000, 0x43660000, 0x42100000,
-    0x42700000, 0x43660000, 0x42100000, 0x42700000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000002, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_bunbaba", (u32)"c_gonbaba_b", 0x42C80000, 0x00000000,
-    0x00000000, 0x437A0000, 0x42DC0000, 0x41C80000,
-    0x437A0000, 0x42DC0000, 0x41C80000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x01600009,
-    0x00000000, (u32)&pose_table,
+BattleWeapon weapon_bunbaba_kamituki_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020007,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 weapon_bunbaba_fumituke_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x000B0302,
-    0x00000000, 0x00000007, 0x000007FF, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x0A000000,
+BattleWeapon weapon_bunbaba_poison_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    50,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 weapon_bunbaba_kamituki_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00020007, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_bunbaba_eq_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 10, 0, 0, 0, 0, 0, 0, 0 },              // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000008,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00001047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 weapon_bunbaba_poison_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000047, 0x000007FF, 0x00000000,
-    0x00000000, 0x0000320A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_bunbaba_charge = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    8,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 weapon_bunbaba_eq_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x0000000A, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000008, 0x00000302,
-    0x00000000, 0x00001047, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 weapon_bunbaba_charge[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00000008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000008,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 weapon_bunbaba_mega_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000047, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_bunbaba_mega_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -880,77 +1323,77 @@ static EVT_BEGIN(attack_event)
     SWITCH(LW(0))
         CASE_EQUAL(0)
         CALL(btlevtcmd_SetUnitWork, -2, 0, 1)
-        SET_VALUE(LW(9), PTR(weapon_bunbaba_poison_attack))
+        SET_VALUE(LW(9), PTR(&weapon_bunbaba_poison_attack))
         CALL_CHILD(poison_attack_event)
         CASE_EQUAL(1)
         CALL(btlevtcmd_DrawLots, LW(0), 3, 10, 10, 20)
         SWITCH(LW(0))
             CASE_EQUAL(0)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_fumituke_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_fumituke_attack))
             CALL_CHILD(fumituke_attack_event)
             CASE_EQUAL(1)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_kamituki_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_kamituki_attack))
             CALL_CHILD(kamituki_attack_event)
             CASE_EQUAL(2)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_poison_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_poison_attack))
             CALL_CHILD(poison_attack_event)
         END_SWITCH
         CASE_EQUAL(2)
         CALL(btlevtcmd_SetUnitWork, -2, 0, 3)
-        SET_VALUE(LW(9), PTR(weapon_bunbaba_eq_attack))
+        SET_VALUE(LW(9), PTR(&weapon_bunbaba_eq_attack))
         CALL_CHILD(eq_attack_event)
         CASE_EQUAL(3)
         CALL(btlevtcmd_DrawLots, LW(0), 4, 10, 10, 20, 15)
         SWITCH(LW(0))
             CASE_EQUAL(0)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_fumituke_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_fumituke_attack))
             CALL_CHILD(fumituke_attack_event)
             CASE_EQUAL(1)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_kamituki_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_kamituki_attack))
             CALL_CHILD(kamituki_attack_event)
             CASE_EQUAL(2)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_poison_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_poison_attack))
             CALL_CHILD(poison_attack_event)
             CASE_EQUAL(3)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_eq_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_eq_attack))
             CALL_CHILD(eq_attack_event)
         END_SWITCH
         CASE_EQUAL(4)
         CALL(btlevtcmd_SetUnitWork, -2, 0, 5)
-        SET_VALUE(LW(9), PTR(weapon_bunbaba_charge))
+        SET_VALUE(LW(9), PTR(&weapon_bunbaba_charge))
         CALL_CHILD(charge_event)
         CASE_EQUAL(5)
         CALL(btlevtcmd_SetUnitWork, -2, 0, 7)
-        SET_VALUE(LW(9), PTR(weapon_bunbaba_mega_attack))
+        SET_VALUE(LW(9), PTR(&weapon_bunbaba_mega_attack))
         CALL_CHILD(mega_attack_event)
         CALL(btlevtcmd_StatusWindowOnOff, 0)
         CALL(evt_msg_print, 2, STRING("stg8_las_49_06"), 0, -2)
         CALL(btlevtcmd_StatusWindowOnOff, 1)
         CASE_EQUAL(6)
         CALL(btlevtcmd_SetUnitWork, -2, 0, 7)
-        SET_VALUE(LW(9), PTR(weapon_bunbaba_mega_attack))
+        SET_VALUE(LW(9), PTR(&weapon_bunbaba_mega_attack))
         CALL_CHILD(mega_attack_event)
         CASE_EQUAL(7)
         CALL(btlevtcmd_DrawLots, LW(0), 6, 10, 10, 20, 10, 20, 0)
         SWITCH(LW(0))
             CASE_EQUAL(0)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_fumituke_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_fumituke_attack))
             CALL_CHILD(fumituke_attack_event)
             CASE_EQUAL(1)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_kamituki_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_kamituki_attack))
             CALL_CHILD(kamituki_attack_event)
             CASE_EQUAL(2)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_poison_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_poison_attack))
             CALL_CHILD(poison_attack_event)
             CASE_EQUAL(3)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_eq_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_eq_attack))
             CALL_CHILD(eq_attack_event)
             CASE_EQUAL(4)
             CALL(btlevtcmd_SetUnitWork, -2, 0, 6)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_charge))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_charge))
             CALL_CHILD(charge_event)
             CASE_EQUAL(5)
-            SET_VALUE(LW(9), PTR(weapon_bunbaba_mega_attack))
+            SET_VALUE(LW(9), PTR(&weapon_bunbaba_mega_attack))
             CALL_CHILD(mega_attack_event)
         END_SWITCH
     END_SWITCH

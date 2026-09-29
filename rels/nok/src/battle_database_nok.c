@@ -3,10 +3,11 @@
 #include "driver/npcdrv.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 battle_heart_drop_param_default[];
-extern s32 unit_act_mario[];
+extern BattleUnitKind unit_act_mario;
 
 // clang-format off
 extend_data(36,
@@ -72,31 +73,19 @@ u32 nok_btlstage_data[109] = {
     0x00000000,
 };
 
-// BattleUnitSetup only names mUnitKindParams (0x0), field_1C (0x1C) and field_2C (0x2C); the original also
-// stores values at 0x4 (0x01000000), 0x8 (0x04000004) and 0xC (spawn x = 90.0), which fall inside the
-// header's field_4[] padding. Written out byte-for-byte until the header names them (same idiom as
-// src/battle/battle_party.c).
 // clang-format off
 BattleUnitSetup btlparty_nok_hei_ep[1] = {
-    { (BattleUnitKind*)unit_act_mario,
-      { 0x01, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x04,
-        0x42, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-      { 0, 0, 0, 0 }, { 0x00, 0x00, 0x00, 0x00 } },
+    { &unit_act_mario, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 // clang-format on
 
-// TODO: type
-u32 btlgrp_nok_hei_ep[8] = {
-    0x00000001, (u32)&btlparty_nok_hei_ep, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
+BattleGroupSetup btlgrp_nok_hei_ep = { 1, btlparty_nok_hei_ep, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
 
 // The weighted setup list npcSetupBattleInfo() walks: entries are { weight, groupSetup, stageData }, and the
 // zero-weight entry terminates the list.
 NpcBattleSetupEntry btlgrpsel_nok_btlno_hei_test1_off[2] = {
-    { 0x32, (BattleGroupSetup*)&btlgrp_nok_hei_ep, (s32)&nok_btlstage_data },
-    { 0x00, NULL, 0x00000000 },
+    { 50, &btlgrp_nok_hei_ep, (struct BattleStageData*)nok_btlstage_data },
+    { 0, NULL, NULL },
 };
 
 // TODO: type

@@ -28,7 +28,7 @@ extend_data(29,
      f32, one, 1.0f)
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_05", "e_bero", 1, 1, (s32)"door_01", (s32)"door_02"},
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_05", "e_bero", 1, 1, "door_01", "door_02"},
     {"s_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_10", "n_bero", 1, 1},
     {NULL},
 };

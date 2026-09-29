@@ -229,8 +229,8 @@ USER_FUNC(evt_bero_get_info_anime) {
 	bero = BeroINFOARR[evtGetValue(event, args[0])];
 	evtSetValue(event, args[1], bero->animeArg1);
 	evtSetValue(event, args[2], bero->animeArg2);
-	evtSetValue(event, args[3], bero->animeArg3);
-	evtSetValue(event, args[4], bero->animeArg4);
+	evtSetValue(event, args[3], (s32)bero->animeArg3);
+	evtSetValue(event, args[4], (s32)bero->animeArg4);
 	return EVT_RETURN_DONE;
 }
 

@@ -12,22 +12,23 @@
 #include "battle/battle_unit.h"
 #include "eff/n64/eff_kumokumo_n64.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_disp.h"
 
 #pragma pool_data off
 #pragma fp_contract on // the original REL object contracts a+b*c into fmadds; the REL cflags lack -fp_contract on
 
 #pragma force_active on
-extern s32 unit_act_atmic_teresa[];
-extern s32 unit_act_clauda[];
-extern s32 unit_act_kinopiko[];
-extern s32 unit_act_kinopio[];
-extern s32 unit_act_teresa[];
+extern BattleUnitKind unit_act_atmic_teresa;
+extern BattleUnitKind unit_act_clauda;
+extern BattleUnitKind unit_act_kinopiko;
+extern BattleUnitKind unit_act_kinopio;
+extern BattleUnitKind unit_act_teresa;
 extern s32 unitdata_Party_Christine[];
 static USER_FUNC(_clauda_breath_effect_fire);
 static USER_FUNC(_clauda_breath_effect_ready);
-static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[1];
 
 // Global .rodata float constants this file's functions use (see the original's
 // .rodata: the compiler reuses double_to_int for the int->float conversion).
@@ -63,59 +64,114 @@ extend_data(29,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_act_mario[49] = {
-    0x000000B5, (u32)"btl_un_act_mario", 0x000A0000, 0x01010100,
-    0x00000064, 0x0009001C, 0x00180005, 0x00190000,
-    0x00000000, 0x41600000, 0x00000000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x41600000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41600000,
-    0x00000000, 0x00000000, 0x41600000, 0x4179999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BTL_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_act_mario = {
+    UNIT_EPILOGUE_DOOPLISS_MARIO, // mUnitType
+    "btl_un_act_mario",           // name
+    10,                           // maxHp
+    0,                            // maxFp
+    1,                            // mDangerHP
+    1,                            // mPerilHP
+    1,                            // mLevel
+    0,                            // mBonusExp
+    0,                            // bonusCoinRolls
+    0,                            // bonusCoinRate
+    0,                            // baseCoin
+    100,                          // field_0x13
+    9,                            // field_0x14
+    28,                           // width
+    24,                           // height
+    { 5, 25 },                    // statusIconOffset
+    { 0.0f, 14.0f, 0.0f },        // centerOffset
+    { 0, 0 },                     // hpGaugeOffset
+    { 0.0f, 30.0f, 0.0f },        // talkTogeBaseOffset
+    { 14.0f, 0.0f, -10.0f },      // field_0x3C
+    { 0.0f, 0.0f, 0.0f },         // burnFlameOffset
+    0.0f,                         // field_0x54
+    0.0f,                         // field_0x58
+    { 14.0f, 0.0f, 0.0f },        // bintaHitOffset
+    { 14.0f, 15.6f, 0.0f },       // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },         // cutBaseOffset
+    0.0f,                         // cutWidth
+    0.0f,                         // cutHeight
+    0,                            // turnOrder
+    0,                            // turnOrderVariance
+    -1,                           // swallowRate
+    0,                            // swallowAttribute
+    100,                          // field_0x8C
+    20,                           // itemStealParam
+    { 0.0f, 0.0f, 0.0f },         // starPointDispOffset
+    "SFX_BTL_DAMAGE1",            // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",       // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",        // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",   // electricDamageSfxName
+    0,                            // attributeFlags
+    &regist,                       // vulnStatus
+    1,                            // numParts
+    parts,                        // mParts
+    init_event,                   // initEvtScript
+    data_table,                   // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[7] = {
+    { 0x1C, "EM_S_1" },
+    { 0x1F, "KNP_S_1" },
+    { 0x27, "EM_D_1" },
+    { 0x2A, "EM_R_1" },
+    { 0x28, "EM_W_1" },
+    { 0x41, "EM_T_1" },
+    { 0x45, "EM_S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table[14] = {
-    0x0000001C, (u32)"EM_S_1", 0x0000001F, (u32)"KNP_S_1",
-    0x00000027, (u32)"EM_D_1", 0x0000002A, (u32)"EM_R_1",
-    0x00000028, (u32)"EM_W_1", 0x00000041, (u32)"EM_T_1",
-    0x00000045, (u32)"EM_S_1",
-};
-
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_act_mario", (u32)"c_mario", 0x00000000,
-    0x00000000, 0x00000000, 0xC0A00000, 0x41F00000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                      // partNum
+        "btl_un_act_mario",     // partName
+        "c_mario",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { -5.0f, 30.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,                // defense
+        &defence_attr,           // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -149,25 +205,25 @@ EVT_END()
 
 // TODO: type
 u32 entry_unit_data[96] = {
-    (u32)unit_act_clauda, 0x00000000, 0x04000004, 0xC30C0000,
+    (u32)&unit_act_clauda, 0x00000000, 0x04000004, 0xC30C0000,
     0x00000000, 0x40A00000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_teresa, 0x01000000, 0x04000004, 0x42340000,
+    (u32)&unit_act_teresa, 0x01000000, 0x04000004, 0x42340000,
     0x42200000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_teresa, 0x01000000, 0x04000004, 0x42AA0000,
+    (u32)&unit_act_teresa, 0x01000000, 0x04000004, 0x42AA0000,
     0x42200000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_atmic_teresa, 0x01000000, 0x04000004, 0x43160000,
+    (u32)&unit_act_atmic_teresa, 0x01000000, 0x04000004, 0x43160000,
     0x42200000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_kinopio, 0x02000000, 0x04000004, 0xC2960000,
+    (u32)&unit_act_kinopio, 0x02000000, 0x04000004, 0xC2960000,
     0x00000000, 0xC2200000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_kinopio, 0x02000000, 0x04000004, 0xC1700000,
+    (u32)&unit_act_kinopio, 0x02000000, 0x04000004, 0xC1700000,
     0x00000000, 0xC2200000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_act_kinopiko, 0x02000000, 0x04000004, 0xC2340000,
+    (u32)&unit_act_kinopiko, 0x02000000, 0x04000004, 0xC2340000,
     0x00000000, 0xC2200000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     (u32)unitdata_Party_Christine, 0x02000000, 0x04000004, 0x00000000,

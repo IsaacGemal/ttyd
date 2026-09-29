@@ -9,10 +9,12 @@
 #include "evt/evt_map.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleUnitKindPart parts;
 static BattleDispPose pose_table[18];
 static BattleDataEntry data_table[2];
@@ -41,70 +43,177 @@ extend_data(69,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_pansy[49] = {
-    0x00000045, (u32)"btl_un_pansy", 0x00070000, 0x01011000,
-    0x02460146, 0x270F0016, 0x00200005, 0x00200000,
-    0x00000000, 0x41800000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41300000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41300000,
-    0x00000000, 0x00000000, 0x40C00000, 0x41A66666,
-    0x00000000, 0x00000000, 0x41800000, 0x00000000,
-    0x41B00000, 0x42000000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_PANSY_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_pansy = {
+    UNIT_CRAZEE_DAYZEE,         // mUnitType
+    "btl_un_pansy",             // name
+    7,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    16,                         // mLevel
+    0,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    1,                          // baseCoin
+    70,                         // field_0x13
+    9999,                       // field_0x14
+    22,                         // width
+    32,                         // height
+    { 5, 32 },                  // statusIconOffset
+    { 0.0f, 16.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 11.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 11.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 6.0f, 20.8f, 0.0f },      // kissHitOffset
+    { 0.0f, 16.0f, 0.0f },      // cutBaseOffset
+    22.0f,                      // cutWidth
+    32.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_PANSY_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                     // vulnStatus
+    1,                          // numParts
+    &parts,                     // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence[1] = {
-    { 0x00, 0x00, 0x00, 0x00, 0x00 },
-};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefenseAttr defence_attr[1] = {
-    { 0x00, 0x00, 0x00, 0x00, 0x00 },
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x5F1E1E64, 0x3264641E, 0x641E641E, 0x641E1E64,
-    0x50641E64, 0x641E0000,
+static BattleVulnerableStatus regist = {
+    95,  // sleepRate
+    30,  // stopRate
+    30,  // dizzyRate
+    100, // poisonRate
+    50,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    30,  // freezeRate
+    100, // hugeRate
+    30,  // tinyRate
+    100, // attackUpRate
+    30,  // attackDownRate
+    100, // defenseUpRate
+    30,  // defenseDownRate
+    30,  // allergicRate
+    100, // frightRate
+    80,  // galeForceRate
+    100, // fastRate
+    30,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    30,  // instaKillRate
 };
 
 static BattleUnitKindPart parts = {
-    0x00000001, "btl_un_pansy", "c_pansy",
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 29.0f, 0.0f },
-    { 0x00, 0x00, 0x00, 0x00, 0x42, 0x08, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E,
-      0x00, 0xFF, 0x00, 0x00 },
-    defence, defence_attr,
-    kMainPart | kUnknown_0x8, 0x00000000, pose_table,
+    1,                     // partNum
+    "btl_un_pansy",        // partName
+    "c_pansy",             // modelName
+    { 0.0f, 0.0f, 0.0f },  // positionOffset
+    { 0.0f, 29.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 34.0f, 0.0f }, // hitCursorBaseOffset
+    20,                    // field_0x30
+    30,                    // field_0x32
+    255,                   // baseAlpha
+    &defence,               // defense
+    &defence_attr,          // defenseAttr
+    0x00000009,            // attributes
+    0,                     // counterAttributes
+    pose_table,            // poseTable
 };
 
-BattleWeapon weapon_pansy_attack[1] = {{
-    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x64, 0x00, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 },
-    0x01, 0x01, 0x01, 0x01,
-    weaponGetPowerDefault,
-    { 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
-    NULL,
-    { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
-    { 0x02, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
-    0x00000047,
-    { 0x00, 0x00, 0x07, 0xFF, 0x80, 0x00, 0x00, 0x00,
-      0x4B, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-    NULL,
-    { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-}};
+BattleWeapon weapon_pansy_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80000000,                               // targetWeightingFlags
+    75,                                       // sleepChance
+    5,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_EnemyItemUseCheck, -2, LW(0))
@@ -122,7 +231,7 @@ static EVT_BEGIN(attack_event)
     SUBTRACT(LW(0), 1)
     CALL(evt_sub_random, LW(0), LW(1))
     IF_INT_LESS(LW(1), 70)
-        SET_VALUE(LW(9), PTR(weapon_pansy_attack))
+        SET_VALUE(LW(9), PTR(&weapon_pansy_attack))
         CALL_CHILD(song_event)
         GOTO(99)
     END_IF
@@ -134,29 +243,29 @@ static EVT_BEGIN(attack_event)
 EVT_END()
 
 static BattleDispPose pose_table[18] = {
-    { 0x00000001, "PAN_N_1" },
-    { 0x00000002, "PAN_Y_1" },
-    { 0x00000009, "PAN_Y_1" },
-    { 0x00000005, "PAN_K_1" },
-    { 0x00000004, "PAN_X_1" },
-    { 0x00000003, "PAN_X_1" },
-    { 0x0000001C, "PAN_S_1" },
-    { 0x0000001D, "PAN_Q_1" },
-    { 0x0000001E, "PAN_Q_1" },
-    { 0x0000001F, "PAN_S_1" },
-    { 0x00000027, "PAN_D_1" },
-    { 0x00000032, "PAN_A_1" },
-    { 0x0000002A, "PAN_R_1" },
-    { 0x00000028, "PAN_W_1" },
-    { 0x00000038, "PAN_X_1" },
-    { 0x00000039, "PAN_X_1" },
-    { 0x00000041, "PAN_T_1" },
-    { 0x00000045, "PAN_S_1" },
+    { 0x01, "PAN_N_1" },
+    { 0x02, "PAN_Y_1" },
+    { 0x09, "PAN_Y_1" },
+    { 0x05, "PAN_K_1" },
+    { 0x04, "PAN_X_1" },
+    { 0x03, "PAN_X_1" },
+    { 0x1C, "PAN_S_1" },
+    { 0x1D, "PAN_Q_1" },
+    { 0x1E, "PAN_Q_1" },
+    { 0x1F, "PAN_S_1" },
+    { 0x27, "PAN_D_1" },
+    { 0x32, "PAN_A_1" },
+    { 0x2A, "PAN_R_1" },
+    { 0x28, "PAN_W_1" },
+    { 0x38, "PAN_X_1" },
+    { 0x39, "PAN_X_1" },
+    { 0x41, "PAN_T_1" },
+    { 0x45, "PAN_S_1" },
 };
 
 static BattleDataEntry data_table[2] = {
-    { 0x00000030, btldefaultevt_Dummy },
-    { 0x00000000, NULL },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(init_event)

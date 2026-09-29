@@ -29,7 +29,12 @@ typedef struct NpcDeadInfo {
 typedef struct BattleGroupSetup {
     s32 numEnemies;             // 0x0
     BattleUnitSetup* enemyData; // 0x4
-    u8 field_0[0x20 - 0x0];     // 0x8
+    s32 field_0x8;              // 0x8
+    s32 field_0xC;              // 0xC
+    s32 field_0x10;             // 0x10
+    u32* heartDropParams;       // 0x14, battle_heart_drop_param_default*
+    u32* flowerDropParams;      // 0x18, battle_flower_drop_param_default*
+    s32 field_0x1C;             // 0x1C
 } BattleGroupSetup;
 
 // One entry of an area's battle setup list (name at 0x0, item-drop and loadout tables at 0x10/0x14, music at
@@ -58,15 +63,8 @@ typedef struct NpcBattleInfo {
 typedef struct NpcBattleSetupEntry {
     s32 weight;              // 0x0
     BattleGroupSetup* setup; // 0x4
-    s32 field_8;             // 0x8
+    struct BattleStageData* stageData; // 0x8
 } NpcBattleSetupEntry;
-
-// The 8-byte entries of an enemy item drop list (see setup+0x10/setup+0x14).
-typedef struct NpcItemDropEntry {
-    s32 field_0;   // 0x0, item type
-    s16 weight;    // 0x4
-    u8 pad_6[2];   // 0x6
-} NpcItemDropEntry;
 
 typedef struct NpcTribeInfo {
     const char* nameJp;           // 0x0

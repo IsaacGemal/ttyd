@@ -6,6 +6,8 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
@@ -17,7 +19,7 @@ extern s32 cortez_weapon_phase_event[];
 extern s32 cortez_weapon_unison_phase_event[];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[21];
-static u32 parts[19];
+static BattleUnitKindPart parts[1];
 static s32 init_event[47];
 static s32 damage_event[10];
 static s32 avoid_thorn_event[33];
@@ -44,59 +46,164 @@ extend_data(69,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_cortez_saber[49] = {
-    0x00000062, (u32)"btl_un_cortez_saber", 0x00040000, 0x01010000,
-    0x00640032, 0x00140078, 0x00320000, 0x001E0000,
-    0x00000000, 0x41C80000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42700000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42700000,
-    0x00000000, 0x00000000, 0x42700000, 0x42020000,
-    0x00000000, 0x00000000, 0x41C80000, 0x00000000,
-    0x42F00000, 0x42480000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_KOR_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x02000004,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_cortez_saber = {
+    UNIT_CORTEZ_SABER,          // mUnitType
+    "btl_un_cortez_saber",      // name
+    4,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    0,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    20,                         // field_0x14
+    120,                        // width
+    50,                         // height
+    { 0, 30 },                  // statusIconOffset
+    { 0.0f, 25.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 60.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 60.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 60.0f, 32.5f, 0.0f },     // kissHitOffset
+    { 0.0f, 25.0f, 0.0f },      // cutBaseOffset
+    120.0f,                     // cutWidth
+    50.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_KOR_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x02000004,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence = {
-    { 0, 0, 0, 0, 0 },
-};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefenseAttr defence_attr = {
-    { 0, 0, 0, 0, 0 },
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
 static BattleVulnerableStatus regist = {
-    0, 80, 95, 100,
-    90, 100, 100, 85,
-    0, 0, 100, 0,
-    100, 90, 50, 0,
-    90, 100, 50, 0,
-    0, 0,
+    0,   // sleepRate
+    80,  // stopRate
+    95,  // dizzyRate
+    100, // poisonRate
+    90,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    85,  // freezeRate
+    0,   // hugeRate
+    0,   // tinyRate
+    100, // attackUpRate
+    0,   // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    50,  // allergicRate
+    0,   // frightRate
+    90,  // galeForceRate
+    100, // fastRate
+    50,  // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-u32 weapon_cortez_saber_float_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_cortez_saber_float_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardsAllowed
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80000000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static BattleDispPose pose_table[6] = {
-    { 2, "KRT_Z_1" },
-    { 9, "KRT_Z_1" },
+    { 0x02, "KRT_Z_1" },
+    { 0x09, "KRT_Z_1" },
     { 0x1C, "KRT_S_1" },
     { 0x1F, "KRT_S_1" },
     { 0x27, "KRT_S_1" },
@@ -111,7 +218,7 @@ static BattleDispPose pose_table_break[4] = {
 };
 
 static BattleDataEntry data_table[21] = {
-    { 9, cortez_damage_sub_event },
+    { 0x09, cortez_damage_sub_event },
     { 0x31, cortez_weapon_dead_event },
     { 0x47, cortez_weapon_break_event },
     { 0x3A, cortez_weapon_blow_dead_event },
@@ -131,16 +238,26 @@ static BattleDataEntry data_table[21] = {
     { 0x27, avoid_thorn_event },
     { 0x25, avoid_thorn_event },
     { 0x26, avoid_thorn_event },
-    { 0, NULL },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_cortez_saber", (u32)"c_buki1", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x03010009, 0x00000006, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                      // partNum
+        "btl_un_cortez_saber",  // partName
+        "c_buki1",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03010009,             // attributes
+        0x00000006,             // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -179,7 +296,7 @@ static EVT_BEGIN(attack_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    SET_VALUE(LW(12), PTR(weapon_cortez_saber_float_attack))
+    SET_VALUE(LW(12), PTR(&weapon_cortez_saber_float_attack))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(12))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(12), LW(3), LW(4))
