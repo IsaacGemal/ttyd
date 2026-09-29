@@ -259,6 +259,10 @@ impl<'a> EventScript<'a> {
                 }
             }
             opcode.increase_indent(&mut indentation);
+            // Past the last END_SCRIPT, the symbol may hold alignment padding
+            if opcode == Opcode::EndScript && self.data[self.pos..].iter().all(|&b| b == 0) {
+                break;
+            }
         }
         println!("EVT_END()");
         Ok(())
