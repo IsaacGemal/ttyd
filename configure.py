@@ -725,7 +725,7 @@ config.libs = [
             Object(Matching, "manager/evtmgr.c"),
             Object(NonMatching, "manager/fontmgr.c"),
             Object(Matching, "manager/cardmgr.c"),
-            Object(NonMatching, "manager/dvdmgr.c"),
+            Object(Matching, "manager/dvdmgr.c"),
             Object(NonMatching, "manager/arammgr.c"),
             Object(NonMatching, "manager/filemgr.c"),
             Object(NonMatching, "manager/winmgr.c"),
