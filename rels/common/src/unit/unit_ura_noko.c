@@ -1,3 +1,7 @@
+#include "eff/eff_uranoko.h"
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -24,7 +28,7 @@ static s32 ura_attack_event[560];
 static s32 wait_event[6];
 
 // clang-format off
-extend_data(112,
+extend_data(unit_ura_noko_0,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -33,7 +37,7 @@ extend_data(112,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(113,
+extend_data(unit_ura_noko_1,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -43,7 +47,7 @@ extend_data(113,
      f32, one, 1.0f)
 
 // TODO: type
-u32 unit_ura_noko_15_data_2E060[49] = {
+u32 UNIT_DATA_SYM[49] = {
     0x0000002F, (u32)"btl_un_ura_noko", 0x00080000, 0x01011100,
     0x02460132, 0x270F0024, 0x0028FFFC, 0x00280000,
     0x00000000, 0x41A00000, 0x00000000, 0x00000000,
@@ -428,8 +432,33 @@ static EVT_BEGIN(attack_event)
     RETURN
 EVT_END()
 
-// TODO: write eff_aura (static, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_ura_noko.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_aura) {
+    BattleUnit* unit;
+    EffectEntry* effect;
+    effUranokoData* data;
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (isFirstCall) {
+        unit->work[2] = (s32)effUranokoEntry(0, 120, 0.0f, -1000.0f, 0.0f);
+    }
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    effect = (EffectEntry*)unit->work[2];
+    if (!(effect->flags & 1)) {
+        return EVT_RETURN_DONE;
+    }
+    data = effect->userdata;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->baseScale = unit->mSizeMultiplier;
+    return EVT_RETURN_BLOCK;
+}
+
 
 static EVT_BEGIN(ura_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
