@@ -181,9 +181,6 @@ static u32 key_tbl[2] = {
 
 // MWCC emits static functions in reverse definition order, so bgm_start_wait is defined first to
 // place majin_callback at .text 0x0, matching the original layout.
-static USER_FUNC(bgm_start_wait) {
-    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
-}
 
 static void majin_callback(s32 state) {
     MapObjectEntry* entry = mobjNameToPtr("box");
@@ -199,6 +196,10 @@ static void majin_callback(s32 state) {
     else if (state == 2) {
         animPoseSetAnim(entry->poseId, "S_1", 1);
     }
+}
+
+static USER_FUNC(bgm_start_wait) {
+    return psndBGMStartCheck(1) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
 static EVT_BEGIN(evt_majin)
