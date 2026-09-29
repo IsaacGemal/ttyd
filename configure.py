@@ -966,7 +966,7 @@ config.libs = [
             Object(Matching, "musyx/runtime/CheapReverb/creverb_fx.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb.c"),
             Object(Matching, "musyx/runtime/StdReverb/reverb_fx.c"),
-            Object(NonMatching, "musyx/runtime/StdReverb/reverb.c"),
+            Object(Matching, "musyx/runtime/StdReverb/reverb.c"),
             Object(Matching, "musyx/runtime/Delay/delay_fx.c"),
             Object(Matching, "musyx/runtime/Chorus/chorus_fx.c"),
         ],
