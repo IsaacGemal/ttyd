@@ -36,6 +36,9 @@ for gi, mods in enumerate(groups):
         if s2 == s:
             sys.exit(f"{src}: no per-REL data table name found")
         s = re.sub(rf"&{name}\b", "&UNIT_DATA_SYM", s2)
+    refs = sorted(set(re.findall(rf"\b(unit_(?!{name}_)\w+?)_\d+_data_[0-9A-F]+\b", s)))
+    for r in refs:
+        s = re.sub(rf"\b{r}_\d+_data_[0-9A-F]+\b", f"UNIT_REF_{r[5:].upper()}", s)
     k = 0
 
     def bump(_):
@@ -60,7 +63,11 @@ for gi, mods in enumerate(groups):
         g = re.search(rf"\.obj ({name}_\d+_data_[0-9A-F]+), global", asm)
         sym = g.group(1) if g else f"{name}_local_data"
         srcopt = f', source="{dst_rel}.c"' if dst_rel != unit else ""
-        lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=["-DUNIT_DATA_SYM={sym}"]),\n')
+        flags = [f"-DUNIT_DATA_SYM={sym}"]
+        for r in refs:
+            flags.append(f"-DUNIT_REF_{r[5:].upper()}=" + re.search(rf"\b{r}_\d+_data_[0-9A-F]+\b", asm).group(0))
+        flag_text = ", ".join(f'"{f}"' for f in flags)
+        lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=[{flag_text}]),\n')
     tail = tail[:end] + "".join(lines) + tail[end:]
     end += sum(len(l) for l in lines)
 open("configure.py", "w").write(head + '        "common",' + tail)

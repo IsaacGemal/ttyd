@@ -1766,6 +1766,33 @@ pool-base hacks.
   `evt_sub_get_coin` through `evt_sub_check_intersect`, and around `evt_sub_spline_get_value_manual`.
 - The old `sequence/seqdef.c` stub is gone; the table is `seq_data`. `CircleBuffer.c` keeps its objects `static` under their
   real names.
+
+## 2026-09-29: shared units with functions (Claude #3)
+
+Linked so far (every copy by its REL's checksum): unit_barriern_satellite, unit_barriern_z_satellite, unit_borodo,
+unit_green_chorobon, unit_gundan_zako_magician, unit_honenoko, unit_red_honenoko, unit_karon, unit_ura_noko,
+unit_togenoko_ace, unit_jyugem, unit_hyper_jyugem, unit_heavy_bom, unit_kuriboo (10 of 12 RELs) and unit_patakuri (2 of 3).
+
+- Workflow: `rel_gen.py MOD unit/unit_x`, write the function(s) at rel_gen's TODO hint (`fn_hint.py`; `tools/unit_fn.sh` does
+  hint + includes + `share_unit.py` + configure), check with `agent_check.py MOD/unit/unit_x FUNC`, then
+  `perm_decls.py` (declaration-order search: it found 100% for four functions that plain code left at 97-99%), then
+  `rel_link.py` per REL. `fn_insert.py` copies an already matched function into another unit's source (the same static
+  helper appears in several units: chorobon/honenoko/togezo `_copy_status`, `_krb_get_dir`, the barriern satellites).
+- rel_gen no longer ends the file with `#pragma force_active off` when the unit has functions: with `-inline deferred`
+  the function is emitted at the end of the file, where the pragma is already off, so its symbol lacks the force-active
+  flag and the linker drops the (unreferenced) static function from .text.
+- Codegen habits that decided matches: `id = evtGetValue(..); id = BattleTransID(event, id);` compiles with a `mr r0,r3`
+  temporary, the nested call `BattleTransID(event, evtGetValue(..))` does not; separate variables for two ids;
+  `mSizeChangeTurns/Strength` copy as `lbz/stb`; a `switch` with `case 3:` merged into `default` gives the pivot-at-2 shape.
+  A field typed `s16` in a header but loaded with `lhz` (item icon) means the header's type is wrong: the fix is `u16`
+  in the header (item_data.h's icon_id), not a local struct; unit_borodo.c's local ItemIcon view is a workaround to
+  undo when that header changes (wave 10 found battle_disp drops if it changes alone, so fix its users together).
+- Shared sources whose data refers to another unit's per-REL table name use `UNIT_REF_<UNIT>` with a `-D` per REL
+  (`share_unit.py` does it).
+- Unsolved: the gon and mri copies of unit_kuriboo and the gon copy of unit_patakuri have the function's `0.0f` pooled
+  before the last script string (`SFX_ENM_KURI_ATTACK1`), every other REL after it. The source position of the function
+  (place_fn.py tried every top-level position), a non-static table, `pool_data` and `inline` did not change it. Those three
+  Objects stay NonMatching.
 ## Wave 18: the generated REL tables typed with existing structs (2026-09-29, Claude Opus 5.5 orchestrating, DeepSeek V4.1 Flash agents)
 
 Claude #1 launched it at Isaac's request (one wave per orchestrator); Claude #2 collected and reviewed it. 151 of the
