@@ -31,6 +31,7 @@ typedef struct RecoverHeartData {
 	s32 field_0x44; // 0x44
 } RecoverHeartData; // 0x48
 
+// NONMATCHING (85.66%): instructions differ; see check.py
 EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	RecoverHeartData* data;

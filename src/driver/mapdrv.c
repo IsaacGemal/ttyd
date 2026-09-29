@@ -1267,7 +1267,7 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (0%): first pass
+// NONMATCHING (93.45%): first pass
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;

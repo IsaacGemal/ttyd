@@ -15,7 +15,7 @@
 #include "cam_road.h"
 #include "cam_shift.h"
 #include "seq/seq_mapchange.h"
-#include "sequence/seq_gameover.h"
+#include "seq/seq_gameover.h"
 #include <string.h>
 
 // object-local data

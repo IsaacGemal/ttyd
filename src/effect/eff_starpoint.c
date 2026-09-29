@@ -19,6 +19,7 @@ typedef struct StarPointData {
 
 extern const f32 float_deg2rad_804209c8;
 
+// NONMATCHING (99.61%): instructions differ; see check.py
 void effStarPointDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     StarPointData* data = effect->userdata;

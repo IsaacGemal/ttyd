@@ -44,6 +44,7 @@ typedef struct effKemuri3Data {
     f32 field_84;   // 0x84
 } effKemuri3Data;
 
+// NONMATCHING (98.85%): instructions differ; see check.py
 EffectEntry* effKemuri3N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri3Data* data;

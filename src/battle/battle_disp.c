@@ -703,6 +703,7 @@ static f32 x_1184;
 
 double double_to_int_802ede28 = 4503601774854144.0;
 
+// NONMATCHING (91.05%): instructions differ; see check.py
 void _btlStockExpDisp(CameraId cameraId, void* param) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 exp;

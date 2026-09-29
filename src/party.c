@@ -1724,7 +1724,7 @@ s32 partyKill2(s32 index) {
     return 0;
 }
 
-// NONMATCHING (0.00%): first draft of partyMakeDispDir.
+// NONMATCHING (99.38%): first draft of partyMakeDispDir.
 void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
     f32 target;

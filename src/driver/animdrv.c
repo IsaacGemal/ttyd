@@ -3,7 +3,7 @@
  */
 #include "driver/animdrv.h"
 #include "driver/dispdrv.h"
-#include "driver/himo.h"
+#include "himo.h"
 #include "driver/mapdrv.h"
 #include "mario/mariost.h"
 #include "memory.h"

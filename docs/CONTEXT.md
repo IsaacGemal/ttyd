@@ -2038,3 +2038,19 @@ was copied. Several also listed or read paths outside their workspace (~/ttyd, o
 brief forbids; the per-agent provenance.txt files in scratch/wave21 have the details. Worth tightening in the
 prompt: say what's allowed to fetch.
 Near-misses (90-99%) for Claude #3: scratch/wave21/scores.json.
+
+**Review of PR #37** (one fresh Claude): no wrong code in the 17 partial functions checked against the asm; no
+function scores lower than on main; all 239 new declarations in the defining file's header; nothing copied. Fixed:
+8 missing or stale NONMATCHING labels (all from the 12 agents that wrote no REPORT.md); a duplicate new header
+include/driver/himo.h (vivihimo is in himo.h) and include/sequence/seq_gameover.h (folded into seq/seq_gameover.h).
+Follow-ups: data reached as offsets past another symbol (brief rule 13) in battle_seq.c:284 (_rule_disp),
+sac_genki.c:49, sac_deka.c:132, battle_status_icon.c:112-117; item_data.h's ItemDataView shadow of ItemData; two
+different effKemuri2Data structs (eff_kemuri.h, eff_kemuri2_n64.c); unmarked match tricks (static volatile const
+Vec in battle_disp.c, const volatile data in eff_blow_n64.c, a base+0x34 pointer in eff_rothammer_fail_n64.c, an
+unreset opt_propagation off there); dont_inline pragmas agents wrapped around neighbouring existing functions in 7
+battle files. Six battle files now carry optimize_for_size pragmas (battle_information, battle_message,
+battle_pad, battle_unit_event, battle_seq, battle_damage): candidates for -O4,s in configure.py instead.
+What agents fetched, fully: doldecomp/ttyd and several MIT forks, AxioDL/musyx (MIT), SeekyCt/spm-decomp (CC0),
+jdaster64/ttyd-tot (GPL-3.0, one header read), Rainchus/ttyd-decomp-us (no license: off-limits), sourcegraph and
+decomp.me; nothing borrowed. 48 agents also used /tmp, which the brief forbids; wave 23's prompt says to stay
+inside the workspace.

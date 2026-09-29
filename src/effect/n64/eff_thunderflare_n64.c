@@ -22,6 +22,7 @@ typedef struct EffThunderflareData {
 	s32 field_0x44; // 0x44
 } EffThunderflareData;
 
+// NONMATCHING (78.74%): instructions differ; see check.py
 EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	EffectEntry* entry;
 	EffThunderflareData* data;

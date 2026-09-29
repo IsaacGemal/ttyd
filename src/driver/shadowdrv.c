@@ -377,6 +377,7 @@ void cylinder(ShadowEntry* entry) {
         cylinder(entry);                            \
     } while (0)
 
+// NONMATCHING (98.56%): instructions differ; see check.py
 void cylinderShadowDraw(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
