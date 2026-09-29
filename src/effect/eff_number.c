@@ -7,9 +7,10 @@
 #include <string.h>
 
 // Register allocation and switch dispatch still differ from the target.
-// NONMATCHING (97.94%): the target keeps end/len/half/cam in r14/r19/r17/r18 and the
-// eight colour bytes in r20-r27; here cam is r14 (so end/len cannot reuse value/type), the
-// bytes are r19-r25+r31, and the 3-case switch is a balanced tree, not the 2/0/1 scan.
+// NONMATCHING (98.58%): the switch dispatch and every instruction now match; only register
+// allocation differs (the target keeps value/color/cam in r14/r17/r18 and the eight colour bytes in
+// r20-r27; here cam is r14, value r17, color r18, and the bytes are r19-r25 plus r31). Local
+// declaration order does not change it.
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
 	GXColor colors[2];
@@ -40,6 +41,7 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 		colors[1] = (GXColor){ 0xFF, 0x56, 0x27, color };
 		colors[0] = (GXColor){ 0xFF, 0xC5, 0x18, color };
 		break;
+	case 3:
 	default:
 		colors[1] = (GXColor){ 0xFF, 0xFF, 0xFF, color };
 		colors[0] = (GXColor){ 0xFF, 0xFF, 0xFF, color };
