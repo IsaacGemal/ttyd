@@ -189,7 +189,7 @@ void effParticleDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (39.80%): retail keeps a 0x14 stack copy of the position Vec plus a 0x8 init scratch; mine keeps one slot at 0x8.
+// NONMATCHING (87.88%): retail keeps a 0x14 stack copy of the position Vec plus a 0x8 init scratch; mine keeps one slot at 0x8.
 void effParticleMain(EffectEntry* effect) {
 	ParticleWork* work = effect->userdata;
 	Vec position = vec3_8030026c;

@@ -104,8 +104,8 @@ void effPointGetMain(EffectEntry* effect) {
 }
 
 // NONMATCHING (97.35%): all logic and GX calls match. We save f21-f31/r25-r31,
-// the original f19-f31/r26-r31 (frame 0x1c0 vs 0x1e0); one inner-loop bound uses
-// cmpw vs cmplw. The .sdata2 pool and mtx offsets (0xb8/0x88/0x58) match.
+// the original f19-f31/r26-r31 (frame 0x1c0 vs 0x1e0). The .sdata2 pool and mtx offsets
+// (0xb8/0x88/0x58) match.
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;

@@ -200,7 +200,7 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 }
 
 // .text:0x644 | 0x8018E170 | size: 0x1D8
-// NONMATCHING (89.14%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
+// NONMATCHING (90.17%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
 void effUpdownMain(EffectEntry* effect) {
 	EffUpdownWork* work = effect->userdata;
 	s32 type;
@@ -228,7 +228,7 @@ void effUpdownMain(EffectEntry* effect) {
 			work->scaleY = (f32)scale_data[work->frame * 2 + 1] / float_100_8041e2dc;
 		} else {
 			work->scaleY = float_1_8041e2b4 -
-						   float_0p1_8041e2e4 * (f32)sin((f32)(work->frame - 15) * float_0p25_8041e2e0);
+						   float_0p1_8041e2e4 * (f32)sin((f32)(s32)(work->frame - 15) * float_0p25_8041e2e0);
 			work->scaleX = float_1_8041e2b4;
 		}
 	}
