@@ -4,27 +4,31 @@
     python3 tools/rel_link.py MOD/UNIT     e.g. gor/gor_12 or aji/unit/unit_barriern
 Prints LINKED (and leaves the unit Matching in configure.py) or NOT LINKED with what differs (and leaves the unit as it
 was before the check)."""
-import re, subprocess, sys
+import json, re, subprocess, sys
 
 mod, unit = sys.argv[1].split("/", 1)
 name = f'"{unit}.c"'
+# a unit shared between RELs has one Object per REL (modules=[...]); a unit of this REL alone has none
+PAT = rf"Object\((Matching|NonMatching), {re.escape(name)}(?=[,)])(?![^\n]*modules=\[(?!\"{mod}\"\])[^\]]*\])"
 
 
 def set_state(state):
     s = open("configure.py").read()
-    s2 = re.sub(rf"Object\((?:Matching|NonMatching), {re.escape(name)}\)", f"Object({state}, {name})", s)
-    if s2 == s and f"Object({state}, {name})" not in s:
+    s2 = re.sub(PAT, f"Object({state}, {name}", s)
+    if s2 == s and f"Object({state}, {name}" not in s:
         sys.exit(f"{name} is not in configure.py")
     open("configure.py", "w").write(s2)
     subprocess.run(["python3", "configure.py"], capture_output=True, check=True)
 
 
-orig_state = re.search(rf"Object\((Matching|NonMatching), {re.escape(name)}\)", open("configure.py").read())
+orig_state = re.search(PAT, open("configure.py").read())
 orig_state = orig_state.group(1) if orig_state else "NonMatching"
 linked = False
 try:
     set_state("NonMatching")
-    b = subprocess.run(["ninja", f"build/G8MJ01/src/{unit}.o"], capture_output=True, text=True)
+    obj = next((u["base_path"] for u in json.load(open("objdiff.json"))["units"] if u["name"] == f"{mod}/{unit}"),
+               f"build/G8MJ01/src/{unit}.o")
+    b = subprocess.run(["ninja", obj], capture_output=True, text=True)
     if b.returncode:
         print("NOT LINKED: the file doesn't build\n" + "\n".join(l for l in (b.stdout + b.stderr).splitlines() if l.startswith("#"))[-2000:])
         sys.exit(1)

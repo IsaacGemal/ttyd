@@ -75,3 +75,4 @@ archive/
 
 # Orchestrator working files: wave launchers, agent results, review logs
 scratch/
+lastgood.c

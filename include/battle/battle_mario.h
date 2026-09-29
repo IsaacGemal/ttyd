@@ -1,6 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+extern u32 marioWeapon_KaitenHammerInvolved[48];
+extern u32 marioWeapon_UltraHammerInvolved[48];
+
 USER_FUNC(_whirlwind_effect);
 USER_FUNC(_jump_star_effect);
 USER_FUNC(_bgset_iron_frame_check);

@@ -10,6 +10,8 @@
 #include "battle/battle_event_subset.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
+#include "battle/battle_mario.h"
+#include "battle/battle_party.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
@@ -143,13 +145,6 @@ USER_FUNC(_binta_effect) {
     return EVT_RETURN_DONE;
 }
 
-extern s32 btlevtcmd_AnimeCmpPoseType[];
-extern s32 btlevtcmd_ConsumeItemReserve[];
-extern s32 btlevtcmd_EllipseMovePosition[];
-extern s32 btlevtcmd_OffUnitFlag[];
-extern s32 marioWeapon_KaitenHammerInvolved[];
-extern s32 marioWeapon_UltraHammerInvolved[];
-extern s32 partyWeapon_YoshiNomikomi_Involved[];
 s32 subsetevt_dead_core[193];
 s32 btldefaultevt_ChangePosition[186];
 s32 subsetevt_blow_damage[69];

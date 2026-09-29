@@ -15,6 +15,7 @@
 #include "evt/evt_hit.h"
 #include "evt/evt_map.h"
 #include "evt/evt_mario.h"
+#include "evt/evt_sub.h"
 #include "evt/evt_movefloor.h"
 #include "evt/evt_party.h"
 #include "evt/evt_snd.h"
@@ -129,7 +130,6 @@ static u32 sintbl[450] = {
 	0x3F7E98FE, 0x3F7F06A3, 0x3F7F605B, 0x3F7FA626, 0x3F7FD817, 0x3F7FF60A,
 };
 
-extern s32 evt_sub_get_areaname[];
 
 // clang-format off
 
@@ -243,9 +243,8 @@ USER_FUNC(evt_moving_floor_free) {
 // register allocation. The original computes `t = 1.0f - ratio` into f1 and
 // loads `start` into f2, while this build assigns f2 to `t` and f1 to `start`
 // (and therefore emits `fmuls f0, f31, f0` instead of `fmuls f0, f0, f31`).
-// Every byte, ordering and arithmetic matches otherwise; the constant pool
-// refs (`float_0_*`, `double_to_int_*`, `jumptable_*`) are the same values at
-// differing symbol names and do not affect the score.
+// Also the unit's .sdata2 holds 1.0f before 0.5f where the original has 0.5f, 1.0f, so the
+// unit does not link either.
 USER_FUNC(evt_moving_floor_init) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);

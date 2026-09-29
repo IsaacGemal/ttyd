@@ -1,4 +1,5 @@
-"""Turn a data-only unit's disassembly into C source.
+"""Turn a data-only unit's disassembly into C source. Superseded by tools/dol_gen.py (scripts as EVT macros, declarations
+in headers); still the only tool for units that have only .rodata/.sdata2.
 
 Usage (from the repo root, after a build): python3 tools/asm2c_data.py <unit> > src/<unit>.c
 where <unit> is the split's name without .c (e.g. data/party_data). Reads build/G8MJ01/asm/<unit>.s.

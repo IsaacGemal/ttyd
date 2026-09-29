@@ -153,7 +153,7 @@ if hdr_lines:
     os.makedirs(os.path.dirname(hname),exist_ok=True)
     open(hname,'w').write('#pragma once\n\n#include "evt/evt_cmd.h"\n\n'+'\n'.join(hdr_lines)+'\n')
     hdrs.add('__UNIT__')
-text=(f'#include "{os.path.basename(UNIT)}.h"\n' if '__UNIT__' in hdrs else '')+''.join(f'#include "{h}"\n' for h in sorted(hdrs-{'__UNIT__'}))+('\n#pragma pool_data off\n' if fns else '')+'\n#pragma force_active on\n'+'\n'.join(ext+fwd)+('\n\n' if ext or fwd else '\n')+'// clang-format off\n'+src+'\n// clang-format on\n#pragma force_active off\n'
+text=(f'#include "{os.path.basename(UNIT)}.h"\n' if '__UNIT__' in hdrs else '')+''.join(f'#include "{h}"\n' for h in sorted(hdrs-{'__UNIT__'}))+('\n#pragma pool_data off\n' if fns else '')+'\n#pragma force_active on\n'+'\n'.join(ext+fwd)+('\n\n' if ext or fwd else '\n')+'// clang-format off\n'+src+'\n// clang-format on\n'+('' if fns else '#pragma force_active off\n')
 os.makedirs(os.path.dirname(f'rels/{MOD}/src/{UNIT}.c'),exist_ok=True); os.makedirs(f'rels/{MOD}/include',exist_ok=True)
 open(f'rels/{MOD}/src/{UNIT}.c','w').write(text)
 print(f'{MOD}/{UNIT}: {len(data)} data objects, {len(todo)} tables to type, {len(ext)} externs')

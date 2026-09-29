@@ -9,7 +9,7 @@
 #include "sequence/seq_load.h"
 
 // Init, Main and Exit of each sequence, in the order seqdrv.c numbers them.
-SequenceCallback seq_data_80302E40[8][3] = {
+SequenceCallback seq_data[8][3] = {
     { seq_logoInit, seq_logoMain, seq_logoExit },
     { seq_titleInit, seq_titleMain, seq_titleExit },
     { seq_gameInit, seq_gameMain, seq_gameExit },

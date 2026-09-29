@@ -383,6 +383,35 @@ if HDR_ADD:
 skip = re.compile(r'^(LW|LF|GW|GF|GSW|GSWF|LSW|LSWF|UW|UF|FLOAT|STRING|PTR|EVT_BEGIN|EVT_END|EVTDAT_POINTER_MAX|extend_data|static|u8|u32|s32|u64|f32|f64|TODO|type|__declspec|section)$')
 missing = sorted(n for n in idents if n not in USED_EXT and not n.isupper() and not skip.match(n) and
                  not any(re.search(rf'(USER_FUNC|EVT_DEF)\({n}\)|\b{n}\s*\(|\b{n}\[\]', hdrtext.get('include/' + h, '')) for h in hdrs))
+def owner_decl(n):
+    """(header path, declaration) for a name another source file defines, so the declaration goes in its header."""
+    for path in _g.glob('src/**/*.c', recursive=True):
+        text = open(path).read()
+        m = re.search(rf'^USER_FUNC\({re.escape(n)}\)', text, re.M)
+        decl = f'USER_FUNC({n});' if m else None
+        if not m:
+            m = re.search(rf'^(?:const\s+)?(\w+)\s+{re.escape(n)}\s*\[(\d*)\]\s*=', text, re.M)
+            if m:
+                decl = f'EVT_DEF({n});' if m.group(1) == 's32' else f'extern {m.group(1)} {n}[{m.group(2)}];'
+        if decl:
+            hdr = 'include/' + path[4:-2] + '.h'
+            if os.path.exists(hdr):
+                return hdr, decl
+    return None
+
+
+_ext_names = []
+for n in missing:
+    o = owner_decl(n)
+    if o is None:
+        print(f'WARNING: {n} is declared by no header and no header-owning source defines it: writing a stand-in extern', file=sys.stderr)
+        _ext_names.append(n)
+        continue
+    hdr, decl = o
+    if decl not in open(hdr).read():
+        open(hdr, 'a').write(('' if open(hdr).read().endswith('\n') else '\n') + decl + '\n')
+    hdrs.add(hdr[8:])
+missing = _ext_names
 ext = [f'extern s32 {n}[];' for n in missing] + [f'extern const char {n}[];' for n in USED_EXT if not re.search(rf'\b{n}\s*\[', APPEND_PRE if APPEND else '')]
 
 pre = ''.join(f'#include "{h}"\n' for h in sorted(hdrs))

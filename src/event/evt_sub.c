@@ -88,19 +88,6 @@ typedef struct SplineWork {
 extern s32 stop;
 
 extern s32 evt_win_one_message[];
-extern s32 str_802C3560[];
-extern s32 str_802C3568[];
-extern s32 str_802C3570[];
-extern s32 str_802C3578[];
-extern s32 str_802C3580[];
-extern s32 str_802C3588[];
-extern s32 str_802C3594[];
-extern s32 str_802C359C[];
-extern s32 str_802C35A4[];
-extern s32 str_802C35AC[];
-extern s32 str_802C35B4[];
-extern s32 str_802C35BC[];
-extern s32 str_802C35C4[];
 extern const char str_802C32C0[];
 extern const char str_802C32D0[];
 extern const char str_802C32E8[];
@@ -311,7 +298,6 @@ USER_FUNC(evt_sub_spline_init) {
 }
 
 
-#pragma opt_propagation reset
 // NONMATCHING (94.29%): 4 missing, 4 extra, plus register differences.
 USER_FUNC(evt_sub_spline_get_value) {
 	s32* args = event->args;
@@ -375,6 +361,7 @@ USER_FUNC(evt_sub_spline_get_value_manual) {
 	evtSetValue(event, args[3], (s32)(1024.0f * out[2]) + 0xF24A7A80);
 	return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 
 USER_FUNC(evt_sub_spline_free) {
@@ -1007,6 +994,7 @@ USER_FUNC(evt_sub_check_intersect) {
 	evtSetValue(event, args[8], 1);
 	return 2;
 }
+#pragma opt_propagation reset
 
 
 USER_FUNC(irai_mail_check) {
@@ -1034,27 +1022,26 @@ USER_FUNC(mail_evt_gor_04_keyoff_check) {
 	return EVT_RETURN_DONE;
 }
 
-// TODO: type
 u32 tree_data[75] = {
-    0xF24A7A80, 0xF24A7A80, 0xF24A7A80, 0xF24A785D,
-    0xF24A8049, 0xF24A80FE, 0xF24A75D1, 0xF24A8733,
-    0xF24A88C4, 0xF24A7415, 0xF24A8BDB, 0xF24A8DFC,
-    0xF24A745E, 0xF24A8ADD, 0xF24A8CD2, 0xF24A77C2,
-    0xF24A817C, 0xF24A8212, 0xF24A7D5D, 0xF24A723B,
-    0xF24A7092, 0xF24A836A, 0xF24A6193, 0xF24A5D8B,
-    0xF24A8825, 0xF24A5401, 0xF24A4E36, 0xF24A89CA,
-    0xF24A4E01, 0xF24A47CD, 0xF24A86E8, 0xF24A528C,
-    0xF24A4DEA, 0xF24A80AD, 0xF24A5EA6, 0xF24A5D12,
-    0xF24A7943, 0xF24A6DD7, 0xF24A6FDE, 0xF24A72CF,
-    0xF24A7BA7, 0xF24A80E4, 0xF24A6F7C, 0xF24A839E,
-    0xF24A8ABE, 0xF24A704B, 0xF24A8429, 0xF24A8B8B,
-    0xF24A73CB, 0xF24A8042, 0xF24A86E5, 0xF24A787B,
-    0xF24A7A48, 0xF24A7F9D, 0xF24A7CD6, 0xF24A7497,
-    0xF24A7888, 0xF24A7F5C, 0xF24A718F, 0xF24A7476,
-    0xF24A7FB7, 0xF24A719F, 0xF24A73DB, 0xF24A7EE8,
-    0xF24A7331, 0xF24A74D6, 0xF24A7D70, 0xF24A75A1,
-    0xF24A76BA, 0xF24A7BCD, 0xF24A7848, 0xF24A78D7,
-    0xF24A7A80, 0xF24A7A80, 0xF24A7A80,
+    FLOAT(0.0), FLOAT(0.0), FLOAT(0.0), FLOAT(-0.5341796875),
+    FLOAT(1.4462890625), FLOAT(1.623046875), FLOAT(-1.1708984375), FLOAT(3.1748046875),
+    FLOAT(3.56640625), FLOAT(-1.6044921875), FLOAT(4.3388671875), FLOAT(4.87109375),
+    FLOAT(-1.533203125), FLOAT(4.0908203125), FLOAT(4.580078125), FLOAT(-0.685546875),
+    FLOAT(1.74609375), FLOAT(1.892578125), FLOAT(0.7158203125), FLOAT(-2.0673828125),
+    FLOAT(-2.482421875), FLOAT(2.228515625), FLOAT(-6.2314453125), FLOAT(-7.2392578125),
+    FLOAT(3.4111328125), FLOAT(-9.6240234375), FLOAT(-11.072265625), FLOAT(3.822265625),
+    FLOAT(-11.1240234375), FLOAT(-12.6748046875), FLOAT(3.1015625), FLOAT(-9.98828125),
+    FLOAT(-11.146484375), FLOAT(1.5439453125), FLOAT(-6.962890625), FLOAT(-7.357421875),
+    FLOAT(-0.3095703125), FLOAT(-3.1650390625), FLOAT(-2.658203125), FLOAT(-1.9228515625),
+    FLOAT(0.2880859375), FLOAT(1.59765625), FLOAT(-2.75390625), FLOAT(2.279296875),
+    FLOAT(4.060546875), FLOAT(-2.5517578125), FLOAT(2.4150390625), FLOAT(4.2607421875),
+    FLOAT(-1.6767578125), FLOAT(1.439453125), FLOAT(3.0986328125), FLOAT(-0.5048828125),
+    FLOAT(-0.0546875), FLOAT(1.2783203125), FLOAT(0.583984375), FLOAT(-1.4775390625),
+    FLOAT(-0.4921875), FLOAT(1.21484375), FLOAT(-2.2353515625), FLOAT(-1.509765625),
+    FLOAT(1.3037109375), FLOAT(-2.2197265625), FLOAT(-1.6611328125), FLOAT(1.1015625),
+    FLOAT(-1.8271484375), FLOAT(-1.416015625), FLOAT(0.734375), FLOAT(-1.2177734375),
+    FLOAT(-0.943359375), FLOAT(0.3251953125), FLOAT(-0.5546875), FLOAT(-0.4150390625),
+    FLOAT(0.0), FLOAT(0.0), FLOAT(0.0),
 };
 
 EVT_BEGIN(tree_evt)
@@ -1965,38 +1952,73 @@ EVT_BEGIN(mail_evt_pik_00)
     RETURN
 EVT_END()
 
-// TODO: type
-s32 evt_sub_mail_event[117] = {
-    0x0002005B, (s32)evt_sub_get_system_flag, 0xFE363C80, 0x0002001E,
-    0xFE363C80, 0x00001000, 0x00000002, 0x00000021,
-    0x0002005B, (s32)evt_mario_get_mode, 0xFE363C80, 0x00020019,
-    0xFE363C80, 0x00000000, 0x00000002, 0x00000021,
-    0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
-    0xFE363C80, (s32)str_802C3560, 0x0001005E, (s32)&mail_evt_nok_01,
-    0x00000002, 0x00000021, 0x0002000C, 0xFE363C80,
-    (s32)str_802C3568, 0x0001005E, (s32)&mail_evt_gor_03, 0x00000002,
-    0x00000021, 0x0002000C, 0xFE363C80, (s32)str_802C3570,
-    0x0001005C, (s32)&mail_evt_gor_02, 0x0001005E, (s32)&mail_evt_gor_02_2,
-    0x00000002, 0x00000021, 0x0002000C, 0xFE363C80,
-    (s32)str_802C3578, 0x0001005C, (s32)&mail_evt_gor_01_2, 0x0001005E,
-    (s32)&mail_evt_gor_01, 0x00000002, 0x00000021, 0x0002000C,
-    0xFE363C80, (s32)str_802C3580, 0x0001005E, (s32)&mail_evt_gor_04,
-    0x00000002, 0x00000021, 0x0002000C, 0xFE363C80,
-    (s32)str_802C3588, 0x0001005E, (s32)&mail_evt_rsh_03_a_2, 0x0001005E,
-    (s32)&mail_evt_rsh_03_a, 0x00000002, 0x00000021, 0x0002000C,
-    0xFE363C80, (s32)str_802C3594, 0x0001005E, (s32)&mail_evt_hom_00,
-    0x00000002, 0x00000021, 0x0002000C, 0xFE363C80,
-    (s32)str_802C359C, 0x0001005E, (s32)&mail_evt_bom_01, 0x00000002,
-    0x00000021, 0x0002000C, 0xFE363C80, (s32)str_802C35A4,
-    0x0001005E, (s32)&mail_evt_tik_00, 0x00000002, 0x00000021,
-    0x0002000C, 0xFE363C80, (s32)str_802C35AC, 0x0001005E,
-    (s32)&mail_evt_win_01, 0x00000002, 0x00000021, 0x0002000C,
-    0xFE363C80, (s32)str_802C35B4, 0x0001005E, (s32)&mail_evt_tou_01,
-    0x00000002, 0x00000021, 0x0002000C, 0xFE363C80,
-    (s32)str_802C35BC, 0x0001005E, (s32)&mail_evt_usu_01, 0x00000002,
-    0x00000021, 0x0002000C, 0xFE363C80, (s32)str_802C35C4,
-    0x0001005E, (s32)&mail_evt_pik_00, 0x00000002, 0x00000021,
-    0x00000002,
+// The END word closing this script is lbl_803080CC (a separate symbol in the original).
+EVT_BEGIN(evt_sub_mail_event)
+    CALL(evt_sub_get_system_flag, LW(0))
+    IF_BITS_SET(LW(0), 4096)
+        RETURN
+    END_IF
+    CALL(evt_mario_get_mode, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_sub_get_mapname, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("nok_01"))
+        CALL_CHILD(mail_evt_nok_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("gor_03"))
+        CALL_CHILD(mail_evt_gor_03)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("gor_02"))
+        SPAWN_EVENT(mail_evt_gor_02)
+        CALL_CHILD(mail_evt_gor_02_2)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("gor_01"))
+        SPAWN_EVENT(mail_evt_gor_01_2)
+        CALL_CHILD(mail_evt_gor_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("gor_04"))
+        CALL_CHILD(mail_evt_gor_04)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("rsh_03_a"))
+        CALL_CHILD(mail_evt_rsh_03_a_2)
+        CALL_CHILD(mail_evt_rsh_03_a)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("hom_00"))
+        CALL_CHILD(mail_evt_hom_00)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("bom_01"))
+        CALL_CHILD(mail_evt_bom_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("tik_00"))
+        CALL_CHILD(mail_evt_tik_00)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("win_01"))
+        CALL_CHILD(mail_evt_win_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("tou_01"))
+        CALL_CHILD(mail_evt_tou_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("usu_01"))
+        CALL_CHILD(mail_evt_usu_01)
+        RETURN
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("pik_00"))
+        CALL_CHILD(mail_evt_pik_00)
+        RETURN
+    END_IF
+    RETURN
 };
 
 __declspec(section ".data") EVT_BEGIN(lbl_803080CC)
@@ -2009,11 +2031,10 @@ EVT_BEGIN(evt_sub_stopwatch)
     RETURN
 EVT_END()
 
-// TODO: type
 static u32 kusa_data[12] = {
-    0xF24A7A80, 0xF24A7302, 0xF24A6E82, 0xF24A719F,
-    0xF24A7766, 0xF24A7A80, 0xF24A7766, 0xF24A719F,
-    0xF24A6E82, 0xF24A70BB, 0xF24A759F, 0xF24A7A80,
+    FLOAT(0.0), FLOAT(-1.873046875), FLOAT(-2.998046875), FLOAT(-2.2197265625),
+    FLOAT(-0.775390625), FLOAT(0.0), FLOAT(-0.775390625), FLOAT(-2.2197265625),
+    FLOAT(-2.998046875), FLOAT(-2.4423828125), FLOAT(-1.2197265625), FLOAT(0.0),
 };
 
 WinMgrDesc coinget_window_desc = {
