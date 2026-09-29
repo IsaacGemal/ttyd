@@ -1,0 +1,324 @@
+#include "aji_07.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_item.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_party.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+#include "mario/mario.h"
+#include "manager/evtmgr_cmd.h"
+#include "party.h"
+#include "party/party_motion.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 evt_emergency[];
+static USER_FUNC(scale_func);
+
+// clang-format off
+extend_data(28,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(29,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+static EVT_BEGIN(s_door_open)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.16602f))
+    CALL(evt_mapobj_trans, 1, STRING("S_door1_2"), LW(0), 0, 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_trans, 1, STRING("S_door1_1"), LW(0), 0, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(s_door_close)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.16602f))
+    CALL(evt_mapobj_trans, 1, STRING("S_door1_2"), LW(0), 0, 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_trans, 1, STRING("S_door1_1"), LW(0), 0, 0)
+    RETURN
+EVT_END()
+
+static BeroEntry bero_entry_data[] = {
+    {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "aji_01", "n_bero_2", 5, 5,
+     (s32)s_door_close, (s32)s_door_open},
+    {NULL},
+};
+
+static USER_FUNC(scale_func) {
+    s32* args = event->args;
+    f32 value = evtGetFloat(event, args[0]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(PARTY_SLOT_PARTY);
+    Vec scale = { 0.0f, 0.0f, 0.0f };
+    scale.x = value;
+    scale.y = value;
+    scale.z = value;
+    mario->scale = scale;
+    if (party != NULL) {
+        Vec scale2 = { 0.0f, 0.0f, 0.0f };
+        scale2.x = value;
+        scale2.y = value;
+        scale2.z = value;
+        party->field_70 = scale2;
+    }
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(tensou_ride)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_normalize)
+    CALL(evt_party_stop, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -90, 0, FLOAT(100.0f))
+        CALL(evt_party_set_dir, 0, 270, 200)
+    END_INLINE_EVENT
+    CALL(evt_mario_mov_pos2, -115, 0, FLOAT(100.0f))
+    CALL(evt_mario_set_dir, 90, 200, 0)
+    WAIT_MS(300)
+    CALL(evt_hit_get_position, STRING("A_tensou"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WARP_LIGHT1"), LW(0), LW(1), LW(2), LW(9))
+    SET_VALUE(GW(0), 0)
+    CALL(evt_mario_get_dispdir, LW(0))
+    CALL(evt_party_get_dispdir, 0, LW(1))
+    BEGIN_INLINE_EVENT
+        LOOP(0)
+            ADD(LW(0), GW(0))
+            ADD(LW(1), GW(0))
+            CALL(evt_mario_set_dispdir, LW(0))
+            CALL(evt_party_set_dispdir, 0, LW(1))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WARP1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 30, 3000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(0), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_mario_cam_off)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_mario_get_pos, 0, LW(2), LW(3), LW(4))
+    CALL(evt_party_get_pos, 0, LW(5), LW(6), LW(7))
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 12, 100, 0, 800)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+            CALL(scale_func, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WARP2"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 12, 0, 70, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(LW(8), LW(0))
+        ADD(LW(0), LW(3))
+        CALL(evt_mario_set_pos, LW(2), LW(0), LW(4))
+        ADD(LW(8), LW(6))
+        CALL(evt_party_set_pos, 0, LW(5), LW(8), LW(7))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_MS(2000)
+    CALL(evt_snd_sfxoff, LW(9))
+    SWITCH(GSW(0))
+        CASE_LESS(376)
+        SET_VALUE(GSWF(4175), 1)
+        CALL(evt_bero_mapchange, STRING("tik_00"), 0)
+        CASE_EQUAL(376)
+        CALL(evt_bero_mapchange, STRING("moo_04"), 0)
+        CASE_DEFAULT
+        SET_VALUE(GSWF(4175), 1)
+        CALL(evt_bero_mapchange, STRING("tik_00"), 0)
+    END_SWITCH
+    CALL(evt_exit_case_evt)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(tensou_switch)
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("sui__1"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("sui__2"), 1)
+    CALL(evt_mapobj_get_position, STRING("sui__1"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_SWITCH_WARP1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_map_playanim, STRING("anm_saisho"), 0, 0)
+    WAIT_FRAMES(1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("hikari"), 1)
+    CALL(evt_map_checkanim, STRING("anm_saisho"), LW(0), LW(1))
+    WAIT_MS(LW(1))
+    CALL(evt_map_playanim, STRING("anm_wa-p"), 1, 0)
+    CALL(evt_run_case_evt, 0, 1, STRING("A_tensou"), 0, PTR(tensou_ride), 0)
+    CALL(evt_exit_case_evt)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_tensou2)
+    CALL(evt_map_playanim, STRING("anm_wa-p"), 1, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("wa_pu"), 1)
+    CALL(evt_hit_get_position, STRING("A_tensou"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WARP_LIGHT1"), LW(0), LW(1), LW(2), LW(9))
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 5, 0, 5760, 4000)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            MODULO(LW(0), 360)
+            CALL(evt_party_set_dispdir, 0, LW(0))
+            ADD(LW(0), 180)
+            MODULO(LW(0), 360)
+            CALL(evt_mario_set_dispdir, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 12, 0, 100, 800)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+            CALL(scale_func, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_mario_get_pos, 0, LW(2), LW(3), LW(4))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG7_WARP1_2"), LW(2), LW(3), LW(4), 0)
+    CALL(evt_mario_get_pos, 0, LW(2), LW(3), LW(4))
+    CALL(evt_party_get_pos, 0, LW(5), LW(6), LW(7))
+    CALL(evt_sub_intpl_msec_init, 12, 70, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(LW(8), LW(0))
+        ADD(LW(0), LW(3))
+        CALL(evt_mario_set_pos, LW(2), LW(0), LW(4))
+        ADD(LW(8), LW(6))
+        CALL(evt_party_set_pos, 0, LW(5), LW(8), LW(7))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_MS(3000)
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_color, 1, STRING("wa_pu"), 255, 255, 255, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("wa_pu"), 1)
+    CALL(evt_mapobj_color, 1, STRING("wa_pu"), 255, 255, 255, 255)
+    CALL(evt_mario_cont_onoff, 1)
+    CALL(evt_party_cont_onoff, 0, 1)
+    CALL(evt_party_cont_onoff, 1, 1)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_party_run, 0)
+    CALL(evt_party_run, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(tensou_init)
+    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("sui__1"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("sui__2"), 1)
+    CALL(evt_run_case_evt, 9, 1, STRING("A__sui"), 0, PTR(tensou_switch), 0)
+    IF_INT_EQUAL(GSWF(1326), 0)
+        RETURN
+    END_IF
+    SET_VALUE(GSWF(1326), 0)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_stop, 1)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_party_cont_onoff, 1, 0)
+    CALL(evt_mario_set_pos, -115, 9, 0)
+    CALL(evt_party_set_pos, 0, -90, 9, 0)
+    CALL(evt_party_set_pos, 1, -100, 9, -10)
+    SPAWN_EVENT(evt_tensou2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_haguruma)
+    SET_VALUE(GSWF(4194), 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(aji_07_init_evt)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG7_DUN2"))
+    CALL(evt_snd_envon, 272, STRING("ENV_STG7_AJI4"))
+    CALL(evt_snd_set_rev_mode, 1)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL_CHILD(tensou_init)
+    CALL(evt_map_playanim, STRING("anm_PC"), 1, 0)
+    CALL(evt_map_playanim, STRING("anm_terop"), 1, 0)
+    CALL(evt_map_playanim, STRING("anm_tiktik"), 1, 0)
+    IF_INT_EQUAL(GSWF(4194), 0)
+        CALL(evt_item_entry, STRING("haguruma"), 85, -65, 100, -120, 16, -1, PTR(evt_haguruma))
+    END_IF
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("tenjo"))
+        CALL(evt_cam_letter_box_disable, 1)
+        CALL(evt_mario_key_onoff, 0)
+        CALL(evt_mario_cont_onoff, 0)
+        CALL(evt_party_cont_onoff, 0, 0)
+        CALL(evt_party_cont_onoff, 1, 0)
+        CALL(evt_mario_set_pos, 180, 200, -125)
+        CALL(evt_party_set_pos, 0, 190, 200, -115)
+        CALL(evt_party_set_pos, 1, 200, 200, -105)
+        BEGIN_INLINE_EVENT
+            CALL(evt_seq_wait, 2)
+            CALL(evt_mario_cont_onoff, 1)
+            CALL(evt_party_cont_onoff, 0, 1)
+            CALL(evt_party_cont_onoff, 1, 1)
+            CALL(evt_mario_wait_landon)
+            CALL(evt_mario_key_onoff, 1)
+            CALL(evt_cam_letter_box_disable, 0)
+        END_INLINE_EVENT
+    END_IF
+    SPAWN_EVENT(evt_emergency)
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off

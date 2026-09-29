@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 #include <dolphin/types.h>
 #include "battle/battle_stage_object.h"
 
@@ -64,3 +66,4 @@ void BattleStageDispLight(CameraId camId, void* param);
 void tou_gamen_screen_tev(void* param);
 void BattleStageOnLightFriendInCommand(void);
 void BattleStageOnLightEnemyInCommand(void);
+

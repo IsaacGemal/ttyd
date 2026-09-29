@@ -20,7 +20,7 @@ typedef struct BeroEntry {
 	s32* enterEvent; //0x1C;
 	s32 field_0x20; //0x20
 	s32* exitEvent; //0x24
-	s32 nextareaArg1; //0x28
+	const char* nextareaArg1; //0x28 destination map
 	const char* nextareaArg2; //0x2C
 	u16 animeArg1; //0x30
 	u16 animeArg2; //0x32
@@ -59,3 +59,20 @@ USER_FUNC(evt_bero_get_now_number);
 USER_FUNC(evt_bero_get_info);
 USER_FUNC(evt_bero_get_into_info);
 void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end);
+
+USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry);
+USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_to_current_mario_pos);
+EVT_DEF(bero_case_entry);
+EVT_DEF(bero_case_exec_pipe);
+EVT_DEF(bero_case_switch_off);
+EVT_DEF(bero_case_switch_on);
+EVT_DEF(bero_close_door_play_se);
+USER_FUNC(bero_get_position_normal);
+EVT_DEF(bero_open_door_play_se);
+EVT_DEF(bero_play_enter_anime);
+USER_FUNC(evt_bero_get_info_num);
+USER_FUNC(evt_bero_id_filter);
+USER_FUNC(evt_bero_mario_go);
+USER_FUNC(evt_bero_mario_go_init);
+USER_FUNC(evt_bero_mario_go_wait);
+USER_FUNC(evt_bero_overwrite);

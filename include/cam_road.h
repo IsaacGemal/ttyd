@@ -11,3 +11,5 @@ u32 compareCamRoad(struct CamRoadState* cur, struct CamRoadState* prev, f32* out
 void calcCamRoad(struct CamRoadState* a, struct CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az);
 void calcHokanCamRoad(s32 flag, struct CamRoadState* a, struct CamRoadState* b, f32 t, struct CamRoadState* c, struct CamRoadState* out);
 void calcCurrentCamState(f32* dst);
+void camRoadCurveOn(const char* name);
+void camRoadCurveOff(const char* name);
