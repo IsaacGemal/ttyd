@@ -1466,3 +1466,29 @@ evt_door.c keeps a local DoorParam (0x4C) for the same data as DoorEntry, and do
 still hitIn/hitOut where DoorEntry says closeHit/openHit.
 The three ttydasm fixes (strings, ELSE's indentation, floats) could go upstream to doldecomp/ttyd as a PR; not
 done yet.
+
+## Every REL script, extracted and compiled back (2026-09-28, Claude Opus 5.5)
+
+To size REL work, ttydasm was run on every script in the RELs, and each unit's scripts were compiled with MWCC
+and compared with the original word for word, pointer targets included. **7,275 scripts (3 MB) in 564 units;
+all extract, and 7,262 compile to the original (99.8%).** The scripts (scratch/rel-scan/: objs.py lists every
+REL data object and picks out scripts, one.sh extracts one, roundtrip.py compiles and compares) are the check to
+run before any REL wave.
+
+Fixed on the way (ttydasm, evt_cmd.h): a word in the address range with no relocation is a value, mostly
+EVTDAT_POINTER_MAX (-250000000), the "no value" argument battle commands take (5,454 uses; 971 scripts used to
+abort); `-a ADDRESS` picks one of several same-named symbols (3,113 scripts share a name within their REL, e.g.
+every enemy's attack_event); pointer targets resolved by symbol index, since in a REL built from our source the
+anonymous string symbols repeat across objects and it printed the wrong strings; READ_INT2-4 and READ_FLOAT2-4
+took one destination; DEBUG_PUT_MSG and DEBUG_PUT_REG were missing (designer debug prints, e.g. 「アニメ開始」).
+
+Left: two scripts point into the middle of a table (las firebardesc, nok entry_unit_data; ttydasm prints the
+table's name without the offset), and muj_05's command_seikai has three RETURNs and four END_SCRIPTs, which the
+empty END macro can't write. Five scripts' strings have global dtk names (dat_*); they compare fine.
+
+**Scope beyond the scripts.** The scripts use 1,010 dol names; 669 have no declaration (612 functions, 57 data).
+REL tables outside scripts are 756 KB: battle about 400 KB (weapons 106 KB, battle groups and btlparty setups
+~145 KB, unit/parts/defence/status 90 KB, pose tables 62 KB), NPC setups 61 KB, doors/entrances/trees/bushes
+66 KB, MSL floats 43 KB (extend_data), the rest assorted (minigames, recipes, credits, splines). Strings are
+452 KB and come with the scripts. Code is 910 KB, 1,859 distinct bodies. Next: a data wave, prepared by the
+declarations sweep, the battle table types, ttydasm writing a whole unit, and REL object paths and tools.
