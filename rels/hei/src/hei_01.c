@@ -1,4 +1,6 @@
 #include "hei_01.h"
+#include "manager/evtmgr_cmd.h"
+#include "party.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -26,7 +28,7 @@
 
 #pragma force_active on
 extern s32 all_party_lecture_12_data_1CF80[];
-static void set_dir(void);  // TODO: real signature
+static USER_FUNC(set_dir);
 
 // clang-format off
 extend_data(8,
@@ -815,6 +817,22 @@ EVT_BEGIN(hei_01_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write set_dir (static, 0x84 bytes) here:
-// its asm is in build/G8MJ01/hei/asm/hei_01.s; this is where the original has it, just before the first script that uses it
-// clang-format on
+static USER_FUNC(set_dir) {
+    s32* args;
+    s32 dir;
+    s32 base;
+    PartyEntry* party;
+
+    args = event->args;
+    dir = evtGetValue(event, args[0]);
+    party = partyGetPtr(0);
+    if (party) {
+        base = 90;
+        if (dir > 180) {
+            base = 270;
+        }
+        party->field_110 = party->field_10C = (f32)(270 - base);
+    }
+    return EVT_RETURN_DONE;
+}
+

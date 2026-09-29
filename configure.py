@@ -1574,7 +1574,7 @@ config.libs = [
             Object(Matching, "hei_12.c"),
             Object(Matching, "unit/unit_gold_chorobon.c"),
             Object(Matching, "hei_07.c"),
-            Object(NonMatching, "hei_01.c"),
+            Object(Matching, "hei_01.c"),
         ],
     ),
     Rel(
