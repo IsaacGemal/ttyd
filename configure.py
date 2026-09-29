@@ -1417,6 +1417,10 @@ config.libs = [
             Object(Matching, "unit/unit_boss_kanbu2.c"),
             Object(Matching, "mri_17.c"),
             Object(Matching, "mri_14.c"),
+            Object(NonMatching, "mri_04.c"),
+            Object(NonMatching, "mri_08.c"),
+            Object(NonMatching, "mri_13.c"),
+            Object(NonMatching, "mri_16.c"),
         ],
     ),
     Rel(
@@ -1442,6 +1446,7 @@ config.libs = [
             Object(Matching, "unit/unit_iron_sinemon2.c"),
             Object(Matching, "unit/unit_kurikuri.c"),
             Object(Matching, "unit/unit_fire_bros.c"),
+            Object(NonMatching, "unit/unit_borodo_king.c"),
         ]
     ),
     Rel(
@@ -1474,6 +1479,7 @@ config.libs = [
             Object(Matching, "aji_14.c"),
             Object(Matching, "aji_12.c"),
             Object(Matching, "aji_18.c"),
+            Object(NonMatching, "unit/unit_barriern_custom_satellite.c"),
         ],
     ),
     Rel(
@@ -1502,6 +1508,7 @@ config.libs = [
             Object(Matching, "dou_07.c"),
             Object(Matching, "unit/unit_killer_cannon.c"),
             Object(Matching, "data/battle/battle_database_dou.c"),
+            Object(NonMatching, "dou_04.c"),
         ],
     ),
     Rel(
@@ -1512,6 +1519,7 @@ config.libs = [
             Object(Matching, "eki_05.c"),
             Object(Matching, "unit/unit_kurokumorn.c"),
             Object(Matching, "eki_02.c"),
+            Object(NonMatching, "eki_03.c"),
         ],
     ),
     Rel(
@@ -1528,6 +1536,8 @@ config.libs = [
             Object(Matching, "gon_10.c"),
             Object(Matching, "gon_bt00.c"),
             Object(Matching, "gon_13.c"),
+            Object(NonMatching, "gon_06.c"),
+            Object(NonMatching, "gon_12.c"),
         ],
     ),
     Rel(
@@ -1564,6 +1574,7 @@ config.libs = [
             Object(Matching, "hei_12.c"),
             Object(Matching, "unit/unit_gold_chorobon.c"),
             Object(Matching, "hei_07.c"),
+            Object(NonMatching, "hei_01.c"),
         ],
     ),
     Rel(
@@ -1572,6 +1583,7 @@ config.libs = [
             Object(Matching, "hom_11.c"),
             Object(Matching, "hom_12.c"),
             Object(Matching, "hom_10.c"),
+            Object(NonMatching, "hom_00.c"),
         ],
     ),
     Rel(
@@ -1615,6 +1627,7 @@ config.libs = [
             Object(Matching, "unit/unit_yami_patakuri.c"),
             Object(Matching, "unit/unit_giant_bomb.c"),
             Object(Matching, "unit/unit_yami_togekuri.c"),
+            Object(NonMatching, "unit/unit_badge_borodo.c"),
         ],
     ),
     Rel(
@@ -1672,6 +1685,8 @@ config.libs = [
             Object(Matching, "moo_06.c"),
             Object(Matching, "moo_07.c"),
             Object(Matching, "data/battle/battle_database_moo.c"),
+            Object(NonMatching, "moo_03.c"),
+            Object(NonMatching, "moo_04.c"),
         ],
     ),
     Rel(
@@ -1689,6 +1704,7 @@ config.libs = [
             Object(Matching, "data/battle/battle_database_muj.c"),
             Object(Matching, "muj_21.c"),
             Object(Matching, "muj_12.c"),
+            Object(NonMatching, "unit/unit_boss_kanbu3.c"),
         ],
     ),
     Rel(

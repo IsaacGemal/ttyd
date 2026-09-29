@@ -34,7 +34,7 @@ if os.path.exists(patch) and os.path.getsize(patch):
 cfg = open("configure.py").read()
 line = f'            Object(NonMatching, "{unit}.c"),\n'
 if f'"{unit}.c"' not in cfg:
-    m = re.search(rf'Rel\(\n        "{mod}",\n        \[\n(.*?)\n        \],\n', cfg, re.S)
+    m = re.search(rf'Rel\(\n        "{mod}",\n        \[\n(.*?)\n        \],?\n', cfg, re.S)
     if not m:
         sys.exit(f"no Rel({mod!r}) list found")
     cfg = cfg[: m.end(1)] + "\n" + line.rstrip("\n") + cfg[m.end(1):]

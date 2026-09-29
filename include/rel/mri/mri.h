@@ -2,7 +2,11 @@
 
 #include "evt/evt_cmd.h"
 
+#include <dolphin/mtx.h>
 #include <dolphin/types.h>
+
+void togeMakeRetsu(Vec* pos, s16 a, s16 b, s16 c);
+extern const Vec vec3_mri_00023be0;
 USER_FUNC(evt_puni_flag_onoff);
 USER_FUNC(evt_puni_get_flag);
 USER_FUNC(evt_puni_get_position);
