@@ -1733,3 +1733,19 @@ what MWCC gives when their text order is `_fire_wave`, `_mario_fire_ball_control
 four partial functions. `unit_party_clauda`: its weapon tables are typed `BattleWeapon` in `include/battle`, whose struct has
 no room for the pointers they contain, and the struct is not to change tonight. `evt_kinopio` is full of named string and
 pool-base hacks.
+
+## 2026-09-29: shared REL units, one source for many RELs (Claude #3, orchestrator's request)
+
+- REL objects now build to `build/G8MJ01/src/rel/<module(s)>/<unit>.o` when an `Object` carries `modules=[...]`
+  (project.py `resolve()`); objdiff unit names (`<mod>/<unit>`), report.json, checksums and dol paths are unchanged.
+  Tools read the path from `objdiff.json` `base_path` (`rel_link.py`, `agent_check.py`) or try `src/rel/<mod>/` first
+  (`rel_cmp.py`).
+- `Rel("common", [...])` in configure.py holds the shared, function-free enemy units: one source under
+  `rels/common/src/`, one `Object` per REL. Units whose copies differ between RELs have `v1/`, `v2/` source dirs
+  (basename must equal the unit's, or the `.d` dependency file path breaks).
+- The unit's exported data table is named per REL (`unit_X_<module id>_data_<offset>`) and referenced by that name from
+  the module's battle database, so the sources call it `UNIT_DATA_SYM` and each `Object` passes
+  `extra_cflags=["-DUNIT_DATA_SYM=<name>"]` (a REL that never references it gets `unit_X_local_data`).
+- `extend_data(N)` is an inline function `forcedataN`; two files in one REL with the same N are merged by the linker and
+  the second one's constants vanish (this cost gor 0x50 bytes of .data). Shared sources use N >= 1001, unique per
+  source, so keep them out of the 0..200 range the per-REL files use.

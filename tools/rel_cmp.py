@@ -24,7 +24,9 @@ def load(path):
                 r[off]=(n,tsec,val+add)
             rel[names[s[7]]]=r
     return body,rel
-A,AR=load(f'build/G8MJ01/{MOD}/obj/{UNIT}.o'); B,BR=load(f'build/G8MJ01/src/{UNIT}.o')
+A,AR=load(f'build/G8MJ01/{MOD}/obj/{UNIT}.o'); import os
+_rel=f'build/G8MJ01/src/rel/{MOD}/{UNIT}.o'
+B,BR=load(_rel if os.path.exists(_rel) else f'build/G8MJ01/src/{UNIT}.o')
 def target(r,body):
     n,tsec,off=r
     if tsec=='.rodata' and body.get('.rodata') and body['.rodata'][0] is not None:
