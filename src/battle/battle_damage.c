@@ -508,8 +508,7 @@ s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
 #pragma optimize_for_size on
 // NONMATCHING (99.80%): the (s32)((f32)rate * 0.5f) conversion allocates f1/f2 for the constants,
 // whereas the original uses f2/f0; every other byte matches.
-s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32 a) {
-    BattleWeapon* weapon = (BattleWeapon*)value;
+s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a) {
     BattleWork* wp = _battleWorkPointer;
     s32 count;
     s32 rate;

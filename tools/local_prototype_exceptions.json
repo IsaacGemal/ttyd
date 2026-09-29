@@ -22,7 +22,7 @@
   {
     "path": "src/battle/battle_event_cmd.c",
     "name": "BattleCheckCounter",
-    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32* out);",
+    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* out);",
     "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
   },
   {

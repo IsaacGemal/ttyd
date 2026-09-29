@@ -33,7 +33,7 @@
 #include "driver/itemdrv.h"
 
 // LOCAL_PROTO(BattleCheckCounter): battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts.
-s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32* out);
+s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* out);
 
 // The original unit was built for size; without this the neg/or/srawi mask and
 // the /60 reciprocal-multiply codegen differ from the target (verified with the
@@ -4596,7 +4596,7 @@ USER_FUNC(btlevtcmd_PreCheckDamage) {
     value = evtGetValue(event, args[3]);
     a = args[4];
     retIndex = args[5];
-    result = BattlePreCheckDamage(attacker, target, part, value, a);
+    result = BattlePreCheckDamage(attacker, target, part, (BattleWeapon*)value, a);
     if (result < 0) {
         return 0xFF;
     }
@@ -4627,7 +4627,7 @@ USER_FUNC(btlevtcmd_PreCheckCounter) {
     part = BtlUnit_GetPartsPtr(target, partId);
     value = evtGetValue(event, args[3]);
     retIndex = args[5];
-    result = BattleCheckCounter(&work, attacker, target, part, value, &out);
+    result = BattleCheckCounter(&work, attacker, target, part, (BattleWeapon*)value, &out);
     evtSetValue(event, retIndex, result);
     if (evtCheckID(event->eventId)) {
         return EVT_RETURN_DONE;
@@ -4715,7 +4715,7 @@ USER_FUNC(btlevtcmd_CommandPreCheckDamage) {
     a = args[3];
     retIndex = args[4];
     weapon = BattleGetSelectWeapon(wp);
-    result = BattlePreCheckDamage(attacker, target, part, (s32)weapon, a);
+    result = BattlePreCheckDamage(attacker, target, part, weapon, a);
     if (result < 0) {
         return 0xFF;
     }
@@ -4745,7 +4745,7 @@ USER_FUNC(btlevtcmd_CommandPreCheckCounter) {
     partId = evtGetValue(event, args[2]);
     part = BtlUnit_GetPartsPtr(target, partId);
     retIndex = args[4];
-    result = BattleCheckCounter(&work, attacker, target, part, (s32)BattleGetSelectWeapon(wp), &out);
+    result = BattleCheckCounter(&work, attacker, target, part, BattleGetSelectWeapon(wp), &out);
     evtSetValue(event, retIndex, result);
     if (evtCheckID(event->eventId)) {
         return EVT_RETURN_DONE;
