@@ -79,3 +79,7 @@ USER_FUNC(evt_npc_jump_position_nohit);
 USER_FUNC(evt_npc_reverse_ry);
 f32 _get_target_dir(EventEntry* event, NpcEntry* npc, const char* target);
 f32 _intplGetFloat(s32 type, f32 t);
+USER_FUNC(evt_npc_glide_position);
+USER_FUNC(evt_npc_set_anim);
+USER_FUNC(evt_npc_set_autotalkpose);
+USER_FUNC(evt_npc_wait_pera);

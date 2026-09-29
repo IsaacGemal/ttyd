@@ -1384,7 +1384,7 @@ config.libs = [
         "aaa",
         [
             Object(Matching, "aaa.c"),
-            Object(NonMatching, "aaa_00.c"),
+            Object(Matching, "aaa_00.c"),
         ],
     ),
     Rel(
