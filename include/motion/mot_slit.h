@@ -15,3 +15,4 @@ BOOL marioChkSlitEnd(void);
 BOOL marioChkSlitThrouh(void);
 BOOL marioGetSlitFloorPos(Vec* pos);
 void motSlitCancel2(void);
+s32 U_marioSlitContinueChk(void);

@@ -1430,6 +1430,8 @@ config.libs = [
             Object(Matching, "pik_03.c"),
             Object(Matching, "pik_04.c"),
             Object(Matching, "battle_database_pik.c"),
+            Object(Matching, "pik_00.c"),
+            Object(Matching, "pik_01.c"),
         ]
     ),
     Rel(
@@ -1447,6 +1449,9 @@ config.libs = [
             Object(Matching, "unit/unit_kurikuri.c"),
             Object(Matching, "unit/unit_fire_bros.c"),
             Object(Matching, "unit/unit_borodo_king.c"),
+            Object(Matching, "unit/unit_boss_koopa_tou.c"),
+            Object(Matching, "unit/unit_kamec_green.c"),
+            Object(Matching, "unit/unit_kamec_white.c"),
         ]
     ),
     Rel(
@@ -1460,6 +1465,8 @@ config.libs = [
             Object(Matching, "unit/unit_lecture_frankli.c"),
             Object(Matching, "unit/unit_boss_kanbu1.c"),
             Object(Matching, "gor_04.c"),
+            Object(Matching, "event/evt_goryuugijo.c"),
+            Object(Matching, "event/evt_keijiban.c"),
         ],
     ),
     Rel(
@@ -1480,6 +1487,11 @@ config.libs = [
             Object(Matching, "aji_12.c"),
             Object(Matching, "aji_18.c"),
             Object(Matching, "unit/unit_barriern_custom_satellite.c"),
+            Object(Matching, "aji_03.c"),
+            Object(Matching, "aji_05.c"),
+            Object(Matching, "aji_19.c"),
+            Object(Matching, "aji_02.c"),
+            Object(Matching, "aji_10.c"),
         ],
     ),
     Rel(
@@ -1509,6 +1521,9 @@ config.libs = [
             Object(Matching, "unit/unit_killer_cannon.c"),
             Object(Matching, "data/battle/battle_database_dou.c"),
             Object(Matching, "dou_04.c"),
+            Object(Matching, "dou_05.c"),
+            Object(Matching, "dou_11.c"),
+            Object(Matching, "dou_10.c"),
         ],
     ),
     Rel(
@@ -1628,6 +1643,8 @@ config.libs = [
             Object(Matching, "unit/unit_giant_bomb.c"),
             Object(Matching, "unit/unit_yami_togekuri.c"),
             Object(Matching, "unit/unit_badge_borodo.c"),
+            Object(Matching, "unit/unit_mahorn.c"),
+            Object(Matching, "unit/unit_mahorn_custom.c"),
         ],
     ),
     Rel(
@@ -1639,6 +1656,8 @@ config.libs = [
             Object(Matching, "kpa_03.c"),
             Object(Matching, "kpa_04.c"),
             Object(Matching, "kpa_05.c"),
+            Object(Matching, "kpa_01.c"),
+            Object(Matching, "kpa_07.c"),
         ],
     ),
     Rel(
@@ -1674,6 +1693,9 @@ config.libs = [
             Object(Matching, "las_27.c"),
             Object(Matching, "las_30.c"),
             Object(Matching, "las_21.c"),
+            Object(Matching, "las_00.c"),
+            Object(Matching, "las_28.c"),
+            Object(Matching, "data/battle/battle_database_las.c"),
         ],
     ),
     Rel(
@@ -1687,6 +1709,7 @@ config.libs = [
             Object(Matching, "data/battle/battle_database_moo.c"),
             Object(NonMatching, "moo_03.c"),
             Object(NonMatching, "moo_04.c"),
+            Object(Matching, "moo_00.c"),
         ],
     ),
     Rel(
@@ -1705,6 +1728,9 @@ config.libs = [
             Object(Matching, "muj_21.c"),
             Object(Matching, "muj_12.c"),
             Object(Matching, "unit/unit_boss_kanbu3.c"),
+            Object(Matching, "muj_05.c"),
+            Object(Matching, "muj_10.c"),
+            Object(Matching, "unit/unit_boss_gundan_zako_group3.c"),
         ],
     ),
     Rel(
@@ -1717,6 +1743,8 @@ config.libs = [
             Object(Matching, "unit/unit_act_kinopio.c"),
             Object(Matching, "unit/unit_act_teresa.c"),
             Object(Matching, "unit/unit_act_mario.c"),
+            Object(Matching, "nok_00.c"),
+            Object(Matching, "nok_01.c"),
         ],
     ),
     Rel(
@@ -1737,6 +1765,8 @@ config.libs = [
             Object(Matching, "unit/unit_boss_moamoa_mouth.c"),
             Object(Matching, "rsh_04.c"),
             Object(Matching, "data/battle/battle_database_rsh.c"),
+            Object(Matching, "rsh_02.c"),
+            Object(Matching, "rsh_03.c"),
         ],
     ),
     Rel(
@@ -1778,6 +1808,11 @@ config.libs = [
             Object(Matching, "tou_20.c"),
             Object(Matching, "tou_05.c"),
             Object(Matching, "tou_08.c"),
+            Object(Matching, "tou_04.c"),
+            Object(Matching, "tou_07.c"),
+            Object(Matching, "tou_06.c"),
+            Object(Matching, "tou_00.c"),
+            Object(Matching, "tou_10.c"),
         ],
     ),
     Rel(
@@ -1792,6 +1827,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_majolyne.c"),
             Object(Matching, "window/win_03.c"),
             Object(Matching, "window/win_00.c"),
+            Object(Matching, "window/win_06.c"),
         ],
     ),
     Rel(
@@ -1925,6 +1961,12 @@ config.libs = [
             Object(Matching, "unit/unit_togekuri.c", modules=["hei"], source="v2/unit/unit_togekuri.c", extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_28_data_24A10"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_26_data_240F0"]),
+        ],
+    ),
+    Rel(
+        "yuu",
+        [
+            Object(Matching, "event/evt_yuuminigame.c"),
         ],
     ),
 ]
