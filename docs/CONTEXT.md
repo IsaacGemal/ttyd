@@ -1,8 +1,8 @@
 # TTYD decomp: the ledger
 
-The single record of every decision on this fork and why it was made. New chapters go at the bottom, dated, with who made the call. The "Current state" section is the only part
-that gets rewritten in place; everything below it is append-only history (correct an old chapter by adding a
-new one that supersedes it, and say so).
+The single record of every decision on this fork and why it was made. New chapters go at the bottom, dated, with who
+made the call. The "Current state" section is the only part that gets rewritten in place; everything below it is
+append-only history (correct an old chapter by adding a new one that supersedes it, and say so).
 
 Private notes (inference provider, accounts, keys, capacity) go in `docs/CONTEXT.private.md`, which is
 gitignored, never here: this repo will be public.
