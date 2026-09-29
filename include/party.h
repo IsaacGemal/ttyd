@@ -194,3 +194,5 @@ void bomhei_init_800BFBB0(PartyEntry* party);
 void bomhei_bye(PartyEntry* party);
 s32 partyRideChk(PartyEntry* party);
 void partyUpdateKeyData(PartyEntry* party);
+void partySetFamicomMode(PartyEntry* party, s32 mode);
+extern s32 partyCtrlNo;

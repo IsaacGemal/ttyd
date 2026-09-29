@@ -88,3 +88,4 @@ USER_FUNC(evt_peach_set_condition);
 USER_FUNC(evt_peach_transform_gundan_off);
 USER_FUNC(evt_peach_transform_gundan_on);
 USER_FUNC(unk_800e23e0);
+USER_FUNC(evt_mario_cam_keep_on);

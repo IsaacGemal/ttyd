@@ -114,6 +114,13 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    - Every case of a switch, including the ones that share a body (rule 15), and a table walked one entry per
      iteration (`addi rN, rN, 4` in the loop) is `tbl[i]`, not `tbl[0]`.
    - A float compare's direction (`cror eq, gt, eq` vs `lt`), and a subtraction's operand order.
+18. **Functions in the original's order, which is the reverse of the asm's.** Game code (and the RELs) is compiled
+   with `-inline auto,deferred`, which emits a file's functions in reverse source order. So write your file's
+   functions in the REVERSE of the order they appear in the asm (the last function in the .s comes first in the .c).
+   Written in the asm's order, every function can reach 100% and the file still won't link. It applies to every
+   file built with `-inline auto,deferred`: game code, the RELs, and in libs/ at least MetroTRK, MSL and the
+   runtime. Check your unit's cflags in configure.py; battle.c and dispdrv.c are built without it, as are the
+   Dolphin SDK libraries.
 
 ## Signedness hints from the assembly
 

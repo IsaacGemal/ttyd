@@ -1,0 +1,904 @@
+#include "battle_database_aji.h"
+#include "battle/battle_stage_object.h"
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 battle_flower_drop_param_default[];
+extern s32 battle_flower_drop_param_default3[];
+extern s32 battle_heart_drop_param_default[];
+extern s32 battle_heart_drop_param_default3[];
+extern s32 battle_item_barriern[];
+extern s32 battle_item_barriern_custom[];
+extern s32 battle_item_barriern_z[];
+extern s32 battle_item_default_param_list[];
+extern s32 battle_item_gundan_zako[];
+extern s32 battle_item_gundan_zako_elite[];
+extern s32 battle_item_gundan_zako_magician[];
+extern s32 unit_barriern_2_data_3A830[];
+extern s32 unit_barriern_custom[];
+extern s32 unit_barriern_z_2_data_303C8[];
+extern s32 unit_boss_magnum_battender_mkII[];
+extern s32 unit_gundan_zako_2_data_2E898[];
+extern s32 unit_gundan_zako_elite[];
+extern s32 unit_gundan_zako_magician_2_data_34AD8[];
+static USER_FUNC(_space_rotate);
+s32 bgset_aji_space_event[35];
+
+// clang-format off
+extend_data(80,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(81,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+u32 aji_btlobject_data[162] = {
+    (u32)"dentou_01", 0x00020000, 0x43100000, 0x00000000,
+    0xC2580000, 0x003C0000, (u32)"dentou_02", 0x00020000,
+    0x42800000, 0x00000000, 0xC23C0000, 0x0A320000,
+    (u32)"dentou_03", 0x00020000, 0xC2800000, 0x00000000,
+    0xC23C0000, 0x14280000, (u32)"dentou_04", 0x00020000,
+    0xC3100000, 0x00000000, 0xC2580000, 0x1E1E0000,
+    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"haikei_C_a", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"A2", 0x00020001,
+    0x00000000, 0x00000000, 0xC2940000, 0x003C0000,
+    (u32)"haikei_C_b", 0x00020003, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"B", 0x00020002,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"A2", 0x00020001, 0x00000000, 0x00000000,
+    0xC2940000, 0x003C0000, (u32)"haikei_C_c", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"A2", 0x00020001,
+    0x00000000, 0x00000000, 0xC2940000, 0x003C0000,
+    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"B", 0x00020002,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"A1", 0x00020000, 0x00000000, 0x00000000,
+    0xC1F00000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"A1", 0x00020000,
+    0x00000000, 0x00000000, 0xC2500000, 0x003C0000,
+    (u32)"c_ten", 0x00020003, 0x00000000, 0x00000000,
+    0x41800000, 0x003C0000, (u32)"c_kabe", 0x00020003,
+    0x00000000, 0x00000000, 0x41800000, 0x003C0000,
+    (u32)"c_o", 0x00020003, 0x00000000, 0x00000000,
+    0x40E00000, 0x003C0000, (u32)"space", 0x00020003,
+    0x00000000, 0x00000000, 0x40E00000, 0x003C0000,
+    (u32)"star_01", 0x00020003, 0x00000000, 0x00000000,
+    0x421C0000, 0x003C0000, (u32)"star_02", 0x00020003,
+    0x00000000, 0x00000000, 0x41C80000, 0x003C0000,
+    (u32)"star_03", 0x00020003, 0x00000000, 0x00000000,
+    0x41F80000, 0x003C0000,
+};
+
+// TODO: type
+u32 aji_btlstage_data[763] = {
+    (u32)"bti_01", (u32)"stg_07_5", 0x00000005, (u32)&aji_btlobject_data,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"bti_01", (u32)"stg_07_1", 0x00000003,
+    (u32)((u8*)&aji_btlobject_data + 0x78), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"bti_01", (u32)"stg_07_1",
+    0x00000003, (u32)((u8*)&aji_btlobject_data + 0xc0), 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, (u32)weaponGetPowerDefault, 0x00000001, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"bti_01",
+    (u32)"stg_07_1", 0x00000003, (u32)((u8*)&aji_btlobject_data + 0x108), 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x02100060, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, (u32)weaponGetPowerDefault, 0x00000001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x02100060, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)"bti_01", (u32)"stg_07_2", 0x00000003, (u32)((u8*)&aji_btlobject_data + 0x198),
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"bti_01", (u32)"stg_07_3", 0x00000003,
+    (u32)((u8*)&aji_btlobject_data + 0x150), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"bti_01", (u32)"stg_07_6",
+    0x00000007, (u32)((u8*)&aji_btlobject_data + 0x1e0), 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)&bgset_aji_space_event, 0x00000000,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_mbmkII[12] = {
+    (u32)unit_boss_magnum_battender_mkII, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_default_param_list,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_mbmkII[8] = {
+    0x00000001, (u32)&btlparty_aji_aji_mbmkII, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_zako[24] = {
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_zako[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_zako, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_01_off_1[24] = {
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_01_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_02_off_1[36] = {
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_aji_aji_01_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_03_off_1[48] = {
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_03_off_1[8] = {
+    0x00000004, (u32)&btlparty_aji_aji_01_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_04_off_1[24] = {
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_04_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_01_04_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_05_off_1[24] = {
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_05_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_01_05_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_06_off_1[48] = {
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_06_off_1[8] = {
+    0x00000004, (u32)&btlparty_aji_aji_01_06_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_07_off_1[36] = {
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x43160000,
+    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_07_off_1[8] = {
+    0x00000003, (u32)&btlparty_aji_aji_01_07_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_01_08_off_1[48] = {
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_01_08_off_1[8] = {
+    0x00000004, (u32)&btlparty_aji_aji_01_08_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_04_01_off_1[24] = {
+    (u32)unit_barriern_custom, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_custom,
+    (u32)unit_barriern_custom, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_custom,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_04_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_04_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_06_01_off_1[24] = {
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_06_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_06_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_08_01_off_1[36] = {
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_barriern_2_data_3A830, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x43160000,
+    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_08_01_off_1[8] = {
+    0x00000003, (u32)&btlparty_aji_aji_08_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_09_01_off_1[60] = {
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x41200000,
+    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_2_data_2E898, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x432A0000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_09_01_off_1[8] = {
+    0x00000005, (u32)&btlparty_aji_aji_09_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_10_01_off_1[12] = {
+    (u32)unit_barriern_custom, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_custom,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_10_01_off_1[8] = {
+    0x00000001, (u32)&btlparty_aji_aji_10_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_13_01_off_1[48] = {
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+    (u32)unit_gundan_zako_magician_2_data_34AD8, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_magician,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_13_01_off_1[8] = {
+    0x00000004, (u32)&btlparty_aji_aji_13_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_13_02_off_1[24] = {
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+    (u32)unit_barriern_z_2_data_303C8, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern_z,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_13_02_off_1[8] = {
+    0x00000002, (u32)&btlparty_aji_aji_13_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_aji_aji_15_01_off_1[12] = {
+    (u32)unit_gundan_zako_elite, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako_elite,
+};
+
+// TODO: type
+u32 btlgrp_aji_aji_15_01_off_1[8] = {
+    0x00000001, (u32)&btlparty_aji_aji_15_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_test1_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_test2_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)((u8*)&aji_btlstage_data + 0x6d0), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_test3_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)((u8*)&aji_btlstage_data + 0x884), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_test4_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)&aji_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_test5_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)((u8*)&aji_btlstage_data + 0xa38), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_mbmkii_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_mbmkII, (u32)((u8*)&aji_btlstage_data + 0x884), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_00_00_off[6] = {
+    0x00000032, (u32)&btlgrp_aji_aji_zako, (u32)((u8*)&aji_btlstage_data + 0xa38), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_01_off_1, (u32)((u8*)&aji_btlstage_data + 0xa38), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_02_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_02_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_03_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_03_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_04_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_04_off_1, (u32)((u8*)&aji_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_05_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_05_off_1, (u32)((u8*)&aji_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_06_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_06_off_1, (u32)((u8*)&aji_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_07_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_07_off_1, (u32)((u8*)&aji_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_01_08_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_01_08_off_1, (u32)((u8*)&aji_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_04_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_04_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_06_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_06_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_08_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_08_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_09_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_09_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_10_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_10_01_off_1, (u32)&aji_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_13_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_13_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x6d0), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_13_02_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_13_02_off_1, (u32)((u8*)&aji_btlstage_data + 0x6d0), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_aji_btlno_aji_15_01_off[6] = {
+    0x00000014, (u32)&btlgrp_aji_aji_15_01_off_1, (u32)((u8*)&aji_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlsetup_aji_tbl[408] = {
+    (u32)"マップstg_07_1", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_test1_off, 0x00000000, 0x00000000,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_07_2", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_test2_off, 0x00000000,
+    0x00000000, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_07_3", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_test3_off,
+    0x00000000, 0x00000000, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_07_5",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_aji_btlno_aji_test4_off, 0x00000000, 0x00000000, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"マップstg_07_6", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_test5_off, 0x00000000, 0x00000000,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"マグナムバッテンダー幕痛", (u32)"aji_14", 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_mbmkii_off, 0x20000010,
+    0x00000006, 0x00000A0A, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x01010101,
+    0x01010101, (u32)"BGM_BOSS_STG3_3RDLEADER1", (u32)"軍団ザコエリート", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_00_00_off,
+    0x20000010, 0x00000000, 0x03030A0A, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"aji01軍団ザコエリート",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_aji_btlno_aji_01_01_off, 0x00000000, 0x00000000, 0x03030A0A,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"aji01軍団ザコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_02_off, 0x00000000, 0x00000000,
+    0x03030A0A, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"aji01軍団ザコエリート", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_03_off, 0x00000000,
+    0x00000000, 0x03030A0A, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji01軍団ザコ魔法使い", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_04_off,
+    0x00000000, 0x00000000, 0x03030A0A, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji01バリアーンＺ",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_aji_btlno_aji_01_05_off, 0x00000000, 0x00000000, 0x03030A0A,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"aji01軍団ザコエリート", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_06_off, 0x00000000, 0x00000000,
+    0x03030A0A, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"aji01軍団ザコ", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_07_off, 0x00000000,
+    0x00000000, 0x03030A0A, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji01軍団ザコ", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_01_08_off,
+    0x00000000, 0x00000000, 0x03030A0A, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji04バリアーンカスタム",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_aji_btlno_aji_04_01_off, 0x00000010, 0x00000000, 0x03030A0A,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"aji06軍団ザコ魔法使い", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_06_01_off, 0x00000000, 0x00000000,
+    0x03030A0A, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"aji08軍団ザコ魔法使い", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_08_01_off, 0x00000000,
+    0x00000000, 0x03030A0A, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji09軍団ザコ", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_09_01_off,
+    0x00000000, 0x00000000, 0x03030A0A, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji10バリアーンカスタム",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_aji_btlno_aji_10_01_off, 0x00000000, 0x00000000, 0x03030A0A,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"aji13軍団ザコ魔法使い", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_aji_btlno_aji_13_01_off, 0x00000000, 0x00000000,
+    0x03030A0A, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"aji13バリアーンＺ", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_13_02_off, 0x00000000,
+    0x00000000, 0x03030A0A, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"aji15軍団ザコエリート", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_aji_btlno_aji_15_01_off,
+    0x00000000, 0x00000000, 0x03030A0A, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btl_aji_setup_no_tbl[48] = {
+    (u32)"BTLNO_AJI_TEST1", 0x00000000, (u32)"BTLNO_AJI_TEST2", 0x00000001,
+    (u32)"BTLNO_AJI_TEST3", 0x00000002, (u32)"BTLNO_AJI_TEST4", 0x00000003,
+    (u32)"BTLNO_AJI_TEST5", 0x00000004, (u32)"BTLNO_AJI_MBMKII", 0x00000005,
+    (u32)"BTLNO_AJI_00_00", 0x00000006, (u32)"BTLNO_AJI_01_01", 0x00000007,
+    (u32)"BTLNO_AJI_01_02", 0x00000008, (u32)"BTLNO_AJI_01_03", 0x00000009,
+    (u32)"BTLNO_AJI_01_04", 0x0000000A, (u32)"BTLNO_AJI_01_05", 0x0000000B,
+    (u32)"BTLNO_AJI_01_06", 0x0000000C, (u32)"BTLNO_AJI_01_07", 0x0000000D,
+    (u32)"BTLNO_AJI_01_08", 0x0000000E, (u32)"BTLNO_AJI_04_01", 0x0000000F,
+    (u32)"BTLNO_AJI_06_01", 0x00000010, (u32)"BTLNO_AJI_08_01", 0x00000011,
+    (u32)"BTLNO_AJI_09_01", 0x00000012, (u32)"BTLNO_AJI_10_01", 0x00000013,
+    (u32)"BTLNO_AJI_13_01", 0x00000014, (u32)"BTLNO_AJI_13_02", 0x00000015,
+    (u32)"BTLNO_AJI_15_01", 0x00000016, 0x00000000, 0x00000000,
+};
+
+static USER_FUNC(_space_rotate) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    s32 index = args[1];
+    s32 start = evtGetValue(event, index);
+    s32 end = evtGetValue(event, args[2]);
+    BattleStageObject* obj = BattleSearchObjectPtr(name);
+    s32 next;
+
+    obj->mRotation.z = 360.0f * (f32)start / (f32)end;
+    next = start + 1;
+    if (next >= end) {
+        next = 0;
+    }
+    evtSetValue(event, index, next);
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(bgset_aji_space_event)
+    SET_VALUE(LW(0), 0)
+    SET_VALUE(LW(1), 0)
+    SET_VALUE(LW(2), 0)
+    SET_VALUE(LW(3), 0)
+    LABEL(0)
+    CALL(_space_rotate, STRING("star_01"), LW(1), 7500)
+    CALL(_space_rotate, STRING("star_02"), LW(2), 6750)
+    CALL(_space_rotate, STRING("star_03"), LW(3), 6000)
+    WAIT_FRAMES(1)
+    GOTO(0)
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off
