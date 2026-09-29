@@ -1766,6 +1766,10 @@ config.libs = [
             Object(Matching, "unit/unit_honenoko.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_15_data_15568"]),
             Object(Matching, "unit/unit_honenoko.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_17_data_57250"]),
             Object(Matching, "unit/unit_honenoko.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_28_data_27C08"]),
+            Object(Matching, "unit/unit_red_honenoko.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_red_honenoko_9_data_17268", "-DUNIT_REF_HONENOKO=unit_honenoko_9_data_14C90"]),
+            Object(Matching, "unit/unit_red_honenoko.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_red_honenoko_17_data_58C90", "-DUNIT_REF_HONENOKO=unit_honenoko_17_data_57250"]),
+            Object(Matching, "unit/unit_karon.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_karon_15_data_55368"]),
+            Object(Matching, "unit/unit_karon.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_karon_17_data_3F680"]),
         ],
     ),
 ]
