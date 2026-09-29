@@ -13,29 +13,34 @@ anything worth keeping into a chapter here.
 ## Current state (rewrite this section as things change)
 
 - New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first, then the
-  chapters after it. Later chapters supersede its recipe in three places: the review routine is one Codex round
-  plus one Claude round per PR ("Wave 4" chapter); the agents' rules live in `docs/AGENT_BRIEF.md`, attached
-  to every prompt ("The plan for the hard tail, finalized"); the tooling lives in this repo ("Everything TTYD
-  needs now lives in this repo").
+  chapters after it; the newest chapters (Sep 28-29: the REL chapters, waves 17 and 18, Claude #3's grind rounds)
+  supersede it where they differ. The agents' rules live in `docs/AGENT_BRIEF.md`, attached to every prompt.
 - Fork of [doldecomp/ttyd](https://github.com/doldecomp/ttyd) at `2df569d` (Jul 5, 2026), private at
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 28 after wave 16, PR #21): 4,902 of 9,770 functions matched, 25.64% of code (fuzzy 40.24%); linked code 11.19%, linked data 4.94%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
-- Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
-  runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
-- Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
-  or Codex twice; no GLM). Before round 1 the orchestrator checks every declaration the PR adds against headers
-  and definitions. See "Wave 7".
-- Targets: near-misses and missing functions in files that already have source are the biggest cheap pool
-  (wave 7's focus); plus a few new files and finishers. Area modules (RELs, ~2,760 functions, 24% of code) are
-  configured on branch `rel-setup` (not merged yet); the launcher still needs REL paths.
-- Who merges PRs, and whether an orchestrator may continue unattended overnight, are Isaac's calls; ask him.
-- **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** `ci.py`, the ratchet, `lint_patch.py`,
-  `label_partials.py`, `autolink.py` and `merge_agent.sh` were all written quickly by models, and
-  several have already had silent blind spots. Rare or subtle ones will surface only much later (linking whole
-  files, the RELs, the hard tail). When a result surprises you, suspect the tool first. See the chapter "Our
-  tools will have bugs".
+- Progress (main 8f20e58, Sep 29 02:50, after PRs #22-#31): 5,182 of 9,770 functions matched, 27.44% of code;
+  linked code 14.02%, **linked data 36.94%** (4.94% the evening before). All 32 checksums (dol + 31 RELs) pass.
+  Most of the data jump is REL units written by generators (tools/rel_gen.py, tools/dol_gen.py) and proven by
+  linking; ~1,000 of their tables are still raw `u32` arrays marked `// TODO: type`.
+- Sessions (Sep 29): "Ambitious work session" (Claude Opus 5.5) and "TTYD Claude #2" (Opus 5.5) orchestrate waves,
+  one wave each; "TTYD Claude #3" (Claude Sonnet 5.5) grinds link blockers and shared REL units itself, no agents.
+  Isaac merges or explicitly delegates merging; he authorized the Sep 28-29 overnight run.
+- Reviews: one fresh Claude review per PR (Codex out of usage), findings fixed before merge. A unit that links is
+  proven byte-for-byte by the checksum, so reviews look at what it can't see: names, types, headers, hacks,
+  readability (scripts must be EVT macros, never hex).
+- In flight: Claude #3's branch grind-7 (one more shared unit, and `-fp_contract on` in cflags_rel: a compiler
+  flag change, checksums pass; Isaac to look), to be rebased on main as one PR.
+- Next, in rough order: (1) complete the battle structs (BattleUnitKind, BattleVulnerableStatus, unit defence and
+  attribute tables, BattleWeapon's pointer fields) and rerun a wave-18-style typing pass over the ~1,000 raw tables;
+  (2) a REL wave over rooms with more functions, from generated skeletons (agents start from the brief with rule
+  18); (3) the 20 shared enemy units with functions, the 22 wave 17 units that didn't link, and the 6-unit gap in
+  tools/rel_cmp.py (compares equal, checksum fails); (4) REL header clean-up and the generator's stand-in
+  `extern s32` declarations (see the PR #30 review in the "Wave 17" chapter); (5) the dol's code, still the bulk.
+- **⚠️ Assume our tools have bugs we haven't found yet (Isaac, Sep 26).** Tonight alone: ttydasm printed wrong
+  strings, aborted on 13% of scripts and picked the wrong one of two same-named scripts; evt_cmd.h had wrong
+  macros; rel_cmp.py calls 6 units equal that don't link. When a result surprises you, suspect the tool first.
+  See the chapter "Our tools will have bugs".
 
 ## Why TTYD (2026-09-24, Isaac + Claude Opus 5.5)
 
