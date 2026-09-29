@@ -1398,12 +1398,25 @@ config.libs = [
         "mri",
         [
             Object(NonMatching, "mri_puni.c"),
+            Object(Matching, "mri_06.c"),
+            Object(Matching, "mri_07.c"),
+            Object(Matching, "mri_09.c"),
+            Object(Matching, "mri_10.c"),
+            Object(Matching, "mri_11.c"),
+            Object(Matching, "mri_12.c"),
+            Object(Matching, "mri_15.c"),
+            Object(Matching, "mri_20.c"),
+            Object(Matching, "mri_18.c"),
+            Object(Matching, "mri_19.c"),
         ],
     ),
     Rel(
         "pik",
         [
             Object(Matching, "unit/unit_purple_teresa.c"),
+            Object(Matching, "pik_03.c"),
+            Object(Matching, "pik_04.c"),
+            Object(Matching, "battle_database_pik.c"),
         ]
     ),
     Rel(
@@ -1411,7 +1424,214 @@ config.libs = [
         [
             Object(NonMatching, "tou2.c"),
         ]
-    )
+    ),
+    Rel(
+        "gor",
+        [
+            Object(Matching, "gor_12.c"),
+            Object(Matching, "gor_door.c"),
+            Object(Matching, "gor_11.c"),
+        ],
+    ),
+    Rel(
+        "aji",
+        [
+            Object(Matching, "aji_00.c"),
+        ],
+    ),
+    Rel(
+        "bom",
+        [
+            Object(Matching, "bom_00.c"),
+            Object(Matching, "bom_04.c"),
+            Object(Matching, "bom_03.c"),
+        ],
+    ),
+    Rel(
+        "dou",
+        [
+            Object(Matching, "dou_01.c"),
+            Object(Matching, "dou_02.c"),
+            Object(Matching, "dou_03.c"),
+            Object(Matching, "dou_06.c"),
+            Object(Matching, "dou_08.c"),
+            Object(Matching, "dou_09.c"),
+            Object(Matching, "dou_13.c"),
+            Object(Matching, "dou_12.c"),
+        ],
+    ),
+    Rel(
+        "eki",
+        [
+            Object(Matching, "eki_01.c"),
+            Object(Matching, "eki_04.c"),
+            Object(Matching, "eki_05.c"),
+        ],
+    ),
+    Rel(
+        "gon",
+        [
+            Object(Matching, "gon_00.c"),
+            Object(Matching, "gon_01.c"),
+            Object(Matching, "gon_02.c"),
+            Object(Matching, "gon_04.c"),
+            Object(Matching, "gon_05.c"),
+            Object(Matching, "gon_07.c"),
+            Object(Matching, "gon_08.c"),
+            Object(Matching, "gon_09.c"),
+            Object(Matching, "gon_10.c"),
+            Object(Matching, "gon_bt00.c"),
+            Object(Matching, "gon_13.c"),
+        ],
+    ),
+    Rel(
+        "gra",
+        [
+            Object(Matching, "gra_01.c"),
+            Object(Matching, "gra_03.c"),
+            Object(Matching, "gra_06.c"),
+        ],
+    ),
+    Rel(
+        "hei",
+        [
+            Object(Matching, "hei_02.c"),
+            Object(Matching, "hei_03.c"),
+            Object(Matching, "hei_04.c"),
+            Object(Matching, "hei_05.c"),
+            Object(Matching, "hei_06.c"),
+            Object(Matching, "hei_11.c"),
+            Object(Matching, "hei_13.c"),
+            Object(Matching, "hei_bt00.c"),
+        ],
+    ),
+    Rel(
+        "hom",
+        [
+            Object(Matching, "hom_11.c"),
+            Object(Matching, "hom_12.c"),
+        ],
+    ),
+    Rel(
+        "jin",
+        [
+            Object(Matching, "jin_01.c"),
+            Object(Matching, "jin_02.c"),
+            Object(Matching, "jin_03.c"),
+            Object(Matching, "jin_05.c"),
+            Object(Matching, "jin_06.c"),
+            Object(Matching, "jin_08.c"),
+            Object(Matching, "jin_09.c"),
+            Object(Matching, "jin_11.c"),
+        ],
+    ),
+    Rel(
+        "jon",
+        [
+            Object(NonMatching, "jon_06.c"),
+            Object(Matching, "jon_00.c"),
+            Object(Matching, "jon_01.c"),
+            Object(Matching, "jon_02.c"),
+            Object(Matching, "jon_03.c"),
+            Object(Matching, "jon_04.c"),
+            Object(Matching, "jon_05.c"),
+        ],
+    ),
+    Rel(
+        "kpa",
+        [
+            Object(Matching, "kpa_02.c"),
+            Object(Matching, "kpa_00.c"),
+            Object(Matching, "kpa_06.c"),
+            Object(Matching, "kpa_03.c"),
+            Object(Matching, "kpa_04.c"),
+        ],
+    ),
+    Rel(
+        "las",
+        [
+            Object(Matching, "las_01.c"),
+            Object(Matching, "las_07.c"),
+            Object(Matching, "las_11.c"),
+            Object(Matching, "las_12.c"),
+            Object(Matching, "las_15.c"),
+            Object(Matching, "las_16.c"),
+            Object(Matching, "las_17.c"),
+            Object(Matching, "las_19.c"),
+            Object(Matching, "las_22.c"),
+            Object(Matching, "las_23.c"),
+            Object(Matching, "las_24.c"),
+            Object(Matching, "las_25.c"),
+        ],
+    ),
+    Rel(
+        "moo",
+        [
+            Object(Matching, "moo_01.c"),
+            Object(Matching, "moo_02.c"),
+            Object(Matching, "moo_05.c"),
+            Object(Matching, "moo_06.c"),
+            Object(Matching, "moo_07.c"),
+        ],
+    ),
+    Rel(
+        "muj",
+        [
+            Object(Matching, "muj_03.c"),
+            Object(Matching, "muj_11.c"),
+        ],
+    ),
+    Rel(
+        "nok",
+        [
+            Object(Matching, "battle_database_nok.c"),
+        ],
+    ),
+    Rel(
+        "qiz",
+        [
+            Object(Matching, "qiz_00.c"),
+        ],
+    ),
+    Rel(
+        "rsh",
+        [
+            Object(Matching, "rsh_01.c"),
+            Object(Matching, "rsh_08.c"),
+            Object(Matching, "rsh_07.c"),
+        ],
+    ),
+    Rel(
+        "tik",
+        [
+            Object(Matching, "tik_01.c"),
+            Object(Matching, "tik_03.c"),
+            Object(Matching, "tik_04.c"),
+            Object(Matching, "tik_06.c"),
+            Object(Matching, "tik_07.c"),
+            Object(Matching, "tik_08.c"),
+            Object(Matching, "tik_09.c"),
+            Object(Matching, "tik_10.c"),
+            Object(Matching, "tik_13.c"),
+            Object(Matching, "tik_14.c"),
+            Object(Matching, "tik_21.c"),
+            Object(Matching, "tik_15.c"),
+            Object(Matching, "tik_16.c"),
+            Object(Matching, "tik_17.c"),
+            Object(Matching, "tik_18.c"),
+            Object(Matching, "tik_20.c"),
+        ],
+    ),
+    Rel(
+        "tou",
+        [
+            Object(Matching, "tou_09.c"),
+            Object(Matching, "tou_11.c"),
+            Object(Matching, "tou_12.c"),
+            Object(Matching, "tou_13.c"),
+            Object(Matching, "tou_20.c"),
+        ],
+    ),
 ]
 
 # Optional extra categories for progress tracking
