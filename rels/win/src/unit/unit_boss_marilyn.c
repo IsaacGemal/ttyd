@@ -108,9 +108,6 @@ static BattleDataEntry data_table[2] = {
     { 0x00, NULL },
 };
 
-// defence/defence_attr stay raw: the header's BattleUnitDefense/BattleUnitDefenseAttr are 5 bytes, but the
-// original symbols are 8 bytes each (build/G8MJ01/win/asm/unit/unit_boss_marilyn.s), so no existing type fits.
-// The casts point BattleUnitKindPart at those raw bytes without changing them.
 static BattleUnitKindPart parts = {
     1, "btl_un_marilyn1", "c_maririn",
     { 0.0f, 0.0f, 0.0f },

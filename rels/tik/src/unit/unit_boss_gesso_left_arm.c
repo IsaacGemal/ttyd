@@ -80,6 +80,7 @@ static BattleDispPose pose_table[4] = {
     { 0x45, "GSO_S1_1" },
 };
 
+// No terminator: BtlUnit_GetData reads on into data_table below.
 BattleDataEntry unk_tik_00029f1c[13] = {
     { 0x18, unk_evt_tik_0002a0c8 },
     { 0x19, unk_evt_tik_0002a0c8 },
@@ -108,7 +109,7 @@ static BattleUnitKindPart parts = {
     "c_gesso3",
     { 0.0f, 0.0f, 0.0f },          // positionOffset
     { 270.0f, 20.0f, 0.0f },       // hitBaseOffset
-    // opaque in battle_unit.h: Vec2 {270.0f, 20.0f}, u32 {0}, u16 {0x0014, 0x001E}, u16 {0x00FF, 0x0000}
+    // opaque in battle_unit.h: Vec {270.0f, 20.0f, 0.0f}, u16 {0x0014, 0x001E}, u16 {0x00FF, 0x0000}
     { 0x43, 0x87, 0x00, 0x00, 0x41, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
     &defence,

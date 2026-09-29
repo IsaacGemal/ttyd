@@ -80,8 +80,6 @@ static BattleWeapon weapon_patapata_attack[1] = {
     },
 };
 
-// BattleUnitDefense* tables: 8 bytes each, but the header struct is u8 defenses[5] (5 bytes); typing them
-// would shift every following symbol. Values are 5 defense entries + 3 bytes of tail padding.
 static u32 defence_patapata[2] = {
     0x02020202, 0x02000000,
 };

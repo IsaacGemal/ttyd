@@ -55,7 +55,7 @@ static BattleUnitDefense defence = { 0 };
 
 static BattleUnitDefenseAttr defence_attr = { 0 };
 
-// Pointer stored at BattleUnitKind +0xB0. 24 bytes, no matching struct in include/.
+// BattleVulnerableStatus (BattleUnitKind +0xB0); the header struct is 0x16 bytes, the object 0x18.
 static u32 regist[6] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000,

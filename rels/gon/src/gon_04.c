@@ -774,7 +774,7 @@ EVT_BEGIN(evt_hashi)
     RETURN
 EVT_END()
 
-// Item ids accepted by the lock, terminated by -1 (see evt_win_item_maketable)
+// Item ids accepted by the lock, terminated by -1 (passed to evt_win_item_select)
 static s32 key_tbl[2] = {
     13, -1,
 };

@@ -85,8 +85,6 @@ static BattleDataEntry data_table[1] = {
     {0, NULL},
 };
 
-// Both the local `defence`/`defence_attr` tables and the opaque 20-byte `field_0x24` block are kept byte-exact;
-// `defence` is 8 bytes in the original, not the 5-byte BattleUnitDefense in the header.
 static BattleUnitKindPart parts[4] = {
     {
         1, "btl_un_boomerang_bros", "c_burosu_b",

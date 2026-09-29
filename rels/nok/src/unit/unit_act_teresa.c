@@ -71,7 +71,7 @@ static BattleDispPose pose_table[] = {
     { 0x45, "S_1" },
 };
 
-// One (tag, data) entry; BtlUnit_GetData/BtlUnit_CheckData walk it.
+// Only the terminator; BtlUnit_GetData/BtlUnit_CheckData walk it.
 static BattleDataEntry data_table[] = {
     { 0x00000000, NULL },
 };
