@@ -11,7 +11,6 @@ extern BattleWork* _battleWorkPointer;
 extern GlobalWork* gp;
 
 // The original saves r30/r31 with stmw/lmw (size-oriented prologue).
-#pragma optimize_for_size on
 void BattlePadInit(void) {
 	int i;
 
@@ -19,7 +18,6 @@ void BattlePadInit(void) {
 		BtlPad_WorkInit(&_battleWorkPointer->padWork[i]);
 	}
 }
-#pragma optimize_for_size off
 
 // NONMATCHING (76.50%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattlePadManager(void) {
