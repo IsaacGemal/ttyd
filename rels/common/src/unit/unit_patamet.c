@@ -98,7 +98,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0x00000004,                 // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     1,                          // numParts
     parts_pata,                 // mParts
     init_event_pata,            // initEvtScript
@@ -250,8 +250,8 @@ static BattleUnitKindPart parts_pata[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence_pata,          // defense
-        &defence_attr_pata,     // defenseAttr
+        &defence_pata,         // defense
+        &defence_attr_pata,    // defenseAttr
         0x00600809,            // attributes
         0,                     // counterAttributes
         pose_table_pata,       // poseTable
@@ -713,8 +713,8 @@ static BattleUnitKindPart parts[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable

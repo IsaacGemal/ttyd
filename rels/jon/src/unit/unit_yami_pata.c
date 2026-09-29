@@ -203,20 +203,20 @@ static BattleVulnerableStatus regist_patapata = {
 };
 
 static BattleUnitKindPart parts_patapata = {
-    1,                     // partNum
-    "btl_un_yami_pata",    // partName
-    "c_yaminoko",          // modelName
-    { 0.0f, 0.0f, 0.0f },  // positionOffset
-    { 0.0f, 30.0f, 0.0f }, // hitBaseOffset
-    { 0.0f, 40.0f, 0.0f }, // hitCursorBaseOffset
-    20,                    // field_0x30
-    30,                    // field_0x32
-    255,                   // baseAlpha
+    1,                      // partNum
+    "btl_un_yami_pata",     // partName
+    "c_yaminoko",           // modelName
+    { 0.0f, 0.0f, 0.0f },   // positionOffset
+    { 0.0f, 30.0f, 0.0f },  // hitBaseOffset
+    { 0.0f, 40.0f, 0.0f },  // hitCursorBaseOffset
+    20,                     // field_0x30
+    30,                     // field_0x32
+    255,                    // baseAlpha
     &defence_patapata,      // defense
     &defence_patapata_attr, // defenseAttr
-    0x00600809,            // attributes
-    0,                     // counterAttributes
-    pose_table_patapata,   // poseTable
+    0x00600809,             // attributes
+    0,                      // counterAttributes
+    pose_table_patapata,    // poseTable
 };
 
 static BattleDispPose pose_table_patapata[18] = {
@@ -556,8 +556,8 @@ static BattleUnitKindPart parts[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00001009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable

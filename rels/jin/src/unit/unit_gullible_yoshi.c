@@ -203,20 +203,20 @@ static BattleDataEntry data_table_yoshi[2] = {
 };
 
 static BattleUnitKindPart parts_yoshi = {
-    1,                                             // partNum
-    "btl_un_yoshi",                                // partName
-    "c_babyyoshi",                                 // modelName
-    { 0.0f, 0.0f, 0.0f },                          // positionOffset
-    { 15.0f, 25.0f, 0.0f },                        // hitBaseOffset
-    { 0.0f, 30.0f, 0.0f },                         // hitCursorBaseOffset
-    20,                                            // field_0x30
-    30,                                            // field_0x32
-    255,                                           // baseAlpha
-    &defence_yoshi,                                // defense
-    &defence_attr_yoshi,                           // defenseAttr
-    0x00000009,                                    // attributes
-    0,                                             // counterAttributes
-    pose_table_yoshi_stay, // poseTable
+    1,                      // partNum
+    "btl_un_yoshi",         // partName
+    "c_babyyoshi",          // modelName
+    { 0.0f, 0.0f, 0.0f },   // positionOffset
+    { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+    20,                     // field_0x30
+    30,                     // field_0x32
+    255,                    // baseAlpha
+    &defence_yoshi,         // defense
+    &defence_attr_yoshi,    // defenseAttr
+    0x00000009,             // attributes
+    0,                      // counterAttributes
+    pose_table_yoshi_stay,  // poseTable
 };
 
 static EVT_BEGIN(init_event_yoshi)

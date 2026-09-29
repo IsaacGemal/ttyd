@@ -21,7 +21,7 @@ extern s32 btldefaultevt_Dummy[];
 extern s32 chorogun_appear[];
 extern s32 chorogun_entry[];
 extern s32 chorogun_escape_all[];
-extern s32 unit_chorobon_gundan[];
+extern BattleUnitKind unit_chorobon_gundan;
 extern s32 unk_evt_hei_00019e30[];
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[15];
@@ -93,7 +93,7 @@ BattleUnitKind unit_gold_chorobon = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0x00040000,                  // attributeFlags
-    &regist,                      // vulnStatus
+    &regist,                     // vulnStatus
     1,                           // numParts
     parts,                       // mParts
     init_event,                  // initEvtScript
@@ -179,8 +179,8 @@ static BattleUnitKindPart parts[1] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x00000009,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -316,11 +316,8 @@ EVT_BEGIN(gold_chorobon_rabbit_move)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_chorogun[12] = {
-    (u32)unit_chorobon_gundan, 0x01000000, 0x04000004, 0x42960000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_chorogun[1] = {
+    { &unit_chorobon_gundan, 1, 0x04000004, { 75.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 EVT_BEGIN(call_chorogun_event)

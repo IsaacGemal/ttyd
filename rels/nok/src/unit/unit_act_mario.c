@@ -23,7 +23,7 @@ extern BattleUnitKind unit_act_clauda;
 extern BattleUnitKind unit_act_kinopiko;
 extern BattleUnitKind unit_act_kinopio;
 extern BattleUnitKind unit_act_teresa;
-extern s32 unitdata_Party_Christine[];
+extern BattleUnitKind unitdata_Party_Christine;
 static USER_FUNC(_clauda_breath_effect_fire);
 static USER_FUNC(_clauda_breath_effect_ready);
 static BattleVulnerableStatus regist;
@@ -105,7 +105,7 @@ BattleUnitKind unit_act_mario = {
     "SFX_BTL_DAMAGE_ICE1",        // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",   // electricDamageSfxName
     0,                            // attributeFlags
-    &regist,                       // vulnStatus
+    &regist,                      // vulnStatus
     1,                            // numParts
     parts,                        // mParts
     init_event,                   // initEvtScript
@@ -166,8 +166,8 @@ static BattleUnitKindPart parts[1] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x00000009,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -203,32 +203,15 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_unit_data[96] = {
-    (u32)&unit_act_clauda, 0x00000000, 0x04000004, 0xC30C0000,
-    0x00000000, 0x40A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_teresa, 0x01000000, 0x04000004, 0x42340000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_teresa, 0x01000000, 0x04000004, 0x42AA0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_atmic_teresa, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_kinopio, 0x02000000, 0x04000004, 0xC2960000,
-    0x00000000, 0xC2200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_kinopio, 0x02000000, 0x04000004, 0xC1700000,
-    0x00000000, 0xC2200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&unit_act_kinopiko, 0x02000000, 0x04000004, 0xC2340000,
-    0x00000000, 0xC2200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unitdata_Party_Christine, 0x02000000, 0x04000004, 0x00000000,
-    0xC2480000, 0x42DC0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_unit_data[8] = {
+    { &unit_act_clauda, 0, 0x04000004, { -140.0f, 0.0f, 5.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_teresa, 1, 0x04000004, { 45.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_teresa, 1, 0x04000004, { 85.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_atmic_teresa, 1, 0x04000004, { 150.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_kinopio, 2, 0x04000004, { -75.0f, 0.0f, -40.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_kinopio, 2, 0x04000004, { -15.0f, 0.0f, -40.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_act_kinopiko, 2, 0x04000004, { -45.0f, 0.0f, -40.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unitdata_Party_Christine, 2, 0x04000004, { 0.0f, -50.0f, 110.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(battle_entry_event)
@@ -245,22 +228,22 @@ static EVT_BEGIN(battle_entry_event)
     CALL(btlevtcmd_SetUnitWork, -2, 0, LW(0))
     CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entry_unit_data), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 1, LW(3))
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[12]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[1]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 2, LW(3))
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[24]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[2]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 3, LW(3))
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[36]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[3]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 4, LW(3))
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[48]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[4]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 5, LW(3))
     CALL(btlevtcmd_ChangeFaceDirection, LW(3), 1)
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[60]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[5]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 6, LW(3))
     CALL(btlevtcmd_ChangeFaceDirection, LW(3), 1)
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[72]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[6]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 7, LW(3))
     CALL(btlevtcmd_ChangeFaceDirection, LW(3), 1)
-    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[84]), 0)
+    CALL(btlevtcmd_SpawnUnit, LW(3), PTR(&entry_unit_data[7]), 0)
     CALL(btlevtcmd_SetUnitWork, -2, 8, LW(3))
     CALL(btlevtcmd_ChangeFaceDirection, LW(3), 1)
     SPAWN_EVENT(_battle_event)

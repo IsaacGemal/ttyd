@@ -82,7 +82,7 @@ BattleUnitKind unit_gullible_clauda = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0x10000000,                 // attributeFlags
-    &regist_clauda,              // vulnStatus
+    &regist_clauda,             // vulnStatus
     1,                          // numParts
     &parts_clauda,              // mParts
     init_event_clauda,          // initEvtScript
@@ -202,19 +202,19 @@ static BattleDataEntry data_table_clauda[2] = {
 };
 
 static BattleUnitKindPart parts_clauda = {
-    1,                                              // partNum
-    "btl_un_clauda",                                // partName
-    "c_windy",                                      // modelName
-    { 0.0f, 0.0f, 0.0f },                           // positionOffset
-    { 15.0f, 25.0f, 0.0f },                         // hitBaseOffset
-    { 0.0f, 30.0f, 0.0f },                          // hitCursorBaseOffset
-    20,                                             // field_0x30
-    30,                                             // field_0x32
-    255,                                            // baseAlpha
-    &defence_clauda,                                 // defense
-    &defence_attr_clauda,                            // defenseAttr
-    0x00000009,                                     // attributes
-    0,                                              // counterAttributes
+    1,                      // partNum
+    "btl_un_clauda",        // partName
+    "c_windy",              // modelName
+    { 0.0f, 0.0f, 0.0f },   // positionOffset
+    { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+    20,                     // field_0x30
+    30,                     // field_0x32
+    255,                    // baseAlpha
+    &defence_clauda,        // defense
+    &defence_attr_clauda,   // defenseAttr
+    0x00000009,             // attributes
+    0,                      // counterAttributes
     pose_table_clauda_stay, // poseTable
 };
 

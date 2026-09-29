@@ -31,7 +31,7 @@ static s32 attack_head_2_event[613];
 static s32 attack_head_1_event[587];
 static s32 attack_spike_event[824];
 static s32 call_friend_event[304];
-static u32 entry_sambo[12];
+static BattleUnitSetup entry_sambo[1];
 static s32 wait_event[36];
 static s32 sambo_rabbit_move[74];
 static s32 _body_param_set[49];
@@ -96,7 +96,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0,                          // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     5,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript
@@ -796,8 +796,8 @@ static BattleUnitKindPart parts[5] = {
         20,                    // field_0x30
         90,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0x00000005,            // counterAttributes
         pose_table_body4,      // poseTable
@@ -812,8 +812,8 @@ static BattleUnitKindPart parts[5] = {
         20,                    // field_0x30
         70,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x03010000,            // attributes
         0x00000005,            // counterAttributes
         pose_table_body3,      // poseTable
@@ -828,8 +828,8 @@ static BattleUnitKindPart parts[5] = {
         20,                    // field_0x30
         50,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x03010000,            // attributes
         0x00000005,            // counterAttributes
         pose_table_body2,      // poseTable
@@ -844,8 +844,8 @@ static BattleUnitKindPart parts[5] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x03010000,            // attributes
         0x00000005,            // counterAttributes
         pose_table_body1,      // poseTable
@@ -860,8 +860,8 @@ static BattleUnitKindPart parts[5] = {
         20,                   // field_0x30
         30,                   // field_0x32
         255,                  // baseAlpha
-        &defence,              // defense
-        &defence_attr,         // defenseAttr
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
         0x13010000,           // attributes
         0,                    // counterAttributes
         pose_table_parts,     // poseTable
@@ -1911,11 +1911,8 @@ static EVT_BEGIN(call_friend_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 entry_sambo[12] = {
-    (u32)&UNIT_DATA_SYM, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_sambo[1] = {
+    { &UNIT_DATA_SYM, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(wait_event)

@@ -93,7 +93,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0,                           // attributeFlags
-    &regist,                      // vulnStatus
+    &regist,                     // vulnStatus
     4,                           // numParts
     parts,                       // mParts
     init_event,                  // initEvtScript
@@ -140,8 +140,8 @@ static BattleUnitKindPart parts[4] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable
@@ -156,8 +156,8 @@ static BattleUnitKindPart parts[4] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -172,8 +172,8 @@ static BattleUnitKindPart parts[4] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -188,8 +188,8 @@ static BattleUnitKindPart parts[4] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -274,11 +274,8 @@ static BattleWeapon weapon_honenoko_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 entry_honenoko[12] = {
-    (u32)&UNIT_DATA_SYM, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_honenoko[1] = {
+    { &UNIT_DATA_SYM, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static BattleDispPose pose_table[19] = {

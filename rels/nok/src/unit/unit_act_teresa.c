@@ -71,7 +71,7 @@ BattleUnitKind unit_act_teresa = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0,                          // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     1,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript

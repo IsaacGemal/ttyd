@@ -90,7 +90,7 @@ BattleUnitKind unit_fire_bros = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0,                          // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     7,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript
@@ -162,8 +162,8 @@ static BattleUnitKindPart parts[7] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable
@@ -178,8 +178,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -194,8 +194,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -210,8 +210,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -226,8 +226,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -242,8 +242,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable
@@ -258,8 +258,8 @@ static BattleUnitKindPart parts[7] = {
         20,                     // field_0x30
         30,                     // field_0x32
         255,                    // baseAlpha
-        &defence,                // defense
-        &defence_attr,           // defenseAttr
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
         0x13010000,             // attributes
         0,                      // counterAttributes
         pose_table,             // poseTable

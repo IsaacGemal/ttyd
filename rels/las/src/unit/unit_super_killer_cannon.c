@@ -88,7 +88,7 @@ BattleUnitKind unit_super_killer_cannon = {
     "SFX_BTL_DAMAGE_ICE1",           // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",      // electricDamageSfxName
     0,                               // attributeFlags
-    &regist,                          // vulnStatus
+    &regist,                         // vulnStatus
     3,                               // numParts
     parts,                           // mParts
     init_event,                      // initEvtScript
@@ -135,8 +135,8 @@ static BattleUnitKindPart parts[3] = {
         35,                           // field_0x30
         30,                           // field_0x32
         255,                          // baseAlpha
-        &defence,                      // defense
-        &defence_attr,                 // defenseAttr
+        &defence,                     // defense
+        &defence_attr,                // defenseAttr
         0x00000009,                   // attributes
         0,                            // counterAttributes
         pose_table,                   // poseTable
@@ -151,8 +151,8 @@ static BattleUnitKindPart parts[3] = {
         0,                            // field_0x30
         0,                            // field_0x32
         255,                          // baseAlpha
-        &defence,                      // defense
-        &defence_attr,                 // defenseAttr
+        &defence,                     // defense
+        &defence_attr,                // defenseAttr
         0x00010000,                   // attributes
         0,                            // counterAttributes
         pose_table,                   // poseTable
@@ -167,19 +167,16 @@ static BattleUnitKindPart parts[3] = {
         0,                            // field_0x30
         0,                            // field_0x32
         255,                          // baseAlpha
-        &defence,                      // defense
-        &defence_attr,                 // defenseAttr
+        &defence,                     // defense
+        &defence_attr,                // defenseAttr
         0x00010000,                   // attributes
         0,                            // counterAttributes
         pose_table,                   // poseTable
     },
 };
 
-// TODO: type
-static u32 entry_killer[12] = {
-    (u32)&unit_super_killer, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_killer[1] = {
+    { &unit_super_killer, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static BattleDispPose pose_table[16] = {

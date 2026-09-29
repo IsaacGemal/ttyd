@@ -93,7 +93,7 @@ BattleUnitKind unit_togenoko = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0,                           // attributeFlags
-    &regist,                      // vulnStatus
+    &regist,                     // vulnStatus
     1,                           // numParts
     parts,                       // mParts
     init_event,                  // initEvtScript
@@ -293,8 +293,8 @@ static BattleUnitKindPart parts[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00001009,            // attributes
         0x00000001,            // counterAttributes
         pose_table,            // poseTable
@@ -630,11 +630,8 @@ static EVT_BEGIN(wakeup_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 entry_togenoko[12] = {
-    (u32)&unit_togenoko, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_togenoko[1] = {
+    { &unit_togenoko, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 USER_FUNC(togenoko_getnum) {

@@ -32,8 +32,8 @@ static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts[1];
 static s32 init_event[121];
-u32 entry_gesso_left_arm_entry_data[12];
-u32 entry_gesso_right_arm_entry_data[12];
+BattleUnitSetup entry_gesso_left_arm_entry_data[1];
+BattleUnitSetup entry_gesso_right_arm_entry_data[1];
 static s32 damage_event[34];
 static s32 phase_event[488];
 static s32 attack_event[48];
@@ -101,7 +101,7 @@ BattleUnitKind unit_boss_gesso = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0x00200000,                 // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     1,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript
@@ -253,8 +253,8 @@ static BattleUnitKindPart parts[1] = {
         103,                  // field_0x30
         -175,                 // field_0x32
         255,                  // baseAlpha
-        &defence,              // defense
-        &defence_attr,         // defenseAttr
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
         0x00000009,           // attributes
         0,                    // counterAttributes
         pose_table,           // poseTable
@@ -433,18 +433,12 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 entry_gesso_left_arm_entry_data[12] = {
-    (u32)&unit_boss_gesso_left_arm, 0x01000000, 0x04000004, 0x00000000,
-    0xC47A0000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_gesso_left_arm_entry_data[1] = {
+    { &unit_boss_gesso_left_arm, 1, 0x04000004, { 0.0f, -1000.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 entry_gesso_right_arm_entry_data[12] = {
-    (u32)&unit_boss_gesso_right_arm, 0x01000000, 0x04000004, 0x00000000,
-    0xC47A0000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_gesso_right_arm_entry_data[1] = {
+    { &unit_boss_gesso_right_arm, 1, 0x04000004, { 0.0f, -1000.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(damage_event)

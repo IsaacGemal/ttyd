@@ -92,7 +92,7 @@ BattleUnitKind unit_boss_marilyn = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0,                          // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     1,                          // numParts
     &parts,                     // mParts
     init_event,                 // initEvtScript
@@ -164,8 +164,8 @@ static BattleUnitKindPart parts = {
     38,                     // field_0x30
     56,                     // field_0x32
     255,                    // baseAlpha
-    &defence,                // defense
-    &defence_attr,           // defenseAttr
+    &defence,               // defense
+    &defence_attr,          // defenseAttr
     0x00000009,             // attributes
     0,                      // counterAttributes
     pose_table,             // poseTable

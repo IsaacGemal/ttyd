@@ -86,7 +86,7 @@ BattleUnitKind unit_gullible_nokotarou = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0x10000000,                  // attributeFlags
-    &regist_nokotarou,            // vulnStatus
+    &regist_nokotarou,           // vulnStatus
     1,                           // numParts
     parts_nokotarou,             // mParts
     init_event_nokotarou,        // initEvtScript
@@ -297,8 +297,8 @@ static BattleUnitKindPart parts_nokotarou[1] = {
         20,                                                // field_0x30
         30,                                                // field_0x32
         255,                                               // baseAlpha
-        &defence_nokotarou,                                 // defense
-        &defence_attr_nokotarou,                            // defenseAttr
+        &defence_nokotarou,                                // defense
+        &defence_attr_nokotarou,                           // defenseAttr
         0x00001009,                                        // attributes
         0,                                                 // counterAttributes
         (struct BattleDispPose*)pose_table_nokotarou_stay, // poseTable

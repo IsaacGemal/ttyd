@@ -23,8 +23,8 @@ static BattleUnitKindPart parts[1] = {
         20,                   // field_0x30
         30,                   // field_0x32
         255,                  // baseAlpha
-        &defence,              // defense
-        &defence_attr,         // defenseAttr
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
         0x03010009,           // attributes
         0,                    // counterAttributes
         NULL,                 // poseTable

@@ -17,7 +17,7 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 UNIT_REF_TOGEZO[];
+extern BattleUnitKind UNIT_REF_TOGEZO;
 static USER_FUNC(togezo_copy_status);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[3];
@@ -92,7 +92,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0x00000004,                 // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     2,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript
@@ -185,8 +185,8 @@ static BattleUnitKindPart parts[2] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00600009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable
@@ -201,8 +201,8 @@ static BattleUnitKindPart parts[2] = {
         20,                   // field_0x30
         30,                   // field_0x32
         255,                  // baseAlpha
-        &defence,              // defense
-        &defence_attr,         // defenseAttr
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
         0x13010000,           // attributes
         0,                    // counterAttributes
         pose_table,           // poseTable
@@ -287,11 +287,8 @@ static BattleWeapon weapon_jyugem_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 entry_togezo[12] = {
-    (u32)UNIT_REF_TOGEZO, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_togezo[1] = {
+    { &UNIT_REF_TOGEZO, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(init_event)

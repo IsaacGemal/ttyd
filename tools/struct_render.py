@@ -65,6 +65,11 @@ LAYOUTS = {
         (0x0, 'str', 'name'), (0x4, 'u16', 'mSpawnSpecialUnitType'), (0x6, 'u16', 'mLayer'),
         (0x8, 'vec', 'mPosition'), (0x14, 'u8', 'mNumFramesToStartFalling'), (0x15, 'u8', 'mNumFramesToFall'),
         (0x16, 'arr', 'pad_16', ('u8', 2))]),
+    'BattleSetupData': (0x44, [
+        (0x0, 'str', 'name'), (0x4, 'str', 'field_0x4'), (0x8, 's32', 'field_0x8'), (0xC, 's32', 'flag'),
+        (0x10, 'ptr', 'onLoadouts', 'NpcBattleSetupEntry'), (0x14, 'ptr', 'offLoadouts', 'NpcBattleSetupEntry'),
+        (0x18, 's32', 'field_0x18'), (0x1C, 's32', 'field_0x1C'), (0x20, 'arr', 'field_0x20', ('s8', 32)),
+        (0x40, 'str', 'music')]),
     'BeroEntry': (0x3C, [
         (0x0, 'str', 'hitName'), (0x4, 'u16', 'kinddirArg1'), (0x6, 'u16', 'kinddirArg2'), (0x8, 'hex', 'kinddirArg3'),
         (0xC, 's32', 'field_0xC'), (0x10, 's32', 'unknown1'), (0x14, 's32', 'unknown2'), (0x18, 's32', 'field_0x18'),
@@ -258,13 +263,15 @@ def header_declarations():
 
 
 class Renderer:
-    def __init__(self, cfile, objs, types):
+    def __init__(self, cfile, objs, types, alias=None):
         self.cfile, self.objs, self.types = cfile, objs, types  # types: {symbol: type being written}
+        self.alias = alias or {}  # original symbol -> the name the C file defines it under (UNIT_DATA_SYM)
         self.decls = dict(header_declarations())
         self.decls.update(declarations(open(cfile).read()))
         self.enums = {}
 
     def ref(self, sym, add, pointee):
+        sym = self.alias.get(sym, sym)
         o = self.objs.get(sym)
         if o and o['string'] is not None and o['sec'] in ('.rodata', '.data') and add == 0 and len(o['data']) - 1 <= len(o['string'].encode()) + 3:
             return cstr(o['string'])
@@ -357,11 +364,12 @@ class Renderer:
 # single objects are written as scalars, lists as arrays (even of one), whatever the old declaration was
 ONE_LINE = {'BeroEntry'}  # rows written on one line, trailing zero fields left off (the style map files use)
 RAW_ONLY = {'BeroEntry'}  # rendered only where the table is still a raw array
-LISTS = {'BeroEntry', 'ItemDropData', 'BattleUnitKindPart', 'BattleDispPose', 'BattleDataEntry', 'BattleUnitSetup', 'NpcBattleSetupEntry',
+LISTS = {'BattleSetupData', 'BeroEntry', 'ItemDropData', 'BattleUnitKindPart', 'BattleDispPose', 'BattleDataEntry', 'BattleUnitSetup', 'NpcBattleSetupEntry',
          'BattleStageObjectData'}
 RESHAPED = {}  # (file, symbol): (now_array, is_static), for fix_refs
+RETYPED = {}  # (file, symbol): (old element size, new stride, is_static), for fix_index
 GLOBAL_TYPED = {}  # filled by rewrite(): global symbols typed in this run, for update_externs
-HEADERS = {'BeroEntry': 'evt/evt_bero.h', 'ItemDropData': 'battle/battle_unit.h', 'BattleDispPose': 'battle/battle_disp.h', 'BattleWeapon': 'battle/battle_database_common.h',
+HEADERS = {'BattleSetupData': 'driver/npcdrv.h', 'BeroEntry': 'evt/evt_bero.h', 'ItemDropData': 'battle/battle_unit.h', 'BattleDispPose': 'battle/battle_disp.h', 'BattleWeapon': 'battle/battle_database_common.h',
            'BattleGroupSetup': 'driver/npcdrv.h', 'NpcBattleSetupEntry': 'driver/npcdrv.h',
            'BattleStageData': 'battle/battle_stage.h', 'BattleStageObjectData': 'battle/battle_stage_object.h'}
 
@@ -404,6 +412,19 @@ def update_externs(typed, roots=('include', 'src', 'rels')):
                     open(p, 'w').write(new)
                     changed.append(p)
     return changed
+
+
+def fix_index(src, sym, old_size, stride):
+    """`&sym[N]`, `sym[N]` and `sym + N` counted in the old raw element size, rewritten for the new type:
+    `&sym[k]` where N lands on an element, otherwise a byte offset."""
+    def conv(n, want_addr):
+        off = n * old_size
+        if off % stride == 0:
+            return f'&{sym}[{off // stride}]' if want_addr else f'{sym}[{off // stride}]'
+        return f'(void*)((u8*){sym} + 0x{off:X})'
+    src = re.sub(r'&' + re.escape(sym) + r'\[(\d+)\]', lambda m: conv(int(m.group(1)), True), src)
+    src = re.sub(r'(?<![&\w])' + re.escape(sym) + r' \+ (\d+)\b', lambda m: conv(int(m.group(1)), True), src)
+    return src
 
 
 def fix_refs(src, sym, now_array):
@@ -462,13 +483,13 @@ def find_definition(src, sym):
     return m.start(), end, m.group(2), bool(m.group(3))
 
 
-def rewrite(cfile, mapping, objs=None):
+def rewrite(cfile, mapping, objs=None, alias=None):
     """Replace each SYMBOL's definition (and forward declarations) in cfile with its TYPE rendering."""
     objs = objs or load_objects(asm_path(cfile))
     src = open(cfile).read()
     mapping = dict(mapping)
     while True:  # drop what can't render first, so nothing that points at it assumes its new type
-        r = Renderer(cfile, objs, mapping)
+        r = Renderer(cfile, objs, mapping, alias)
         bad = []
         for sym, typ in mapping.items():
             dm = find_definition(src, sym)
@@ -481,7 +502,7 @@ def rewrite(cfile, mapping, objs=None):
             break
         for sym in bad:
             del mapping[sym]
-    r = Renderer(cfile, objs, mapping)
+    r = Renderer(cfile, objs, mapping, alias)
     done, failed = [], []
     for sym, typ in mapping.items():
         dm = find_definition(src, sym)
@@ -495,6 +516,10 @@ def rewrite(cfile, mapping, objs=None):
             text = r.render(sym, typ, dm[2], want_array)
             if want_array != dm[3]:
                 RESHAPED[(cfile, sym)] = (want_array, dm[2].startswith('static'))
+            old = re.match(r'(?:// TODO: type\n)?(?:static |const )*(\w+) ', src[dm[0]:])
+            old_size = {'u32': 4, 's32': 4, 'u16': 2, 's16': 2, 'u8': 1, 's8': 1}.get(old.group(1) if old else '')
+            if old_size:
+                RETYPED[(cfile, sym)] = (old_size, stride, dm[2].startswith('static'))
         except (ValueError, AssertionError) as e:
             failed.append((sym, str(e)))
             continue
@@ -534,7 +559,23 @@ ROOTS = [(re.compile(r'^unit_\w+$|^UNIT_DATA_SYM$'), 'BattleUnitKind'), (re.comp
          (re.compile(r'(^|_)regist(_[a-z]+)*$'), 'BattleVulnerableStatus'),
          (re.compile(r'(^|_)pose_table(_\w+)?$'), 'BattleDispPose'), (re.compile(r'(^|_)data_table(_\w+)?$'), 'BattleDataEntry'),
          (re.compile(r'(^|_)parts(_[a-z]+)*$'), 'BattleUnitKindPart'), (re.compile(r'^battle_item_\w+$'), 'ItemDropData'),
-         (re.compile(r'(^|_)bero(_\w+)?$'), 'BeroEntry')]
+         (re.compile(r'(^|_)bero(_\w+)?$'), 'BeroEntry'), (re.compile(r'^btlsetup_\w+_tbl$'), 'BattleSetupData'),
+         (re.compile(r'^entry_\w+$'), 'BattleUnitSetup')]
+
+
+def macro_aliases(cfile):
+    """A shared file (rels/common) names its own and other units through macros configure.py sets per module
+    (-DUNIT_DATA_SYM=unit_x_9_data_..., -DUNIT_REF_X=...). {original symbol: macro} for the module whose
+    disassembly asm_path picked."""
+    m = re.match(r'rels/common/src/(.+\.c)$', cfile)
+    ap = asm_path(cfile) if m else None
+    if not ap:
+        return {}
+    mod = ap.split('/')[2]
+    for line in open('configure.py'):
+        if f'"{m.group(1)}"' in line and f'modules=["{mod}"]' in line:
+            return {v: k for k, v in re.findall(r'-D(\w+)=(\w+)', line)}
+    return {}
 
 
 def auto_types(cfile, objs):
@@ -543,9 +584,9 @@ def auto_types(cfile, objs):
     src = open(cfile).read()
     defined = {m.group(1) for m in re.finditer(r'^(?:static |const )*[A-Za-z_]\w* (\w+)(?:\[\w*\])? = \{', src, re.M)}
     raw = {m.group(1) for m in re.finditer(r'^(?:static |const )*[su]32 (\w+)(?:\[\w*\])? = \{', src, re.M)}
-    alias = {}
-    if 'UNIT_DATA_SYM' in defined:
-        units = [n for n, o in objs.items() if re.match(r'unit_', n) and o['size'] == 0xC4]
+    alias = macro_aliases(cfile)
+    if 'UNIT_DATA_SYM' in defined and not any(v == 'UNIT_DATA_SYM' and k in objs for k, v in alias.items()):
+        units = [n for n, o in objs.items() if n.startswith('unit_') and o['size'] == 0xC4]
         if len(units) == 1:
             alias[units[0]] = 'UNIT_DATA_SYM'
     def fits(sym, typ):
@@ -607,8 +648,9 @@ def run_all(skip=()):
         if not mapping:
             continue
         for a, c in alias.items():
-            objs[c] = objs[a]
-        done, failed = rewrite(f, mapping, objs)
+            if a in objs:
+                objs[c] = objs[a]
+        done, failed = rewrite(f, mapping, objs, alias)
         counts.update(mapping[d] for d in done)
         for sym, why in failed:
             print('FAILED', f, sym, why)
@@ -621,6 +663,12 @@ def run_all(skip=()):
                 RESHAPED[('<shared>', name)] = (False, False)
     everything = glob.glob('rels/**/*.[ch]', recursive=True) + glob.glob('src/**/*.[ch]', recursive=True) + \
         glob.glob('include/**/*.h', recursive=True)
+    for (f, sym), (old_size, stride, static) in RETYPED.items():
+        for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
+            text = open(p, errors='replace').read()
+            new = fix_index(text, sym, old_size, stride)
+            if new != text:
+                open(p, 'w').write(new)
     for (f, sym), (arr, static) in RESHAPED.items():
         for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
             text = open(p, errors='replace').read()
@@ -710,14 +758,19 @@ if __name__ == '__main__':
         sys.exit(0 if check_layouts() else 1)
     if sys.argv[1] == '--all':
         print(dict(run_all(skip=set(sys.argv[2:]))))
+        RESHAPED.clear()
+        RETYPED.clear()
+        _HEADER_DECLS = None
+        run_all(skip=set(sys.argv[2:]))  # again, so casts and `&` are rendered from the updated declarations
         sys.exit(0)
     cfile = sys.argv[1]
     if sys.argv[2:] == ['--auto']:
         objs = load_objects(asm_path(cfile))
         mapping, alias = auto_types(cfile, objs)
         for a, c in alias.items():
-            objs[c] = objs[a]
-        done, failed = rewrite(cfile, mapping, objs)
+            if a in objs:
+                objs[c] = objs[a]
+        done, failed = rewrite(cfile, mapping, objs, alias)
     else:
         mapping = dict(a.split('=') for a in sys.argv[2:])
         done, failed = rewrite(cfile, mapping)

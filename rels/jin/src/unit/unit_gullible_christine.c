@@ -86,7 +86,7 @@ BattleUnitKind unit_gullible_christine = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0x10000000,                  // attributeFlags
-    &regist_christine,            // vulnStatus
+    &regist_christine,           // vulnStatus
     1,                           // numParts
     parts_christine,             // mParts
     init_event_christine,        // initEvtScript
@@ -216,8 +216,8 @@ static BattleUnitKindPart parts_christine[1] = {
         20,                                                // field_0x30
         30,                                                // field_0x32
         255,                                               // baseAlpha
-        &defence_christine,                                 // defense
-        &defence_attr_christine,                            // defenseAttr
+        &defence_christine,                                // defense
+        &defence_attr_christine,                           // defenseAttr
         0x00000009,                                        // attributes
         0,                                                 // counterAttributes
         (struct BattleDispPose*)pose_table_christine_stay, // poseTable

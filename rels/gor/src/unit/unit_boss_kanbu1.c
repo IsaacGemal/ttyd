@@ -93,7 +93,7 @@ BattleUnitKind unit_boss_kanbu1 = {
     "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
     0,                          // attributeFlags
-    &regist,                     // vulnStatus
+    &regist,                    // vulnStatus
     1,                          // numParts
     parts,                      // mParts
     init_event,                 // initEvtScript
@@ -146,8 +146,8 @@ static BattleUnitKindPart parts[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable
@@ -232,11 +232,8 @@ BattleWeapon weapon_kanbu1_attack = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 entry_npc_christine[12] = {
-    (u32)&unit_npc_christine, 0x02000000, 0x04000001, 0x447A0000,
-    0x00000000, 0x447A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup entry_npc_christine[1] = {
+    { &unit_npc_christine, 2, 0x04000001, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(init_event)

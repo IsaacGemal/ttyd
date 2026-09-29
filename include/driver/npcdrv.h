@@ -37,11 +37,19 @@ typedef struct BattleGroupSetup {
     s32 field_0x1C;             // 0x1C
 } BattleGroupSetup;
 
-// One entry of an area's battle setup list (name at 0x0, item-drop and loadout tables at 0x10/0x14, music at
-// 0x40); npcSetBattleInfo walks them 0x44 apart and hands one to npcSetupBattleInfo.
+// One entry of an area's battle setup list (btlsetup_*_tbl); npcSetBattleInfo finds one by name and hands it to
+// npcSetupBattleInfo.
 typedef struct BattleSetupData {
-    const char* name;       // 0x0
-    u8 field_4[0x44 - 0x4]; // 0x4
+    const char* name;                         // 0x0
+    const char* field_0x4;                    // 0x4, a map name where set (aji_14 for the Magnum Battender fight)
+    s32 field_0x8;                            // 0x8, copied to NpcBattleInfo+0x8
+    s32 flag;                                 // 0xC, a GSWF: while it is set, onLoadouts is used
+    struct NpcBattleSetupEntry* onLoadouts;   // 0x10, btlgrpsel_*_on
+    struct NpcBattleSetupEntry* offLoadouts;  // 0x14, btlgrpsel_*_off
+    s32 field_0x18;                           // 0x18, copied to NpcBattleInfo.field_4
+    s32 field_0x1C;                           // 0x1C, copied to NpcBattleInfo+0xAC; outside 1-2, field_0x20 is rolled
+    s8 field_0x20[16][2];                     // 0x20, min/max pairs, each rolled into NpcBattleInfo+0xB0
+    const char* music;                        // 0x40, copied to NpcBattleInfo+0xC0
 } BattleSetupData;
 
 typedef struct NpcBattleInfo {

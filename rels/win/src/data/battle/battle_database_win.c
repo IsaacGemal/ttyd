@@ -341,47 +341,115 @@ NpcBattleSetupEntry btlgrpsel_win_btlno_win_03_01_off[2] = {
     { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlsetup_win_tbl[153] = {
-    (u32)"マップstg_02_0", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_win_btlno_win_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"win_00ドクガッスン１", 0x00000000, 0x00000000,
-    0xF84065FA, (u32)&btlgrpsel_win_btlno_win_00_01_on, (u32)&btlgrpsel_win_btlno_win_00_01_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050505, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"win_00モノクロシンエモン", 0x00000000,
-    0x00000000, 0xF84065FA, (u32)&btlgrpsel_win_btlno_win_00_02_on, (u32)&btlgrpsel_win_btlno_win_00_02_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050505,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"win_00ドクガッスン３",
-    0x00000000, 0x00000000, 0xF84065FA, (u32)&btlgrpsel_win_btlno_win_00_03_on,
-    (u32)&btlgrpsel_win_btlno_win_00_03_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"win00ビビアン３姉妹", (u32)"win_00", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_win_btlno_win_00_04_off, 0x20000010, 0x00000000,
-    0x05050000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050505, 0x01010101, 0x01010101,
-    (u32)"BGM_BOSS_STG3_3WOMEN1", (u32)"win_02シンエモン１", 0x00000000, 0x00000000,
-    0xF84065F8, (u32)&btlgrpsel_win_btlno_win_02_01_on, (u32)&btlgrpsel_win_btlno_win_02_01_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050505, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"win_02パックンフラワー", 0x00000000,
-    0x00000000, 0xF84065F8, (u32)&btlgrpsel_win_btlno_win_02_02_on, (u32)&btlgrpsel_win_btlno_win_02_02_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050A0A,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"win_03パックン１",
-    0x00000000, 0x00000000, 0xF84065F9, (u32)&btlgrpsel_win_btlno_win_03_01_on,
-    (u32)&btlgrpsel_win_btlno_win_03_01_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050A0A, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+BattleSetupData btlsetup_win_tbl[9] = {
+    {
+        "マップstg_02_0",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_win_btlno_win_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "win_00ドクガッスン１",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129997318,                                                                                         // flag
+        btlgrpsel_win_btlno_win_00_01_on,                                                                   // onLoadouts
+        btlgrpsel_win_btlno_win_00_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "win_00モノクロシンエモン",                                                                                  // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129997318,                                                                                         // flag
+        btlgrpsel_win_btlno_win_00_02_on,                                                                   // onLoadouts
+        btlgrpsel_win_btlno_win_00_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "win_00ドクガッスン３",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129997318,                                                                                         // flag
+        btlgrpsel_win_btlno_win_00_03_on,                                                                   // onLoadouts
+        btlgrpsel_win_btlno_win_00_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "win00ビビアン３姉妹",                                                                                     // name
+        "win_00",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_win_btlno_win_00_04_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG3_3WOMEN1",                                                                            // music
+    },
+    {
+        "win_02シンエモン１",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129997320,                                                                                         // flag
+        btlgrpsel_win_btlno_win_02_01_on,                                                                   // onLoadouts
+        btlgrpsel_win_btlno_win_02_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "win_02パックンフラワー",                                                                                     // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -129997320,                                                                                           // flag
+        btlgrpsel_win_btlno_win_02_02_on,                                                                     // onLoadouts
+        btlgrpsel_win_btlno_win_02_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 10, 10, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "win_03パックン１",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -129997319,                                                                                           // flag
+        btlgrpsel_win_btlno_win_03_01_on,                                                                     // onLoadouts
+        btlgrpsel_win_btlno_win_03_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 10, 10, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

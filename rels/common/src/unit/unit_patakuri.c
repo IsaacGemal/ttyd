@@ -95,7 +95,7 @@ BattleUnitKind UNIT_DATA_SYM = {
     "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
     "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
     0x00040004,                  // attributeFlags
-    &regist_patakuri,             // vulnStatus
+    &regist_patakuri,            // vulnStatus
     1,                           // numParts
     parts_patakuri,              // mParts
     init_event_patakuri,         // initEvtScript
@@ -211,20 +211,20 @@ static BattleWeapon weapon_patakuri_attack = {
 
 static BattleUnitKindPart parts_patakuri[1] = {
     {
-        1,                     // partNum
-        "btl_un_patakuri",     // partName
-        "c_kuribo",            // modelName
-        { 0.0f, 0.0f, 0.0f },  // positionOffset
-        { 0.0f, 22.0f, 0.0f }, // hitBaseOffset
-        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
-        20,                    // field_0x30
-        30,                    // field_0x32
-        255,                   // baseAlpha
+        1,                      // partNum
+        "btl_un_patakuri",      // partName
+        "c_kuribo",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 0.0f, 22.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
         &defence_patakuri,      // defense
         &defence_patakuri_attr, // defenseAttr
-        0x00600809,            // attributes
-        0,                     // counterAttributes
-        pose_table_patakuri,   // poseTable
+        0x00600809,             // attributes
+        0,                      // counterAttributes
+        pose_table_patakuri,    // poseTable
     },
 };
 
@@ -492,8 +492,8 @@ static BattleUnitKindPart parts[1] = {
         20,                    // field_0x30
         30,                    // field_0x32
         255,                   // baseAlpha
-        &defence,               // defense
-        &defence_attr,          // defenseAttr
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
         0x00000009,            // attributes
         0,                     // counterAttributes
         pose_table,            // poseTable
