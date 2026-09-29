@@ -15,15 +15,18 @@
 #include "mario/mario_pouch.h"
 #include "party/party_motion.h"
 #include "system.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(_steal_item);
-static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[1];
 static s32 init_event[57];
 static s32 damage_event[10];
 static s32 attack_event[59];
@@ -51,94 +54,226 @@ extend_data(229,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_badge_borodo[49] = {
-    0x0000009E, (u32)"btl_un_badge_borodo", 0x000C0000, 0x01011400,
-    0x01460232, 0x270F001A, 0x00220000, 0x00220000,
-    0x00000000, 0x41880000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0x00000000, 0x41100000, 0x41D00000,
-    0x00000000, 0x00000000, 0x41880000, 0x00000000,
-    0x41D00000, 0x42080000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_BORODO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_badge_borodo = {
+    UNIT_BADGE_BANDIT,          // mUnitType
+    "btl_un_badge_borodo",      // name
+    12,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    20,                         // mLevel
+    0,                          // mBonusExp
+    1,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    2,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    26,                         // width
+    34,                         // height
+    { 0, 34 },                  // statusIconOffset
+    { 0.0f, 17.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 13.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 9.0f, 26.0f, 0.0f },      // kissHitOffset
+    { 0.0f, 17.0f, 0.0f },      // cutBaseOffset
+    26.0f,                      // cutWidth
+    34.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_BORODO_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 weapon_borodo_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000007, 0x00000002, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_borodo_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000007,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    80,  // sleepRate
+    70,  // stopRate
+    50,  // dizzyRate
+    100, // poisonRate
+    80,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    50,  // freezeRate
+    100, // hugeRate
+    85,  // tinyRate
+    100, // attackUpRate
+    85,  // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    80,  // allergicRate
+    75,  // frightRate
+    60,  // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    60,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[20] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "S_1" },
+    { 0x27, "D_1" },
+    { 0x32, "A_1" },
+    { 0x33, "A_2" },
+    { 0x2A, "R_1" },
+    { 0x29, "R_1" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x50463264, 0x50646432, 0x64556455, 0x645A504B,
-    0x3C644664, 0x643C0000,
+static BattleDispPose pose_table_item_have[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_2" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "S_2" },
+    { 0x27, "D_1" },
+    { 0x32, "A_1" },
+    { 0x33, "A_2" },
+    { 0x2A, "R_2" },
+    { 0x29, "R_2" },
+    { 0x28, "W_2" },
+    { 0x41, "S_2" },
+    { 0x45, "S_2" },
 };
 
-// TODO: type
-static u32 pose_table[40] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"S_1", 0x0000001D, (u32)"Q_1",
-    0x0000001E, (u32)"Q_1", 0x0000001F, (u32)"S_1",
-    0x00000027, (u32)"D_1", 0x00000032, (u32)"A_1",
-    0x00000033, (u32)"A_2", 0x0000002A, (u32)"R_1",
-    0x00000029, (u32)"R_1", 0x00000028, (u32)"W_1",
-    0x00000038, (u32)"X_1", 0x00000039, (u32)"X_1",
-    0x00000041, (u32)"T_1", 0x00000045, (u32)"S_1",
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table_item_have[36] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"S_2", 0x0000001D, (u32)"Q_1",
-    0x0000001E, (u32)"Q_1", 0x0000001F, (u32)"S_2",
-    0x00000027, (u32)"D_1", 0x00000032, (u32)"A_1",
-    0x00000033, (u32)"A_2", 0x0000002A, (u32)"R_2",
-    0x00000029, (u32)"R_2", 0x00000028, (u32)"W_2",
-    0x00000041, (u32)"S_2", 0x00000045, (u32)"S_2",
-};
-
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_badge_borodo", (u32)"c_borodo_t", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_badge_borodo", // partName
+        "c_borodo_t",          // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -199,8 +334,8 @@ EVT_END()
 
 static EVT_BEGIN(_borodo_normal_attack)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_borodo_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_borodo_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_borodo_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_borodo_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -213,10 +348,10 @@ static EVT_BEGIN(_borodo_normal_attack)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_borodo_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_borodo_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_borodo_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_borodo_attack))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 60)
@@ -236,7 +371,7 @@ static EVT_BEGIN(_borodo_normal_attack)
         WAIT_FRAMES(3)
     END_LOOP
     CALL(evt_btl_camera_set_mode, 0, 3)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
     IF_INT_EQUAL(LW(5), 5)
         CALL(btlevtcmd_GetStatusMg, LW(3), LW(6))
         MULTIPLY_FLOAT(LW(6), 40)
@@ -250,7 +385,7 @@ static EVT_BEGIN(_borodo_normal_attack)
         CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(5.0f))
         CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
         CALL(evt_snd_sfxoff, LW(14))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
         RETURN
     END_IF
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BORODO_ATT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -293,8 +428,8 @@ static EVT_BEGIN(_borodo_normal_attack)
     WAIT_FRAMES(20)
     GOTO(98)
     LABEL(91)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_borodo_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_borodo_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
     CALL(btlevtcmd_SetFallAccel, -2, FLOAT(0.25f))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 40)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("O_1"))
@@ -431,8 +566,8 @@ static USER_FUNC(_steal_item) {
 
 static EVT_BEGIN(_borodo_steal_attack)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_borodo_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_borodo_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_borodo_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_borodo_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -445,10 +580,10 @@ static EVT_BEGIN(_borodo_steal_attack)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_borodo_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_borodo_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_borodo_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_borodo_attack))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 60)
@@ -468,7 +603,7 @@ static EVT_BEGIN(_borodo_steal_attack)
         WAIT_FRAMES(3)
     END_LOOP
     CALL(evt_btl_camera_set_mode, 0, 3)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
     IF_INT_EQUAL(LW(5), 5)
         CALL(btlevtcmd_GetStatusMg, LW(3), LW(6))
         MULTIPLY_FLOAT(LW(6), 40)
@@ -482,7 +617,7 @@ static EVT_BEGIN(_borodo_steal_attack)
         CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(5.0f))
         CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
         CALL(evt_snd_sfxoff, LW(14))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
         RETURN
     END_IF
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BORODO_ATT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -525,8 +660,8 @@ static EVT_BEGIN(_borodo_steal_attack)
     WAIT_FRAMES(20)
     GOTO(98)
     LABEL(91)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_borodo_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_borodo_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_borodo_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_borodo_attack), 256, LW(5))
     SET_VALUE(LW(8), 0)
     CALL(btlevtcmd_GetResultACDefence, LW(7))
     IF_INT_LESS_OR_EQUAL(LW(7), 3)

@@ -16,6 +16,9 @@
 #include "party/party_motion.h"
 #include "system.h"
 #include <string.h>
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -30,11 +33,11 @@ static USER_FUNC(hand_ctrl);
 static USER_FUNC(hand_end);
 static USER_FUNC(hand_init);
 static USER_FUNC(mahorn_get_live_num);
-static u32 regist[6];
-static u32 parts[95];
-static u32 pose_table[34];
-static u32 data_table[10];
-static u32 data_table_bunsin[6];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[5];
+static BattleDispPose pose_table[17];
+static BattleDataEntry data_table[5];
+static BattleDataEntry data_table_bunsin[3];
 static s32 init_event[88];
 static s32 hand_ctrl_event[23];
 static s32 damage_event[66];
@@ -78,223 +81,865 @@ extend_data(177,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_mahorn_custom[49] = {
-    0x000000A9, (u32)"btl_un_mahorn_custom", 0x000C0000, 0x01012402,
-    0x03460232, 0x270F0030, 0x002C0000, 0x002C0000,
-    0x00000000, 0x41B00000, 0x00000000, 0x0000FFF7,
-    0x00000000, 0x00000000, 0x00000000, 0x41C00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C00000,
-    0x00000000, 0x00000000, 0x41800000, 0x41E4CCCD,
-    0x41200000, 0x00000000, 0x41B00000, 0x00000000,
-    0x42400000, 0x42300000, 0x00000002, 0x00140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_MAHO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000004,
-    (u32)&regist, 0x05000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_mahorn_custom = {
+    UNIT_ELITE_WIZZERD,         // mUnitType
+    "btl_un_mahorn_custom",     // name
+    12,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    36,                         // mLevel
+    2,                          // mBonusExp
+    3,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    2,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    48,                         // width
+    44,                         // height
+    { 0, 44 },                  // statusIconOffset
+    { 0.0f, 22.0f, 0.0f },      // centerOffset
+    { 0, -9 },                  // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 24.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 24.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 16.0f, 28.6f, 10.0f },    // kissHitOffset
+    { 0.0f, 22.0f, 0.0f },      // cutBaseOffset
+    48.0f,                      // cutWidth
+    44.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    0,                          // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_MAHO_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00000004,                 // attributeFlags
+    &regist,                    // vulnStatus
+    5,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-u32 unit_mahorn_custom_bunsin[49] = {
-    0x000000AA, (u32)"btl_un_mahorn_custom_bunsin", 0x000C0000, 0x01010102,
-    0x003C0032, 0x270F0030, 0x002C0000, 0x002C0000,
-    0x00000000, 0x41B00000, 0x00000000, 0x0000FFF7,
-    0x00000000, 0x00000000, 0x00000000, 0x41C00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C00000,
-    0x00000000, 0x00000000, 0x41800000, 0x41E4CCCD,
-    0x41200000, 0x00000000, 0x41B00000, 0x00000000,
-    0x42400000, 0x42300000, 0x00000002, 0x00140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_MAHO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00400004,
-    (u32)&regist, 0x05000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table_bunsin,
+BattleUnitKind unit_mahorn_custom_bunsin = {
+    UNIT_ELITE_WIZZERD_CLONE,      // mUnitType
+    "btl_un_mahorn_custom_bunsin", // name
+    12,                            // maxHp
+    0,                             // maxFp
+    1,                             // mDangerHP
+    1,                             // mPerilHP
+    1,                             // mLevel
+    2,                             // mBonusExp
+    0,                             // bonusCoinRolls
+    60,                            // bonusCoinRate
+    0,                             // baseCoin
+    50,                            // field_0x13
+    9999,                          // field_0x14
+    48,                            // width
+    44,                            // height
+    { 0, 44 },                     // statusIconOffset
+    { 0.0f, 22.0f, 0.0f },         // centerOffset
+    { 0, -9 },                     // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },          // talkTogeBaseOffset
+    { 24.0f, 0.0f, -10.0f },       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },          // burnFlameOffset
+    0.0f,                          // field_0x54
+    0.0f,                          // field_0x58
+    { 24.0f, 0.0f, 0.0f },         // bintaHitOffset
+    { 16.0f, 28.6f, 10.0f },       // kissHitOffset
+    { 0.0f, 22.0f, 0.0f },         // cutBaseOffset
+    48.0f,                         // cutWidth
+    44.0f,                         // cutHeight
+    0,                             // turnOrder
+    0,                             // turnOrderVariance
+    0,                             // swallowRate
+    2,                             // swallowAttribute
+    0,                             // field_0x8C
+    20,                            // itemStealParam
+    { 0.0f, 0.0f, 0.0f },          // starPointDispOffset
+    "SFX_ENM_MAHO_DAMAGED1",       // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",        // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",         // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",    // electricDamageSfxName
+    0x00400004,                    // attributeFlags
+    &regist,                       // vulnStatus
+    5,                             // numParts
+    parts,                         // mParts
+    init_event,                    // initEvtScript
+    data_table_bunsin,             // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x05050505, 0x05000000,
+static BattleUnitDefense defence = { { 5, 5, 5, 5, 5 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0,   // sleepRate
+    30,  // stopRate
+    80,  // dizzyRate
+    100, // poisonRate
+    20,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    40,  // freezeRate
+    100, // hugeRate
+    75,  // tinyRate
+    100, // attackUpRate
+    75,  // attackDownRate
+    100, // defenseUpRate
+    80,  // defenseDownRate
+    20,  // allergicRate
+    10,  // frightRate
+    75,  // galeForceRate
+    100, // fastRate
+    20,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    20,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleVulnerableStatus regist_bunsin = {
+    0,   // sleepRate
+    0,   // stopRate
+    0,   // dizzyRate
+    100, // poisonRate
+    0,   // confuseRate
+    0,   // electricRate
+    0,   // burnRate
+    0,   // freezeRate
+    0,   // hugeRate
+    0,   // tinyRate
+    0,   // attackUpRate
+    0,   // attackDownRate
+    0,   // defenseUpRate
+    0,   // defenseDownRate
+    0,   // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    0,   // fastRate
+    0,   // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x001E5064, 0x14646428, 0x644B644B, 0x6450140A,
-    0x4B641464, 0x64140000,
+static BattleUnitKindPart parts[5] = {
+    {
+        1,                      // partNum
+        "btl_un_mahorn_custom", // partName
+        "c_maho_w",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 0.0f, 30.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        2,                      // partNum
+        "btl_un_mahorn_custom", // partName
+        "c_maho_w",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 5.0f, 30.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x02010009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        3,                      // partNum
+        "btl_un_mahorn_custom", // partName
+        "c_maho_w",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 5.0f, 30.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x02010009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        4,                      // partNum
+        "btl_un_mahorn_custom", // partName
+        "c_maho_w",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 5.0f, 30.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x02010009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        5,                      // partNum
+        "btl_un_mahorn_custom", // partName
+        "c_maho_w",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 5.0f, 30.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x02010009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
-// TODO: type
-static u32 regist_bunsin[6] = {
-    0x00000064, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_attack_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x000000C7,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[95] = {
-    0x00000001, (u32)"btl_un_mahorn_custom", (u32)"c_maho_w", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_mahorn_custom", (u32)"c_maho_w", 0x00000000, 0x00000000,
-    0x00000000, 0x40A00000, 0x41F00000, 0x00000000,
-    0x00000000, 0x420C0000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x02010009,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_mahorn_custom",
-    (u32)"c_maho_w", 0x00000000, 0x00000000, 0x00000000,
-    0x40A00000, 0x41F00000, 0x00000000, 0x00000000,
-    0x420C0000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x02010009, 0x00000000,
-    (u32)&pose_table, 0x00000004, (u32)"btl_un_mahorn_custom", (u32)"c_maho_w",
-    0x00000000, 0x00000000, 0x00000000, 0x40A00000,
-    0x41F00000, 0x00000000, 0x00000000, 0x420C0000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x02010009, 0x00000000, (u32)&pose_table,
-    0x00000005, (u32)"btl_un_mahorn_custom", (u32)"c_maho_w", 0x00000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x41F00000,
-    0x00000000, 0x00000000, 0x420C0000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x02010009, 0x00000000, (u32)&pose_table,
+static BattleWeapon weapon_mahorn_all_attack_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    4,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000007,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_attack_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x000000C7, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_attack_punch = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_all_attack_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x04000302,
-    0x00000000, 0x00000007, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_trans_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    100,                                      // invisibleChance
+    3,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_attack_punch[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000002, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_yokeyoke_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    100,                                      // dodgyChance
+    3,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_trans_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x64030000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_dekadeka_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    100,                                      // sizeChangeChance
+    3,                                        // sizeChangeTime
+    2,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_yokeyoke_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00640300,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_katikati_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    100,                                      // defChangeChance
+    3,                                        // defChangeTime
+    3,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_dekadeka_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000064, 0x03020000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_mahorn_recover_magic = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01100160,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0,                                        // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00001500,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_mahorn_katikati_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00640303, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_mahorn_recover_magic[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01100160, 0x20000000, 0x00000302,
-    0x00000000, 0x00000000, 0x000007FF, 0x00001500,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 entry_mahorn[12] = {
-    (u32)&unit_mahorn_custom_bunsin, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_mahorn[1] = {
+    { &unit_mahorn_custom_bunsin, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 // Functions are emitted in reverse source order (deferred inlining); listed here in the
@@ -579,7 +1224,7 @@ static USER_FUNC(eff_magic_get_posX) {
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(9), PTR(weapon_mahorn_attack_punch))
+        SET_VALUE(LW(9), PTR(&weapon_mahorn_attack_punch))
         CALL_CHILD(attack_punch_event)
         GOTO(99)
     END_IF
@@ -605,7 +1250,7 @@ static EVT_BEGIN(attack_event)
                 CALL_CHILD(subsetevt_confuse_flustered)
                 GOTO(99)
             END_IF
-            SET_VALUE(LW(9), PTR(weapon_mahorn_attack_magic))
+            SET_VALUE(LW(9), PTR(&weapon_mahorn_attack_magic))
             CALL_CHILD(attack_magic_event)
             GOTO(99)
         ELSE
@@ -623,49 +1268,49 @@ static EVT_BEGIN(attack_event)
             CALL(evt_sub_random, LW(0), LW(1))
             SET_VALUE(LW(0), 30)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_attack_punch))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_attack_punch))
                 CALL_CHILD(attack_punch_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 60)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_attack_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_attack_magic))
                 CALL_CHILD(attack_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_all_attack_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_all_attack_magic))
                 CALL_CHILD(all_attack_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_dekadeka_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_dekadeka_magic))
                 CALL_CHILD(dekadeka_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_katikati_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_katikati_magic))
                 CALL_CHILD(katikati_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_trans_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_trans_magic))
                 CALL_CHILD(trans_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_yokeyoke_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_yokeyoke_magic))
                 CALL_CHILD(yokeyoke_magic_event)
                 GOTO(99)
             END_IF
             ADD(LW(0), 10)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_mahorn_recover_magic))
+                SET_VALUE(LW(9), PTR(&weapon_mahorn_recover_magic))
                 CALL_CHILD(recover_magic_event)
                 GOTO(99)
             END_IF
@@ -683,30 +1328,38 @@ static EVT_BEGIN(attack_event_bunsin)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[34] = {
-    0x00000001, (u32)"MAH_N_1", 0x00000002, (u32)"MAH_Y_1",
-    0x00000009, (u32)"MAH_Y_1", 0x00000005, (u32)"MAH_K_1",
-    0x00000004, (u32)"MAH_X_1", 0x00000003, (u32)"MAH_X_1",
-    0x0000001C, (u32)"MAH_S_1", 0x0000001D, (u32)"MAH_Q_1",
-    0x0000001E, (u32)"MAH_Q_1", 0x0000001F, (u32)"MAH_A_1",
-    0x00000027, (u32)"MAH_D_1", 0x00000028, (u32)"MAH_W_1",
-    0x0000002A, (u32)"MAH_R_1", 0x00000038, (u32)"MAH_X_1",
-    0x00000039, (u32)"MAH_X_1", 0x00000041, (u32)"MAH_T_1",
-    0x00000045, (u32)"MAH_S_1",
+static BattleDispPose pose_table[17] = {
+    { 0x01, "MAH_N_1" },
+    { 0x02, "MAH_Y_1" },
+    { 0x09, "MAH_Y_1" },
+    { 0x05, "MAH_K_1" },
+    { 0x04, "MAH_X_1" },
+    { 0x03, "MAH_X_1" },
+    { 0x1C, "MAH_S_1" },
+    { 0x1D, "MAH_Q_1" },
+    { 0x1E, "MAH_Q_1" },
+    { 0x1F, "MAH_A_1" },
+    { 0x27, "MAH_D_1" },
+    { 0x28, "MAH_W_1" },
+    { 0x2A, "MAH_R_1" },
+    { 0x38, "MAH_X_1" },
+    { 0x39, "MAH_X_1" },
+    { 0x41, "MAH_T_1" },
+    { 0x45, "MAH_S_1" },
 };
 
-// TODO: type
-static u32 data_table[10] = {
-    0x00000031, (u32)&mahorn_subset_dead_event, 0x0000003A, (u32)&mahorn_subset_blow_dead_event,
-    0x0000002E, (u32)&avoid_miss_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[5] = {
+    { 0x31, mahorn_subset_dead_event },
+    { 0x3A, mahorn_subset_blow_dead_event },
+    { 0x2E, avoid_miss_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 data_table_bunsin[6] = {
-    0x0000002E, (u32)&avoid_miss_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table_bunsin[3] = {
+    { 0x2E, avoid_miss_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 
@@ -1670,7 +2323,7 @@ static EVT_BEGIN(spawn_event)
     CALL(btlevtcmd_OffAttribute, LW(3), 33554432)
     CALL(btlevtcmd_SetUnitWork, LW(3), 4, 1)
     CALL(btlevtcmd_SetEventAttack, LW(3), PTR(attack_event_bunsin))
-    CALL(btlevtcmd_SetRegistStatus, LW(3), PTR(regist_bunsin))
+    CALL(btlevtcmd_SetRegistStatus, LW(3), PTR(&regist_bunsin))
     CALL(btlevtcmd_OnPartsAttribute, LW(3), 1, 16384)
     RETURN
 EVT_END()
