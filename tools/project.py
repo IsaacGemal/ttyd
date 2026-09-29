@@ -122,8 +122,7 @@ class Object:
                 Path(obj.options["asm_dir"]) / obj.options["source"]
             ).with_suffix(".s")
         base_name = Path(self.name).with_suffix("")
-        # An object restricted to some modules (a unit whose copies differ between RELs) builds to its own directory,
-        # so two variants of one unit name don't overwrite each other
+        # An object restricted to some modules builds to its own directory, so a unit name can repeat across RELs
         variant = Path("rel") / "+".join(obj.options["modules"]) if obj.options["modules"] else Path("")
         obj.src_obj_path = build_dir / "src" / variant / f"{base_name}.o"
         obj.asm_obj_path = build_dir / "mod" / variant / f"{base_name}.o"
@@ -273,6 +272,11 @@ class ProjectConfig:
                     if key in out:
                         sys.exit(f"Duplicate object name {key}")
                     out[key] = resolved
+        # a plain object would silently apply to every module the restricted ones don't list
+        restricted = {k.split(":", 1)[1] for k in out if ":" in k and k.split(":", 1)[0] != k}
+        for name in restricted:
+            if name in out:
+                sys.exit(f"Object {name} is both module-restricted (modules=[...]) and plain")
         return out
 
     # Gets the output path for build-related files.

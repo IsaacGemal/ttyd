@@ -1450,9 +1450,9 @@ code against 8.5 KB of data, so data is most of the REL work.
   compare that found the problems is section bytes plus relocations resolved to section and offset.
 
 **Prep before a REL wave, in order.**
-1. Object paths: tools/project.py builds every object to build/G8MJ01/src/<name>.o, so a unit in two RELs (or
-   a REL unit named like a dol one) overwrites itself. One shared source compiled into each REL is the likely
-   original setup too.
+1. Object paths (done for shared units, see the 2026-09-29 chapter): an `Object` with `modules=[...]` builds to
+   build/G8MJ01/src/rel/<mods>/<name>.o; a plain object still builds to build/G8MJ01/src/<name>.o, so a plain REL
+   unit named like another REL's or a dol unit collides ("Duplicate object name").
 2. REL-aware agent tools: check.py, lint_patch, label_partials, claims and merge_agent assume MarioSt/ and src/
    (a scratch copy of agent_check.py needed three lines). Each REL needs rels/<rel>/include/.
 3. ttydasm: tables, and a way to extract a whole unit's data in order.
@@ -1736,16 +1736,16 @@ pool-base hacks.
 
 ## 2026-09-29: shared REL units, one source for many RELs (Claude #3, orchestrator's request)
 
-- REL objects now build to `build/G8MJ01/src/rel/<module(s)>/<unit>.o` when an `Object` carries `modules=[...]`
-  (project.py `resolve()`); objdiff unit names (`<mod>/<unit>`), report.json, checksums and dol paths are unchanged.
-  Tools read the path from `objdiff.json` `base_path` (`rel_link.py`, `agent_check.py`) or try `src/rel/<mod>/` first
-  (`rel_cmp.py`).
-- `Rel("common", [...])` in configure.py holds the shared, function-free enemy units: one source under
-  `rels/common/src/`, one `Object` per REL. Units whose copies differ between RELs have `v1/`, `v2/` source dirs
-  (basename must equal the unit's, or the `.d` dependency file path breaks).
+- An `Object` with `modules=[...]` builds to `build/G8MJ01/src/rel/<module(s)>/<unit>.o` (project.py `resolve()`); plain
+  objects still build to `build/G8MJ01/src/<unit>.o`. objdiff unit names (`<mod>/<unit>`), report.json, checksums and
+  dol paths are unchanged. `rel_link.py` and `rel_cmp.py` read the object path from `objdiff.json` `base_path`;
+  `agent_check.py` already did. project.py refuses a name that is both plain and module-restricted.
+- `Rel("common", [...])` in configure.py holds the shared units: one source under `rels/common/src/`, one `Object` per
+  REL (`share_unit.py` adds them). The copies of a unit differ only in trailing split padding, so every copy compiles
+  from the same source; three units first had v1/v2 sources that differed only in `extend_data` ids and were merged.
 - The unit's exported data table is named per REL (`unit_X_<module id>_data_<offset>`) and referenced by that name from
   the module's battle database, so the sources call it `UNIT_DATA_SYM` and each `Object` passes
   `extra_cflags=["-DUNIT_DATA_SYM=<name>"]` (a REL that never references it gets `unit_X_local_data`).
-- `extend_data(N)` is an inline function `forcedataN`; two files in one REL with the same N are merged by the linker and
-  the second one's constants vanish (this cost gor 0x50 bytes of .data). Shared sources use N >= 1001, unique per
-  source, so keep them out of the 0..200 range the per-REL files use.
+- `extend_data(id)` is an inline function `forcedata<id>`; two files in one REL with the same id are merged by the
+  linker and the second one's constants vanish (this cost gor 0x50 bytes of .data). Shared sources name their ids
+  `<unit>_<n>`, which is unique by construction.

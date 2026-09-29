@@ -4,8 +4,8 @@
     python3 tools/share_unit.py unit/unit_x MOD [MOD ...] [-- MOD ...]     (groups after `--` are variants: v2, v3)
 
 The source must be at rels/<first MOD>/src/<unit>.c. Its per-REL data table name becomes UNIT_DATA_SYM (each Object
-passes -DUNIT_DATA_SYM=<that REL's name>), and its extend_data indices become unique across the common sources (>=1001),
-because extend_data(N) is an inline function forcedataN that the linker merges by name within a REL.
+passes -DUNIT_DATA_SYM=<that REL's name>), and its extend_data ids become <unit>_<n>: extend_data(id) is an inline function forcedata<id>
+that the linker merges by name within a REL, so ids must be unique per REL.
 New Objects are NonMatching; flip them with tools/rel_link.py MOD/unit/unit_x."""
 import re, sys, os, shutil, glob
 
@@ -36,15 +36,14 @@ for gi, mods in enumerate(groups):
         if s2 == s:
             sys.exit(f"{src}: no per-REL data table name found")
         s = re.sub(rf"&{name}\b", "&UNIT_DATA_SYM", s2)
-    used = [int(x) for p in glob.glob("rels/common/src/**/*.c", recursive=True) for x in re.findall(r"extend_data\((\d+),", open(p).read())]
-    n = max(used + [1000])
+    k = 0
 
     def bump(_):
-        global n
-        n += 1
-        return f"extend_data({n},"
+        global k
+        k += 1
+        return f"extend_data({name}_{k - 1},"
 
-    s = re.sub(r"extend_data\(\d+,", bump, s)
+    s = re.sub(r"extend_data\(\w+,", bump, s)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, "w").write(s)
     os.remove(src)

@@ -20,7 +20,7 @@ static s32 attack_event[448];
 static s32 wait_event[6];
 
 // clang-format off
-extend_data(1001,
+extend_data(basabasa_0,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -29,7 +29,7 @@ extend_data(1001,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(1002,
+extend_data(basabasa_1,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
