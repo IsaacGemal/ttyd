@@ -37,7 +37,13 @@ typedef void* (*ARAMUploadCallback)(u32, u32);
 typedef u32 (*SND_MESSAGE_CALLBACK)(u32, u32);
 
 extern SND_MESSAGE_CALLBACK salMessageCallback;
-extern SND_HOOKS salHooks;
+typedef struct SAL_HOOKS {
+  void* (*malloc)(size_t addr);
+  void* (*mallocPhysical)(size_t addr);
+  void (*free)(void* addr);
+} SAL_HOOKS;
+
+extern SAL_HOOKS salHooks;
 
 extern u32 dspHRTFOn;
 
