@@ -1893,6 +1893,8 @@ config.libs = [
             Object(Matching, "unit/unit_phantom.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_phantom_17_data_540A8"]),
             Object(Matching, "unit/unit_teresa.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_15_data_25D30"]),
             Object(Matching, "unit/unit_teresa.c", modules=["jin"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_14_data_1EF28"]),
+            Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["bom"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_3_data_CDB0"]),
+            Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_15_data_577D8"]),
         ],
     ),
 ]
