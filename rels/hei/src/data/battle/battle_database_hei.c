@@ -1,28 +1,30 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_chorobon[];
-extern s32 battle_item_gold_chorobon[];
-extern s32 battle_item_kuriboo[];
-extern s32 battle_item_monochrome_sinemon[];
-extern s32 battle_item_nokonoko[];
-extern s32 battle_item_patakuri[];
-extern s32 battle_item_sinnosuke[];
-extern s32 battle_item_togedaruma[];
-extern s32 battle_item_togekuri[];
-extern s32 unit_chorobon_12_data_E9A0[];
-extern s32 unit_gold_chorobon[];
-extern s32 unit_kuriboo_12_data_11CF0[];
-extern s32 unit_monochrome_sinemon_12_data_1B9C0[];
-extern s32 unit_nokonoko_12_data_12888[];
-extern s32 unit_patakuri_12_data_13CD0[];
-extern s32 unit_sinnosuke[];
-extern s32 unit_togedaruma_12_data_1A788[];
-extern s32 unit_togekuri_12_data_17668[];
+extern ItemDropData battle_item_chorobon[9];
+extern ItemDropData battle_item_gold_chorobon[1];
+extern ItemDropData battle_item_kuriboo[10];
+extern ItemDropData battle_item_monochrome_sinemon[8];
+extern ItemDropData battle_item_nokonoko[10];
+extern ItemDropData battle_item_patakuri[10];
+extern ItemDropData battle_item_sinnosuke[1];
+extern ItemDropData battle_item_togedaruma[1];
+extern ItemDropData battle_item_togekuri[10];
+extern BattleUnitKind unit_chorobon_12_data_E9A0;
+extern BattleUnitKind unit_gold_chorobon;
+extern BattleUnitKind unit_kuriboo_12_data_11CF0;
+extern BattleUnitKind unit_monochrome_sinemon_12_data_1B9C0;
+extern BattleUnitKind unit_nokonoko_12_data_12888;
+extern BattleUnitKind unit_patakuri_12_data_13CD0;
+extern BattleUnitKind unit_sinnosuke;
+extern BattleUnitKind unit_togedaruma_12_data_1A788;
+extern BattleUnitKind unit_togekuri_12_data_17668;
 
 // clang-format off
 extend_data(64,
@@ -440,932 +442,761 @@ u32 hei_btlstage_data[1199] = {
     0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 btlparty_hei_hei_01_01_off_1[48] = {
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_01_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_01_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_02_02_off_1[24] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_02_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_02_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_02_03_off_1[24] = {
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_02_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_02_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_02_04_off_1[24] = {
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_02_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_02_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_03_01_off_1[24] = {
-    (u32)unit_sinnosuke, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinnosuke,
-    (u32)unit_sinnosuke, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinnosuke,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_03_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_03_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_04_01_off_1[36] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_04_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_04_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_04_01_off_2[24] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_04_01_off_2[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_04_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_04_02_off_1[24] = {
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_04_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_04_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_04_02_off_2[36] = {
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_04_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_04_02_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_05_01_off_1[24] = {
-    (u32)unit_togedaruma_12_data_1A788, 0x01000000, 0x04000004, 0x42A00000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togedaruma,
-    (u32)unit_togedaruma_12_data_1A788, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togedaruma,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_05_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_05_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_06_02_off_1[24] = {
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_06_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_06_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_06_03_off_1[36] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_06_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_06_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_06_03_off_2[36] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_nokonoko_12_data_12888, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_06_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_06_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_07_01_off_1[48] = {
-    (u32)unit_monochrome_sinemon_12_data_1B9C0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_sinemon,
-    (u32)unit_monochrome_sinemon_12_data_1B9C0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_sinemon,
-    (u32)unit_monochrome_sinemon_12_data_1B9C0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_sinemon,
-    (u32)unit_monochrome_sinemon_12_data_1B9C0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_07_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_07_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_08_01_off_1[48] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_08_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_08_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_09_01_off_1[24] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_09_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_09_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_09_01_off_2[36] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_09_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_09_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_09_03_off_1[24] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_09_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_09_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_09_03_off_2[36] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_09_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_09_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_10_01_off_1[12] = {
-    (u32)unit_gold_chorobon, 0x01000000, 0x04000004, 0x42FA0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gold_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_10_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_hei_hei_10_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_11_01_off_1[24] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_11_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_11_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_11_01_off_2[36] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_11_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_11_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_11_03_off_1[24] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_11_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_11_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_11_03_off_2[36] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_11_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_11_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_12_01_off_1[48] = {
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_12_data_E9A0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_12_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_12_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_02_off_1[24] = {
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_13_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_02_on_1[36] = {
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_02_on_1[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_13_02_on_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_02_on_2[48] = {
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_02_on_2[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_13_02_on_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_02_on_3[60] = {
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-    (u32)unit_kuriboo_12_data_11CF0, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_02_on_3[8] = {
-    0x00000005, (u32)&btlparty_hei_hei_13_02_on_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_03_off_1[24] = {
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_13_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_03_on_1[24] = {
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_03_on_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_13_03_on_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_03_on_2[36] = {
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_togekuri_12_data_17668, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_03_on_2[8] = {
-    0x00000003, (u32)&btlparty_hei_hei_13_03_on_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_04_off_1[24] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_13_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_04_on_1[24] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_04_on_1[8] = {
-    0x00000002, (u32)&btlparty_hei_hei_13_04_on_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_hei_hei_13_04_on_2[48] = {
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_12_data_13CD0, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_hei_hei_13_04_on_2[8] = {
-    0x00000004, (u32)&btlparty_hei_hei_13_04_on_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_hei_hei_01_01_off_1, (u32)&hei_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_hei_hei_01_01_off_1, (u32)((u8*)&hei_btlstage_data + 0xbec), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_test3_off[6] = {
-    0x00000032, (u32)&btlgrp_hei_hei_01_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_test4_off[6] = {
-    0x00000032, (u32)&btlgrp_hei_hei_01_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_01_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_01_01_off_1, (u32)&hei_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_02_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_02_02_off_1, (u32)((u8*)&hei_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_02_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_02_03_off_1, (u32)((u8*)&hei_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_02_04_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_02_04_off_1, (u32)((u8*)&hei_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_03_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_03_01_off_1, (u32)((u8*)&hei_btlstage_data + 0xbec), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_04_01_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_04_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x6d0), 0x0000000A,
-    (u32)&btlgrp_hei_hei_04_01_off_2, (u32)((u8*)&hei_btlstage_data + 0x6d0), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_04_02_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_04_02_off_1, (u32)((u8*)&hei_btlstage_data + 0x51c), 0x0000000A,
-    (u32)&btlgrp_hei_hei_04_02_off_2, (u32)((u8*)&hei_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_05_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_05_01_off_1, (u32)((u8*)&hei_btlstage_data + 0xda0), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_06_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_06_02_off_1, (u32)((u8*)&hei_btlstage_data + 0x884), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_06_03_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_06_03_off_1, (u32)((u8*)&hei_btlstage_data + 0xa38), 0x0000000A,
-    (u32)&btlgrp_hei_hei_06_03_off_2, (u32)((u8*)&hei_btlstage_data + 0xa38), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_07_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_07_01_off_1, (u32)((u8*)&hei_btlstage_data + 0xf54), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_08_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_08_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 R_btlgrpsel_hei_btlno_hei_08_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_08_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_09_01_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_09_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x0000000A,
-    (u32)&btlgrp_hei_hei_09_01_off_2, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_09_03_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_09_03_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x0000000A,
-    (u32)&btlgrp_hei_hei_09_03_off_2, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_10_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_10_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_11_01_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_11_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x0000000A,
-    (u32)&btlgrp_hei_hei_11_01_off_2, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_11_03_off[9] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_11_03_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x0000000A,
-    (u32)&btlgrp_hei_hei_11_03_off_2, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_12_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_12_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 R_btlgrpsel_hei_btlno_hei_12_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_12_01_off_1, (u32)((u8*)&hei_btlstage_data + 0x1108), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_13_02_off[15] = {
-    0x0000000A, (u32)&btlgrp_hei_hei_13_02_on_1, (u32)&hei_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_hei_hei_13_02_on_2, (u32)&hei_btlstage_data, 0x0000000A, (u32)&btlgrp_hei_hei_13_02_on_3,
-    (u32)&hei_btlstage_data, 0x00000032, (u32)&btlgrp_hei_hei_13_02_off_1, (u32)&hei_btlstage_data,
-    0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_13_03_off[12] = {
-    0x00000032, (u32)&btlgrp_hei_hei_13_03_on_1, (u32)&hei_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_hei_hei_13_03_on_2, (u32)&hei_btlstage_data, 0x0000000A, (u32)&btlgrp_hei_hei_13_03_off_1,
-    (u32)&hei_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_hei_btlno_hei_13_04_off[12] = {
-    0x00000032, (u32)&btlgrp_hei_hei_13_04_on_1, (u32)&hei_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_hei_hei_13_04_on_2, (u32)&hei_btlstage_data, 0x0000000A, (u32)&btlgrp_hei_hei_13_04_off_1,
-    (u32)&hei_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_hei_tbl[476] = {
-    (u32)"マップstg_01_0", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_1", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_2", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_test3_off,
-    0x00000000, 0x00000000, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_4",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_hei_btlno_hei_test4_off, 0x00000000, 0x00000000, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"hei01クリボー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_01_01_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x00000000, 0x0A0A0000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"hei02パタクリ２", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_02_02_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei02ノコノコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_02_03_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x0A0A0000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei02トゲクリ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_hei_btlno_hei_02_04_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x05050000,
-    0x0A0A0000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"hei03シンノスケ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_03_01_off, 0x2000000F, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_KOBOSS_BATTLE1", (u32)"hei04パタクリ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_04_01_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei04ノコノコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_04_02_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x0A0A0000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei05トゲダルマー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_hei_btlno_hei_05_01_off, 0x2000000F, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_KOBOSS_BATTLE1",
-    (u32)"hei06ノコノコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_06_02_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x0A0A0000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"hei06パタクリ２", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_06_03_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei07モノクロシンエモン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_07_01_off,
-    0x2000001F, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_KOBOSS_BATTLE1", (u32)"hei08チョロボン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_hei_btlno_hei_08_01_off, 0x20000010, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"hei08チョロボン２", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&R_btlgrpsel_hei_btlno_hei_08_02_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"hei09チョロボン1", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_09_01_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x05050000, 0x05050000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei09チョロボン3", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_09_03_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei10ゴールドチョロボン",
-    (u32)"hei_10", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_hei_btlno_hei_10_01_off, 0x20000010, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_KOBOSS_BATTLE1",
-    (u32)"hei11チョロボン1", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_11_01_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"hei11チョロボン3", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_11_03_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x05050000, 0x05050000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei12チョロボン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_12_01_off,
-    0x20000010, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei12チョロボン２",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&R_btlgrpsel_hei_btlno_hei_12_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"hei13クリボー2", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_hei_btlno_hei_13_02_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x00000000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"hei13トゲクリ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_13_03_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x00000000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"hei13パタクリ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_hei_btlno_hei_13_04_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x00000000, 0x0A0A0000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup btlparty_hei_hei_01_01_off_1[4] = {
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_01_01_off_1 = { 4, btlparty_hei_hei_01_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_02_02_off_1[2] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_02_02_off_1 = { 2, btlparty_hei_hei_02_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_02_03_off_1[2] = {
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_hei_hei_02_03_off_1 = { 2, btlparty_hei_hei_02_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_02_04_off_1[2] = {
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_02_04_off_1 = { 2, btlparty_hei_hei_02_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_03_01_off_1[2] = {
+    { &unit_sinnosuke, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinnosuke },
+    { &unit_sinnosuke, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinnosuke },
+};
+
+BattleGroupSetup btlgrp_hei_hei_03_01_off_1 = { 2, btlparty_hei_hei_03_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_04_01_off_1[3] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_04_01_off_1 = { 3, btlparty_hei_hei_04_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_04_01_off_2[2] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_04_01_off_2 = { 2, btlparty_hei_hei_04_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_04_02_off_1[2] = {
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_04_02_off_1 = { 2, btlparty_hei_hei_04_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_04_02_off_2[3] = {
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_04_02_off_2 = { 3, btlparty_hei_hei_04_02_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_05_01_off_1[2] = {
+    { &unit_togedaruma_12_data_1A788, 1, 0x04000004, { 80.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togedaruma },
+    { &unit_togedaruma_12_data_1A788, 1, 0x04000004, { 150.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togedaruma },
+};
+
+BattleGroupSetup btlgrp_hei_hei_05_01_off_1 = { 2, btlparty_hei_hei_05_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_06_02_off_1[2] = {
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_06_02_off_1 = { 2, btlparty_hei_hei_06_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_06_03_off_1[3] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_06_03_off_1 = { 3, btlparty_hei_hei_06_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_06_03_off_2[3] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_nokonoko_12_data_12888, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_hei_hei_06_03_off_2 = { 3, btlparty_hei_hei_06_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_07_01_off_1[4] = {
+    { &unit_monochrome_sinemon_12_data_1B9C0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_sinemon },
+    { &unit_monochrome_sinemon_12_data_1B9C0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_sinemon },
+    { &unit_monochrome_sinemon_12_data_1B9C0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_sinemon },
+    { &unit_monochrome_sinemon_12_data_1B9C0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_sinemon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_07_01_off_1 = { 4, btlparty_hei_hei_07_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_08_01_off_1[4] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_08_01_off_1 = { 4, btlparty_hei_hei_08_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_09_01_off_1[2] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_09_01_off_1 = { 2, btlparty_hei_hei_09_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_09_01_off_2[3] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_09_01_off_2 = { 3, btlparty_hei_hei_09_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_09_03_off_1[2] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_09_03_off_1 = { 2, btlparty_hei_hei_09_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_09_03_off_2[3] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_09_03_off_2 = { 3, btlparty_hei_hei_09_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_10_01_off_1[1] = {
+    { &unit_gold_chorobon, 1, 0x04000004, { 125.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gold_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_10_01_off_1 = { 1, btlparty_hei_hei_10_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_11_01_off_1[2] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_11_01_off_1 = { 2, btlparty_hei_hei_11_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_11_01_off_2[3] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_11_01_off_2 = { 3, btlparty_hei_hei_11_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_11_03_off_1[2] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_11_03_off_1 = { 2, btlparty_hei_hei_11_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_11_03_off_2[3] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_11_03_off_2 = { 3, btlparty_hei_hei_11_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_12_01_off_1[4] = {
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_12_data_E9A0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_hei_hei_12_01_off_1 = { 4, btlparty_hei_hei_12_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_02_off_1[2] = {
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_02_off_1 = { 2, btlparty_hei_hei_13_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_02_on_1[3] = {
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_02_on_1 = { 3, btlparty_hei_hei_13_02_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_02_on_2[4] = {
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_02_on_2 = { 4, btlparty_hei_hei_13_02_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_02_on_3[5] = {
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+    { &unit_kuriboo_12_data_11CF0, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_02_on_3 = { 5, btlparty_hei_hei_13_02_on_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_03_off_1[2] = {
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_03_off_1 = { 2, btlparty_hei_hei_13_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_03_on_1[2] = {
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_03_on_1 = { 2, btlparty_hei_hei_13_03_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_03_on_2[3] = {
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_togekuri_12_data_17668, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_03_on_2 = { 3, btlparty_hei_hei_13_03_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_04_off_1[2] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_04_off_1 = { 2, btlparty_hei_hei_13_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_04_on_1[2] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_04_on_1 = { 2, btlparty_hei_hei_13_04_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_hei_hei_13_04_on_2[4] = {
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_12_data_13CD0, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_hei_hei_13_04_on_2 = { 4, btlparty_hei_hei_13_04_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_test1_off[2] = {
+    { 50, &btlgrp_hei_hei_01_01_off_1, (struct BattleStageData*)hei_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_test2_off[2] = {
+    { 50, &btlgrp_hei_hei_01_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xBEC) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_test3_off[2] = {
+    { 50, &btlgrp_hei_hei_01_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_test4_off[2] = {
+    { 50, &btlgrp_hei_hei_01_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_01_01_off[2] = {
+    { 10, &btlgrp_hei_hei_01_01_off_1, (struct BattleStageData*)hei_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_02_02_off[2] = {
+    { 10, &btlgrp_hei_hei_02_02_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_02_03_off[2] = {
+    { 10, &btlgrp_hei_hei_02_03_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_02_04_off[2] = {
+    { 10, &btlgrp_hei_hei_02_04_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_03_01_off[2] = {
+    { 10, &btlgrp_hei_hei_03_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xBEC) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_04_01_off[3] = {
+    { 10, &btlgrp_hei_hei_04_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x6D0) },
+    { 10, &btlgrp_hei_hei_04_01_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x6D0) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_04_02_off[3] = {
+    { 10, &btlgrp_hei_hei_04_02_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x51C) },
+    { 10, &btlgrp_hei_hei_04_02_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_05_01_off[2] = {
+    { 10, &btlgrp_hei_hei_05_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xDA0) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_06_02_off[2] = {
+    { 10, &btlgrp_hei_hei_06_02_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x884) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_06_03_off[3] = {
+    { 10, &btlgrp_hei_hei_06_03_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xA38) },
+    { 10, &btlgrp_hei_hei_06_03_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xA38) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_07_01_off[2] = {
+    { 10, &btlgrp_hei_hei_07_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0xF54) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_08_01_off[2] = {
+    { 10, &btlgrp_hei_hei_08_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry R_btlgrpsel_hei_btlno_hei_08_02_off[2] = {
+    { 10, &btlgrp_hei_hei_08_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_09_01_off[3] = {
+    { 10, &btlgrp_hei_hei_09_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 10, &btlgrp_hei_hei_09_01_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_09_03_off[3] = {
+    { 10, &btlgrp_hei_hei_09_03_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 10, &btlgrp_hei_hei_09_03_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_10_01_off[2] = {
+    { 10, &btlgrp_hei_hei_10_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_11_01_off[3] = {
+    { 10, &btlgrp_hei_hei_11_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 10, &btlgrp_hei_hei_11_01_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_11_03_off[3] = {
+    { 10, &btlgrp_hei_hei_11_03_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 10, &btlgrp_hei_hei_11_03_off_2, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_12_01_off[2] = {
+    { 10, &btlgrp_hei_hei_12_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry R_btlgrpsel_hei_btlno_hei_12_02_off[2] = {
+    { 10, &btlgrp_hei_hei_12_01_off_1, (struct BattleStageData*)(void*)((u8*)hei_btlstage_data + 0x1108) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_13_02_off[5] = {
+    { 10, &btlgrp_hei_hei_13_02_on_1, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_02_on_2, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_02_on_3, (struct BattleStageData*)hei_btlstage_data },
+    { 50, &btlgrp_hei_hei_13_02_off_1, (struct BattleStageData*)hei_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_13_03_off[4] = {
+    { 50, &btlgrp_hei_hei_13_03_on_1, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_03_on_2, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_03_off_1, (struct BattleStageData*)hei_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_hei_btlno_hei_13_04_off[4] = {
+    { 50, &btlgrp_hei_hei_13_04_on_1, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_04_on_2, (struct BattleStageData*)hei_btlstage_data },
+    { 10, &btlgrp_hei_hei_13_04_off_1, (struct BattleStageData*)hei_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+BattleSetupData btlsetup_hei_tbl[28] = {
+    {
+        "マップstg_01_0",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_01_1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_01_2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_test3_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_01_4",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_test4_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei01クリボー",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_01_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei02パタクリ２",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_02_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei02ノコノコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_02_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei02トゲクリ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_02_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei03シンノスケ",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_03_01_off,                                                                  // offLoadouts
+        536870927,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "hei04パタクリ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_04_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei04ノコノコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_04_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei05トゲダルマー",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_05_01_off,                                                                  // offLoadouts
+        536870927,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "hei06ノコノコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_06_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei06パタクリ２",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_06_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei07モノクロシンエモン",                                                                                   // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_07_01_off,                                                                  // offLoadouts
+        536870943,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "hei08チョロボン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_08_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei08チョロボン２",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        R_btlgrpsel_hei_btlno_hei_08_02_off,                                                                // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei09チョロボン1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_09_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei09チョロボン3",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_09_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei10ゴールドチョロボン",                                                                                   // name
+        "hei_10",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_10_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "hei11チョロボン1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_11_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei11チョロボン3",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_11_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei12チョロボン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_12_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei12チョロボン２",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        R_btlgrpsel_hei_btlno_hei_12_02_off,                                                                // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei13クリボー2",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_hei_btlno_hei_13_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "hei13トゲクリ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_13_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "hei13パタクリ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_hei_btlno_hei_13_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

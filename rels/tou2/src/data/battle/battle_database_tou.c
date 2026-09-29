@@ -4,74 +4,76 @@
 #include "evt/evt_cmd.h"
 #include "evt/evt_map.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_basabasa[];
-extern s32 battle_item_bllizard[];
-extern s32 battle_item_bomhei[];
-extern s32 battle_item_boomerang_bros[];
-extern s32 battle_item_borodo[];
-extern s32 battle_item_borodo_king[];
-extern s32 battle_item_burst_wanwan[];
-extern s32 battle_item_champion[];
-extern s32 battle_item_dokugassun[];
-extern s32 battle_item_fire_bros[];
-extern s32 battle_item_hammer_bros[];
-extern s32 battle_item_hyper_sinnosuke[];
-extern s32 battle_item_hyper_togemet[];
-extern s32 battle_item_iron_sinemon[];
-extern s32 battle_item_iron_sinemon2[];
-extern s32 battle_item_kamec[];
-extern s32 battle_item_kurikuri[];
-extern s32 battle_item_kurokumorn[];
-extern s32 battle_item_macho_gance[];
-extern s32 battle_item_monban[];
-extern s32 battle_item_nokonoko_fighter[];
-extern s32 battle_item_patapata_fighter[];
-extern s32 battle_item_sambo[];
-extern s32 battle_item_togezo[];
-extern s32 battle_item_ura_noko[];
-extern s32 battle_item_ura_pata[];
+extern ItemDropData battle_item_basabasa[10];
+extern ItemDropData battle_item_bllizard[9];
+extern ItemDropData battle_item_bomhei[10];
+extern ItemDropData battle_item_boomerang_bros[1];
+extern ItemDropData battle_item_borodo[10];
+extern ItemDropData battle_item_borodo_king[1];
+extern ItemDropData battle_item_burst_wanwan[7];
+extern ItemDropData battle_item_champion[1];
+extern ItemDropData battle_item_dokugassun[9];
+extern ItemDropData battle_item_fire_bros[1];
+extern ItemDropData battle_item_hammer_bros[10];
+extern ItemDropData battle_item_hyper_sinnosuke[7];
+extern ItemDropData battle_item_hyper_togemet[7];
+extern ItemDropData battle_item_iron_sinemon[1];
+extern ItemDropData battle_item_iron_sinemon2[1];
+extern ItemDropData battle_item_kamec[10];
+extern ItemDropData battle_item_kurikuri[1];
+extern ItemDropData battle_item_kurokumorn[9];
+extern ItemDropData battle_item_macho_gance[1];
+extern ItemDropData battle_item_monban[1];
+extern ItemDropData battle_item_nokonoko_fighter[1];
+extern ItemDropData battle_item_patapata_fighter[1];
+extern ItemDropData battle_item_sambo[7];
+extern ItemDropData battle_item_togezo[8];
+extern ItemDropData battle_item_ura_noko[10];
+extern ItemDropData battle_item_ura_pata[10];
 extern s32 tou_gamen_screen_tev_init[];
-extern s32 unit_basabasa_28_data_16B60[];
-extern s32 unit_bomhei_28_data_17C48[];
-extern s32 unit_boomerang_bros[];
-extern s32 unit_borodo_28_data_1AEF0[];
-extern s32 unit_borodo_king[];
-extern s32 unit_boss_champion[];
-extern s32 unit_boss_koopa_tou[];
-extern s32 unit_boss_macho_gance[];
-extern s32 unit_burst_wanwan_28_data_4AED8[];
-extern s32 unit_chorobon_28_data_1C808[];
-extern s32 unit_crimson_togemet[];
-extern s32 unit_dark_keeper_28_data_1DE40[];
-extern s32 unit_fire_bros[];
-extern s32 unit_flower_chorobon_28_data_21138[];
-extern s32 unit_green_chorobon_28_data_22E58[];
-extern s32 unit_hammer_bros_28_data_24A10[];
-extern s32 unit_hannya_28_data_3BF68[];
-extern s32 unit_hinnya_28_data_27050[];
-extern s32 unit_honenoko_28_data_27C08[];
-extern s32 unit_hyper_sinnosuke[];
-extern s32 unit_iron_sinemon[];
-extern s32 unit_iron_sinemon2[];
-extern s32 unit_jyugem_28_data_2B678[];
-extern s32 unit_kamec_green[];
-extern s32 unit_kamec_red[];
-extern s32 unit_kamec_white[];
-extern s32 unit_kurikuri[];
-extern s32 unit_monochrome_kurokumorn_28_data_59A08[];
-extern s32 unit_monochrome_pakkun_28_data_5B1C8[];
-extern s32 unit_nokonoko_fighter[];
-extern s32 unit_patapata_fighter[];
-extern s32 unit_piders_28_data_2E140[];
-extern s32 unit_sambo_28_data_30280[];
-extern s32 unit_togedaruma_28_data_34998[];
-extern s32 unit_togenoko_ace_28_data_48988[];
-extern s32 unit_togezo_28_data_35BD0[];
-extern s32 unit_ura_noko_28_data_37580[];
-extern s32 unit_ura_pata[];
+extern BattleUnitKind unit_basabasa_28_data_16B60;
+extern BattleUnitKind unit_bomhei_28_data_17C48;
+extern BattleUnitKind unit_boomerang_bros;
+extern BattleUnitKind unit_borodo_28_data_1AEF0;
+extern BattleUnitKind unit_borodo_king;
+extern BattleUnitKind unit_boss_champion;
+extern BattleUnitKind unit_boss_koopa_tou;
+extern BattleUnitKind unit_boss_macho_gance;
+extern BattleUnitKind unit_burst_wanwan_28_data_4AED8;
+extern BattleUnitKind unit_chorobon_28_data_1C808;
+extern BattleUnitKind unit_crimson_togemet;
+extern BattleUnitKind unit_dark_keeper_28_data_1DE40;
+extern BattleUnitKind unit_fire_bros;
+extern BattleUnitKind unit_flower_chorobon_28_data_21138;
+extern BattleUnitKind unit_green_chorobon_28_data_22E58;
+extern BattleUnitKind unit_hammer_bros_28_data_24A10;
+extern BattleUnitKind unit_hannya_28_data_3BF68;
+extern BattleUnitKind unit_hinnya_28_data_27050;
+extern BattleUnitKind unit_honenoko_28_data_27C08;
+extern BattleUnitKind unit_hyper_sinnosuke;
+extern BattleUnitKind unit_iron_sinemon;
+extern BattleUnitKind unit_iron_sinemon2;
+extern BattleUnitKind unit_jyugem_28_data_2B678;
+extern BattleUnitKind unit_kamec_green;
+extern BattleUnitKind unit_kamec_red;
+extern BattleUnitKind unit_kamec_white;
+extern BattleUnitKind unit_kurikuri;
+extern BattleUnitKind unit_monochrome_kurokumorn_28_data_59A08;
+extern BattleUnitKind unit_monochrome_pakkun_28_data_5B1C8;
+extern BattleUnitKind unit_nokonoko_fighter;
+extern BattleUnitKind unit_patapata_fighter;
+extern BattleUnitKind unit_piders_28_data_2E140;
+extern BattleUnitKind unit_sambo_28_data_30280;
+extern BattleUnitKind unit_togedaruma_28_data_34998;
+extern BattleUnitKind unit_togenoko_ace_28_data_48988;
+extern BattleUnitKind unit_togezo_28_data_35BD0;
+extern BattleUnitKind unit_ura_noko_28_data_37580;
+extern BattleUnitKind unit_ura_pata;
 s32 bgset_tou_screen_evt[22];
 
 // clang-format off
@@ -177,701 +179,628 @@ u32 tou_btlstage_data[218] = {
     (u32)&bgset_tou_screen_evt, 0x00010101,
 };
 
-// TODO: type
-u32 btlparty_tou_tou_rank_19[60] = {
-    (u32)unit_kurikuri, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-    (u32)unit_kurikuri, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-    (u32)unit_kurikuri, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-    (u32)unit_kurikuri, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-    (u32)unit_kurikuri, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_19[8] = {
-    0x00000005, (u32)&btlparty_tou_tou_rank_19, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_18[36] = {
-    (u32)unit_nokonoko_fighter, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko_fighter,
-    (u32)unit_nokonoko_fighter, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko_fighter,
-    (u32)unit_patapata_fighter, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata_fighter,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_18[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_18, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_17[36] = {
-    (u32)unit_sambo_28_data_30280, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_28_data_30280, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_28_data_30280, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_17[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_17, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_16[36] = {
-    (u32)unit_honenoko_28_data_27C08, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_honenoko_28_data_27C08, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_honenoko_28_data_27C08, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_16[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_16, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_15[36] = {
-    (u32)unit_togezo_28_data_35BD0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_togezo_28_data_35BD0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_jyugem_28_data_2B678, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_15[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_15, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_14[36] = {
-    (u32)unit_monochrome_pakkun_28_data_5B1C8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togezo,
-    (u32)unit_monochrome_kurokumorn_28_data_59A08, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togezo,
-    (u32)unit_piders_28_data_2E140, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togezo,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_14[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_14, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_13[36] = {
-    (u32)unit_hyper_sinnosuke, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinnosuke,
-    (u32)unit_hyper_sinnosuke, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinnosuke,
-    (u32)unit_hyper_sinnosuke, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinnosuke,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_13[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_13, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_12[48] = {
-    (u32)unit_bomhei_28_data_17C48, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_28_data_17C48, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_28_data_17C48, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_28_data_17C48, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_12[8] = {
-    0x00000004, (u32)&btlparty_tou_tou_rank_12, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_11[48] = {
-    (u32)unit_borodo_28_data_1AEF0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_28_data_1AEF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_king, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo_king,
-    (u32)unit_borodo_king, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo_king,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_11[8] = {
-    0x00000004, (u32)&btlparty_tou_tou_rank_11, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_10[24] = {
-    (u32)unit_iron_sinemon, 0x01000000, 0x04000004, 0x42A00000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000032,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_iron_sinemon,
-    (u32)unit_iron_sinemon2, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000082,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_iron_sinemon2,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_10[8] = {
-    0x00000002, (u32)&btlparty_tou_tou_rank_10, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_9[24] = {
-    (u32)unit_crimson_togemet, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_togemet,
-    (u32)unit_crimson_togemet, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_togemet,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_9[8] = {
-    0x00000002, (u32)&btlparty_tou_tou_rank_9, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_8[24] = {
-    (u32)unit_togedaruma_28_data_34998, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_togedaruma_28_data_34998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_8[8] = {
-    0x00000002, (u32)&btlparty_tou_tou_rank_8, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_7[36] = {
-    (u32)unit_ura_noko_28_data_37580, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_pata, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_noko_28_data_37580, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_pata,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_7[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_7, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_6[36] = {
-    (u32)unit_chorobon_28_data_1C808, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_green_chorobon_28_data_22E58, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_flower_chorobon_28_data_21138, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_6[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_6, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_5[36] = {
-    (u32)unit_kamec_red, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_kamec_white, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_fire_bros,
-    (u32)unit_kamec_green, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_boomerang_bros,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_5[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_5, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_4[12] = {
-    (u32)unit_dark_keeper_28_data_1DE40, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_4[8] = {
-    0x00000001, (u32)&btlparty_tou_tou_rank_4, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_3[36] = {
-    (u32)unit_hammer_bros_28_data_24A10, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_fire_bros, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_boomerang_bros, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_3[8] = {
-    0x00000003, (u32)&btlparty_tou_tou_rank_3, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_2[24] = {
-    (u32)unit_burst_wanwan_28_data_4AED8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-    (u32)unit_burst_wanwan_28_data_4AED8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_2[8] = {
-    0x00000002, (u32)&btlparty_tou_tou_rank_2, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_rank_1[12] = {
-    (u32)unit_togenoko_ace_28_data_48988, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_rank_1[8] = {
-    0x00000001, (u32)&btlparty_tou_tou_rank_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_add_1[48] = {
-    (u32)unit_basabasa_28_data_16B60, 0x01000000, 0x04000004, 0x41F00000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa,
-    (u32)unit_basabasa_28_data_16B60, 0x01000000, 0x04000004, 0x428C0000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa,
-    (u32)unit_basabasa_28_data_16B60, 0x01000000, 0x04000004, 0x42DC0000,
-    0x43020000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa,
-    (u32)unit_basabasa_28_data_16B60, 0x01000000, 0x04000004, 0x43160000,
-    0x43020000, 0x41A00000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_add_1[8] = {
-    0x00000004, (u32)&btlparty_tou_tou_add_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_add_2[48] = {
-    (u32)unit_hinnya_28_data_27050, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monban,
-    (u32)unit_hannya_28_data_3BF68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monban,
-    (u32)unit_hinnya_28_data_27050, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monban,
-    (u32)unit_hannya_28_data_3BF68, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_add_2[8] = {
-    0x00000004, (u32)&btlparty_tou_tou_add_2, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tou_tou_boss[12] = {
-    (u32)unit_boss_macho_gance, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_macho_gance,
-};
-
-// TODO: type
-u32 btlgrp_tou_tou_boss[8] = {
-    0x00000001, (u32)&btlparty_tou_tou_boss, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
+BattleUnitSetup btlparty_tou_tou_rank_19[5] = {
+    { &unit_kurikuri, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
+    { &unit_kurikuri, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
+    { &unit_kurikuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_kurikuri },
+    { &unit_kurikuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
+    { &unit_kurikuri, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
 };
-
-// TODO: type
-u32 btlparty_tou_tou_champ[12] = {
-    (u32)unit_boss_champion, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_champion,
+
+BattleGroupSetup btlgrp_tou_tou_rank_19 = { 5, btlparty_tou_tou_rank_19, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_18[3] = {
+    { &unit_nokonoko_fighter, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko_fighter },
+    { &unit_nokonoko_fighter, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko_fighter },
+    { &unit_patapata_fighter, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_patapata_fighter },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_18 = { 3, btlparty_tou_tou_rank_18, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_17[3] = {
+    { &unit_sambo_28_data_30280, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_28_data_30280, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_28_data_30280, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_sambo },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_17 = { 3, btlparty_tou_tou_rank_17, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_16[3] = {
+    { &unit_honenoko_28_data_27C08, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_honenoko_28_data_27C08, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_honenoko_28_data_27C08, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_bomhei },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_16 = { 3, btlparty_tou_tou_rank_16, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_15[3] = {
+    { &unit_togezo_28_data_35BD0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_togezo_28_data_35BD0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_jyugem_28_data_2B678, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_bllizard },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_15 = { 3, btlparty_tou_tou_rank_15, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_14[3] = {
+    { &unit_monochrome_pakkun_28_data_5B1C8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togezo },
+    { &unit_monochrome_kurokumorn_28_data_59A08, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togezo },
+    { &unit_piders_28_data_2E140, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_togezo },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_14 = { 3, btlparty_tou_tou_rank_14, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_13[3] = {
+    { &unit_hyper_sinnosuke, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinnosuke },
+    { &unit_hyper_sinnosuke, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinnosuke },
+    { &unit_hyper_sinnosuke, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_hyper_sinnosuke },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_13 = { 3, btlparty_tou_tou_rank_13, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_12[4] = {
+    { &unit_bomhei_28_data_17C48, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_28_data_17C48, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_28_data_17C48, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_28_data_17C48, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_12 = { 4, btlparty_tou_tou_rank_12, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_11[4] = {
+    { &unit_borodo_28_data_1AEF0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_28_data_1AEF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_king, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo_king },
+    { &unit_borodo_king, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo_king },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_11 = { 4, btlparty_tou_tou_rank_11, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_10[2] = {
+    { &unit_iron_sinemon, 1, 0x04000004, { 80.0f, 0.0f, 0.0f }, 0, { 50, 0, 0, 0 }, battle_item_iron_sinemon },
+    { &unit_iron_sinemon2, 1, 0x04000004, { 150.0f, 0.0f, 10.0f }, 0, { 130, 0, 0, 0 }, battle_item_iron_sinemon2 },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_10 = { 2, btlparty_tou_tou_rank_10, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_9[2] = {
+    { &unit_crimson_togemet, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_togemet },
+    { &unit_crimson_togemet, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_togemet },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_9 = { 2, btlparty_tou_tou_rank_9, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_8[2] = {
+    { &unit_togedaruma_28_data_34998, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_togedaruma_28_data_34998, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_8 = { 2, btlparty_tou_tou_rank_8, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_7[3] = {
+    { &unit_ura_noko_28_data_37580, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_pata, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_noko_28_data_37580, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_ura_pata },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_7 = { 3, btlparty_tou_tou_rank_7, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_6[3] = {
+    { &unit_chorobon_28_data_1C808, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_green_chorobon_28_data_22E58, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_flower_chorobon_28_data_21138, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_6 = { 3, btlparty_tou_tou_rank_6, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_5[3] = {
+    { &unit_kamec_red, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_kamec_white, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_fire_bros },
+    { &unit_kamec_green, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_boomerang_bros },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_5 = { 3, btlparty_tou_tou_rank_5, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_4[1] = {
+    { &unit_dark_keeper_28_data_1DE40, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tou_tou_champ[8] = {
-    0x00000001, (u32)&btlparty_tou_tou_champ, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_tou_tou_rank_4 = { 1, btlparty_tou_tou_rank_4, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_3[3] = {
+    { &unit_hammer_bros_28_data_24A10, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_fire_bros, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_boomerang_bros, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_3 = { 3, btlparty_tou_tou_rank_3, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_2[2] = {
+    { &unit_burst_wanwan_28_data_4AED8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+    { &unit_burst_wanwan_28_data_4AED8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_2 = { 2, btlparty_tou_tou_rank_2, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_rank_1[1] = {
+    { &unit_togenoko_ace_28_data_48988, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+BattleGroupSetup btlgrp_tou_tou_rank_1 = { 1, btlparty_tou_tou_rank_1, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_add_1[4] = {
+    { &unit_basabasa_28_data_16B60, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa },
+    { &unit_basabasa_28_data_16B60, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa },
+    { &unit_basabasa_28_data_16B60, 1, 0x04000004, { 110.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa },
+    { &unit_basabasa_28_data_16B60, 1, 0x04000004, { 150.0f, 130.0f, 20.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa },
+};
+
+BattleGroupSetup btlgrp_tou_tou_add_1 = { 4, btlparty_tou_tou_add_1, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_add_2[4] = {
+    { &unit_hinnya_28_data_27050, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monban },
+    { &unit_hannya_28_data_3BF68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monban },
+    { &unit_hinnya_28_data_27050, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monban },
+    { &unit_hannya_28_data_3BF68, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+BattleGroupSetup btlgrp_tou_tou_add_2 = { 4, btlparty_tou_tou_add_2, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_boss[1] = {
+    { &unit_boss_macho_gance, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_macho_gance },
+};
+
+BattleGroupSetup btlgrp_tou_tou_boss = { 1, btlparty_tou_tou_boss, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_champ[1] = {
+    { &unit_boss_champion, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_champion },
+};
+
+BattleGroupSetup btlgrp_tou_tou_champ = { 1, btlparty_tou_tou_champ, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tou_tou_koopa[1] = {
+    { &unit_boss_koopa_tou, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlparty_tou_tou_koopa[12] = {
-    (u32)unit_boss_koopa_tou, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleGroupSetup btlgrp_tou_tou_koopa = { 1, btlparty_tou_tou_koopa, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_test1_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_19, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_01_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_19, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_02_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_18, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_03_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_17, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_04_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_16, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_05_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_15, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tou_tou_koopa[8] = {
-    0x00000001, (u32)&btlparty_tou_tou_koopa, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_06_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_14, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_19, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_07_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_13, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_01_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_19, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_08_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_12, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_02_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_18, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_09_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_11, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_03_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_17, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_10_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_10, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_04_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_16, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_11_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_9, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_05_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_15, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_12_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_8, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_06_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_14, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_13_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_7, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_07_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_13, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_14_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_6, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_08_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_12, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_15_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_5, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_09_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_11, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_16_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_4, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_10_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_10, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_17_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_3, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_11_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_9, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_18_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_2, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_12_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_8, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_19_off[2] = {
+    { 50, &btlgrp_tou_tou_rank_1, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
 };
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_13_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_7, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_14_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_6, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_15_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_5, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_16_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_4, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_17_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_3, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_18_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_2, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_19_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_rank_1, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_20_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_add_1, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_21_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_add_2, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_22_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_champ, (u32)((u8*)&tou_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_23_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_boss, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tou_btlno_tou_01_24_off[6] = {
-    0x00000032, (u32)&btlgrp_tou_tou_koopa, (u32)&tou_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_tou_tbl[442] = {
-    (u32)"マップstg_03_0", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"クリクリブラザーズ", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_01_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x04040000, 0x0A0A0404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"コウラーズ", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_02_off,
-    0x00000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x0A0A0000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"サンボ三兄弟",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_03_off, 0x00000040, 0x00000000, 0x04040404,
-    0x00000000, 0x04040404, 0x00000404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ボンバーズ", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_04_off, 0x00000040, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"クモーンズ", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_05_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ジュゲムとイタい仲間たち", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_06_off,
-    0x00000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ハイパーズ",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_07_off, 0x00000040, 0x00000000, 0x04040404,
-    0x00000000, 0x04040404, 0x00000404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ボロドーズ", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_08_off, 0x00000040, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"クッパぐんだんズ", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_09_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"こうてつウォリアーズ", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_10_off,
-    0x20000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"ザ・トゲトゲン",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_11_off, 0x00000040, 0x00000000, 0x04040404,
-    0x00000000, 0x04040404, 0x00000404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ヤミトゲダルマー", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_12_off, 0x00000040, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ザ・ウラウラン", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_13_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x0A0A0000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"レッドデビルズ", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_14_off,
-    0x00000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"トリプルブロス",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_15_off, 0x00000040, 0x00000000, 0x04040404,
-    0x00000A0A, 0x04040404, 0x00000404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ザ・マホーンズ", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_16_off, 0x00000040, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"キラーボムヘイズ", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_17_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"バーストワンワン", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_18_off,
-    0x00000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"トゲノコエース",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_19_off, 0x00000040, 0x00000000, 0x04040404,
-    0x00000000, 0x04040404, 0x00000404, 0x0A0A0000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ナイトウィングス", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_20_off, 0x00000040, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"スネイルズ", (u32)"tou_03", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_21_off, 0x00000040,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ブレッドハート", (u32)"tou_03",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_22_off,
-    0x20000040, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_BOSS_STG3_CHAMP1", (u32)"マッチョガンス",
-    (u32)"tou_03", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tou_btlno_tou_01_23_off, 0x20000010, 0x00000006, 0x04040404,
-    0x00000000, 0x04040404, 0x00000404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_BOSS_STG3_GANCE1",
-    (u32)"乱入クッパ", (u32)"tou_03", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tou_btlno_tou_01_24_off, 0x20000000, 0x00000000,
-    0x00000000, 0x00000000, 0x04040404, 0x00000000,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_BOSS_STG8_KOOPA", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_20_off[2] = {
+    { 50, &btlgrp_tou_tou_add_1, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_21_off[2] = {
+    { 50, &btlgrp_tou_tou_add_2, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_22_off[2] = {
+    { 50, &btlgrp_tou_tou_champ, (struct BattleStageData*)(void*)((u8*)tou_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_23_off[2] = {
+    { 50, &btlgrp_tou_tou_boss, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tou_btlno_tou_01_24_off[2] = {
+    { 50, &btlgrp_tou_tou_koopa, (struct BattleStageData*)tou_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+BattleSetupData btlsetup_tou_tbl[26] = {
+    {
+        "マップstg_03_0",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "クリクリブラザーズ",                                                                                          // name
+        "tou_03",                                                                                             // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_01_off,                                                                    // offLoadouts
+        64,                                                                                                   // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "コウラーズ",                                                                                              // name
+        "tou_03",                                                                                             // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_02_off,                                                                    // offLoadouts
+        64,                                                                                                   // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "サンボ三兄弟",                                                                                           // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_03_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ボンバーズ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_04_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "クモーンズ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_05_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ジュゲムとイタい仲間たち",                                                                                     // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_06_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ハイパーズ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_07_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ボロドーズ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_08_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "クッパぐんだんズ",                                                                                         // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_09_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "こうてつウォリアーズ",                                                                                       // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_10_off,                                                                  // offLoadouts
+        536870976,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_CHUBOSS_BATTLE1",                                                                              // music
+    },
+    {
+        "ザ・トゲトゲン",                                                                                          // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_11_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミトゲダルマー",                                                                                         // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_12_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ザ・ウラウラン",                                                                                            // name
+        "tou_03",                                                                                             // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_13_off,                                                                    // offLoadouts
+        64,                                                                                                   // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "レッドデビルズ",                                                                                          // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_14_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "トリプルブロス",                                                                                            // name
+        "tou_03",                                                                                             // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_15_off,                                                                    // offLoadouts
+        64,                                                                                                   // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ザ・マホーンズ",                                                                                          // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_16_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "キラーボムヘイズ",                                                                                         // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_17_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "バーストワンワン",                                                                                         // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_18_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "トゲノコエース",                                                                                            // name
+        "tou_03",                                                                                             // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_19_off,                                                                    // offLoadouts
+        64,                                                                                                   // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ナイトウィングス",                                                                                         // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_20_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "スネイルズ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_21_off,                                                                  // offLoadouts
+        64,                                                                                                 // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ブレッドハート",                                                                                          // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_22_off,                                                                  // offLoadouts
+        536870976,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG3_CHAMP1",                                                                             // music
+    },
+    {
+        "マッチョガンス",                                                                                          // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_23_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        6,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG3_GANCE1",                                                                             // music
+    },
+    {
+        "乱入クッパ",                                                                                            // name
+        "tou_03",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tou_btlno_tou_01_24_off,                                                                  // offLoadouts
+        536870912,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG8_KOOPA",                                                                              // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

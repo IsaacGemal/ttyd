@@ -3,21 +3,24 @@
 #include "evt/evt_cmd.h"
 #include "evt/evt_map.h"
 #include "forcedata.h"
+#include "battle/battle_stage_object.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_flower_drop_param_default2[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_barriern[];
-extern s32 battle_item_gundan_zako[];
-extern s32 battle_item_magnum_battender[];
-extern s32 battle_item_monochrome__pakkun[];
-extern s32 battle_item_piders[];
-extern s32 unit_barriern_19_data_2B8A8[];
-extern s32 unit_boss_magnum_battender[];
-extern s32 unit_gundan_zako_19_data_2A2B8[];
-extern s32 unit_monochrome_pakkun_19_data_389E0[];
-extern s32 unit_piders_19_data_2E9C8[];
+extern ItemDropData battle_item_barriern[1];
+extern ItemDropData battle_item_gundan_zako[10];
+extern ItemDropData battle_item_magnum_battender[1];
+extern ItemDropData battle_item_monochrome__pakkun[5];
+extern ItemDropData battle_item_piders[4];
+extern BattleUnitKind unit_barriern_19_data_2B8A8;
+extern BattleUnitKind unit_boss_magnum_battender;
+extern BattleUnitKind unit_gundan_zako_19_data_2A2B8;
+extern BattleUnitKind unit_monochrome_pakkun_19_data_389E0;
+extern BattleUnitKind unit_piders_19_data_2E9C8;
 s32 stg_02_1_init_evt[8];
 
 // clang-format off
@@ -39,73 +42,50 @@ extend_data(81,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 mri_btlobject_data[258] = {
-    (u32)"S_isk_01", 0x00020000, 0x41980000, 0x00000000,
-    0xC25C0000, 0x003C0000, (u32)"S_ueki_01", 0x00020001,
-    0xC33C0000, 0x00000000, 0x42400000, 0x003C0000,
-    (u32)"S_ueki_02", 0x00020001, 0xC3130000, 0x00000000,
-    0xC2500000, 0x003C0000, (u32)"S_ueki_03", 0x00020001,
-    0xC2600000, 0x00000000, 0xC2100000, 0x003C0000,
-    (u32)"S_ueki_04", 0x00020001, 0x42180000, 0x00000000,
-    0xC1E00000, 0x003C0000, (u32)"S_ueki_05", 0x00020001,
-    0x431D0000, 0x00000000, 0xC2480000, 0x003C0000,
-    (u32)"S_ueki_06", 0x00020001, 0x43460000, 0x00000000,
-    0x42640000, 0x003C0000, (u32)"S_ueki_07", 0x00020001,
-    0xC34C0000, 0x00000000, 0xC2800000, 0x003C0000,
-    (u32)"S_kusa_01", 0x00020001, 0xBF800000, 0x00000000,
-    0x42980000, 0x003C0000, (u32)"B", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"S_isk_02", 0x00020000,
-    0x41C80000, 0x00000000, 0xC25C0000, 0x003C0000,
-    (u32)"S_ueki_01", 0x00020001, 0xC33C0000, 0x00000000,
-    0x42400000, 0x003C0000, (u32)"S_ueki_02", 0x00020001,
-    0xC3130000, 0x00000000, 0xC2500000, 0x003C0000,
-    (u32)"S_ueki_03", 0x00020001, 0xC2600000, 0x00000000,
-    0xC2100000, 0x003C0000, (u32)"S_ueki_04", 0x00020001,
-    0x42180000, 0x00000000, 0xC1E00000, 0x003C0000,
-    (u32)"S_ueki_05", 0x00020001, 0x431D0000, 0x00000000,
-    0xC2480000, 0x003C0000, (u32)"S_ueki_06", 0x00020001,
-    0x43460000, 0x00000000, 0x42640000, 0x003C0000,
-    (u32)"S_ueki_07", 0x00020001, 0xC34C0000, 0x00000000,
-    0xC2800000, 0x003C0000, (u32)"S_kusa_01", 0x00020001,
-    0xBF800000, 0x00000000, 0x42980000, 0x003C0000,
-    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"S_isk_03", 0x00020000, 0x41400000, 0x00000000,
-    0xC25C0000, 0x003C0000, (u32)"S_ueki_01", 0x00020001,
-    0xC33C0000, 0x00000000, 0x42400000, 0x003C0000,
-    (u32)"S_ueki_02", 0x00020001, 0xC3130000, 0x00000000,
-    0xC2500000, 0x003C0000, (u32)"S_ueki_03", 0x00020001,
-    0xC2600000, 0x00000000, 0xC2100000, 0x003C0000,
-    (u32)"S_ueki_04", 0x00020001, 0x42180000, 0x00000000,
-    0xC1E00000, 0x003C0000, (u32)"S_ueki_05", 0x00020001,
-    0x431D0000, 0x00000000, 0xC2480000, 0x003C0000,
-    (u32)"S_ueki_06", 0x00020001, 0x43460000, 0x00000000,
-    0x42640000, 0x003C0000, (u32)"S_ueki_07", 0x00020001,
-    0xC34C0000, 0x00000000, 0xC2800000, 0x003C0000,
-    (u32)"S_kusa_01", 0x00020001, 0xBF800000, 0x00000000,
-    0x42980000, 0x003C0000, (u32)"B", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"S_ueki_01", 0x00020001,
-    0xC33C0000, 0x00000000, 0x42400000, 0x003C0000,
-    (u32)"S_ueki_02", 0x00020001, 0xC3130000, 0x00000000,
-    0xC2500000, 0x003C0000, (u32)"S_ueki_03", 0x00020001,
-    0xC2600000, 0x00000000, 0xC2380000, 0x003C0000,
-    (u32)"S_ueki_04", 0x00020001, 0x42180000, 0x00000000,
-    0xC2640000, 0x003C0000, (u32)"S_ueki_05", 0x00020001,
-    0x431D0000, 0x00000000, 0xC2480000, 0x003C0000,
-    (u32)"S_ueki_06", 0x00020001, 0x43460000, 0x00000000,
-    0x42640000, 0x003C0000, (u32)"S_ueki_07", 0x00020001,
-    0xC34C0000, 0x00000000, 0xC2800000, 0x003C0000,
-    (u32)"S_kusa_01", 0x00020001, 0xBF800000, 0x00000000,
-    0x42980000, 0x003C0000, (u32)"B", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000,
+BattleStageObjectData mri_btlobject_data[43] = {
+    { "S_isk_01", 2, 0, { 19.0f, 0.0f, -55.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_01", 2, 1, { -188.0f, 0.0f, 48.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_02", 2, 1, { -147.0f, 0.0f, -52.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_03", 2, 1, { -56.0f, 0.0f, -36.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_04", 2, 1, { 38.0f, 0.0f, -28.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_05", 2, 1, { 157.0f, 0.0f, -50.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_06", 2, 1, { 198.0f, 0.0f, 57.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_07", 2, 1, { -204.0f, 0.0f, -64.0f }, 0, 60, { 0, 0 } },
+    { "S_kusa_01", 2, 1, { -1.0f, 0.0f, 76.0f }, 0, 60, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "S_isk_02", 2, 0, { 25.0f, 0.0f, -55.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_01", 2, 1, { -188.0f, 0.0f, 48.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_02", 2, 1, { -147.0f, 0.0f, -52.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_03", 2, 1, { -56.0f, 0.0f, -36.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_04", 2, 1, { 38.0f, 0.0f, -28.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_05", 2, 1, { 157.0f, 0.0f, -50.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_06", 2, 1, { 198.0f, 0.0f, 57.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_07", 2, 1, { -204.0f, 0.0f, -64.0f }, 0, 60, { 0, 0 } },
+    { "S_kusa_01", 2, 1, { -1.0f, 0.0f, 76.0f }, 0, 60, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "S_isk_03", 2, 0, { 12.0f, 0.0f, -55.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_01", 2, 1, { -188.0f, 0.0f, 48.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_02", 2, 1, { -147.0f, 0.0f, -52.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_03", 2, 1, { -56.0f, 0.0f, -36.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_04", 2, 1, { 38.0f, 0.0f, -28.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_05", 2, 1, { 157.0f, 0.0f, -50.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_06", 2, 1, { 198.0f, 0.0f, 57.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_07", 2, 1, { -204.0f, 0.0f, -64.0f }, 0, 60, { 0, 0 } },
+    { "S_kusa_01", 2, 1, { -1.0f, 0.0f, 76.0f }, 0, 60, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_01", 2, 1, { -188.0f, 0.0f, 48.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_02", 2, 1, { -147.0f, 0.0f, -52.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_03", 2, 1, { -56.0f, 0.0f, -46.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_04", 2, 1, { 38.0f, 0.0f, -57.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_05", 2, 1, { 157.0f, 0.0f, -50.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_06", 2, 1, { 198.0f, 0.0f, 57.0f }, 0, 60, { 0, 0 } },
+    { "S_ueki_07", 2, 1, { -204.0f, 0.0f, -64.0f }, 0, 60, { 0, 0 } },
+    { "S_kusa_01", 2, 1, { -1.0f, 0.0f, 76.0f }, 0, 60, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
 };
 
 // TODO: type
@@ -221,524 +201,503 @@ u32 mri_btlstage_data[436] = {
     0x00000000, 0x00000000, 0x00000000, 0x00010001,
 };
 
-// TODO: type
-u32 btlparty_mri_mri_01_01[24] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+BattleUnitSetup btlparty_mri_mri_01_01[2] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_01_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_01_01, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_01_01 = { 2, btlparty_mri_mri_01_01, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_04_01[1] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_04_01[12] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+BattleGroupSetup btlgrp_mri_mri_04_01 = { 1, btlparty_mri_mri_04_01, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_05_01[2] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_04_01[8] = {
-    0x00000001, (u32)&btlparty_mri_mri_04_01, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_05_01 = { 2, btlparty_mri_mri_05_01, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_06_2F_02[3] = {
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_05_01[24] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+BattleGroupSetup btlgrp_mri_mri_06_2F_02 = { 3, btlparty_mri_mri_06_2F_02, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_06_2F_03[4] = {
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_05_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_05_01, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_06_2F_03 = { 4, btlparty_mri_mri_06_2F_03, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_12_01[2] = {
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_06_2F_02[36] = {
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+BattleGroupSetup btlgrp_mri_mri_12_01 = { 2, btlparty_mri_mri_12_01, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_mri_mri_12_02[4] = {
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_06_2F_02[8] = {
-    0x00000003, (u32)&btlparty_mri_mri_06_2F_02, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_12_02 = { 4, btlparty_mri_mri_12_02, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_mri_mri_15_01[2] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_06_2F_03[48] = {
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+BattleGroupSetup btlgrp_mri_mri_15_01 = { 2, btlparty_mri_mri_15_01, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_17_01[2] = {
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_06_2F_03[8] = {
-    0x00000004, (u32)&btlparty_mri_mri_06_2F_03, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_17_01 = { 2, btlparty_mri_mri_17_01, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_18_02[3] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_12_01[24] = {
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
+BattleGroupSetup btlgrp_mri_mri_18_02 = { 3, btlparty_mri_mri_18_02, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_18_03[3] = {
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 0.0f, 40.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 75.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_12_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_12_01, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_18_03 = { 3, btlparty_mri_mri_18_03, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_19_01[2] = {
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_12_02[48] = {
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
+BattleGroupSetup btlgrp_mri_mri_19_01 = { 2, btlparty_mri_mri_19_01, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_19_02[2] = {
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_12_02[8] = {
-    0x00000004, (u32)&btlparty_mri_mri_12_02, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_19_02 = { 2, btlparty_mri_mri_19_02, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_mri_mri_19_04[4] = {
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_monochrome_pakkun_19_data_389E0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome__pakkun },
+    { &unit_piders_19_data_2E9C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_15_01[24] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+BattleGroupSetup btlgrp_mri_mri_19_04 = { 4, btlparty_mri_mri_19_04, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_mri_mri_20_02[2] = {
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_15_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_15_01, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_20_02 = { 2, btlparty_mri_mri_20_02, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_20_03[3] = {
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 10.0f, 40.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
+    { &unit_barriern_19_data_2B8A8, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern },
+    { &unit_gundan_zako_19_data_2A2B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_17_01[24] = {
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+BattleGroupSetup btlgrp_mri_mri_20_03 = { 3, btlparty_mri_mri_20_03, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_mri_mri_mb[1] = {
+    { &unit_boss_magnum_battender, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_magnum_battender },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_17_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_17_01, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_mri_mri_mb = { 1, btlparty_mri_mri_mb, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_test1_off[2] = {
+    { 50, &btlgrp_mri_mri_01_01, (struct BattleStageData*)mri_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_18_02[36] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_test2_off[2] = {
+    { 50, &btlgrp_mri_mri_01_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_18_02[8] = {
-    0x00000003, (u32)&btlparty_mri_mri_18_02, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_test3_off[2] = {
+    { 50, &btlgrp_mri_mri_01_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_18_03[36] = {
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x00000000,
-    0x42200000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x42960000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_test4_off[2] = {
+    { 50, &btlgrp_mri_mri_01_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_18_03[8] = {
-    0x00000003, (u32)&btlparty_mri_mri_18_03, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_01_01_off[2] = {
+    { 10, &btlgrp_mri_mri_01_01, (struct BattleStageData*)mri_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_19_01[24] = {
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_04_01_off[2] = {
+    { 10, &btlgrp_mri_mri_04_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_19_01[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_19_01, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_05_01_off[2] = {
+    { 10, &btlgrp_mri_mri_05_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_19_02[24] = {
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_06_2f_02_off[2] = {
+    { 10, &btlgrp_mri_mri_06_2F_02, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_19_02[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_19_02, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_06_2f_03_off[2] = {
+    { 10, &btlgrp_mri_mri_06_2F_03, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_19_04[48] = {
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_monochrome_pakkun_19_data_389E0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome__pakkun,
-    (u32)unit_piders_19_data_2E9C8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_12_01_off[2] = {
+    { 10, &btlgrp_mri_mri_12_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_19_04[8] = {
-    0x00000004, (u32)&btlparty_mri_mri_19_04, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_12_02_off[2] = {
+    { 10, &btlgrp_mri_mri_12_02, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_20_02[24] = {
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_15_01_off[2] = {
+    { 10, &btlgrp_mri_mri_15_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_20_02[8] = {
-    0x00000002, (u32)&btlparty_mri_mri_20_02, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_17_01_off[2] = {
+    { 10, &btlgrp_mri_mri_17_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_20_03[36] = {
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x41200000,
-    0x42200000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
-    (u32)unit_barriern_19_data_2B8A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_barriern,
-    (u32)unit_gundan_zako_19_data_2A2B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gundan_zako,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_18_02_off[2] = {
+    { 10, &btlgrp_mri_mri_18_02, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_20_03[8] = {
-    0x00000003, (u32)&btlparty_mri_mri_20_03, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_18_03_off[2] = {
+    { 10, &btlgrp_mri_mri_18_03, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_mri_mri_mb[12] = {
-    (u32)unit_boss_magnum_battender, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_magnum_battender,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_19_01_off[2] = {
+    { 10, &btlgrp_mri_mri_19_01, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_mri_mri_mb[8] = {
-    0x00000001, (u32)&btlparty_mri_mri_mb, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_19_02_off[2] = {
+    { 10, &btlgrp_mri_mri_19_02, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_mri_mri_01_01, (u32)&mri_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_19_04_off[2] = {
+    { 10, &btlgrp_mri_mri_19_04, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_mri_mri_01_01, (u32)((u8*)&mri_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_20_02_off[2] = {
+    { 10, &btlgrp_mri_mri_20_02, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_test3_off[6] = {
-    0x00000032, (u32)&btlgrp_mri_mri_01_01, (u32)((u8*)&mri_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_20_03_off[2] = {
+    { 10, &btlgrp_mri_mri_20_03, (struct BattleStageData*)(void*)((u8*)mri_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_test4_off[6] = {
-    0x00000032, (u32)&btlgrp_mri_mri_01_01, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_mri_btlno_mri_mb_off[2] = {
+    { 10, &btlgrp_mri_mri_mb, (struct BattleStageData*)mri_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_01_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_01_01, (u32)&mri_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_04_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_04_01, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_05_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_05_01, (u32)((u8*)&mri_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_06_2f_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_06_2F_02, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_06_2f_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_06_2F_03, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_12_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_12_01, (u32)((u8*)&mri_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_12_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_12_02, (u32)((u8*)&mri_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_15_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_15_01, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_17_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_17_01, (u32)((u8*)&mri_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_18_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_18_02, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_18_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_18_03, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_19_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_19_01, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_19_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_19_02, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_19_04_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_19_04, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_20_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_20_02, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_20_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_20_03, (u32)((u8*)&mri_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_mri_btlno_mri_mb_off[6] = {
-    0x0000000A, (u32)&btlgrp_mri_mri_mb, (u32)&mri_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_mri_tbl[374] = {
-    (u32)"マップstg_02_1_1", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_02_1_2", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_02_1_3", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_test3_off,
-    0x00000000, 0x00000000, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_02_1_3",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_mri_btlno_mri_test4_off, 0x00000000, 0x00000000, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"mri01ぐんだんザコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_01_01_off, 0x20000010, 0x00000000,
-    0x05050A0A, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050505, 0x01010101, 0x01010101,
-    (u32)"BGM_KOBOSS_BATTLE1", (u32)"mri04ぐんだんザコ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_04_01_off, 0x20000010,
-    0x00000000, 0x05050A0A, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050505, 0x01010101,
-    0x01010101, (u32)"BGM_KOBOSS_BATTLE1", (u32)"mri05ぐんだんザコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_05_01_off,
-    0x00000000, 0x00000000, 0x05050A0A, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050505,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri06パイダース2F_２",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_mri_btlno_mri_06_2f_02_off, 0x00000000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"mri06パイダース2F_３", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_06_2f_03_off, 0x00000000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050505, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"mri12パックンフラワー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_12_01_off, 0x00000000,
-    0x00000000, 0x04040404, 0x00000000, 0x04040404,
-    0x00000A0A, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri12パックンフラワー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_12_02_off,
-    0x00000000, 0x00000000, 0x04040404, 0x00000000,
-    0x04040404, 0x00000A0A, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri15ぐんだんザコ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_mri_btlno_mri_15_01_off, 0x20000010, 0x00000000, 0x04040A0A,
-    0x00000000, 0x04040404, 0x00000A0A, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_KOBOSS_BATTLE1",
-    (u32)"mri17パイダース", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_17_01_off, 0x00000000, 0x00000000,
-    0x04040404, 0x00000000, 0x04040404, 0x00000A0A,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"mri18軍団ザコ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_18_02_off, 0x00000000,
-    0x00000000, 0x04040A0A, 0x00000000, 0x04040404,
-    0x00000A0A, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri18バリアーン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_18_03_off,
-    0x00000000, 0x00000000, 0x04040A0A, 0x00000000,
-    0x04040404, 0x00000A0A, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri19パイダース",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_mri_btlno_mri_19_01_off, 0x00000000, 0x00000000, 0x05050A0A,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"mri19パックン１", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_19_02_off, 0x00000000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050505, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"mri19パックン３", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_19_04_off, 0x00000000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050505, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri20軍団ザコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_mri_btlno_mri_20_02_off,
-    0x00000000, 0x00000000, 0x05050A0A, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050505,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"mri20バリアーン２",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_mri_btlno_mri_20_03_off, 0x00000000, 0x00000000, 0x05050A0A,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"マグナムバッテンダー", (u32)"mri_01", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_mri_btlno_mri_mb_off, 0x20000010, 0x00000002,
-    0x00000A0A, 0x00000000, 0x00000000, 0x00000A0A,
-    0x00000000, 0x00000000, 0x00000101, 0x01010101,
-    (u32)"BGM_BOSS_STG3_3RDLEADER1", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleSetupData btlsetup_mri_tbl[22] = {
+    {
+        "マップstg_02_1_1",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_02_1_2",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_02_1_3",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_test3_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_02_1_3",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_test4_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri01ぐんだんザコ",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_01_01_off,                                                                    // offLoadouts
+        536870928,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri04ぐんだんザコ",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_04_01_off,                                                                    // offLoadouts
+        536870928,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri05ぐんだんザコ",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_05_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri06パイダース2F_２",                                                                                   // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_06_2f_02_off,                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri06パイダース2F_３",                                                                                   // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_06_2f_03_off,                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri12パックンフラワー",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_12_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri12パックンフラワー",                                                                                      // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_12_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri15ぐんだんザコ",                                                                                          // name
+        NULL,                                                                                                   // field_0x4
+        0,                                                                                                      // field_0x8
+        -1,                                                                                                     // flag
+        NULL,                                                                                                   // onLoadouts
+        btlgrpsel_mri_btlno_mri_15_01_off,                                                                      // offLoadouts
+        536870928,                                                                                              // field_0x18
+        0,                                                                                                      // field_0x1C
+        { 4, 4, 10, 10, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri17パイダース",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_17_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri18軍団ザコ",                                                                                            // name
+        NULL,                                                                                                   // field_0x4
+        0,                                                                                                      // field_0x8
+        -1,                                                                                                     // flag
+        NULL,                                                                                                   // onLoadouts
+        btlgrpsel_mri_btlno_mri_18_02_off,                                                                      // offLoadouts
+        0,                                                                                                      // field_0x18
+        0,                                                                                                      // field_0x1C
+        { 4, 4, 10, 10, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                     // music
+    },
+    {
+        "mri18バリアーン",                                                                                           // name
+        NULL,                                                                                                   // field_0x4
+        0,                                                                                                      // field_0x8
+        -1,                                                                                                     // flag
+        NULL,                                                                                                   // onLoadouts
+        btlgrpsel_mri_btlno_mri_18_03_off,                                                                      // offLoadouts
+        0,                                                                                                      // field_0x18
+        0,                                                                                                      // field_0x1C
+        { 4, 4, 10, 10, 0, 0, 0, 0, 4, 4, 4, 4, 0, 0, 10, 10, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                     // music
+    },
+    {
+        "mri19パイダース",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_19_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri19パックン１",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_19_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri19パックン３",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_mri_btlno_mri_19_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "mri20軍団ザコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_20_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "mri20バリアーン２",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_mri_btlno_mri_20_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "マグナムバッテンダー",                                                                                           // name
+        "mri_01",                                                                                               // field_0x4
+        0,                                                                                                      // field_0x8
+        -1,                                                                                                     // flag
+        NULL,                                                                                                   // onLoadouts
+        btlgrpsel_mri_btlno_mri_mb_off,                                                                         // offLoadouts
+        536870928,                                                                                              // field_0x18
+        2,                                                                                                      // field_0x1C
+        { 0, 0, 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG3_3RDLEADER1",                                                                             // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

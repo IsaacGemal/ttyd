@@ -1,19 +1,22 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_stage_object.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_heart_drop_param_default[];
 extern s32 battle_heart_drop_param_default2[];
 extern s32 battle_heart_drop_param_default3[];
-extern s32 battle_item_kurokumorn[];
-extern s32 battle_item_patatogemet[];
-extern s32 battle_item_sambo_mummy[];
-extern s32 unit_kuriboo_7_data_69B8[];
-extern s32 unit_kurokumorn[];
-extern s32 unit_patatogemet_7_data_10380[];
-extern s32 unit_sambo_mummy_7_data_BC68[];
+extern ItemDropData battle_item_kurokumorn[9];
+extern ItemDropData battle_item_patatogemet[10];
+extern ItemDropData battle_item_sambo_mummy[8];
+extern BattleUnitKind unit_kuriboo_7_data_69B8;
+extern BattleUnitKind unit_kurokumorn;
+extern BattleUnitKind unit_patatogemet_7_data_10380;
+extern BattleUnitKind unit_sambo_mummy_7_data_BC68;
 
 // clang-format off
 extend_data(32,
@@ -34,44 +37,31 @@ extend_data(33,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 eki_btlobject_data[144] = {
-    (u32)"lamp_01", 0x00020000, 0xC2E80000, 0x00000000,
-    0xC26C0000, 0x003C0000, (u32)"lamp_02", 0x00020000,
-    0x42E80000, 0x00000000, 0xC26C0000, 0x0A320000,
-    (u32)"lamp_03", 0x00020000, 0x00000000, 0x00000000,
-    0xC26C0000, 0x14280000, (u32)"gomibako_01", 0x00020001,
-    0xC3320000, 0x00000000, 0x42440000, 0x003C0000,
-    (u32)"gomibako_02", 0x00020001, 0x43320000, 0x00000000,
-    0x42440000, 0x0A320000, (u32)"saku", 0x00020001,
-    0x00000000, 0x00000000, 0x428A0000, 0x14280000,
-    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"gomibako_01", 0x00020001, 0xC3320000, 0x00000000,
-    0x42440000, 0x003C0000, (u32)"gomibako_02", 0x00020001,
-    0x43320000, 0x00000000, 0x42440000, 0x0A320000,
-    (u32)"saku", 0x00020001, 0x00000000, 0x00000000,
-    0x428A0000, 0x14280000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"A1", 0x00020000, 0x00000000, 0x00000000,
-    0x40400000, 0x003C0000, (u32)"A2", 0x00020001,
-    0x00000000, 0x00000000, 0xC1F00000, 0x003C0000,
-    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
-    0x40A00000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"saku_01", 0x00020001, 0xC2E40000, 0x00000000,
-    0xC1B80000, 0x003C0000, (u32)"saku_02", 0x00020001,
-    0x43020000, 0x00000000, 0xC1C80000, 0x0A320000,
-    (u32)"sikake_01", 0x00020000, 0xC2EC0000, 0x00000000,
-    0xC2240000, 0x003C0000, (u32)"sikake_02", 0x00020000,
-    0xC2280000, 0x00000000, 0xC26C0000, 0x0A320000,
-    (u32)"sikake_03", 0x00020000, 0x43040000, 0x00000000,
-    0xC2180000, 0x14280000, (u32)"sikake_04", 0x00020000,
-    0x42100000, 0x00000000, 0xC2400000, 0x1E1E0000,
-    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+BattleStageObjectData eki_btlobject_data[24] = {
+    { "lamp_01", 2, 0, { -116.0f, 0.0f, -59.0f }, 0, 60, { 0, 0 } },
+    { "lamp_02", 2, 0, { 116.0f, 0.0f, -59.0f }, 10, 50, { 0, 0 } },
+    { "lamp_03", 2, 0, { 0.0f, 0.0f, -59.0f }, 20, 40, { 0, 0 } },
+    { "gomibako_01", 2, 1, { -178.0f, 0.0f, 49.0f }, 0, 60, { 0, 0 } },
+    { "gomibako_02", 2, 1, { 178.0f, 0.0f, 49.0f }, 10, 50, { 0, 0 } },
+    { "saku", 2, 1, { 0.0f, 0.0f, 69.0f }, 20, 40, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "gomibako_01", 2, 1, { -178.0f, 0.0f, 49.0f }, 0, 60, { 0, 0 } },
+    { "gomibako_02", 2, 1, { 178.0f, 0.0f, 49.0f }, 10, 50, { 0, 0 } },
+    { "saku", 2, 1, { 0.0f, 0.0f, 69.0f }, 20, 40, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "A1", 2, 0, { 0.0f, 0.0f, 3.0f }, 0, 60, { 0, 0 } },
+    { "A2", 2, 1, { 0.0f, 0.0f, -30.0f }, 0, 60, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 5.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "saku_01", 2, 1, { -114.0f, 0.0f, -23.0f }, 0, 60, { 0, 0 } },
+    { "saku_02", 2, 1, { 130.0f, 0.0f, -25.0f }, 10, 50, { 0, 0 } },
+    { "sikake_01", 2, 0, { -118.0f, 0.0f, -41.0f }, 0, 60, { 0, 0 } },
+    { "sikake_02", 2, 0, { -42.0f, 0.0f, -59.0f }, 10, 50, { 0, 0 } },
+    { "sikake_03", 2, 0, { 132.0f, 0.0f, -38.0f }, 20, 40, { 0, 0 } },
+    { "sikake_04", 2, 0, { 36.0f, 0.0f, -48.0f }, 30, 30, { 0, 0 } },
+    { "B", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
 };
 
 // TODO: type
@@ -187,477 +177,457 @@ u32 eki_btlstage_data[436] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 btlparty_eki_eki_06_01_off_1[36] = {
-    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleUnitSetup btlparty_eki_eki_06_01_off_1[3] = {
+    { &unit_kuriboo_7_data_69B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_kuriboo_7_data_69B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
+    { &unit_kuriboo_7_data_69B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_06_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_06_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_06_01_off_1 = { 3, btlparty_eki_eki_06_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_02_01_off_1[2] = {
+    { &unit_kurokumorn, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_kurokumorn, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_02_01_off_1[24] = {
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+BattleGroupSetup btlgrp_eki_eki_02_01_off_1 = { 2, btlparty_eki_eki_02_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_02_02_off_1[3] = {
+    { &unit_kurokumorn, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_kurokumorn, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_kurokumorn, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_02_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_02_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_02_02_off_1 = { 3, btlparty_eki_eki_02_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_02_03_off_1[2] = {
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_02_02_off_1[36] = {
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+BattleGroupSetup btlgrp_eki_eki_02_03_off_1 = { 2, btlparty_eki_eki_02_03_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_03_01_off_1[2] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_02_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_02_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_03_01_off_1 = { 2, btlparty_eki_eki_03_01_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_03_02_off_1[3] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_02_03_off_1[24] = {
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+BattleGroupSetup btlgrp_eki_eki_03_02_off_1 = { 3, btlparty_eki_eki_03_02_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_03_03_off_1[3] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_kurokumorn, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_02_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_02_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_03_03_off_1 = { 3, btlparty_eki_eki_03_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_03_05_off_1[2] = {
+    { &unit_kurokumorn, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_03_01_off_1[24] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+BattleGroupSetup btlgrp_eki_eki_03_05_off_1 = { 2, btlparty_eki_eki_03_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_03_07_off_1[4] = {
+    { &unit_kurokumorn, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_kurokumorn, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurokumorn },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_03_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_03_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_03_07_off_1 = { 4, btlparty_eki_eki_03_07_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_01_off_1[3] = {
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_03_02_off_1[36] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+BattleGroupSetup btlgrp_eki_eki_04_01_off_1 = { 3, btlparty_eki_eki_04_01_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_02_off_1[3] = {
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_03_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_03_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_04_02_off_1 = { 3, btlparty_eki_eki_04_02_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_06_off_1[2] = {
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_03_03_off_1[36] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+BattleGroupSetup btlgrp_eki_eki_04_06_off_1 = { 2, btlparty_eki_eki_04_06_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_03_off_1[2] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_03_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_03_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_04_03_off_1 = { 2, btlparty_eki_eki_04_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_04_off_1[4] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_03_05_off_1[24] = {
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+BattleGroupSetup btlgrp_eki_eki_04_04_off_1 = { 4, btlparty_eki_eki_04_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_eki_eki_04_05_off_1[2] = {
+    { &unit_sambo_mummy_7_data_BC68, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_patatogemet_7_data_10380, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_03_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_03_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_eki_eki_04_05_off_1 = { 2, btlparty_eki_eki_04_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_test1_off[2] = {
+    { 50, &btlgrp_eki_eki_06_01_off_1, (struct BattleStageData*)eki_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_03_07_off_1[48] = {
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_test2_off[2] = {
+    { 50, &btlgrp_eki_eki_06_01_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_03_07_off_1[8] = {
-    0x00000004, (u32)&btlparty_eki_eki_03_07_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_test3_off[2] = {
+    { 50, &btlgrp_eki_eki_06_01_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_01_off_1[36] = {
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_06_01_off[2] = {
+    { 50, &btlgrp_eki_eki_06_01_off_1, (struct BattleStageData*)eki_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_04_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_06_02_off[2] = {
+    { 50, &btlgrp_eki_eki_06_01_off_1, (struct BattleStageData*)eki_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_02_off_1[36] = {
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_02_01_off[2] = {
+    { 20, &btlgrp_eki_eki_02_01_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_eki_eki_04_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_02_02_off[2] = {
+    { 20, &btlgrp_eki_eki_02_02_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_06_off_1[24] = {
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_02_03_off[2] = {
+    { 20, &btlgrp_eki_eki_02_03_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_06_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_04_06_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_03_01_off[2] = {
+    { 20, &btlgrp_eki_eki_03_01_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_03_off_1[24] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_03_02_off[2] = {
+    { 20, &btlgrp_eki_eki_03_02_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_04_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_03_03_off[2] = {
+    { 20, &btlgrp_eki_eki_03_03_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_04_off_1[48] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_03_06_off[2] = {
+    { 20, &btlgrp_eki_eki_03_05_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_eki_eki_04_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_03_08_off[2] = {
+    { 20, &btlgrp_eki_eki_03_07_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_eki_eki_04_05_off_1[24] = {
-    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_01_off[2] = {
+    { 20, &btlgrp_eki_eki_04_01_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_eki_eki_04_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_eki_eki_04_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_02_off[2] = {
+    { 20, &btlgrp_eki_eki_04_02_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_06_off[2] = {
+    { 20, &btlgrp_eki_eki_04_06_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_03_off[2] = {
+    { 20, &btlgrp_eki_eki_04_03_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_test3_off[6] = {
-    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_04_off[2] = {
+    { 20, &btlgrp_eki_eki_04_04_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_06_01_off[6] = {
-    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_eki_btlno_eki_04_05_off[2] = {
+    { 20, &btlgrp_eki_eki_04_05_off_1, (struct BattleStageData*)(void*)((u8*)eki_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_06_02_off[6] = {
-    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_02_01_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_02_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_02_02_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_02_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_02_03_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_02_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_03_01_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_03_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_03_02_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_03_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_03_03_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_03_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_03_06_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_03_05_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_03_08_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_03_07_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_01_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_02_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_06_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_06_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_03_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_04_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_04_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_eki_btlno_eki_04_05_off[6] = {
-    0x00000014, (u32)&btlgrp_eki_eki_04_05_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_eki_tbl[340] = {
-    (u32)"マップstg_06_1", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_06_2", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_06_3", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test3_off,
-    0x00000000, 0x00000000, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_06 クリボー３",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_eki_btlno_eki_06_01_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"eki_06 クリボー３", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_06_02_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02クロクモーン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_02_01_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02クロクモーン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_02_02_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02パタトゲメット",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_eki_btlno_eki_02_03_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"eki_03サンボ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_01_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03サンボ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_02_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03サンボ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_03_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03クロクモーン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_eki_btlno_eki_03_06_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"eki_03クロクモーン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_08_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_01_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_02_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_eki_btlno_eki_04_06_off, 0x00000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"eki_04サンボマミー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_03_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04サンボマミー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_04_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04サンボマミー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_05_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleSetupData btlsetup_eki_tbl[20] = {
+    {
+        "マップstg_06_1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_06_2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_06_3",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_test3_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_06 クリボー３",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_06_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_06 クリボー３",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_06_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_02クロクモーン",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_02_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_02クロクモーン",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_02_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_02パタトゲメット",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_02_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_03サンボ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_03_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_03サンボ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_03_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_03サンボ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_03_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_03クロクモーン",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_03_06_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_03クロクモーン",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_03_08_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04パタトゲメット",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04パタトゲメット",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04パタトゲメット",                                                                                    // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_06_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04サンボマミー",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04サンボマミー",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "eki_04サンボマミー",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_eki_btlno_eki_04_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

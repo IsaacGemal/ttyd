@@ -1,24 +1,26 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_gonbaba[];
-extern s32 battle_item_honenoko[];
-extern s32 battle_item_nokonoko[];
-extern s32 battle_item_patakuri[];
-extern s32 battle_item_patapata[];
-extern s32 battle_item_red_honenoko[];
-extern s32 battle_item_togekuri[];
-extern s32 unit_boss_gonbaba[];
-extern s32 unit_honenoko_9_data_14C90[];
-extern s32 unit_nokonoko_9_data_18CA8[];
-extern s32 unit_patakuri_9_data_1A0F0[];
-extern s32 unit_patapata_9_data_1B7A8[];
-extern s32 unit_red_honenoko_9_data_17268[];
-extern s32 unit_togekuri_9_data_1DA88[];
+extern ItemDropData battle_item_gonbaba[1];
+extern ItemDropData battle_item_honenoko[9];
+extern ItemDropData battle_item_nokonoko[10];
+extern ItemDropData battle_item_patakuri[10];
+extern ItemDropData battle_item_patapata[10];
+extern ItemDropData battle_item_red_honenoko[1];
+extern ItemDropData battle_item_togekuri[10];
+extern BattleUnitKind unit_boss_gonbaba;
+extern BattleUnitKind unit_honenoko_9_data_14C90;
+extern BattleUnitKind unit_nokonoko_9_data_18CA8;
+extern BattleUnitKind unit_patakuri_9_data_1A0F0;
+extern BattleUnitKind unit_patapata_9_data_1B7A8;
+extern BattleUnitKind unit_red_honenoko_9_data_17268;
+extern BattleUnitKind unit_togekuri_9_data_1DA88;
 
 // clang-format off
 extend_data(60,
@@ -199,586 +201,527 @@ u32 gon_btlstage_data[545] = {
     0x00000000,
 };
 
-// TODO: type
-u32 btlparty_gon_gon_02_02_off_1[36] = {
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+BattleUnitSetup btlparty_gon_gon_02_02_off_1[3] = {
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_02_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_02_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_02_02_off_1 = { 3, btlparty_gon_gon_02_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_02_03_off_1[2] = {
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_02_03_off_1[24] = {
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+BattleGroupSetup btlgrp_gon_gon_02_03_off_1 = { 2, btlparty_gon_gon_02_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_02_04_off_1[3] = {
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_02_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_gon_gon_02_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_02_04_off_1 = { 3, btlparty_gon_gon_02_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_03_01_off_1[5] = {
+    { &unit_red_honenoko_9_data_17268, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_red_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_02_04_off_1[36] = {
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+BattleGroupSetup btlgrp_gon_gon_03_01_off_1 = { 5, btlparty_gon_gon_03_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_04_01_off_1[2] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_02_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_02_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_04_01_off_1 = { 2, btlparty_gon_gon_04_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_04_02_off_1[4] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_03_01_off_1[60] = {
-    (u32)unit_red_honenoko_9_data_17268, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_red_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+BattleGroupSetup btlgrp_gon_gon_04_02_off_1 = { 4, btlparty_gon_gon_04_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_04_03_off_1[3] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_03_01_off_1[8] = {
-    0x00000005, (u32)&btlparty_gon_gon_03_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_04_03_off_1 = { 3, btlparty_gon_gon_04_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_06_03_off_1[3] = {
+    { &unit_patakuri_9_data_1A0F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_04_01_off_1[24] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+BattleGroupSetup btlgrp_gon_gon_06_03_off_1 = { 3, btlparty_gon_gon_06_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_06_04_off_1[3] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_patakuri_9_data_1A0F0, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patakuri_9_data_1A0F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_04_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_gon_gon_04_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_06_04_off_1 = { 3, btlparty_gon_gon_06_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_08_01_off_1[2] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_04_02_off_1[48] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+BattleGroupSetup btlgrp_gon_gon_08_01_off_1 = { 2, btlparty_gon_gon_08_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_08_03_off_1[2] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_togekuri_9_data_1DA88, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_04_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_gon_gon_04_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_08_03_off_1 = { 2, btlparty_gon_gon_08_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_08_05_off_1[2] = {
+    { &unit_patakuri_9_data_1A0F0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_04_03_off_1[36] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+BattleGroupSetup btlgrp_gon_gon_08_05_off_1 = { 2, btlparty_gon_gon_08_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_09_01_off_1[3] = {
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_04_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_04_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_09_01_off_1 = { 3, btlparty_gon_gon_09_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_09_02_off_1[3] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_06_03_off_1[36] = {
-    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+BattleGroupSetup btlgrp_gon_gon_09_02_off_1 = { 3, btlparty_gon_gon_09_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_09_04_off_1[4] = {
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_9_data_14C90, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_06_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_06_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_09_04_off_1 = { 4, btlparty_gon_gon_09_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_10_01_off_1[4] = {
+    { &unit_togekuri_9_data_1DA88, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_togekuri_9_data_1DA88, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_06_04_off_1[36] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+BattleGroupSetup btlgrp_gon_gon_10_01_off_1 = { 4, btlparty_gon_gon_10_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_10_02_off_1[3] = {
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_06_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_06_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_10_02_off_1 = { 3, btlparty_gon_gon_10_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_10_03_off_1[4] = {
+    { &unit_nokonoko_9_data_18CA8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+    { &unit_togekuri_9_data_1DA88, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_patakuri_9_data_1A0F0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_patapata_9_data_1B7A8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_08_01_off_1[24] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+BattleGroupSetup btlgrp_gon_gon_10_03_off_1 = { 4, btlparty_gon_gon_10_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gon_gon_11_01_off_1[1] = {
+    { &unit_boss_gonbaba, 1, 0x04000004, { 365.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gonbaba },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_08_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_gon_gon_08_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gon_gon_11_01_off_1 = { 1, btlparty_gon_gon_11_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_test1_off[2] = {
+    { 50, &btlgrp_gon_gon_02_02_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_08_03_off_1[24] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_test2_off[2] = {
+    { 50, &btlgrp_gon_gon_02_02_off_1, (struct BattleStageData*)gon_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_08_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_gon_gon_08_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_test3_off[2] = {
+    { 50, &btlgrp_gon_gon_02_02_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_08_05_off_1[24] = {
-    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_02_02_off[2] = {
+    { 50, &btlgrp_gon_gon_02_02_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_08_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_gon_gon_08_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_02_03_off[2] = {
+    { 10, &btlgrp_gon_gon_02_03_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_09_01_off_1[36] = {
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_02_04_off[2] = {
+    { 10, &btlgrp_gon_gon_02_04_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_09_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_09_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_03_01_off[2] = {
+    { 10, &btlgrp_gon_gon_03_01_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x6D0) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_09_02_off_1[36] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_04_02_off[2] = {
+    { 10, &btlgrp_gon_gon_04_02_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_09_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_09_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_04_03_off[2] = {
+    { 10, &btlgrp_gon_gon_04_03_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_09_04_off_1[48] = {
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_06_03_off[2] = {
+    { 10, &btlgrp_gon_gon_06_03_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_09_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_gon_gon_09_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_06_04_off[2] = {
+    { 10, &btlgrp_gon_gon_06_04_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_10_01_off_1[48] = {
-    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_08_01_off[2] = {
+    { 10, &btlgrp_gon_gon_08_01_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_10_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_gon_gon_10_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_08_03_off[2] = {
+    { 10, &btlgrp_gon_gon_08_03_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_10_02_off_1[36] = {
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_08_05_off[2] = {
+    { 10, &btlgrp_gon_gon_08_05_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_10_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_gon_gon_10_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_09_01_off[2] = {
+    { 10, &btlgrp_gon_gon_09_01_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_10_03_off_1[48] = {
-    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_09_02_off[2] = {
+    { 10, &btlgrp_gon_gon_09_02_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_10_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_gon_gon_10_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_09_04_off[2] = {
+    { 10, &btlgrp_gon_gon_09_04_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gon_gon_11_01_off_1[12] = {
-    (u32)unit_boss_gonbaba, 0x01000000, 0x04000004, 0x43B68000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gonbaba,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_10_01_off[2] = {
+    { 10, &btlgrp_gon_gon_10_01_off_1, (struct BattleStageData*)gon_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gon_gon_11_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_gon_gon_11_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_10_02_off[2] = {
+    { 10, &btlgrp_gon_gon_10_02_off_1, (struct BattleStageData*)gon_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_10_03_off[2] = {
+    { 10, &btlgrp_gon_gon_10_03_off_1, (struct BattleStageData*)gon_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)&gon_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_gon_btlno_gon_11_01_off[2] = {
+    { 20, &btlgrp_gon_gon_11_01_off_1, (struct BattleStageData*)(void*)((u8*)gon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_test3_off[6] = {
-    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_02_02_off[6] = {
-    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_02_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_02_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_02_04_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_02_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_03_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_03_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x6d0), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_04_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_04_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_04_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_04_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_06_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_06_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_06_04_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_06_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_08_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_08_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_08_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_08_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_08_05_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_08_05_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_09_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_09_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_09_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_09_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_09_04_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_09_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_10_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_10_01_off_1, (u32)&gon_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_10_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_10_02_off_1, (u32)&gon_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_10_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_gon_gon_10_03_off_1, (u32)&gon_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gon_btlno_gon_11_01_off[6] = {
-    0x00000014, (u32)&btlgrp_gon_gon_11_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_gon_tbl[374] = {
-    (u32)"マップstg_01_03", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_05", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_06", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test3_off,
-    0x00000000, 0x00000000, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon02パタパタ1",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gon_btlno_gon_02_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x0A0A0000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"gon02ノコノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_02_03_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x0A0A0000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon02パタパタ2", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_02_04_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x0A0A0000, 0x05050000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon03赤ホネノコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_03_01_off,
-    0x20000010, 0x00000003, 0x00000000, 0x00000000,
-    0x01010000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"gon04ホネノコ2",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gon_btlno_gon_04_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"gon04ホネノコ3", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_04_03_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon06トゲクリボー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_06_03_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon06ホネノコ2", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_06_04_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050A0A, 0x00000000, 0x05050000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon08ホネノコ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gon_btlno_gon_08_01_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"gon08ホネノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_08_03_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon08パタクリ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_08_05_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon09ノコノコ1", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_09_01_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x0A0A0000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon09ホネノコ1",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gon_btlno_gon_09_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"gon09ホネノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_09_04_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10トゲクリボー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_10_01_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
-    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10パタパタ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_10_02_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x0A0A0000, 0x05050000,
-    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10ノコノコ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gon_btlno_gon_10_03_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x0A0A0000,
-    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"gon11ゴンババ", (u32)"gon_11", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_11_01_off, 0x20100010, 0x00000003,
-    0x05050000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010000, 0x00000000,
-    (u32)"BGM_BOSS_STG1_GONBABA1", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleSetupData btlsetup_gon_tbl[22] = {
+    {
+        "マップstg_01_03",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gon_btlno_gon_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_01_05",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gon_btlno_gon_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_01_06",                                                                                     // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gon_btlno_gon_test3_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "gon02パタパタ1",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_02_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon02ノコノコ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_02_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon02パタパタ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_02_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon03赤ホネノコ",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gon_btlno_gon_03_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        3,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_CHUBOSS_BATTLE1",                                                                              // music
+    },
+    {
+        "gon04ホネノコ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_04_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon04ホネノコ3",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_04_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon06トゲクリボー",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_06_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon06ホネノコ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_06_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon08ホネノコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_08_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon08ホネノコ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_08_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon08パタクリ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_08_05_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon09ノコノコ1",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_09_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon09ホネノコ1",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_09_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon09ホネノコ2",                                                                                         // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_09_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 10, 10, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon10トゲクリボー",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_10_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon10パタパタ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_10_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon10ノコノコ",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_gon_btlno_gon_10_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 10, 10, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "gon11ゴンババ",                                                                                        // name
+        "gon_11",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gon_btlno_gon_11_01_off,                                                                  // offLoadouts
+        537919504,                                                                                          // field_0x18
+        3,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_BOSS_STG1_GONBABA1",                                                                           // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

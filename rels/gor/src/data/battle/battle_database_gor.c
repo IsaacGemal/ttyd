@@ -1,16 +1,18 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
 extern s32 battle_heart_drop_param_default[];
-extern s32 battle_item_kanbu1[];
-extern s32 battle_item_monban[];
-extern s32 unit_boss_kanbu1[];
-extern s32 unit_lecture_christine[];
-extern s32 unit_lecture_frankli_sac[];
-extern s32 unit_monban[];
+extern ItemDropData battle_item_kanbu1[1];
+extern ItemDropData battle_item_monban[1];
+extern BattleUnitKind unit_boss_kanbu1;
+extern BattleUnitKind unit_lecture_christine;
+extern BattleUnitKind unit_lecture_frankli_sac;
+extern BattleUnitKind unit_monban;
 
 // clang-format off
 extend_data(32,
@@ -103,126 +105,145 @@ u32 gor_btlstage_data[218] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 btlparty_gor_gor_00_01_off_1[12] = {
-    (u32)unit_boss_kanbu1, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kanbu1,
+BattleUnitSetup btlparty_gor_gor_00_01_off_1[1] = {
+    { &unit_boss_kanbu1, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kanbu1 },
 };
 
-// TODO: type
-u32 btlgrp_gor_gor_00_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_gor_gor_00_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gor_gor_00_01_off_1 = { 1, btlparty_gor_gor_00_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gor_gor_02_ac_lecture[1] = {
+    { &unit_lecture_christine, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlparty_gor_gor_02_ac_lecture[12] = {
-    (u32)unit_lecture_christine, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleGroupSetup btlgrp_gor_gor_02_ac_lecture = { 1, btlparty_gor_gor_02_ac_lecture, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gor_gor_02_sac_lecture[1] = {
+    { &unit_lecture_frankli_sac, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gor_gor_02_ac_lecture[8] = {
-    0x00000001, (u32)&btlparty_gor_gor_02_ac_lecture, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleGroupSetup btlgrp_gor_gor_02_sac_lecture = { 1, btlparty_gor_gor_02_sac_lecture, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_gor_gor_02_01_off_1[1] = {
+    { &unit_monban, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monban },
 };
 
-// TODO: type
-u32 btlparty_gor_gor_02_sac_lecture[12] = {
-    (u32)unit_lecture_frankli_sac, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleGroupSetup btlgrp_gor_gor_02_01_off_1 = { 1, btlparty_gor_gor_02_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_test1_off[2] = {
+    { 50, &btlgrp_gor_gor_02_01_off_1, (struct BattleStageData*)gor_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gor_gor_02_sac_lecture[8] = {
-    0x00000001, (u32)&btlparty_gor_gor_02_sac_lecture, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_test2_off[2] = {
+    { 50, &btlgrp_gor_gor_02_01_off_1, (struct BattleStageData*)(void*)((u8*)gor_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_gor_gor_02_01_off_1[12] = {
-    (u32)unit_monban, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monban,
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_00_01_off[2] = {
+    { 50, &btlgrp_gor_gor_00_01_off_1, (struct BattleStageData*)gor_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_gor_gor_02_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_gor_gor_02_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_02_aclec_off[2] = {
+    { 50, &btlgrp_gor_gor_02_ac_lecture, (struct BattleStageData*)(void*)((u8*)gor_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)&gor_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_02_saclec_off[2] = {
+    { 50, &btlgrp_gor_gor_02_sac_lecture, (struct BattleStageData*)(void*)((u8*)gor_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_gor_btlno_gor_02_01_off[2] = {
+    { 50, &btlgrp_gor_gor_02_01_off_1, (struct BattleStageData*)(void*)((u8*)gor_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_00_01_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_00_01_off_1, (u32)&gor_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_02_aclec_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_02_ac_lecture, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_02_saclec_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_02_sac_lecture, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_gor_btlno_gor_02_01_off[6] = {
-    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_gor_tbl[119] = {
-    (u32)"マップstg_00_0", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gor_btlno_gor_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_00_4", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"GOR00 幹部その１", (u32)"gor_00",
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_00_01_off,
-    0x20000010, 0x00000000, 0x00000505, 0x00000000,
-    0x00000505, 0x00000000, 0x00000000, 0x00000000,
-    0x00000101, 0x01010101, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"GOR02 ACレクチャー",
-    (u32)"gor_02", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_gor_btlno_gor_02_aclec_off, 0x00000000, 0x00000000, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, (u32)"BGM_KOBOSS_BATTLE1",
-    (u32)"GOR02 SACレクチャー", (u32)"gor_02", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_gor_btlno_gor_02_saclec_off, 0x00000000, 0x00000000,
-    0x01010000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"BGM_KOBOSS_BATTLE1", (u32)"GOR02 もんばん", (u32)"gor_02", 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_02_01_off, 0x20000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x00000000, 0x05050000, 0x01010101,
-    0x01010101, (u32)"BGM_KOBOSS_BATTLE1", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+BattleSetupData btlsetup_gor_tbl[7] = {
+    {
+        "マップstg_00_0",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_00_4",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "GOR00 幹部その１",                                                                                      // name
+        "gor_00",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_00_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_CHUBOSS_BATTLE1",                                                                              // music
+    },
+    {
+        "GOR02 ACレクチャー",                                                                                    // name
+        "gor_02",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_02_aclec_off,                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "GOR02 SACレクチャー",                                                                                   // name
+        "gor_02",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_02_saclec_off,                                                              // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        "GOR02 もんばん",                                                                                       // name
+        "gor_02",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_gor_btlno_gor_02_01_off,                                                                  // offLoadouts
+        536870912,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_KOBOSS_BATTLE1",                                                                               // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type
