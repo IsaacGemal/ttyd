@@ -1505,3 +1505,47 @@ REL tables outside scripts are 756 KB: battle about 400 KB (weapons 106 KB, batt
 66 KB, MSL floats 43 KB (extend_data), the rest assorted (minigames, recipes, credits, splines). Strings are
 452 KB and come with the scripts. Code is 910 KB, 1,859 distinct bodies. Next: a data wave, prepared by the
 declarations sweep, the battle table types, ttydasm writing a whole unit, and REL object paths and tools.
+
+## Sep 29: finishing the last function of nearly-linked units (Claude Sonnet 5.5, for the "Ambitious work session" orchestrator)
+
+A unit links only when every function is 100% and its data and function order match, so units whose data was done and
+that were one or two functions short were the queue. **15 units linked, `tools/ci.py` PASS: functions 4,902 -> 4,994
+matched, linked code 11.19% -> 11.80%, linked data 4.94% -> 5.79%.** Each link was proven by the checksum ("32 files OK").
+
+**Finished functions**
+- `effThunderDisp` (eff_thunder_n64): the `type < 3 && type >= 0` test was a `switch` (cases 0-2 together, default),
+  which MWCC lowers to the original's `cmpwi/bge/b` chain. The alpha-patched colour is a local inside an inlined
+  helper, which puts its stack slot below the by-value temporaries. The unit also defined its own copies of the .sdata2
+  floats, the .rodata double and the "ThunderN64" string that the code's literals already emit (so each existed twice),
+  and its four colour words were non-`const` (.sdata, not .sdata2).
+- `DVDMgrRead` (dvdmgr): the original's loop is not rotated; `while (1) { if (done) break; ... }` reproduces it,
+  where `while (!done)` gets rotated.
+- `partyChkJoin` (mario_party): the result passes through a temporary (`clrlwi r0; mr r3, r0`). All 14 functions were
+  then 100% and it still would not link: under `-inline auto,deferred` MWCC emits functions in reverse source order, so
+  the file is written in reverse (the same finding as evt_hit and mot_stay).
+- `marioBalloonMain`/`marioBaloonInit` (mario_balloon): each hit-object block has its own `hit` variable (a shared one
+  swapped r27/r30 from the second block on), and `marioChkBero` belongs to the third block's `else`, so the
+  `0x00800000` path skips it. `marioBaloonInit` needs `#pragma opt_propagation off` to keep its 0 in r31 across
+  `marioGetPtr` (needs `--allow-pragma`; the reason is commented at the pragma).
+- `__close_all` (ansi_files): the loop sits between `__begin_critical_region(2)` and `__end_critical_region(2)`.
+- 32-byte one-function units, written from scratch: `eff_butterfly`, `eff_hit`, `eff_stardust`, `eff_breath_fire`
+  (forward to the N64 effect; three new `include/eff/n64/*_n64.h` prototype headers, types from the callers' argument
+  registers) and the Sun fdlibm wrappers `w_asin`, `w_fmod`, `w_hypot`, `w_log`, `w_pow`, `w_sqrt`.
+
+**Improved, not finished (left `NonMatching`, labels say what differs)**
+- `effNumberGX` 97.94% -> 98.58%: a `case 3:` sharing the default gives the original's dispatch (compare 2, then 0,
+  then 1); local declaration order does not change the remaining register allocation (32 permutations tried).
+- `mbtowc` 95.62% -> 98.47%: nested ifs with one `return result`; the first `!s` test still compiles to `beq end`
+  where the target has `bne over; b end`. `wcstombs` stays 98.36%.
+
+**Tried without result:** `mot_hip` (one `fmuls` with its operands swapped; a dozen source shapes), `evt_cloud_main`
+(FP register rotation in the screen-space math), `battleAcMain_CraneTiming` (the target keeps two base pointers,
+`work+0x1F20` and `work+0x1F4C`, in registers; every derivation folds one into the other).
+
+**Lessons**
+- A unit that scores complete but will not link: compare its objects' section bytes with `build/G8MJ01/obj/<unit>.o`
+  (pyelftools). Two causes came up: constants emitted twice (explicit definition plus the code's own literal) and
+  function order.
+- `switch` shape is a hint about the source: extra `case` labels that share the default change MWCC's dispatch tree.
+- Registers assigned per variable: splitting one variable into one per block changes allocation without changing the
+  code, and is worth trying on any "same instructions, different registers" near-miss.

@@ -7,6 +7,8 @@ char stderr_buff[0x100];
 extern int __close_console(__file_handle file);
 extern int __write_console(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn);
 extern int __read_console(__file_handle file, unsigned char* buf, size_t* count, __idle_proc idle_fn);
+extern void __begin_critical_region(int);
+extern void __end_critical_region(int);
 
 extern files __files = {
     {
@@ -104,11 +106,11 @@ extern files __files = {
     },
 };
 
-// NONMATCHING (90.24%): 4 missing, plus register differences.
 void __close_all(void) {
     FILE* p = &__files._stdin;
     FILE* plast;
 
+	__begin_critical_region(2);
 	while(p != NULL)
 	{
 		if (p->file_mode.file_kind != __closed_file)
@@ -127,6 +129,7 @@ void __close_all(void) {
 				plast->next = NULL;
 		}
 	}
+	__end_critical_region(2);
 }
 
 unsigned int __flush_all(void)
