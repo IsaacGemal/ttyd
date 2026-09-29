@@ -313,7 +313,7 @@ def Rel(lib_name: str, objects: List[Object]) -> Dict[str, Any]:
         "lib": lib_name,
         "src_dir": f"rels/{lib_name}/src",
         "mw_version": "GC/2.6",
-        "cflags": [*cflags_rel, f"-i rels/{lib_name}/include"],
+        "cflags": [*(cflags_rel_nodefer if lib_name in ("gon", "mri") else cflags_rel), f"-i rels/{lib_name}/include"],
         "progress_category": "game",
         "objects": objects,
     }
