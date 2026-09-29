@@ -36,7 +36,7 @@ void johoya_init(void);
 s32 search_evt_no(const char* label);
 s32 johoya_data_make(const char* prefix, s32 type);
 s16 johoya_get(u8* data, s16 id);
-s32 johoya_set(u8* data, s16 id, s16 value);
+s16 johoya_set(u8* data, s16 id, s16 value);
 const char* search_evt_moji(s32 index);
 
 USER_FUNC(johoya_keti_newjoho_check);
