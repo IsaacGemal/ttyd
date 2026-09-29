@@ -1793,6 +1793,9 @@ config.libs = [
             Object(NonMatching, "unit/unit_patakuri.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_9_data_1A0F0"]),
             Object(Matching, "unit/unit_patakuri.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_26_data_21998"]),
             Object(Matching, "unit/unit_patakuri.c", modules=["hei"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_12_data_13CD0"]),
+            Object(Matching, "unit/unit_heavy_bom.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_15_data_33E08"]),
+            Object(Matching, "unit/unit_heavy_bom.c", modules=["dou"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_6_data_15A08"]),
+            Object(Matching, "unit/unit_heavy_bom.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_local_data"]),
         ],
     ),
 ]

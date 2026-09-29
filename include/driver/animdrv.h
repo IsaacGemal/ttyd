@@ -302,6 +302,8 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback);
 void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disableDraw);
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name);
+void animPoseDrawShape(s32 poseId, s32 shapeId);
+void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData);
 s32 animPoseGetGroupIdx(s32 poseId, const char* name);
 const char* animPoseGetGroupName(s32 poseId, s32 group);
 
