@@ -1,0 +1,799 @@
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "forcedata.h"
+
+#pragma force_active on
+extern s32 battle_flower_drop_param_default[];
+extern s32 battle_heart_drop_param_default[];
+extern s32 battle_item_gonbaba[];
+extern s32 battle_item_honenoko[];
+extern s32 battle_item_nokonoko[];
+extern s32 battle_item_patakuri[];
+extern s32 battle_item_patapata[];
+extern s32 battle_item_red_honenoko[];
+extern s32 battle_item_togekuri[];
+extern s32 unit_boss_gonbaba[];
+extern s32 unit_honenoko_9_data_14C90[];
+extern s32 unit_nokonoko_9_data_18CA8[];
+extern s32 unit_patakuri_9_data_1A0F0[];
+extern s32 unit_patapata_9_data_1B7A8[];
+extern s32 unit_red_honenoko_9_data_17268[];
+extern s32 unit_togekuri_9_data_1DA88[];
+
+// clang-format off
+extend_data(60,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(61,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+u32 gon_btlobject_data[60] = {
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"haikei_B_a", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"haikei_C_a", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"haikei_B_b", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"haikei_C_b", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"haikei_B_c", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"haikei_C_c", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+};
+
+// TODO: type
+u32 gon_btlstage_data[545] = {
+    (u32)"bti_01", (u32)"stg_01_5", 0x00000002, (u32)&gon_btlobject_data,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"bti_01", (u32)"stg_01_6", 0x00000002,
+    (u32)((u8*)&gon_btlobject_data + 0xc0), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"bti_01", (u32)"stg_01_3",
+    0x00000002, (u32)((u8*)&gon_btlobject_data + 0x30), 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, (u32)weaponGetPowerDefault, 0x00000001, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"bti_01",
+    (u32)"stg_01_3", 0x00000002, (u32)((u8*)&gon_btlobject_data + 0x60), 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x02100060, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, (u32)weaponGetPowerDefault, 0x00000001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x02100060, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)"bti_01", (u32)"stg_01_3", 0x00000002, (u32)((u8*)&gon_btlobject_data + 0x90),
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_02_02_off_1[36] = {
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_02_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_02_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_02_03_off_1[24] = {
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_02_03_off_1[8] = {
+    0x00000002, (u32)&btlparty_gon_gon_02_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_02_04_off_1[36] = {
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_02_04_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_02_04_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_03_01_off_1[60] = {
+    (u32)unit_red_honenoko_9_data_17268, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_red_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41200000,
+    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x432A0000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_03_01_off_1[8] = {
+    0x00000005, (u32)&btlparty_gon_gon_03_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_04_01_off_1[24] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_04_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_gon_gon_04_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_04_02_off_1[48] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_04_02_off_1[8] = {
+    0x00000004, (u32)&btlparty_gon_gon_04_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_04_03_off_1[36] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_04_03_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_04_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_06_03_off_1[36] = {
+    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_06_03_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_06_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_06_04_off_1[36] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
+    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_06_04_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_06_04_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_08_01_off_1[24] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_08_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_gon_gon_08_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_08_03_off_1[24] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_08_03_off_1[8] = {
+    0x00000002, (u32)&btlparty_gon_gon_08_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_08_05_off_1[24] = {
+    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_08_05_off_1[8] = {
+    0x00000002, (u32)&btlparty_gon_gon_08_05_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_09_01_off_1[36] = {
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_09_01_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_09_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_09_02_off_1[36] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_09_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_09_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_09_04_off_1[48] = {
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_honenoko_9_data_14C90, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_09_04_off_1[8] = {
+    0x00000004, (u32)&btlparty_gon_gon_09_04_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_10_01_off_1[48] = {
+    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_10_01_off_1[8] = {
+    0x00000004, (u32)&btlparty_gon_gon_10_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_10_02_off_1[36] = {
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_10_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_gon_gon_10_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_10_03_off_1[48] = {
+    (u32)unit_nokonoko_9_data_18CA8, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
+    (u32)unit_togekuri_9_data_1DA88, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+    (u32)unit_patakuri_9_data_1A0F0, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
+    (u32)unit_patapata_9_data_1B7A8, 0x01000000, 0x04000004, 0x43160000,
+    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_10_03_off_1[8] = {
+    0x00000004, (u32)&btlparty_gon_gon_10_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gon_gon_11_01_off_1[12] = {
+    (u32)unit_boss_gonbaba, 0x01000000, 0x04000004, 0x43B68000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gonbaba,
+};
+
+// TODO: type
+u32 btlgrp_gon_gon_11_01_off_1[8] = {
+    0x00000001, (u32)&btlparty_gon_gon_11_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_test1_off[6] = {
+    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_test2_off[6] = {
+    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)&gon_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_test3_off[6] = {
+    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_02_02_off[6] = {
+    0x00000032, (u32)&btlgrp_gon_gon_02_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_02_03_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_02_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_02_04_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_02_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_03_01_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_03_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x6d0), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_04_02_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_04_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_04_03_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_04_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_06_03_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_06_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_06_04_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_06_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_08_01_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_08_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_08_03_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_08_03_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_08_05_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_08_05_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_09_01_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_09_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_09_02_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_09_02_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_09_04_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_09_04_off_1, (u32)((u8*)&gon_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_10_01_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_10_01_off_1, (u32)&gon_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_10_02_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_10_02_off_1, (u32)&gon_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_10_03_off[6] = {
+    0x0000000A, (u32)&btlgrp_gon_gon_10_03_off_1, (u32)&gon_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gon_btlno_gon_11_01_off[6] = {
+    0x00000014, (u32)&btlgrp_gon_gon_11_01_off_1, (u32)((u8*)&gon_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlsetup_gon_tbl[374] = {
+    (u32)"マップstg_01_03", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test1_off, 0x00000000, 0x00000000,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_05", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test2_off, 0x00000000,
+    0x00000000, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_01_06", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_test3_off,
+    0x00000000, 0x00000000, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon02パタパタ1",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gon_btlno_gon_02_02_off, 0x00000000, 0x00000000, 0x05050000,
+    0x00000000, 0x00000505, 0x00000000, 0x0A0A0000,
+    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"gon02ノコノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_02_03_off, 0x00000000, 0x00000000,
+    0x05050000, 0x00000000, 0x00000505, 0x00000000,
+    0x0A0A0000, 0x05050000, 0x01010000, 0x00000000,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon02パタパタ2", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_02_04_off, 0x00000000,
+    0x00000000, 0x05050000, 0x00000000, 0x00000505,
+    0x00000000, 0x0A0A0000, 0x05050000, 0x01010000,
+    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon03赤ホネノコ", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_03_01_off,
+    0x20000010, 0x00000003, 0x00000000, 0x00000000,
+    0x01010000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"gon04ホネノコ2",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gon_btlno_gon_04_02_off, 0x00000000, 0x00000000, 0x05050000,
+    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
+    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"gon04ホネノコ3", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_04_03_off, 0x00000000, 0x00000000,
+    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
+    0x05050000, 0x05050000, 0x01010000, 0x00000000,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon06トゲクリボー", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_06_03_off, 0x00000000,
+    0x00000000, 0x05050000, 0x00000000, 0x05050505,
+    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
+    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon06ホネノコ2", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_06_04_off,
+    0x00000000, 0x00000000, 0x05050000, 0x00000000,
+    0x05050A0A, 0x00000000, 0x05050000, 0x05050000,
+    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon08ホネノコ",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gon_btlno_gon_08_01_off, 0x00000000, 0x00000000, 0x05050000,
+    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
+    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"gon08ホネノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_08_03_off, 0x00000000, 0x00000000,
+    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
+    0x05050000, 0x05050000, 0x01010000, 0x00000000,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon08パタクリ", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_08_05_off, 0x00000000,
+    0x00000000, 0x05050000, 0x00000000, 0x05050505,
+    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
+    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon09ノコノコ1", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_09_01_off,
+    0x00000000, 0x00000000, 0x05050000, 0x00000000,
+    0x05050505, 0x00000000, 0x0A0A0000, 0x05050000,
+    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon09ホネノコ1",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gon_btlno_gon_09_02_off, 0x00000000, 0x00000000, 0x05050000,
+    0x00000000, 0x05050A0A, 0x00000000, 0x05050000,
+    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"gon09ホネノコ2", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_09_04_off, 0x00000000, 0x00000000,
+    0x05050000, 0x00000000, 0x05050A0A, 0x00000000,
+    0x05050000, 0x05050000, 0x01010000, 0x00000000,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10トゲクリボー", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_10_01_off, 0x00000000,
+    0x00000000, 0x05050000, 0x00000000, 0x05050505,
+    0x00000000, 0x05050000, 0x0A0A0000, 0x01010000,
+    0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10パタパタ", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gon_btlno_gon_10_02_off,
+    0x00000000, 0x00000000, 0x05050000, 0x00000000,
+    0x05050505, 0x00000000, 0x0A0A0000, 0x05050000,
+    0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1", (u32)"gon10ノコノコ",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gon_btlno_gon_10_03_off, 0x00000000, 0x00000000, 0x05050000,
+    0x00000000, 0x05050505, 0x00000000, 0x0A0A0000,
+    0x05050000, 0x01010000, 0x00000000, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"gon11ゴンババ", (u32)"gon_11", 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gon_btlno_gon_11_01_off, 0x20100010, 0x00000003,
+    0x05050000, 0x00000000, 0x05050505, 0x00000000,
+    0x05050000, 0x05050000, 0x01010000, 0x00000000,
+    (u32)"BGM_BOSS_STG1_GONBABA1", 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btl_gon_setup_no_tbl[44] = {
+    (u32)"BTLNO_GON_TEST1", 0x00000000, (u32)"BTLNO_GON_TEST2", 0x00000001,
+    (u32)"BTLNO_GON_TEST3", 0x00000002, (u32)"BTLNO_GON_02_02", 0x00000003,
+    (u32)"BTLNO_GON_02_03", 0x00000004, (u32)"BTLNO_GON_02_04", 0x00000005,
+    (u32)"BTLNO_GON_03_01", 0x00000006, (u32)"BTLNO_GON_04_02", 0x00000007,
+    (u32)"BTLNO_GON_04_03", 0x00000008, (u32)"BTLNO_GON_06_03", 0x00000009,
+    (u32)"BTLNO_GON_06_04", 0x0000000A, (u32)"BTLNO_GON_08_01", 0x0000000B,
+    (u32)"BTLNO_GON_08_03", 0x0000000C, (u32)"BTLNO_GON_08_05", 0x0000000D,
+    (u32)"BTLNO_GON_09_01", 0x0000000E, (u32)"BTLNO_GON_09_02", 0x0000000F,
+    (u32)"BTLNO_GON_09_04", 0x00000010, (u32)"BTLNO_GON_10_01", 0x00000011,
+    (u32)"BTLNO_GON_10_02", 0x00000012, (u32)"BTLNO_GON_10_03", 0x00000013,
+    (u32)"BTLNO_GON_11_01", 0x00000014, 0x00000000, 0x00000000,
+};
+// clang-format on
+#pragma force_active off

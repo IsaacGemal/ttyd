@@ -1,0 +1,236 @@
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "forcedata.h"
+
+#pragma force_active on
+extern s32 battle_flower_drop_param_default[];
+extern s32 battle_heart_drop_param_default[];
+extern s32 battle_item_kanbu1[];
+extern s32 battle_item_monban[];
+extern s32 unit_boss_kanbu1[];
+extern s32 unit_lecture_christine[];
+extern s32 unit_lecture_frankli_sac[];
+extern s32 unit_monban[];
+
+// clang-format off
+extend_data(32,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(33,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+u32 gor_btlobject_data[36] = {
+    (u32)"A1", 0x00020000, 0x42040000, 0x00000000,
+    0xC2400000, 0x003C0000, (u32)"A2", 0x00020001,
+    0x00000000, 0x00000000, 0x428E0000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+};
+
+// TODO: type
+u32 gor_btlstage_data[218] = {
+    (u32)"bti_01", (u32)"stg_00_0", 0x00000004, (u32)&gor_btlobject_data,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100070, 0x10000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"bti_01", (u32)"stg_00_4", 0x00000002,
+    (u32)((u8*)&gor_btlobject_data + 0x60), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x0210006F, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlparty_gor_gor_00_01_off_1[12] = {
+    (u32)unit_boss_kanbu1, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kanbu1,
+};
+
+// TODO: type
+u32 btlgrp_gor_gor_00_01_off_1[8] = {
+    0x00000001, (u32)&btlparty_gor_gor_00_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gor_gor_02_ac_lecture[12] = {
+    (u32)unit_lecture_christine, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrp_gor_gor_02_ac_lecture[8] = {
+    0x00000001, (u32)&btlparty_gor_gor_02_ac_lecture, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gor_gor_02_sac_lecture[12] = {
+    (u32)unit_lecture_frankli_sac, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrp_gor_gor_02_sac_lecture[8] = {
+    0x00000001, (u32)&btlparty_gor_gor_02_sac_lecture, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_gor_gor_02_01_off_1[12] = {
+    (u32)unit_monban, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monban,
+};
+
+// TODO: type
+u32 btlgrp_gor_gor_02_01_off_1[8] = {
+    0x00000001, (u32)&btlparty_gor_gor_02_01_off_1, 0x00000000, 0x00000000,
+    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_test1_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)&gor_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_test2_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_00_01_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_00_01_off_1, (u32)&gor_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_02_aclec_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_02_ac_lecture, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_02_saclec_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_02_sac_lecture, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_gor_btlno_gor_02_01_off[6] = {
+    0x00000032, (u32)&btlgrp_gor_gor_02_01_off_1, (u32)((u8*)&gor_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlsetup_gor_tbl[119] = {
+    (u32)"マップstg_00_0", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gor_btlno_gor_test1_off, 0x00000000, 0x00000000,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_00_4", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_test2_off, 0x00000000,
+    0x00000000, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"GOR00 幹部その１", (u32)"gor_00",
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_00_01_off,
+    0x20000010, 0x00000000, 0x00000505, 0x00000000,
+    0x00000505, 0x00000000, 0x00000000, 0x00000000,
+    0x00000101, 0x01010101, (u32)"BGM_CHUBOSS_BATTLE1", (u32)"GOR02 ACレクチャー",
+    (u32)"gor_02", 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_gor_btlno_gor_02_aclec_off, 0x00000000, 0x00000000, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, (u32)"BGM_KOBOSS_BATTLE1",
+    (u32)"GOR02 SACレクチャー", (u32)"gor_02", 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_gor_btlno_gor_02_saclec_off, 0x00000000, 0x00000000,
+    0x01010000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)"BGM_KOBOSS_BATTLE1", (u32)"GOR02 もんばん", (u32)"gor_02", 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_gor_btlno_gor_02_01_off, 0x20000000,
+    0x00000000, 0x05050000, 0x00000000, 0x00000505,
+    0x00000000, 0x00000000, 0x05050000, 0x01010101,
+    0x01010101, (u32)"BGM_KOBOSS_BATTLE1", 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btl_gor_setup_no_tbl[14] = {
+    (u32)"BTLNO_GOR_TEST1", 0x00000000, (u32)"BTLNO_GOR_TEST2", 0x00000001,
+    (u32)"BTLNO_GOR_00_01", 0x00000002, (u32)"BTLNO_GOR_02_ACLEC", 0x00000003,
+    (u32)"BTLNO_GOR_02_SACLEC", 0x00000004, (u32)"BTLNO_GOR_02_01", 0x00000005,
+    0x00000000, 0x00000000,
+};
+// clang-format on
+#pragma force_active off

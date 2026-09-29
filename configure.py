@@ -1421,6 +1421,7 @@ config.libs = [
             Object(Matching, "mri_08.c"),
             Object(NonMatching, "mri_13.c"),
             Object(NonMatching, "mri_16.c"),
+            Object(Matching, "data/battle/battle_database_mri.c"),
         ],
     ),
     Rel(
@@ -1447,6 +1448,7 @@ config.libs = [
             Object(Matching, "unit/unit_kurikuri.c"),
             Object(Matching, "unit/unit_fire_bros.c"),
             Object(Matching, "unit/unit_borodo_king.c"),
+            Object(Matching, "data/battle/battle_database_tou.c"),
         ]
     ),
     Rel(
@@ -1460,6 +1462,7 @@ config.libs = [
             Object(Matching, "unit/unit_lecture_frankli.c"),
             Object(Matching, "unit/unit_boss_kanbu1.c"),
             Object(Matching, "gor_04.c"),
+            Object(Matching, "data/battle/battle_database_gor.c"),
         ],
     ),
     Rel(
@@ -1520,6 +1523,7 @@ config.libs = [
             Object(Matching, "unit/unit_kurokumorn.c"),
             Object(Matching, "eki_02.c"),
             Object(NonMatching, "eki_03.c"),
+            Object(Matching, "data/battle/battle_database_eki.c"),
         ],
     ),
     Rel(
@@ -1538,6 +1542,7 @@ config.libs = [
             Object(Matching, "gon_13.c"),
             Object(Matching, "gon_06.c"),
             Object(Matching, "gon_12.c"),
+            Object(Matching, "data/battle/battle_database_gon.c"),
         ],
     ),
     Rel(
@@ -1555,6 +1560,7 @@ config.libs = [
             Object(Matching, "unit/unit_hyper_togekuri.c"),
             Object(Matching, "event/evt_iwamove.c"),
             Object(Matching, "unit/unit_faker_mario_gra.c"),
+            Object(Matching, "data/battle/battle_database_gra.c"),
         ],
     ),
     Rel(
@@ -1575,6 +1581,7 @@ config.libs = [
             Object(Matching, "unit/unit_gold_chorobon.c"),
             Object(Matching, "hei_07.c"),
             Object(Matching, "hei_01.c"),
+            Object(Matching, "data/battle/battle_database_hei.c"),
         ],
     ),
     Rel(
@@ -1606,6 +1613,7 @@ config.libs = [
             Object(Matching, "unit/unit_gullible_christine.c"),
             Object(Matching, "jin_10.c"),
             Object(Matching, "unit/unit_boss_rampell.c"),
+            Object(Matching, "data/battle/battle_database_jin.c"),
         ],
     ),
     Rel(

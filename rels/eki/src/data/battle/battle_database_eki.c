@@ -1,0 +1,677 @@
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "forcedata.h"
+
+#pragma force_active on
+extern s32 battle_flower_drop_param_default[];
+extern s32 battle_heart_drop_param_default[];
+extern s32 battle_heart_drop_param_default2[];
+extern s32 battle_heart_drop_param_default3[];
+extern s32 battle_item_kurokumorn[];
+extern s32 battle_item_patatogemet[];
+extern s32 battle_item_sambo_mummy[];
+extern s32 unit_kuriboo_7_data_69B8[];
+extern s32 unit_kurokumorn[];
+extern s32 unit_patatogemet_7_data_10380[];
+extern s32 unit_sambo_mummy_7_data_BC68[];
+
+// clang-format off
+extend_data(32,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(33,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+u32 eki_btlobject_data[144] = {
+    (u32)"lamp_01", 0x00020000, 0xC2E80000, 0x00000000,
+    0xC26C0000, 0x003C0000, (u32)"lamp_02", 0x00020000,
+    0x42E80000, 0x00000000, 0xC26C0000, 0x0A320000,
+    (u32)"lamp_03", 0x00020000, 0x00000000, 0x00000000,
+    0xC26C0000, 0x14280000, (u32)"gomibako_01", 0x00020001,
+    0xC3320000, 0x00000000, 0x42440000, 0x003C0000,
+    (u32)"gomibako_02", 0x00020001, 0x43320000, 0x00000000,
+    0x42440000, 0x0A320000, (u32)"saku", 0x00020001,
+    0x00000000, 0x00000000, 0x428A0000, 0x14280000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"gomibako_01", 0x00020001, 0xC3320000, 0x00000000,
+    0x42440000, 0x003C0000, (u32)"gomibako_02", 0x00020001,
+    0x43320000, 0x00000000, 0x42440000, 0x0A320000,
+    (u32)"saku", 0x00020001, 0x00000000, 0x00000000,
+    0x428A0000, 0x14280000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"A1", 0x00020000, 0x00000000, 0x00000000,
+    0x40400000, 0x003C0000, (u32)"A2", 0x00020001,
+    0x00000000, 0x00000000, 0xC1F00000, 0x003C0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x40A00000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+    (u32)"saku_01", 0x00020001, 0xC2E40000, 0x00000000,
+    0xC1B80000, 0x003C0000, (u32)"saku_02", 0x00020001,
+    0x43020000, 0x00000000, 0xC1C80000, 0x0A320000,
+    (u32)"sikake_01", 0x00020000, 0xC2EC0000, 0x00000000,
+    0xC2240000, 0x003C0000, (u32)"sikake_02", 0x00020000,
+    0xC2280000, 0x00000000, 0xC26C0000, 0x0A320000,
+    (u32)"sikake_03", 0x00020000, 0x43040000, 0x00000000,
+    0xC2180000, 0x14280000, (u32)"sikake_04", 0x00020000,
+    0x42100000, 0x00000000, 0xC2400000, 0x1E1E0000,
+    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
+    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
+    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+};
+
+// TODO: type
+u32 eki_btlstage_data[436] = {
+    (u32)"bti_01", (u32)"stg_06_1", 0x00000008, (u32)&eki_btlobject_data,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x02100060, 0x20000000, 0x001A0302,
+    0x00000000, 0x00000000, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00010101, (u32)"bti_01", (u32)"stg_06_1", 0x00000004,
+    (u32)((u8*)&eki_btlobject_data + 0xc0), 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x64000002, 0x00000000, 0x00000000,
+    (u32)weaponGetPowerDefault, 0x00000001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x02100060, 0x20000000,
+    0x001A0302, 0x00000000, 0x00000000, 0x000007FF,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00010101, (u32)"bti_01", (u32)"stg_06_2",
+    0x00000004, (u32)((u8*)&eki_btlobject_data + 0x120), 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, (u32)weaponGetPowerDefault, 0x00000001, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x64000002, 0x00000000,
+    0x00000000, (u32)weaponGetPowerDefault, 0x00000001, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x02100060,
+    0x20000000, 0x001A0302, 0x00000000, 0x00000000,
+    0x000007FF, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"bti_01",
+    (u32)"stg_06_3", 0x00000008, (u32)((u8*)&eki_btlobject_data + 0x180), 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, (u32)weaponGetPowerDefault, 0x00000001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x02100060, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x64000002,
+    0x00000000, 0x00000000, (u32)weaponGetPowerDefault, 0x00000001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0210006F, 0x20000000, 0x001A0302, 0x00000000,
+    0x00000000, 0x000007FF, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000064, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_06_01_off_1[36] = {
+    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)unit_kuriboo_7_data_69B8, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_06_01_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_06_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_02_01_off_1[24] = {
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_02_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_02_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_02_02_off_1[36] = {
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_02_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_02_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_02_03_off_1[24] = {
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_02_03_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_02_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_03_01_off_1[24] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_03_01_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_03_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_03_02_off_1[36] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42B40000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_03_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_03_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_03_03_off_1[36] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42480000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_03_03_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_03_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_03_05_off_1[24] = {
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_03_05_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_03_05_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_03_07_off_1[48] = {
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x41F00000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_kurokumorn, 0x01000000, 0x04000004, 0x43160000,
+    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurokumorn,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_03_07_off_1[8] = {
+    0x00000004, (u32)&btlparty_eki_eki_03_07_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_01_off_1[36] = {
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x43020000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_01_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_04_01_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_02_off_1[36] = {
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42480000,
+    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42B40000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43020000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_02_off_1[8] = {
+    0x00000003, (u32)&btlparty_eki_eki_04_02_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_06_off_1[24] = {
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x428C0000,
+    0x42200000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_06_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_04_06_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_03_off_1[24] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_03_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_04_03_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_04_off_1[48] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x41F00000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x42DC0000,
+    0x00000000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x43160000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_04_off_1[8] = {
+    0x00000004, (u32)&btlparty_eki_eki_04_04_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlparty_eki_eki_04_05_off_1[24] = {
+    (u32)unit_sambo_mummy_7_data_BC68, 0x01000000, 0x04000004, 0x428C0000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
+    (u32)unit_patatogemet_7_data_10380, 0x01000000, 0x04000004, 0x42DC0000,
+    0x42200000, 0x41200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
+};
+
+// TODO: type
+u32 btlgrp_eki_eki_04_05_off_1[8] = {
+    0x00000002, (u32)&btlparty_eki_eki_04_05_off_1, 0x00000019, 0x00000019,
+    0x00000032, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_test1_off[6] = {
+    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_test2_off[6] = {
+    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_test3_off[6] = {
+    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_06_01_off[6] = {
+    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_06_02_off[6] = {
+    0x00000032, (u32)&btlgrp_eki_eki_06_01_off_1, (u32)&eki_btlstage_data, 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_02_01_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_02_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_02_02_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_02_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_02_03_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_02_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x51c), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_03_01_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_03_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_03_02_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_03_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_03_03_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_03_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_03_06_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_03_05_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_03_08_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_03_07_off_1, (u32)((u8*)&eki_btlstage_data + 0x368), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_01_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_01_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_02_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_02_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_06_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_06_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_03_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_03_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_04_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_04_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlgrpsel_eki_btlno_eki_04_05_off[6] = {
+    0x00000014, (u32)&btlgrp_eki_eki_04_05_off_1, (u32)((u8*)&eki_btlstage_data + 0x1b4), 0x00000000,
+    0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btlsetup_eki_tbl[340] = {
+    (u32)"マップstg_06_1", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test1_off, 0x00000000, 0x00000000,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_06_2", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test2_off, 0x00000000,
+    0x00000000, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_06_3", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_test3_off,
+    0x00000000, 0x00000000, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, 0x01010101, 0x01010101,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_06 クリボー３",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_eki_btlno_eki_06_01_off, 0x00000000, 0x00000000, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"eki_06 クリボー３", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_06_02_off, 0x00000000, 0x00000000,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02クロクモーン", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_02_01_off, 0x00000000,
+    0x00000000, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02クロクモーン", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_02_02_off,
+    0x00000000, 0x00000000, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_02パタトゲメット",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_eki_btlno_eki_02_03_off, 0x00000000, 0x00000000, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"eki_03サンボ", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_01_off, 0x00000000, 0x00000000,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03サンボ", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_02_off, 0x00000000,
+    0x00000000, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03サンボ", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_03_off,
+    0x00000000, 0x00000000, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_03クロクモーン",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_eki_btlno_eki_03_06_off, 0x00000000, 0x00000000, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"eki_03クロクモーン", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_03_08_off, 0x00000000, 0x00000000,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_01_off, 0x00000000,
+    0x00000000, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_02_off,
+    0x00000000, 0x00000000, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04パタトゲメット",
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    (u32)&btlgrpsel_eki_btlno_eki_04_06_off, 0x00000000, 0x00000000, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
+    (u32)"eki_04サンボマミー", 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_03_off, 0x00000000, 0x00000000,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x01010101, 0x01010101,
+    (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04サンボマミー", 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_04_off, 0x00000000,
+    0x00000000, 0x03030303, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x01010101,
+    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"eki_04サンボマミー", 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_eki_btlno_eki_04_05_off,
+    0x00000000, 0x00000000, 0x03030303, 0x03030303,
+    0x03030303, 0x03030303, 0x03030303, 0x03030303,
+    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 btl_eki_setup_no_tbl[40] = {
+    (u32)"BTLNO_EKI_TEST1", 0x00000000, (u32)"BTLNO_EKI_TEST2", 0x00000001,
+    (u32)"BTLNO_EKI_TEST3", 0x00000002, (u32)"BTLNO_EKI_06_01", 0x00000003,
+    (u32)"BTLNO_EKI_06_02", 0x00000004, (u32)"BTLNO_EKI_02_01", 0x00000005,
+    (u32)"BTLNO_EKI_02_02", 0x00000006, (u32)"BTLNO_EKI_02_03", 0x00000007,
+    (u32)"BTLNO_EKI_03_01", 0x00000008, (u32)"BTLNO_EKI_03_02", 0x00000009,
+    (u32)"BTLNO_EKI_03_03", 0x0000000A, (u32)"BTLNO_EKI_03_06", 0x0000000B,
+    (u32)"BTLNO_EKI_03_08", 0x0000000C, (u32)"BTLNO_EKI_04_01", 0x0000000D,
+    (u32)"BTLNO_EKI_04_02", 0x0000000E, (u32)"BTLNO_EKI_04_06", 0x0000000F,
+    (u32)"BTLNO_EKI_04_03", 0x00000010, (u32)"BTLNO_EKI_04_04", 0x00000011,
+    (u32)"BTLNO_EKI_04_05", 0x00000012, 0x00000000, 0x00000000,
+};
+// clang-format on
+#pragma force_active off
