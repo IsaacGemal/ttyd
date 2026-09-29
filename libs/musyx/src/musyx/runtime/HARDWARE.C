@@ -21,7 +21,7 @@ u8 salFrame;
 u8 salAuxFrame;
 u8 salNumVoices;
 u8 salMaxStudioNum;
-SND_HOOKS salHooks;
+SAL_HOOKS salHooks;
 u8 salTimeOffset;
 void hwSetTimeOffset(u8 offset);
 
@@ -423,6 +423,7 @@ u32 hwGetPos(u32 v) {
     pos = dspVoice[v].currentAddr - (u32)dspVoice[v].smp_info.addr;
     break;
   case 2:
+  case 6:
     pos = dspVoice[v].currentAddr - ((u32)dspVoice[v].smp_info.addr / 2);
     break;
   }
@@ -524,7 +525,11 @@ void hwSyncSampleMem() { aramSyncTransferQueue(); }
 
 void hwFrameDone() {}
 
-void sndSetHooks(SND_HOOKS* hooks) { salHooks = *hooks; }
+void sndSetHooks(SND_HOOKS* hooks) {
+  salHooks.malloc = hooks->malloc;
+  salHooks.mallocPhysical = hooks->malloc;
+  salHooks.free = hooks->free;
+}
 
 void hwEnableHRTF() {
   if (dspHRTFOn != FALSE) {

@@ -68,6 +68,7 @@ void salCalcVolume(u8 voltab_index, SAL_VOLINFO* vi, f32 vol, u32 pan, u32 span,
                    u32 itd, u32 dpl2);
 void salReconnectVoice(DSPvoice* dsp_vptr, u8 studio);
 void* salMalloc(u32 len);
+void* salMallocPhysical(u32 len);
 void salFree(void* addr);
 void salBuildCommandList(signed short* dest, unsigned long nsDelay);
 void salStartDsp(u16* cmdList);

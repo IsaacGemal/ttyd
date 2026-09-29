@@ -75,9 +75,9 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
 
   MUSY_ASSERT(salMaxStudioNum <= SAL_MAX_STUDIONUM);
   dspARAMZeroBuffer = aramGetZeroBuffer();
-  if ((dspCmdList = salMalloc(1024 * sizeof(u16))) != NULL) {
+  if ((dspCmdList = salMallocPhysical(1024 * sizeof(u16))) != NULL) {
     MUSY_DEBUG("Allocated dspCmdList.\n\n");
-    if ((dspSurround = salMalloc(160 * sizeof(s32))) != NULL) {
+    if ((dspSurround = salMallocPhysical(160 * sizeof(s32))) != NULL) {
       MUSY_DEBUG("Allocated surround buffer.\n\n");
       memset(dspSurround, 0, 160 * sizeof(s32));
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
@@ -85,7 +85,7 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
 #endif
       if ((dspVoice = salMalloc(salNumVoices * sizeof(DSPvoice))) != NULL) {
         MUSY_DEBUG("Allocated HW voice array.\n\n");
-        if ((dspITDBuffer = salMalloc(salNumVoices * 64)) != NULL) {
+        if ((dspITDBuffer = salMallocPhysical(salNumVoices * 64)) != NULL) {
           MUSY_DEBUG("Allocated ITD buffers for voice array.\n\n");
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
           DCInvalidateRange(dspITDBuffer, salNumVoices * 64);
@@ -100,9 +100,9 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
             dspVoice[i].lastUpdate.vol = 0xff;
             dspVoice[i].lastUpdate.volA = 0xff;
             dspVoice[i].lastUpdate.volB = 0xff;
-            dspVoice[i].pb = salMalloc(sizeof(_PB));
+            dspVoice[i].pb = salMallocPhysical(sizeof(_PB));
             memset(dspVoice[i].pb, 0, sizeof(_PB));
-            dspVoice[i].patchData = salMalloc(0x80);
+            dspVoice[i].patchData = salMallocPhysical(0x80);
             dspVoice[i].pb->currHi = ((u32)dspVoice[i].pb >> 16);
             dspVoice[i].pb->currLo = (u16)dspVoice[i].pb;
             dspVoice[i].pb->update.dataHi = ((u32)dspVoice[i].patchData >> 16);
@@ -125,11 +125,11 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
           for (i = 0; i < salMaxStudioNum; ++i) {
             MUSY_DEBUG("Initializing studio %d...\n", i);
             dspStudio[i].state = 0;
-            if ((dspStudio[i].spb = (_SPB*)salMalloc(sizeof(_SPB))) == NULL) {
+            if ((dspStudio[i].spb = (_SPB*)salMallocPhysical(sizeof(_SPB))) == NULL) {
               return FALSE;
             }
 
-            if ((dspStudio[i].main[0] = (void*)salMalloc(0x3c00)) == NULL) {
+            if ((dspStudio[i].main[0] = (void*)salMallocPhysical(0x3c00)) == NULL) {
               return FALSE;
             }
 
@@ -159,7 +159,7 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
           salActivateStudio(
               0, 1, defaultStudioDPL2 != FALSE ? SND_STUDIO_TYPE_DPL2 : SND_STUDIO_TYPE_STD);
           MUSY_DEBUG("Default studio is active.\n\n");
-          if ((dspHrtfHistoryBuffer = salMalloc(0x100)) == NULL) {
+          if ((dspHrtfHistoryBuffer = salMallocPhysical(0x100)) == NULL) {
             return FALSE;
           }
 
@@ -335,29 +335,32 @@ static void HandleDepopVoice(DSPstudioinfo* stp, DSPvoice* dsp_vptr) {
   dsp_vptr->postBreak = 0;
   dsp_vptr->pb->state = 0;
   pb = dsp_vptr->pb;
-  AddDpop(&stp->hostDPopSum.l, pb->dpop.aL);
-  AddDpop(&stp->hostDPopSum.r, pb->dpop.aR);
-
+  if ((pb->mixerCtrl & 0x01) != 0) {
+    AddDpop(&stp->hostDPopSum.l, pb->dpop.aL);
+  }
+  if ((pb->mixerCtrl & 0x02) != 0) {
+    AddDpop(&stp->hostDPopSum.r, pb->dpop.aR);
+  }
   if ((pb->mixerCtrl & 0x04) != 0) {
     AddDpop(&stp->hostDPopSum.s, pb->dpop.aS);
   }
-
-  if ((pb->mixerCtrl & 0x01) != 0) {
+  if ((pb->mixerCtrl & 0x10) != 0) {
     AddDpop(&stp->hostDPopSum.lA, pb->dpop.aAuxAL);
-    AddDpop(&stp->hostDPopSum.rA, pb->dpop.aAuxAR);
-
-    if ((pb->mixerCtrl & 0x14) != 0) {
-      AddDpop(&stp->hostDPopSum.sA, pb->dpop.aAuxAS);
-    }
   }
-
-  if ((pb->mixerCtrl & 0x12) != 0) {
+  if ((pb->mixerCtrl & 0x20) != 0) {
+    AddDpop(&stp->hostDPopSum.rA, pb->dpop.aAuxAR);
+  }
+  if ((pb->mixerCtrl & 0x80) != 0) {
+    AddDpop(&stp->hostDPopSum.sA, pb->dpop.aAuxAS);
+  }
+  if ((pb->mixerCtrl & 0x200) != 0) {
     AddDpop(&stp->hostDPopSum.lB, pb->dpop.aAuxBL);
+  }
+  if ((pb->mixerCtrl & 0x400) != 0) {
     AddDpop(&stp->hostDPopSum.rB, pb->dpop.aAuxBR);
-
-    if ((pb->mixerCtrl & 0x4) != 0) {
-      AddDpop(&stp->hostDPopSum.sB, pb->dpop.aAuxBS);
-    }
+  }
+  if ((pb->mixerCtrl & 0x1000) != 0) {
+    AddDpop(&stp->hostDPopSum.sB, pb->dpop.aAuxBS);
   }
 }
 
@@ -448,6 +451,9 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
   }
   if (dspHRTFOn != FALSE) {
     cyclesUsed += 45000;
+  }
+  if (dspCompressorOn != FALSE) {
+    cyclesUsed += 3000;
   }
   rampResetOffsetFlags[0] = 0;
   for (st = 0; st < salMaxStudioNum; st++) {
@@ -550,6 +556,7 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
             dsp_vptr->virtualSampleID = -1;
             switch (dsp_vptr->smp_info.compType) {
             case 5:
+            case 6:
               dsp_vptr->vSampleInfo.loopBufferLength = 0;
               dsp_vptr->virtualSampleID = salSynthSendMessage(dsp_vptr, 2);
               if (dsp_vptr->vSampleInfo.loopBufferLength == 0) {
@@ -637,7 +644,8 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
               dsp_vptr->playInfo.posHi = dsp_vptr->smp_info.offset;
               dsp_vptr->playInfo.posLo = 0;
             } break;
-            case 2: {
+            case 2:
+            case 6: {
               u8 i; // r1+0x10
               pb->addr.format = 0xA;
               pb->adpcm.gain = 0x800;
@@ -648,6 +656,9 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
               addr = dsp_vptr->smp_info.offset + (base = (u32)dsp_vptr->smp_info.addr >> 1);
               dsp_vptr->playInfo.posHi = dsp_vptr->smp_info.offset;
               dsp_vptr->playInfo.posLo = 0;
+              if (dsp_vptr->smp_info.compType == 6) {
+                pb->loopType = 1;
+              }
             } break;
             default:
               MUSY_ASSERT(FALSE);
@@ -682,6 +693,11 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
                 endAddr = base + bn * 16 + 2 + bo;
                 dsp_vptr->vSampleInfo.inLoopBuffer = 0;
               } break;
+              case 6:
+                loopAddr = (u32)dsp_vptr->vSampleInfo.loopBufferAddr >> 1;
+                endAddr = dsp_vptr->smp_info.loop + (base + dsp_vptr->smp_info.loopLength - 1);
+                dsp_vptr->vSampleInfo.inLoopBuffer = 0;
+                break;
               case 2:
               case 3:
               default:
@@ -724,6 +740,12 @@ void salBuildCommandList(s16* dest, u32 nsDelay) {
             }
             pb->srcSelect = dsp_vptr->srcTypeSelect;
             pb->coefSelect = dsp_vptr->srcCoefSelect;
+            pb->lpf.on = (dsp_vptr->filter.on != 0);
+            if (dsp_vptr->filter.on != 0) {
+              pb->lpf.a0 = dsp_vptr->filter.coefA;
+              pb->lpf.b0 = dsp_vptr->filter.coefB;
+              pb->lpf.yn1 = 0;
+            }
             pb->state = (mix_start = dsp_vptr->singleOffset) ? 0 : 1;
             pb->mix.vL = dsp_vptr->lastVolL = dsp_vptr->volL;
             pb->mix.vR = dsp_vptr->lastVolR = dsp_vptr->volR;

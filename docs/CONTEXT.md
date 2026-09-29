@@ -2054,3 +2054,45 @@ What agents fetched, fully: doldecomp/ttyd and several MIT forks, AxioDL/musyx (
 jdaster64/ttyd-tot (GPL-3.0, one header read), Rainchus/ttyd-decomp-us (no license: off-limits), sourcegraph and
 decomp.me; nothing borrowed. 48 agents also used /tmp, which the brief forbids; wave 23's prompt says to stay
 inside the workspace.
+
+## Grind 9-10: MusyX/TRK/MSL linked, battle_database units, tooling (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Dol near-miss and fully-matched-but-unlinked units. Linked: StdReverb/reverb, hw_memory, hw_dolphin, snd_service,
+synthmacros, synth_dbtab, dsp_import, TRK targimpl, MSL float.c; plus grind-9's jon_06, end, dokugassun and the
+battle_database units of jon/eki/gon/gor/gra/hei/jin/mri/tou2.
+
+- **`symbols.txt` name.** `U_HandleReverb` was the name of a function that is `HandleReverb` in the source; the
+  mismatch scored a matching function 0%. Renamed.
+- **SAL_HOOKS has three slots** (malloc, mallocPhysical, free), not SND_HOOKS's two: `salHooks` is 0xC bytes and
+  `sndSetHooks` copies malloc into both of the first two. salInitDspCtrl and salInitAi call `salMallocPhysical`; the
+  DSP PB is 0xC4 bytes (a low-pass block `_PBLPF` at 0xBA, `streamLoopCnt` moved to 0xC2).
+- **Two `align:32` data splits** (dsp_import, hw_dspctrl). An asm neighbour's `.data` start is 32-aligned in the
+  original (it holds a 32-aligned object); without the split flag the object before it was 0x10/0x18 short and every
+  later `.bss` address moved. `tools/dol_diff.py` shows this as a run of words differing by the same delta.
+- **hw_dolphin** keeps `salWaitForDSPThreadQueue` as a zero-initialized `u64` cast to `OSThreadQueue*`: a real
+  `OSThreadQueue` with an initializer goes to `.sdata`, without one to the end of `.sbss`, and the original has it
+  between `hwIrqLevel` and `salDspInitIsDone`.
+- **Report 100% is not link-ready.** synthmacros had two switch cases (0x5e/0x5f) calling swapped functions: the
+  jump table is in `.data`, which the code score doesn't see. The dsp_import DSP microcode in the tree was another
+  MusyX revision (7488 B; retail is 7872 B), so the unit was 100% of the wrong data.
+- **targimpl** builds with `-inline auto,deferred`: non-asm functions are emitted in reverse source order, asm ones in
+  place, and literals pool in source order, so the source order is reconstructed from the retail addresses (asm
+  first, then the C functions reversed). The four TRKTarget helpers the retail build inlines and never emits
+  (Versions, SupportMask, CPUType, FlushCache) are deleted from the file, not kept: msghndlr.c (NonMatching) is the
+  only caller and links from the asm object. The TRKPPCAccess* helpers are `static`, so they inline and vanish. The
+  asm bodies were moved, not written (MetroTRK's own).
+- **hw_dspctrl** `salBuildCommandList` 83.1 -> 84.7%: the retail mix control uses per-channel bits (0x1/0x2/0x4,
+  0x10/0x20/0x80, 0x200/0x400/0x1000) and compType 6; the first-time setup and the update path (roughly source lines
+  760-960) still need porting. `HandleDepopVoice` matches. `hwRemoveSample` (99.1%) keeps `len` in r6 where we use r5;
+  HARDWARE stays NonMatching for it.
+- **extend_data ids** (`tools/ci.py`, per rels/<mod>/src): two files of one REL with the same `extend_data(id)`
+  produce one `forcedata<id>` inline; the linker merges them and the second one's constants vanish (jon_06's ids
+  0-2 against another jon file's, found as a gor/jon `.data` size shortfall). Ids in shared units are `<unit>_<n>`.
+- **battle_database_jon** is typed now (struct_render pipeline run on that file alone). Grind 9 left it raw because
+  the render stopped compiling; the pass that fixes references and casts (run_all) was what it needed. v2
+  unit_dokugassun is typed the same way; `struct_render.asm_path` resolves `rels/common/src/vN/` variants through
+  configure.py's `source=`.
+- **Tools:** `tools/dol_diff.py` (changed words with the symbol they fall in), `place_fns.py`, `mod_gen.py`
+  (base unit of a REL: refuses to overwrite).
+- **CI baseline** `build/ci/accepted.json` is per worktree and goes stale when the worktree changes branches:
+  `python3 tools/ci.py --init` on a clean checkout of main before trusting a ratchet failure.

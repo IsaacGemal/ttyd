@@ -110,8 +110,16 @@ typedef struct _PBADPCMLOOP {
   u16 loop_yn2;        // offset 0x4, size 0x2
 } _PBADPCMLOOP;
 
+typedef struct _PBLPF {
+  // total size: 0x8
+  u16 on;  // offset 0x0, size 0x2
+  u16 yn1; // offset 0x2, size 0x2
+  u16 a0;  // offset 0x4, size 0x2
+  u16 b0;  // offset 0x6, size 0x2
+} _PBLPF;
+
 typedef struct _PB {
-  // total size: 0xBC
+  // total size: 0xC4
   u16 nextHi;             // offset 0x0, size 0x2
   u16 nextLo;             // offset 0x2, size 0x2
   u16 currHi;             // offset 0x4, size 0x2
@@ -131,7 +139,8 @@ typedef struct _PB {
   _PBADPCM adpcm;         // offset 0x7E, size 0x28
   _PBSRC src;             // offset 0xA6, size 0xE
   _PBADPCMLOOP adpcmLoop; // offset 0xB4, size 0x6
-  u16 streamLoopCnt;      // offset 0xBA, size 0x2
+  _PBLPF lpf;             // offset 0xBA, size 0x8
+  u16 streamLoopCnt;      // offset 0xC2, size 0x2
 } _PB;
 
 typedef struct VSampleInfo {

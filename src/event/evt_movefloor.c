@@ -243,8 +243,6 @@ USER_FUNC(evt_moving_floor_free) {
 // register allocation. The original computes `t = 1.0f - ratio` into f1 and
 // loads `start` into f2, while this build assigns f2 to `t` and f1 to `start`
 // (and therefore emits `fmuls f0, f31, f0` instead of `fmuls f0, f0, f31`).
-// Also the unit's .sdata2 holds 1.0f before 0.5f where the original has 0.5f, 1.0f, so the
-// unit does not link either.
 USER_FUNC(evt_moving_floor_init) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
@@ -280,11 +278,11 @@ USER_FUNC(evt_moving_floor_init) {
     case 3:
         switch (work->direction) {
         case 0:
+            ratio = 0.5f;
             work->flags &= ~1;
             work->index = 0;
             work->time = 1.0f;
             reverse = 1;
-            ratio = 0.5f;
             break;
         case 1:
             work->flags |= 1;

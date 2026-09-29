@@ -12,6 +12,8 @@ static u16 dram_image[4096] ATTRIBUTE_ALIGN(32);
 
 static volatile u32 oldState = 0;
 static volatile u16 hwIrqLevel = 0;
+// an OSThreadQueue; a zero-initialized scalar keeps it in .sbss at this position
+static u64 salWaitForDSPThreadQueue = 0;
 static volatile u32 salDspInitIsDone = 0;
 static volatile OSTick salLastTick = 0;
 static volatile u32 salLogicActive = 0;
@@ -60,8 +62,10 @@ void dspResumeCallback() {
   }
 }
 
+void dspDoneCallback() { OSWakeupThread((OSThreadQueue*)&salWaitForDSPThreadQueue); }
+
 u32 salInitAi(SND_SOME_CALLBACK callback, u32 unk, u32* outFreq) {
-  if ((salAIBufferBase = salMalloc(DMA_BUFFER_LEN * 4)) != NULL) {
+  if ((salAIBufferBase = salMallocPhysical(DMA_BUFFER_LEN * 4)) != NULL) {
     memset(salAIBufferBase, 0, DMA_BUFFER_LEN * 4);
     DCFlushRange(salAIBufferBase, DMA_BUFFER_LEN * 4);
     salAIBufferIndex = TRUE;
@@ -107,9 +111,10 @@ u32 salInitDsp() {
   dsp_task.dsp_resume_vector = 0x30;
   dsp_task.init_cb = dspInitCallback;
   dsp_task.res_cb = dspResumeCallback;
-  dsp_task.done_cb = NULL;
+  dsp_task.done_cb = dspDoneCallback;
   dsp_task.req_cb = NULL;
   dsp_task.priority = 0;
+  OSInitThreadQueue((OSThreadQueue*)&salWaitForDSPThreadQueue);
   DSPInit();
   DSPAddTask(&dsp_task);
   salDspInitIsDone = FALSE;

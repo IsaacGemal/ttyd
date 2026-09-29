@@ -944,10 +944,10 @@ config.libs = [
             Object(Matching, "musyx/runtime/snd_synthapi.c"),
             Object(Matching, "musyx/runtime/stream.c"),
             Object(NonMatching, "musyx/runtime/synthdata.c"),
-            Object(NonMatching, "musyx/runtime/synthmacros.c"),
+            Object(Matching, "musyx/runtime/synthmacros.c"),
             Object(NonMatching, "musyx/runtime/synthvoice.c"),
             Object(Matching, "musyx/runtime/synth_ac.c"),
-            Object(NonMatching, "musyx/runtime/synth_dbtab.c"),
+            Object(Matching, "musyx/runtime/synth_dbtab.c"),
             Object(Matching, "musyx/runtime/synth_adsr.c"),
             Object(NonMatching, "musyx/runtime/synth_vsamples.c"),
             Object(NonMatching, "musyx/runtime/s_data.c"),
@@ -957,16 +957,16 @@ config.libs = [
             Object(Matching, "musyx/runtime/snd_init.c"),
             Object(Matching, "musyx/runtime/snd_math.c"),
             Object(Matching, "musyx/runtime/snd_midictrl.c"),
-            Object(NonMatching, "musyx/runtime/snd_service.c"),
+            Object(Matching, "musyx/runtime/snd_service.c"),
             Object(NonMatching, "musyx/runtime/HARDWARE.C"),
-            Object(NonMatching, "musyx/runtime/dsp_import.c"),
+            Object(Matching, "musyx/runtime/dsp_import.c"),
             Object(NonMatching, "musyx/runtime/hw_aramdma.c"),
-            Object(NonMatching, "musyx/runtime/hw_dolphin.c"),
-            Object(NonMatching, "musyx/runtime/hw_memory.c"),
+            Object(Matching, "musyx/runtime/hw_dolphin.c"),
+            Object(Matching, "musyx/runtime/hw_memory.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb_fx.c"),
             Object(Matching, "musyx/runtime/CheapReverb/creverb.c"),
             Object(Matching, "musyx/runtime/StdReverb/reverb_fx.c"),
-            Object(NonMatching, "musyx/runtime/StdReverb/reverb.c"),
+            Object(Matching, "musyx/runtime/StdReverb/reverb.c"),
             Object(Matching, "musyx/runtime/Delay/delay_fx.c"),
             Object(Matching, "musyx/runtime/Chorus/chorus_fx.c"),
         ],
@@ -1018,7 +1018,7 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/notify.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/flush_cache.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mem_TRK.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/targimpl.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/targimpl.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/targsupp.s"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mpc_7xx_603e.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/__exception.s"),
@@ -1085,7 +1085,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/printf.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/qsort.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/rand.c"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/float.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/float.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/scanf.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/string.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/strtold.c"),
@@ -1387,6 +1387,12 @@ config.libs = [
         ],
     ),
     Rel(
+        "end",
+        [
+            Object(Matching, "end.c"),
+        ],
+    ),
+    Rel(
         "aaa",
         [
             Object(Matching, "aaa.c"),
@@ -1421,6 +1427,7 @@ config.libs = [
             Object(Matching, "mri_08.c"),
             Object(NonMatching, "mri_13.c"),
             Object(NonMatching, "mri_16.c"),
+            Object(Matching, "data/battle/battle_database_mri.c"),
         ],
     ),
     Rel(
@@ -1452,6 +1459,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_koopa_tou.c"),
             Object(Matching, "unit/unit_kamec_green.c"),
             Object(Matching, "unit/unit_kamec_white.c"),
+            Object(Matching, "data/battle/battle_database_tou.c"),
         ]
     ),
     Rel(
@@ -1467,6 +1475,7 @@ config.libs = [
             Object(Matching, "gor_04.c"),
             Object(Matching, "event/evt_goryuugijo.c"),
             Object(Matching, "event/evt_keijiban.c"),
+            Object(Matching, "data/battle/battle_database_gor.c"),
         ],
     ),
     Rel(
@@ -1535,6 +1544,7 @@ config.libs = [
             Object(Matching, "unit/unit_kurokumorn.c"),
             Object(Matching, "eki_02.c"),
             Object(NonMatching, "eki_03.c"),
+            Object(Matching, "data/battle/battle_database_eki.c"),
         ],
     ),
     Rel(
@@ -1553,6 +1563,7 @@ config.libs = [
             Object(Matching, "gon_13.c"),
             Object(Matching, "gon_06.c"),
             Object(Matching, "gon_12.c"),
+            Object(Matching, "data/battle/battle_database_gon.c"),
         ],
     ),
     Rel(
@@ -1570,6 +1581,7 @@ config.libs = [
             Object(Matching, "unit/unit_hyper_togekuri.c"),
             Object(Matching, "event/evt_iwamove.c"),
             Object(Matching, "unit/unit_faker_mario_gra.c"),
+            Object(Matching, "data/battle/battle_database_gra.c"),
         ],
     ),
     Rel(
@@ -1590,6 +1602,7 @@ config.libs = [
             Object(Matching, "unit/unit_gold_chorobon.c"),
             Object(Matching, "hei_07.c"),
             Object(Matching, "hei_01.c"),
+            Object(Matching, "data/battle/battle_database_hei.c"),
         ],
     ),
     Rel(
@@ -1621,12 +1634,13 @@ config.libs = [
             Object(Matching, "unit/unit_gullible_christine.c"),
             Object(Matching, "jin_10.c"),
             Object(Matching, "unit/unit_boss_rampell.c"),
+            Object(Matching, "data/battle/battle_database_jin.c"),
         ],
     ),
     Rel(
         "jon",
         [
-            Object(NonMatching, "jon_06.c"),
+            Object(Matching, "jon_06.c"),
             Object(Matching, "jon_00.c"),
             Object(Matching, "jon_01.c"),
             Object(Matching, "jon_02.c"),
@@ -1645,6 +1659,7 @@ config.libs = [
             Object(Matching, "unit/unit_badge_borodo.c"),
             Object(Matching, "unit/unit_mahorn.c"),
             Object(Matching, "unit/unit_mahorn_custom.c"),
+            Object(Matching, "data/battle/battle_database_jon.c"),
         ],
     ),
     Rel(
@@ -1710,6 +1725,7 @@ config.libs = [
             Object(NonMatching, "moo_03.c"),
             Object(NonMatching, "moo_04.c"),
             Object(Matching, "moo_00.c"),
+            Object(NonMatching, "moo.c"),
         ],
     ),
     Rel(
@@ -1961,6 +1977,9 @@ config.libs = [
             Object(Matching, "unit/unit_togekuri.c", modules=["hei"], source="v2/unit/unit_togekuri.c", extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_28_data_24A10"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_26_data_240F0"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_15_data_5CC90"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["win"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["mri"], source="v2/unit/unit_dokugassun.c", cflags=[*cflags_rel_nodefer, "-i rels/common/include"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
         ],
     ),
     Rel(
