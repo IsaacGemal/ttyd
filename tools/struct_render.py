@@ -136,6 +136,7 @@ def enum_names(name):
 
 # ---------------------------------------------------------------- original objects
 def asm_path(cfile):
+    cfile = os.path.relpath(os.path.abspath(cfile))
     m = re.match(r'rels/common/src/(v\d+)/(.+)\.c$', cfile)
     if m:  # a variant: its asm is the first module configure.py builds from it
         mods = re.search(r'modules=\["(\w+)"\][^)]*source="%s/%s\.c"' % (m.group(1), re.escape(m.group(2))), open('configure.py').read())
@@ -149,7 +150,7 @@ def asm_path(cfile):
     if m:
         return f'build/G8MJ01/{m.group(1)}/asm/{m.group(2)}.s'
     m = re.match(r'src/(.+)\.c$', cfile)
-    return f'build/G8MJ01/asm/{m.group(1)}.s'
+    return f'build/G8MJ01/asm/{m.group(1)}.s' if m else None
 
 
 def is_string_object(o):
@@ -223,6 +224,8 @@ def load_objects(path):
                 n = data.index(b'\0')
                 if n and all(0x20 <= c < 0x7F for c in data[:n]) and not any(data[n:size]):
                     string = data[:n].decode('ascii')  # dtk sometimes calls a string a vec3/float
+                elif n == 0 and size == 4 and not any(data):
+                    string = ''  # an empty string, which dtk names zero_*
         objs[name] = dict(size=size, data=data, rel=rel, sec=sec, string=string)
     for rel, off, sym, label in pending:  # `.rel SYM, .L_x`: a pointer to a label inside SYM
         owner, loff = labels.get(label, (None, 0))
@@ -612,12 +615,34 @@ def macro_aliases(cfile):
     return {}
 
 
+def function_bodies(src):
+    """The text of every C function body in src (scripts and data initializers excluded)."""
+    out = []
+    for m in re.finditer(r'^(?!static EVT_BEGIN|EVT_BEGIN)[A-Za-z_][^;\n{}=]*\)\s*\{\s*$', src, re.M):
+        i, depth = m.end() - 1, 0
+        while i < len(src):
+            if src[i] == '{':
+                depth += 1
+            elif src[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        out.append(src[m.end():i])
+    return '\n'.join(out)
+
+
 def auto_types(cfile, objs):
     """{symbol: type} for the battle graph in cfile: roots by name and size, then every typed pointer followed
     into objects this file defines. A symbol reached as two types, or not a whole number of its type, is left out."""
     src = open(cfile).read()
     defined = {m.group(1) for m in re.finditer(r'^(?:static |const )*[A-Za-z_]\w* (\w+)(?:\[\w*\])? = \{', src, re.M)}
     raw = {m.group(1) for m in re.finditer(r'^(?:static |const )*[su]32 (\w+)(?:\[\w*\])? = \{', src, re.M)}
+    # a raw table that C code uses stays raw: retyping it would change what indexing it means
+    code = function_bodies(src)
+    raw_in_code = {n for n in raw if re.search(r'\b' + re.escape(n) + r'\b', code)}
+    defined -= raw_in_code
+    raw -= raw_in_code
     alias = macro_aliases(cfile)
     if 'UNIT_DATA_SYM' in defined and not any(v == 'UNIT_DATA_SYM' and k in objs for k, v in alias.items()):
         units = [n for n, o in objs.items() if n.startswith('unit_') and o['size'] == 0xC4]
@@ -672,26 +697,34 @@ def c_files():
     return sorted(glob.glob('rels/**/*.c', recursive=True)) + sorted(glob.glob('src/**/*.c', recursive=True))
 
 
+# files the renderer must not touch: hand-built before the generators (strings as named char arrays, hex scripts)
+SKIP = {'rels/pik/src/unit/unit_purple_teresa.c'}
+
+
 def run_all(skip=()):
     """Type the battle graph in every file with raw tables, then make the rest of the tree agree: references to
     tables that became scalars or arrays, extern declarations, and casts the new declarations made unneeded."""
     import collections, glob
     counts = collections.Counter()
     for f in c_files():
-        if f in skip or (f.startswith('src/') and '// TODO: type' not in open(f).read() and
+        if f in skip or f in SKIP or (f.startswith('src/') and '// TODO: type' not in open(f).read() and
                          not re.search(r'^(?:static |const )*(' + STRUCTS_RE + r') \w+', open(f).read(), re.M)):
             continue
         ap = asm_path(f)
         if not ap or not os.path.exists(ap):
             continue
-        objs = load_objects(ap)
-        mapping, alias = auto_types(f, objs)
-        if not mapping:
+        try:
+            objs = load_objects(ap)
+            mapping, alias = auto_types(f, objs)
+            if not mapping:
+                continue
+            for a, c in alias.items():
+                if a in objs:
+                    objs[c] = objs[a]
+            done, failed = rewrite(f, mapping, objs, alias)
+        except Exception as e:  # one file's problem shouldn't stop the rest
+            print('FAILED', f, repr(e))
             continue
-        for a, c in alias.items():
-            if a in objs:
-                objs[c] = objs[a]
-        done, failed = rewrite(f, mapping, objs, alias)
         counts.update(mapping[d] for d in done)
         for sym, why in failed:
             print('FAILED', f, sym, why)
@@ -813,7 +846,7 @@ if __name__ == '__main__':
         _HEADER_DECLS = None
         run_all(skip=set(sys.argv[2:]))  # again, so casts and `&` are rendered from the updated declarations
         sys.exit(0)
-    cfile = sys.argv[1]
+    cfile = os.path.relpath(os.path.abspath(sys.argv[1]))
     if sys.argv[2:] == ['--auto']:
         objs = load_objects(asm_path(cfile))
         mapping, alias = auto_types(cfile, objs)
