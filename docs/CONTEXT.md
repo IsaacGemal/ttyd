@@ -2096,3 +2096,17 @@ battle_database units of jon/eki/gon/gor/gra/hei/jin/mri/tou2.
   (base unit of a REL: refuses to overwrite).
 - **CI baseline** `build/ci/accepted.json` is per worktree and goes stale when the worktree changes branches:
   `python3 tools/ci.py --init` on a clean checkout of main before trusting a ratchet failure.
+
+## Real asm in the original libraries (Sep 29, Isaac asked for a note; written by TTYD Claude #1)
+
+The rule "no inline asm: a match produced by pasting assembly is worthless" (brief) has one legitimate exception:
+functions the ORIGINAL library was written in asm. PR #36 is the first to rely on it and needed `ci.py
+--allow-asm`: MetroTRK's targimpl.c has 9 `asm` functions (they are asm in the original MetroTRK; they moved, their
+bodies are unchanged), and MusyX's reverb.c `DoCrossTalk` is `static asm` in AxioDL/musyx (MIT) too, so its edit
+there is legitimate. The review checked every asm block against that standard and found no paste.
+How to tell the difference: an asm function is legitimate only in library code (libs/: MetroTRK, the runtime, the
+SDK, MusyX), and only when another source of that library (a public decomp such as AxioDL/musyx, or the SDK's own
+sources) writes the same function in asm; hand-scheduled code with no compiler prologue pattern is a hint, not
+proof. Game code (src/, rels/) was compiled C: asm there is always a paste. Reviews of any PR that needs
+`--allow-asm` should name, for each asm function, the source that shows it's asm in the original.
+(Also on this date: linked data passed 50%, 50.77% at 0e624af.)
