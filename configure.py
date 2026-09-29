@@ -1883,6 +1883,8 @@ config.libs = [
             Object(Matching, "unit/unit_bllizard.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_bllizard_15_data_60E68"]),
             Object(NonMatching, "unit/unit_wanwan.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_wanwan_15_data_3F3F0"]),
             Object(NonMatching, "unit/unit_wanwan.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_wanwan_17_data_50DF8"]),
+            Object(NonMatching, "unit/unit_burst_wanwan.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_burst_wanwan_15_data_5F390"]),
+            Object(NonMatching, "unit/unit_burst_wanwan.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_burst_wanwan_28_data_4AED8"]),
         ],
     ),
 ]
