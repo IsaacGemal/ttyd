@@ -292,3 +292,4 @@ void npcMoveG(NpcEntry* entry);
 void fbatTalkMode(void);
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param);
 void fbatSandersBombTriggerOn(void);
+void npcClearDeadInfo(void);

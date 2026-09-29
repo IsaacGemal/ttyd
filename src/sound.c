@@ -1253,6 +1253,92 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
 void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
 }
 
+s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 4432, 6962, 9300};
+
+// NONMATCHING (99.73%): the run-length branch keeps its nibble in r0 (clrlwi/extsb/slwi on r0)
+// where the original uses r9, so entry->0x44 + 1 is done in place instead of into r0; a
+// register-coalescing difference from the same source shape, 6 operands in all.
+u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in) {
+    u8* e = (u8*)entry;
+    s8 delta;
+    u8 byte;
+    s32 index;
+
+    while (count != 0) {
+        byte = *in;
+        if (*(u16*)(e + 0x5c) != 0) {
+            if (*(u16*)(e + 0x5a) & 1) {
+                delta = byte & 0xF;
+            } else {
+                delta = (byte >> 4) & 0xF;
+            }
+            index = *(u16*)(e + 0x58);
+            delta = (s8)(delta << 4);
+            delta >>= 4;
+            *(u16*)(e + 0x5a) += 1;
+            if (*(u16*)(e + 0x5a) >= *(u16*)(e + 0x5c)) {
+                in++;
+                *(u16*)(e + 0x5c) = 0;
+                *(u32*)(e + 0x44) += 1;
+            } else if ((*(u16*)(e + 0x5a) & 1) == 0) {
+                in++;
+                *(u32*)(e + 0x44) += 1;
+            }
+        } else {
+            in++;
+            *(u32*)(e + 0x44) += 1;
+            delta = byte & 0xF;
+            if ((s8)delta == 8) {
+                *(u16*)(e + 0x5c) = ((byte >> 4) & 0xF) + 4;
+                *(u16*)(e + 0x5a) = 0;
+                continue;
+            }
+            index = (byte >> 4) & 0xF;
+            *(u16*)(e + 0x58) = index;
+            delta = (s8)(delta << 4);
+            delta >>= 4;
+        }
+
+        {
+            s32 val = *(s16*)(e + 0x52) + delta * (s32)dtbl[index];
+            if (val > 0x7fff) {
+                val = 0x7fff;
+            }
+            if (val < -0x8000) {
+                val = -0x8000;
+            }
+            *(s16*)(e + 0x52) = val;
+            *out++ = val;
+        }
+        count--;
+        *(u32*)&stream->unk1C[0x24 - 0x1C] += 1;
+
+        if (*(u32*)(e + 0x44) >= *(u32*)(e + 0x3c + (*(u16*)(e + 0x4c) << 2))) {
+            if (*(s16*)(e + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                *(u32*)(e + 0x38) -= *(u32*)(e + 0x44);
+                *(u32*)(e + 0x44) = 0;
+                in = (u8*)*(u32*)(e + 0x2c + (*(u16*)(e + 0x4c) << 2));
+                continue;
+            } else {
+                *(s16*)(e + 0x54) = 0;
+                *(u32*)(e + 0x44) = 0;
+                *(u16*)(e + 0x4c) = 1 - *(u16*)(e + 0x4c);
+                in = (u8*)*(u32*)(e + 0x2c + (*(u16*)(e + 0x4c) << 2));
+            }
+        }
+        *(u32*)(e + 0x38) += 2;
+        if (*(u32*)(e + 0x38) >= *(u32*)&stream->unk1C[0x1C - 0x1C]) {
+            *(u32*)(e + 0x38) = *(u32*)&stream->unk1C[0x20 - 0x1C];
+            *(s16*)(e + 0x52) = *(s16*)(e + 0x50);
+            if (!(stream->flags & 0x200)) {
+                stream->flags |= 4;
+                break;
+            }
+        }
+    }
+    return in;
+}
+
 // NONMATCHING (0.20%): empty placeholder, not decompiled yet.
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
 }

@@ -13,6 +13,9 @@
 #include "data/item_data.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
+#include "motion/mot_jabara.h"
+#include "driver/hitdrv.h"
+#include "math_ext.h"
 #include "memory.h"
 #include <string.h>
 #include "driver/npcdrv.h"
@@ -20,6 +23,61 @@
 #include <stdio.h>
 
 extern GlobalWork* gp;
+
+extern int __float_nan[];
+extern const f32 float_0_8041af9c;
+extern const f32 float_1_8041afa4;
+extern const f32 float_10_8041afb0;
+extern const f32 float_0p5_8041afb8;
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > float_0_8041af9c) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
 
 
 extern ItemData itemDataTable[];
@@ -31,8 +89,13 @@ extern const char str_802CAE48[];
 extern u32 dat_8041af90;
 extern u32 dat_8041af94;
 extern u32 dat_8041af98;
-extern const Vec vec3_802cabec;
-extern const Vec vec3_802cabf8;
+const Vec vec3_802cabe0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
+const f64 double_20_802cac28 = 20.0;
 
 //.bss
 static ItemWork work[2];
@@ -247,6 +310,83 @@ ItemEntry* itemNameToPtr(char* name) {
         }
     }
     return NULL;
+}
+
+// Float-register allocation in the vertical range test differs (8 instructions): the original
+// keeps the offset in f2, the 0.5 constant in f4 and the 10.0 constant in f1 (reused for the
+// hit distance); this build picks f1/f2/f5 instead. The MUST_MATCH subtraction swap keeps the
+// original's f3 (item Y) live; same value through fabs.
+// NONMATCHING (99.72%): only the vertical-test float registers differ.
+ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
+    ItemWork* wp = itemGetWork();
+    MarioWork* mario;
+    ItemEntry* entry;
+    int i;
+    ItemEntry* result;
+    HitEntry* hit;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 horizDist;
+    f32 totalDist;
+    f32 hitX;
+    f32 hitY;
+    f32 hitZ;
+    f32 distance;
+    f32 hitNX;
+    f32 hitNY;
+    f32 hitNZ;
+
+    mario = marioGetPtr();
+    entry = wp->entries;
+    result = NULL;
+    for (i = 0; i < wp->count; i++, entry++) {
+        if (!(entry->flags & 1)) {
+            continue;
+        }
+        if (entry->flags & 2) {
+            continue;
+        }
+        if (itemStatus(entry, 0x1000)) {
+            continue;
+        }
+        if (entry->mode == 2) {
+            continue;
+        }
+
+        dx = x - entry->position.x;
+        dy = y - entry->position.y;
+        dz = z - entry->position.z;
+        horizDist = sqrtf(dx * dx + dz * dz);
+        totalDist = sqrtf(dx * dx + dy * dy + dz * dz);
+        if (horizDist < maxDist
+            && marioItemGetOk()
+            && marioGetJabaraState() != 1
+            && marioGetJabaraState() != 4
+            && marioGetJabaraState() != 5
+#ifdef MUST_MATCH
+            // reversed subtraction order: same value (fabs), but it makes the original's f3 (item Y) live.
+            && __fabsf(entry->position.y - (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y))
+                < (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + float_10_8041afb0)) {
+#else
+            && __fabsf((float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y) - entry->position.y)
+                < (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + float_10_8041afb0)) {
+#endif
+            hit = NULL;
+            if (y < entry->position.y) {
+                distance = float_10_8041afb0 + (entry->position.y - y);
+                if (distance > float_0_8041af9c) {
+                    hit = hitCheckAttr(0x80000000, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                                       x, y, z, float_0_8041af9c, float_1_8041afa4, float_0_8041af9c);
+                }
+            }
+            if (hit == NULL) {
+                result = entry;
+                maxDist = totalDist;
+            }
+        }
+    }
+    return result;
 }
 
 // NONMATCHING (98.25%): the itemId range check emits `blt` to the else block where the

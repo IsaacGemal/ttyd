@@ -12,6 +12,12 @@
 
 extern GlobalWork* gp;
 
+// .sdata2
+const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041e518 = { 0xFF, 0xFF, 0xFF, 0xA0 };
+const GXColor dat_8041e51c = { 0x7F, 0x7F, 0x7F, 0x00 };
+
 //.data
 EnvironmentGlare envGlare0 = {
     GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_K1_A, GX_TEV_KCSEL_K0_A, 5.25f, 16,
@@ -827,6 +833,95 @@ void envDisp_DepthOfField(void) {
     }
 }
 
+// NONMATCHING (99.98%): only the if-branch GXColor temporary differs: the original builds the local at
+// sp+0xC and copies it to the by-value argument at sp+0x10; MWCC puts the local at sp+0x10 and the argument
+// at sp+0xC. Everything else (alpha math, all GX calls, the vertex math) is byte-identical.
+void envDisp_Blur(void) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+    GXColor color;
+    CameraEntry* cam;
+    s32 alpha;
+    f32 ratio;
+    u64 elapsed;
+    s32 duration;
+
+    if ((wp->flags & 0x40000000) && (wp->flags & 8)) {
+        cam = camGetPtr(CAMERA_2D);
+        GXSetProjection(camGetPtr(CAMERA_2D)->projection, cam->projType);
+        GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, GX_PNMTX0);
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXSetNumChans(0);
+        GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+        GXSetNumTevStages(1);
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_ZERO);
+        GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXSetTevKColorSel(GX_TEVSTAGE0, GX_TEV_KCSEL_K0);
+        GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_K0_A);
+
+        duration = blur->unk10;
+        if (duration != 0) {
+            elapsed = gp->renderTime - blur->renderTime;
+            ratio = (f32)(elapsed / (OS_TIMER_CLOCK / 1000)) / (f32)duration;
+            if (ratio > 1.0f) {
+                ratio = 1.0f;
+            }
+            if (blur->flags & 1) {
+                alpha = (s32)(255.0f * (1.0f - ratio));
+            } else {
+                alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
+            }
+            color = dat_8041e514;
+            color.a = alpha;
+            GXSetTevKColor(GX_KCOLOR0, color);
+        } else {
+            GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
+        }
+
+        GXLoadTexObj(&wp->envBlurObj, GX_TEXMAP0);
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZCompLoc(GX_TRUE);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+        GXClearVtxDesc();
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+#ifdef MUST_MATCH
+        // MWCC puts 0.5f in f3 and the int->float mask double in f4 only when the
+        // factor is a named local; with the literal the two swap and ~14
+        // fmuls/fsubs differ. The natural form is under #else.
+        {
+            f32 half = 0.5f;
+            GXPosition3f32(-gp->fbWidth * half, gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+            GXPosition3f32(gp->fbWidth * half, gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(1.0f, 0.0f);
+            GXPosition3f32(gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(1.0f, 1.0f);
+            GXPosition3f32(-gp->fbWidth * half, -gp->efbHeight * half, 0.0f);
+            GXTexCoord2f32(0.0f, 1.0f);
+        }
+#else
+        GXPosition3f32(-gp->fbWidth * 0.5f, gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth * 0.5f, gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        GXPosition3f32(gp->fbWidth * 0.5f, -gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(-gp->fbWidth * 0.5f, -gp->efbHeight * 0.5f, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+#endif
+    }
+}
 
 
 

@@ -10,7 +10,8 @@
 extern BattleWork* _battleWorkPointer;
 extern GlobalWork* gp;
 
-// NONMATCHING (0.00%): 8 instructions differ, 4 missing, 41 extra, plus register differences.
+// The original saves r30/r31 with stmw/lmw (size-oriented prologue).
+#pragma optimize_for_size on
 void BattlePadInit(void) {
 	int i;
 
@@ -18,6 +19,7 @@ void BattlePadInit(void) {
 		BtlPad_WorkInit(&_battleWorkPointer->padWork[i]);
 	}
 }
+#pragma optimize_for_size off
 
 // NONMATCHING (76.50%): 1 instruction differs, 1 missing, 3 extra, plus register differences.
 void BattlePadManager(void) {
@@ -29,6 +31,8 @@ void BattlePadManager(void) {
 }
 
 // NONMATCHING (4.30%): 6 instructions differ, 17 missing, 20 extra, plus register differences.
+// dont_inline keeps BtlPad_WorkInit a real `bl` from BattlePadInit as in retail.
+#pragma dont_inline on
 void BtlPad_WorkInit(BattleWorkPad* pad) {
 	int i;
 
@@ -54,6 +58,7 @@ void BtlPad_WorkInit(BattleWorkPad* pad) {
 	pad->mHoldRepeatState = 0;
 	pad->mHoldRepeatFrameCounter = 0;
 }
+#pragma dont_inline reset
 
 // NONMATCHING (17.14%): 6 instructions differ, 23 missing, 126 extra, plus register differences.
 void BtlPad_WorkUpdate(BattleWorkPad* pad, s32 chan) {

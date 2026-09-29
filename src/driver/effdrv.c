@@ -305,3 +305,7 @@ EffectSet* effGetSet(const char* name) {
 	}
 	return NULL;
 }
+
+void effDeleteMayaAnim(void* anim) {
+	__memFree(HEAP_EFFECT, anim);
+}

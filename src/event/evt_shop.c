@@ -1,5 +1,6 @@
 #include "manager/fontmgr.h"
 #include "evt/evt_shop.h"
+#include "evt/evt_case.h"
 #include "mario/mariost.h"
 #include "mario/mario_pouch.h"
 #include "manager/evtmgr.h"
@@ -79,6 +80,13 @@ extern const f32 float_0p8_8041bc4c;
 extern const f32 float_124_8041bc50;
 extern const f32 float_38_8041bc54;
 extern WinMgrDesc list_desc[];
+extern WinMgrDesc window_desc[];
+extern const char str_802ECDE8[];
+extern const char str_8041BC1C[6];
+extern const f32 float_6_8041bc24;
+extern u32 shopper_talk_evt[];
+extern u32 main_evt[4];
+extern u32 evt_shoplist[10];
 
 s32 evtShopIsActive(void) {
 	s32 active;
@@ -482,4 +490,72 @@ USER_FUNC(disp_list) {
 		return 1;
 	}
 	return 0;
+}
+
+USER_FUNC(evt_shop_setup) {
+	s32* args;
+	s32 v0;
+	s32 v1;
+	s32 v2;
+	s32 v3;
+	NpcEntry* npc;
+	s32 i;
+	ShopWork* wp;
+
+	args = event->args;
+	v0 = evtGetValue(event, args[0]);
+	v1 = evtGetValue(event, args[1]);
+	v2 = evtGetValue(event, args[2]);
+	v3 = evtGetValue(event, args[3]);
+
+	wp = (ShopWork*)_mapAlloc(0xD8);
+	memset(wp, 0, 0xD8);
+	_wp = (evt_shop_work*)wp;
+	strncpy(mapname, gp->currentMapName, 15);
+	wp->field_0x4 = (void*)v0;
+	wp->field_0x8 = (s32*)v1;
+	wp->field_0xC = (void*)v2;
+	wp->field_0x10 = (void*)v3;
+	wp->field_0x20 = 6;
+
+	for (i = 0; i < wp->field_0x20; i++) {
+		Vec pos;
+		char buf[0x20];
+
+		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
+		mapObjFlagOn(*(const char**)((u8*)wp->field_0x4 + i * 8), 0x4000);
+		sprintf(buf, str_8041BC1C, i);
+		iconEntry(buf, *(u16*)&itemDataTable[wp->field_0x8[i * 2]].icon_id);
+		iconSetPos(buf, pos.x, float_6_8041bc24 + pos.y, pos.z);
+		iconFlagOn(buf, 0x40);
+		wp->field_0x14[i] = 0;
+		if (wp->field_0x8[i * 2] == 0x33 && (s32)pouchCheckItem(0x33) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x37 && (s32)pouchCheckItem(0x37) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x38 && (s32)pouchCheckItem(0x38) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x39 && (s32)pouchCheckItem(0x39) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3A && (s32)pouchCheckItem(0x3A) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3B && (s32)pouchCheckItem(0x3B) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+	}
+	npc = npcNameToPtr(*(const char**)v2);
+	npc->talkEvt = shopper_talk_evt;
+	wp->field_0x24 = evtEntryType(main_evt, 0, 0x20, 0);
+	wp->field_0x24->lwData[0] = (s32)wp;
+	for (i = 0; i < 3; i++) {
+		(&wp->field_0x50)[i] = winMgrEntry(&window_desc[i]);
+	}
+	wp->field_0xD0 = -1;
+	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
+	return EVT_RETURN_DONE;
 }

@@ -1,10 +1,17 @@
 #include "eff/eff_nice.h"
 #include "driver/animdrv.h"
+#include "driver/camdrv.h"
 #include "mario/mariost.h"
 #include "memory.h"
 #include <string.h>
 
 extern GlobalWork* gp;
+
+// .sdata2 named float constants
+extern const f32 float_0p017453_8041cba4;
+extern const f32 float_0_8041cbb0;
+extern const f32 float_1_8041cbb8;
+extern const f32 float_8_8041cbd4;
 
 //.sdata
 const char* anim_jp[] = {
@@ -123,4 +130,24 @@ EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z) {
 // NONMATCHING (0.41%): empty placeholder, not decompiled yet.
 void effNiceMain(EffectEntry* effect) {
 
+}
+
+void effNiceDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	NiceEffectWork* data = effect->userdata;
+	Mtx mtxTrans;
+	Mtx mtxRot;
+	Mtx mtxScale;
+	Mtx mtxFinal;
+
+	PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_0p017453_8041cba4);
+	PSMTXScale(mtxScale, data->field_0x1C, data->field_0x1C, data->field_0x1C);
+	PSMTXConcat(mtxTrans, mtxRot, mtxFinal);
+	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
+	PSMTXScale(mtxScale, float_8_8041cbd4, float_8_8041cbd4, float_8_8041cbd4);
+	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
+	animPoseDrawMtx(data->poseId, mtxFinal, 1, float_0_8041cbb0, float_1_8041cbb8);
+	animPoseDrawMtx(data->poseId, mtxFinal, 2, float_0_8041cbb0, float_1_8041cbb8);
+	animPoseDrawMtx(data->poseId, mtxFinal, 3, float_0_8041cbb0, float_1_8041cbb8);
 }

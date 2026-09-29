@@ -1,7 +1,12 @@
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
+#include "math_ext.h"
 
 extern BattleWork* _battleWorkPointer;
+
+f32 sinfd(f32 deg) {
+	return (f32)sin(6.2831855f * deg / 360.0f);
+}
 
 // NONMATCHING (57.38%): 1 instruction differs, 2 missing, 6 extra, plus register differences.
 void btlsubResetMoveColorLvAll(BattleWork* work) {

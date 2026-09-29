@@ -1,5 +1,6 @@
 #include "battle/battle_damage.h"
 #include "battle/battle.h"
+#include "battle/battle_mario.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_disp.h"
@@ -440,6 +441,208 @@ s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part
 
 
 }
+
+// Size-op: the original uses stmw/lmw prologues and a jump table (see the header note for this file).
+#pragma optimize_for_size on
+void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {
+    s32 param1;
+    s32 param2;
+    s32 item;
+    s32 count;
+    u32 utype = (u32)type;
+
+    switch (type) {
+    case STATUS_SLEEP:
+        param1 = param2 = weapon->sleepTime;
+        break;
+    case STATUS_STOP:
+        param1 = param2 = weapon->stopTime;
+        break;
+    case STATUS_DIZZY:
+        param1 = param2 = weapon->dizzyTime;
+        break;
+    case STATUS_POISON:
+        param1 = weapon->poisonTime;
+        param2 = weapon->poisonStrength;
+        break;
+    case STATUS_CONFUSE:
+        param1 = param2 = weapon->confuseTime;
+        break;
+    case STATUS_ELECTRIC:
+        param1 = param2 = weapon->electricTime;
+        break;
+    case STATUS_DODGY:
+        param1 = param2 = weapon->dodgyTime;
+        break;
+    case STATUS_BURN:
+        param1 = param2 = weapon->burnTime;
+        break;
+    case STATUS_FREEZE:
+        param1 = param2 = weapon->freezeTime;
+        break;
+    case STATUS_HUGE:
+        if (weapon->sizeChangeStrength > 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_TINY:
+        if (weapon->sizeChangeStrength < 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_UP:
+        if (weapon->atkChangeStrength > 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_DOWN:
+        if (weapon->atkChangeStrength < 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_UP:
+        if (weapon->defChangeStrength > 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_DOWN:
+        if (weapon->defChangeStrength < 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ALLERGIC:
+        param1 = param2 = weapon->allergicTime;
+        break;
+    case STATUS_FAST:
+        param1 = param2 = weapon->fastTime;
+        break;
+    case STATUS_SLOW:
+        param1 = param2 = weapon->slowTime;
+        break;
+    case STATUS_INSTANT_KILL:
+#ifdef MUST_MATCH
+        // The original sign-extends the byte at 0x9E, but battle_database_common.h declares ohkoChance u8.
+        param1 = param2 = ((s8*)weapon)[0x9E];
+#else
+        param1 = param2 = weapon->ohkoChance;
+#endif
+        break;
+    case STATUS_INVISIBLE:
+        param1 = param2 = weapon->invisibleTime;
+        break;
+    case STATUS_HP_REGEN:
+        param1 = weapon->hpRegenTime;
+        param2 = weapon->hpRegenStrength;
+        break;
+    case STATUS_FP_REGEN:
+        param1 = weapon->fpRegenTime;
+        param2 = weapon->fpRegenStrength;
+        break;
+    case STATUS_CHARGE:
+        param1 = weapon->chargeStrength;
+        param2 = weapon->chargeStrength;
+        break;
+    case STATUS_PAYBACK:
+        param1 = param2 = weapon->paybackTime;
+        break;
+    case STATUS_HOLD_FAST:
+        param1 = param2 = weapon->holdFastTime;
+        break;
+    default:
+        param1 = param2 = 0;
+        break;
+    }
+
+    item = weapon->item;
+    count = 0;
+    if (item >= BADGE_MIN && item < BADGE_MAX) {
+        count = pouchEquipCheckBadge(item);
+    }
+    if (count > 0) {
+        switch (item) {
+        case ITEM_SHRINK_STOMP:
+            if (utype == STATUS_TINY) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_SLEEPY_STOMP:
+            if (utype == STATUS_SLEEP) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_SOFT_STOMP:
+            if (utype == STATUS_DEFENSE_DOWN) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_HEAD_RATTLE:
+            if (utype == STATUS_CONFUSE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_ICE_SMASH:
+            if (utype == STATUS_FREEZE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_UNUSED_DEFEND_BADGE:
+        case ITEM_UNUSED_DEFEND_BADGE_P:
+            if (utype == STATUS_DEFENSE_UP && unit->badgesEquipped.DefendUnused >= 2) {
+                param2 += unit->badgesEquipped.DefendUnused - 1;
+            }
+            break;
+        }
+    }
+
+    if (utype == STATUS_CHARGE) {
+        s32 n;
+
+        if (weapon == &badgeWeapon_Charge || weapon == &badgeWeapon_ChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_CHARGE_P);
+            }
+            if (n >= 2) {
+                param2 += n - 1;
+            }
+        } else if (weapon == &badgeWeapon_SuperCharge || weapon == &badgeWeapon_SuperChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE_P);
+            }
+            if (n >= 2) {
+                param2 += (n - 1) * 2;
+            }
+        }
+        if (param2 >= 10) {
+            param2 = 9;
+        }
+    }
+
+    *out1 = param1;
+    *out2 = param2;
+}
+#pragma optimize_for_size off
 
 // Size-op: the original's instruction selection here matches -O4,s (see the header note for this file).
 #pragma optimize_for_size on

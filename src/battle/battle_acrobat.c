@@ -41,7 +41,7 @@ s32 BattleAcrobatMain(BattleWork* work) {
 		v11.x = unit->mPosition.x;
 		v11.y = unit->mPosition.y;
 		v11.z = 15.0f + unit->mPosition.z;
-		dispEntry(CAMERA_3D, dispCalcZ(&v11), 1, accrobat_timing_icon_disp, unit);
+		dispEntry(CAMERA_3D, dispCalcZ(&v11), 1, _accrobat_timing_icon_disp, unit);
 	}
 	if (unit->badgesEquipped.AutoCommand && (work->mStylishWindowStart < work->mStylishCurFrame <= work->mStylishWindowEnd)) {
 		doSimplified = TRUE;
@@ -78,14 +78,14 @@ s32 BattleAcrobatMain(BattleWork* work) {
 }
 
 //param = BattleUnit* unit;
-void accrobat_timing_icon_disp(CameraId camId, void* param) {
-	BattleUnit* unit = param; //cast to proper type
-	f32 x, y, z; //sp 8, c, 10
+void _accrobat_timing_icon_disp(CameraId camId, void* param) {
+	BattleUnit* unit = param;
+	Vec pos;
 
-	BtlUnit_GetPos(unit, &x, &y, &z);
-	x += 15.0f;
-	y += (f32)(BtlUnit_GetHeight(unit) + 5);
-	//iconDispGx();
+	BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+	pos.y += (f32)(BtlUnit_GetHeight(unit) + 5);
+	pos.x += 15.0f;
+	iconDispGx(&pos, 0, 0x9A, 0.67f);
 }
 
 s32 BattleAcrobatGetResult(BattleWork* work, s32* result, s32* curFrame) {

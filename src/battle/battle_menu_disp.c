@@ -96,7 +96,8 @@ extern BattleWeapon ItemWeaponData_CookingItem;
 
 extern Vec vec3_802ef168;
 extern Vec vec3_802ef174;
-extern Vec vec3_802ef180;
+// In .rodata: `const` makes MWCC emit lis/addi instead of @sda21 loads.
+extern const Vec vec3_802ef180;
 extern Vec vec3_802ef18c;
 
 // Stack scratch block shared by the battle-menu draw workers. The original
@@ -162,35 +163,54 @@ void DrawMultiItemWin(void) {
     }
 }
 
-// NONMATCHING (0.00%): 24 instructions differ, 7 missing, 97 extra, plus register differences.
+// This declaration order (and the split window/cursor assignment below) is what
+// makes MWCC place the locals at the original frame offsets and hand out
+// r30/r29/r28 to window/cursor/entries; the natural order does not match.
 void DrawChangePartyWin(void) {
     BattleWork* wp = _battleWorkPointer;
-    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
-    BattleCursor* cursor = window->cursor;
+    BattleMenuWork* window;
+    BattleCursor* cursor;
     BattleMenuDispEntry* entries;
-    BattleMenuDispScratch scratch;
+    f32 outX;
+    f32 outY;
+    u16 arr24[7];
+    Vec vec;
+    f32 scales[5];
+    s32 arr88[7];
+    s32 arr6C[7];
+    s32 arr50[7];
+    s32 arr34[7];
+    Vec centers[5];
+    Mtx mats[5];
+    Mtx rot[7];
     s32 i;
 
+    window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    cursor = window->cursor;
     BattleGetUnitPtr(wp, wp->activeUnitId);
     entries = (BattleMenuDispEntry*)((u8*)wp + 0x1aac);
-    DrawSubMenuCommonProcess(&scratch.out0x14, &scratch.out0x10, scratch.mats, scratch.centers, scratch.scales, scratch.rot);
+    DrawSubMenuCommonProcess(&outX, &outY, mats, centers, scales, rot);
     for (i = 0; i < 7; i++) {
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
             BattleMenuDispEntry* entry = &entries[idx];
-            scratch.arr88[i] = entry->field_0x4;
-            scratch.arr24[i] = entry->field_0xC != 0 ? entry->field_0xC : 0x18B;
-            scratch.arr6C[i] = (s32)entry->field_0x8;
-            scratch.arr50[i] = 0;
-            scratch.arr34[i] = 0;
+            arr88[i] = entry->field_0x4;
+            if (entry->field_0xC != 0) {
+                arr24[i] = entry->field_0xC;
+            } else {
+                arr24[i] = 0x18B;
+            }
+            arr6C[i] = (s32)entry->field_0x8;
+            arr50[i] = 0;
+            arr34[i] = 0;
         }
     }
-    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), scratch.mats, scratch.centers, scratch.scales);
-    DrawSubIcon(window, scratch.rot, scratch.arr88, scratch.arr24, scratch.arr6C, scratch.arr50, scratch.arr34, (void*)((u8*)wp + 0x1aac), 1);
-    scratch.pos = vec3_802ef180;
-    DrawMenuCursorAndScrollArrow(&scratch.pos);
-    if (entries[cursor->field_0].field_0x10 != 0) {
-        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, scratch.out0x14, scratch.out0x10);
+    DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
+    DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
+    vec = vec3_802ef180;
+    DrawMenuCursorAndScrollArrow(&vec);
+    if ((u32)entries[cursor->field_0].field_0x10 != 0) {
+        DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, outX, outY);
     }
 }
 
@@ -629,6 +649,10 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
     }
 }
 
+// The original emits a real `bl` to this function from every caller, so it must
+// be marked don't-inline itself (a surrounding region only stops its functions
+// being inlined elsewhere).
+#pragma dont_inline on
 // NONMATCHING (85.42%): 7 instructions differ, 5 missing, 5 extra, plus register differences.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;
@@ -667,6 +691,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     vec.z = 0.0f;
     iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
 }
+#pragma dont_inline reset
 
 // NONMATCHING (97.44%): MWCC coalesces sp/p (`cmplwi` instead of `mr. r31,r3`),
 // shifting p/line to r3/r4; everything else is register renaming.

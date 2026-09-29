@@ -3905,6 +3905,136 @@ USER_FUNC(btlevtcmd_FaceDirectionSub) {
     return EVT_RETURN_DONE;
 }
 
+// Inline sqrt (with the NaN classification) the original expands at both
+// distance sites; same helper as system.c/evt_npc.c.
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+//s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* mode
+// NONMATCHING (93.94%): logic and schedule match; ours addresses its .rodata (double_to_int, the sqrtf
+// 0.5/3.0 doubles, the 0.0f pool) from a local base instead of vec3_802ede88 because this TU's data isn't
+// defined here, and `e`/rodata/unit land in different registers. See REPORT.md.
+USER_FUNC(btlevtcmd_EllipseMovePosition) {
+    s32 btlId, id;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 frame, mode;
+    f32 tx, ty, tz;
+    f32 x, y, z;
+    f32 dist;
+    f32 dx, dy, dz;
+    f32 cx, cz;
+    f32 e;
+    f32 radius;
+    f32 angle;
+    f32 t;
+
+    btlId = evtGetValue(event, args[0]);
+    id = BattleTransID(event, btlId);
+    tx = (f32)evtGetValue(event, args[1]);
+    ty = (f32)evtGetValue(event, args[2]);
+    tz = (f32)evtGetValue(event, args[3]);
+    frame = evtGetValue(event, args[4]);
+    e = (f32)evtGetValue(event, args[5]);
+    mode = evtGetValue(event, args[6]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (isFirstCall) {
+        event->blocked = 1;
+        *(s32*)((u8*)unit + 0x168) = frame;
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        BtlUnit_SetMoveStartPos(unit, x, y, z);
+        BtlUnit_SetMoveCurrentPos(unit, x, y, z);
+        BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
+        dy = y - ty;
+        dx = x - tx;
+        dz = z - tz;
+        dist = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
+        *(f32*)((u8*)unit + 0x17C) = dist;
+        if (*(s32*)((u8*)unit + 0x168) == 0) {
+            *(s32*)((u8*)unit + 0x168) = (s32)(dist / unit->mMoveSpeedXZ);
+        } else {
+            unit->mMoveSpeedXZ = dist / (f32)*(s32*)((u8*)unit + 0x168);
+        }
+        if (*(s32*)((u8*)unit + 0x168) == 0) {
+            return 2;
+        }
+        *(f32*)((u8*)unit + 0x180) = float_0_8041bf98;
+        *(f32*)((u8*)unit + 0x178) = float_0_8041bf98;
+        if (tx - x > float_0_8041bf98) {
+            unit->moveDirection = 1;
+        } else if (tx - x < float_0_8041bf98) {
+            unit->moveDirection = -1;
+        }
+    }
+    cz = (unit->mMoveStartPos.z + unit->mMoveTargetPos.z) * float_0p5_8041bfc8;
+    cx = (unit->mMoveStartPos.x + unit->mMoveTargetPos.x) * float_0p5_8041bfc8;
+    dx = unit->mMoveTargetPos.x - unit->mMoveStartPos.x;
+    dz = unit->mMoveTargetPos.z - unit->mMoveStartPos.z;
+    radius = sqrtf(dx * dx + dz * dz) * float_0p5_8041bfc8;
+    angle = angleABf(cx, cz, unit->mMoveStartPos.x, unit->mMoveStartPos.z);
+    t = intpl_sub(mode, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
+                  float_180_8041bfc4, float_0_8041bf98);
+    unit->mMoveCurrentPos.x =
+        cx - (radius * sinfd(angle) * cosfd(t) + e * cosfd(angle) * sinfd(t));
+    unit->mMoveCurrentPos.z =
+        cz + radius * cosfd(angle) * cosfd(t) - e * sinfd(angle) * sinfd(t);
+    BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y, unit->mMoveCurrentPos.z);
+    *(f32*)((u8*)unit + 0x180) += float_1_8041bfa4;
+    if (*(f32*)((u8*)unit + 0x180) > (f32)*(s32*)((u8*)unit + 0x168)) {
+        BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
+        return 2;
+    }
+    return 0;
+}
+
 //s32* battleId, s32* retIndex, s32* dir
 // NONMATCHING (77.43%): 2 instructions differ, 4 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_MoveDirectionAdd) {

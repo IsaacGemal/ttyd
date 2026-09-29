@@ -4,13 +4,18 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "driver/animdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
 #include "eff/eff_nice.h"
 #include "mario/mario_party.h"
+#include "manager/fontmgr.h"
 #include "party.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <math.h>
+#include <stdio.h>
 #include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
 
 extern BattleWork* _battleWorkPointer;
 
@@ -269,6 +274,52 @@ void btlseqFirstAct(BattleWork* wp) {
 void btlseqTurn(BattleWork* wp) {
 
 }
+
+// The three rule-message pointer tables are the 0x110-byte arrays the original addresses as
+// lbl_80360FE0+0x40 (2bu), +0x150 (1bu) and +0x260 (after); one base register is shared.
+// The pooled int->float double is a local @770 here instead of the original's shared
+// double_to_int_802ef590 because this file's other int->float users are not written yet (MWCC then
+// pools a local constant), and it lands at a different .rodata offset because the rule-message
+// strings are also not in the file.
+extern f32 lbl_80360FE0[];
+extern GXColor dat_8041c26c;
+
+// Needed: -O4,p saves r30/r31 with two individual stw; the original saves them with stmw.
+#pragma optimize_for_size on
+// The table loads use `add base,idx*4; lwz off(base)` where the original uses `addi base,off; lwzx`;
+// the pooled int->float double is a local @770, not double_to_int_802ef590 (the file's other
+// int->float users are not written yet); and MWCC swaps two temps (r6/r7). Control flow matches.
+// NONMATCHING (92.77%): see the three differences above.
+void _rule_disp(void) {
+	u8* base = (u8*)lbl_80360FE0;
+	BattleWork* wp = _battleWorkPointer;
+	FieldBattleInfo* info = wp->fbatInfo;
+	u16 lines;
+	u16 width;
+	f32 x;
+	char buf[0x100];
+
+	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
+		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
+			sprintf(buf, msgSearch(((const char**)(base + 0x150))[*(u8*)((u8*)info + 0x18)]),
+				*(u8*)((u8*)info + 0x1a));
+		} else {
+			sprintf(buf, msgSearch(((const char**)(base + 0x40))[*(u8*)((u8*)info + 0x18)]),
+				*(u8*)((u8*)info + 0x1a));
+		}
+	} else {
+		sprintf(buf, msgSearch(((const char**)(base + 0x260))[*(u8*)((u8*)info + 0x18)]),
+			*(u8*)((u8*)info + 0x1a));
+	}
+	width = FontGetMessageWidthLine(buf, &lines);
+	lines++;
+	x = float_0_8041c280 - (f32)(width >> 1);
+	windowDispGX_Waku_col(0, dat_8041c26c, x - float_10_8041c2a0, float_94_8041c2a4,
+		(f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+	FontDrawStart();
+	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
+}
+#pragma optimize_for_size off
 
 void btlseqEnd(BattleWork* wp) {
 

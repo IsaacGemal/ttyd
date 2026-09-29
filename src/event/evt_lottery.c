@@ -52,3 +52,10 @@ USER_FUNC(evt_lottery) {
 
 	return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_lottery_flag) {
+	s32* args = event->args;
+
+	evtSetValue(event, args[0], gp->mLotteryInfo.mFlags);
+	return EVT_RETURN_DONE;
+}

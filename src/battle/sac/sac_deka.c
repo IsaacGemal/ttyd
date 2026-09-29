@@ -119,6 +119,17 @@ typedef struct DekaWork {
 
 static DekaWork* get_ptr(void);
 
+// Vertex data allocated by yuka_init into matEntry->address (0x3870 bytes).
+typedef struct DekaYukaMesh {
+    /*0x0000*/ Vec pos[2][0x81];
+    /*0x0C18*/ Vec disp[2][0x81];
+    /*0x1830*/ Vec normal[2][0x81];
+    /*0x2448*/ Vec prev[2][0x81];
+    /*0x3060*/ f32 texU[2][0x81];
+    /*0x3468*/ f32 texV[2][0x81];
+} DekaYukaMesh;
+
+extern Vec vec3_803004f8[];
 
 const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
@@ -584,6 +595,62 @@ s32 main_deka(EventEntry* event, s32 arg) {
     dispEntry(CAMERA_3D, float_0_80421e8c, 2, disp_3D_alpha, NULL);
     dispEntry(CAMERA_3D, float_0_80421e8c, 0, yuka_disp, NULL);
     return 0;
+}
+
+// .text:0x29F8 | 0x802459F0 | size: 0x2D8
+// NONMATCHING (83.26%): algorithm matches; the original pools the three zero Vecs and
+// double_to_int_80300630 through one base (r30=&vec3_803004f8), which the missing
+// .rodata symbols in this unit prevent; register/stack allocation then differs.
+static void yuka_init(void) {
+    DekaWork* p = get_ptr();
+    MapObject* obj = mapGetMapObj("stg_b_yuka");
+    DekaYukaMesh* mesh;
+    s32 i, j;
+
+    mapGrpFlagOn("stg_b_yuka", 0x400001);
+
+    PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMin, &p->plane0);
+    PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMax, &p->plane1);
+
+    p->width = p->texWidth = (s32)(p->plane1.x - p->plane0.x);
+    p->height = p->texHeight = (s32)(p->plane1.z - p->plane0.z);
+
+    p->texWidth += p->texWidth & 1;
+    p->texHeight += p->texHeight & 1;
+
+    if (p->texWidth > 0x260) {
+        p->texWidth = 0x260;
+    }
+    if (p->texHeight > 0x1E0) {
+        p->texHeight = 0x1E0;
+    }
+
+    p->texEntry = smartAlloc(GXGetTexBufferSize(p->texWidth, p->texHeight, 4, 0, 0), 2);
+    p->matEntry = smartAlloc(0x3870, 2);
+
+    mesh = p->matEntry->address;
+
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < 0x81; j++) {
+            Vec v;
+            f32 x = p->plane0.x + (f32)p->width * float_0p0078125_80421eac * (f32)j;
+            f32 z = p->plane0.z + (f32)p->height * (f32)i;
+
+            v = vec3_803004f8[0];
+            v.x = x;
+            v.z = z;
+            mesh->disp[i][j] = v;
+            v = vec3_803004f8[1];
+            v.x = x;
+            v.z = z;
+            mesh->pos[i][j] = v;
+            mesh->normal[i][j] = vec3_803004f8[2];
+            mesh->texU[i][j] = float_0p0078125_80421eac * (f32)j;
+            mesh->texV[i][j] = (f32)i;
+        }
+    }
+
+    dispEntry(CAMERA_SHADOW, float_0_80421e8c, 0, (DispCallback)yuka_capture, NULL);
 }
 
 // .text:0xAA0 | 0x80243A98 | size: 0x4

@@ -381,8 +381,118 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
+// .text:0x1A90 | 0x80230020 | size: 0x4C8
+// NONMATCHING (86.85%): logic and instructions match; the callee-saved register allocation differs throughout
+// (this compiler gives a/b r30/r31, bombCount r23; the original has a/b r29/r30, bombCount r31), plus the
+// scheduling of the found-point stores into bomb1 and of the final bomb initialization.
+void zubastar_bunkatu(Vec* a, Vec* b) {
+    ZubaStarWork* work = GetZubaStarPtr();
+    s32 bombCount = work->bombCount;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < bombCount; i++) {
+        ZubaStarBomb* bomb = work->bombs[i];
+        s32 used[2];
+        s32 index[2];
+        Vec point[2];
+        s32 n = 0;
+        f32 out1;
+        f32 out2;
+
+        {
+            s32 k;
+
+            for (k = 0; k < 2; k++) {
+                used[k] = 0;
+            }
+        }
+        for (j = 0; j < bomb->count; j++) {
+            s32 k;
+            s32 nx;
+            s32 ny;
+
+            if (n == 2) {
+                break;
+            }
+            if (zubastar_get_kouten(a->x, a->y, b->x, b->y, bomb->points[j].x, bomb->points[j].y,
+                                    bomb->points[(j + 1) % bomb->count].x,
+                                    bomb->points[(j + 1) % bomb->count].y, &out1, &out2)) {
+                nx = (s32)out1;
+                ny = (s32)out2;
+                for (k = 0; k < n; k++) {
+                    if (used[k] == 1 && (s32)point[k].x == nx && (s32)point[k].y == ny) {
+                        break;
+                    }
+                }
+                if (k == n) {
+                    point[k].x = out1;
+                    point[k].y = out2;
+                    point[k].z = float_0_804217e0;
+                    used[k] = 1;
+                    index[k] = j;
+                    n++;
+                }
+            }
+        }
+        if (n == 2) {
+            ZubaStarBomb* bomb1;
+            ZubaStarBomb* bomb2;
+
+            bomb1 = BattleAlloc(0x50);
+            bomb2 = BattleAlloc(0x50);
+            for (j = 0; j < bomb->count; j++) {
+                if (j == index[0]) {
+                    bomb1->count = bomb->count - (index[1] - j) + 2;
+                    bomb2->count = index[1] - index[0] + 2;
+                }
+            }
+            bomb1->points = BattleAlloc(bomb1->count * 0xC);
+            bomb2->points = BattleAlloc(bomb2->count * 0xC);
+            for (j = 0; j <= index[0]; j++) {
+                bomb1->points[j] = bomb->points[j];
+            }
+            bomb1->points[index[0] + 1] = point[0];
+            bomb1->points[index[0] + 2] = point[1];
+            {
+                s32 k = index[0] + 3;
+
+                for (j = index[1] + 1; j < bomb->count; j++, k++) {
+                    bomb1->points[k] = bomb->points[j];
+                }
+            }
+            for (j = 0; j < bomb->count; j++) {
+                if (j == index[0]) {
+                    s32 m;
+
+                    bomb2->points[0] = point[0];
+                    for (m = 1; m <= bomb2->count - 2; m++) {
+                        bomb2->points[m] = bomb->points[j + m];
+                    }
+                    bomb2->points[bomb2->count - 1] = point[1];
+                }
+            }
+            bomb1->state = 0;
+            bomb1->field_0x0C = vec3_802ff6bc;
+            bomb1->timer = irand(0x80);
+            bomb1->maxTimer = irand(5) + 1;
+            bomb2->state = 0;
+            bomb2->field_0x0C = vec3_802ff6c8;
+            bomb2->timer = irand(0x80);
+            bomb2->maxTimer = irand(5) + 1;
+            BattleFree(work->bombs[i]->points);
+            BattleFree(work->bombs[i]);
+            work->bombs[i] = bomb1;
+            work->bombs[work->bombCount] = bomb2;
+            work->bombCount++;
+        }
+    }
+}
+
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // NONMATCHING (86.64%): line-segment intersection logic matches; only float-register allocation differs.
+// Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
+#pragma dont_inline on
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
     f32 a = f3 - f1;
@@ -414,6 +524,7 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     }
     return 0;
 }
+#pragma dont_inline reset
 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
 // NONMATCHING (92.93%): one early lwz of vec3_802ff6b0 is scheduled before count is stored; the rest

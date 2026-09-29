@@ -2,6 +2,7 @@
 #include "battle/battle.h"
 #include "battle/ac/ac_table.h"
 #include "driver/dispdrv.h"
+#include "pmario_sound.h"
 
 extern ActionCommandEntry ActionCommandList[];
 extern BattleWork* _battleWorkPointer;
@@ -138,4 +139,11 @@ void BattleActionCommandSetDifficulty(BattleWork* work, BattleUnit* unit, s32 di
 		adjusted = 6;
 	}
 	work->actionCommands.mAcDifficulty = adjusted;
+}
+
+void BattleAcGaugeSeInit(void) {
+	BattleWork* work = _battleWorkPointer;
+
+	work->actionCommands.field_0x288 = psndSFXOn("SFX_AC_POWER_GAUGE1");
+	*(f32*)&work->actionCommands.field_0x28C[0] = 0.0f;
 }

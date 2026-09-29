@@ -10,3 +10,11 @@ static ARAMWork* wp;
 void aramMgrInit(void) {
 
 }
+
+void* aramMgrToAram(void* data, u32 size) {
+	void* work = aramMgrToAramAsync(data, size);
+
+	while (!(*(volatile u16*)work & 4)) {
+	}
+	return work;
+}
