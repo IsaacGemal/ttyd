@@ -5,6 +5,9 @@
 
 extern GlobalWork* gp;
 
+const char R_build_date[] = "Jun 17 2004";
+const char R_build_time[12] = "17:20:01";
+
 int main(void) {
     OSTick base_tick;
 

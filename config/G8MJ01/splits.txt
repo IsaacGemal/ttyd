@@ -13,10 +13,11 @@ Sections:
 
 main.c:
 	.text       start:0x800055E0 end:0x80005634
+	.rodata     start:0x802C0F20 end:0x802C0F38
 
 system.c:
 	.text       start:0x80005634 end:0x80007310
-	.rodata     start:0x802C0F20 end:0x802C1028
+	.rodata     start:0x802C0F38 end:0x802C1028
 	.data       start:0x80302C20 end:0x80302DC8
 	.bss        start:0x803C17E0 end:0x803C48E0
 	.sdata      start:0x8040F260 end:0x8040F268
