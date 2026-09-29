@@ -1408,6 +1408,7 @@ config.libs = [
             Object(Matching, "mri_20.c"),
             Object(Matching, "mri_18.c"),
             Object(Matching, "mri_19.c"),
+            Object(Matching, "unit/unit_boss_kanbu2.c"),
         ],
     ),
     Rel(
@@ -1423,6 +1424,11 @@ config.libs = [
         "tou2",
         [
             Object(NonMatching, "tou2.c"),
+            Object(Matching, "unit/unit_boomerang_bros.c"),
+            Object(Matching, "unit/unit_hyper_sinnosuke.c"),
+            Object(Matching, "unit/unit_nokonoko_fighter.c"),
+            Object(Matching, "unit/unit_patapata_fighter.c"),
+            Object(Matching, "unit/unit_crimson_togemet.c"),
         ]
     ),
     Rel(
@@ -1431,13 +1437,16 @@ config.libs = [
             Object(Matching, "gor_12.c"),
             Object(Matching, "gor_door.c"),
             Object(Matching, "gor_11.c"),
+            Object(Matching, "unit/unit_monban.c"),
+            Object(Matching, "unit/unit_npc_christine.c"),
+            Object(Matching, "unit/unit_lecture_frankli.c"),
         ],
     ),
     Rel(
         "aji",
         [
             Object(Matching, "aji_00.c"),
-            Object(Matching, "unit/unit_gundan_zako_elite dou/unit/unit_killer eki/unit/unit_kurokumorn gor/unit/unit_monban gor/unit/unit_npc_christine gor/unit/unit_lecture_frankli gra/unit/unit_pansy hei/unit/unit_sinnosuke jin/unit/unit_gullible_clauda jin/unit/unit_gullible_nokotarou jin/unit/unit_gullible_yoshi jin/unit/unit_met jin/unit/unit_togemet jon/unit/unit_yami_noko jon/unit/unit_yami_pata jon/unit/unit_yamitogedaruma jon/unit/unit_basabasa_green las/unit/unit_super_killer las/unit/unit_boss_marilyn_las mri/unit/unit_boss_kanbu2 muj/unit/unit_boss_honeduka muj/unit/unit_boss_cortez_sword muj/unit/unit_boss_cortez_claw muj/unit/unit_boss_cortez_rapier muj/unit/unit_boss_cortez_saber nok/unit/unit_act_atmic_teresa nok/unit/unit_act_clauda nok/unit/unit_act_kinopiko nok/unit/unit_act_kinopio nok/unit/unit_act_teresa rsh/unit/unit_boss_moamoa_tentacle_a rsh/unit/unit_boss_moamoa_tentacle_b rsh/unit/unit_boss_moamoa_tentacle_c rsh/unit/unit_boss_moamoa_mouth tik/unit/unit_boss_gesso_left_arm tou2/unit/unit_boomerang_bros tou2/unit/unit_hyper_sinnosuke tou2/unit/unit_nokonoko_fighter tou2/unit/unit_patapata_fighter tou2/unit/unit_crimson_togemet win/window/win_01 win/window/win_02 win/window/win_05 win/data/battle/battle_database_win win/unit/unit_boss_vivian win/unit/unit_boss_marilyn.c"),
+            Object(Matching, "unit/unit_gundan_zako_elite.c"),
         ],
     ),
     Rel(
@@ -1459,6 +1468,7 @@ config.libs = [
             Object(Matching, "dou_09.c"),
             Object(Matching, "dou_13.c"),
             Object(Matching, "dou_12.c"),
+            Object(Matching, "unit/unit_killer.c"),
         ],
     ),
     Rel(
@@ -1467,6 +1477,7 @@ config.libs = [
             Object(Matching, "eki_01.c"),
             Object(Matching, "eki_04.c"),
             Object(Matching, "eki_05.c"),
+            Object(Matching, "unit/unit_kurokumorn.c"),
         ],
     ),
     Rel(
@@ -1491,6 +1502,7 @@ config.libs = [
             Object(Matching, "gra_01.c"),
             Object(Matching, "gra_03.c"),
             Object(Matching, "gra_06.c"),
+            Object(Matching, "unit/unit_pansy.c"),
         ],
     ),
     Rel(
@@ -1504,6 +1516,7 @@ config.libs = [
             Object(Matching, "hei_11.c"),
             Object(Matching, "hei_13.c"),
             Object(Matching, "hei_bt00.c"),
+            Object(Matching, "unit/unit_sinnosuke.c"),
         ],
     ),
     Rel(
@@ -1524,6 +1537,11 @@ config.libs = [
             Object(Matching, "jin_08.c"),
             Object(Matching, "jin_09.c"),
             Object(Matching, "jin_11.c"),
+            Object(Matching, "unit/unit_gullible_clauda.c"),
+            Object(Matching, "unit/unit_gullible_nokotarou.c"),
+            Object(Matching, "unit/unit_gullible_yoshi.c"),
+            Object(Matching, "unit/unit_met.c"),
+            Object(Matching, "unit/unit_togemet.c"),
         ],
     ),
     Rel(
@@ -1536,6 +1554,10 @@ config.libs = [
             Object(Matching, "jon_03.c"),
             Object(Matching, "jon_04.c"),
             Object(Matching, "jon_05.c"),
+            Object(Matching, "unit/unit_yami_noko.c"),
+            Object(Matching, "unit/unit_yami_pata.c"),
+            Object(Matching, "unit/unit_yamitogedaruma.c"),
+            Object(Matching, "unit/unit_basabasa_green.c"),
         ],
     ),
     Rel(
@@ -1563,6 +1585,8 @@ config.libs = [
             Object(Matching, "las_23.c"),
             Object(Matching, "las_24.c"),
             Object(Matching, "las_25.c"),
+            Object(Matching, "unit/unit_super_killer.c"),
+            Object(Matching, "unit/unit_boss_marilyn_las.c"),
         ],
     ),
     Rel(
@@ -1580,12 +1604,22 @@ config.libs = [
         [
             Object(Matching, "muj_03.c"),
             Object(Matching, "muj_11.c"),
+            Object(Matching, "unit/unit_boss_honeduka.c"),
+            Object(Matching, "unit/unit_boss_cortez_sword.c"),
+            Object(Matching, "unit/unit_boss_cortez_claw.c"),
+            Object(Matching, "unit/unit_boss_cortez_rapier.c"),
+            Object(Matching, "unit/unit_boss_cortez_saber.c"),
         ],
     ),
     Rel(
         "nok",
         [
             Object(Matching, "battle_database_nok.c"),
+            Object(Matching, "unit/unit_act_atmic_teresa.c"),
+            Object(Matching, "unit/unit_act_clauda.c"),
+            Object(Matching, "unit/unit_act_kinopiko.c"),
+            Object(Matching, "unit/unit_act_kinopio.c"),
+            Object(Matching, "unit/unit_act_teresa.c"),
         ],
     ),
     Rel(
@@ -1600,6 +1634,10 @@ config.libs = [
             Object(Matching, "rsh_01.c"),
             Object(Matching, "rsh_08.c"),
             Object(Matching, "rsh_07.c"),
+            Object(Matching, "unit/unit_boss_moamoa_tentacle_a.c"),
+            Object(Matching, "unit/unit_boss_moamoa_tentacle_b.c"),
+            Object(Matching, "unit/unit_boss_moamoa_tentacle_c.c"),
+            Object(Matching, "unit/unit_boss_moamoa_mouth.c"),
         ],
     ),
     Rel(
@@ -1621,6 +1659,7 @@ config.libs = [
             Object(Matching, "tik_17.c"),
             Object(Matching, "tik_18.c"),
             Object(Matching, "tik_20.c"),
+            Object(Matching, "unit/unit_boss_gesso_left_arm.c"),
         ],
     ),
     Rel(
@@ -1631,6 +1670,17 @@ config.libs = [
             Object(Matching, "tou_12.c"),
             Object(Matching, "tou_13.c"),
             Object(Matching, "tou_20.c"),
+        ],
+    ),
+    Rel(
+        "win",
+        [
+            Object(Matching, "window/win_01.c"),
+            Object(Matching, "window/win_02.c"),
+            Object(Matching, "window/win_05.c"),
+            Object(Matching, "data/battle/battle_database_win.c"),
+            Object(Matching, "unit/unit_boss_vivian.c"),
+            Object(Matching, "unit/unit_boss_marilyn.c"),
         ],
     ),
 ]
