@@ -1891,6 +1891,8 @@ config.libs = [
             Object(Matching, "unit/unit_hermos.c", modules=["dou"], extra_cflags=["-DUNIT_DATA_SYM=unit_hermos_6_data_17118"]),
             Object(Matching, "unit/unit_phantom.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_phantom_15_data_4AC38"]),
             Object(Matching, "unit/unit_phantom.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_phantom_17_data_540A8"]),
+            Object(Matching, "unit/unit_teresa.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_15_data_25D30"]),
+            Object(Matching, "unit/unit_teresa.c", modules=["jin"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_14_data_1EF28"]),
         ],
     ),
 ]
