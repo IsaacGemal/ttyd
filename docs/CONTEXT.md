@@ -1549,3 +1549,31 @@ matched, linked code 11.19% -> 11.80%, linked data 4.94% -> 5.79%.** Each link w
 - `switch` shape is a hint about the source: extra `case` labels that share the default change MWCC's dispatch tree.
 - Registers assigned per variable: splitting one variable into one per block changes allocation without changing the
   code, and is worth trying on any "same instructions, different registers" near-miss.
+
+## RELs: 165 units linked from a generator, and wave 17 set up (2026-09-29, Claude Opus 5.5)
+
+Isaac asked for an overnight REL wave. Prep showed most of it doesn't need agents: **245 REL units have no functions**,
+only data, and a generator (scratch/rel-scan/gen.py) writes a unit's whole source from the original: the MSL floats
+as extend_data (indices unique per REL), each script from ttydasm (`PTR()` where the macros don't cast), every other
+object as a `u32` array marked `// TODO: type` (strings inline, interior pointers as base plus offset), in the
+original order, all in one force_active block. Every generated unit was compiled, compared with the original object
+(section bytes and relocation targets, strings by content; tools/rel_cmp.py) and linked. **164 linked with no
+changes by hand; with hei_09 below, 165. Linked data 4.94% -> 13.94%.** Units left out: object names another unit
+shares (enemy units in several RELs: the object path collision is still open), the 9 battle databases (don't
+compile yet), and auto_* rodata units.
+
+- A section a few bytes shorter than the original's is its trailing alignment padding; the linker adds it back.
+- Scripts can end in padding after END_SCRIPT (ttydasm now stops there).
+- The 660 declarations the scripts need were generated into the defining files' headers first
+  (scratch/rel-scan/declsweep.py); three were dropped where the source defines the function with one argument.
+- BeroEntry.nextareaArg1 is the destination map's name, not a number: linking hei_09 showed it.
+- tools/agent_check.py takes REL units as MOD/UNIT; `--final` runs tools/rel_link.py, which compares the object
+  and then tries the link, printing LINKED or NOT LINKED with what differs.
+- 256 tables in 105 of the linked files are still raw u32 arrays: typing them is agent work (the link keeps it
+  honest).
+
+**Wave 17** (scratch/wave17): the 104 unique-name REL units with 1-3 functions, none over 1.2 KB (34 KB of code,
+732 KB of data). Each agent gets its unit's generated source (data done, verified; a `// TODO: write NAME here`
+where each function goes, declarations so it builds), writes the functions, types the raw tables, and runs
+`check.py --final` until LINKED. 32 agents at a time over the list, 30 minutes each, from ~/ttyd-w17base on the
+tower (this branch plus the units' configure entries).
