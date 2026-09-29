@@ -1,9 +1,13 @@
 #include "manager/fontmgr.h"
 #include "manager/dvdmgr.h"
 #include "driver/camdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/icondrv.h"
 #include "memory.h"
 #include "system.h"
+#include "mario/mariost.h"
 #include <stdio.h>
+#include <string.h>
 #include "math_ext.h"
 
 
@@ -15,7 +19,10 @@ GXColor fontColTbl[3] = {
 };
 s32 charspace[2] = {4, 2};
 const char* fontname[2] = {"papermarioset_JPN", "popjoyB22"};
+const GXColor dat_8041a2f0 = {0x00, 0xAA, 0xFF, 0xFF};
 const Vec vec3_802c48c0 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_802c48cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802c48d8 = {0.0f, 0.0f, 0.0f};
 
 typedef struct {
 	f32 x, y, z;
@@ -398,6 +405,89 @@ u16 FontGetMessageWidth(const char* message) {
 	return FontGetMessageWidthLine(message, NULL);
 }
 
+// NONMATCHING (90.03%): full parse loop reconstructed; remaining diffs are register allocation and the
+// anonymous @-labels for the sscanf format strings / double_to_int constants.
+u16 FontGetMessageWidthLine(const char* message, u16* lines) {
+	s32 maxwidth = 0;
+	s32 curwidth = 0;
+	s32 linecount = 0;
+	u16 glyph;
+
+	while (*message) {
+		glyph = 0xFFFF;
+		if (_ismbblead((s8)*message)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)message);
+			message += 2;
+		}
+		else {
+			switch ((s8)*message) {
+			case '\n':
+				if ((u16)maxwidth < (u16)curwidth) {
+					maxwidth = curwidth;
+				}
+				curwidth = 0;
+				linecount++;
+				message++;
+				continue;
+			case '<': {
+				char arg1[128];
+				char arg2[128];
+				char name[32];
+				s32 id;
+				s32 a1;
+				s32 a2;
+				s32 offset;
+				f32 scale;
+				u16 width;
+				u16 height;
+
+				message = msgGetCommand((char*)message + 1, arg1, arg2);
+				if (strcmp(arg1, "icon") == 0) {
+					camGetCurPtr();
+					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
+					}
+					else {
+						sscanf(arg2, "%s%f%d%d%d", name, &scale, &a1, &a2, &offset);
+						id = msgIconStr2ID(name);
+						if (id < 0) {
+							id = 0;
+						}
+					}
+					iconGetWidthHight(&width, &height, (u16)id);
+					curwidth = (s32)((f32)width * scale + offset + (f32)(u16)curwidth);
+				}
+				else if ((s8)arg1[0] == 'R') {
+					continue;
+				}
+				if (*message == '\n') {
+					message++;
+				}
+				continue;
+			}
+			default:
+				glyph = JUTFont_CodeToGlyph((s8)*message);
+				message++;
+				break;
+			}
+		}
+		if (glyph == 0xFFFF) {
+			continue;
+		}
+		curwidth = (u16)(charspace[gp->language] + curwidth + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+	}
+	if ((u16)maxwidth < (u16)curwidth) {
+		maxwidth = curwidth;
+	}
+	if ((u16)maxwidth != 0) {
+		maxwidth = (u16)(maxwidth - charspace[gp->language]);
+	}
+	if (lines) {
+		*lines = linecount;
+	}
+	return maxwidth;
+}
+
 
 
 u16 hankakuSearch(s8 code) {
@@ -484,4 +574,604 @@ u16 JUTFont_CodeToGlyph(u32 code) {
 u16 kanjiGetWidth(u16 code) {
 	BinaryFontWidth* width = FontGetWidthPtr(code);
 	return *(u8*)((u8*)width + 1);
+}
+
+// NONMATCHING (95.81%): structural code matches; remaining diffs are per-call (s16)offsetX rematerialisation,
+// the swapped GXColor temp slots, `while` emitting cmplwi instead of extsb., and anon .rodata labels.
+void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
+	CameraEntry* cam;
+	Mtx m;
+	f32 offsetX;
+	u16 glyph;
+
+	cam = camGetCurPtr();
+	offsetX = -(f32)FontGetMessageWidthLine(msg, NULL) * 0.5f;
+	PSMTXConcat(cam->view, mtx, m);
+	GXLoadPosMtxImm(m, GX_PNMTX0);
+	while ((s8)*msg) {
+		if (_ismbblead((s8)*msg)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
+			msg += 2;
+		}
+		else {
+			glyph = JUTFont_CodeToGlyph((s8)*msg);
+			msg += 1;
+		}
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, (s16)offsetX - 2, 0);
+			_JUTFont_DrawPos(glyph, (s16)offsetX + 2, 0);
+			_JUTFont_DrawPos(glyph, (s16)offsetX, -2);
+			_JUTFont_DrawPos(glyph, (s16)offsetX, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, (s16)offsetX, 0);
+		offsetX += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+	}
+}
+
+// NONMATCHING (79.41%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
+// handling was reconstructed from asm; anon @-labels for the embedded strings and a few schedule diffs remain.
+void FontDrawStringMtx(Mtx mtx, const char* msg) {
+	CameraEntry* cam;
+	Mtx m;
+	f32 x = 0.0f;
+	f32 y = 0.0f;
+	u16 glyph;
+
+	cam = camGetCurPtr();
+	PSMTXConcat(cam->view, mtx, m);
+	GXLoadPosMtxImm(m, GX_PNMTX0);
+	while (*msg) {
+		glyph = 0xFFFF;
+		if (_ismbblead((s8)*msg)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
+			msg += 2;
+		}
+		else {
+			switch ((s8)*msg) {
+			case '\n':
+				x = 0.0f;
+				y -= 28.0f;
+				msg++;
+				break;
+			case '<': {
+				char arg1[128];
+				char arg2[128];
+				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				if (arg1[0] == 'R') {
+					break;
+				}
+				if (*msg == '\n') {
+					msg++;
+				}
+				break;
+			}
+			default:
+				glyph = JUTFont_CodeToGlyph((s8)*msg);
+				msg++;
+				break;
+			}
+		}
+		if (glyph == 0xFFFF) {
+			continue;
+		}
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
+			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
+		x += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
+	}
+}
+
+// NONMATCHING (97.88%): correct algorithm; only register scheduling and float-pool label names differ.
+void FontDrawStringShake(const char* str, f32 x, f32 y) {
+	CameraEntry* cam;
+	Mtx mtx2;
+	Mtx mtx;
+	f32 offX;
+	f32 offY;
+	u16 w;
+	u16 glyph;
+
+	cam = camGetCurPtr();
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
+	while ((s8)*str) {
+		if (_ismbblead((s8)*str)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)str);
+			str += 2;
+		}
+		else {
+			glyph = JUTFont_CodeToGlyph((s8)*str);
+			str += 1;
+		}
+		offX = fontScale.x * (f32)(irand(10000) % 3) + x;
+		offY = fontScale.y * (f32)(irand(10000) % 3) + y;
+		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		PSMTXTransApply(mtx, mtx2, offX, offY, 0.0f);
+		PSMTXConcat(cam->view, mtx2, mtx2);
+		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, -2, 0);
+			_JUTFont_DrawPos(glyph, 2, 0);
+			_JUTFont_DrawPos(glyph, 0, -2);
+			_JUTFont_DrawPos(glyph, 0, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, 0, 0);
+		x += fontScale.x * (f32)(w + charspace[gp->language]);
+	}
+}
+
+// NONMATCHING (92.63%): per-glyph PSMTXTransApply path; remaining diffs are register scheduling and
+// anonymous float-pool labels.
+void FontDrawString(const char* str, f32 x, f32 y) {
+	CameraEntry* cam;
+	Mtx mtx;
+	Mtx mtx2;
+	Vec pos;
+	Vec pos2;
+	f32 fx;
+	f32 fy;
+	f32 fz;
+	u16 w;
+	u16 glyph;
+
+	pos = vec3_802c48cc;
+	pos.x = x;
+	pos.y = y;
+	pos2 = pos;
+	fx = pos2.x;
+	fy = pos2.y;
+	fz = pos2.z;
+	cam = camGetCurPtr();
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
+	while ((s8)*str) {
+		if (_ismbblead((s8)*str)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)str);
+			str += 2;
+		}
+		else {
+			glyph = JUTFont_CodeToGlyph((s8)*str);
+			str += 1;
+		}
+		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		PSMTXTransApply(mtx, mtx2, fx, fy, fz);
+		PSMTXConcat(cam->view, mtx2, mtx2);
+		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, -2, 0);
+			_JUTFont_DrawPos(glyph, 2, 0);
+			_JUTFont_DrawPos(glyph, 0, -2);
+			_JUTFont_DrawPos(glyph, 0, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, 0, 0);
+		fx += fontScale.x * (f32)(w + charspace[gp->language]);
+	}
+}
+
+// NONMATCHING (98.59%): correct algorithm; only minor scheduling/label diffs remain.
+void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
+	CameraEntry* cam;
+	Mtx mtx2;
+	Mtx mtx;
+	f32 x;
+	f32 f1;
+	u16 w;
+	u16 glyph;
+
+	cam = camGetCurPtr();
+	x = pos->x;
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
+	while ((s8)*text) {
+		if (_ismbblead((s8)*text)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)text);
+			text += 2;
+		}
+		else {
+			glyph = JUTFont_CodeToGlyph((s8)*text);
+			text += 1;
+		}
+		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		f1 = (pitch < 0.0f) ? x : x + fontScale.x * (0.5f * (pitch - (f32)w));
+		PSMTXTransApply(mtx, mtx2, f1, pos->y, pos->z);
+		PSMTXConcat(cam->view, mtx2, mtx2);
+		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, -2, 0);
+			_JUTFont_DrawPos(glyph, 2, 0);
+			_JUTFont_DrawPos(glyph, 0, -2);
+			_JUTFont_DrawPos(glyph, 0, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, 0, 0);
+		if (pitch < 0.0f) {
+			x += fontScale.x * (f32)(w + charspace[gp->language]);
+		}
+		else {
+			x += pitch * fontScale.x;
+		}
+	}
+}
+
+// NONMATCHING (93.79%): pitch<0 fixed-spacing vs 0.5*(pitch-width) centring reconstructed; remaining
+// diffs are register scheduling and float-pool labels.
+void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
+	CameraEntry* cam;
+	Mtx mtx;
+	Mtx mtx2;
+	Vec pos;
+	Vec pos2;
+	f32 fx;
+	f32 fy;
+	f32 fz;
+	f32 tx;
+	u16 w;
+	u16 glyph;
+
+	pos = vec3_802c48d8;
+	pos.x = x;
+	pos.y = y;
+	pos2 = pos;
+	fx = pos2.x;
+	fy = pos2.y;
+	fz = pos2.z;
+	cam = camGetCurPtr();
+	PSMTXScale(mtx, fontScale.x, fontScale.y, fontScale.z);
+	while ((s8)*str) {
+		if (_ismbblead((s8)*str)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)str);
+			str += 2;
+		}
+		else {
+			glyph = JUTFont_CodeToGlyph((s8)*str);
+			str += 1;
+		}
+		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+		tx = (pitch < 0.0f) ? fx : fx + fontScale.x * (0.5f * (pitch - (f32)w));
+		PSMTXTransApply(mtx, mtx2, tx, fy, fz);
+		PSMTXConcat(cam->view, mtx2, mtx2);
+		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, -2, 0);
+			_JUTFont_DrawPos(glyph, 2, 0);
+			_JUTFont_DrawPos(glyph, 0, -2);
+			_JUTFont_DrawPos(glyph, 0, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, 0, 0);
+		if (pitch < 0.0f) {
+			fx += fontScale.x * (f32)(w + charspace[gp->language]);
+		}
+		else {
+			fx += pitch * fontScale.x;
+		}
+	}
+}
+
+// NONMATCHING (79.37%): full command/icon loop reconstructed from asm. Remaining: the compiler keeps a
+// single .rodata base in r29 and names the command strings (str_8041A31C...) whereas ours emit anon @-labels,
+// and the icon block's float schedule / frame layout differs.
+void FontDrawMessageMtx(Mtx mtx, const char* msg) {
+	CameraEntry* cam;
+	Mtx trans;
+	Mtx m;
+	s32 x = 0;
+	s32 y = 0;
+	u16 glyph;
+	char arg1[128];
+	char arg2[128];
+
+	cam = camGetCurPtr();
+	while ((s8)*msg) {
+		glyph = 0xFFFF;
+		if (_ismbblead((s8)*msg)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
+			msg += 2;
+		}
+		else {
+			switch ((s8)*msg) {
+			case '\n':
+				x = 0;
+				y -= 28;
+				msg++;
+				break;
+			case '<':
+				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				if (strcmp(arg1, "red") == 0) {
+					GXColor c = {0xE0, 0x00, 0x00, 0xFF};
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "/red") == 0) {
+					GXColor c = fontColTbl[0];
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "icon") == 0) {
+					s32 id;
+					s32 a1;
+					s32 a2;
+					s32 offset;
+					f32 scale;
+					char name[32];
+					u16 iw;
+					u16 ih;
+					Vec ipos;
+
+					camGetCurPtr();
+					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
+					}
+					else {
+						sscanf(arg2, "%s%f%d%d%d", name, &scale, &a1, &a2, &offset);
+						id = msgIconStr2ID(name);
+						if (id < 0) {
+							id = 0;
+						}
+					}
+					iconGetWidthHight(&iw, &ih, (u16)id);
+					ipos.x = (f32)x + (0.5f * (f32)iw) * scale + (f32)a1;
+					ipos.y = (f32)y + (0.5f * (f32)ih) * scale + (f32)a2;
+					ipos.z = 0.0f;
+					PSMTXMultVec(mtx, &ipos, &ipos);
+					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
+					{
+						GXColor c = fontColTbl[0];
+						fontEdge = FALSE;
+						fontScale.x = 1.0f;
+						fontScale.y = 1.0f;
+						fontScale.z = 1.0f;
+						JUTFont_DrawStart(c);
+					}
+					{
+						GXColor c = fontColTbl[0];
+						FontDrawColor(&c);
+					}
+					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
+				}
+				else if (arg1[0] == 'R') {
+					break;
+				}
+				if (*msg == '\n') {
+					msg++;
+				}
+				break;
+			default:
+				glyph = JUTFont_CodeToGlyph((s8)*msg);
+				msg++;
+				break;
+			}
+		}
+		if (glyph == 0xFFFF) {
+			continue;
+		}
+		PSMTXTrans(trans, (f32)x, (f32)y, 0.0f);
+		PSMTXConcat(cam->view, mtx, m);
+		PSMTXConcat(m, trans, m);
+		GXLoadPosMtxImm(m, GX_PNMTX0);
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, -2, 0);
+			_JUTFont_DrawPos(glyph, 2, 0);
+			_JUTFont_DrawPos(glyph, 0, -2);
+			_JUTFont_DrawPos(glyph, 0, 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, 0, 0);
+		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
+	}
+}
+
+// NONMATCHING (79.91%): red|/red|col|/col|icon command loop reconstructed from asm; same anon @-label and
+// icon-schedule/frame diffs as FontDrawMessageMtx.
+void FontDrawMessage(s32 x, s32 y, const char* msg) {
+	s32 x0 = x;
+	u16 glyph;
+	char arg1[128];
+	char arg2[128];
+
+	while ((s8)*msg) {
+		glyph = 0xFFFF;
+		if (_ismbblead((s8)*msg)) {
+			glyph = JUTFont_CodeToGlyph(*(u16*)msg);
+			msg += 2;
+		}
+		else {
+			switch ((s8)*msg) {
+			case '\n':
+				x = x0;
+				y -= 28;
+				msg++;
+				break;
+			case '<':
+				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
+				if (strcmp(arg1, "red") == 0) {
+					GXColor c = {0xE0, 0x00, 0x00, 0xFF};
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "/red") == 0) {
+					GXColor c = fontColTbl[0];
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "col") == 0) {
+					GXColor c;
+					sscanf(arg2, "%x", &c);
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "/col") == 0) {
+					GXColor c = fontColTbl[0];
+					FontDrawColor(&c);
+				}
+				else if (strcmp(arg1, "icon") == 0) {
+					s32 id;
+					s32 a1;
+					s32 a2;
+					s32 offset;
+					f32 scale;
+					char name[32];
+					u16 iw;
+					u16 ih;
+					Vec ipos;
+
+					camGetCurPtr();
+					if ((s8)arg2[0] >= '0' && (s8)arg2[0] <= '9') {
+						sscanf(arg2, "%d%f%d%d%d", &id, &scale, &a1, &a2, &offset);
+					}
+					else {
+						sscanf(arg2, "%s%f%d%d%d", name, &scale, &a1, &a2, &offset);
+						id = msgIconStr2ID(name);
+						if (id < 0) {
+							id = 0;
+						}
+					}
+					iconGetWidthHight(&iw, &ih, (u16)id);
+					ipos.x = (f32)x + (0.5f * (f32)iw) * scale + (f32)a1;
+					ipos.y = (f32)y + (0.5f * (f32)ih) * scale + (f32)a2;
+					ipos.z = 0.0f;
+					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
+					{
+						GXColor c = fontColTbl[0];
+						fontEdge = FALSE;
+						fontScale.x = 1.0f;
+						fontScale.y = 1.0f;
+						fontScale.z = 1.0f;
+						JUTFont_DrawStart(c);
+					}
+					{
+						GXColor c = fontColTbl[0];
+						FontDrawColor(&c);
+					}
+					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
+				}
+				else if (arg1[0] == 'R') {
+					break;
+				}
+				if (*msg == '\n') {
+					msg++;
+				}
+				break;
+			default:
+				glyph = JUTFont_CodeToGlyph((s8)*msg);
+				msg++;
+				break;
+			}
+		}
+		if (glyph == 0xFFFF) {
+			continue;
+		}
+		if (fontEdge) {
+			GXColor c2;
+			GXColor saved = fontColor;
+			GXColor c = fontColTbl[0];
+			FontDrawColor(&c);
+			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
+			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
+			_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
+			c2 = saved;
+			FontDrawColor(&c2);
+		}
+		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
+		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
+	}
+}
+
+// NONMATCHING (41.05%): immediate-mode GX quad reconstructed from asm (cell decode, rainbow HSV vertex
+// colours, irand TEX1 noise). Retail keeps five shape floats (f27-f31) and a 0x140 frame; ours keeps four
+// and a 0x100 frame, so the whole schedule/layout shifts. Closest structural reconstruction attempted.
+void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
+	BinaryFontGlyph* blk = blockGlyph;
+	u8* info = (u8*)FontGetWidthPtr(code);
+	s32 width = info[1];
+	s32 n = code - blk->firstcode;
+	s32 row = n / blk->sheetrows;
+	s32 col = row / blk->sheetcolumns;
+	f32 xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
+	f32 yoffs = 1.0f + (f32)(row - col * blk->sheetcolumns) * blk->cellheight;
+	f32 fwidth;
+	f32 fheight;
+	f32 fwidthS;
+	f32 fheightS;
+	s32 hueoff = (u8)gp->retraceCount * 2;
+	s32 hueL = (u8)(x + (u8)(x - hueoff));
+	s32 hueR = (u8)((x + width) + (u8)(x - hueoff));
+	GXColor hsv;
+	u32 rgb;
+	u8 n1;
+	u8 n2;
+
+	fwidth = width;
+	fheight = blk->cellheight;
+	fwidthS = fwidth * 1.0f;
+	fheightS = fheight * 1.0f;
+
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	n1 = irand(64);
+	n2 = irand(64);
+
+	hsv = dat_8041a2f0;
+	hsv.r = hueL;
+	rgb = HSV2RGB(&hsv);
+	GXPosition3s16(x, y - 1, 0);
+	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
+	GXTexCoord2u16((u16)xoffs, (u16)yoffs);
+	GXTexCoord2u8(n1, n2);
+
+	hsv.r = hueR;
+	rgb = HSV2RGB(&hsv);
+	GXPosition3s16(x + (s16)fwidthS, y - 1, 0);
+	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
+	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)yoffs);
+	GXTexCoord2u8(n1 + (u8)width, n2);
+
+	hsv.r = hueR;
+	rgb = HSV2RGB(&hsv);
+	GXPosition3s16(x + (s16)fwidthS, y - 1 - (s16)fheightS, 0);
+	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
+	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)(yoffs + fheight));
+	GXTexCoord2u8(n1 + (u8)width, n2 + (u8)fheight);
+
+	hsv.r = hueL;
+	rgb = HSV2RGB(&hsv);
+	GXPosition3s16(x, y - 1 - (s16)fheightS, 0);
+	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
+	GXTexCoord2u16((u16)xoffs, (u16)(yoffs + fheight));
+	GXTexCoord2u8(n1, n2 + (u8)fheight);
 }

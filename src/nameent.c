@@ -1,6 +1,9 @@
 #include "nameent.h"
+#include "driver/dispdrv.h"
+#include "driver/fadedrv.h"
 #include "system.h"
 #include <string.h>
+#include <math.h>
 
 //.data
 const char* katakana_tbl[] = {
@@ -63,19 +66,253 @@ static const char* msg_tbl[] = {
 };
 static NameEntryWork* wp = &work;
 
-void nameEntInit(void) {
-	memset(wp, 0, sizeof(NameEntryWork));
+void nameMaskGX(f32 alpha) {
+	GXColor color;
+	GXTexObj texObj;
+	Mtx mtxMain;
+	Mtx mtxScale;
+	Mtx mtxNeg;
+	f32 scale;
+
+	scale = 1000.0f * alpha * alpha * alpha * alpha * alpha;
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_DISABLE, GX_ALWAYS, GX_DISABLE);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	color = (GXColor){ 0, 0, 0, 0x80 };
+	GXSetTevColor(GX_TEVREG0, color);
+	TEXGetGXTexObjFromPalette(fadeGetTpl(), &texObj, 1);
+	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	PSMTXTrans(mtxMain, 0.5f, 0.5f, 0.0f);
+	PSMTXScale(mtxScale, scale, scale, 0.0f);
+	PSMTXTrans(mtxNeg, -0.5f, -0.5f, 0.0f);
+	PSMTXConcat(mtxMain, mtxScale, mtxMain);
+	PSMTXConcat(mtxMain, mtxNeg, mtxMain);
+	GXLoadTexMtxImm(mtxMain, GX_TEXMTX0, GX_MTX2x4);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+	GXSetCurrentMtx(0);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3s16(-304, 240, 0);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3s16(304, 240, 0);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3s16(304, -240, 0);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3s16(-304, -240, 0);
+	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-void nameEntReInit(void) {
+// NONMATCHING (88.29%): GX setup and all three quads match; the texture scale computation
+// (f32 spans / GXGetTexObj* the original does through fabs(double)) leaves the frame at
+// 0x140 vs the original 0x170 and differs in the scale arithmetic.
+void nameBG(void) {
+	GXTexObj texObj1;
+	GXTexObj texObj2;
+	GXTexObj texObj3;
+	Mtx mtx1;
+	Mtx mtx2;
+	Mtx mtx3;
+	f32 xscale;
+	f32 yscale;
+
+	GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_FALSE);
+	GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
+	GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	GXSetNumChans(0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+	GXSetCurrentMtx(0);
+
+	TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x60->data[0], &texObj1, 0x22);
+	GXInitTexObjLOD(&texObj1, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	GXLoadTexObj(&texObj1, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	yscale = 480.0f / GXGetTexObjHeight(&texObj1);
+	xscale = 32.0f / GXGetTexObjWidth(&texObj1);
+	PSMTXScale(mtx1, xscale, yscale, 1.0f);
+	GXLoadTexMtxImm(mtx1, GX_TEXMTX0, GX_MTX2x4);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(-304.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(-304.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXPosition3f32(-272.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(-272.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+
+	TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x60->data[0], &texObj2, 0x21);
+	GXInitTexObjLOD(&texObj2, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	GXLoadTexObj(&texObj2, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	yscale = 480.0f / GXGetTexObjHeight(&texObj2);
+	xscale = 544.0f / GXGetTexObjWidth(&texObj2);
+	PSMTXScale(mtx2, xscale, yscale, 1.0f);
+	GXLoadTexMtxImm(mtx2, GX_TEXMTX0, GX_MTX2x4);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(-272.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(-272.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXPosition3f32(272.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(272.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+
+	TEXGetGXTexObjFromPalette((TEXPalette*)wp->field_0x60->data[0], &texObj3, 0x23);
+	GXInitTexObjLOD(&texObj3, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	GXLoadTexObj(&texObj3, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	yscale = 480.0f / GXGetTexObjHeight(&texObj3);
+	xscale = 32.0f / GXGetTexObjWidth(&texObj3);
+	PSMTXScale(mtx3, xscale, yscale, 1.0f);
+	GXLoadTexMtxImm(mtx3, GX_TEXMTX0, GX_MTX2x4);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(272.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(272.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXPosition3f32(304.0f, -240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(304.0f, 240.0f, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+}
+
+void nameEntMain(void) {
+	BOOL loaded;
+
+	switch (wp->field_0x4) {
+	case 0:
+		break;
+	case 1:
+		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0U) {
+			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl", getMarioStDvdRoot());
+			loaded = TRUE;
+		} else {
+			loaded = FALSE;
+		}
+		if (loaded) {
+			wp->field_0x4++;
+		}
+	case 2:
+		nameMain();
+		break;
+	case 3:
+		if (wp->field_0x60 != NULL) {
+			fileFree(wp->field_0x60);
+		}
+		wp->field_0x60 = NULL;
+		wp->field_0x4 = 0;
+		break;
+	}
+	if (wp->field_0x4 > 1) {
+		dispEntry(4, 0.0f, 7, nameEntDisp, NULL);
+	}
+}
+
+char* nameEntGetName(void) {
+	s32 off;
+	s32 i;
+
+	if (wp->field_0x8 != 0x65) {
+		return NULL;
+	}
+	for (i = 7, off = 0xe; i >= 1; i--, off -= 2) {
+		if (strncmp(&wp->field_0x3C[off], "\x81\x40", 2) != 0) {
+			break;
+		}
+		wp->field_0x3C[off] = 0;
+		wp->field_0x3C[off + 1] = 0;
+	}
+	return wp->field_0x3C;
+}
+
+BOOL nameEntIsCancel(void) {
+	return (wp->field_0x0 >> 1) & 1;
+}
+
+BOOL nameEntWait(void) {
+	wp->field_0x0 |= 1;
+	return wp->field_0x8 != 0x65;
+}
+
+void nameEntOff(void) {
 	wp->field_0x4 = 3;
+}
+
+// NONMATCHING (97.07%): the integer expression reassociates -- original does `x*24; (x/5)*30; add; subi 190`
+// while ours does `x*24; subi 190; (x/5)*30; add` (r5 vs r0), and the final `if (type == 2)` branches
+// `beq then; b else` in the original but `bne else` in ours. Everything else matches.
+void nameEntOn(s32 type) {
+	s32 i;
+
+	wp->field_0x0 = 0;
+	wp->field_0xC = type;
+	wp->field_0x4 = 1;
+	wp->field_0x8 = 0;
+	wp->field_0x50 = hiragana_tbl;
+	wp->field_0x18 = 0;
+	wp->field_0x10 = 0;
+	wp->field_0x14 = 0;
+
+	wp->x1 = wp->x2 = (f32)(wp->field_0x10 / 5 * 30 + wp->field_0x10 * 24 - 190);
+	wp->y1 = wp->y2 = (f32)(112 - wp->field_0x14 * 28);
+	wp->field_0x2C = wp->field_0x34 = -106.0f;
+	wp->field_0x30 = wp->field_0x38 = 135.0f;
+
+	strcpy(wp->field_0x3C, "");
+	for (i = 0; i < 8; i++) {
+		strcat(wp->field_0x3C, "\x81\x40");
+	}
+	wp->field_0x54 = 0.0f;
+
+	if (type == 2) {
+		hiragana_tbl[9] = "\x81\x40";
+		katakana_tbl[9] = "\x81\x40";
+	} else {
+		hiragana_tbl[9] = "\x82\xF1";
+		katakana_tbl[9] = "\x83\x93";
+	}
 }
 
 BOOL nameEntPrepare(void) {
 	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0;
 }
 
-// NONMATCHING (1.45%): empty placeholder, not decompiled yet.
-void nameEntMain(void) {
+void nameEntReInit(void) {
+	wp->field_0x4 = 3;
+}
 
+void nameEntInit(void) {
+	memset(wp, 0, sizeof(NameEntryWork));
 }

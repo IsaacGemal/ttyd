@@ -12,3 +12,5 @@ void monosiriExit(void* work);
 #include "driver/dispdrv.h"
 void monosiri_disp(CameraId camId, void* param);
 void capture(CameraId camId, void* param);
+typedef struct WindowWork WindowWork;
+void winLogDisp(CameraId camId, WindowWork* work, s32 idx);

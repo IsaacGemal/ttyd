@@ -14,8 +14,47 @@
 #include "data/mail_data.h"
 #include "window/win_item.h"
 #include "window/win_badge.h"
+#include "window/win_mario.h"
+#include "window/win_party.h"
+#include "window/win_log.h"
 #include "battle/battle_monosiri.h"
 #include "manager/evtmgr_cmd.h"
+
+extern WinRootVecs str_802F3FE8;
+extern const GXColor dat_8041ced8;
+extern const GXColor dat_8041cedc;
+extern const GXColor dat_8041cee0;
+extern const GXColor dat_8041cee4;
+extern const GXColor dat_8041d014;
+extern const f32 float_2_8041d090;
+extern const f32 float_neg1p3963_8041d0dc;
+extern const f32 float_neg0p5_8041d0e0;
+extern const GXColor dat_8041cee8;
+extern const GXColor dat_8041ceec;
+extern const GXColor dat_8041cef0;
+extern const GXColor dat_8041cef4;
+extern const GXColor dat_8041cef8;
+extern const GXColor dat_8041cefc;
+extern const GXColor float_neg0p0047648_8041cf00;
+extern const GXColor dat_8041cf04;
+extern const GXColor dat_8041cf08;
+extern const GXColor dat_8041cf0c;
+extern const GXColor dat_8041cf10;
+extern const GXColor dat_8041cf14;
+extern const GXColor dat_8041cf18;
+extern const GXColor dat_8041cf1c;
+extern const GXColor dat_8041cf20;
+extern const GXColor dat_8041cf24;
+extern const f32 float_18_8041d1b8;
+extern const f32 float_320_8041d074;
+extern const f32 float_570_8041d1bc;
+extern const f32 float_288_8041d16c;
+extern const f32 float_neg285_8041d1c0;
+extern const f32 float_160_8041d1c4;
+extern const f32 float_neg160_8041d1c8;
+extern const f32 float_285_8041d1cc;
+extern const f32 float_144_8041d1d0;
+extern const f32 float_neg144_8041d1d4;
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -1134,4 +1173,266 @@ void sort_5_3_func(WindowWork* work) {
     WW_S32(work, 0x180) = 1 - WW_S32(work, 0x180);
     WW_S32(work, 0xE98) = 0;
     WW_S32(work, 0xE9C) = WW_S32(work, 0xE98) / 28;
+}
+
+// First loop and inter-call sequence match; still differs in the scheduling of
+// the dat_8041ced8 load and the stack slots MWCC picks for the translate/scale
+// temporaries in the second loop and trailing winTexSet calls.
+// NONMATCHING (63.77%): see above.
+void winRootDisp(CameraId camId, WindowWork* work) {
+    WinRootVecs* vp = &str_802F3FE8;
+    GXColor bgcolor = dat_8041ced8;
+    Vec translate;
+    Vec scale;
+    s32 i;
+    s32 j;
+    u8* p;
+
+    if (WW_S32(work, 0x24) == 0) {
+        return;
+    }
+
+    for (i = 4; i >= 0; i--) {
+        u8* e = (u8*)work + i * 0x14;
+        s32 state = WW_S32(e, 0xCC);
+
+        if (state == -1) {
+            continue;
+        }
+        if (i > 0 && WW_S32(e, 0xB8) == 0x64) {
+            continue;
+        }
+        if (i > 0 && (u32)(state - 0xA) <= 1) {
+            continue;
+        }
+
+        switch (WW_S32(e, 0xC0)) {
+            case 0:
+                winMarioDisp(camId, work, i);
+                break;
+            case 1:
+                winPartyDisp(camId, work, i);
+                break;
+            case 2:
+                winItemDisp(camId, work, i);
+                break;
+            case 3:
+                winBadgeDisp(camId, work, i);
+                break;
+            case 4:
+                winLogDisp(camId, work, i);
+                break;
+        }
+    }
+
+    p = (u8*)work;
+    for (j = 0; j < WW_S32(work, 0x44); j++) {
+        GXColor color;
+
+        if (WW_S32(work, 0x40) == j) {
+            color = dat_8041cee0;
+        } else {
+            color = dat_8041cee4;
+        }
+
+        winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        translate = vp->v4;
+        scale = vp->v5;
+        translate.x = WW_F32(p, 0x4C);
+        translate.y = WW_F32(p, 0x50);
+        winTexSet_x2(WW_S32(p, 0x48) + 1, 0xB2, translate, scale, color);
+        p += 0x18;
+    }
+
+    winMailDisp(work);
+    winMsgDisp(work, WW_F32(work, 0x128), WW_F32(work, 0x12C));
+    winSortGX(work);
+
+    if (!(work->flags & 0x8000)) {
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+
+        translate = vp->v0;
+        scale = vp->v1;
+        translate.x = WW_F32(work, 0x150) + 2.0f;
+        translate.y = WW_F32(work, 0x154) - 2.0f;
+        winTexSet(0, translate, scale, dat_8041cedc);
+
+        translate = vp->v2;
+        scale = vp->v3;
+        translate.x = WW_F32(work, 0x150);
+        translate.y = WW_F32(work, 0x154);
+        winTexSet(0, translate, scale, bgcolor);
+    }
+}
+
+// All GX state, matrices and quad match except GXSetFog's 0.0f argument copies,
+// the pooled int->float double (local @754@ vs double_to_int_mask_802f44c8) and
+// the vertex FIFO stores (original reloads f0, MWCC keeps f1/f2/f3).
+// NONMATCHING (90.93%): see above.
+void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx4;
+    Mtx mtx1;
+    Mtx mtx2;
+    Mtx mtx3;
+    f32 scaleY;
+
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041d014);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 1, 4, 7);
+    GXSetTevSwapMode(0, 0, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, 0x7A);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetTevColor(1, *(GXColor*)color);
+    PSMTXTrans(mtx1, x, y, w);
+    scaleY = h * (float_2_8041d090 * (f32)GXGetTexObjHeight(&texObj));
+    PSMTXScale(mtx2, h * (float_2_8041d090 * (f32)GXGetTexObjWidth(&texObj)), scaleY, float_1_8041d070);
+    PSMTXRotRad(mtx3, 0x78, float_neg1p3963_8041d0dc);
+    PSMTXConcat(mtx1, mtx3, mtx4);
+    PSMTXConcat(mtx4, mtx2, mtx4);
+    PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx4, mtx4);
+    GXLoadPosMtxImm(mtx4, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(float_neg0p5_8041d0e0, float_0p5_8041d06c, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+    GXPosition3f32(float_neg0p5_8041d0e0, float_neg0p5_8041d0e0, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
+    GXPosition3f32(float_0p5_8041d06c, float_neg0p5_8041d0e0, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
+    GXPosition3f32(float_0p5_8041d06c, float_0p5_8041d06c, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+}
+
+// NONMATCHING (88.97%): everything matches except the vertex FIFO stores
+// (original reloads each float constant into f0, MWCC keeps them in f1-f4) and
+// the two pooled int->float doubles (local @848@ vs double_to_int_mask_802f44c8).
+void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f32 scaleY;
+
+    switch (type) {
+        case 0:
+            GXSetTevColor(1, dat_8041cee8);
+            GXSetTevColor(2, dat_8041ceec);
+            GXSetTevColor(3, dat_8041cef0);
+            break;
+        case 1:
+            GXSetTevColor(1, dat_8041cef4);
+            GXSetTevColor(2, dat_8041cef8);
+            GXSetTevColor(3, dat_8041cefc);
+            break;
+        case 2:
+            GXSetTevColor(1, float_neg0p0047648_8041cf00);
+            GXSetTevColor(2, dat_8041cf04);
+            GXSetTevColor(3, dat_8041cf08);
+            break;
+        case 3:
+            GXSetTevColor(1, dat_8041cf0c);
+            GXSetTevColor(2, dat_8041cf10);
+            GXSetTevColor(3, dat_8041cf14);
+            break;
+        case 4:
+            GXSetTevColor(1, dat_8041cf18);
+            GXSetTevColor(2, dat_8041cf1c);
+            GXSetTevColor(3, dat_8041cf20);
+            break;
+    }
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041cf24);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+    GXSetTevAlphaIn(0, 7, 7, 7, 4);
+    GXSetTevSwapMode(0, 0, 0);
+
+    PSMTXTrans(mtx, x, float_18_8041d1b8 + y, float_0_8041d068);
+    PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx, mtx);
+    GXLoadPosMtxImm(mtx, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, 7);
+    GXInitTexObjLOD(&texObj, 0, 0, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    scaleY = float_320_8041d074 / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, float_570_8041d1bc / (f32)GXGetTexObjWidth(&texObj), scaleY, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(float_neg285_8041d1c0, float_160_8041d1c4, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+    GXPosition3f32(float_neg285_8041d1c0, float_neg160_8041d1c8, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
+    GXPosition3f32(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
+    GXPosition3f32(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(float_0_8041d068, float_160_8041d1c4, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
+    GXPosition3f32(float_0_8041d068, float_neg160_8041d1c8, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
+    GXPosition3f32(float_285_8041d1cc, float_neg160_8041d1c8, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
+    GXPosition3f32(float_285_8041d1cc, float_160_8041d1c4, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, 6);
+    GXInitTexObjLOD(&texObj, 0, 0, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    scaleY = float_288_8041d16c / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, float_570_8041d1bc / (f32)GXGetTexObjWidth(&texObj), scaleY, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+
+    GXSetTevColorIn(0, 4, 6, 8, 0xF);
+    GXSetTevAlphaIn(0, 7, 7, 7, 3);
+
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(float_neg285_8041d1c0, float_144_8041d1d0, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_0_8041d068);
+    GXPosition3f32(float_neg285_8041d1c0, float_neg144_8041d1d4, float_0_8041d068);
+    GXTexCoord2f32(float_0_8041d068, float_1_8041d070);
+    GXPosition3f32(float_285_8041d1cc, float_neg144_8041d1d4, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_1_8041d070);
+    GXPosition3f32(float_285_8041d1cc, float_144_8041d1d0, float_0_8041d068);
+    GXTexCoord2f32(float_1_8041d070, float_0_8041d068);
 }

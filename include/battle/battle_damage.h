@@ -2,6 +2,7 @@
 
 typedef struct BattleUnit BattleUnit;
 typedef struct BattleWorkUnitPart BattleUnitPart;
+typedef struct BattleWeapon BattleWeapon;
 
 typedef struct BattleWork BattleWork;
 
@@ -34,9 +35,13 @@ typedef struct BattleVulnerableStatus {
 
 s32 BattleCheckDamage(struct BattleUnit* unit1, struct BattleUnit* unit2, struct BattleWorkUnitPart* part, struct BattleWeapon* weapon, s32 flags);
 void BattleAttackDeclareAll(BattleWork* wp);
-s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, s32 value, s32 a);
+s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32 a);
 
 void BattleInitCounterPreCheckWork(void* work);
 void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 arg2, s32 arg3, s32 arg4,
                         s32 arg5, s32 arg6, s32 arg7);
 void BattleAttackDeclare(s32* out1, s32* out2);
+s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out);
+s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags);
+s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* damageCode, s32 flags);
+void __declare(s32 unitId, s32 partId, s32* out1, s32* out2);

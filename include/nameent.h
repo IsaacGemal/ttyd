@@ -37,3 +37,11 @@ void nameEntOff(void);
 char* nameEntGetName(void);
 BOOL nameEntWait(void);
 void nameEntOn(s32 type);
+#include "driver/camdrv.h"
+BOOL nameEntIsCancel(void);
+void nameWinGX(void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w);
+void nameMaskGX(f32 alpha);
+void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w);
+void nameBG(void);
+void nameEntDisp(CameraId cameraId, void* param);
+void nameMain(void);

@@ -77,7 +77,8 @@ typedef struct PartyEntry {
     u16 field_20;                // 0x20
     u8 field_22[0x28 - 0x22];    // 0x22
     s16 field_28;                // 0x28
-    u8 field_2A[0x2D - 0x2A];    // 0x2A
+    s16 field_2A;                // 0x2A
+    u8 field_2C;                 // 0x2C
     s8 field_2D;                 // 0x2D
     u8 field_2E;                 // 0x2E
     s8 currentSlotId;            // 0x2F
@@ -96,7 +97,11 @@ typedef struct PartyEntry {
     s8 field_4C;                 // 0x4C
     u8 field_4D[0x58 - 0x4D];    // 0x4D
     Vec position;                // 0x58
-    u8 field_64[0xE4 - 0x64];    // 0x64
+    u8 field_64[0x70 - 0x64];    // 0x64
+    Vec field_70;                // 0x70
+    u8 field_7C[0xB8 - 0x7C];    // 0x7C
+    Vec field_B8;                // 0xB8
+    u8 field_C4[0xE4 - 0xC4];    // 0xC4
     f32 field_E4;                // 0xE4
     u8 field_E8[0xFC - 0xE8];    // 0xE8
     f32 field_FC;                // 0xFC
@@ -153,6 +158,9 @@ void allPartyRideShip(void);
 void allPartyRideOff(void);
 s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z);
 s32 partyEntry2Hello(s32 memberId);
+void partyPreDisp(PartyEntry* party);
+void partyMakeDispDir(PartyEntry* party);
+void partyDisp(CameraId cameraId, void* param);
 void partyChgRunMode(PartyEntry* party, s32 mode);
 void partyShadowOff(PartyEntry* party);
 void partySetCamId(PartyEntry* party, s32 cameraId);
@@ -184,3 +192,5 @@ void bomhei_use_post(PartyEntry* party);
 void bomhei_exit(PartyEntry* party);
 void bomhei_init_800BFBB0(PartyEntry* party);
 void bomhei_bye(PartyEntry* party);
+s32 partyRideChk(PartyEntry* party);
+void partyUpdateKeyData(PartyEntry* party);

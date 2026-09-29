@@ -1,9 +1,8 @@
 # TTYD decomp: the ledger
 
-The single record of every decision on this fork and why it was made. Read it top to bottom before starting
-work. New chapters go at the bottom, dated, with who made the call. The "Current state" section is the only part
-that gets rewritten in place; everything below it is append-only history (correct an old chapter by adding a
-new one that supersedes it, and say so).
+The single record of every decision on this fork and why it was made. New chapters go at the bottom, dated, with who
+made the call. The "Current state" section is the only part that gets rewritten in place; everything below it is
+append-only history (correct an old chapter by adding a new one that supersedes it, and say so).
 
 Private notes (inference provider, accounts, keys, capacity) go in `docs/CONTEXT.private.md`, which is
 gitignored, never here: this repo will be public.
@@ -488,8 +487,8 @@ Mac) runs the waves, merges, reviews and keeps this ledger. Agents do the matchi
 takes an agent's word for anything, only the build's.
 
 **Start here.**
-1. Read this ledger top to bottom, then `docs/CONTEXT.private.md` if it exists (gitignored, on Isaac's Mac
-   only): inference provider, keys, the tower, capacity, what can and can't go public.
+1. `docs/CONTEXT.private.md`, if it exists (gitignored, on Isaac's Mac only), has the inference provider, keys,
+   the tower, capacity, and what can and can't go public.
 2. Check the live state: `gh pr list`, `git log --oneline -15`, and `python3 tools/ci.py` on `main` (it should
    pass with nothing changed). GitHub is the source of truth for what's merged.
 3. Ask Isaac what's next. Don't launch a wave, spend on inference or share traces without him.

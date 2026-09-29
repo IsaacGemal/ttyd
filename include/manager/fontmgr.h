@@ -107,3 +107,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y);
 void FontDrawMessageMtx(Mtx mtx, const char* msg);
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch);
 void FontDrawScaleVec(Vec scale);
+int sscanf(const char* str, const char* format, ...);
+void FontDrawStringCenterMtx(Mtx mtx, const char* msg);
+void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch);
+u32 HSV2RGB(GXColor* hsv);

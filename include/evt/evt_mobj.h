@@ -37,3 +37,4 @@ s32 mobj_brickblk(MapObjectEntry* obj);
 s32 mobj_itembox(MapObjectEntry* obj);
 s32 mobj_switch_float_blk(MapObjectEntry* obj);
 s32 mobj_timerswitch(MapObjectEntry* obj);
+void kururing_capture(CameraId cameraId, void* param);

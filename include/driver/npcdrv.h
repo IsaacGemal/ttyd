@@ -32,6 +32,13 @@ typedef struct BattleGroupSetup {
     u8 field_0[0x20 - 0x0];     // 0x8
 } BattleGroupSetup;
 
+// One entry of an area's battle setup list (name at 0x0, item-drop and loadout tables at 0x10/0x14, music at
+// 0x40); npcSetBattleInfo walks them 0x44 apart and hands one to npcSetupBattleInfo.
+typedef struct BattleSetupData {
+    const char* name;       // 0x0
+    u8 field_4[0x44 - 0x4]; // 0x4
+} BattleSetupData;
+
 typedef struct NpcBattleInfo {
     u8 field_0[0x4 - 0x0];          // 0x0
     s32 field_4;                    // 0x4
@@ -46,6 +53,20 @@ typedef struct NpcBattleInfo {
     ItemType recoveredItems[8];     // 0x7C
     u8 field_9C[0xC8 - 0x9C];       // 0x9C
 } NpcBattleInfo;
+
+// The 0xC-byte entries of the weighted battle setup list selected by npcSetupBattleInfo.
+typedef struct NpcBattleSetupEntry {
+    s32 weight;              // 0x0
+    BattleGroupSetup* setup; // 0x4
+    s32 field_8;             // 0x8
+} NpcBattleSetupEntry;
+
+// The 8-byte entries of an enemy item drop list (see setup+0x10/setup+0x14).
+typedef struct NpcItemDropEntry {
+    s32 field_0;   // 0x0, item type
+    s16 weight;    // 0x4
+    u8 pad_6[2];   // 0x6
+} NpcItemDropEntry;
 
 typedef struct NpcTribeInfo {
     const char* nameJp;           // 0x0
@@ -221,6 +242,7 @@ FieldBattleData* fbatGetPointer(void);
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id);
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId);
+void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup);
 void fbatChangeMode(s16 mode);
 
 NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description);

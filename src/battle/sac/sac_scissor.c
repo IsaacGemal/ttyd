@@ -3,14 +3,19 @@
 #include <string.h>
 
 #include "battle/battle.h"
+#include "battle/battle_disp.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
 #include "driver/offscreendrv.h"
 #include "manager/evtmgr_cmd.h"
+#include "manager/fontmgr.h"
+#include "mario/mariost.h"
 #include "memory.h"
+#include "pmario_sound.h"
 #include "system.h"
+#include "math_ext.h"
 #include "battle/sac/sac_scissor.h"
 
 
@@ -23,9 +28,44 @@ extern f32 float_120_80421790;
 extern f32 float_185_8042178c;
 extern f32 float_320_80421788;
 extern f32 float_deg2rad_80421798;
+extern f32 float_255_8042174c;
+extern f32 float_neg240_80421738;
+extern f32 float_240_8042173c;
+extern f32 float_neg304_80421740;
+extern f32 float_304_80421744;
+extern f32 float_0p5_80421748;
+extern f32 float_1_80421754;
+extern f32 float_neg1_80421750;
+extern f32 float_9_80421758;
+extern f32 float_100_8042175c;
+extern f32 float_0p3_80421760;
+extern f32 float_0p6_80421764;
+extern f32 float_0p9_80421768;
 extern f32 float_1000_804217b0;
 extern f32 float_neg1000_8042179c;
+extern f32 float_42_8042176c;
+extern f32 float_50_80421770;
+extern f32 float_0p86_80421774;
+extern f32 float_neg300_80421778;
+extern f32 float_300_8042177c;
+extern f32 float_neg200_80421780;
+extern f32 float_200_80421784;
+extern char str_802FF648[];
 extern u32 dat_80421718;
+extern u32 dat_8042171c;
+extern char str_80421728[4];
+extern BattleWeapon weapon_scissor;
+
+// Double constants emitted in this translation unit's .sdata2.
+const f64 double_to_int_802ff638 = 4503601774854144.0;
+const f64 double_5_802ff640 = 5.0;
+const f64 double_to_int_mask_802ff660 = 4503599627370496.0;
+
+// A 2D point in the scissor polygon buffers (8 bytes, copied by value in tess).
+typedef struct ScissorPoint {
+    f32 x;
+    f32 y;
+} ScissorPoint;
 
 // Local view of the scissor action-command work area at _battleWorkPointer + 0x1F4C.
 // No header declares this struct yet; fields are listed in REPORT.md.
@@ -40,10 +80,19 @@ typedef struct ScissorWork {
     u8 field_0x98;                // 0x98
     u8 field_0x99[0x03];          // 0x99
     s32 field_0x9C;               // 0x9C, point count
-    u8 field_0xA0[0x14];          // 0xA0
+    s32 field_0xA0;               // 0xA0
+    f32 field_0xA4;               // 0xA4
+    f32 field_0xA8;               // 0xA8
+    f32 field_0xAC;               // 0xAC
+    f32 field_0xB0;               // 0xB0
     f32 field_0xB4;               // 0xB4
     f32 field_0xB8;               // 0xB8
-    u8 field_0xBC[0x40];          // 0xBC
+    f32 field_0xBC;               // 0xBC
+    f32 field_0xC0;               // 0xC0
+    u8 field_0xC4[0x10];          // 0xC4
+    f32 field_0xD4;               // 0xD4
+    f32 field_0xD8;               // 0xD8
+    u8 field_0xDC[0x20];          // 0xDC
     s32 field_0xFC;               // 0xFC
     s32 field_0x100;              // 0x100
     s32 field_0x104;              // 0x104
@@ -107,11 +156,110 @@ s32 scissor_init(void) {
     return 2;
 }
 
+void scissor_disp_region(CameraId cameraId, void* param) {
+    ScissorWork* work = GetScissorPtr();
+    GXTexObj texObj;
+    Mtx mtx;
+    u16 left;
+    u16 top;
+    u16 right;
+    u16 bottom;
+    f32* tri;
+    s32 i;
+
+    sysWaitDrawSync();
+    GXClearBoundingBox();
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXInitTexObj(&texObj, work->field_0x170->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_80421734, float_0_80421734, float_0_80421734, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetNumChans(1);
+    GXSetNumTexGens(1);
+    C_MTXLightOrtho(mtx, float_neg240_80421738, float_240_8042173c, float_neg304_80421740, float_304_80421744, float_0p5_80421748, float_0p5_80421748, float_0p5_80421748, float_0p5_80421748);
+    PSMTXConcat(mtx, camGetPtr(CAMERA_2D)->view, mtx);
+    GXLoadTexMtxImm(mtx, 0x1E, GX_MTX3x4);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_POS, 0x1E, GX_FALSE, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
+    GXSetTevKAlphaSel(GX_TEVSTAGE0, GX_TEV_KASEL_1);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, GX_PNMTX0);
+    tri = (f32*)work->field_0x118;
+    GXBegin(GX_TRIANGLES, GX_VTXFMT0, (u16)(work->field_0x14 * 3));
+    for (i = 0; i < work->field_0x14; i++) {
+        GXPosition3f32(tri[0], tri[3], 0.0f);
+        GXPosition3f32(tri[1], tri[4], 0.0f);
+        GXPosition3f32(tri[2], tri[5], 0.0f);
+        tri += 6;
+    }
+    sysWaitDrawSync();
+    if (work->field_0x170 != NULL) {
+        smartFree(work->field_0x170);
+        work->field_0x170 = NULL;
+    }
+    GXReadBoundingBox(&left, &top, &right, &bottom);
+    if (left == 0x3FF && right == 0 && top == 0x3FF && bottom == 0) {
+        work->flags &= ~1;
+    } else {
+        work->flags |= 1;
+    }
+    offscreenAddBoundingBox(offscreenNameToId(str_80421728), left, top, right, bottom);
+}
+
 s32 scissor_offscreen(void) {
     ScissorWork* work = GetScissorPtr();
 
     dispEntry(CAMERA_OFFSCREEN2, 0.0f, 1, scissor_disp_region, NULL);
     return 2;
+}
+
+// NONMATCHING (96.38%): newly written; see REPORT.md.
+void scissor_disp_control(CameraId cameraId, void* param) {
+    ScissorWork* work = GetScissorPtr();
+    f32* points = work->field_0x114;
+    GXColor color;
+    GXColor hsv;
+    s32 i;
+
+    work->field_0x10++;
+    if (work->field_0x10 >= 0x3C) {
+        work->field_0x10 -= 0x3C;
+    }
+    if (work->field_0x10 <= 0x1D) {
+        intplGetValue(0, work->field_0x10, 0x1D, float_0_80421734, float_255_8042174c);
+    } else {
+        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, float_255_8042174c, float_0_80421734);
+    }
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GXLoadPosMtxImm(camGetPtr(cameraId)->view, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXSetLineWidth(0x10, GX_TO_ZERO);
+    for (i = 0; i < work->field_0x9C - 1; i++) {
+        hsv = *(GXColor*)&dat_8042171c;
+        hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
+        *(u32*)&color = HSV2RGB(&hsv);
+        GXSetChanMatColor(GX_COLOR0A0, color);
+        GXBegin(GX_LINES, GX_VTXFMT0, 2);
+        GXPosition3f32(points[i * 2], points[i * 2 + 1], 0.0f);
+        GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], 0.0f);
+    }
 }
 
 void scissor_capture(void) {
@@ -135,6 +283,8 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// Keep scissor_damage_sub2 out of line: scissor_damage_sub calls (bl) it in the original.
+#pragma dont_inline on
 // NONMATCHING (97.82%): same instructions; only register numbers or operands differ.
 s32 scissor_damage_sub2(Vec* point) {
     ScissorWork* work = GetScissorPtr();
@@ -157,6 +307,253 @@ s32 scissor_damage_sub2(Vec* point) {
             return 1;
         }
     }
+    return 0;
+}
+#pragma dont_inline reset
+
+// NONMATCHING (94.79%): newly written; see REPORT.md.
+void scissor_damage_sub(BattleUnit* unit, s32* out) {
+    Vec pos;
+    Vec point;
+    Vec screen;
+    f32 sign;
+    f32 width;
+    f32 height;
+    f32 ratio;
+    f32 halfW;
+    f32 halfH;
+    f32 rowBase;
+    f32 nine;
+    s32 hits = 0;
+    s32 i;
+    s32 j;
+
+    sign = (unit->mAttributeFlags & kCeiling) ? float_neg1_80421750 : float_1_80421754;
+    width = unit->cutWidth * unit->mSizeMultiplier;
+    height = unit->cutHeight * unit->mSizeMultiplier;
+    BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+    halfH = float_0p5_80421748 * -height;
+    halfW = float_0p5_80421748 * width;
+    nine = float_9_80421758;
+    pos.x += unit->cutBaseOffset.x * unit->mSizeMultiplier;
+    pos.y += sign * (unit->cutBaseOffset.y * unit->mSizeMultiplier);
+    for (i = 0; i < 10; i++) {
+        rowBase = ((f32)i * width) / nine;
+        for (j = 0; j < 10; j++) {
+            point.x = pos.x - halfW + rowBase;
+            point.z = pos.z;
+            point.y = sign * (halfH + ((f32)j * height) / nine) + pos.y;
+            btlGetScreenPoint(&point, &point);
+            screen = point;
+            if (scissor_damage_sub2(&screen)) {
+                hits++;
+            }
+        }
+    }
+    ratio = (f32)hits / float_100_8042175c;
+    *out = 0;
+    if (ratio >= float_0p3_80421760) {
+        *out = 1;
+    }
+    if (ratio >= float_0p6_80421764) {
+        *out = 2;
+    }
+    if (ratio >= float_0p9_80421768) {
+        *out = 3;
+    }
+}
+
+// NONMATCHING (98.28%): newly written; see REPORT.md.
+s32 scissor_damage(EventEntry* event, s32 unused) {
+    s32* args = event->args;
+    BattleWork* battleWork = _battleWorkPointer;
+    BattleUnit* mario = BattleGetMarioPtr(battleWork);
+    ScissorWork* work = GetScissorPtr();
+    s32 count = 0;
+    s32 allHit = 1;
+    s32 audienceNum = BattleAudience_GetAudienceNum();
+    s32 damage = 0;
+    s32 out;
+    s32 i;
+    s32 unitIndex;
+
+    for (unitIndex = 0; unitIndex < 0x40; unitIndex++) {
+        BattleUnit* unit = BattleGetUnitPtr(battleWork, unitIndex);
+        if (unit == NULL) {
+            continue;
+        }
+        if (BtlUnit_GetBelong(unit) != 1) {
+            continue;
+        }
+        {
+            BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+            if (BtlUnit_CheckStatus(unit, 0x1B) == 1) {
+                continue;
+            }
+            if ((part->attributes & kUnknown_0x4000) || (part->attributes & kUnk_ImmuneToDamageOrStatus) || (part->attributes & kNotTargetable)) {
+                continue;
+            }
+            if ((s8)part->defenseAttr->defenseAttrs[0] == 4 || (s8)part->defenseAttr->defenseAttrs[0] == 2) {
+                continue;
+            }
+            scissor_damage_sub(unit, &out);
+            work->field_0x18[count] = unitIndex;
+            work->field_0x58[count] = out;
+            count++;
+            if (out < 1) {
+                allHit = 0;
+            }
+        }
+    }
+    if (count == 0) {
+        allHit = 0;
+    }
+    for (i = 0; i < count; i++) {
+        BattleUnit* unit;
+        BattleUnitPart* part;
+
+        if (work->field_0x18[i] == -1) {
+            continue;
+        }
+        if (work->field_0x58[i] < 1) {
+            continue;
+        }
+        unit = BattleGetUnitPtr(battleWork, work->field_0x18[i]);
+        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        BattleCheckDamage(mario, unit, part, &weapon_scissor, 0);
+        damage = 1;
+    }
+    if (allHit == 1) {
+        s32 value;
+
+        work->field_0x0C++;
+        value = work->field_0x0C + 1;
+        if (value >= 7) {
+            value = 6;
+        }
+        evtSetValue(event, args[0], value);
+    } else {
+        evtSetValue(event, args[0], -1);
+    }
+    if (damage == 1) {
+        if (audienceNum >= 1 && audienceNum <= 0x31) {
+            BattleAudienceSoundCallKind(1);
+        }
+        if (audienceNum >= 0x32 && audienceNum <= 0x63) {
+            BattleAudienceSoundCallKind(1);
+            BattleAudienceSoundHandBeat();
+        }
+        if (audienceNum >= 0x64 && audienceNum <= 0x95) {
+            BattleAudienceSoundCallKind(2);
+        }
+        if (audienceNum >= 0x96) {
+            BattleAudienceSoundCallKind(2);
+            BattleAudienceSoundHandBeat();
+        }
+        work->field_0x98 += 0x14;
+        if (work->field_0x98 >= 0x64) {
+            work->field_0x98 = 0x64;
+        }
+        BattleAudienceSoundSetVol(4, work->field_0x98, 0x1E);
+    }
+    return 2;
+}
+
+// NONMATCHING (93.32%): newly written; see REPORT.md.
+s32 scissor_control(s32 unused, s32 reset) {
+    ScissorWork* work = GetScissorPtr();
+    ScissorPoint* points = (ScissorPoint*)work->field_0x114;
+    s32 i;
+    s32 offset;
+
+    if (reset != 0) {
+        work->field_0x9C = 0;
+        work->field_0xA8 = 0.0f;
+        work->field_0xA4 = 0.0f;
+        work->field_0xB0 = 0.0f;
+        work->field_0xAC = 0.0f;
+        work->field_0xA0 = 0;
+        work->field_0xD4 = 0.0f;
+        work->field_0xD8 = 0.0f;
+        memset(points, 0, 0x1000);
+        work->flags &= ~1;
+    }
+    work->field_0xA4 = work->field_0xAC;
+    work->field_0xA8 = work->field_0xB0;
+    work->field_0xAC = (f32)keyGetStickX(0);
+    work->field_0xB0 = (f32)keyGetStickY(0);
+    {
+        f32 mag = (f32)sqrt(work->field_0xA4 * work->field_0xA4 + work->field_0xA8 * work->field_0xA8);
+        mag = (f32)sqrt(work->field_0xAC * work->field_0xAC + work->field_0xB0 * work->field_0xB0);
+        if (mag > float_42_8042176c) {
+            work->field_0xD4 += work->field_0xAC / float_50_80421770;
+            work->field_0xD8 += work->field_0xB0 / float_50_80421770;
+        }
+    }
+    work->field_0xD4 *= float_0p86_80421774;
+    work->field_0xD8 *= float_0p86_80421774;
+    work->field_0xB4 += work->field_0xD4;
+    work->field_0xB8 += work->field_0xD8;
+    if (work->field_0xB4 < float_neg300_80421778) {
+        work->field_0xB4 = float_neg300_80421778;
+    }
+    if (work->field_0xB4 > float_300_8042177c) {
+        work->field_0xB4 = float_300_8042177c;
+    }
+    if (work->field_0xB8 < float_neg200_80421780) {
+        work->field_0xB8 = float_neg200_80421780;
+    }
+    if (work->field_0xB8 > float_200_80421784) {
+        work->field_0xB8 = float_200_80421784;
+    }
+    if (work->field_0x104 <= 0x3B) {
+        work->state = 6;
+        return 2;
+    }
+    if (gp->retraceCount % 6 == 0) {
+        if (work->field_0x9C < 0x200) {
+            if (work->field_0xBC != work->field_0xB4 || work->field_0xC0 != work->field_0xB8) {
+                if (__fabs(work->field_0xB4 - work->field_0xBC) >= double_5_802ff640 || __fabs(work->field_0xB8 - work->field_0xC0) >= double_5_802ff640) {
+                    psndSFXOn(str_802FF648);
+                }
+                points[work->field_0x9C].x = work->field_0xB4;
+                points[work->field_0x9C].y = work->field_0xB8;
+                work->field_0xBC = work->field_0xB4;
+                work->field_0xC0 = work->field_0xB8;
+                work->field_0x9C++;
+            }
+        }
+    }
+    if (work->field_0x9C > 3) {
+        for (i = 0, offset = 0; i < work->field_0x9C - 3; i++, offset += 8) {
+            ScissorPoint* p = &points[i];
+            f32 ox;
+            f32 oy;
+            s32 n = work->field_0x9C;
+
+            if (scissor_intersection(p->x, p->y, p[1].x, p[1].y,
+                                     points[n - 2].x, points[n - 2].y, points[n - 1].x, points[n - 1].y,
+                                     &ox, &oy) != 0) {
+                s32 k;
+
+                points[n - 1].x = ox;
+                p->x = ox;
+                points[n - 1].y = oy;
+                p->y = oy;
+                for (k = 0; k < i; k++) {
+                    points[k] = *p;
+                }
+                if (work->field_0x170 != NULL) {
+                    smartFree(work->field_0x170);
+                    work->field_0x170 = NULL;
+                }
+                work->field_0x170 = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 4, 0, 0), 1);
+                dispEntry(8, 0.0f, 0, (DispCallback)scissor_capture, 0);
+                return 2;
+            }
+        }
+    }
+    dispEntry(8, 0.0f, 0, (DispCallback)scissor_disp_control, 0);
     return 0;
 }
 
@@ -220,30 +617,31 @@ s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
 }
 
 // Keep star_disp2D_sub out of line: star_disp2D must call (bl) it.
-// NONMATCHING (0.00%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
+// NONMATCHING (98.77%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
     f32* points = (f32*)((u8*)work + 0x9C);
+    Mtx mTemp;
     Mtx mTrans;
-    Mtx mScale;
     Mtx mRotX;
     Mtx mRotY;
     Mtx mRotZ;
-    Mtx mTemp;
+    Mtx mScale;
     GXColor color;
     f32 x;
     f32 y;
     f32 z;
-    s32 a = alpha;
 
     if (work->state >= 6) {
         work->field_0x120++;
         if (work->field_0x120 > 0x1E) {
             work->field_0x120 = 0x1E;
         }
-        a = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u8)alpha, float_0_80421734);
+        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u8)alpha, float_0_80421734);
     }
+    *(u32*)&color = dat_80421718;
+    color.a = alpha;
     if (index == 0) {
         x = points[6];
         y = points[7];
@@ -255,15 +653,13 @@ void star_disp2D_sub(s32 index, s32 alpha) {
     }
     PSMTXTrans(mTrans, x, y - float_20_80421794, z);
     PSMTXScale(mScale, work->field_0x154, work->field_0x158, work->field_0x15C);
-    PSMTXRotRad(mRotX, 'x', work->field_0x160 * float_deg2rad_80421798);
-    PSMTXRotRad(mRotY, 'y', work->field_0x164 * float_deg2rad_80421798);
-    PSMTXRotRad(mRotZ, 'z', work->field_0x168 * float_deg2rad_80421798);
+    PSMTXRotRad(mRotX, 'x', float_deg2rad_80421798 * work->field_0x160);
+    PSMTXRotRad(mRotY, 'y', float_deg2rad_80421798 * work->field_0x164);
+    PSMTXRotRad(mRotZ, 'z', float_deg2rad_80421798 * work->field_0x168);
     PSMTXConcat(mRotZ, mRotY, mTemp);
     PSMTXConcat(mRotX, mTemp, mTemp);
     PSMTXConcat(mScale, mTemp, mTemp);
     PSMTXConcat(mTrans, mTemp, mTemp);
-    *(u32*)&color = dat_80421718;
-    color.a = a;
     iconDispGxCol(mTemp, 0x10, 0x19C, color);
 }
 #pragma dont_inline reset
@@ -295,6 +691,60 @@ s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
         }
     }
     return 0;
+}
+
+s32 tess(f32* points, s32 count) {
+    ScissorWork* work = GetScissorPtr();
+    s32 i;
+    s32 j;
+    s32 k;
+
+    if (count == 3) {
+        f32* dst = (f32*)((u8*)work->field_0x118 + work->field_0x14 * 0x18);
+        for (i = 0; i < 3; i++) {
+            dst[i] = points[i * 2];
+            dst[i + 3] = points[i * 2 + 1];
+        }
+        work->field_0x14++;
+        BattleFree(points);
+    } else {
+        ScissorPoint* p = (ScissorPoint*)points;
+        for (i = 0; i < count; i++) {
+            for (j = 2; j < count - 1; j++) {
+                s32 rem = (i + j) % count;
+                if (scissor_cross(&p[i].x, &p[rem].x, points, count) == 1) {
+                    s32 n1 = j + 1;
+                    ScissorPoint* v1 = BattleAlloc(n1 * 8);
+                    for (k = 0; k < n1; k++) {
+                        s32 r0 = (i + k) % count;
+                        v1[k] = p[r0];
+                    }
+                    {
+                        s32 n2 = count - j + 1;
+                        ScissorPoint* v2 = BattleAlloc(n2 * 8);
+                        v2[0] = p[i];
+                        for (k = 0; k < n2 - 1; k++) {
+                            s32 r0 = (i + j + k) % count;
+                            v2[k + 1] = p[r0];
+                        }
+                        BattleFree(points);
+                        tess((f32*)v1, n1);
+                        tess((f32*)v2, n2);
+                    }
+                    return;
+                }
+            }
+        }
+        {
+            f32* dst = (f32*)((u8*)work->field_0x118 + work->field_0x14 * 0x18);
+            for (i = 0; i < 3; i++) {
+                dst[i] = points[i * 2];
+                dst[i + 3] = points[i * 2 + 1];
+            }
+            work->field_0x14++;
+            BattleFree(points);
+        }
+    }
 }
 
 s32 scissor_tess(void) {

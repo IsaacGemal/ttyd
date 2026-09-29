@@ -208,6 +208,227 @@ HitEntry* hitEntryMOBJ(MapFileJoint* joint, Mtx mtx) {
     return hitEntrySub(joint, NULL, mtx, TRUE, 0);
 }
 
+static inline void hitUpdateActiveList(void) {
+    MapWork* wp = mapGetWork();
+    MapEntry* map;
+    s32 i;
+    s32 j;
+    HitEntry* hit;
+    HitEntry* prev;
+
+    i = 0;
+    prev = NULL;
+    lbl_80418408 = NULL;
+    map = wp->entries;
+    for (; i < wp->entries->count; map++, i++) {
+        hit = map->hitEntries;
+        for (j = 0; j < map->hitNumJoints; j++, hit++) {
+            if (hit->joint->partCount != 0 && !(hit->flags & 0x81)) {
+                if (prev == NULL) {
+                    lbl_80418408 = hit;
+                } else {
+                    prev->siblingActive = hit;
+                }
+                prev = hit;
+            }
+        }
+    }
+    if (prev != NULL) {
+        prev->siblingActive = NULL;
+    }
+}
+
+// NONMATCHING (97.76%): inlined active-list rebuild has a couple of low-register swaps left.
+void hitDelete(const char* name) {
+    MapEntry* map;
+    MapWork* wp = mapGetWork();
+    s32 j, i;
+    HitEntry* hit;
+
+    map = wp->entries;
+    for (i = 0; i < wp->entries->count; map++, i++) {
+        hit = map->hitEntries;
+        for (j = 0; j < map->hitNumJoints; j++, hit++) {
+            if (!(hit->flags & 0x80) && !strcmp(name, hit->joint->name)) {
+                hit->flags |= 0x80;
+                hitUpdateActiveList();
+                return;
+            }
+        }
+    }
+}
+
+// NONMATCHING (97.33%): main animation pass keeps a different register assignment than retail.
+void hitMain(void) {
+    MapWork* wp = mapGetWork();
+    MapEntry* map;
+    HitEntry* found;
+    u8* anim;
+    s32 i, j, k;
+    s32 anyScale;
+    Mtx mtx;
+
+    hitUpdateActiveList();
+
+    map = wp->entries;
+    for (i = 0; i < wp->entries->count; map++, i++) {
+        anim = (u8*)map->animData;
+        anyScale = 0;
+        for (j = 0; j < *(s32*)map->field_0x160; j++, anim += 0x20) {
+            u16 animFlags = *(u16*)anim;
+            u8* list = *(u8**)(anim + 0x18);
+            u8* childList = *(u8**)(list + 0xC);
+
+            if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
+                u8* p = childList;
+                for (k = 0; k < *(s32*)childList; k++, p += 4) {
+                    found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
+                    if (found != NULL) {
+                        mapCalcAnimMatrix(found->unk6C, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
+                        anyScale = 1;
+                        found->flags |= 0x10;
+                        found->flags |= 0x40;
+                        *(u16*)anim |= 0x1000;
+                    }
+                }
+            }
+        }
+        if (anyScale) {
+            PSMTXScale(mtx, 10.0f, 10.0f, 10.0f);
+            hitReCalcMatrix2(map->rootHitObj, mtx, FALSE);
+        }
+    }
+}
+
+
+void hitObjFlagOn(const char* name, u32 flag) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hit->flags |= flag;
+    }
+}
+
+void hitObjFlagOff(const char* name, s32 flag) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hit->flags &= ~flag;
+    }
+}
+
+void hitFlgOn(HitEntry* hit, s32 flag, BOOL recursion) {
+    hit->flags |= flag;
+    if (hit->child != NULL) {
+        hitFlgOn(hit->child, flag, TRUE);
+    }
+    if (recursion != 0) {
+        if (hit->sibling != NULL) {
+            hitFlgOn(hit->sibling, flag, TRUE);
+        }
+    }
+}
+
+void hitFlgOff(HitEntry* hit, s32 flag, BOOL recursion) {
+    hit->flags &= ~(u16)flag;
+    if (hit->child != NULL) {
+        hitFlgOff(hit->child, flag, TRUE);
+    }
+    if (recursion != 0) {
+        if (hit->sibling != NULL) {
+            hitFlgOff(hit->sibling, flag, TRUE);
+        }
+    }
+}
+
+void hitGrpFlagOn(const char* name, s32 flag) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hitFlgOn(hit, flag, FALSE);
+    }
+}
+
+void hitGrpFlagOff(const char* name, s32 flag) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hitFlgOff(hit, flag, FALSE);
+    }
+}
+
+void hitObjAttrOn(const char* name, s32 attr) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hit->attributes |= attr;
+    }
+}
+
+void hitObjAttrOff(const char* name, s32 attr) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hit->attributes &= ~attr;
+    }
+}
+
+void hitAtrOn(HitEntry* hit, s32 attr, BOOL recursion) {
+    hit->attributes |= attr;
+    if (hit->child != NULL) {
+        hitAtrOn(hit->child, attr, TRUE);
+    }
+    if (recursion != 0) {
+        if (hit->sibling != NULL) {
+            hitAtrOn(hit->sibling, attr, TRUE);
+        }
+    }
+}
+
+void hitAtrOff(HitEntry* hit, s32 attr, BOOL recursion) {
+    hit->attributes &= ~attr;
+    if (hit->child != NULL) {
+        hitAtrOff(hit->child, attr, TRUE);
+    }
+    if (recursion != 0) {
+        if (hit->sibling != NULL) {
+            hitAtrOff(hit->sibling, attr, TRUE);
+        }
+    }
+}
+
+void hitGrpAttrOn(const char* name, s32 attr) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hitAtrOn(hit, attr, FALSE);
+    }
+}
+
+void hitGrpAttrOff(const char* name, s32 attr) {
+    HitEntry* hit = hitNameToPtr(name);
+
+    if (hit == NULL) {
+        mapErrorEntry(1, name);
+    } else {
+        hitAtrOff(hit, attr, FALSE);
+    }
+}
+
 void hitReCalcMatrix(HitEntry* hit, Mtx mtx) {
     Vec world;
 
@@ -255,10 +476,123 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
     }
 }
 
+// dont_inline keeps hitCalcVtxPosition a real `bl` from _hitEnt/hitReCalcMatrix as in retail.
 #pragma dont_inline on
-// NONMATCHING (0.33%): empty placeholder, not decompiled yet.
+
+// The unpacked triangle path is reconstructed from the asm, but the packed branch's locals inflate the frame
+// and the packed s16->f32 reads lower to the integer xoris/lfd/fsubs path instead of retail's psq_l/psq_st.
+// NONMATCHING (50.32%): the original reads packed s16 vertices with psq_lx through GQR5, scaled by 2^-shift using the map
+// file's fraction shift (mapGetWork()->entries[...] +0xA4 -> +0x44); this reads them as plain s16 and never scales, so
+// packed collision triangles are wrong whenever the shift is nonzero. Register allocation also differs.
 s16 hitCalcVtxPosition(HitEntry* hit) {
-    // TODO
+    s32 numVectors = 0;
+    s32 partIndex;
+    s32 dlIndex;
+    s32 triIndex;
+    MapFileMesh* mesh;
+
+    if (hit->vectors == NULL) {
+        return 0;
+    }
+
+    for (partIndex = 0; partIndex < hit->joint->partCount; partIndex++) {
+        mesh = hit->joint->parts[partIndex].mesh;
+        if (mesh == NULL) {
+            continue;
+        }
+
+        if (!mesh->isPackedDisplay) {
+            for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
+                u8* base = (u8*)mesh->displayLists.normalLists[dlIndex];
+                for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++) {
+                    HitVector* vector = &hit->vectors[numVectors];
+                    Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    s32 i0 = *(s16*)(base + triIndex * 0x18 + 4);
+                    s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
+                    s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
+                    s32 v1i;
+                    s32 v2i;
+
+                    if (triIndex & 1) {
+                        v1i = i1;
+                        v2i = i2;
+                    } else {
+                        v1i = i2;
+                        v2i = i1;
+                    }
+
+                    PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
+                    PSMTXMultVec(hit->worldMtx, &vtx[v1i], &vector->v1);
+                    PSMTXMultVec(hit->worldMtx, &vtx[v2i], &vector->v2);
+                    PSVECSubtract(&vector->v2, &vector->v0, &vector->edge0);
+                    PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
+                    PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
+                    PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
+                    numVectors++;
+                }
+            }
+        } else {
+            u32 mask = mesh->elementMask;
+            s32 stride = 0;
+            s32 s;
+
+            for (s = 0; s < 12; s++) {
+                stride += (mask >> s) & 1;
+            }
+            stride *= 2;
+
+            for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
+                u8* list = (u8*)mesh->displayLists.packedLists[dlIndex].offset;
+                s32 triCount = *(u16*)(list + 1) - 2;
+                s32 byteOffset = 0;
+                s32 vecOffset = numVectors * 0x54;
+
+                for (triIndex = 0; triIndex < triCount; triIndex++, byteOffset += stride) {
+                    s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    s32 i0 = *(u16*)(list + byteOffset + 3);
+                    s32 i1 = *(u16*)(list + (triIndex + 1) * stride + 3);
+                    s32 i2 = *(u16*)(list + (triIndex + 2) * stride + 3);
+                    s32 v1i;
+                    s32 v2i;
+                    Vec v0;
+                    Vec v1;
+                    Vec v2;
+                    HitVector* vector = (HitVector*)((u8*)hit->vectors + vecOffset);
+
+                    if (triIndex & 1) {
+                        v1i = i1;
+                        v2i = i2;
+                    } else {
+                        v1i = i2;
+                        v2i = i1;
+                    }
+
+                    v0.x = vtx[i0 * 3 + 0];
+                    v0.y = vtx[i0 * 3 + 1];
+                    v0.z = vtx[i0 * 3 + 2];
+                    v1.x = vtx[v1i * 3 + 0];
+                    v1.y = vtx[v1i * 3 + 1];
+                    v1.z = vtx[v1i * 3 + 2];
+                    v2.x = vtx[v2i * 3 + 0];
+                    v2.y = vtx[v2i * 3 + 1];
+                    v2.z = vtx[v2i * 3 + 2];
+
+                    PSMTXMultVec(hit->worldMtx, &v0, &vector->v0);
+                    PSMTXMultVec(hit->worldMtx, &v1, &vector->v1);
+                    PSMTXMultVec(hit->worldMtx, &v2, &vector->v2);
+                    PSVECSubtract(&vector->v2, &vector->v0, &vector->edge0);
+                    PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
+                    PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
+                    PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
+                    if (vector->normal.x != 0.0f || vector->normal.y != 0.0f || vector->normal.z != 0.0f) {
+                        numVectors++;
+                        vecOffset += 0x54;
+                    }
+                }
+            }
+        }
+    }
+    return numVectors;
 }
 #pragma dont_inline reset
 

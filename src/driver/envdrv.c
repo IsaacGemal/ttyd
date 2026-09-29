@@ -64,13 +64,13 @@ EnvironmentGlare envGlare3 = {
 static EnvironmentWork work[2];
 
 //.sbss
-s32 v_count; //TODO: re-type all these
-s32 u2;
-s32 u1;
-s32 a;
-s32 frame_cnt;
-s32 tpl_ok;
 TEXPalette* env_tpl;
+s32 tpl_ok;
+f32 frame_cnt;
+f32 a;
+f32 u1;
+f32 u2;
+s32 v_count;
 
 //local prototypes
 
@@ -173,16 +173,15 @@ void envCapture2(CameraId camId, void* param) { //1:1
     }
 }
 
-// NONMATCHING (86.96%): 3 missing.
 void envDisp(CameraId camId, void *param) {
     f32 vp[GX_VIEWPORT_SZ];
     f32 pm[GX_PROJECTION_SZ];
 
     GXGetViewportv(vp);
     GXGetProjectionv(pm);
-    //envDisp_DepthOfField();
-    //envDisp_Blur();
-    //envDisp_FF();
+    envDisp_DepthOfField();
+    envDisp_Blur();
+    envDisp_FF();
     GXSetViewport(vp[0], vp[1], vp[2], vp[3], vp[4], vp[5]);
     GXSetProjectionv(pm);
 }
@@ -834,8 +833,140 @@ void envDisp_DepthOfField(void) {
 
 
 
+// NONMATCHING (88.71%): full logic; callee-saved locals land in r25-r31 instead of the original r24-r30 and a few scheduler moves differ.
+void envSetYami(EnvironmentYami* yami) {
+    EnvironmentWork* wp = envGetWork();
+    s32 tevStage = yami->tevStage;
+    s32 texMap = yami->texMap;
+    s32 texCoord = yami->texCoord;
+    s32 unk18 = yami->unk18;
+    Mtx mtx;
+    GXTexObj texObj;
+
+    if (v_count != gp->retraceCount) {
+        f32 newu1 = u1 + 0.004f;
+        f32 newu2 = u2 - 0.004f;
+
+        v_count = gp->retraceCount;
+        u1 = newu1;
+        u2 = newu2;
+        if (u1 > 10.0f) {
+            u1 -= 10.0f;
+        }
+        if (u2 < 10.0f) {
+            u2 += 10.0f;
+        }
+    }
+
+    GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+
+    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
+    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+
+    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
+    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap + 1], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap + 1], GX_FALSE, GX_PTIDENTITY);
+
+    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 9);
+    GXLoadTexObj(&texObj, texMap);
+    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 10);
+    GXLoadTexObj(&texObj, texMap + 1);
+
+    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    GXSetTevOrder(tevStage + 1, texCoord + 1, texMap + 1, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage + 1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage + 1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(tevStage + 1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    GXSetTevOrder(tevStage + 2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage + 2, GX_CC_C0, GX_CC_ZERO, GX_CC_APREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage + 2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevSwapMode(tevStage + 2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    tevStage += 3;
+    texCoord += 2;
+    yami->tevStage = tevStage;
+    texMap += 2;
+    yami->texCoord = texCoord;
+    yami->unk18 = unk18;
+    yami->texMap = texMap;
+}
+
+void envSetYamiView(Mtx mtx) {
+    EnvironmentWork* wp = envGetWork();
+
+    PSMTXCopy(mtx, (MtxPtr)wp->unkC0);
+}
+
+void envGlareFilterZ(f32 z) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentGlareFilter* filter = &wp->filter;
+
+    filter->zscale = z;
+    filter->flags |= 1;
+}
+
+// NONMATCHING (92.73%): gp is kept in a different register (r9/r11) and the filter base in r11/r12; the rounding and clamp logic matches.
+void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentGlareFilter* filter = &wp->filter;
+
+    if (type == 0) {
+        filter->type = 0;
+        filter->x1 = 0;
+        filter->y1 = 0;
+        filter->x0 = 0;
+        filter->y0 = 0;
+        wp->flags &= ~0x20000000;
+    }
+    else {
+        s16 tx0, ty0, tx1, ty1;
+
+        filter->type = type;
+        tx0 = x0 - (x0 & 1);
+        ty0 = y0 - (y0 & 1);
+        tx1 = x1 + (x1 & 1);
+        ty1 = y1 + (y1 & 1);
+        if (tx0 < 0) {
+            tx0 = 0;
+        }
+        if (ty0 < 0) {
+            ty0 = 0;
+        }
+        if (tx1 > gp->fbWidth) {
+            tx1 = gp->fbWidth;
+        }
+        if (ty1 > gp->efbHeight) {
+            ty1 = gp->efbHeight;
+        }
+        filter->y0 = ty0;
+        filter->x0 = tx0;
+        filter->y1 = ty1;
+        filter->x1 = tx1;
+        filter->zscale = 0.0f;
+        filter->flags &= ~1;
+        wp->flags |= 0x20000000;
+    }
+}
+
 //almost 1:1, needs some regalloc work and type changes
-// NONMATCHING (91.29%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
+// NONMATCHING (98.53%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
 void envGlare(EnvironmentGlare* glare) {
     EnvironmentWork* var_r4 = envGetWork();
     EnvironmentGlareFilter* temp_r30;
@@ -875,8 +1006,8 @@ void envGlare(EnvironmentGlare* glare) {
     temp_r26 = var_r4->filter.x0;
     temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
     temp_r8 = (u16)(var_r4->filter.x1 - temp_r26);
-    temp_r20 = ((u32)temp_r0 & 0xFFFF) / 2;
-    temp_r21 = ((u32)temp_r8 & 0xFFFF) / 2;
+    temp_r20 = (u32)temp_r0 / 2;
+    temp_r21 = (u32)temp_r8 / 2;
     size = GXGetTexBufferSize((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_FALSE, 0);
     temp_r19 = smartAlloc(size, 3)->address;
     GXSetTexCopySrc(temp_r26, temp_r27, temp_r8, temp_r0);
@@ -973,4 +1104,28 @@ void envGlare(EnvironmentGlare* glare) {
         GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
         GXTexCoord2u16(0, 1);
     }
+}
+
+void envBlurOff(void) {
+    EnvironmentWork* wp = envGetWork();
+
+    wp->flags &= ~4;
+    wp->flags &= ~0x40000000;
+    _mapFree(wp->envBlur);
+}
+
+void envBlurOn(s32 flag, s32 value) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+
+    wp->flags |= 0x40000000;
+    wp->flags |= 4;
+    wp->flags &= ~8;
+    memset(blur, 0, sizeof(EnvironmentBlur));
+    blur->renderTime = gp->renderTime;
+    blur->unk10 = value;
+    if (flag != 0) {
+        blur->flags |= 1;
+    }
+    wp->envBlur = _mapAlloc(GXGetTexBufferSize((u16)(gp->fbWidth / 2), (u16)(gp->efbHeight / 2), GX_TF_RGB565, GX_FALSE, 0));
 }

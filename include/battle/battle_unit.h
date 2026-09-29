@@ -738,3 +738,4 @@ void BtlUnit_PayWeaponCost(BattleUnit* unit, BattleWeapon* weapon);
 struct BtlUnitSeMode;
 void BtlUnit_SetSeMode(struct BtlUnitSeMode* se, s32 a, s32 b, s16 c, s16 d, s16 e, s16 f, s16 g);
 void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d);
+BOOL BtlUnit_CanGuardStatus(BattleUnit* unit);

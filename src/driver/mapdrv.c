@@ -15,6 +15,8 @@
 #include "manager/arammgr.h"
 #include <stdio.h>
 
+extern s32 texmtx_tbl[];
+
 extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
 
@@ -949,6 +951,89 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
+// NONMATCHING (99.94%): only the pool symbol names for the 1.0f/1000.0f literals and the
+// double_to_int constant differ (compiler emits local @nnnn entries instead of the named
+// .sdata2 symbols); schedule and all other instructions match.
+void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
+	MapWork* wp;
+	MapEntry* entry;
+	MapEntryAnimData* found = NULL;
+	s32 j;
+	s32 i;
+	BOOL valid = FALSE;
+	OSTime time;
+	u8* found8;
+
+	wp = &mapWork[activeGroup];
+	entry = wp->entries;
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		found = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
+			if (!strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
+				valid = TRUE;
+				break;
+			}
+		}
+		if (valid) {
+			break;
+		}
+	}
+
+	if (!valid) {
+		return;
+	}
+
+	found8 = (u8*)found;
+
+	*(u16*)found = 0;
+	switch (a3) {
+	case 0:
+		break;
+	case 1:
+		*(u16*)found |= 0x100;
+		break;
+	case 2:
+		*(u16*)found |= 0x200;
+		break;
+	case 3:
+		*(u16*)found |= 0x400;
+		break;
+	case 4:
+		*(u16*)found |= 0x800;
+		break;
+	}
+
+	if (*(u16*)found & 0x100) {
+		time = gp->systemLv0Time;
+	}
+	else if (*(u16*)found & 0x200) {
+		time = gp->systemLv1Time;
+	}
+	else if (*(u16*)found & 0x400) {
+		time = gp->systemLv2Time;
+	}
+	else if (*(u16*)found & 0x800) {
+		time = gp->systemLv3Time;
+	}
+	else if (gp->inBattle) {
+		time = gp->renderTime;
+	}
+	else {
+		time = gp->renderFieldTime;
+	}
+
+	*(OSTime*)(found8 + 0x8) = OSTicksToMilliseconds(time);
+	*(f32*)(found8 + 0x10) = float_0_80419850;
+	*(f32*)(found8 + 0x14) = 1.0f;
+	*(u16*)found |= 0x1;
+	if (a2 == 1) {
+		*(u16*)found |= 0x4;
+	}
+	if (a2 == 2) {
+		*(OSTime*)(found8 + 0x8) -= (u64)(1000.0f * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
+	}
+}
+
 // NONMATCHING (94.21%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	MapEntryAnimData* found = mapSearchAnmObj(animName);
@@ -1637,6 +1722,85 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 // NONMATCHING (0.50%): only a stub is present
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 
+}
+
+// NONMATCHING (83.18%): logic/structure and call sequence match; MWCC register coloring differs (target
+// folds the entries+0x2C base into the displacement and keeps separate sx/sy copies) and float/
+// double pool constants use local @nnnn entries. Remaining: addressing/register allocation.
+void mapSetTextureMatrix(MapMaterialTex* mat) {
+	MapMatTexMtx* entry = &mat->entries[mat->field_0xB - 1];
+	s32* mtxTbl = &texmtx_tbl[mat->field_0xB - 1];
+	s32 count = mat->field_0xB;
+	s32 i = count - 1;
+	s32 tc = 0;
+	s32 j = 0;
+	Mtx mtx, mtx2, mtx3, mtx4, mtx5;
+
+	for (; i >= 0; i--, entry--, mtxTbl--, tc++, j++) {
+		f32 f5 = entry->field_0x8;
+		f32 f1 = entry->field_0x10;
+		f32 f6 = entry->field_0xC;
+		f32 sx = f5;
+		f32 f0 = entry->field_0x4;
+		f32 sy = f6;
+		f32 tx = entry->field_0x0;
+		f32 rots = -f1;
+		f32 ty = -f0;
+
+		if (sx == 1.0f && sy == 1.0f && tx == 0.0f && ty == 0.0f && rots == 0.0f) {
+			GXSetTexCoordGen2(tc, 1, count + 3 - j, GX_IDENTITY, 0, 0x7D);
+		}
+		else {
+			if (rots != 0.0f) {
+				f32 f25 = 0.5f * entry->field_0x14 * sx;
+				f32 f24 = (1.0f - 0.5f * entry->field_0x18) * sy;
+				PSMTXTrans(mtx, f25, f24, 0.0f);
+				PSMTXRotRad(mtx2, 'z', float_deg2rad_80419868 * rots);
+				PSMTXTrans(mtx3, -f25, -f24, 0.0f);
+				PSMTXConcat(mtx, mtx2, mtx2);
+				PSMTXConcat(mtx2, mtx3, mtx2);
+			}
+			if (sx != 0.0f || sy != 0.0f) {
+				PSMTXScale(mtx4, sx, sy, 1.0f);
+			}
+			if (tx != 0.0f || ty != 0.0f) {
+				PSMTXTrans(mtx5, tx, ty, 0.0f);
+			}
+			if (rots != 0.0f) {
+				if (sx != 0.0f || sy != 0.0f) {
+					PSMTXConcat(mtx2, mtx4, mtx);
+					if (tx != 0.0f || ty != 0.0f) {
+						PSMTXConcat(mtx, mtx5, mtx);
+					}
+				}
+				else {
+					if (tx != 0.0f || ty != 0.0f) {
+						PSMTXConcat(mtx2, mtx5, mtx);
+					}
+					else {
+						PSMTXCopy(mtx2, mtx);
+					}
+				}
+			}
+			else {
+				if (sx != 0.0f || sy != 0.0f) {
+					if (tx != 0.0f || ty != 0.0f) {
+						PSMTXConcat(mtx4, mtx5, mtx);
+					}
+					else {
+						PSMTXCopy(mtx4, mtx);
+					}
+				}
+				else {
+					if (tx != 0.0f || ty != 0.0f) {
+						PSMTXCopy(mtx5, mtx);
+					}
+				}
+			}
+			GXLoadTexMtxImm(mtx, *mtxTbl, 1);
+			GXSetTexCoordGen2(tc, 1, count + 3 - j, *mtxTbl, 0, 0x7D);
+		}
+	}
 }
 
 void mapSetMaterialFog(void) {
