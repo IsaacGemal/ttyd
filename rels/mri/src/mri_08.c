@@ -282,13 +282,12 @@ static u32 bero_entry_data[45] = {
     0x00000000,
 };
 
-const Vec vec3_mri_00023be0 = { 450.0f, 0.0f, 0.0f };
 
 // TODO: write toge_enter_func00 here (moved from the generated end position: its {450,0,0} constant
 // must be emitted at .rodata+0x228, between bero_entry_data and puni_win_offscreen)
 #pragma opt_propagation off // keep the named .rodata Vec ref and the original copy schedule
 USER_FUNC(toge_enter_func00) {
-    Vec pos = vec3_mri_00023be0;
+    Vec pos = { 450.0f, 0.0f, 0.0f };
 
     togeMakeRetsu(&pos, 110, 111, 112);
     togeMakeRetsu(&pos, 113, 114, 115);
