@@ -280,6 +280,7 @@ cflags_static_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" f
 # REL flags
 cflags_rel = [
     *cflags_base,
+    "-fp_contract on",
     "-O4,s",
     "-use_lmw_stmw on",
     "-inline auto,deferred",
@@ -1878,6 +1879,8 @@ config.libs = [
             Object(Matching, "unit/unit_heavy_bom.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_15_data_33E08"]),
             Object(Matching, "unit/unit_heavy_bom.c", modules=["dou"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_6_data_15A08"]),
             Object(Matching, "unit/unit_heavy_bom.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_local_data"]),
+            Object(Matching, "unit/unit_bllizard.c", modules=["bom"], extra_cflags=["-DUNIT_DATA_SYM=unit_bllizard_3_data_B7F0"]),
+            Object(Matching, "unit/unit_bllizard.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_bllizard_15_data_60E68"]),
         ],
     ),
 ]
