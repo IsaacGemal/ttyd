@@ -1437,6 +1437,7 @@ config.libs = [
         "aji",
         [
             Object(Matching, "aji_00.c"),
+            Object(Matching, "unit/unit_gundan_zako_elite dou/unit/unit_killer eki/unit/unit_kurokumorn gor/unit/unit_monban gor/unit/unit_npc_christine gor/unit/unit_lecture_frankli gra/unit/unit_pansy hei/unit/unit_sinnosuke jin/unit/unit_gullible_clauda jin/unit/unit_gullible_nokotarou jin/unit/unit_gullible_yoshi jin/unit/unit_met jin/unit/unit_togemet jon/unit/unit_yami_noko jon/unit/unit_yami_pata jon/unit/unit_yamitogedaruma jon/unit/unit_basabasa_green las/unit/unit_super_killer las/unit/unit_boss_marilyn_las mri/unit/unit_boss_kanbu2 muj/unit/unit_boss_honeduka muj/unit/unit_boss_cortez_sword muj/unit/unit_boss_cortez_claw muj/unit/unit_boss_cortez_rapier muj/unit/unit_boss_cortez_saber nok/unit/unit_act_atmic_teresa nok/unit/unit_act_clauda nok/unit/unit_act_kinopiko nok/unit/unit_act_kinopio nok/unit/unit_act_teresa rsh/unit/unit_boss_moamoa_tentacle_a rsh/unit/unit_boss_moamoa_tentacle_b rsh/unit/unit_boss_moamoa_tentacle_c rsh/unit/unit_boss_moamoa_mouth tik/unit/unit_boss_gesso_left_arm tou2/unit/unit_boomerang_bros tou2/unit/unit_hyper_sinnosuke tou2/unit/unit_nokonoko_fighter tou2/unit/unit_patapata_fighter tou2/unit/unit_crimson_togemet win/window/win_01 win/window/win_02 win/window/win_05 win/data/battle/battle_database_win win/unit/unit_boss_vivian win/unit/unit_boss_marilyn.c"),
         ],
     ),
     Rel(
