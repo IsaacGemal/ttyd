@@ -16,7 +16,6 @@
 #include "party/party_motion.h"
 #include "system.h"
 
-extern ItemData itemDataTable[];
 
 #pragma pool_data off
 
@@ -334,74 +333,79 @@ EVT_END()
 // TODO: write _steal_item (static, 0x2dc bytes) here:
 // its asm is in build/G8MJ01/jon/asm/unit/unit_badge_borodo.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(_steal_item) {
-    s32 coins;
-    s32 amount;
+    s32* args;
+    PouchData* pouch;
+    BattleUnit* target;
     s32 id;
-    s32* args = event->args;
-    PouchData* pouch = pouchGetPtr();
-    BattleUnit* unit1;
-    BattleUnit* unit2;
-    s32 item;
+    s32 targetId;
+    s32 coins;
+    s32 indexItem;
+    BattleUnit* unit;
+    s32 r;
     s32 count;
     s32 i;
-    s32 out2;
-    s32 out3;
-    s32 out4;
+    s32 indexCount;
+    s32 item;
+    s32 n;
+    s32 indexIcon;
 
+    args = event->args;
+    pouch = pouchGetPtr();
     id = evtGetValue(event, args[0]);
-    unit1 = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
-    if (unit1 == NULL) {
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (!unit) {
         return EVT_RETURN_DONE;
     }
-    id = evtGetValue(event, args[1]);
-    unit2 = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
-    if (unit2 == NULL) {
+    targetId = evtGetValue(event, args[1]);
+    targetId = BattleTransID(event, targetId);
+    target = BattleGetUnitPtr(_battleWorkPointer, targetId);
+    if (!target) {
         return EVT_RETURN_DONE;
     }
-    out2 = args[2];
-    out3 = args[3];
-    out4 = args[4];
-    evtSetValue(event, out2, 0);
-    evtSetValue(event, out3, 0);
-    evtSetValue(event, out4, 0);
-
+    indexItem = args[2];
+    indexIcon = args[3];
+    indexCount = args[4];
+    evtSetValue(event, indexItem, 0);
+    evtSetValue(event, indexIcon, 0);
+    evtSetValue(event, indexCount, 0);
     if (irand(100) < 40) {
         coins = pouchGetCoin();
-        amount = 10;
+        n = 10;
         if (coins < 10) {
-            amount = coins;
+            n = coins;
         }
-        if (amount > 0) {
-            evtSetValue(event, out2, ITEM_COIN);
-            evtSetValue(event, out3, 395);
-            evtSetValue(event, out4, amount);
-            unit1->heldItem = ITEM_COIN;
-            unit1->field_0x30C[0] = amount;
-            pouchSetCoin(coins - amount);
+        if (n > 0) {
+            evtSetValue(event, indexItem, ITEM_COIN);
+            evtSetValue(event, indexIcon, 0x18B);
+            evtSetValue(event, indexCount, n);
+            unit->heldItem = ITEM_COIN;
+            unit->field_0x30C[0] = n;
+            pouchSetCoin(coins - n);
         }
         return EVT_RETURN_DONE;
     }
-
     item = 0;
-    for (count = 0, i = 0; i < MAX_BADGES; i++) {
-        if (pouch->badges[i] != ITEM_NULL) {
+    count = 0;
+    for (i = 0; i < MAX_BADGES; i++) {
+        if (pouch->badges[i] != 0) {
             count++;
         }
     }
     if (count <= 0) {
         return EVT_RETURN_DONE;
     }
-    count = irand(count);
-    if (count >= 0) {
+    r = irand(count);
+    if (r >= 0) {
         for (i = 0; i < MAX_BADGES; i++) {
-            if (pouch->badges[i] != ITEM_NULL && --count < 0) {
+            if (pouch->badges[i] != 0 && --r < 0) {
                 item = pouch->badges[i];
                 break;
             }
         }
     } else {
         for (i = 0; i < MAX_HELD_ITEMS; i++) {
-            if (pouch->heldItems[i] != ITEM_NULL && --count < 0) {
+            if (pouch->heldItems[i] != 0 && --r < 0) {
                 item = pouch->heldItems[i];
                 break;
             }
@@ -411,18 +415,18 @@ static USER_FUNC(_steal_item) {
         if (!pouchRemoveItem(item)) {
             return EVT_RETURN_DONE;
         }
-        unit1->heldItem = item;
-        if (item >= BADGE_MIN && item < BADGE_MAX) {
-            if (unit2->currentKind == UNIT_MARIO) {
-                BtlUnit_EquipItem(unit2, EQUIP_RESET | EQUIP_MARIO, 0);
-            } else if (unit2->currentKind >= TYPE_PARTNER_MIN && unit2->currentKind < TYPE_PARTNER_MAX) {
-                BtlUnit_EquipItem(unit2, EQUIP_RESET | EQUIP_PARTNER, 0);
+        unit->heldItem = item;
+        if (item >= ITEM_POWER_JUMP && item < 0x153) {
+            if (target->currentKind == UNIT_MARIO) {
+                BtlUnit_EquipItem(target, EQUIP_RESET | EQUIP_MARIO, 0);
+            } else if (target->currentKind >= UNIT_GOOMBELLA && target->currentKind < UNIT_MARIO + 9) {
+                BtlUnit_EquipItem(target, EQUIP_RESET | EQUIP_PARTNER, 0);
             }
             pouchReviseMarioParam();
             pouchRevisePartyParam();
         }
-        evtSetValue(event, out2, item);
-        evtSetValue(event, out3, (u16)itemDataTable[item].icon_id);
+        evtSetValue(event, indexItem, item);
+        evtSetValue(event, indexIcon, itemDataTable[item].icon_id);
     }
     return EVT_RETURN_DONE;
 }

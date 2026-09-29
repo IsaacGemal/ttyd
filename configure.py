@@ -1446,7 +1446,7 @@ config.libs = [
             Object(Matching, "unit/unit_iron_sinemon2.c"),
             Object(Matching, "unit/unit_kurikuri.c"),
             Object(Matching, "unit/unit_fire_bros.c"),
-            Object(NonMatching, "unit/unit_borodo_king.c"),
+            Object(Matching, "unit/unit_borodo_king.c"),
         ]
     ),
     Rel(
@@ -1627,7 +1627,7 @@ config.libs = [
             Object(Matching, "unit/unit_yami_patakuri.c"),
             Object(Matching, "unit/unit_giant_bomb.c"),
             Object(Matching, "unit/unit_yami_togekuri.c"),
-            Object(NonMatching, "unit/unit_badge_borodo.c"),
+            Object(Matching, "unit/unit_badge_borodo.c"),
         ],
     ),
     Rel(
