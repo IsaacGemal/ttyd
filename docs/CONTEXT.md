@@ -2003,3 +2003,17 @@ returning a pointer (the original's callers read r3) while src/driver/npcdrv.c d
 copy of evt_nannpc.c's NanNpcEntry/NanNpcWork (breaks once evt_nannpc.c links); ~83 bare `return 0/1/2` in event
 functions; several tables tools/struct_render.py could now type (unit_mahorn, gundan_zako_group3, unit_kamec_*,
 battle_database_las's 180 arrays).
+
+## Sep 29 evening: pushing the autonomous setup (Isaac; written up by TTYD Claude #1)
+
+Isaac's directive for the night (18:47): push the autonomous agents as far as they go before ~23:00, then review
+how many waves ran and what a fully autonomous flow should look like. The goal is unchanged: a matching decomp with
+reasonably clean code. Roles: TTYD Claude #1 (Opus 5.5, session "Ambitious work session") orchestrates two agent
+waves at a time, its own and TTYD Claude #2's, launching the next from the backlog when one finishes, and merges
+reviewed, CI-clean PRs (merging delegated Sep 29 afternoon); TTYD Claude #3 (Sonnet 5.5) works for Claude #1 on
+code, the hard grind of linking functions (code over data: data has become mechanical). Usage headroom is ample
+(resets Thursday). The knowledge base is growing (this ledger, the brief, the tools) and the reference decomps
+of other games are there for agents to learn from. One concern to watch: agents poking around on the web;
+Claude #1 checks each workspace's provenance.txt at collection and surfaces anything outside the repo.
+Size estimate asked for tonight: the finished decomp is roughly 0.8-1.2 million lines (about 450k today: src 157k,
+rels 183k, libs 99k, include 12k), about half of it event scripts and data tables.
