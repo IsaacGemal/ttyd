@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -17,8 +18,8 @@ extern s32 btldefaultevt_Confuse[];
 extern s32 majo3_shadow_tail_event_30_data_13F70[];
 extern s32 majo_unison_phase_event_30_data_126FC[];
 static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts;
 static s32 init_event[37];
 static s32 damage_event[22];
 static s32 dead_event[152];
@@ -81,31 +82,48 @@ static u32 regist[6] = {
     0x00644664, 0x64000000,
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"MRR_N_1", 0x00000002, (u32)"MRR_Z_1",
-    0x00000009, (u32)"MRR_Z_1", 0x00000005, (u32)"MRR_X_1",
-    0x00000004, (u32)"MRR_X_1", 0x00000003, (u32)"MRR_X_1",
-    0x0000001C, (u32)"MRR_S_1", 0x0000001D, (u32)"MRR_Q_2",
-    0x0000001E, (u32)"MRR_Q_2", 0x0000001F, (u32)"MRR_D_1",
-    0x00000027, (u32)"MRR_D_1", 0x00000032, (u32)"MRR_S_1",
-    0x0000002A, (u32)"MRR_R_1", 0x00000028, (u32)"MRR_W_1",
-    0x00000038, (u32)"MRR_S_1", 0x00000039, (u32)"MRR_S_1",
-    0x00000041, (u32)"MRR_T_1", 0x00000045, (u32)"MRR_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "MRR_N_1" },
+    { 0x02, "MRR_Z_1" },
+    { 0x09, "MRR_Z_1" },
+    { 0x05, "MRR_X_1" },
+    { 0x04, "MRR_X_1" },
+    { 0x03, "MRR_X_1" },
+    { 0x1C, "MRR_S_1" },
+    { 0x1D, "MRR_Q_2" },
+    { 0x1E, "MRR_Q_2" },
+    { 0x1F, "MRR_D_1" },
+    { 0x27, "MRR_D_1" },
+    { 0x32, "MRR_S_1" },
+    { 0x2A, "MRR_R_1" },
+    { 0x28, "MRR_W_1" },
+    { 0x38, "MRR_S_1" },
+    { 0x39, "MRR_S_1" },
+    { 0x41, "MRR_T_1" },
+    { 0x45, "MRR_S_1" },
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000031, (u32)&dead_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[2] = {
+    { 0x31, &dead_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_marilyn1", (u32)"c_maririn", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x42340000,
-    0x00000000, 0x00000000, 0x42480000, 0x00000000,
-    0x00260038, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+// defence/defence_attr stay raw: the header's BattleUnitDefense/BattleUnitDefenseAttr are 5 bytes, but the
+// original symbols are 8 bytes each (build/G8MJ01/win/asm/unit/unit_boss_marilyn.s), so no existing type fits.
+// The casts point BattleUnitKindPart at those raw bytes without changing them.
+static BattleUnitKindPart parts = {
+    1, "btl_un_marilyn1", "c_maririn",
+    { 0.0f, 0.0f, 0.0f },
+    { 15.0f, 45.0f, 0.0f },
+    // 0x24..0x37: not named by the header yet, written byte-for-byte.
+    { 0x00, 0x00, 0x00, 0x00,
+      0x42, 0x48, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00,
+      0x00, 0x26, 0x00, 0x38,
+      0x00, 0xFF, 0x00, 0x00 },
+    (BattleUnitDefense*)&defence,
+    (BattleUnitDefenseAttr*)&defence_attr,
+    9, 0, &pose_table,
 };
 
 // TODO: type

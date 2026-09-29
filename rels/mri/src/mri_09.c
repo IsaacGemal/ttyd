@@ -50,35 +50,17 @@ extend_data(41,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 bero_bluejail[15] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_03", (u32)"",
-    0x00010001, 0x00000000, 0x00000000,
+BeroEntry bero_bluejail[] = {
+    "w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1,
+    NULL, "mri_03", "", 1, 1, 0, 0,
 };
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_08", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"n_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"mri_10", (u32)"s_bero", 0x00010001,
-    0x00000000, 0x00000000, (u32)"dokan2", 0x00020000,
-    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000000,
-    0x00000000, (u32)"dokan3", 0x00010001, 0x00000000,
-    0x00000000, (u32)"dokan3", 0x00020000, 0x00000006,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0000000A, 0x00000000, 0x00000000,
-    (u32)"dokan2", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_08", "e_bero", 1, 1, 0, 0},
+    {"n_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_10", "s_bero", 1, 1, 0, 0},
+    {"dokan2", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan3", 1, 1, 0, 0},
+    {"dokan3", 2, 0, 6, 100000, 0, 0, -1, NULL, 10, NULL, NULL, "dokan2", 1, 1, 0, 0},
+    {NULL},
 };
 
 EVT_BEGIN(wall_roll_sub)
@@ -195,14 +177,13 @@ static EVT_BEGIN(breakyuka_main)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[24] = {
-    0x00000001, (u32)"A_ueki_01", (u32)"S_ueki_01", 0x00000000,
-    0x00000001, (u32)"A_ueki_02", (u32)"S_ueki_02", 0x00000000,
-    0x00000001, (u32)"A_ueki_03", (u32)"S_ueki_03", 0x00000000,
-    0x00000001, (u32)"A_ueki_04", (u32)"S_ueki_04", 0x00000000,
-    0x00000001, (u32)"A_ueki_05", (u32)"S_ueki_05", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    {1, "A_ueki_01", "S_ueki_01", NULL},
+    {1, "A_ueki_02", "S_ueki_02", NULL},
+    {1, "A_ueki_03", "S_ueki_03", NULL},
+    {1, "A_ueki_04", "S_ueki_04", NULL},
+    {1, "A_ueki_05", "S_ueki_05", NULL},
+    {4},
 };
 
 EVT_BEGIN(slot00_event)

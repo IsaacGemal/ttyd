@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -10,8 +11,8 @@
 
 #pragma force_active on
 static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[76];
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[4];
 static s32 init_event[21];
 static s32 damage_event[10];
 static s32 attack_event[71];
@@ -72,45 +73,54 @@ static u32 regist[6] = {
     0x3C645064, 0x645F0000,
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"BRO_N_1", 0x00000002, (u32)"BRO_Y_1",
-    0x00000009, (u32)"BRO_Y_1", 0x00000005, (u32)"BRO_K_1",
-    0x00000004, (u32)"BRO_X_1", 0x00000003, (u32)"BRO_X_1",
-    0x0000001B, (u32)"BRO_D_1", 0x0000001C, (u32)"BRO_S_1",
-    0x0000001D, (u32)"BRO_Q_1", 0x0000001E, (u32)"BRO_Q_1",
-    0x0000001F, (u32)"BRO_S_1", 0x00000027, (u32)"BRO_D_1",
-    0x0000002A, (u32)"BRO_R_1", 0x00000028, (u32)"BRO_W_1",
-    0x00000038, (u32)"BRO_X_1", 0x00000039, (u32)"BRO_X_1",
-    0x00000041, (u32)"BRO_T_1", 0x00000045, (u32)"BRO_S_1",
+static BattleDispPose pose_table[18] = {
+    {0x01, "BRO_N_1"}, {0x02, "BRO_Y_1"}, {0x09, "BRO_Y_1"}, {0x05, "BRO_K_1"},
+    {0x04, "BRO_X_1"}, {0x03, "BRO_X_1"}, {0x1B, "BRO_D_1"}, {0x1C, "BRO_S_1"},
+    {0x1D, "BRO_Q_1"}, {0x1E, "BRO_Q_1"}, {0x1F, "BRO_S_1"}, {0x27, "BRO_D_1"},
+    {0x2A, "BRO_R_1"}, {0x28, "BRO_W_1"}, {0x38, "BRO_X_1"}, {0x39, "BRO_X_1"},
+    {0x41, "BRO_T_1"}, {0x45, "BRO_S_1"},
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    {0, NULL},
 };
 
-// TODO: type
-static u32 parts[76] = {
-    0x00000001, (u32)"btl_un_boomerang_bros", (u32)"c_burosu_b", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x420C0000,
-    0x00000000, 0x00000000, 0x42340000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_boomerang_bros", (u32)"c_burosu_b", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_boomerang_bros",
-    (u32)"c_burosu_b", 0x00000000, 0x00000000, 0x00000000,
-    0x41700000, 0x41C80000, 0x00000000, 0x00000000,
-    0x41F00000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table, 0x00000004, (u32)"btl_un_boomerang_bros", (u32)"c_burosu_b",
-    0x00000000, 0x00000000, 0x00000000, 0x41700000,
-    0x41C80000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x13010000, 0x00000000, (u32)&pose_table,
+// Both the local `defence`/`defence_attr` tables and the opaque 20-byte `field_0x24` block are kept byte-exact;
+// `defence` is 8 bytes in the original, not the 5-byte BattleUnitDefense in the header.
+static BattleUnitKindPart parts[4] = {
+    {
+        1, "btl_un_boomerang_bros", "c_burosu_b",
+        {0.0f, 0.0f, 0.0f},
+        {0.0f, 35.0f, 0.0f},
+        {0x00, 0x00, 0x00, 0x00, 0x42, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+        (BattleUnitDefense*)&defence, (BattleUnitDefenseAttr*)&defence_attr, kMainPart | kUnknown_0x8, 0,
+        &pose_table,
+    },
+    {
+        2, "btl_un_boomerang_bros", "c_burosu_b",
+        {0.0f, 0.0f, 0.0f},
+        {15.0f, 25.0f, 0.0f},
+        {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+        (BattleUnitDefense*)&defence, (BattleUnitDefenseAttr*)&defence_attr, 0x13010000, 0, &pose_table,
+    },
+    {
+        3, "btl_un_boomerang_bros", "c_burosu_b",
+        {0.0f, 0.0f, 0.0f},
+        {15.0f, 25.0f, 0.0f},
+        {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+        (BattleUnitDefense*)&defence, (BattleUnitDefenseAttr*)&defence_attr, 0x13010000, 0, &pose_table,
+    },
+    {
+        4, "btl_un_boomerang_bros", "c_burosu_b",
+        {0.0f, 0.0f, 0.0f},
+        {15.0f, 25.0f, 0.0f},
+        {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+        (BattleUnitDefense*)&defence, (BattleUnitDefenseAttr*)&defence_attr, 0x13010000, 0, &pose_table,
+    },
 };
 
 // TODO: type

@@ -35,35 +35,16 @@ extend_data(121,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 bero_black_shadow[15] = {
-    (u32)"dokan1", 0x00020000, 0x00000002, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0000000A, 0x00000000, (u32)"mri_04", (u32)"",
-    0x00010001, 0x00000000, 0x00000000,
+BeroEntry bero_black_shadow[] = {
+    {"dokan1", 2, 0, 2, 100000, 0, 0, -1, NULL, 10, NULL, "mri_04", "", 1, 1, 0, 0},
 };
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"dokan1", 0x00020000, 0x00000002, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0000000A, 0x00000000, (u32)"mri_03", (u32)"dokan",
-    0x00010001, 0x00000000, 0x00000000, (u32)"dokan2",
-    0x00020000, 0x00000009, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000006,
-    0x00000000, (u32)"mri_02", (u32)"dokan3", 0x00010001,
-    0x00000000, 0x00000000, (u32)"dokan3", 0x00020000,
-    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000000,
-    0x00000000, (u32)"dokan4", 0x00010001, 0x00000000,
-    0x00000000, (u32)"dokan4", 0x00020000, 0x00000006,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0000000A, 0x00000000, 0x00000000,
-    (u32)"dokan3", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"dokan1", 2, 0, 2, 100000, 0, 0, -1, NULL, 10, NULL, "mri_03", "dokan", 1, 1, 0, 0},
+    {"dokan2", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, "mri_02", "dokan3", 1, 1, 0, 0},
+    {"dokan3", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan4", 1, 1, 0, 0},
+    {"dokan4", 2, 0, 6, 100000, 0, 0, -1, NULL, 10, NULL, NULL, "dokan3", 1, 1, 0, 0},
+    {NULL, 0, 0, 0, 0, 0, 0, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0},
 };
 
 static EVT_BEGIN(evt_ueki_08)
@@ -74,15 +55,14 @@ static EVT_BEGIN(evt_ueki_08)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[28] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", 0x00000000,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000001, (u32)"A_ueki08", (u32)"S_ueki08", (u32)&evt_ueki_08,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    {1, "A_ueki01", "S_ueki01", NULL},
+    {1, "A_ueki02", "S_ueki02", NULL},
+    {1, "A_ueki03", "S_ueki03", NULL},
+    {1, "A_ueki04", "S_ueki04", NULL},
+    {1, "A_ueki05", "S_ueki05", NULL},
+    {1, "A_ueki08", "S_ueki08", evt_ueki_08},
+    {4},
 };
 
 EVT_BEGIN(mri_20_init_evt)

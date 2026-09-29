@@ -1,3 +1,4 @@
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -47,39 +48,27 @@ extend_data(21,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_data[45] = {
-    (u32)"nw_bero", 0x00000000, 0x00000007, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"pik_00", (u32)"se_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"se_bero",
-    0x00000000, 0x00000003, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"pik_01", (u32)"nw_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_data[] = {
+    {"nw_bero", 0, 0, 7, 0x000186A0, 0, 0, -1, NULL, -1, NULL, "pik_00", "se_bero", 1, 1},
+    {"se_bero", 0, 0, 3, 0x000186A0, 0, 0, -1, NULL, -1, NULL, "pik_01", "nw_bero", 1, 1},
+    {NULL},
 };
 
-// TODO: type
-static u32 dmgReturnPt[36] = {
-    (u32)"mod_1", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_2", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_3", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_4", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_5", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_6", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_7", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_8", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn dmgReturnPt[] = {
+    {"mod_1", {0.0f, -1000.0f, 0.0f}},
+    {"mod_2", {0.0f, -1000.0f, 0.0f}},
+    {"mod_3", {0.0f, -1000.0f, 0.0f}},
+    {"mod_4", {0.0f, -1000.0f, 0.0f}},
+    {"mod_5", {0.0f, -1000.0f, 0.0f}},
+    {"mod_6", {0.0f, -1000.0f, 0.0f}},
+    {"mod_7", {0.0f, -1000.0f, 0.0f}},
+    {"mod_8", {0.0f, -1000.0f, 0.0f}},
+    {NULL, {0.0f, 0.0f, 0.0f}},
 };
 
-// TODO: type
-static u32 name_tbl[6] = {
-    (u32)"yajirusi_1", (u32)"yajirusi_2", (u32)"yajirusi_3", (u32)"yajirusi_4",
-    (u32)"yajirusi_5", (u32)"yajirusi_6",
+static char* name_tbl[] = {
+    "yajirusi_1", "yajirusi_2", "yajirusi_3", "yajirusi_4",
+    "yajirusi_5", "yajirusi_6",
 };
 
 static EVT_BEGIN(evt_door)
@@ -103,9 +92,8 @@ static EVT_BEGIN(evt_wall)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 ie_3_npc[3] = {
-    (u32)"ターくん１", (u32)"ターくん２", 0x00000000,
+const char* ie_3_npc[] = {
+    "ターくん１", "ターくん２", NULL,
 };
 
 static EVT_BEGIN(door_1_open)
@@ -122,14 +110,24 @@ static EVT_BEGIN(door_1_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_1[18] = {
-    0x00000000, 0x00000001, 0x00000001, (u32)"door_1",
-    (u32)"a_door_1_2", (u32)"a_door_1_1", (u32)"ie_3_soto", (u32)"a_ie_3_soto",
-    (u32)"ie_3_naka", (u32)"a_ie_3_naka", (u32)&evt_door, 0x00000000,
-    (u32)&evt_wall, (u32)&ie_3_npc, 0x00000000, 0x00000000,
-    (u32)&door_1_open, (u32)&door_1_close,
-};
+static DoorEntry door_1[] = {{
+    0, 1, 1,
+    "door_1",
+    "a_door_1_2",
+    "a_door_1_1",
+    "ie_3_soto",
+    "a_ie_3_soto",
+    "ie_3_naka",
+    "a_ie_3_naka",
+    evt_door,
+    0,
+    evt_wall,
+    ie_3_npc,
+    NULL,
+    NULL,
+    door_1_open,
+    door_1_close,
+}};
 
 EVT_BEGIN(evt_door_h)
     MULTIPLY_FLOAT(LW(0), FLOAT(-0.555f))
@@ -152,9 +150,8 @@ EVT_BEGIN(evt_wall_h)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 hotel_npc[3] = {
-    (u32)"店員女", (u32)"キザ野郎", 0x00000000,
+const char* hotel_npc[] = {
+    "店員女", "キザ野郎", NULL,
 };
 
 static EVT_BEGIN(door_2_open)
@@ -172,14 +169,24 @@ static EVT_BEGIN(door_2_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 door_2[18] = {
-    0x00000000, 0x00000003, 0x00000001, (u32)"door_h",
-    (u32)"a_door_h_2", (u32)"a_door_h_1", (u32)"hotel_soto", (u32)"a_hotel_soto",
-    (u32)"hotel_naka", (u32)"a_hotel_naka", (u32)&evt_door_h, 0x00000000,
-    (u32)&evt_wall_h, (u32)&hotel_npc, 0x00000000, 0x00000000,
-    (u32)&door_2_open, (u32)&door_2_close,
-};
+static DoorEntry door_2[] = {{
+    0, 3, 1,
+    "door_h",
+    "a_door_h_2",
+    "a_door_h_1",
+    "hotel_soto",
+    "a_hotel_soto",
+    "hotel_naka",
+    "a_hotel_naka",
+    evt_door_h,
+    0,
+    evt_wall_h,
+    hotel_npc,
+    NULL,
+    NULL,
+    door_2_open,
+    door_2_close,
+}};
 
 EVT_BEGIN(imginit)
     CALL(evt_paper_entry, STRING("OFF_hei_07"))
@@ -597,60 +604,16 @@ static EVT_BEGIN(talk_kiza)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npc_data[207] = {
-    (u32)"土産屋", 0x40000600, 0x00000000, (u32)&init_miyage,
-    0x00000000, (u32)&talk_miyage, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"３人娘１",
-    0x00000600, 0x00000000, (u32)&init_musume1, 0x00000000,
-    (u32)&talk_musume1, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"３人娘２", 0x00000600,
-    0x00000000, (u32)&init_musume2, 0x00000000, (u32)&talk_musume2,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"３人娘３", 0x00000600, 0x00000000,
-    (u32)&init_musume3, 0x00000000, (u32)&talk_musume3, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"ターくん１", 0x00000600, 0x00000000, (u32)&init_takun1,
-    0x00000000, (u32)&talk_takun1, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ターくん２",
-    0x00000600, 0x00000000, (u32)&init_takun2, 0x00000000,
-    (u32)&talk_takun2, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"店員女", 0x00000600,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"キザ野郎", 0x00000600, 0x00000000,
-    (u32)&init_kiza, 0x00000000, (u32)&talk_kiza, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npc_data[] = {
+    {"土産屋", 0x40000600, 0, init_miyage, NULL, talk_miyage},
+    {"３人娘１", 0x00000600, 0, init_musume1, NULL, talk_musume1},
+    {"３人娘２", 0x00000600, 0, init_musume2, NULL, talk_musume2},
+    {"３人娘３", 0x00000600, 0, init_musume3, NULL, talk_musume3},
+    {"ターくん１", 0x00000600, 0, init_takun1, NULL, talk_takun1},
+    {"ターくん２", 0x00000600, 0, init_takun2, NULL, talk_takun2},
+    {"店員女", 0x00000600},
+    {"キザ野郎", 0x00000600, 0, init_kiza, NULL, talk_kiza},
+    {NULL},
 };
 
 EVT_BEGIN(evt_roten)

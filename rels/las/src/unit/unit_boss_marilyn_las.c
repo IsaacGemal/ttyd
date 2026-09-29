@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -17,8 +18,8 @@ extern s32 btldefaultevt_Confuse[];
 extern s32 majo3_shadow_tail_event_17_data_5E094[];
 extern s32 majo_unison_phase_event_17_data_5C5E4[];
 static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts[1];
 static s32 init_event[37];
 static s32 damage_event[22];
 static s32 dead_event[152];
@@ -65,15 +66,9 @@ u32 unit_boss_marilyn_las[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence = {0};
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr = {0};
 
 // TODO: type
 static u32 regist[6] = {
@@ -81,31 +76,39 @@ static u32 regist[6] = {
     0x00642864, 0x64050000,
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"MRR_N_1", 0x00000002, (u32)"MRR_Z_1",
-    0x00000009, (u32)"MRR_Z_1", 0x00000005, (u32)"MRR_X_1",
-    0x00000004, (u32)"MRR_X_1", 0x00000003, (u32)"MRR_X_1",
-    0x0000001C, (u32)"MRR_S_1", 0x0000001D, (u32)"MRR_Q_2",
-    0x0000001E, (u32)"MRR_Q_2", 0x0000001F, (u32)"MRR_D_1",
-    0x00000027, (u32)"MRR_D_1", 0x00000032, (u32)"MRR_S_1",
-    0x0000002A, (u32)"MRR_R_1", 0x00000028, (u32)"MRR_W_1",
-    0x00000038, (u32)"MRR_S_1", 0x00000039, (u32)"MRR_S_1",
-    0x00000041, (u32)"MRR_T_1", 0x00000045, (u32)"MRR_S_1",
+static BattleDispPose pose_table[18] = {
+    {0x01, "MRR_N_1"}, {0x02, "MRR_Z_1"},
+    {0x09, "MRR_Z_1"}, {0x05, "MRR_X_1"},
+    {0x04, "MRR_X_1"}, {0x03, "MRR_X_1"},
+    {0x1C, "MRR_S_1"}, {0x1D, "MRR_Q_2"},
+    {0x1E, "MRR_Q_2"}, {0x1F, "MRR_D_1"},
+    {0x27, "MRR_D_1"}, {0x32, "MRR_S_1"},
+    {0x2A, "MRR_R_1"}, {0x28, "MRR_W_1"},
+    {0x38, "MRR_S_1"}, {0x39, "MRR_S_1"},
+    {0x41, "MRR_T_1"}, {0x45, "MRR_S_1"},
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000031, (u32)&dead_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[2] = {
+    {0x31, dead_event},
+    {0, NULL},
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_marilyn4", (u32)"c_maririn", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x42340000,
-    0x00000000, 0x00000000, 0x42480000, 0x00000000,
-    0x00260038, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,
+        "btl_un_marilyn4",
+        "c_maririn",
+        {0.0f, 0.0f, 0.0f},
+        {15.0f, 45.0f, 0.0f},
+        // header hides 0x24-0x37 (a Vec at 0x24, size at 0x30, flags at 0x34); bytes kept as-is
+        {0x00, 0x00, 0x00, 0x00, 0x42, 0x48, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x26, 0x00, 0x38, 0x00, 0xFF, 0x00, 0x00},
+        &defence,
+        &defence_attr,
+        9,
+        0,
+        pose_table,
+    },
 };
 
 // TODO: type

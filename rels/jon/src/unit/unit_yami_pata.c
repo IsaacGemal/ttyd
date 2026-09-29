@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -9,17 +10,17 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-static u32 regist_patapata[6];
-static u32 parts_patapata[19];
-static u32 pose_table_patapata[36];
-static u32 data_table_patapata[6];
+static BattleVulnerableStatus regist_patapata;
+static BattleUnitKindPart parts_patapata;
+static BattleDispPose pose_table_patapata[18];
+static BattleDataEntry data_table_patapata[3];
 static s32 init_event_patapata[26];
 static s32 dmg_fall_event[189];
 static s32 patapata_dmg_first_attack_pos[19];
 static s32 attack_event_patapata[541];
-static u32 pose_table[36];
-static u32 data_table[6];
-static u32 parts[19];
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[3];
+static BattleUnitKindPart parts[1];
 static s32 damage_event[10];
 static s32 dmg_turn_event[78];
 static s32 attack_event[548];
@@ -44,7 +45,9 @@ extend_data(121,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
+// BattleUnitKind (0xC4). Left raw: the header's field_0x4 and field_0xBC are u8[] regions that in the
+// original hold a const char* (0x4) and the init event pointer (0xBC), which cannot be written as bytes at
+// compile time. Everything else (unit type 0x9D = UNIT_DARK_PARATROOPA, parts/data table at 0xB8/0xC0) fits.
 u32 unit_yami_pata[49] = {
     0x0000009D, (u32)"btl_un_yami_pata", 0x00080000, 0x01011100,
     0x01460132, 0x270F0024, 0x0028FFFC, 0x00280000,
@@ -61,67 +64,74 @@ u32 unit_yami_pata[49] = {
     (u32)&data_table_patapata,
 };
 
-// TODO: type
-static u32 weapon_patapata_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00005087, 0x00000000, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_patapata_attack[1] = {
+    {
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+        0x01, 0x01, 0x01, 0x01,
+        (void*)weaponGetPowerDefault,
+        { 0x00000004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        0,
+        { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        { 0x01, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+        0x00005087,
+        { 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+        0,
+        { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+    },
 };
 
-// TODO: type
+// BattleUnitDefense* tables: 8 bytes each, but the header struct is u8 defenses[5] (5 bytes); typing them
+// would shift every following symbol. Values are 5 defense entries + 3 bytes of tail padding.
 static u32 defence_patapata[2] = {
     0x02020202, 0x02000000,
 };
 
-// TODO: type
+// BattleUnitDefenseAttr* table (5 attrs + 3 pad); header struct is u8 defenseAttrs[5].
 static u32 defence_patapata_attr[2] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 regist_patapata[6] = {
-    0x4B506964, 0x46646446, 0x64556455, 0x6455504B,
-    0x5F644664, 0x64460000,
+static BattleVulnerableStatus regist_patapata = {
+    75, 80, 105, 100, 70, 100, 100, 70, 100, 85,
+    100, 85, 100, 85, 80, 75, 95, 100, 70, 100,
+    100, 70,
 };
 
-// TODO: type
-static u32 parts_patapata[19] = {
-    0x00000001, (u32)"btl_un_yami_pata", (u32)"c_yaminoko", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence_patapata, (u32)&defence_patapata_attr,
-    0x00600809, 0x00000000, (u32)&pose_table_patapata,
+static BattleUnitKindPart parts_patapata = {
+    0x01,
+    "btl_un_yami_pata",
+    "c_yaminoko",
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 30.0f, 0.0f },
+    // field_0x24, byte-identical to the original data
+    { 0x00, 0x00, 0x00, 0x00, 0x42, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+    (BattleUnitDefense*)defence_patapata,
+    (BattleUnitDefenseAttr*)defence_patapata_attr,
+    0x00600809,
+    0x00000000,
+    &pose_table_patapata,
 };
 
-// TODO: type
-static u32 pose_table_patapata[36] = {
-    0x00000001, (u32)"PTP_N_1", 0x00000002, (u32)"PTP_Y_1",
-    0x00000009, (u32)"PTP_Y_1", 0x00000005, (u32)"PTP_K_1",
-    0x00000004, (u32)"PTP_X_1", 0x00000003, (u32)"PTP_X_1",
-    0x0000001C, (u32)"PTP_S_1", 0x0000001D, (u32)"PTP_Q_1",
-    0x0000001E, (u32)"PTP_Q_1", 0x0000001F, (u32)"PTP_S_1",
-    0x00000027, (u32)"PTP_D_1", 0x00000032, (u32)"PTP_A_1",
-    0x0000002A, (u32)"PTP_R_1", 0x00000028, (u32)"PTP_W_1",
-    0x00000038, (u32)"PTP_X_1", 0x00000039, (u32)"PTP_X_1",
-    0x00000041, (u32)"PTP_T_1", 0x00000045, (u32)"PTP_S_1",
+static BattleDispPose pose_table_patapata[18] = {
+    { 0x01, "PTP_N_1" }, { 0x02, "PTP_Y_1" },
+    { 0x09, "PTP_Y_1" }, { 0x05, "PTP_K_1" },
+    { 0x04, "PTP_X_1" }, { 0x03, "PTP_X_1" },
+    { 0x1C, "PTP_S_1" }, { 0x1D, "PTP_Q_1" },
+    { 0x1E, "PTP_Q_1" }, { 0x1F, "PTP_S_1" },
+    { 0x27, "PTP_D_1" }, { 0x32, "PTP_A_1" },
+    { 0x2A, "PTP_R_1" }, { 0x28, "PTP_W_1" },
+    { 0x38, "PTP_X_1" }, { 0x39, "PTP_X_1" },
+    { 0x41, "PTP_T_1" }, { 0x45, "PTP_S_1" },
 };
 
-// TODO: type
-static u32 data_table_patapata[6] = {
-    0x0000000E, (u32)&dmg_fall_event, 0x00000030, (u32)&patapata_dmg_first_attack_pos,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table_patapata[3] = {
+    { 0x0E, &dmg_fall_event },
+    { 0x30, &patapata_dmg_first_attack_pos },
+    { 0x00, NULL },
 };
 
-// TODO: type
+// Pose-sound table: 8 entries of {const char* poseName; f32 frame; u32 field8; const char* seName; s32 flag}.
+// No matching struct exists; consumed by btlevtcmd_AnimeSetPoseSoundTable.
 static u32 pose_sound_timing_table[40] = {
     (u32)"PTP_S_1", 0x3C23D70A, 0x00000000, (u32)"SFX_ENM_PATA_WAIT1",
     0x00000001, (u32)"PTP_W_1", 0x3C23D70A, 0x00000000,
@@ -341,82 +351,88 @@ static EVT_BEGIN(attack_event_patapata)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"NKT_N_1", 0x00000002, (u32)"NKT_Y_1",
-    0x00000009, (u32)"NKT_Y_1", 0x00000005, (u32)"NKT_K_1",
-    0x00000004, (u32)"NKT_X_1", 0x00000003, (u32)"NKT_X_1",
-    0x0000001C, (u32)"NKT_S_1", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_S_1",
-    0x00000027, (u32)"NKT_D_1", 0x00000032, (u32)"NKT_A_1",
-    0x0000002A, (u32)"NKT_R_1", 0x00000028, (u32)"NKT_W_1",
-    0x00000038, (u32)"NKT_X_1", 0x00000039, (u32)"NKT_X_1",
-    0x00000041, (u32)"NKT_T_1", 0x00000045, (u32)"NKT_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "NKT_N_1" }, { 0x02, "NKT_Y_1" },
+    { 0x09, "NKT_Y_1" }, { 0x05, "NKT_K_1" },
+    { 0x04, "NKT_X_1" }, { 0x03, "NKT_X_1" },
+    { 0x1C, "NKT_S_1" }, { 0x1D, "NKT_Q_1" },
+    { 0x1E, "NKT_Q_1" }, { 0x1F, "NKT_S_1" },
+    { 0x27, "NKT_D_1" }, { 0x32, "NKT_A_1" },
+    { 0x2A, "NKT_R_1" }, { 0x28, "NKT_W_1" },
+    { 0x38, "NKT_X_1" }, { 0x39, "NKT_X_1" },
+    { 0x41, "NKT_T_1" }, { 0x45, "NKT_S_1" },
 };
 
-// TODO: type
-static u32 pose_table_turn[34] = {
-    0x00000001, (u32)"NKT_N_2", 0x00000002, (u32)"NKT_B_1",
-    0x00000009, (u32)"NKT_B_1", 0x00000005, (u32)"NKT_K_2",
-    0x00000004, (u32)"NKT_K_2", 0x00000003, (u32)"NKT_K_2",
-    0x0000001C, (u32)"NKT_S_2", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_D_1",
-    0x00000027, (u32)"NKT_D_1", 0x0000002A, (u32)"NKT_R_1",
-    0x00000028, (u32)"NKT_W_1", 0x00000038, (u32)"NKT_K_2",
-    0x00000039, (u32)"NKT_K_2", 0x00000041, (u32)"NKT_S_2",
-    0x00000045, (u32)"NKT_S_2",
+static BattleDispPose pose_table_turn[17] = {
+    { 0x01, "NKT_N_2" }, { 0x02, "NKT_B_1" },
+    { 0x09, "NKT_B_1" }, { 0x05, "NKT_K_2" },
+    { 0x04, "NKT_K_2" }, { 0x03, "NKT_K_2" },
+    { 0x1C, "NKT_S_2" }, { 0x1D, "NKT_Q_1" },
+    { 0x1E, "NKT_Q_1" }, { 0x1F, "NKT_D_1" },
+    { 0x27, "NKT_D_1" }, { 0x2A, "NKT_R_1" },
+    { 0x28, "NKT_W_1" }, { 0x38, "NKT_K_2" },
+    { 0x39, "NKT_K_2" }, { 0x41, "NKT_S_2" },
+    { 0x45, "NKT_S_2" },
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x0000000D, (u32)&dmg_turn_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x0D, &dmg_turn_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
+// BattleUnitDefense* tables: 8 bytes each, but the header struct is u8 defenses[5] (5 bytes).
 static u32 defence[2] = {
     0x02020202, 0x02000000,
 };
 
-// TODO: type
+// BattleUnitDefenseAttr* table (5 attrs + 3 pad); header struct is u8 defenseAttrs[5].
 static u32 defence_attr[2] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
+// BattleUnitDefense* table (5 defense entries + 3 pad); header struct is u8 defenses[5].
 static u32 defence_turn[2] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x4B504664, 0x46646446, 0x64556455, 0x6455504B,
-    0x46644664, 0x64460000,
+static BattleVulnerableStatus regist = {
+    75, 80, 70, 100, 70, 100, 100, 70, 100, 85,
+    100, 85, 100, 85, 80, 75, 70, 100, 70, 100,
+    100, 70,
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_yami_noko", (u32)"c_yaminoko", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00001009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        0x01,
+        "btl_un_yami_noko",
+        "c_yaminoko",
+        { 0.0f, 0.0f, 0.0f },
+        { 0.0f, 30.0f, 0.0f },
+        // field_0x24, byte-identical to the original data
+        { 0x00, 0x00, 0x00, 0x00, 0x42, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+        (BattleUnitDefense*)defence,
+        (BattleUnitDefenseAttr*)defence_attr,
+        0x00001009,
+        0x00000000,
+        &pose_table,
+    },
 };
 
-// TODO: type
-static u32 weapon_nokonoko_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00080302,
-    0x00000000, 0x00000087, 0x000005FF, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_nokonoko_attack[1] = {
+    {
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+        0x01, 0x01, 0x01, 0x01,
+        (void*)weaponGetPowerDefault,
+        { 0x00000004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        0,
+        { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00, 0x00, 0x08, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+        0x00000087,
+        { 0x00, 0x00, 0x05, 0xFF, 0x00, 0x00, 0x20, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+        0,
+        { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+    },
 };
 
 static EVT_BEGIN(init_event)

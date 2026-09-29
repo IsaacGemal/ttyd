@@ -63,20 +63,10 @@ EVT_BEGIN(evt_dokan)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero", 0x00010000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_06", (u32)"e_bero",
-    0x00040004, (u32)&bero_s_doa_close, (u32)&bero_s_doa_open, (u32)"dokan",
-    0x00020000, 0x00000009, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000006,
-    (u32)&evt_dokan, (u32)"mri_14", (u32)"dokan", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 1, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_06", "e_bero", 4, 4, (s32)bero_s_doa_close, (s32)bero_s_doa_open},
+    {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, evt_dokan, "mri_14", "dokan", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(door_switch_init)
@@ -200,15 +190,14 @@ EVT_BEGIN(ueki_evt_01)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[28] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", (u32)&ueki_evt_01,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", 0x00000000,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000001, (u32)"A_ueki06", (u32)"S_ueki06", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    {1, "A_ueki01", "S_ueki01", ueki_evt_01},
+    {1, "A_ueki02", "S_ueki02", NULL},
+    {1, "A_ueki03", "S_ueki03", NULL},
+    {1, "A_ueki04", "S_ueki04", NULL},
+    {1, "A_ueki05", "S_ueki05", NULL},
+    {1, "A_ueki06", "S_ueki06", NULL},
+    {4},
 };
 
 EVT_BEGIN(mri_15_init_evt)

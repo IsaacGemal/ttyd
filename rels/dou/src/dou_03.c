@@ -1,3 +1,4 @@
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -14,6 +15,7 @@
 #include "evt/evt_sub.h"
 #include "evt/evt_window.h"
 #include "forcedata.h"
+#include "mario/mario_pouch.h"
 #include "party/party_motion.h"
 
 #pragma force_active on
@@ -44,38 +46,15 @@ EVT_BEGIN(dou_03_custom)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[120] = {
-    (u32)"w_bero_1", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"dou_12", (u32)"e_bero_1",
-    0x00010001, 0x00000000, 0x00000000, (u32)"w_bero_2",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, (u32)&dou_03_custom, 0xFFFFFFFF,
-    0x00000000, (u32)"dou_12", (u32)"e_bero_2", 0x00010001,
-    0x00000000, 0x00000000, (u32)"w_bero_3", 0x00000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"dou_04", (u32)"e_bero", 0x00010001, 0x00000000,
-    0x00000000, (u32)"e_bero_1", 0x00000000, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    (u32)&dou_03_custom, 0xFFFFFFFF, 0x00000000, (u32)"dou_05",
-    (u32)"w_bero_1", 0x00010001, 0x00000000, 0x00000000,
-    (u32)"e_bero_2", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"dou_05", (u32)"w_bero_2",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero_3",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"dou_05", (u32)"w_bero_3", 0x00010001,
-    0x00000000, 0x00000000, (u32)"s_bero", 0x00000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"dou_09", (u32)"n_bero", 0x00010001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_12", "e_bero_1", 1, 1},
+    {"w_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, dou_03_custom, -1, NULL, "dou_12", "e_bero_2", 1, 1},
+    {"w_bero_3", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_04", "e_bero", 1, 1},
+    {"e_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, dou_03_custom, -1, NULL, "dou_05", "w_bero_1", 1, 1},
+    {"e_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_05", "w_bero_2", 1, 1},
+    {"e_bero_3", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_05", "w_bero_3", 1, 1},
+    {"s_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "dou_09", "n_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(watergate_handle_init)
@@ -91,9 +70,8 @@ EVT_BEGIN(watergate_handle_init)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 itemsel_table[2] = {
-    0x00000048, 0xFFFFFFFF,
+static s32 itemsel_table[] = {
+    ITEM_GATE_HANDLE, -1,
 };
 
 EVT_BEGIN(watergate_lever)
@@ -317,26 +295,25 @@ static EVT_BEGIN(dou_puka_event_main2)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[72] = {
-    (u32)"mod_01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_03", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_04", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_05", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_06", 0x43660000, 0x42480000, 0x42480000,
-    (u32)"mod_07", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_09", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_10", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_11", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_12", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_13", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_14", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_15", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_16", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_17", 0x43D98000, 0x41C80000, 0x41200000,
-    (u32)"Ship_Change", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[] = {
+    {"mod_01", {0.0f, -1000.0f, 0.0f}},
+    {"mod_02", {0.0f, -1000.0f, 0.0f}},
+    {"mod_03", {0.0f, -1000.0f, 0.0f}},
+    {"mod_04", {0.0f, -1000.0f, 0.0f}},
+    {"mod_05", {0.0f, -1000.0f, 0.0f}},
+    {"mod_06", {230.0f, 50.0f, 50.0f}},
+    {"mod_07", {0.0f, -1000.0f, 0.0f}},
+    {"mod_09", {0.0f, -1000.0f, 0.0f}},
+    {"mod_10", {0.0f, -1000.0f, 0.0f}},
+    {"mod_11", {0.0f, -1000.0f, 0.0f}},
+    {"mod_12", {0.0f, -1000.0f, 0.0f}},
+    {"mod_13", {0.0f, -1000.0f, 0.0f}},
+    {"mod_14", {0.0f, -1000.0f, 0.0f}},
+    {"mod_15", {0.0f, -1000.0f, 0.0f}},
+    {"mod_16", {0.0f, -1000.0f, 0.0f}},
+    {"mod_17", {435.0f, 25.0f, 10.0f}},
+    {"Ship_Change", {0.0f, -1000.0f, 0.0f}},
+    {NULL},
 };
 
 EVT_BEGIN(dou_03_init_evt)

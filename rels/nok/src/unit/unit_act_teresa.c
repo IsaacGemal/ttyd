@@ -1,11 +1,12 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
 #pragma force_active on
 static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[19];
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[1];
 static s32 init_event[9];
 static s32 wait_event[6];
 
@@ -45,14 +46,15 @@ u32 unit_act_teresa[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+// Per damage-type defence; pointed to by BattleUnitKindPart::defense. The
+// original symbol is 8 bytes (header struct is only 5, padded to 8 here).
+static BattleUnitDefense defence = {
+    { 0x00, 0x00, 0x00, 0x00, 0x00 },
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+// Per damage-type defence attributes; BattleUnitKindPart::defenseAttr.
+static BattleUnitDefenseAttr defence_attr = {
+    { 0x00, 0x00, 0x00, 0x00, 0x00 },
 };
 
 // TODO: type
@@ -61,26 +63,35 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[14] = {
-    0x0000001C, (u32)"S_1", 0x0000001F, (u32)"A_2",
-    0x00000027, (u32)"D_1", 0x00000028, (u32)"W_1",
-    0x0000002A, (u32)"R_1", 0x00000041, (u32)"T_1",
-    0x00000045, (u32)"S_1",
+// 7 entries: poseId -> animation/pose name, walked by searchPoseTbl/BtlUnit_GetPoseNameFromType.
+static BattleDispPose pose_table[] = {
+    { 0x1C, "S_1" }, { 0x1F, "A_2" },
+    { 0x27, "D_1" }, { 0x28, "W_1" },
+    { 0x2A, "R_1" }, { 0x41, "T_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+// One (tag, data) entry; BtlUnit_GetData/BtlUnit_CheckData walk it.
+static BattleDataEntry data_table[] = {
+    { 0x00000000, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_teresa", (u32)"c_teresa", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+// Single part: kind params for the Teresa body.
+static BattleUnitKindPart parts[] = {
+    {
+        0x00000001,
+        "btl_un_teresa",
+        "c_teresa",
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 0.0f, 25.0f, 0.0f },  // hitBaseOffset
+        { 0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+        &defence,
+        &defence_attr,
+        0x00000009,
+        0x00000000,
+        &pose_table,
+    },
 };
 
 static EVT_BEGIN(init_event)
