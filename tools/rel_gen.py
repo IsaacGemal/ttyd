@@ -110,13 +110,23 @@ while i<len(data):
             else: sys.exit(f"{o['name']}: unsupported .{k}")
         if len(words)*4!=o['size']: sys.exit(f"{o['name']}: {len(words)*4} bytes vs {o['size']}")
         todo.append(o['name'])
-        out.append(f"// TODO: type\n{st}u32 {o['name']}[{len(words)}] = {{\n    "+',\n    '.join(', '.join(words[j:j+4]) for j in range(0,len(words),4))+",\n};")
+        table=f"{st}u32 {o['name']}[{len(words)}] = {{\n    "+',\n    '.join(', '.join(words[j:j+4]) for j in range(0,len(words),4))+",\n};"
+        if '$' in o['name']:
+            # an initialized static local (name$NNN): it belongs inside its function; left here commented out
+            out.append(f"// TODO: {o['name']} is a static local of a function: move it inside that function as\n"
+                       f"// `static` with this data (it's here at its place in .data)\n"+'\n'.join('// '+l for l in table.split('\n')))
+        else:
+            out.append("// TODO: type\n"+table)
     defined.add(o['name']); i+=1
 for f in fns:
     if f['name'] not in placed: out.append(placeholder(f))
 bss=[o for o in objs if o['sec']=='.bss']
 if bss:
-    out.insert(0,'// TODO: type these (.bss, in original order)\n'+'\n'.join(f"{'' if o['scope']=='global' else 'static '}u8 {o['name']}[{o['size']:#x}];" for o in bss))
+    # a name with $ is a function's static local (name$NNN): it belongs inside that function, not at file scope
+    out.insert(0,'// TODO: type these (.bss, in original order)\n'+'\n'.join(
+        f"// {o['name']} ({o['size']:#x} bytes): a static local of a function; declare it inside that function"
+        if '$' in o['name'] else f"{'' if o['scope']=='global' else 'static '}u8 {o['name']}[{o['size']:#x}];" for o in bss))
+    defined.update(o['name'] for o in bss)
 # forward declarations for local objects used before their definition
 src='\n\n'.join(out)
 fwd=[]
