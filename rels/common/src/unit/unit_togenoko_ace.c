@@ -1,3 +1,6 @@
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -30,7 +33,7 @@ static s32 friend_event[88];
 static s32 wait_event[6];
 
 // clang-format off
-extend_data(152,
+extend_data(unit_togenoko_ace_0,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -39,7 +42,7 @@ extend_data(152,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(153,
+extend_data(unit_togenoko_ace_1,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -49,7 +52,7 @@ extend_data(153,
      f32, one, 1.0f)
 
 // TODO: type
-u32 unit_togenoko_ace_15_data_41A18[49] = {
+u32 UNIT_DATA_SYM[49] = {
     0x0000003C, (u32)"btl_un_togenoko_ace", 0x00190000, 0x01011E01,
     0x03460232, 0x270F0024, 0x0032FFFC, 0x00320000,
     0x00000000, 0x41C80000, 0x00000000, 0x00000000,
@@ -334,13 +337,29 @@ EVT_END()
 
 // TODO: type
 static u32 entry_togenoko[12] = {
-    (u32)&unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0xC47A0000,
+    (u32)&UNIT_DATA_SYM, 0x01000000, 0x04000004, 0xC47A0000,
     0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: write togenoko_getnum (static, 0x80 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_togenoko_ace.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(togenoko_getnum) {
+    s32* args;
+    BattleUnit* unit;
+    s32 count;
+    s32 i;
+
+    args = event->args;
+    count = 0;
+    for (i = 0; i < 64; i++) {
+        unit = BattleGetUnitPtr(_battleWorkPointer, i);
+        if (unit && unit->currentKind == UNIT_DARK_KOOPATROL) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return EVT_RETURN_DONE;
+}
+
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)

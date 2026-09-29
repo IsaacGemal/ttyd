@@ -11,7 +11,8 @@ for h in $INC; do inc="$inc#include \"$h\"\n"; done
 python3 - "$src" "$inc" <<'P'
 import sys
 p, inc = sys.argv[1], sys.argv[2].replace('\\n', '\n')
-open(p, 'w').write(inc + open(p).read())
+text = open(p).read()
+open(p, 'w').write(inc + text)
 P
 python3 tools/share_unit.py $unit "$@"
 python3 configure.py >/dev/null 2>&1

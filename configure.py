@@ -1772,6 +1772,8 @@ config.libs = [
             Object(Matching, "unit/unit_karon.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_karon_17_data_3F680"]),
             Object(Matching, "unit/unit_ura_noko.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_ura_noko_15_data_2E060"]),
             Object(Matching, "unit/unit_ura_noko.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_ura_noko_28_data_37580"]),
+            Object(Matching, "unit/unit_togenoko_ace.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_togenoko_ace_15_data_41A18"]),
+            Object(Matching, "unit/unit_togenoko_ace.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_togenoko_ace_28_data_48988"]),
         ],
     ),
 ]
