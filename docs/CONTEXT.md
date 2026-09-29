@@ -1578,7 +1578,7 @@ and `unit_mario` need the `eff_irekaeru` treatment.
 
 **20 units linked; `tools/ci.py` PASS, "32 files OK". Relative to main after PR #25: code linked 12.43% -> 12.81%,
 linked data 5.81% -> 6.46%, matched data 7.64% -> 7.73%, functions 4,995 -> 4,996 (`mailGetPtr`).** The "fully matched but not
-linked" list is down to 8. Every dol unit now has a source file (`configure.py` prints no "Missing source file").
+linked" list is down to 7. Every dol unit now has a source file (`configure.py` prints no "Missing source file").
 
 **Data-only units, and `tools/asm2c_data.py`.** Twelve dol units had no source at all: their data was linked from the
 original object, which counts for nothing in matched data. `python3 tools/asm2c_data.py <unit> > src/<unit>.c` turns a unit's
@@ -1615,6 +1615,6 @@ game's; they are a byte-exact starting point to name later. Lessons:
 order 1.0 then 0.125, which no source shape gave); `npc_hide_onoff`; `_hammer_star_effect`. Reverted: `eff_uranoko` with
 literals instead of externs (`Main` drops from 100% to 99.81%, which the ratchet rejects).
 
-**Still unlinked (8):** `battle_event_subset` (17 KB of event scripts, which should be `EVT_BEGIN` macros, not hex),
+**Still unlinked (7):** `battle_event_subset` (17 KB of event scripts, which should be `EVT_BEGIN` macros, not hex),
 `unit_mario`, `eff_uranoko`, `evt_kinopio`, `targimpl` (extra functions the original inlines; source order mixes asm
 and C), the four MusyX files `synthmacros`, `synth_dbtab`, `snd_service`, `dsp_import`, and MSL `float`.
