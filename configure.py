@@ -290,6 +290,7 @@ cflags_rel = [
 ]
 
 # REL flags without deferred inlining (a few unit copies were compiled that way: functions in source order)
+cflags_rel_norostr = [f for f in cflags_rel if f != "-rostr"]
 cflags_rel_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" for f in cflags_rel]
 
 config.linker_version = "GC/2.6"
@@ -1387,6 +1388,12 @@ config.libs = [
         ],
     ),
     Rel(
+        "end",
+        [
+            Object(Matching, "end.c"),
+        ],
+    ),
+    Rel(
         "aaa",
         [
             Object(Matching, "aaa.c"),
@@ -1421,6 +1428,7 @@ config.libs = [
             Object(Matching, "mri_08.c"),
             Object(NonMatching, "mri_13.c"),
             Object(NonMatching, "mri_16.c"),
+            Object(Matching, "data/battle/battle_database_mri.c"),
         ],
     ),
     Rel(
@@ -1452,6 +1460,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_koopa_tou.c"),
             Object(Matching, "unit/unit_kamec_green.c"),
             Object(Matching, "unit/unit_kamec_white.c"),
+            Object(Matching, "data/battle/battle_database_tou.c"),
         ]
     ),
     Rel(
@@ -1467,6 +1476,7 @@ config.libs = [
             Object(Matching, "gor_04.c"),
             Object(Matching, "event/evt_goryuugijo.c"),
             Object(Matching, "event/evt_keijiban.c"),
+            Object(Matching, "data/battle/battle_database_gor.c"),
         ],
     ),
     Rel(
@@ -1535,6 +1545,7 @@ config.libs = [
             Object(Matching, "unit/unit_kurokumorn.c"),
             Object(Matching, "eki_02.c"),
             Object(NonMatching, "eki_03.c"),
+            Object(Matching, "data/battle/battle_database_eki.c"),
         ],
     ),
     Rel(
@@ -1553,6 +1564,7 @@ config.libs = [
             Object(Matching, "gon_13.c"),
             Object(Matching, "gon_06.c"),
             Object(Matching, "gon_12.c"),
+            Object(Matching, "data/battle/battle_database_gon.c"),
         ],
     ),
     Rel(
@@ -1570,6 +1582,7 @@ config.libs = [
             Object(Matching, "unit/unit_hyper_togekuri.c"),
             Object(Matching, "event/evt_iwamove.c"),
             Object(Matching, "unit/unit_faker_mario_gra.c"),
+            Object(Matching, "data/battle/battle_database_gra.c"),
         ],
     ),
     Rel(
@@ -1590,6 +1603,7 @@ config.libs = [
             Object(Matching, "unit/unit_gold_chorobon.c"),
             Object(Matching, "hei_07.c"),
             Object(Matching, "hei_01.c"),
+            Object(Matching, "data/battle/battle_database_hei.c"),
         ],
     ),
     Rel(
@@ -1621,12 +1635,13 @@ config.libs = [
             Object(Matching, "unit/unit_gullible_christine.c"),
             Object(Matching, "jin_10.c"),
             Object(Matching, "unit/unit_boss_rampell.c"),
+            Object(Matching, "data/battle/battle_database_jin.c"),
         ],
     ),
     Rel(
         "jon",
         [
-            Object(NonMatching, "jon_06.c"),
+            Object(Matching, "jon_06.c"),
             Object(Matching, "jon_00.c"),
             Object(Matching, "jon_01.c"),
             Object(Matching, "jon_02.c"),
@@ -1645,6 +1660,7 @@ config.libs = [
             Object(Matching, "unit/unit_badge_borodo.c"),
             Object(Matching, "unit/unit_mahorn.c"),
             Object(Matching, "unit/unit_mahorn_custom.c"),
+            Object(Matching, "data/battle/battle_database_jon.c"),
         ],
     ),
     Rel(
@@ -1710,6 +1726,7 @@ config.libs = [
             Object(NonMatching, "moo_03.c"),
             Object(NonMatching, "moo_04.c"),
             Object(Matching, "moo_00.c"),
+            Object(NonMatching, "moo.c"),
         ],
     ),
     Rel(
@@ -1961,6 +1978,9 @@ config.libs = [
             Object(Matching, "unit/unit_togekuri.c", modules=["hei"], source="v2/unit/unit_togekuri.c", extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_28_data_24A10"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_26_data_240F0"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_15_data_5CC90"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["win"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["mri"], source="v2/unit/unit_dokugassun.c", cflags=[*cflags_rel_nodefer, "-i rels/common/include"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
         ],
     ),
     Rel(

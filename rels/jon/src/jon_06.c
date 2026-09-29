@@ -4,7 +4,7 @@
 #pragma force_active on
 
 // clang-format off
-extend_data(0,
+extend_data(jon_06_0,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -13,7 +13,7 @@ extend_data(0,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(1,
+extend_data(jon_06_1,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -22,7 +22,7 @@ extend_data(1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(2,
+extend_data(jon_06_2,
      f64, _three, 3,
      f64, _half, 0.5)
 // clang-format on
