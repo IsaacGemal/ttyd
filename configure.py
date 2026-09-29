@@ -524,7 +524,7 @@ config.libs = [
             Object(NonMatching, "effect/eff_naniga.c"),
             Object(NonMatching, "effect/eff_sandars.c"),
             Object(Matching, "effect/eff_rankup.c"),
-            Object(NonMatching, "effect/eff_irekaeru.c"),
+            Object(Matching, "effect/eff_irekaeru.c"),
             Object(NonMatching, "effect/eff_scanning.c"),
             Object(NonMatching, "effect/eff_toiki.c"),
             Object(NonMatching, "effect/eff_mist2.c"),
