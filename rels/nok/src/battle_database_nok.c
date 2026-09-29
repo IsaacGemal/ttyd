@@ -1,4 +1,6 @@
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_stage_object.h"
+#include "driver/npcdrv.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -25,23 +27,17 @@ extend_data(37,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 nok_btlobject_data[60] = {
-    (u32)"ki_1", 0x00020000, 0xC2C80000, 0x00000000,
-    0xC1F00000, 0x003C0000, (u32)"isi_A", 0x00020000,
-    0x43160000, 0x00000000, 0xC1F00000, 0x0A320000,
-    (u32)"isi_B", 0x00020000, 0x42480000, 0x00000000,
-    0xC2080000, 0x14280000, (u32)"isigaki", 0x00020001,
-    0x40000000, 0x00000000, 0xC1B80000, 0x003C0000,
-    (u32)"kusa_1", 0x00020001, 0xC3380000, 0x00000000,
-    0x42140000, 0x0A320000, (u32)"kusa_2", 0x00020001,
-    0x43340000, 0x00000000, 0x42700000, 0x14280000,
-    (u32)"kusa_3", 0x00020001, 0x428C0000, 0x00000000,
-    0x42820000, 0x1E1E0000, (u32)"kusa_4", 0x00020001,
-    0xC2AE0000, 0x00000000, 0x42600000, 0x003C0000,
-    (u32)"B", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+BattleStageObjectData nok_btlobject_data[10] = {
+    { "ki_1", 0x0002, 0x0000, { -100.0f, 0.0f, -30.0f }, 0x00, 0x3C },
+    { "isi_A", 0x0002, 0x0000, { 150.0f, 0.0f, -30.0f }, 0x0A, 0x32 },
+    { "isi_B", 0x0002, 0x0000, { 50.0f, 0.0f, -34.0f }, 0x14, 0x28 },
+    { "isigaki", 0x0002, 0x0001, { 2.0f, 0.0f, -23.0f }, 0x00, 0x3C },
+    { "kusa_1", 0x0002, 0x0001, { -184.0f, 0.0f, 37.0f }, 0x0A, 0x32 },
+    { "kusa_2", 0x0002, 0x0001, { 180.0f, 0.0f, 60.0f }, 0x14, 0x28 },
+    { "kusa_3", 0x0002, 0x0001, { 70.0f, 0.0f, 65.0f }, 0x1E, 0x1E },
+    { "kusa_4", 0x0002, 0x0001, { -87.0f, 0.0f, 56.0f }, 0x00, 0x3C },
+    { "B", 0x0002, 0x0002, { 0.0f, 0.0f, 0.0f }, 0x00, 0x3C },
+    { "C", 0x0002, 0x0003, { 0.0f, 0.0f, 0.0f }, 0x00, 0x3C },
 };
 
 // TODO: type
@@ -76,12 +72,19 @@ u32 nok_btlstage_data[109] = {
     0x00000000,
 };
 
-// TODO: type
-u32 btlparty_nok_hei_ep[12] = {
-    (u32)unit_act_mario, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+// BattleUnitSetup only names mUnitKindParams (0x0), field_1C (0x1C) and field_2C (0x2C); the original also
+// stores values at 0x4 (0x01000000), 0x8 (0x04000004) and 0xC (spawn x = 90.0), which fall inside the
+// header's field_4[] padding. Written out byte-for-byte until the header names them (same idiom as
+// src/battle/battle_party.c).
+// clang-format off
+BattleUnitSetup btlparty_nok_hei_ep[1] = {
+    { (BattleUnitKind*)unit_act_mario,
+      { 0x01, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x04,
+        0x42, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+      { 0, 0, 0, 0 }, { 0x00, 0x00, 0x00, 0x00 } },
 };
+// clang-format on
 
 // TODO: type
 u32 btlgrp_nok_hei_ep[8] = {
@@ -89,10 +92,11 @@ u32 btlgrp_nok_hei_ep[8] = {
     0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_heart_drop_param_default, 0x00000005,
 };
 
-// TODO: type
-u32 btlgrpsel_nok_btlno_hei_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_nok_hei_ep, (u32)&nok_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+// The weighted setup list npcSetupBattleInfo() walks: entries are { weight, groupSetup, stageData }, and the
+// zero-weight entry terminates the list.
+NpcBattleSetupEntry btlgrpsel_nok_btlno_hei_test1_off[2] = {
+    { 0x32, (BattleGroupSetup*)&btlgrp_nok_hei_ep, (s32)&nok_btlstage_data },
+    { 0x00, NULL, 0x00000000 },
 };
 
 // TODO: type

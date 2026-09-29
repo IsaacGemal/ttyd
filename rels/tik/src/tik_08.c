@@ -48,40 +48,20 @@ static EVT_BEGIN(oshimodo_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_oshimodo[15] = {
-    (u32)"dokan", 0x00020000, 0x00000009, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000006, (u32)&oshimodo_event, 0x00000000, (u32)"dokan",
-    0x00010001, 0x00000000, 0x00000000,
+static BeroEntry bero_oshimodo[] = {
+    {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, oshimodo_event, NULL, "dokan", 1, 1},
 };
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"dokan", 0x00020000, 0x00000009, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000006, 0x00000000, (u32)"usu_00", (u32)"dokan_1",
-    0x00010001, 0x00000000, 0x00000000, (u32)"s_bero",
-    0x00010001, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"tik_07", (u32)"n_bero", 0x00020002,
-    (u32)"door", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, "usu_00", "dokan_1", 1, 1},
+    {"s_bero", 1, 1, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_07", "n_bero", 2, 2,
+     (s32)"door", 0},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_entry_data2[30] = {
-    (u32)"dokan", 0x00020000, 0x00000009, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x00000006, 0x00000000, (u32)"sys_01", (u32)"stg_4",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data2[] = {
+    {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, "sys_01", "stg_4", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_kanban)

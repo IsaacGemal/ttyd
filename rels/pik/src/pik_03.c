@@ -74,16 +74,9 @@ EVT_BEGIN(bero_out)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[30] = {
-    (u32)"s_bero", 0x00010000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, (u32)&bero_in,
-    0x00000008, (u32)&bero_out, (u32)"pik_02", (u32)"h_bero",
-    0x00040004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_data[] = {
+    {"s_bero", 1, 0, 0x4E20, 100000, 0, 0, -1, bero_in, 8, bero_out, "pik_02", "h_bero", 4, 4},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_daiza)

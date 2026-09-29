@@ -38,20 +38,10 @@ extend_data(17,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"hei_02", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"hei_04", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_02", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_04", "w_bero", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(dead_evt1)
@@ -68,26 +58,14 @@ static EVT_BEGIN(dead_evt2)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[69] = {
-    (u32)"シンノスケ1", 0x00000000, 0x00000000, (u32)kuriboo_init_event,
-    (u32)kuriboo_move_event, 0x00000000, (u32)&dead_evt1, (u32)kuriboo_find_event,
-    (u32)kuriboo_lost_event, (u32)kuriboo_return_event, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x447A0000, 0x43B40000,
-    0x447A0000, 0x43B40000, 0x00000008, (u32)"シンノスケ2",
-    0x00000000, 0x00000000, (u32)kuriboo_init_event, (u32)kuriboo_move_event,
-    0x00000000, (u32)&dead_evt2, (u32)kuriboo_find_event, (u32)kuriboo_lost_event,
-    (u32)kuriboo_return_event, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x447A0000, 0x43B40000, 0x447A0000,
-    0x43B40000, 0x00000008, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {"シンノスケ1", 0, 0, kuriboo_init_event, kuriboo_move_event, NULL, dead_evt1,
+     kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, NULL, 0,
+     {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 1000.0f, 360.0f, 1000.0f, 360.0f, 8},
+    {"シンノスケ2", 0, 0, kuriboo_init_event, kuriboo_move_event, NULL, dead_evt2,
+     kuriboo_find_event, kuriboo_lost_event, kuriboo_return_event, NULL, 0,
+     {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 1000.0f, 360.0f, 1000.0f, 360.0f, 8},
+    {NULL},
 };
 
 static EVT_BEGIN(door_open)

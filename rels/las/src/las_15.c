@@ -45,16 +45,9 @@ static EVT_BEGIN(e_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[30] = {
-    (u32)"e_bero_1", 0x00010001, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_10", (u32)"nw_bero_2",
-    0x00050005, (u32)&e_door_close, (u32)&e_door_open, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"e_bero_1", 1, 1, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_10", "nw_bero_2", 5, 5, (s32)&e_door_close, (s32)&e_door_open},
+    {NULL},
 };
 
 static EVT_BEGIN(box_evt)

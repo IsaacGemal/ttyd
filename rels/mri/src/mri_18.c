@@ -35,27 +35,12 @@ extend_data(125,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"dokan1", 0x00020000, 0x00000006, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0x0000000A, 0x00000000, (u32)"mri_12", (u32)"dokan3",
-    0x00010001, 0x00000000, 0x00000000, (u32)"dokan2",
-    0x00020000, 0x00000009, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000006,
-    0x00000000, (u32)"mri_16", (u32)"dokan2", 0x00010001,
-    0x00000000, 0x00000000, (u32)"dokan3", 0x00020000,
-    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000000,
-    0x00000000, (u32)"dokan4", 0x00010001, 0x00000000,
-    0x00000000, (u32)"dokan4", 0x00020000, 0x00000002,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x0000000A, 0x00000000, 0x00000000,
-    (u32)"dokan3", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"dokan1", 2, 0, 6, 100000, 0, 0, -1, NULL, 10, NULL, "mri_12", "dokan3", 1, 1},
+    {"dokan2", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, "mri_16", "dokan2", 1, 1},
+    {"dokan3", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan4", 1, 1},
+    {"dokan4", 2, 0, 2, 100000, 0, 0, -1, NULL, 10, NULL, NULL, "dokan3", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_ueki_04)
@@ -66,15 +51,14 @@ static EVT_BEGIN(evt_ueki_04)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[28] = {
-    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
-    0x00000001, (u32)"A_ueki02", (u32)"S_ueki02", 0x00000000,
-    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
-    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", (u32)&evt_ueki_04,
-    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
-    0x00000001, (u32)"A_ueki08", (u32)"S_ueki08", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[] = {
+    {1, "A_ueki01", "S_ueki01", NULL},
+    {1, "A_ueki02", "S_ueki02", NULL},
+    {1, "A_ueki03", "S_ueki03", NULL},
+    {1, "A_ueki04", "S_ueki04", evt_ueki_04},
+    {1, "A_ueki05", "S_ueki05", NULL},
+    {1, "A_ueki08", "S_ueki08", NULL},
+    {4},
 };
 
 EVT_BEGIN(mri_18_init_evt)

@@ -1,3 +1,4 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_weapon_power.h"
@@ -14,8 +15,8 @@ extern s32 cortez_weapon_dead_event[];
 extern s32 cortez_weapon_phase_event[];
 extern s32 cortez_weapon_unison_phase_event[];
 static u32 regist[6];
-static u32 data_table[36];
-static u32 parts[19];
+static BattleDataEntry data_table[18];
+static BattleUnitKindPart parts[1];
 static s32 init_event[47];
 static s32 damage_event[10];
 static s32 attack_event[353];
@@ -74,49 +75,78 @@ static u32 regist[6] = {
     0x5A643200, 0x00000000,
 };
 
-// TODO: type
-u32 weapon_cortez_claw_float_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80000000,
-    0x00000000, 0x0000320A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_cortez_claw_float_attack[1] = {
+    {
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x64, 0x00, 0x00, 0x02, 0x3F, 0x80, 0x00, 0x00 },
+        0x01, 0x01, 0x01, 0x01,
+        weaponGetPowerDefault,
+        { 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        0x00000000,
+        { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+        { 0x01, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+        (BattleWeaponSpecialFlags)0x00000087,
+        { 0x00, 0x00, 0x07, 0xFF, 0x80, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x32, 0x0A,
+          0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+        0x00000000,
+        { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00 },
+    },
 };
 
-// TODO: type
-static u32 pose_table[12] = {
-    0x00000002, (u32)"KRT_Z_1", 0x00000009, (u32)"KRT_Z_1",
-    0x0000001C, (u32)"KRT_S_1", 0x0000001F, (u32)"KRT_S_1",
-    0x00000027, (u32)"KRT_S_1", 0x00000045, (u32)"KRT_S_1",
+static BattleDispPose pose_table[6] = {
+    { 0x00000002, "KRT_Z_1" },
+    { 0x00000009, "KRT_Z_1" },
+    { 0x0000001C, "KRT_S_1" },
+    { 0x0000001F, "KRT_S_1" },
+    { 0x00000027, "KRT_S_1" },
+    { 0x00000045, "KRT_S_1" },
 };
 
-// TODO: type
-static u32 data_table[36] = {
-    0x00000009, (u32)&cortez_damage_sub_event, 0x00000031, (u32)cortez_weapon_dead_event,
-    0x00000047, (u32)cortez_weapon_break_event, 0x0000003A, (u32)cortez_weapon_blow_dead_event,
-    0x00000024, (u32)cortez_weapon_counter_damage_event, 0x00000018, (u32)cortez_weapon_counter_damage_event,
-    0x00000019, (u32)cortez_weapon_counter_damage_event, 0x0000001A, (u32)cortez_weapon_counter_damage_event,
-    0x0000001B, (u32)cortez_weapon_counter_damage_event, 0x0000001C, (u32)cortez_weapon_counter_damage_event,
-    0x0000001D, (u32)cortez_weapon_counter_damage_event, 0x0000001E, (u32)cortez_weapon_counter_damage_event,
-    0x0000001F, (u32)cortez_weapon_counter_damage_event, 0x00000020, (u32)cortez_weapon_counter_damage_event,
-    0x00000021, (u32)cortez_weapon_counter_damage_event, 0x00000022, (u32)cortez_weapon_counter_damage_event,
-    0x00000023, (u32)cortez_weapon_counter_damage_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[18] = {
+    { 0x00000009, cortez_damage_sub_event },
+    { 0x00000031, cortez_weapon_dead_event },
+    { 0x00000047, cortez_weapon_break_event },
+    { 0x0000003A, cortez_weapon_blow_dead_event },
+    { 0x00000024, cortez_weapon_counter_damage_event },
+    { 0x00000018, cortez_weapon_counter_damage_event },
+    { 0x00000019, cortez_weapon_counter_damage_event },
+    { 0x0000001A, cortez_weapon_counter_damage_event },
+    { 0x0000001B, cortez_weapon_counter_damage_event },
+    { 0x0000001C, cortez_weapon_counter_damage_event },
+    { 0x0000001D, cortez_weapon_counter_damage_event },
+    { 0x0000001E, cortez_weapon_counter_damage_event },
+    { 0x0000001F, cortez_weapon_counter_damage_event },
+    { 0x00000020, cortez_weapon_counter_damage_event },
+    { 0x00000021, cortez_weapon_counter_damage_event },
+    { 0x00000022, cortez_weapon_counter_damage_event },
+    { 0x00000023, cortez_weapon_counter_damage_event },
+    { 0x00000000, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_cortez_claw", (u32)"c_buki4", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x03010009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        0x00000001,
+        "btl_un_cortez_claw",
+        "c_buki4",
+        { 0.0f, 0.0f, 0.0f },
+        { 15.0f, 25.0f, 0.0f },
+        { 0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E,
+          0x00, 0xFF, 0x00, 0x00 },
+        (BattleUnitDefense*)&defence,
+        (BattleUnitDefenseAttr*)&defence_attr,
+        0x03010009,
+        0x00000000,
+        &pose_table,
+    },
 };
 
 static EVT_BEGIN(init_event)

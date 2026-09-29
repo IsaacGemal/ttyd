@@ -1,0 +1,841 @@
+#include "muj_12.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_env.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_item.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+#include "driver/fadedrv.h"
+#include "driver/itemdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "party/party_motion.h"
+#include "system.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 korutesu_apper[];
+extern s32 korutesu_vanish[];
+static f32 accdec_type(s32 idx, s32 count, f32 start, f32 end);
+static USER_FUNC(evtflash);
+
+static USER_FUNC(evtflash) {
+    if (isFirstCall) {
+        event->userdata[2] = 0;
+    }
+    switch (event->userdata[2]) {
+    case 0:
+        fadeEntry(FADE_OUT_BLACK, 20, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        event->userdata[2]++;
+        // fallthrough
+    case 1:
+        if (fadeIsFinish() != TRUE) {
+            return EVT_RETURN_BLOCK;
+        }
+        event->userdata[0] = 50;
+        event->savedTime = (s32)gp->renderTime;
+        event->userdata[2]++;
+        if (event->userdata[0] == 0) {
+            event->userdata[2]++;
+        }
+        return EVT_RETURN_BLOCK;
+    case 2:
+        if ((u32)OSTicksToMilliseconds((u32)gp->renderTime - (u32)event->savedTime) < event->userdata[0]) {
+            return EVT_RETURN_BLOCK;
+        }
+        event->userdata[2]++;
+        return EVT_RETURN_BLOCK;
+    case 3:
+        fadeEntry(FADE_IN_BLACK, 80, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        event->userdata[2]++;
+        // fallthrough
+    case 4:
+        if (fadeIsFinish() != TRUE) {
+            return EVT_RETURN_BLOCK;
+        }
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_DONE;
+}
+
+// clang-format off
+extend_data(36,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(37,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+static EVT_BEGIN(back_dark)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, LW(10))
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(door_custom)
+    CALL(evt_bero_get_info_anime, LW(1), LW(10), LW(11), LW(12), LW(13))
+    IF_INT_NOT_EQUAL(LW(12), 0)
+        SET_FLOAT_VALUE(LW(0), FLOAT(180.0f))
+        CALL_CHILD(LW(12))
+        CALL(evt_bero_mario_go)
+        WAIT_MS(1500)
+        SPAWN_EVENT(bero_close_door_play_se)
+        SET_VALUE(LW(9), LW(12))
+        CALL(evt_sub_intpl_msec_init, 11, 180, 0, 500)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(10))
+            IF_INT_EQUAL(LW(10), 0)
+                SET_FLOAT_VALUE(LW(0), FLOAT(0.0f))
+                CALL_CHILD(LW(9))
+                BREAK_LOOP
+            ELSE
+                CALL_CHILD(LW(9))
+            END_IF
+        END_LOOP
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(bero_custom)
+    SWITCH(GSW(0))
+        CASE_EQUAL(252)
+        SPAWN_EVENT(door_custom)
+        CALL(evt_mario_normalize)
+        CALL(evt_party_stop, 0)
+        CALL(evt_party_stop, 1)
+        BEGIN_INLINE_EVENT
+            CALL(evt_mario_set_pos, -218, 0, 0)
+            CALL(evt_mario_set_dir, 90, 0, 0)
+            CALL(evt_mario_mov_pos2, -100, 0, FLOAT(120.0f))
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_party_set_pos, 0, -230, 0, 20)
+            CALL(evt_party_set_dir, 0, 90, 0)
+            CALL(evt_party_move_pos2, 0, -130, 20, FLOAT(120.0f))
+        END_INLINE_EVENT
+        WAIT_MS(2000)
+        SET_VALUE(LW(0), 1)
+        RETURN
+        CASE_EQUAL(257)
+        SPAWN_EVENT(door_custom)
+        CALL(evt_mario_normalize)
+        CALL(evt_party_stop, 0)
+        CALL(evt_party_stop, 1)
+        BEGIN_INLINE_EVENT
+            CALL(evt_mario_set_pos, -218, 0, 0)
+            CALL(evt_mario_set_dir, 90, 0, 0)
+            CALL(evt_mario_mov_pos2, -90, 0, FLOAT(120.0f))
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_party_set_pos, 0, -240, 0, -25)
+            CALL(evt_party_set_dir, 0, 90, 0)
+            CALL(evt_party_move_pos2, 0, -110, -25, FLOAT(120.0f))
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_party_set_pos, 1, -220, 0, 25)
+            CALL(evt_party_set_dir, 1, 90, 0)
+            CALL(evt_party_move_pos2, 1, -120, 25, FLOAT(120.0f))
+        END_INLINE_EVENT
+        WAIT_MS(2000)
+        SET_VALUE(LW(0), 1)
+        RETURN
+    END_SWITCH
+    SET_VALUE(LW(0), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(w_close)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.6104f))
+    CALL(evt_mapobj_rotate, 0, STRING("S_doa"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(w_open)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-0.6104f))
+    CALL(evt_mapobj_rotate, 0, STRING("S_doa"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+static BeroEntry bero_entry_data[2] = {
+    {
+        "w_bero", 1, 2, 20000, 100000, 0, 0, -1, (s32*)&bero_custom, -1, NULL,
+        "muj_11", "e_bero", 5, 5, (s32)&w_close, (s32)&w_open,
+    },
+    { 0 },
+};
+
+EVT_BEGIN(korutesu_yure)
+    CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG5_SHIP_SHAKE2"), LW(0), LW(1), LW(2), LW(10))
+    LOOP(0)
+        CALL(evt_cam_shake, 4, FLOAT(0.01f), FLOAT(0.0f), 300)
+        IF_INT_EQUAL(GF(0), 1)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_cam_shake, 4, FLOAT(0.009f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.008f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.007f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.006f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.005f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.004f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.003f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.002f), FLOAT(0.0f), 300)
+    CALL(evt_cam_shake, 4, FLOAT(0.001f), FLOAT(0.0f), 300)
+    CALL(evt_snd_sfxoff, LW(10))
+    RETURN
+EVT_END()
+
+
+EVT_BEGIN(korutesu_flush)
+    LOOP(0)
+        CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+        CALL(evtflash)
+        IF_INT_EQUAL(GF(0), 1)
+            BREAK_LOOP
+        END_IF
+        CALL(evt_sub_random, 500, LW(10))
+        WAIT_MS(800)
+        WAIT_MS(LW(10))
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_flush2)
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+    CALL(evtflash)
+    CALL(evt_sub_random, 500, LW(10))
+    WAIT_MS(800)
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+    CALL(evtflash)
+    CALL(evt_sub_random, 1000, LW(10))
+    WAIT_MS(1600)
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+    CALL(evtflash)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_rotate)
+    CALL(evt_sub_intpl_msec_init, 0, 0, 1800, 2700)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        CALL(evt_npc_set_rotate, STRING("コルテス"), 0, LW(0), 0)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_small)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        CALL(evt_npc_glide_position, STRING("コルテス"), LW(0), LW(1), LW(2), 2700, 0, 0, 11, 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 0, 1000, 100, 2700)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        SET_FLOAT_VALUE(LW(2), LW(0))
+        DIVIDE_FLOAT(LW(2), FLOAT(1000.0f))
+        CALL(evt_npc_set_scale, STRING("コルテス"), LW(2), LW(2), LW(2))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_small2)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        CALL(evt_npc_glide_position, STRING("コルテス"), LW(0), LW(1), LW(2), 2700, 0, 0, 11, 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 0, 1000, 0, 2700)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        SET_FLOAT_VALUE(LW(2), LW(0))
+        DIVIDE_FLOAT(LW(2), FLOAT(1000.0f))
+        CALL(evt_npc_set_scale, STRING("コルテス"), LW(2), LW(2), LW(2))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_rotate2)
+    CALL(evt_sub_intpl_msec_init, 0, 1800, 0, 1300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        CALL(evt_npc_set_rotate, STRING("コルテス"), 0, LW(0), 0)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_large)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+        ADD(LW(1), -30)
+        CALL(evt_npc_glide_position, STRING("コルテス"), LW(0), LW(1), LW(2), 1300, 0, 0, 11, 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 0, 100, 1000, 1300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        SET_FLOAT_VALUE(LW(2), LW(0))
+        DIVIDE_FLOAT(LW(2), FLOAT(1000.0f))
+        CALL(evt_npc_set_scale, STRING("コルテス"), LW(2), LW(2), LW(2))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_blur)
+    LOOP(0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_env_blur_on, 1, 200)
+        END_INLINE_EVENT
+        CALL(evt_cam3d_evt_set, -203, 72, 359, 0, 94, 75, 100, 11)
+        WAIT_MS(100)
+        CALL(evt_cam3d_evt_set, -175, 75, 320, 0, 94, 75, 100, 11)
+        WAIT_MS(100)
+        IF_INT_EQUAL(GF(0), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    SET_VALUE(GF(1), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(starstone_fuwafuwa)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_init, 11, 0, 500, 500)
+        LABEL(1)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        SET_FLOAT_VALUE(GW(1), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(1)
+        END_IF
+        CALL(evt_sub_intpl_msec_init, 11, 500, 0, 500)
+        LABEL(2)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        SET_FLOAT_VALUE(GW(1), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(2)
+        END_IF
+    END_LOOP
+    RETURN
+EVT_END()
+
+USER_FUNC(muj_item_move_3d_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 targetX = (f32)evtGetValue(event, args[1]);
+    f32 targetY = (f32)evtGetValue(event, args[2]);
+    f32 targetZ = (f32)evtGetValue(event, args[3]);
+    s32 steps = evtGetValue(event, args[4]);
+    s32 mode = evtGetValue(event, args[5]);
+    f32 yOffset = evtGetFloat(event, args[6]);
+    ItemEntry* item = itemNameToPtr((char*)name);
+    s32 curStep;
+
+    if (isFirstCall) {
+        if (item == NULL) {
+            return EVT_RETURN_DONE;
+        }
+        event->savedTime = gp->renderTime;
+        event->userdataf[1] = item->position.x;
+        event->userdataf[2] = item->position.y;
+        *(f32*)&event->field_84 = item->position.z;
+    }
+    curStep = (s32)OSTicksToMilliseconds((u32)gp->renderTime - (u32)event->savedTime);
+    if (curStep < steps) {
+#ifdef MUST_MATCH
+        // The (s32) casts make MWCC materialise the elapsed-step division in r4 and copy it to r27
+        // for the calls, matching the original's register allocation.
+        item->position.x = intplGetValue(mode, (s32)curStep, steps, event->userdataf[1], targetX);
+        item->position.y = intplGetValue(mode, (s32)curStep, steps, event->userdataf[2], targetY);
+        item->position.z = intplGetValue(mode, (s32)curStep, steps, *(f32*)&event->field_84, targetZ);
+#else
+        item->position.x = intplGetValue(mode, curStep, steps, event->userdataf[1], targetX);
+        item->position.y = intplGetValue(mode, curStep, steps, event->userdataf[2], targetY);
+        item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_84, targetZ);
+#endif
+        item->position.y += yOffset;
+        return EVT_RETURN_BLOCK;
+    }
+    item->position.x = targetX;
+    item->position.y = targetY;
+    item->position.z = targetZ;
+    return EVT_RETURN_DONE;
+}
+
+static EVT_BEGIN(korutesu_event)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S"), 2)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_npc_set_position, STRING("コルテス"), 46, 35, 25)
+    CALL(evt_npc_flag_onoff, 1, STRING("コルテス"), 1107296800)
+    CALL(evt_npc_flag_onoff, 1, STRING("コルテス"), 128)
+    CALL(evt_npc_set_ry, STRING("コルテス"), 0)
+    CALL(evt_npc_pera_onoff, STRING("コルテス"), 0)
+    CALL(evt_bero_exec_wait, 65536)
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_mario_dispflag_onoff, 1, 4)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_set_pose, STRING("M_N_5B"))
+        WAIT_MS(500)
+        CALL(evt_mario_set_pose, STRING("M_S_1"))
+    END_INLINE_EVENT
+    CALL(evt_snd_bgmoff_f, 512, 2000)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_ELMOS_VOICE1"), 0)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_21"), 0, 0)
+    CALL(evt_cam3d_evt_set, -300, 60, 444, -25, 90, 57, 750, 11)
+    WAIT_MS(1000)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+    CALL(evtflash)
+    WAIT_MS(500)
+    CALL(evt_snd_sfxon, STRING("SFX_STG5_KOR_APPEAR_LIGHT1"), 0)
+    CALL(evtflash)
+    SET_VALUE(GF(0), 0)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG5_KORTESS1"))
+    SPAWN_EVENT(korutesu_flush)
+    CALL_CHILD(korutesu_apper)
+    SET_VALUE(GF(0), 1)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_22"), 0, STRING("コルテス"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_env_blur_on, 1, 500)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -175, 75, 320, 0, 94, 75, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_npc_set_autotalkpose, STRING("コルテス"), STRING("KRT_S_1"), STRING("KRT_T_3"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    SET_VALUE(GF(0), 1)
+    SET_VALUE(GF(1), 1)
+    SPAWN_EVENT(korutesu_blur)
+    CALL(evt_snd_bgmon, 513, STRING("BGM_FF_ENV_SURPRISED3"))
+    CALL(evt_msg_print, 0, STRING("stg5_dou_23"), 0, STRING("コルテス"))
+    CALL(evt_npc_set_autotalkpose, STRING("コルテス"), STRING("KRT_S_1"), STRING("KRT_T_2"))
+    SET_VALUE(GF(0), 0)
+    WAIT_WHILE(GF(1))
+    CALL(evt_cam3d_evt_set, -40, 90, 542, -40, 80, -8, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_24"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -40, 94, 791, -40, 80, -8, 500, 11)
+    WAIT_MS(250)
+    CALL(evt_snd_bgmoff, 513)
+    CALL(evt_npc_set_battle_info, STRING("コルテス"), 4)
+    CALL(evt_npc_battle_start, STRING("コルテス"))
+    CALL(evt_npc_wait_battle_end)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_cam3d_evt_set, -80, 30, 368, 44, 90, -8, 0, 11)
+    CALL(evt_mario_set_pos, -65, 0, 0)
+    CALL(evt_party_set_pos, 0, -100, 0, 0)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    WAIT_MS(1000)
+    SET_VALUE(GF(0), 0)
+    SPAWN_EVENT(korutesu_yure)
+    SPAWN_EVENT(korutesu_flush2)
+    CALL(evt_npc_set_autotalkpose, STRING("コルテス"), STRING("KRT_S_1"), STRING("KRT_T_3"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_25"), 0, STRING("コルテス"))
+    CALL(evt_npc_set_autotalkpose, STRING("コルテス"), STRING("KRT_S_1"), STRING("KRT_T_2"))
+    SET_VALUE(GF(0), 1)
+    WAIT_MS(2000)
+    CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG5_KOR_HEAD_MOVE1"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        SET_VALUE(LW(0), 32000)
+        LOOP(60)
+            SUBTRACT(LW(0), 516)
+            CALL(evt_snd_bgm_freq, 0, LW(0))
+            WAIT_MS(50)
+        END_LOOP
+    END_INLINE_EVENT
+    SPAWN_EVENT(korutesu_rotate)
+    SPAWN_EVENT(korutesu_small)
+    WAIT_MS(5000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_26"), 0, STRING("コルテス"))
+    CALL(evt_npc_get_position, STRING("コルテス"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG5_KOR_HEAD_MOVE2"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        SET_VALUE(LW(0), 0)
+        LOOP(30)
+            ADD(LW(0), 1066)
+            CALL(evt_snd_bgm_freq, 0, LW(0))
+            WAIT_MS(50)
+        END_LOOP
+    END_INLINE_EVENT
+    SPAWN_EVENT(korutesu_rotate2)
+    SPAWN_EVENT(korutesu_large)
+    WAIT_MS(1500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_27"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -20, 125, 505, -20, 80, 7, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_mario_set_pose, STRING("M_I_2"))
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_28"), 0, STRING("コルテス"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_HAND_UP1_1"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_28a"), 0, STRING("コルテス"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_HAND_UP1_4"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_mario_set_pose, STRING("M_I_2"))
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set, 40, 125, 505, 40, 80, 7, 700, 11)
+    CALL(evt_npc_glide_position, STRING("コルテス"), 86, 51, 112, 0, FLOAT(120.0f), 0, 11, 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_28b"), 0, STRING("コルテス"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1_4"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_28c"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -20, 125, 505, -20, 80, 7, 700, 11)
+    CALL(evt_npc_glide_position, STRING("コルテス"), 46, 35, 35, 0, FLOAT(120.0f), 0, 11, 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_29"), 0, STRING("コルテス"))
+    WAIT_MS(1000)
+    SET_VALUE(LW(10), STRING("stone"))
+    CALL(evt_item_flag_on, LW(10), 2)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 50)
+    CALL(evt_item_get_position, LW(10), LW(11), LW(12), LW(13))
+    ADD(LW(12), 20)
+    CALL(evt_item_move_3d_position, LW(10), LW(11), LW(12), LW(13), 500, 0)
+    CALL(evt_cam3d_evt_set, LW(0), 125, 505, LW(0), 80, 7, 1500, 11)
+    SPAWN_EVENT_GET_ID(PTR(starstone_fuwafuwa), LW(9))
+    CALL(muj_item_move_3d_position, LW(10), LW(0), LW(1), LW(2), 3000, 0, GW(1))
+    DELETE_EVENT(LW(9))
+    CALL(evt_mario_dispflag_onoff, 0, 4)
+    SET_VALUE(LW(0), 5)
+    SET_VALUE(LW(1), LW(10))
+    SET_VALUE(GSW(0), 253)
+    CALL(evt_snd_bgmoff_f, 512, 2000)
+    CALL(evt_snd_bgmoff, 513)
+    CALL_CHILD(evt_sub_starstone)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG5_DOU1"))
+    CALL(evt_snd_envon, 272, STRING("ENV_STG5_MUJ9"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(korutesu_event_after)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_set_pos, -65, 0, 0)
+    CALL(evt_party_set_pos, 0, -100, 0, 0)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_npc_set_position, STRING("コルテス"), 46, 35, 25)
+    CALL(evt_npc_flag_onoff, 1, STRING("コルテス"), 1107296800)
+    CALL(evt_npc_set_ry, STRING("コルテス"), 0)
+    CALL(evt_npc_pera_onoff, STRING("コルテス"), 0)
+    CALL(evt_cam3d_evt_set, -20, 125, 505, -20, 80, 7, 0, 11)
+    CALL(evt_seq_wait, 2)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabe_r"), 1)
+    CALL(evt_fade_end_wait)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 70, 800)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(LW(2), 0)
+        SUBTRACT(LW(2), LW(0))
+        CALL(evt_mapobj_rotate, 1, STRING("S_t_doa02"), 0, LW(2), 0)
+        CALL(evt_mapobj_rotate, 1, STRING("S_t_doa03"), 0, LW(0), 0)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_30"), 0, STRING("コルテス"))
+    WAIT_MS(1000)
+    DELETE_EVENT(GW(0))
+    SET_VALUE(LW(10), 600)
+    CALL_CHILD(back_dark)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_39"), 0, 0)
+    SET_VALUE(GSW(0), 253)
+    CALL(evt_bero_mapchange, STRING("muj_10"), STRING(""))
+    RETURN
+EVT_END()
+
+static f32 accdec_type(s32 idx, s32 count, f32 start, f32 end) {
+    s32 i;
+    s32 lo = count * 20 / 100;
+    s32 hi = count * 80 / 100;
+    f32 ret;
+    f32 acc = 0.0f;
+    f32 sum = 0.0f;
+    f32 inc = 1.0f;
+
+    for (i = 0; i < count; i++) {
+        if (i <= lo) {
+            acc += inc;
+        } else if (i >= hi) {
+            acc -= inc;
+        }
+        sum += acc;
+        if (i == idx) {
+            ret = sum;
+        }
+    }
+    return start + (ret * (end - start)) / sum;
+}
+
+EVT_BEGIN(kosho_event)
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_npc_set_position, STRING("コルテス"), 46, 35, 25)
+    CALL(evt_npc_flag_onoff, 1, STRING("コルテス"), 1107296800)
+    CALL(evt_npc_flag_onoff, 1, STRING("コルテス"), 128)
+    CALL(evt_bero_exec_wait, 65536)
+    CALL(evt_cam3d_evt_set, 20, 157, 337, 20, 90, -6, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_STG5_KORTESS1"))
+    CALL_CHILD(korutesu_apper)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_31"), 0, STRING("コルテス"))
+    CALL(evt_party_get_pos, 1, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG5_MARCO_SHAKE1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_party_set_pose, 1, STRING("O_1"))
+    CALL(evt_cam3d_evt_set, -25, 125, 505, -25, 80, 7, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_party_get_pos, 1, LW(0), LW(1), LW(2))
+    ADD(LW(1), 30)
+    ADD(LW(2), 10)
+    CALL(evt_msg_toge, 2, LW(0), LW(1), LW(2))
+    CALL(evt_msg_print, 0, STRING("stg5_dou_32"), 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_33"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -120, 107, 337, -120, 40, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_party_get_pos, 1, LW(0), LW(1), LW(2))
+    ADD(LW(1), 30)
+    CALL(evt_msg_toge, 2, LW(0), LW(1), LW(2))
+    CALL(evt_msg_print, 0, STRING("stg5_dou_34"), 0, 0)
+    CALL(evt_cam3d_evt_set, -25, 125, 505, -25, 80, 7, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_35"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -120, 107, 337, -120, 40, -6, 0, 11)
+    CALL(evt_party_set_pose, 1, STRING("S_1"))
+    CALL(evt_snd_sfxoff, LW(9))
+    WAIT_MS(500)
+    CALL(evt_party_get_pos, 1, LW(0), LW(1), LW(2))
+    CALL(evt_eff_fukidashi, 2, STRING(""), 0, 0, 0, LW(0), LW(1), LW(2), 50, 0, 60)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_NPC_BIKKURI_MARK1"), LW(0), LW(1), LW(2), 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36"), 0, STRING("extparty"))
+    CALL(evt_item_entry, STRING("jewel"), 71, -115, 0, 30, 16, -1, 0)
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set, 20, 157, 337, 20, 90, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_01"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -25, 125, 505, -25, 80, 7, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_02"), 0, STRING("extparty"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_03"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -120, 107, 337, -120, 40, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_04"), 0, STRING("extparty"))
+    CALL(evt_cam3d_evt_set, 20, 157, 337, 20, 90, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_05"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -120, 107, 337, -120, 40, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_36_06"), 0, STRING("extparty"))
+    SET_VALUE(GF(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_item_get_position, STRING("jewel"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG5_JUWEL_MOVE1"), LW(0), LW(1), LW(2), LW(3))
+        LOOP(0)
+            CALL(evt_item_get_position, STRING("jewel"), LW(0), LW(1), LW(2))
+            CALL(evt_snd_sfx_pos, LW(3), LW(0), LW(1), LW(2))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(GF(2), 1)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+        CALL(evt_snd_sfxoff, LW(3))
+    END_INLINE_EVENT
+    CALL(evt_item_move_3d_position, STRING("jewel"), -115, 70, 30, 1000, PTR(accdec_type))
+    CALL(evt_cam3d_evt_set, 20, 157, 337, 20, 90, -6, 3000, 11)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(2500)
+        CALL(evt_sub_intpl_msec_init, 11, 255, 0, 500)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_item_set_alpha, STRING("jewel"), LW(0))
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    SPAWN_EVENT_GET_ID(PTR(starstone_fuwafuwa), LW(10))
+    CALL(muj_item_move_3d_position, STRING("jewel"), 40, 70, 30, 3000, 0, GW(1))
+    SET_VALUE(GF(2), 1)
+    DELETE_EVENT(LW(10))
+    WAIT_MS(500)
+    CALL(evt_item_delete, STRING("jewel"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_37"), 0, STRING("コルテス"))
+    CALL(evt_cam3d_evt_set, -120, 107, 337, -120, 40, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg5_dou_38"), 0, STRING("extparty"))
+    CALL(evt_cam3d_evt_set, -45, 160, 534, -45, 55, -6, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_snd_bgmoff_f, 512, 2000)
+    WAIT_MS(300)
+    CALL(evt_snd_bgmoff_f, 513, 2000)
+    CALL(evt_snd_bgmon_f, 288, 0, 2000)
+    CALL_CHILD(korutesu_vanish)
+    WAIT_MS(1000)
+    CALL(evt_npc_set_position, STRING("コルテス"), 0, -1000, 0)
+    CALL(evt_cam3d_evt_off, 500, 11)
+    WAIT_MS(500)
+    SET_VALUE(GSW(0), 258)
+    CALL(evt_party_run, 0)
+    CALL(evt_party_run, 1)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(coin_effect)
+    LOOP(0)
+        CALL(evt_sub_random, 10, LW(10))
+        SWITCH(LW(10))
+            CASE_EQUAL(0)
+            SET_VALUE(LW(0), -44)
+            SET_VALUE(LW(1), 20)
+            SET_VALUE(LW(2), 138)
+            CASE_EQUAL(1)
+            SET_VALUE(LW(0), -8)
+            SET_VALUE(LW(1), 30)
+            SET_VALUE(LW(2), 146)
+            CASE_EQUAL(2)
+            SET_VALUE(LW(0), 26)
+            SET_VALUE(LW(1), 20)
+            SET_VALUE(LW(2), 143)
+            CASE_EQUAL(3)
+            SET_VALUE(LW(0), 78)
+            SET_VALUE(LW(1), 28)
+            SET_VALUE(LW(2), 147)
+            CASE_EQUAL(4)
+            SET_VALUE(LW(0), 91)
+            SET_VALUE(LW(1), 30)
+            SET_VALUE(LW(2), -62)
+            CASE_EQUAL(5)
+            SET_VALUE(LW(0), 49)
+            SET_VALUE(LW(1), 30)
+            SET_VALUE(LW(2), -82)
+            CASE_EQUAL(6)
+            SET_VALUE(LW(0), -28)
+            SET_VALUE(LW(1), 40)
+            SET_VALUE(LW(2), -82)
+            CASE_EQUAL(7)
+            SET_VALUE(LW(0), -67)
+            SET_VALUE(LW(1), 15)
+            SET_VALUE(LW(2), -50)
+            CASE_EQUAL(8)
+            SET_VALUE(LW(0), -11)
+            SET_VALUE(LW(1), 35)
+            SET_VALUE(LW(2), 98)
+            CASE_EQUAL(9)
+            SET_VALUE(LW(0), 25)
+            SET_VALUE(LW(1), 30)
+            SET_VALUE(LW(2), 133)
+            CASE_EQUAL(10)
+            SET_VALUE(LW(0), 82)
+            SET_VALUE(LW(1), 10)
+            SET_VALUE(LW(2), 148)
+        END_SWITCH
+        CALL(evt_eff64, STRING(""), STRING("hagetaka_flush_n64"), 0, LW(0), LW(1), LW(2), FLOAT(1.0f), 60, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(200)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(muj_12_init_evt)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    IF_INT_LESS(GSW(0), 253)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG5_GHOST1"))
+        CALL(evt_snd_envoff, 512)
+    ELSE
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG5_DOU1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG5_MUJ9"))
+    END_IF
+    IF_INT_EQUAL(GSW(0), 252)
+        SPAWN_EVENT(korutesu_event)
+        CALL(evt_item_entry, STRING("stone"), 118, 63, 38, 138, 16, -1, 0)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 253)
+        SPAWN_EVENT(korutesu_event_after)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 257)
+        SPAWN_EVENT(kosho_event)
+    END_IF
+    SPAWN_EVENT_GET_ID(PTR(coin_effect), GW(0))
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off

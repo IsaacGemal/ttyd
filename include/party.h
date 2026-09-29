@@ -207,3 +207,5 @@ typedef struct PartyData {
     void* unk_8_func; // 8
     void* exit_func;  // 9
 } PartyData;
+void partySetFamicomMode(PartyEntry* party, s32 mode);
+extern s32 partyCtrlNo;

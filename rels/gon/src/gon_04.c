@@ -88,31 +88,17 @@ static EVT_BEGIN(e3_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[90] = {
-    (u32)"w_bero_1", 0x0001000C, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gon_03", (u32)"e_bero",
-    0x00050005, (u32)&w1_door_close, (u32)&w1_door_open, (u32)"w_bero_2",
-    0x0001000C, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"gon_08", (u32)"e_bero_1", 0x00050005,
-    (u32)&w2_door_close, (u32)&w2_door_open, (u32)"e_bero_1", 0x0001000C,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"gon_05", (u32)"w_bero_1", 0x00050005, (u32)&e1_door_close,
-    (u32)&e1_door_open, (u32)"e_bero_2", 0x00000000, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"gon_05",
-    (u32)"w_bero_2", 0x00010001, 0x00000000, 0x00000000,
-    (u32)"e_bero_3", 0x0001000C, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gon_05", (u32)"w_bero_3",
-    0x00050005, (u32)&e3_door_close, (u32)&e3_door_open, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero_1", 1, 12, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gon_03", "e_bero", 5, 5,
+     (s32)w1_door_close, (s32)w1_door_open},
+    {"w_bero_2", 1, 12, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gon_08", "e_bero_1", 5, 5,
+     (s32)w2_door_close, (s32)w2_door_open},
+    {"e_bero_1", 1, 12, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gon_05", "w_bero_1", 5, 5,
+     (s32)e1_door_close, (s32)e1_door_open},
+    {"e_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gon_05", "w_bero_2", 1, 1, 0, 0},
+    {"e_bero_3", 1, 12, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gon_05", "w_bero_3", 5, 5,
+     (s32)e3_door_close, (s32)e3_door_open},
+    {NULL},
 };
 
 EVT_BEGIN(evt_gon_04flowblock_updown1_init)
@@ -539,18 +525,13 @@ EVT_BEGIN(evt_gon_04flowblock_updown2)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 kemuri_pos1[10] = {
-    0x00000096, 0x00000014, 0x00000082, 0x00000037,
-    0x00000078, 0x00000064, 0x000000DC, 0x00000014,
-    0x000000B9, 0x0000004B,
+// 5 (x, y) smoke spawn positions, read two ints at a time by evt_kaidan_pera_anime
+s32 kemuri_pos1[5][2] = {
+    {0x96, 0x14}, {0x82, 0x37}, {0x78, 0x64}, {0xDC, 0x14}, {0xB9, 0x4B},
 };
 
-// TODO: type
-u32 kemuri_pos2[10] = {
-    0x0000013B, 0x0000004B, 0x0000010E, 0x0000001E,
-    0x0000017C, 0x00000064, 0x00000172, 0x00000037,
-    0x00000154, 0x00000014,
+s32 kemuri_pos2[5][2] = {
+    {0x13B, 0x4B}, {0x10E, 0x1E}, {0x17C, 0x64}, {0x172, 0x37}, {0x154, 0x14},
 };
 
 EVT_BEGIN(evt_kaidan_pera_anime)
@@ -793,9 +774,9 @@ EVT_BEGIN(evt_hashi)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 key_tbl[2] = {
-    0x0000000D, 0xFFFFFFFF,
+// Item ids accepted by the lock, terminated by -1 (passed to evt_win_item_select)
+static s32 key_tbl[2] = {
+    13, -1,
 };
 
 static EVT_BEGIN(evt_chk)

@@ -185,14 +185,9 @@ static EVT_BEGIN(jumpstand_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[23] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+// Empty NPC setup list: just the NULL-name terminator entry.
+static NpcSetupInfo npcEnt[] = {
+    {NULL},
 };
 
 EVT_BEGIN(kpa_03_init_evt)

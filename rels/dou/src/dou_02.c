@@ -8,6 +8,7 @@
 #include "evt/evt_mobj.h"
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
+#include "driver/hitdrv.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
 
@@ -34,23 +35,11 @@ extend_data(13,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[60] = {
-    (u32)"w_bero_1", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"dou_01", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero_1",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"dou_12", (u32)"w_bero_1", 0x00010001,
-    0x00000000, 0x00000000, (u32)"e_bero_2", 0x00000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"dou_12", (u32)"w_bero_2", 0x00010001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[4] = {
+    { "w_bero_1", 0, 0, 20000, 100000, 0, 0, -1, NULL, -1, NULL, "dou_01", "e_bero", 1, 1, 0, 0 },
+    { "e_bero_1", 0, 0, 20000, 100000, 0, 0, -1, NULL, -1, NULL, "dou_12", "w_bero_1", 1, 1, 0, 0 },
+    { "e_bero_2", 0, 0, 20000, 100000, 0, 0, -1, NULL, -1, NULL, "dou_12", "w_bero_2", 1, 1, 0, 0 },
+    { NULL, 0, 0, 0, 0, 0, 0, 0, NULL, 0, NULL, NULL, NULL, 0, 0, 0, 0 },
 };
 
 static EVT_BEGIN(yari_trap_sub)
@@ -228,16 +217,15 @@ static EVT_BEGIN(dou_puka_event_sub1)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[32] = {
-    (u32)"mod_01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_03", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_04", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_06", 0x440B0000, 0x42480000, 0xC2B40000,
-    (u32)"mod_08", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"Ship_Change", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[8] = {
+    { "mod_01", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_02", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_03", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_04", { 0.0f, -1000.0f, 0.0f } },
+    { "mod_06", { 556.0f, 50.0f, -90.0f } },
+    { "mod_08", { 0.0f, -1000.0f, 0.0f } },
+    { "Ship_Change", { 0.0f, -1000.0f, 0.0f } },
+    { NULL, { 0.0f, 0.0f, 0.0f } },
 };
 
 static EVT_BEGIN(evt_ride_ship)

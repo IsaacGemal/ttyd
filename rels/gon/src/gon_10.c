@@ -59,20 +59,10 @@ static EVT_BEGIN(door01_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero", 0x0001000D, 0x00000002, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gon_11", (u32)"w_bero",
-    0x00050005, (u32)&door02_close, (u32)&door02_open, (u32)"e_bero",
-    0x0001000C, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"gon_05", (u32)"w_bero_5", 0x00050005,
-    (u32)&door01_close, (u32)&door01_open, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[3] = {
+    {"w_bero", 0x0001, 0x000D, 0x00000002, 0x000186A0, 0, 0, -1, NULL, -1, NULL, "gon_11", "w_bero", 5, 5, (s32)door02_close, (s32)door02_open},
+    {"e_bero", 0x0001, 0x000C, 0x00004E20, 0x000186A0, 0, 0, -1, NULL, -1, NULL, "gon_05", "w_bero_5", 5, 5, (s32)door01_close, (s32)door01_open},
+    {NULL},
 };
 
 EVT_BEGIN(gon_10_init_evt)

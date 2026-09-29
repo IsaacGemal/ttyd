@@ -59,20 +59,12 @@ static EVT_BEGIN(s2_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"s_bero_1", 0x00010002, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"jin_00", (u32)"n_bero_3",
-    0x00050005, (u32)&s1_close, (u32)&s1_open, (u32)"s_bero_2",
-    0x00010002, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"jin_03", (u32)"n_bero", 0x00050005,
-    (u32)&s2_close, (u32)&s2_open, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"s_bero_1", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "n_bero_3", 5, 5,
+     (s32)&s1_close, (s32)&s1_open},
+    {"s_bero_2", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_03", "n_bero", 5, 5,
+     (s32)&s2_close, (s32)&s2_open},
+    {NULL},
 };
 
 static EVT_BEGIN(cam_shake)
@@ -156,11 +148,9 @@ static EVT_BEGIN(ki_data_evt_01)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ki_data[12] = {
-    0x00000002, (u32)"A_gorden_tree", (u32)"S_golden_tree", 0x00000000,
-    0x00000000, (u32)&ki_data_evt_01, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry ki_data[] = {
+    {2, "A_gorden_tree", "S_golden_tree", NULL, NULL, ki_data_evt_01},
+    {7},
 };
 
 EVT_BEGIN(jin_01_init_evt)

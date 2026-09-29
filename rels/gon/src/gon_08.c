@@ -73,23 +73,11 @@ static EVT_BEGIN(door03_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[60] = {
-    (u32)"e_bero_1", 0x0001000C, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gon_04", (u32)"w_bero_2",
-    0x00050005, (u32)&door01_close, (u32)&door01_open, (u32)"e_bero_2",
-    0x0001000C, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"gon_09", (u32)"w_bero", 0x00050005,
-    (u32)&door02_close, (u32)&door02_open, (u32)"w_bero", 0x0001000C,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"gon_12", (u32)"e_bero", 0x00050005, (u32)&door03_close,
-    (u32)&door03_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"e_bero_1", 1, 12, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_04", "w_bero_2", 5, 5, (s32)door01_close, (s32)door01_open},
+    {"e_bero_2", 1, 12, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_09", "w_bero", 5, 5, (s32)door02_close, (s32)door02_open},
+    {"w_bero", 1, 12, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gon_12", "e_bero", 5, 5, (s32)door03_close, (s32)door03_open},
+    {NULL},
 };
 
 static EVT_BEGIN(init_0)
@@ -304,9 +292,8 @@ static EVT_BEGIN(main_0)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 key_tbl[2] = {
-    0x0000000F, 0xFFFFFFFF,
+static s32 key_tbl[] = {
+    15, -1,
 };
 
 static EVT_BEGIN(evt_chk)
@@ -377,20 +364,9 @@ EVT_BEGIN(nokkosu_talk)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[46] = {
-    (u32)"ノッコス", 0x00000600, 0x00000000, (u32)&nokkosu_init,
-    0x00000000, (u32)&nokkosu_talk, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[] = {
+    {"ノッコス", 0x00000600, 0, &nokkosu_init, NULL, &nokkosu_talk},
+    {NULL},
 };
 
 EVT_BEGIN(gon_08_init_evt)
