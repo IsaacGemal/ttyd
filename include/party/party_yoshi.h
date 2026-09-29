@@ -13,3 +13,6 @@ void marioRideYoshi(void);
 void yoshi_jumpStand(void);
 void yoshi_use(PartyEntry* party);
 void inertia(PartyEntry* party);
+void yoshi_bye(PartyEntry* party);
+void yoshi_exit(PartyEntry* party);
+void yoshi_init(PartyEntry* party);

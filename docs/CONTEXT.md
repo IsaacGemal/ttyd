@@ -1598,6 +1598,51 @@ plus the earlier round's `mot_hip`, `evt_cloud_main`, `battleAcMain_CraneTiming`
 (link errors on constants their sources only declare), `evt_kinopio` (checksum), the four MusyX files, TRK
 `serpoll`/`targimpl`/`mslsupp`/`main`/`CircleBuffer`, `alloc`, `printf`, `float`, `uart_console_io_gcn`. `eff_uranoko`
 and `unit_mario` need the `eff_irekaeru` treatment.
+
+## Sep 29: data-only units written from their disassembly, and the last library units (Claude Sonnet 5.5, third near-miss round)
+
+**20 units linked; `tools/ci.py` PASS, "32 files OK". Relative to main after PR #25: code linked 12.43% -> 12.81%,
+linked data 5.81% -> 6.46%, matched data 7.64% -> 7.73%, functions 4,995 -> 4,996 (`mailGetPtr`).** The "fully matched but not
+linked" list is down to 6 (`battle_event_subset` was linked afterwards, see the next chapter). Every dol unit now has a source file (`configure.py` prints no "Missing source file").
+
+**Data-only units, and `tools/asm2c_data.py`.** Twelve dol units had no source at all: their data was linked from the
+original object, which counts for nothing in matched data. `python3 tools/asm2c_data.py <unit> > src/<unit>.c` turns a unit's
+disassembly (`build/G8MJ01/asm/<unit>.s`) into C: strings as `char` arrays sized as the original, words as `u32` arrays with
+symbol addresses as `(u32)(void*)sym`, `.rel sym, .L_x` as `sym + offset`, numeric mixed-width objects as `u8` arrays,
+loose padding as a static, and `__declspec(section)` for objects too small for their section (.data <= 48 bytes, .rodata
+<= 8, .sdata2 strings > 6). Written and linked this way: `party_data`, `battle_audience_kind_data`,
+`battle_database_common`, `seqdef`, `battle_evt_cmd`, `unit_bomzou`, `unit_koura`, `unit_system`, `unk_0x8025de70`,
+`DEMOFont`, MSL `locale`, and (with a hand-written `mailGetPtr`) `mail_data`. The types are raw (`u32` arrays), not the
+game's; they are a byte-exact starting point to name later. Lessons:
+- A unit whose configure.py name doesn't match its split is invisible: `party/party_data.c` was the split `data/party_data.c`
+  and three data units (`battle_audience_kind_data`, `battle_database_common`, `seqdef`) were not in configure.py at all.
+  Add an entry at the unit's place in splits.txt order (link order follows the list).
+- Data referenced only from RELs is dead-stripped from the DOL link unless it is under `#pragma force_active on`
+  (`unk_0x8025de70`, `unit_system`). The same pragma on `unit_bomzou` and `unit_koura` breaks the link (the original
+  had stripped some of their symbols), so it is per unit; a missing symbol shows in `MarioSt.elf` (pyelftools) and the
+  DOL diff starts at the first shifted address.
+- Definitions of `const` data referenced from code must not appear before the code in a file that reads them through
+  named externs (see `eff_mario_balloon`).
+
+**Other links**
+- `sac_common`: function order (the previous round's recipe).
+- TRK `main`/`CircleBuffer`: splits.txt gave `main.c` the rodata, bss and sbss of `CircleBuffer.c`, which is why they
+  "failed the checksum" for a day; `CircleBuffer.c` now owns its ranges (`.rodata 0x803022E0-0x803023C0`, `.bss
+  0x803E4260-0x803E4780`, `.sbss 0x80418C30-0x80418C38`), defines its own buffers (they were externs nothing defined),
+  and its two structs lose their padding fields (objects are 0x1C and 4 bytes). Its ratchet score first read 14.51%
+  because the strings were literals and the objects oversized.
+- `serpoll`: `gTRKInputPendingPtr` is in .sbss (`__declspec(section ".sdata")`, as in `main.c`).
+- `mslsupp`, `alloc`: helpers the original inlines and never emits (`__read_file`..., `SubBlock_merge_next`) were emitted
+  as functions; `static inline` fixes it, and MWCC keeps unused `static` (non-inline) functions.
+- `uart_console_io_gcn`: `__close_console` belongs to `mslsupp`. `printf`: only its four public functions needed reversing.
+
+**Tried without result:** `effUranokoMain` (f0/f1 swapped around `1.0 - scale`; matching it needs the unit's `.sdata2`
+order 1.0 then 0.125, which no source shape gave); `npc_hide_onoff`; `_hammer_star_effect`. Reverted: `eff_uranoko` with
+literals instead of externs (`Main` drops from 100% to 99.81%, which the ratchet rejects).
+
+**Still unlinked (6):** `unit_mario`, `eff_uranoko`, `evt_kinopio`, `targimpl` (extra functions the original inlines; source order mixes asm
+and C), the four MusyX files `synthmacros`, `synth_dbtab`, `snd_service`, `dsp_import`, and MSL `float`.
+
 ## RELs: 165 units linked from a generator, and wave 17 set up (2026-09-29, Claude Opus 5.5)
 
 Isaac asked for an overnight REL wave. Prep showed most of it doesn't need agents: **245 REL units have no functions**,
@@ -1626,6 +1671,30 @@ where each function goes, declarations so it builds), writes the functions, type
 `check.py --final` until LINKED. 32 agents at a time over the list, 30 minutes each, from ~/ttyd-w17base on the
 tower (this branch plus the units' configure entries).
 
+## Sep 29: the data units as readable source, and tools/dol_gen.py (Claude Sonnet 5.5)
+
+The first version of the data-only units (PR #26) was raw: scripts as hex words, engine functions as `extern u8 name[]`,
+strings as named byte arrays. Redone; every file still links (checksum, "32 files OK"):
+- **`tools/dol_gen.py UNIT`** (modeled on `tools/rel_gen.py`, dol version) writes a unit's data from its disassembly:
+  event scripts through `tools/ttydasm` as `EVT_BEGIN` macros (`PTR()` where the macros don't cast), other objects as
+  `u32` arrays marked `// TODO: type`, strings inline as literals, headers found by searching `include/` for the
+  names used (`extern s32 name[]` only where none declares it), `--force-active` for data nothing in the DOL references,
+  and `--append FILE` to add a unit's data to a source that already has its functions. Strings are pooled by MWCC in
+  order of first use, so the generator interleaves the `.data` and `.sdata` objects so each new string lands where the
+  original pool has it, and an empty string is a pool entry like any other (`STRING("")` came first, the original had it
+  last). It needs a linked build (ttydasm reads `MarioSt.elf`), so regenerate from a good tree, then swap the file in.
+- **Written this way:** `unit_bomzou`, `unit_koura`, `unit_system` (scripts as EVT macros, tables as `u32`),
+  `battle_database_common` and `battle_audience_kind_data` (tables), and `battle_event_subset`: 29 scripts (17 KB) as EVT
+  macros appended to its six functions, which are now in reverse order like every deferred-codegen file. ttydasm can't read
+  some `battle_item_*` tables that look like scripts; they are written as tables.
+- **Typed by hand:** `party_data` is `PartyData partyDataTbl[20]` and three `char*[N][15]` pose tables (types from
+  `party.c`'s externs; `PartyData` moved into `party.h`, and the 17 party functions the table names now have prototypes in
+  their `party/*.h`); `seqdef` is `SequenceCallback seq_data_80302E40[8][3]` with the sequence headers' declarations
+  (`seq_gameExit`, `seq_gameover.h` added); `mail_data` is a `MailEntry` table with literals.
+- **Kept raw on purpose:** `battle_evt_cmd` is the jump table of a switch in `btlevtcmd_ACSuccessEffect`, which belongs with that
+  function's unit; `DEMOFont`, MSL `locale` and `unk_0x8025de70` (its strings are used only from RELs).
+- Objects the original keeps in `.data` though they are under 48 bytes need `__declspec(section ".data")`
+  (`unit_bomzou`'s 8-byte `lbl_80398960`, which is padding).
 ## Wave 18: the generated REL tables typed with existing structs (2026-09-29, Claude Opus 5.5 orchestrating, DeepSeek V4.1 Flash agents)
 
 Claude #1 launched it at Isaac's request (one wave per orchestrator); Claude #2 collected and reviewed it. 151 of the

@@ -24,10 +24,6 @@ int __write_console(int param_0, unsigned char* data, size_t* size, int param_3)
     return 0;
 }
 
-int __close_console() {
-    return 0;
-}
-
 static inline int __init_uart_console(void) {
     static int initialized = 0;
     int ret = 0;

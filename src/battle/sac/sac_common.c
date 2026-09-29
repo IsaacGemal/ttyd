@@ -122,51 +122,65 @@ s32 sac_mario_item_on_end_evt[] = {
     0x0002005B, (s32)evt_eff_delete, (s32)(char*)str_803004B8,
     0x00000002, 0x00000001,
 };
-// .text:0x0 | 0x80242B84 | size: 0x28
-USER_FUNC(sac_ac_help_off) {
-    BattleAcHelpSetDispType(0);
-    return 2;
-}
 
-// .text:0x28 | 0x80242BAC | size: 0x28
-USER_FUNC(sac_ac_help_on) {
-    BattleAcHelpSetDispType(2);
-    return 2;
-}
+// .text:0x3F8 | 0x80242F7C | size: 0x7C
+USER_FUNC(sac_wao) {
+    s32 num = BattleAudience_GetAudienceNum();
 
-// .text:0x50 | 0x80242BD4 | size: 0x78
-USER_FUNC(sac_enemy_slide_return) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 i;
-
-    for (i = 0; i < 0x40; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(wp, i);
-        if (unit != NULL && unit->mAlliance == 1) {
-            EventEntry* event = evtEntry(enemy_slide_return_evt, 0, 0x20);
-            event->unitId = i;
-        }
+    BattleAudienceSoundClap(0x78, 0x78);
+    if (num >= 1 && num <= 0x95) {
+        BattleAudienceSoundCheerKind(1, 0x78, 0x78);
+    }
+    if (num >= 0x96) {
+        BattleAudienceSoundCheerKind(4, 0x78, 0x78);
+        BattleAudienceSoundWhistleKind(1);
     }
     return 2;
 }
 
-// .text:0xC8 | 0x80242C4C | size: 0x78
-USER_FUNC(sac_enemy_slide_go) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 i;
-
-    for (i = 0; i < 0x40; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(wp, i);
-        if (unit != NULL && unit->mAlliance == 1) {
-            EventEntry* event = evtEntry(enemy_slide_go_evt, 0, 0x20);
-            event->unitId = i;
+// .text:0x2BC | 0x80242E40 | size: 0x13C
+s32 sac_handbeat(EventEntry* event, BOOL isFirstCall) {
+    if (isFirstCall) {
+        count = 0;
+        count2 = 0x3C;
+        handBeatEnable = 1;
+        volPer = 0;
+        if (BattleAudienceSoundCheck(4) == 1) {
+            BattleAudienceSoundStop(4);
+        }
+        if (BattleAudienceSoundCheck(5) == 1) {
+            BattleAudienceSoundStop(5);
+        }
+        BattleAudienceSoundCheer(-1, 0);
+        BattleAudienceSoundSetVol(4, 0, 1);
+    }
+    BattleAudienceSoundSetVol(4, volPer, 1);
+    if (handBeatEnable == 0) {
+        BattleAudienceSound* ptr = BattleAudienceSoundGetPtr(4);
+        *(s32*)((u8*)ptr + 0xC) = 0xB4;
+        ptr->mFadeoutTime = 0xB4;
+        return 2;
+    }
+    if (count < 0) {
+        BattleAudienceSoundHandBeat();
+        count = count2;
+        count += irand(2);
+        count2 -= 4;
+        if (count2 < 0x14) {
+            count2 = 0x14;
+        }
+        volPer += 5;
+        if ((u8)volPer > 0x64) {
+            volPer = 0x64;
         }
     }
-    return 2;
+    count--;
+    return 0;
 }
 
-// .text:0x140 | 0x80242CC4 | size: 0x10
-USER_FUNC(sac_cheer_end) {
-    cheerEnable = 0;
+// .text:0x2AC | 0x80242E30 | size: 0x10
+USER_FUNC(sac_handbeat_end) {
+    handBeatEnable = 0;
     return 2;
 }
 
@@ -214,64 +228,50 @@ s32 sac_cheer(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// .text:0x2AC | 0x80242E30 | size: 0x10
-USER_FUNC(sac_handbeat_end) {
-    handBeatEnable = 0;
+// .text:0x140 | 0x80242CC4 | size: 0x10
+USER_FUNC(sac_cheer_end) {
+    cheerEnable = 0;
     return 2;
 }
 
-// .text:0x2BC | 0x80242E40 | size: 0x13C
-s32 sac_handbeat(EventEntry* event, BOOL isFirstCall) {
-    if (isFirstCall) {
-        count = 0;
-        count2 = 0x3C;
-        handBeatEnable = 1;
-        volPer = 0;
-        if (BattleAudienceSoundCheck(4) == 1) {
-            BattleAudienceSoundStop(4);
-        }
-        if (BattleAudienceSoundCheck(5) == 1) {
-            BattleAudienceSoundStop(5);
-        }
-        BattleAudienceSoundCheer(-1, 0);
-        BattleAudienceSoundSetVol(4, 0, 1);
-    }
-    BattleAudienceSoundSetVol(4, volPer, 1);
-    if (handBeatEnable == 0) {
-        BattleAudienceSound* ptr = BattleAudienceSoundGetPtr(4);
-        *(s32*)((u8*)ptr + 0xC) = 0xB4;
-        ptr->mFadeoutTime = 0xB4;
-        return 2;
-    }
-    if (count < 0) {
-        BattleAudienceSoundHandBeat();
-        count = count2;
-        count += irand(2);
-        count2 -= 4;
-        if (count2 < 0x14) {
-            count2 = 0x14;
-        }
-        volPer += 5;
-        if ((u8)volPer > 0x64) {
-            volPer = 0x64;
-        }
-    }
-    count--;
-    return 0;
-}
+// .text:0xC8 | 0x80242C4C | size: 0x78
+USER_FUNC(sac_enemy_slide_go) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 i;
 
-// .text:0x3F8 | 0x80242F7C | size: 0x7C
-USER_FUNC(sac_wao) {
-    s32 num = BattleAudience_GetAudienceNum();
-
-    BattleAudienceSoundClap(0x78, 0x78);
-    if (num >= 1 && num <= 0x95) {
-        BattleAudienceSoundCheerKind(1, 0x78, 0x78);
-    }
-    if (num >= 0x96) {
-        BattleAudienceSoundCheerKind(4, 0x78, 0x78);
-        BattleAudienceSoundWhistleKind(1);
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+        if (unit != NULL && unit->mAlliance == 1) {
+            EventEntry* event = evtEntry(enemy_slide_go_evt, 0, 0x20);
+            event->unitId = i;
+        }
     }
     return 2;
 }
 
+// .text:0x50 | 0x80242BD4 | size: 0x78
+USER_FUNC(sac_enemy_slide_return) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 i;
+
+    for (i = 0; i < 0x40; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+        if (unit != NULL && unit->mAlliance == 1) {
+            EventEntry* event = evtEntry(enemy_slide_return_evt, 0, 0x20);
+            event->unitId = i;
+        }
+    }
+    return 2;
+}
+
+// .text:0x28 | 0x80242BAC | size: 0x28
+USER_FUNC(sac_ac_help_on) {
+    BattleAcHelpSetDispType(2);
+    return 2;
+}
+
+// .text:0x0 | 0x80242B84 | size: 0x28
+USER_FUNC(sac_ac_help_off) {
+    BattleAcHelpSetDispType(0);
+    return 2;
+}

@@ -16,7 +16,7 @@ typedef struct TRKFramingStateLocal {
 
 TRKFramingStateLocal gTRKFramingState;
 
-void* gTRKInputPendingPtr;
+__declspec(section ".sdata") void* gTRKInputPendingPtr;
 
 // TTYD's TRKTestForPacket is a UART packet reader, not the ac-decomp TRKFramingState state machine.
 // (Declared here because the vendored header's prototype is misspelled "TRKTestForPacker".)
