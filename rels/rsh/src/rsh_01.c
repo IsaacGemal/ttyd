@@ -56,73 +56,35 @@ EVT_BEGIN(s_bero_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data_a[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_a", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_00_a", (u32)"w_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010011,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"pik_00", (u32)"n_bero", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_a[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_a", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_b[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_b", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_00_b", (u32)"w_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010011,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"hom_00", (u32)"n_bero_1", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_b[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_b", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_c[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_c", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_00_c", (u32)"w_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010011,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"rsh_01_c", (u32)"s_bero", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_c[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_c", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-static u32 door_3[7] = {
-    (u32)"heya_3", (u32)"haikei_3", (u32)"tobira_3", (u32)"a_tobira_3",
-    (u32)"3_door_open", (u32)"a_tobira_3_heya", (u32)"3_door_close",
+static char* door_3[7] = {
+    "heya_3", "haikei_3", "tobira_3", "a_tobira_3",
+    "3_door_open", "a_tobira_3_heya", "3_door_close",
 };
 
-// TODO: type
-static u32 door_4[7] = {
-    (u32)"heya_4", (u32)"haikei_4", (u32)"tobira_4", (u32)"a_tobira_4",
-    (u32)"4_door_open", (u32)"a_tobira_4_heya", (u32)"4_door_close",
+static char* door_4[7] = {
+    "heya_4", "haikei_4", "tobira_4", "a_tobira_4",
+    "4_door_open", "a_tobira_4_heya", "4_door_close",
 };
 
 static EVT_BEGIN(init_toron)
@@ -188,9 +150,8 @@ static EVT_BEGIN(init_madam)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 item_tbl_madam[2] = {
-    0x0000004B, 0xFFFFFFFF,
+static s32 item_tbl_madam[] = {
+    75, -1,
 };
 
 static EVT_BEGIN(talk_madam_ring_return)
@@ -283,71 +244,20 @@ static EVT_BEGIN(talk_madam)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npc_data[161] = {
-    (u32)"トロン", 0x40020610, 0x00000000, (u32)&init_toron,
-    0x00000000, (u32)&talk_toron, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"マダム",
-    0x40020610, 0x00000000, (u32)&init_madam, 0x00000000,
-    (u32)&talk_madam, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"ポワン探偵", 0x40000600,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"車掌", 0x40000600, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"コック", 0x40000600, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ウェイトレス",
-    0x40000600, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static NpcSetupInfo npc_data[7] = {
+    {"トロン", 0x40020610, 0, init_toron, NULL, talk_toron},
+    {"マダム", 0x40020610, 0, init_madam, NULL, talk_madam},
+    {"ポワン探偵", 0x40000600},
+    {"車掌", 0x40000600},
+    {"コック", 0x40000600},
+    {"ウェイトレス", 0x40000600},
+    {NULL},
 };
 
-// TODO: type
-u32 npc_data_2[69] = {
-    (u32)"トロン", 0x40020610, 0x00000000, (u32)&init_toron,
-    0x00000000, (u32)&talk_toron, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"マダム",
-    0x40020610, 0x00000000, (u32)&init_madam, 0x00000000,
-    (u32)&talk_madam, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+NpcSetupInfo npc_data_2[3] = {
+    {"トロン", 0x40020610, 0, init_toron, NULL, talk_toron},
+    {"マダム", 0x40020610, 0, init_madam, NULL, talk_madam},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_daiji_kami)
@@ -399,10 +309,9 @@ EVT_BEGIN(evt_pikary_arrival)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 access_tbl[7] = {
-    (u32)"tana_5", (u32)"stg6_rsh_262", (u32)"stg6_rsh_267", (u32)"tana_4",
-    (u32)"stg6_rsh_263", (u32)"stg6_rsh_267", 0x00000000,
+static char* access_tbl[7] = {
+    "tana_5", "stg6_rsh_262", "stg6_rsh_267", "tana_4",
+    "stg6_rsh_263", "stg6_rsh_267", NULL,
 };
 
 static EVT_BEGIN(evt_access)
@@ -541,9 +450,8 @@ EVT_BEGIN(rsh_01_b_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 window_tbl[3] = {
-    (u32)"mado_uturi_3", (u32)"mado_uturi_4", 0x00000000,
+static char* window_tbl[3] = {
+    "mado_uturi_3", "mado_uturi_4", NULL,
 };
 
 EVT_BEGIN(rsh_01_c_init_evt)
@@ -567,73 +475,30 @@ EVT_BEGIN(talk_syasyou)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data_a_return[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_a", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_08_a", (u32)"e_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010008,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"pik_00", (u32)"n_bero", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_a_return[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_b_return[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_b", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_08_a", (u32)"e_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010008,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"hom_00", (u32)"n_bero_1", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_b_return[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_c_return[60] = {
-    (u32)"w_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_02_c", (u32)"e_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", (u32)"e_bero",
-    0x00010008, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"rsh_08_a", (u32)"e_bero", 0x00010001,
-    (u32)"e_door_close", (u32)"e_door_open", (u32)"s_bero", 0x00010008,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"rsh_01_c", (u32)"s_bero", 0x00050005, (u32)&s_bero_close,
-    (u32)&s_bero_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data_c_return[4] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
-// TODO: type
-u32 gor_bero[30] = {
-    (u32)"s_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gor_04", (u32)"n_bero",
-    0x00050005, (u32)&s_bero_close, (u32)&s_bero_open, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BeroEntry gor_bero[2] = {
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gor_04", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {NULL},
 };
 
 EVT_BEGIN(rsh_01_init_evt_nidome)

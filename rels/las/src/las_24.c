@@ -50,50 +50,34 @@ static EVT_BEGIN(w_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[60] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_22", (u32)"e_bero",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open, (u32)"s_bero_1",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"las_23", (u32)"n_bero_2", 0x00010001,
-    0x00000000, 0x00000000, (u32)"s_bero_2", 0x00000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_25", (u32)"n_bero_1", 0x00010001, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_22", "e_bero", 5, 5, (s32)w_door_close, (s32)w_door_open},
+    {"s_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "n_bero_2", 1, 1},
+    {"s_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "n_bero_1", 1, 1},
+    {NULL},
 };
 
-// TODO: type
-static u32 haguruma_hontai[15] = {
-    (u32)"S_hgm_01a", (u32)"S_hgm_02a", (u32)"S_hgm_03a", (u32)"S_hgm_04a",
-    (u32)"S_hgm_06a", (u32)"S_hgm_07a", (u32)"S_hgm_08a", (u32)"S_hgm_10a",
-    (u32)"S_hgm_11a", (u32)"S_hgm_14a", (u32)"S_hgm_15a", (u32)"S_hgm_16a",
-    (u32)"S_hgm_19a", (u32)"S_hgm_20a", (u32)"S_hgm_24a",
+static char* haguruma_hontai[] = {
+    "S_hgm_01a", "S_hgm_02a", "S_hgm_03a", "S_hgm_04a",
+    "S_hgm_06a", "S_hgm_07a", "S_hgm_08a", "S_hgm_10a",
+    "S_hgm_11a", "S_hgm_14a", "S_hgm_15a", "S_hgm_16a",
+    "S_hgm_19a", "S_hgm_20a", "S_hgm_24a",
 };
 
-// TODO: type
-static u32 haguruma_hontai2[6] = {
-    (u32)"S_hgm_05a", (u32)"S_hgm_09a", (u32)"S_hgm_12a", (u32)"S_hgm_13a",
-    (u32)"S_hgm_17a", (u32)"S_hgm_18a",
+static char* haguruma_hontai2[] = {
+    "S_hgm_05a", "S_hgm_09a", "S_hgm_12a", "S_hgm_13a",
+    "S_hgm_17a", "S_hgm_18a",
 };
 
-// TODO: type
-static u32 haguruma_kage[12] = {
-    (u32)"S_hgm_01b", (u32)"S_hgm_02b", (u32)"S_hgm_03b", (u32)"S_hgm_04b",
-    (u32)"S_hgm_06b", (u32)"S_hgm_07b", (u32)"S_hgm_08b", (u32)"S_hgm_10b",
-    (u32)"S_hgm_11b", (u32)"S_hgm_14b", (u32)"S_hgm_15b", (u32)"S_hgm_16b",
+static char* haguruma_kage[] = {
+    "S_hgm_01b", "S_hgm_02b", "S_hgm_03b", "S_hgm_04b",
+    "S_hgm_06b", "S_hgm_07b", "S_hgm_08b", "S_hgm_10b",
+    "S_hgm_11b", "S_hgm_14b", "S_hgm_15b", "S_hgm_16b",
 };
 
-// TODO: type
-static u32 haguruma_kage2[5] = {
-    (u32)"S_hgm_05b", (u32)"S_hgm_09b", (u32)"S_hgm_12b", (u32)"S_hgm_13b",
-    (u32)"S_hgm_17b",
+static char* haguruma_kage2[] = {
+    "S_hgm_05b", "S_hgm_09b", "S_hgm_12b", "S_hgm_13b",
+    "S_hgm_17b",
 };
 
 static EVT_BEGIN(haguruma_evt)

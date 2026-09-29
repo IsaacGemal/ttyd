@@ -30,14 +30,11 @@ extend_data(17,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 tree_tbl[24] = {
-    0x00000003, (u32)"A_ki1", (u32)"S_ki_1", (u32)"S_ha_1",
-    0x00000000, 0x00000000, 0x00000003, (u32)"A_ki2",
-    (u32)"S_ki_2", (u32)"S_ha_2", 0x00000000, 0x00000000,
-    0x00000003, (u32)"A_ki3", (u32)"S_ki_3", (u32)"S_ha_3",
-    0x00000000, 0x00000000, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry tree_tbl[] = {
+    {3, "A_ki1", "S_ki_1", "S_ha_1", NULL, NULL},
+    {3, "A_ki2", "S_ki_2", "S_ha_2", NULL, NULL},
+    {3, "A_ki3", "S_ki_3", "S_ha_3", NULL, NULL},
+    {7},
 };
 
 static EVT_BEGIN(evt_tree)
@@ -46,20 +43,10 @@ static EVT_BEGIN(evt_tree)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero4", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"bom_03", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero4",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"bom_01", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero4", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "bom_03", "e_bero", 1, 1},
+    {"e_bero4", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "bom_01", "w_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(bom_04_init_evt)

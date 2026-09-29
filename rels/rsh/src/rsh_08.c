@@ -26,40 +26,22 @@ extend_data(41,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 bero_data_a_nidome[30] = {
-    (u32)"e_bero", 0x00010008, 0x00000006, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_01_a", (u32)"e_bero",
-    0x00010001, (u32)"e_door_close", (u32)"e_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BeroEntry bero_data_a_nidome[2] = {
+    {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_a", "e_bero", 1, 1,
+     (s32)"e_door_close", (s32)"e_door_open"},
+    {NULL},
 };
 
-// TODO: type
-u32 bero_data_b_nidome[30] = {
-    (u32)"e_bero", 0x00010008, 0x00000006, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_01_b", (u32)"e_bero",
-    0x00010001, (u32)"e_door_close", (u32)"e_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BeroEntry bero_data_b_nidome[2] = {
+    {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_b", "e_bero", 1, 1,
+     (s32)"e_door_close", (s32)"e_door_open"},
+    {NULL},
 };
 
-// TODO: type
-u32 bero_data_c_nidome[30] = {
-    (u32)"e_bero", 0x00010008, 0x00000006, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_01_c", (u32)"e_bero",
-    0x00010001, (u32)"e_door_close", (u32)"e_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BeroEntry bero_data_c_nidome[2] = {
+    {"e_bero", 1, 8, 6, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "e_bero", 1, 1,
+     (s32)"e_door_close", (s32)"e_door_open"},
+    {NULL},
 };
 
 EVT_BEGIN(rsh_08_a_init_evt)

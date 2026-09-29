@@ -83,42 +83,25 @@ static EVT_BEGIN(e2_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_09", (u32)"e_bero",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open, (u32)"e_bero_1",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"las_21", (u32)"w_bero", 0x00050005,
-    (u32)&e1_door_close, (u32)&e1_door_open, (u32)"e_bero_2", 0x00010006,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_21", (u32)"w_bero", 0x00050005, (u32)&e2_door_close,
-    (u32)&e2_door_open, (u32)"n_bero", 0x00000000, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"las_20",
-    (u32)"s_bero_1", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_09", "e_bero", 5, 5, (s32)w_door_close, (s32)w_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "w_bero", 5, 5, (s32)e1_door_close, (s32)e1_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "w_bero", 5, 5, (s32)e2_door_close, (s32)e2_door_open},
+    {"n_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_20", "s_bero_1", 1, 1},
+    {NULL},
 };
 
-// TODO: type
-u32 mapgrp_name_1[18] = {
-    (u32)"S_kai_02", (u32)"S_kai_03", (u32)"S_kai_04", (u32)"S_kai_05",
-    (u32)"S_kai_06", (u32)"S_kai_07", (u32)"S_kai_08", (u32)"S_kai_09",
-    (u32)"S_kai_10", (u32)"S_kai_11", (u32)"S_kai_12", (u32)"S_kai_13",
-    (u32)"S_kai_14", (u32)"S_kai_15", (u32)"S_kai_16", (u32)"S_kai_17",
-    (u32)"S_kai_18", (u32)"S_kai_25",
+char* mapgrp_name_1[18] = {
+    "S_kai_02", "S_kai_03", "S_kai_04", "S_kai_05",
+    "S_kai_06", "S_kai_07", "S_kai_08", "S_kai_09",
+    "S_kai_10", "S_kai_11", "S_kai_12", "S_kai_13",
+    "S_kai_14", "S_kai_15", "S_kai_16", "S_kai_17",
+    "S_kai_18", "S_kai_25",
 };
 
-// TODO: type
-u32 mapgrp_name_2[5] = {
-    (u32)"S_kai_20", (u32)"S_kai_21", (u32)"S_kai_22", (u32)"S_kai_23",
-    (u32)"S_kai_24",
+char* mapgrp_name_2[5] = {
+    "S_kai_20", "S_kai_21", "S_kai_22", "S_kai_23",
+    "S_kai_24",
 };
 
 static EVT_BEGIN(cam_shake)

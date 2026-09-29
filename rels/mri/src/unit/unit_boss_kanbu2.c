@@ -3,6 +3,7 @@
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_disp.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_msg.h"
 #include "forcedata.h"
@@ -11,14 +12,14 @@
 extern s32 btldefaultevt_Confuse[];
 extern s32 btldefaultevt_Dummy[];
 static u32 regist[6];
-static u32 data_table[6];
-static u32 parts[19];
+static BattleDataEntry data_table[3];
+static BattleUnitKindPart parts;
 static s32 init_event[37];
 static s32 damage_event[10];
 static s32 dead_event[26];
 static s32 attack_event[24];
 static s32 wait_event[6];
-static u32 pose_table[36];
+static BattleDispPose pose_table[18];
 static s32 normal_attack_event[365];
 
 // clang-format off
@@ -73,35 +74,43 @@ static u32 regist[6] = {
     0x00646464, 0x64000000,
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x00000031, (u32)&dead_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x31, dead_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_kanbu2", (u32)"c_kanbu", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42340000,
-    0x00000000, 0x00000000, 0x42480000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    1,
+    "btl_un_kanbu2",
+    "c_kanbu",
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 45.0f, 0.0f },
+    { 0, 0, 0, 0, 0x42, 0x48, 0, 0, 0, 0, 0, 0, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+    (BattleUnitDefense*)defence,
+    (BattleUnitDefenseAttr*)defence_attr,
+    kMainPart | kUnknown_0x8,
+    (PartsCounterAttribute_Flags)0,
+    pose_table,
 };
 
-// TODO: type
-u32 weapon_kanbu2_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00001087, 0x00000000, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon weapon_kanbu2_attack[1] = {
+    {
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x64, 0, 0, 1, 0x3F, 0x80, 0, 0 },
+        1,
+        1,
+        1,
+        1,
+        (void*)weaponGetPowerDefault,
+        { 2, 0, 0, 0, 0, 0, 0, 0 },
+        NULL,
+        { 0 },
+        { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00, 0x00, 0x00, 0x03, 0x02, 0, 0, 0, 0 },
+        (BattleWeaponSpecialFlags)0x1087,
+        { 0, 0, 0, 0, 0, 0, 0, 4 },
+        NULL,
+        { 0, 0, 0, 0x64, 0, 0, 0, 0, 0, 0, 0, 0 },
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -148,30 +157,46 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"S_1", 0x00000041, (u32)"T_1",
-    0x0000001D, (u32)"Q_1", 0x0000001E, (u32)"Q_1",
-    0x0000001F, (u32)"S_1", 0x00000027, (u32)"D_1",
-    0x0000002A, (u32)"R_2", 0x00000028, (u32)"W_1",
-    0x00000038, (u32)"X_1", 0x00000039, (u32)"X_1",
-    0x00000041, (u32)"T_1", 0x00000045, (u32)"S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_1" },
+    { 0x41, "T_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "S_1" },
+    { 0x27, "D_1" },
+    { 0x2A, "R_2" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-static u32 pose_table_guard[36] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"G_2", 0x00000041, (u32)"T_1",
-    0x0000001D, (u32)"Q_1", 0x0000001E, (u32)"Q_1",
-    0x0000001F, (u32)"G_2", 0x00000027, (u32)"D_1",
-    0x0000002A, (u32)"R_2", 0x00000028, (u32)"W_1",
-    0x00000038, (u32)"X_1", 0x00000039, (u32)"X_1",
-    0x00000041, (u32)"T_1", 0x00000045, (u32)"G_2",
+static BattleDispPose pose_table_guard[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "G_2" },
+    { 0x41, "T_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "G_2" },
+    { 0x27, "D_1" },
+    { 0x2A, "R_2" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "G_2" },
 };
 
 static EVT_BEGIN(normal_attack_event)

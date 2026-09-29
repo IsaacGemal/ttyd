@@ -1,3 +1,4 @@
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_damage.h"
@@ -77,49 +78,26 @@ static EVT_BEGIN(e2_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[90] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_21", (u32)"e_bero_1",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open, (u32)"e_bero_1",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"las_25", (u32)"w_bero", 0x00050005,
-    (u32)&e1_door_close, (u32)&e1_door_open, (u32)"e_bero_2", 0x00010006,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_25", (u32)"w_bero", 0x00050005, (u32)&e2_door_close,
-    (u32)&e2_door_open, (u32)"n_bero_1", 0x00000000, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"las_22",
-    (u32)"s_bero", 0x00010001, 0x00000000, 0x00000000,
-    (u32)"n_bero_2", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_24", (u32)"s_bero_1",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_1", 5, 5, (s32)&w_door_close, (s32)&w_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, (s32)&e1_door_close, (s32)&e1_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, (s32)&e2_door_close, (s32)&e2_door_open},
+    {"n_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_22", "s_bero", 1, 1},
+    {"n_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_24", "s_bero_1", 1, 1},
+    {NULL},
 };
 
-// TODO: type
-static u32 w_bero_mapchg[15] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_21", (u32)"e_bero_2",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open,
+static BeroEntry w_bero_mapchg[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_2", 5, 5, (s32)&w_door_close, (s32)&w_door_open},
 };
 
-// TODO: type
-static u32 dmgRetPoint[24] = {
-    (u32)"A_oti_01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_oti_02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_oti_03", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_oti_04", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"A_oti_05", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn dmgRetPoint[] = {
+    {"A_oti_01", {0.0f, -1000.0f, 0.0f}},
+    {"A_oti_02", {0.0f, -1000.0f, 0.0f}},
+    {"A_oti_03", {0.0f, -1000.0f, 0.0f}},
+    {"A_oti_04", {0.0f, -1000.0f, 0.0f}},
+    {"A_oti_05", {0.0f, -1000.0f, 0.0f}},
+    {NULL},
 };
 
 EVT_BEGIN(las_23_init_evt)

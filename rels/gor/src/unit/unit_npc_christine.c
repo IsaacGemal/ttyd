@@ -1,13 +1,15 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
+#include "battle/battle_unit.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[19];
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts;
 static s32 init_event[25];
 static s32 damage_event[10];
 static s32 attack_event[5];
@@ -65,24 +67,36 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[8] = {
-    0x0000001C, (u32)"PKR_S_1", 0x0000001F, (u32)"PKR_S_1",
-    0x00000027, (u32)"PKR_S_1", 0x00000045, (u32)"PKR_S_1",
+static BattleDispPose pose_table[4] = {
+    { 0x1C, "PKR_S_1" },
+    { 0x1F, "PKR_S_1" },
+    { 0x27, "PKR_S_1" },
+    { 0x45, "PKR_S_1" },
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_christine", (u32)"c_pkr", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00090009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    1,
+    "btl_un_christine",
+    "c_pkr",
+    { 0.0f, 0.0f, 0.0f },
+    { 15.0f, 25.0f, 0.0f },
+    // field_0x24 is no longer named in the header; raw bytes preserved.
+    {
+        0x00, 0x00, 0x00, 0x00,
+        0x41, 0xF0, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x14, 0x00, 0x1E,
+        0x00, 0xFF, 0x00, 0x00,
+    },
+    (BattleUnitDefense*)&defence,
+    (BattleUnitDefenseAttr*)&defence_attr,
+    0x00090009,
+    0x00000000,
+    &pose_table,
 };
 
 static EVT_BEGIN(init_event)

@@ -1,3 +1,4 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_weapon_power.h"
@@ -14,8 +15,8 @@ extern s32 cortez_weapon_counter_damage_event[];
 extern s32 cortez_weapon_dead_event[];
 extern s32 cortez_weapon_phase_event[];
 extern s32 cortez_weapon_unison_phase_event[];
-static u32 regist[6];
-static u32 data_table[42];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[21];
 static u32 parts[19];
 static s32 init_event[47];
 static s32 damage_event[10];
@@ -60,20 +61,21 @@ u32 unit_boss_cortez_saber[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = {
+    { 0, 0, 0, 0, 0 },
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefenseAttr defence_attr = {
+    { 0, 0, 0, 0, 0 },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00505F64, 0x5A646455, 0x00006400, 0x645A3200,
-    0x5A643200, 0x00000000,
+static BattleVulnerableStatus regist = {
+    0, 80, 95, 100,
+    90, 100, 100, 85,
+    0, 0, 100, 0,
+    100, 90, 50, 0,
+    90, 100, 50, 0,
+    0, 0,
 };
 
 // TODO: type
@@ -92,32 +94,44 @@ u32 weapon_cortez_saber_float_attack[48] = {
     0x00000000, 0x00000064, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[12] = {
-    0x00000002, (u32)"KRT_Z_1", 0x00000009, (u32)"KRT_Z_1",
-    0x0000001C, (u32)"KRT_S_1", 0x0000001F, (u32)"KRT_S_1",
-    0x00000027, (u32)"KRT_S_1", 0x00000045, (u32)"KRT_S_1",
+static BattleDispPose pose_table[6] = {
+    { 2, "KRT_Z_1" },
+    { 9, "KRT_Z_1" },
+    { 0x1C, "KRT_S_1" },
+    { 0x1F, "KRT_S_1" },
+    { 0x27, "KRT_S_1" },
+    { 0x45, "KRT_S_1" },
 };
 
-// TODO: type
-static u32 pose_table_break[8] = {
-    0x0000001C, (u32)"KRT_Z_1", 0x0000001F, (u32)"KRT_Z_1",
-    0x00000027, (u32)"KRT_Z_1", 0x00000045, (u32)"KRT_Z_1",
+static BattleDispPose pose_table_break[4] = {
+    { 0x1C, "KRT_Z_1" },
+    { 0x1F, "KRT_Z_1" },
+    { 0x27, "KRT_Z_1" },
+    { 0x45, "KRT_Z_1" },
 };
 
-// TODO: type
-static u32 data_table[42] = {
-    0x00000009, (u32)&cortez_damage_sub_event, 0x00000031, (u32)cortez_weapon_dead_event,
-    0x00000047, (u32)cortez_weapon_break_event, 0x0000003A, (u32)cortez_weapon_blow_dead_event,
-    0x00000024, (u32)cortez_weapon_counter_damage_event, 0x00000018, (u32)cortez_weapon_counter_damage_event,
-    0x00000019, (u32)cortez_weapon_counter_damage_event, 0x0000001A, (u32)cortez_weapon_counter_damage_event,
-    0x0000001B, (u32)cortez_weapon_counter_damage_event, 0x0000001C, (u32)cortez_weapon_counter_damage_event,
-    0x0000001D, (u32)cortez_weapon_counter_damage_event, 0x0000001E, (u32)cortez_weapon_counter_damage_event,
-    0x0000001F, (u32)cortez_weapon_counter_damage_event, 0x00000020, (u32)cortez_weapon_counter_damage_event,
-    0x00000021, (u32)cortez_weapon_counter_damage_event, 0x00000022, (u32)cortez_weapon_counter_damage_event,
-    0x00000023, (u32)cortez_weapon_counter_damage_event, 0x00000027, (u32)&avoid_thorn_event,
-    0x00000025, (u32)&avoid_thorn_event, 0x00000026, (u32)&avoid_thorn_event,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[21] = {
+    { 9, cortez_damage_sub_event },
+    { 0x31, cortez_weapon_dead_event },
+    { 0x47, cortez_weapon_break_event },
+    { 0x3A, cortez_weapon_blow_dead_event },
+    { 0x24, cortez_weapon_counter_damage_event },
+    { 0x18, cortez_weapon_counter_damage_event },
+    { 0x19, cortez_weapon_counter_damage_event },
+    { 0x1A, cortez_weapon_counter_damage_event },
+    { 0x1B, cortez_weapon_counter_damage_event },
+    { 0x1C, cortez_weapon_counter_damage_event },
+    { 0x1D, cortez_weapon_counter_damage_event },
+    { 0x1E, cortez_weapon_counter_damage_event },
+    { 0x1F, cortez_weapon_counter_damage_event },
+    { 0x20, cortez_weapon_counter_damage_event },
+    { 0x21, cortez_weapon_counter_damage_event },
+    { 0x22, cortez_weapon_counter_damage_event },
+    { 0x23, cortez_weapon_counter_damage_event },
+    { 0x27, avoid_thorn_event },
+    { 0x25, avoid_thorn_event },
+    { 0x26, avoid_thorn_event },
+    { 0, NULL },
 };
 
 // TODO: type

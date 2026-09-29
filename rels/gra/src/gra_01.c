@@ -35,20 +35,10 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero1", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"gra_00", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero1",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"gra_02", (u32)"w_bero_1", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gra_00", "e_bero", 1, 1},
+    {"e_bero1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gra_02", "w_bero_1", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(gra_01_after_ranpel2)
@@ -80,14 +70,11 @@ EVT_BEGIN(gra_01_after_ranpel2)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 tree_tbl[24] = {
-    0x00000002, (u32)"A_ki_1", (u32)"S_gra01_ki01", 0x00000000,
-    0x00000000, 0x00000000, 0x00000002, (u32)"A_ki_2",
-    (u32)"S_gra01_ki02", 0x00000000, 0x00000000, 0x00000000,
-    0x00000002, (u32)"A_ki_3", (u32)"S_gra01_ki03", 0x00000000,
-    0x00000000, 0x00000000, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry tree_tbl[] = {
+    {2, "A_ki_1", "S_gra01_ki01", NULL, NULL, NULL},
+    {2, "A_ki_2", "S_gra01_ki02", NULL, NULL, NULL},
+    {2, "A_ki_3", "S_gra01_ki03", NULL, NULL, NULL},
+    {7},
 };
 
 EVT_BEGIN(gra_01_init_evt)

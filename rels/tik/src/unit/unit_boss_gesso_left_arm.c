@@ -1,4 +1,7 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_damage.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -10,9 +13,9 @@
 extern s32 btldefaultevt_Confuse[];
 extern s32 gesso_arm_damage_pose_event[];
 extern s32 gesso_arm_dead_event[];
-static u32 regist[6];
-u32 unk_tik_00029f1c[26];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+BattleDataEntry unk_tik_00029f1c[13];
+static BattleUnitKindPart parts;
 static s32 init_event[25];
 static s32 damage_event[31];
 s32 unk_evt_tik_0002a0c8[93];
@@ -38,6 +41,9 @@ extend_data(77,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
+// BattleUnitKind: size 0xC4 matches, but offset 0x4 is the unit-name string pointer
+// and battle_unit.h models it as opaque bytes (u8 field_0x4[8]), so it cannot be
+// initialized through the struct yet.
 // TODO: type
 u32 unit_boss_gesso_left_arm[49] = {
     0x00000009, (u32)"btl_un_gesso_left_arm", 0x00030000, 0x01010000,
@@ -55,52 +61,62 @@ u32 unit_boss_gesso_left_arm[49] = {
     (u32)&unk_tik_00029f1c,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = {
+    0, 0, 0, 0, 0,
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefenseAttr defence_attr = {
+    0, 0, 0, 0, 0,
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00006400, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleVulnerableStatus regist = {
+    0, 0, 0, 0, 0, 0, 100,
 };
 
-// TODO: type
-static u32 pose_table[8] = {
-    0x0000001C, (u32)"GSO_S1_1", 0x0000001F, (u32)"GSO_S1_1",
-    0x00000027, (u32)"GSO_D1_1", 0x00000045, (u32)"GSO_S1_1",
+static BattleDispPose pose_table[4] = {
+    { 0x1C, "GSO_S1_1" },
+    { 0x1F, "GSO_S1_1" },
+    { 0x27, "GSO_D1_1" },
+    { 0x45, "GSO_S1_1" },
 };
 
-// TODO: type
-u32 unk_tik_00029f1c[26] = {
-    0x00000018, (u32)&unk_evt_tik_0002a0c8, 0x00000019, (u32)&unk_evt_tik_0002a0c8,
-    0x0000001A, (u32)&unk_evt_tik_0002a0c8, 0x0000001B, (u32)&unk_evt_tik_0002a0c8,
-    0x0000001C, (u32)&unk_evt_tik_0002a0c8, 0x0000001D, (u32)&unk_evt_tik_0002a0c8,
-    0x0000001E, (u32)&unk_evt_tik_0002a0c8, 0x0000001F, (u32)&unk_evt_tik_0002a0c8,
-    0x00000020, (u32)&unk_evt_tik_0002a0c8, 0x00000021, (u32)&unk_evt_tik_0002a0c8,
-    0x00000022, (u32)&unk_evt_tik_0002a0c8, 0x00000023, (u32)&unk_evt_tik_0002a0c8,
-    0x00000024, (u32)&unk_evt_tik_0002a0c8,
+// No terminator: BtlUnit_GetData reads on into data_table below.
+BattleDataEntry unk_tik_00029f1c[13] = {
+    { 0x18, unk_evt_tik_0002a0c8 },
+    { 0x19, unk_evt_tik_0002a0c8 },
+    { 0x1A, unk_evt_tik_0002a0c8 },
+    { 0x1B, unk_evt_tik_0002a0c8 },
+    { 0x1C, unk_evt_tik_0002a0c8 },
+    { 0x1D, unk_evt_tik_0002a0c8 },
+    { 0x1E, unk_evt_tik_0002a0c8 },
+    { 0x1F, unk_evt_tik_0002a0c8 },
+    { 0x20, unk_evt_tik_0002a0c8 },
+    { 0x21, unk_evt_tik_0002a0c8 },
+    { 0x22, unk_evt_tik_0002a0c8 },
+    { 0x23, unk_evt_tik_0002a0c8 },
+    { 0x24, unk_evt_tik_0002a0c8 },
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x0000000A, (u32)gesso_arm_damage_pose_event, 0x00000031, (u32)gesso_arm_dead_event,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x0A, gesso_arm_damage_pose_event },
+    { 0x31, gesso_arm_dead_event },
+    { 0x00, 0 },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_gesso_left_arm", (u32)"c_gesso3", 0x00000000,
-    0x00000000, 0x00000000, 0x43870000, 0x41A00000,
-    0x00000000, 0x43870000, 0x41A00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00080009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    1,
+    "btl_un_gesso_left_arm",
+    "c_gesso3",
+    { 0.0f, 0.0f, 0.0f },          // positionOffset
+    { 270.0f, 20.0f, 0.0f },       // hitBaseOffset
+    // opaque in battle_unit.h: Vec {270.0f, 20.0f, 0.0f}, u16 {0x0014, 0x001E}, u16 {0x00FF, 0x0000}
+    { 0x43, 0x87, 0x00, 0x00, 0x41, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+    &defence,
+    &defence_attr,
+    0x00080009,
+    0,
+    &pose_table,
 };
 
 static EVT_BEGIN(init_event)
@@ -168,20 +184,26 @@ static EVT_BEGIN(phase_event)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 weapon_gesso_left_arm_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_gesso_left_arm_attack[1] = {
+  {
+    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+    1, 1, 1, 1,
+    weaponGetPowerDefault,
+    { 1, 0, 0, 0, 0, 0, 0, 0 },
+    0,
+    { 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0x01, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+    0x87,
+    { 0x00, 0x00, 0x07, 0xFF, 0x00, 0x00, 0x00, 0x04,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    0,
+    { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+  },
 };
 
 static EVT_BEGIN(attack_event)

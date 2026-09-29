@@ -1,3 +1,4 @@
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_damage.h"
@@ -30,20 +31,10 @@ extend_data(37,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"e_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"dou_13", (u32)"w_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"n_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"dou_07", (u32)"s_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"e_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "dou_13", "w_bero", 1, 1},
+    {"n_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "dou_07", "s_bero", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(dou_puka_event_main0)
@@ -96,18 +87,17 @@ static EVT_BEGIN(dou_puka_event_main1)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[40] = {
-    (u32)"mod_01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_02", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_03", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_04", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_05", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_06", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_07", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"Ship_Change_01", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"Ship_Change_02", 0x00000000, 0xC47A0000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[] = {
+    {"mod_01", {0.0f, -1000.0f, 0.0f}},
+    {"mod_02", {0.0f, -1000.0f, 0.0f}},
+    {"mod_03", {0.0f, -1000.0f, 0.0f}},
+    {"mod_04", {0.0f, -1000.0f, 0.0f}},
+    {"mod_05", {0.0f, -1000.0f, 0.0f}},
+    {"mod_06", {0.0f, -1000.0f, 0.0f}},
+    {"mod_07", {0.0f, -1000.0f, 0.0f}},
+    {"Ship_Change_01", {0.0f, -1000.0f, 0.0f}},
+    {"Ship_Change_02", {0.0f, -1000.0f, 0.0f}},
+    {NULL},
 };
 
 EVT_BEGIN(dou_08_init_evt)

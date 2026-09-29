@@ -48,20 +48,11 @@ static EVT_BEGIN(s_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"s_bero", 0x00010002, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"jin_10", (u32)"n_bero",
-    0x00050005, (u32)&s_close, (u32)&s_open, (u32)"ana",
-    0x00000000, 0x00000004, 0x0000034D, 0x00000073,
-    0x0000004D, 0xFFFFFFFF, 0x00000000, 0x00000000,
-    (u32)&jin_11_ana, (u32)"jin_07", 0x00000000, 0x00040004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"s_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_10", "n_bero", 5, 5,
+     (s32)s_close, (s32)s_open},
+    {"ana", 0, 0, 4, 0x34D, 0x73, 0x4D, -1, NULL, 0, jin_11_ana, "jin_07", NULL, 4, 4, 0, 0},
+    {NULL},
 };
 
 EVT_BEGIN(evt_yuka)
