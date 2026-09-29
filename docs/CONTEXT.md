@@ -23,7 +23,7 @@ anything worth keeping into a chapter here.
   linked code 14.02%, **linked data 36.94%** (4.94% the evening before). All 32 checksums (dol + 31 RELs) pass.
   Most of the data jump is REL units written by generators (tools/rel_gen.py, tools/dol_gen.py) and proven by
   linking; ~1,000 of their tables are still raw `u32` arrays marked `// TODO: type`.
-- Sessions (Sep 29): "Ambitious work session" (Claude Opus 5.5) and "TTYD Claude #2" (Opus 5.5) orchestrate waves,
+- Sessions (Sep 29): "TTYD Claude #1" (Claude Opus 5.5; its session is titled "Ambitious work session") and "TTYD Claude #2" (Opus 5.5) orchestrate waves,
   one wave each; "TTYD Claude #3" (Claude Sonnet 5.5) grinds link blockers and shared REL units itself, no agents.
   Isaac merges or explicitly delegates merging; he authorized the Sep 28-29 overnight run.
 - Reviews: one fresh Claude review per PR (Codex out of usage), findings fixed before merge. A unit that links is
