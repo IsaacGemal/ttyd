@@ -1760,6 +1760,8 @@ config.libs = [
             Object(Matching, "unit/unit_borodo.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_borodo_28_data_1AEF0"]),
             Object(Matching, "unit/unit_green_chorobon.c", modules=["muj"], extra_cflags=["-DUNIT_DATA_SYM=unit_green_chorobon_20_data_36508"]),
             Object(Matching, "unit/unit_green_chorobon.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_green_chorobon_28_data_22E58"]),
+            Object(Matching, "unit/unit_gundan_zako_magician.c", modules=["muj"], extra_cflags=["-DUNIT_DATA_SYM=unit_gundan_zako_magician_20_data_32438"]),
+            Object(Matching, "unit/unit_gundan_zako_magician.c", modules=["aji"], extra_cflags=["-DUNIT_DATA_SYM=unit_gundan_zako_magician_2_data_34AD8"]),
         ],
     ),
 ]
