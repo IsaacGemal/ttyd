@@ -1895,6 +1895,9 @@ config.libs = [
             Object(Matching, "unit/unit_teresa.c", modules=["jin"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_14_data_1EF28"]),
             Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["bom"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_3_data_CDB0"]),
             Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_15_data_577D8"]),
+            Object(NonMatching, "unit/unit_togekuri.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_9_data_1DA88"]),
+            Object(NonMatching, "unit/unit_togekuri.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_26_data_23050"]),
+            Object(NonMatching, "unit/unit_togekuri.c", modules=["hei"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
         ],
     ),
 ]
