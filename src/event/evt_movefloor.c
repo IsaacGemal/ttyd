@@ -11,6 +11,14 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include "pmario_sound.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_movefloor.h"
+#include "evt/evt_party.h"
+#include "evt/evt_snd.h"
+#include "party/party_motion.h"
 
 // Prototypes not yet in headers.
 
@@ -41,28 +49,6 @@ typedef struct MovingFloorWork {
     /* 0x84 */ f32 turn;
 } MovingFloorWork;
 
-// Compiler-pool float/double constants named after their original addresses.
-f32 float_0_80420224 = 0.0f;
-f32 float_neg1_80420228 = -1.0f;
-f32 float_500_8042022c = 500.0f;
-f32 float_3_80420230 = 3.0f;
-f32 float_5p625_80420234 = 5.625f;
-f32 float_360_80420238 = 360.0f;
-f32 float_1000_8042023c = 1000.0f;
-f32 float_0p5_80420240 = 0.5f;
-f32 float_1_80420244 = 1.0f;
-
-// Compiler-pool integer-conversion constants used by the (f32)<s32>/<u32> casts.
-f64 double_to_int_802fb9f0 = 4503601774854144.0;
-f64 double_to_int_mask_802fb9f8 = 4503599627370496.0;
-
-// .sdata2 string.
-const char str_80420220[4] = "yuu";
-
-// .rodata strings. Shift-JIS bytes kept as octal escapes.
-const char str_802FB9A8[24] = "\216\251\223\256\215\355\217\234\203\140\203F\203b\203N\221\322\202\277";
-const char str_802FB9C0[16] = "\216\251\223\256\215\355\217\234\212\256\227\271";
-const char str_802FB9D0[28] = "SFX_STG1_TIK_FLOOR_MOVE1";
 
 // sin table, values are the raw f32 bit patterns.
 static u32 sintbl[450] = {
@@ -143,233 +129,115 @@ static u32 sintbl[450] = {
 	0x3F7E98FE, 0x3F7F06A3, 0x3F7F605B, 0x3F7FA626, 0x3F7FD817, 0x3F7FF60A,
 };
 
-USER_FUNC(evt_moving_floor_delete) {
+extern s32 evt_sub_get_areaname[];
+
+// clang-format off
+
+USER_FUNC(evt_moving_floor_alloc) {
     s32* args = event->args;
-    s32 id = evtGetValue(event, args[0]);
-    EventEntry* entry = evtGetPtrID(id);
-    MovingFloorWork* work = (MovingFloorWork*)entry->lwData[9];
+    MovingFloorWork* work = (MovingFloorWork*)_mapAlloc(sizeof(MovingFloorWork));
 
-    if (work->field_0x78 == 0 && work->seId != 0) {
-        psndSFXOff(work->seId);
-        work->seId = 0;
-    }
-    if (work != NULL) {
-        _mapFree(work);
-        entry->lwData[9] = 0;
-    }
-    if (evtCheckID(id)) {
-        evtDeleteID(id);
-    }
-    return EVT_RETURN_DONE;
-}
+    memset(work, 0, sizeof(MovingFloorWork));
+    work->mode = event->lwData[6];
+    work->kind = event->lwData[12];
 
-USER_FUNC(moving_floor_halt_se) {
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
-
-    work->field_0x78 = 1;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_stop_se) {
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
-
-    if (work->field_0x78 == 0 && work->seId != 0) {
-        psndSFXOff(work->seId);
-        work->seId = 0;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_set_se) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    const char* name = (const char*)evtGetValue(event, args[1]);
-    Vec pos;
-    MapObject* obj;
-    s32 flag;
-
-    if (work->field_0x78 != 0) {
-        return EVT_RETURN_DONE;
-    }
-    if (work->seId == 0) {
-        mapObjGetPos(name, &pos);
-        obj = mapGetMapObj(name);
-        if (obj == NULL) {
-            mapErrorEntry(0, name);
-            return EVT_RETURN_DONE;
-        }
-        flag = 0;
-        if ((psndGetFlag() & 0x100) && !(*(u32*)((u8*)obj + 0x0) & 0x1800)) {
-            flag = 0x10000;
-        }
-        work->seId = psndSFXOn_3D((const char*)(flag | 0x424), &pos);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_reverse) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    f32 t;
-
-    if (work->speed >= float_0_80420224) {
-        return EVT_RETURN_DONE;
-    }
-    work->speed = work->speed * float_neg1_80420228;
-    t = (f32)work->field_0x68[work->index] * work->time;
-    work->field_0x10 = t - work->field_0x10;
-    work->direction ^= 1;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_getf_xz_scale) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    f32 v;
-
-    v = evtGetFloat(event, (s32)(work->pos.y + work->offsetY));
-    evtSetFloat(event, args[1], (float_500_8042022c - v) / float_500_8042022c);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_get_stmsec) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    if (work->flags & 1) {
-        evtSetValue(event, args[1], 0);
-    } else {
-        evtSetValue(event, args[1], work->field_0x74 * 60 / 1000);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_getf_now_bpoint) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    evtSetFloat(event, args[1], work->pos.x - work->prev.x);
-    evtSetFloat(event, args[2], (work->pos.y + work->offsetY) - (work->prev.y + work->prevOffsetY));
-    evtSetFloat(event, args[3], work->pos.z - work->prev.z);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_getf_pos) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    u32 idx;
-
-    work->prevOffsetY = work->offsetY;
-    if (work->kind == 1) {
-        idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
-        work->offsetY = float_3_80420230 * ((f32*)sintbl)[(s32)(float_5p625_80420234 * (f32)idx)];
-    } else {
-        work->offsetY = float_0_80420224;
-    }
-    evtSetFloat(event, args[1], work->pos.x);
-    evtSetFloat(event, args[2], work->pos.y + work->offsetY);
-    evtSetFloat(event, args[3], work->pos.z);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_update_turn) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    work->turn += work->field_0x80;
-    if (work->turn < 0.0f) {
-        work->turn += 360.0f;
-    }
-    if (work->turn >= 360.0f) {
-        work->turn -= 360.0f;
-    }
-    evtSetFloat(event, args[1], work->turn);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_get_mode) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], work->mode);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_get_kind) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    evtSetValue(event, args[1], work->kind);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_get_pause) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-
-    if (work->flags & 2) {
-        evtSetValue(event, args[1], 1);
-    } else {
-        evtSetValue(event, args[1], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(moving_floor_get_end) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    s32 a = (s32)work->field_0x10;
-    s32 b = (s32)((f32)work->field_0x68[work->index] * work->time);
-
-    if (a >= b) {
-        evtSetValue(event, args[1], 1);
-    } else {
-        evtSetValue(event, args[1], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_moving_floor_main2) {
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
-
-    work->field_0x18 = event->lifetime;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_moving_floor_main) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
-    s32 tick;
-    s32 us;
-    f32 dt;
-    u32 idx;
-
-    tick = ((s32*)&event->lifetime)[1] - ((s32*)&work->field_0x18)[1];
-    us = OSTicksToMicroseconds(tick);
-    dt = (f32)us;
-    {
-        f32 b = dt / 1000.0f;
-        f32 a = work->speed * dt / 1000.0f;
-        work->field_0x0C += a;
-        work->field_0x10 += b;
+    switch (work->mode) {
+    case 0:
+        work->flags &= ~1;
+        work->index = 0;
+        work->time = 1.0f;
+        work->start.x = (f32)event->lwData[2];
+        work->end.x = (f32)event->lwData[3];
+        work->field_0x68[0] = event->lwData[4];
+        work->pos.x = work->start.x;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    case 1:
+        work->index = 1;
+        work->time = 1.0f;
+        work->start.y = (f32)event->lwData[2];
+        work->end.y = (f32)event->lwData[3];
+        work->field_0x68[1] = event->lwData[4];
+        work->pos.y = work->start.y;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    case 2:
+        work->index = 2;
+        work->time = 1.0f;
+        work->start.z = (f32)event->lwData[2];
+        work->end.z = (f32)event->lwData[3];
+        work->field_0x68[2] = event->lwData[4];
+        work->pos.z = work->start.z;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    case 3:
+        work->index = 0;
+        work->time = 1.0f;
+        work->start.x = (f32)event->lwData[2];
+        work->end.x = (f32)event->lwData[3];
+        work->field_0x68[0] = event->lwData[4];
+        work->pos.x = 0.5f * work->start.x + 0.5f * work->end.x;
+        work->start.z = (f32)event->lwData[8];
+        work->end.z = (f32)event->lwData[9];
+        work->field_0x68[2] = event->lwData[10];
+        work->pos.z = 0.5f * work->start.z + 0.5f * work->end.z;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    case 4:
+        work->index = 2;
+        work->time = 1.0f;
+        work->start.x = (f32)event->lwData[2];
+        work->end.x = (f32)event->lwData[3];
+        work->field_0x68[0] = event->lwData[4];
+        work->pos.x = work->start.x;
+        work->start.z = (f32)event->lwData[8];
+        work->end.z = (f32)event->lwData[9];
+        work->field_0x68[2] = event->lwData[10];
+        work->pos.z = work->start.z;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    case 5:
+        work->flags &= ~1;
+        work->index = 0;
+        work->time = 1.0f;
+        work->start.x = (f32)event->lwData[2];
+        work->end.x = (f32)event->lwData[3];
+        work->field_0x68[0] = event->lwData[4];
+        work->pos.x = work->start.x;
+        work->field_0x80 = (f32)event->lwData[11];
+        break;
+    default:
+        break;
     }
 
+    work->field_0x74 = event->lwData[5];
     work->prev.x = work->pos.x;
     work->prev.y = work->pos.y;
     work->prev.z = work->pos.z;
     work->prevOffsetY = work->offsetY;
     if (work->kind == 1) {
-        idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
-        work->offsetY = float_3_80420230 * ((f32*)sintbl)[(s32)(float_5p625_80420234 * (f32)idx)];
+        u32 idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
+        work->offsetY = 3.0f * ((f32*)sintbl)[(s32)(5.625f * (f32)idx)];
     } else {
-        work->offsetY = float_0_80420224;
+        work->offsetY = 0.0f;
     }
-    ((f32*)&work->pos)[work->index] = work->field_0x0C;
-    evtSetFloat(event, args[1], work->pos.x);
-    evtSetFloat(event, args[2], work->pos.y + work->offsetY);
-    evtSetFloat(event, args[3], work->pos.z);
+    evtSetValue(event, args[0], (s32)work);
     return EVT_RETURN_DONE;
 }
+
+
+USER_FUNC(evt_moving_floor_free) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    if (work == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    _mapFree(work);
+    evtSetValue(event, args[0], 0);
+    return EVT_RETURN_DONE;
+}
+
 
 // NONMATCHING (99.85%): the field_0x0C blend in the tail differs only in float
 // register allocation. The original computes `t = 1.0f - ratio` into f1 and
@@ -533,106 +401,527 @@ USER_FUNC(evt_moving_floor_init) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_moving_floor_free) {
+
+USER_FUNC(evt_moving_floor_main) {
     s32* args = event->args;
     MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    s32 tick;
+    s32 us;
+    f32 dt;
+    u32 idx;
 
-    if (work == NULL) {
-        return EVT_RETURN_DONE;
-    }
-    _mapFree(work);
-    evtSetValue(event, args[0], 0);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_moving_floor_alloc) {
-    s32* args = event->args;
-    MovingFloorWork* work = (MovingFloorWork*)_mapAlloc(sizeof(MovingFloorWork));
-
-    memset(work, 0, sizeof(MovingFloorWork));
-    work->mode = event->lwData[6];
-    work->kind = event->lwData[12];
-
-    switch (work->mode) {
-    case 0:
-        work->flags &= ~1;
-        work->index = 0;
-        work->time = 1.0f;
-        work->start.x = (f32)event->lwData[2];
-        work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
-        work->pos.x = work->start.x;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    case 1:
-        work->index = 1;
-        work->time = 1.0f;
-        work->start.y = (f32)event->lwData[2];
-        work->end.y = (f32)event->lwData[3];
-        work->field_0x68[1] = event->lwData[4];
-        work->pos.y = work->start.y;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    case 2:
-        work->index = 2;
-        work->time = 1.0f;
-        work->start.z = (f32)event->lwData[2];
-        work->end.z = (f32)event->lwData[3];
-        work->field_0x68[2] = event->lwData[4];
-        work->pos.z = work->start.z;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    case 3:
-        work->index = 0;
-        work->time = 1.0f;
-        work->start.x = (f32)event->lwData[2];
-        work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
-        work->pos.x = 0.5f * work->start.x + 0.5f * work->end.x;
-        work->start.z = (f32)event->lwData[8];
-        work->end.z = (f32)event->lwData[9];
-        work->field_0x68[2] = event->lwData[10];
-        work->pos.z = 0.5f * work->start.z + 0.5f * work->end.z;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    case 4:
-        work->index = 2;
-        work->time = 1.0f;
-        work->start.x = (f32)event->lwData[2];
-        work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
-        work->pos.x = work->start.x;
-        work->start.z = (f32)event->lwData[8];
-        work->end.z = (f32)event->lwData[9];
-        work->field_0x68[2] = event->lwData[10];
-        work->pos.z = work->start.z;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    case 5:
-        work->flags &= ~1;
-        work->index = 0;
-        work->time = 1.0f;
-        work->start.x = (f32)event->lwData[2];
-        work->end.x = (f32)event->lwData[3];
-        work->field_0x68[0] = event->lwData[4];
-        work->pos.x = work->start.x;
-        work->field_0x80 = (f32)event->lwData[11];
-        break;
-    default:
-        break;
+    tick = ((s32*)&event->lifetime)[1] - ((s32*)&work->field_0x18)[1];
+    us = OSTicksToMicroseconds(tick);
+    dt = (f32)us;
+    {
+        f32 b = dt / 1000.0f;
+        f32 a = work->speed * dt / 1000.0f;
+        work->field_0x0C += a;
+        work->field_0x10 += b;
     }
 
-    work->field_0x74 = event->lwData[5];
     work->prev.x = work->pos.x;
     work->prev.y = work->pos.y;
     work->prev.z = work->pos.z;
     work->prevOffsetY = work->offsetY;
     if (work->kind == 1) {
-        u32 idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
+        idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
         work->offsetY = 3.0f * ((f32*)sintbl)[(s32)(5.625f * (f32)idx)];
     } else {
         work->offsetY = 0.0f;
     }
-    evtSetValue(event, args[0], (s32)work);
+    ((f32*)&work->pos)[work->index] = work->field_0x0C;
+    evtSetFloat(event, args[1], work->pos.x);
+    evtSetFloat(event, args[2], work->pos.y + work->offsetY);
+    evtSetFloat(event, args[3], work->pos.z);
     return EVT_RETURN_DONE;
 }
+
+
+USER_FUNC(evt_moving_floor_main2) {
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
+
+    work->field_0x18 = event->lifetime;
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_get_end) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    s32 a = (s32)work->field_0x10;
+    s32 b = (s32)((f32)work->field_0x68[work->index] * work->time);
+
+    if (a >= b) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_get_pause) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    if (work->flags & 2) {
+        evtSetValue(event, args[1], 1);
+    } else {
+        evtSetValue(event, args[1], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_get_kind) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], work->kind);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_get_mode) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    evtSetValue(event, args[1], work->mode);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_update_turn) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    work->turn += work->field_0x80;
+    if (work->turn < 0.0f) {
+        work->turn += 360.0f;
+    }
+    if (work->turn >= 360.0f) {
+        work->turn -= 360.0f;
+    }
+    evtSetFloat(event, args[1], work->turn);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_getf_pos) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    u32 idx;
+
+    work->prevOffsetY = work->offsetY;
+    if (work->kind == 1) {
+        idx = (gp->retraceCount + event->eventId * 0x27) & 0x3F;
+        work->offsetY = 3.0f * ((f32*)sintbl)[(s32)(5.625f * (f32)idx)];
+    } else {
+        work->offsetY = 0.0f;
+    }
+    evtSetFloat(event, args[1], work->pos.x);
+    evtSetFloat(event, args[2], work->pos.y + work->offsetY);
+    evtSetFloat(event, args[3], work->pos.z);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_getf_now_bpoint) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    evtSetFloat(event, args[1], work->pos.x - work->prev.x);
+    evtSetFloat(event, args[2], (work->pos.y + work->offsetY) - (work->prev.y + work->prevOffsetY));
+    evtSetFloat(event, args[3], work->pos.z - work->prev.z);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_get_stmsec) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+
+    if (work->flags & 1) {
+        evtSetValue(event, args[1], 0);
+    } else {
+        evtSetValue(event, args[1], work->field_0x74 * 60 / 1000);
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_getf_xz_scale) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    f32 v;
+
+    v = evtGetFloat(event, (s32)(work->pos.y + work->offsetY));
+    evtSetFloat(event, args[1], (500.0f - v) / 500.0f);
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_reverse) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    f32 t;
+
+    if (work->speed >= 0.0f) {
+        return EVT_RETURN_DONE;
+    }
+    work->speed *= -1.0f;
+    t = (f32)work->field_0x68[work->index] * work->time;
+    work->field_0x10 = t - work->field_0x10;
+    work->direction ^= 1;
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_set_se) {
+    s32* args = event->args;
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, args[0]);
+    const char* name = (const char*)evtGetValue(event, args[1]);
+    Vec pos;
+    MapObject* obj;
+    s32 flag;
+
+    if (work->field_0x78 != 0) {
+        return EVT_RETURN_DONE;
+    }
+    if (work->seId == 0) {
+        mapObjGetPos(name, &pos);
+        obj = mapGetMapObj(name);
+        if (obj == NULL) {
+            mapErrorEntry(0, name);
+            return EVT_RETURN_DONE;
+        }
+        flag = 0;
+        if ((psndGetFlag() & 0x100) && !(*(u32*)((u8*)obj + 0x0) & 0x1800)) {
+            flag = 0x10000;
+        }
+        work->seId = psndSFXOn_3D((const char*)(flag | 0x424), &pos);
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_stop_se) {
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
+
+    if (work->field_0x78 == 0 && work->seId != 0) {
+        psndSFXOff(work->seId);
+        work->seId = 0;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(moving_floor_halt_se) {
+    MovingFloorWork* work = (MovingFloorWork*)evtGetValue(event, event->args[0]);
+
+    work->field_0x78 = 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_moving_floor_delete) {
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    EventEntry* entry = evtGetPtrID(id);
+    MovingFloorWork* work = (MovingFloorWork*)entry->lwData[9];
+
+    if (work->field_0x78 == 0 && work->seId != 0) {
+        psndSFXOff(work->seId);
+        work->seId = 0;
+    }
+    if (work != NULL) {
+        _mapFree(work);
+        entry->lwData[9] = 0;
+    }
+    if (evtCheckID(id)) {
+        evtDeleteID(id);
+    }
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(moving_floor_bero_check)
+    CALL(evt_sub_get_areaname, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("yuu"))
+        RETURN
+    END_IF
+    LOOP(0)
+        CALL(evt_bero_exec_wait, 65536)
+        DEBUG_PUT_MSG(STRING("自動削除チェック待ち"))
+        CALL(evt_bero_exec_wait, 1)
+        CALL(evt_bero_get_now_number, LW(10))
+        CALL(evt_bero_get_info_nextarea, LW(10), LW(3), LW(4))
+        IF_INT_NOT_EQUAL(LW(3), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    DEBUG_PUT_MSG(STRING("自動削除完了"))
+    CALL(moving_floor_stop_se, LW(9))
+    CALL(moving_floor_halt_se, LW(9))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(moving_floor)
+    CALL(evt_moving_floor_alloc, LW(9))
+    CALL(evt_hit_bind_mapobj, LW(1), LW(0))
+    SPAWN_EVENT(moving_floor_bero_check)
+    LOOP(0)
+        CALL(evt_moving_floor_init, LW(9))
+        CALL(evt_moving_floor_main2, LW(9))
+        CALL(moving_floor_get_mode, LW(9), LW(8))
+        IF_INT_EQUAL(LW(8), 5)
+            GOTO(0)
+        END_IF
+        LOOP(0)
+            LOOP(0)
+                CALL(moving_floor_get_pause, LW(9), LW(8))
+                IF_INT_EQUAL(LW(8), 0)
+                    BREAK_LOOP
+                END_IF
+                WAIT_FRAMES(1)
+                CALL(moving_floor_getf_pos, LW(9), LW(12), LW(13), LW(14))
+                CALL(evt_moving_floor_main2, LW(9))
+                CALL(evt_mapobj_trans, 1, LW(0), LW(12), LW(13), LW(14))
+                CALL(moving_floor_update_turn, LW(9), LW(8))
+                CALL(evt_mapobj_rotate, 1, LW(0), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                CALL(evt_hit_bind_update, LW(1))
+                IF_STR_NOT_EQUAL(LW(7), 0)
+                    CALL(evt_mapobj_trans, 1, LW(7), LW(12), 0, LW(14))
+                    CALL(evt_mapobj_rotate, 1, LW(7), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                    CALL(moving_floor_getf_xz_scale, LW(9), LW(8))
+                    CALL(evt_mapobj_scale, 1, LW(7), LW(8), 1, LW(8))
+                END_IF
+            END_LOOP
+            WAIT_FRAMES(1)
+            CALL(evt_moving_floor_main, LW(9), LW(12), LW(13), LW(14))
+            CALL(evt_moving_floor_main2, LW(9))
+            CALL(evt_mapobj_trans, 1, LW(0), LW(12), LW(13), LW(14))
+            CALL(moving_floor_update_turn, LW(9), LW(8))
+            CALL(evt_mapobj_rotate, 1, LW(0), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+            CALL(evt_hit_bind_update, LW(1))
+            IF_STR_NOT_EQUAL(LW(7), 0)
+                CALL(evt_mapobj_trans, 1, LW(7), LW(12), 0, LW(14))
+                CALL(evt_mapobj_rotate, 1, LW(7), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                CALL(moving_floor_getf_xz_scale, LW(9), LW(8))
+                CALL(evt_mapobj_scale, 1, LW(7), LW(8), 1, LW(8))
+            END_IF
+            CALL(evt_mario_get_name_hitobj_head, LW(2))
+            CALL(evt_mario_get_party, LW(10))
+            SET_VALUE(LW(3), 0)
+            IF_INT_NOT_EQUAL(LW(10), 0)
+                CALL(evt_party_get_name_hitobj_head, 0, LW(3))
+            END_IF
+            CALL(evt_mario_get_exparty, LW(10))
+            SET_VALUE(LW(4), 0)
+            IF_INT_NOT_EQUAL(LW(10), 0)
+                CALL(evt_party_get_name_hitobj_head, 1, LW(4))
+            END_IF
+            SET_VALUE(LF(0), 0)
+            IF_INT_EQUAL(LW(6), 1)
+                IF_STR_EQUAL(LW(2), LW(1))
+                    SET_VALUE(LF(0), 1)
+                END_IF
+                IF_STR_EQUAL(LW(3), LW(1))
+                    SET_VALUE(LF(0), 1)
+                END_IF
+                IF_STR_EQUAL(LW(4), LW(1))
+                    SET_VALUE(LF(0), 1)
+                END_IF
+            END_IF
+            IF_INT_EQUAL(LF(0), 1)
+                CALL(moving_floor_reverse, LW(9))
+            END_IF
+            CALL(moving_floor_get_kind, LW(9), LW(8))
+            IF_INT_EQUAL(LW(8), 0)
+                CALL(moving_floor_getf_now_bpoint, LW(9), LW(12), LW(13), LW(14))
+                CALL(evt_mario_get_name_hitobj_ride, LW(8))
+                IF_STR_EQUAL(LW(8), LW(1))
+                    CALL(evt_mario_set_hosei_xyz, LW(12), LW(13), LW(14))
+                END_IF
+                CALL(evt_party_get_name_hitobj_ride, 0, LW(8))
+                IF_STR_EQUAL(LW(8), LW(1))
+                    CALL(evt_party_set_hosei_xyz, 0, LW(12), LW(13), LW(14))
+                END_IF
+                CALL(evt_party_get_name_hitobj_ride, 1, LW(8))
+                IF_STR_EQUAL(LW(8), LW(1))
+                    CALL(evt_party_set_hosei_xyz, 1, LW(12), LW(13), LW(14))
+                END_IF
+            END_IF
+            CALL(moving_floor_get_end, LW(9), LW(8))
+            IF_INT_NOT_EQUAL(LW(8), 0)
+                BREAK_LOOP
+            END_IF
+            CALL(moving_floor_get_kind, LW(9), LW(8))
+            IF_INT_EQUAL(LW(8), 0)
+                SET_VALUE(LF(0), 1)
+                IF_FLOAT_EQUAL(LW(12), FLOAT(0.0f))
+                    IF_FLOAT_EQUAL(LW(13), FLOAT(0.0f))
+                        IF_FLOAT_EQUAL(LW(14), FLOAT(0.0f))
+                            SET_VALUE(LF(0), 0)
+                        END_IF
+                    END_IF
+                END_IF
+                IF_INT_EQUAL(LF(0), 0)
+                    CALL(moving_floor_stop_se, LW(9))
+                ELSE
+                    CALL(moving_floor_set_se, LW(9), LW(0))
+                END_IF
+            END_IF
+        END_LOOP
+        CALL(moving_floor_stop_se, LW(9))
+        LABEL(0)
+        CALL(moving_floor_get_stmsec, LW(9), LW(10))
+        LOOP(LW(10))
+            CALL(moving_floor_get_mode, LW(9), LW(8))
+            IF_INT_EQUAL(LW(8), 5)
+                SET_VALUE(LW(10), 0)
+            ELSE
+                IF_INT_EQUAL(LW(10), 0)
+                    BREAK_LOOP
+                END_IF
+            END_IF
+            LOOP(0)
+                CALL(moving_floor_get_pause, LW(9), LW(8))
+                IF_INT_EQUAL(LW(8), 0)
+                    BREAK_LOOP
+                END_IF
+                WAIT_FRAMES(1)
+                CALL(moving_floor_getf_pos, LW(9), LW(12), LW(13), LW(14))
+                CALL(evt_moving_floor_main2, LW(9))
+                CALL(evt_mapobj_trans, 1, LW(0), LW(12), LW(13), LW(14))
+                CALL(moving_floor_update_turn, LW(9), LW(8))
+                CALL(evt_mapobj_rotate, 1, LW(0), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                CALL(evt_hit_bind_update, LW(1))
+                IF_STR_NOT_EQUAL(LW(7), 0)
+                    CALL(evt_mapobj_trans, 1, LW(7), LW(12), 0, LW(14))
+                    CALL(evt_mapobj_rotate, 1, LW(7), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                    CALL(moving_floor_getf_xz_scale, LW(9), LW(8))
+                    CALL(evt_mapobj_scale, 1, LW(7), LW(8), 1, LW(8))
+                END_IF
+            END_LOOP
+            WAIT_FRAMES(1)
+            CALL(moving_floor_getf_pos, LW(9), LW(12), LW(13), LW(14))
+            CALL(evt_moving_floor_main2, LW(9))
+            CALL(evt_mapobj_trans, 1, LW(0), LW(12), LW(13), LW(14))
+            CALL(moving_floor_update_turn, LW(9), LW(8))
+            CALL(evt_mapobj_rotate, 1, LW(0), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+            CALL(evt_hit_bind_update, LW(1))
+            IF_STR_NOT_EQUAL(LW(7), 0)
+                CALL(evt_mapobj_trans, 1, LW(7), LW(12), 0, LW(14))
+                CALL(evt_mapobj_rotate, 1, LW(7), FLOAT(0.0f), LW(8), FLOAT(0.0f))
+                CALL(moving_floor_getf_xz_scale, LW(9), LW(8))
+                CALL(evt_mapobj_scale, 1, LW(7), LW(8), 1, LW(8))
+            END_IF
+        END_LOOP
+    END_LOOP
+    CALL(evt_moving_floor_free, LW(9))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(ridedown_floor)
+    CALL(evt_hit_bind_mapobj, LW(1), LW(0))
+    SET_VALUE(LW(10), LW(2))
+    SUBTRACT(LW(10), LW(3))
+    GET_INT_INDEXED(LW(6), LW(14))
+    GET_INT_INDEXED(LW(6), LW(15))
+    SET_VALUE(LW(9), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(5), 0)
+            GET_INT_INDEXED(LW(7), LW(12))
+            AND(LW(12), 65534)
+            SET_INT_INDEXED(LW(7), LW(12))
+        ELSE
+            GET_INT_INDEXED(LW(7), LW(12))
+            AND(LW(12), 65533)
+            SET_INT_INDEXED(LW(7), LW(12))
+        END_IF
+        CALL(evt_mario_get_name_hitobj_ride, LW(11))
+        IF_STR_EQUAL(LW(11), LW(1))
+            IF_INT_EQUAL(LW(5), 0)
+                GET_INT_INDEXED(LW(6), LW(11))
+                SUBTRACT(LW(11), LW(4))
+                IF_INT_LESS_OR_EQUAL(LW(11), 0)
+                    SET_VALUE(LW(11), 0)
+                END_IF
+                SET_INT_INDEXED(LW(6), LW(11))
+                GET_INT_INDEXED(LW(7), LW(12))
+                OR(LW(12), 1)
+                SET_INT_INDEXED(LW(7), LW(12))
+            ELSE
+                GET_INT_INDEXED(LW(6), LW(11))
+                ADD(LW(11), LW(4))
+                IF_INT_GREATER_OR_EQUAL(LW(11), 10000)
+                    SET_VALUE(LW(11), 10000)
+                END_IF
+                SET_INT_INDEXED(LW(6), LW(11))
+                GET_INT_INDEXED(LW(7), LW(12))
+                OR(LW(12), 2)
+                SET_INT_INDEXED(LW(7), LW(12))
+            END_IF
+        END_IF
+        GET_INT_INDEXED(LW(7), LW(12))
+        IF_INT_EQUAL(LW(12), 0)
+            IF_INT_EQUAL(LW(5), 0)
+                GET_INT_INDEXED(LW(6), LW(11))
+                IF_INT_GREATER_OR_EQUAL(LW(11), LW(15))
+                    SUBTRACT(LW(11), LW(4))
+                    IF_INT_LESS_OR_EQUAL(LW(11), LW(15))
+                        SET_VALUE(LW(11), LW(15))
+                    END_IF
+                ELSE
+                    ADD(LW(11), LW(4))
+                    IF_INT_GREATER_OR_EQUAL(LW(11), LW(15))
+                        SET_VALUE(LW(11), LW(15))
+                    END_IF
+                END_IF
+                SET_INT_INDEXED(LW(6), LW(11))
+            END_IF
+        END_IF
+        GET_INT_INDEXED(LW(6), LW(11))
+        MULTIPLY(LW(11), LW(10))
+        MULTIPLY_FLOAT(LW(11), FLOAT(0.01f))
+        MULTIPLY_FLOAT(LW(11), FLOAT(0.01f))
+        IF_INT_EQUAL(LW(5), 0)
+            SET_FLOAT_VALUE(LW(12), LW(3))
+            ADD_FLOAT(LW(12), LW(11))
+        ELSE
+            SET_FLOAT_VALUE(LW(12), LW(2))
+            SUBTRACT_FLOAT(LW(12), LW(11))
+        END_IF
+        CALL(evt_mapobj_trans, 1, LW(0), 0, LW(12), 0)
+        CALL(evt_hit_bind_update, LW(1))
+        SET_FLOAT_VALUE(LW(13), LW(12))
+        SUBTRACT_FLOAT(LW(13), LW(14))
+        SET_FLOAT_VALUE(LW(14), LW(12))
+        CALL(evt_mario_get_name_hitobj_ride, LW(11))
+        IF_STR_EQUAL(LW(11), LW(1))
+            CALL(evt_mario_set_hosei_xyz, 0, LW(13), 0)
+        END_IF
+        CALL(evt_party_get_name_hitobj_ride, 0, LW(11))
+        IF_STR_EQUAL(LW(11), LW(1))
+            CALL(evt_party_set_hosei_xyz, 0, 0, LW(13), 0)
+        END_IF
+        CALL(evt_party_get_name_hitobj_ride, 1, LW(11))
+        IF_STR_EQUAL(LW(11), LW(1))
+            CALL(evt_party_set_hosei_xyz, 1, 0, LW(13), 0)
+        END_IF
+        IF_FLOAT_EQUAL(LW(13), FLOAT(0.0f))
+            IF_INT_NOT_EQUAL(LW(9), 0)
+                CALL(evt_snd_sfxoff, LW(9))
+                SET_VALUE(LW(9), 0)
+            END_IF
+        ELSE
+            IF_INT_EQUAL(LW(9), 0)
+                CALL(evt_mapobj_get_position, LW(0), LW(11), LW(12), LW(13))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG1_TIK_FLOOR_MOVE1"), LW(11), LW(12), LW(13), LW(9))
+            END_IF
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+// clang-format on

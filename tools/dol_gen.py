@@ -19,6 +19,7 @@ FORCE = '--force-active' in sys.argv
 APPEND = sys.argv[sys.argv.index('--append') + 1] if '--append' in sys.argv else None
 if APPEND:
     args = [a for a in args if a != APPEND]
+hdrtext = {h: open(h, errors='replace').read() for h in glob.glob('include/**/*.h', recursive=True)}
 asm = open(f'build/G8MJ01/asm/{UNIT}.s', errors='replace').read()
 
 objs = []
@@ -53,10 +54,49 @@ def cstr(s):
     return '"' + t.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n') + '"'
 
 
+
+_EXT = None
+
+
+def ext_strings():
+    """name -> raw text of every string object in the DOL asm (for strings this unit does not own)."""
+    global _EXT
+    if _EXT is None:
+        _EXT = {}
+        for f in glob.glob('build/G8MJ01/asm/**/*.s', recursive=True):
+            t = open(f, errors='replace').read()
+            for m in re.finditer(r'\.obj ((?:str|dat)_\w+), \w+\n\t\.string "((?:[^"\\]|\\.)*)"', t):
+                _EXT[m.group(1)] = m.group(2)
+    return _EXT
+
+
+USED_EXT = []
+
+
+def link_external_strings(text, body, literal, wrap):
+    """Replace inline literals by the name of the string object another unit owns, in the order the body refers to them."""
+    for n in re.findall(r'\.4byte (\w+)', body):
+        if n in strings or n in names:
+            continue
+        raw = ext_strings().get(n)
+        if raw is None:
+            continue
+        lit = cstr(raw)
+        pat = literal(lit)
+        if pat in text:
+            text = text.replace(pat, wrap(n), 1)
+            if n not in USED_EXT:
+                USED_EXT.append(n)
+    return text
+
+
 def content(name):
     return cstr(strings[name])
 
 
+SCALARS = set()
+if APPEND:
+    SCALARS = set(re.findall(r'(?m)^\s*(?:s32|u32|f32|s16|u16|s8|u8|BOOL)\s+(\w+)\s*;', open(APPEND).read()))
 NOTSCRIPT = set()   # objects that look like scripts but ttydasm cannot read
 isscript = lambda o: o['name'] not in NOTSCRIPT and bool(re.match(r'\s*\.4byte 0x000[0-9A-F]{5}', o['body'])) and \
     bool(re.search(r'\.4byte 0x00000001(\s*\.4byte 0x00000000)*\s*$', o['body']))
@@ -100,6 +140,9 @@ def render(o):
         lines = [l for l in t.stdout.rstrip('\n').split('\n') if l.strip() != 'END']
         body = [lines[0]] + [wrap_ptr(l) for l in lines[1:]]
         text = st + '\n'.join(body)
+        for sc in SCALARS:   # a variable (not an array) the source defines: the script holds its address
+            text = re.sub(rf'PTR\({re.escape(sc)}\)', f'PTR(&{sc})', text)
+        text = link_external_strings(text, o['body'], lambda lit: f'STRING({lit})', lambda n: f'STRING((void*){n})')
         used = re.findall(r'STRING\(("(?:[^"\\]|\\.)*")\)', text)
         return text, used
     words = []
@@ -112,7 +155,7 @@ def render(o):
                 words.append(f'(u32){content(v)}')
                 used.append(content(v))
             else:
-                words.append(f'(u32)&{v}' if v in names else f'(u32){v}')
+                words.append(f'(u32)&{v}' if v in names and v not in {f_['name'] for f_ in fns} else f'(u32){v}')
         elif k == 'float':
             words.append('0x%08X' % struct.unpack('>I', struct.pack('>f', float(v)))[0])
         elif k == 'skip' and int(v, 0) % 4 == 0:
@@ -127,12 +170,22 @@ def render(o):
             sys.exit(f"{o['name']}: unsupported .{k}")
     if len(words) * 4 != o['size']:
         sys.exit(f"{o['name']}: {len(words) * 4} bytes vs {o['size']}")
-    text = f"// TODO: type\n{st}u32 {o['name']}[{len(words)}] = {{\n    " + \
+    _t = 's32' if (o['name'] in NOTSCRIPT or re.search(rf'EVT_DEF\({re.escape(o["name"])}\)', ' '.join(hdrtext.values()))) else 'u32'
+    words = [w for w in words]
+    if _t == 's32':
+        words = [w.replace('(u32)', '(s32)') for w in words]
+    text = f"// TODO: type\n{st}{_t} {o['name']}[{len(words)}] = {{\n    " + \
         ',\n    '.join(', '.join(words[j:j + 4]) for j in range(0, len(words), 4)) + ",\n};"
+    text = link_external_strings(text, o['body'], lambda lit: f'(s32){lit}' if _t == 's32' else f'(u32){lit}', lambda n: f'(s32)(void*){n}' if _t == 's32' else f'(u32)(void*){n}')
     return text, used
 
 
 data = [o for o in objs if o['sec'] in ('.data', '.sdata') and o['kind'] == 'obj' and not is_gap(o)]
+if APPEND:
+    # data the source already defines is left alone; compiler-made objects (jump tables) come from the functions
+    _src = open(APPEND).read()
+    _defd = lambda n: bool(re.search(rf'(?m)^(?!\s*(//|extern))[^\n(]*\b{re.escape(n)}\b\s*(\[[^\]]*\]\s*)*=|EVT_BEGIN\({re.escape(n)}\)', _src))
+    data = [o for o in data if not _defd(o['name']) and not o['name'].startswith('jumptable_')]
 queues = {'.data': [o for o in data if o['sec'] == '.data'], '.sdata': [o for o in data if o['sec'] == '.sdata']}
 rendered = {o['name']: render(o) for o in data}
 # expected next strings per pool, by content
@@ -175,57 +228,167 @@ while queues['.data'] or queues['.sdata']:
     emit.append(o)
     seen.update(rendered[o['name']][1])
 
-src_parts = []
-placed = set()
+
+def split_source(text):
+    """(preamble, [(function name, text)], epilogue): the existing source cut into its function definitions."""
+    lines = text.split('\n')
+    chunks, cur, depth, start = [], [], 0, None
+    first = None
+    for i, l in enumerate(lines):
+        code = re.sub(r'//.*', '', l)
+        if first is None and depth == 0 and re.match(r'^[A-Za-z_][\w\s\*]*\(.*\)\s*\{?\s*$', code) and not code.startswith(('typedef', 'extern')) and '=' not in code and not code.rstrip().endswith(';'):
+            first = i
+        if first is not None:
+            cur.append(l)
+            depth += code.count('{') - code.count('}')
+            if depth == 0 and '}' in code:
+                chunks.append(cur)
+                cur = []
+    while first is not None and first > 0 and (lines[first - 1].startswith('//') or lines[first - 1].startswith('#pragma')):
+        first -= 1
+    pre = '\n'.join(lines[:first]) if first is not None else text
+    out = []
+    for c in chunks:
+        body = '\n'.join(c)
+        m = re.search(r'(?:USER_FUNC|EVT_DEF)\((\w+)\)|\b(\w+)\s*\(', re.sub(r'(?m)^\s*(//.*|#pragma.*)$', '', body))
+        out.append(((m.group(1) or m.group(2)) if m else '', body))
+    tail = '\n'.join(cur)
+    return pre, out, tail
 
 
-def placeholder(f):
-    return (f"// TODO: write {f['name']} ({'global' if f['scope'] == 'global' else 'static'}, {f['size']:#x} bytes) here:\n"
-            f"// its asm is in build/G8MJ01/asm/{UNIT}.s")
+if APPEND:
+    pre_text, fchunks, tail_text = split_source(open(APPEND).read())
+    fn_addr = {f['name']: f['addr'] for f in fns}
+    pool = {o['name']: o['sec'] for o in objs if o['sec'] in ('.rodata', '.sdata2') and o['kind'] == 'obj' and not is_gap(o)
+            and '$' not in o['name']}
+    # MWCC pools a string in a data initializer, and an aggregate constant (a Vec = {0,0,0}) in a function, when it parses
+    # them, in source order; the strings inside functions come afterwards, at codegen, in text order; .sdata2 constants
+    # are also pooled at codegen. Only the parse-time entries constrain how functions and data interleave.
+    rd = lambda n: pool.get(n) == '.rodata'
+    data_strs = {n for o in data for n in re.findall(r'\b(\w+)\b', o['body']) if rd(n) and n in strings}
+    fn_aggr = {n for f in fns for n in re.findall(r'\b(\w+)\b', f['body']) if rd(n) and n.startswith('vec3_')}
+    parse_pool = data_strs | fn_aggr
+    pool_order = {'.rodata': [o['name'] for o in objs if o['sec'] == '.rodata' and o['name'] in parse_pool]}
+    refs_of = lambda body, fn=False: {n for n in re.findall(r'\b(\w+)\b', body) if n in parse_pool and (n not in strings if fn else True)}
+    helpers = [c for c in fchunks if c[0] not in fn_addr]
+    funcs = sorted([c for c in fchunks if c[0] in fn_addr], key=lambda c: -fn_addr[c[0]])   # deferred codegen: reverse of the text
+    fbody = {f['name']: f['body'] for f in fns}
+    items = {'F': [dict(name=c[0], text=c[1], refs=refs_of(fbody[c[0]], True)) for c in funcs],
+             'D': [dict(name=o['name'], text=rendered[o['name']][0], refs=refs_of(o['body'])) for o in data if o['sec'] == '.data'],
+             'S': [dict(name=o['name'], text=rendered[o['name']][0], refs=refs_of(o['body'])) for o in data if o['sec'] == '.sdata']}
+    seen_p = set()
+    _emitted = {o['name'] for o in data}
+    for o in objs:   # data the source already defines sits in the preamble: its pool entries come first
+        if o['sec'] in ('.data', '.sdata') and o['kind'] == 'obj' and not is_gap(o) and o['name'] not in _emitted \
+                and not o['name'].startswith('jumptable_'):
+            seen_p |= refs_of(o['body'])
+
+    def ok(item):
+        new = item['refs'] - seen_p
+        for p, lst in pool_order.items():
+            need = [n for n in lst if n not in seen_p]
+            k = len([n for n in new if pool[n] == p])
+            if set(need[:k]) != {n for n in new if pool[n] == p}:
+                return False
+        return True
+
+    merged = []
+    while any(items.values()):
+        pick = None
+        for q in ('F', 'D', 'S'):
+            if items[q] and ok(items[q][0]):
+                pick = q
+                break
+        if pick is None:
+            print('pool order: no item fits; taking', [items[q][0]['name'] for q in items if items[q]], file=sys.stderr)
+            for q in items:
+                if items[q]:
+                    new_ = sorted(items[q][0]['refs'] - seen_p, key=lambda n: (pool[n], pool_order[pool[n]].index(n)))
+                    print('   ', q, items[q][0]['name'], 'needs', new_[:6], '| next expected', {pp: [n for n in l if n not in seen_p][:3] for pp, l in pool_order.items()}, file=sys.stderr)
+            pick = next(q for q in ('F', 'D', 'S') if items[q])
+        it = items[pick].pop(0)
+        merged.append(it)
+        seen_p |= it['refs']
+    emit = [o for o in data if o['name'] in {m['name'] for m in merged}]
+    src_parts = [c[1] for c in helpers] + [m['text'] for m in merged]
+    src = '\n\n'.join(src_parts)
+    defined = {o['name'] for o in emit}
+    own_fns = {f['name'] for f in fns}
+    APPEND_PRE, APPEND_TAIL = pre_text, tail_text
+else:
+    src_parts = []
+    placed = set()
 
 
-for o in emit:
+    def placeholder(f):
+        return (f"// TODO: write {f['name']} ({'global' if f['scope'] == 'global' else 'static'}, {f['size']:#x} bytes) here:\n"
+                f"// its asm is in build/G8MJ01/asm/{UNIT}.s")
+
+
+    for o in emit:
+        if not APPEND:
+            for f in fns:
+                if f['name'] not in placed and re.search(rf'\b{re.escape(f["name"])}\b', o['body']):
+                    src_parts.append(placeholder(f))
+                    placed.add(f['name'])
+        src_parts.append(rendered[o['name']][0])
     if not APPEND:
         for f in fns:
-            if f['name'] not in placed and re.search(rf'\b{re.escape(f["name"])}\b', o['body']):
+            if f['name'] not in placed:
                 src_parts.append(placeholder(f))
-                placed.add(f['name'])
-    src_parts.append(rendered[o['name']][0])
-if not APPEND:
-    for f in fns:
-        if f['name'] not in placed:
-            src_parts.append(placeholder(f))
-src = '\n\n'.join(src_parts)
-defined = {o['name'] for o in emit}
-own_fns = {f['name'] for f in fns}
+    src = '\n\n'.join(src_parts)
+    defined = {o['name'] for o in emit}
+    own_fns = {f['name'] for f in fns}
+    APPEND_PRE = APPEND_TAIL = ''
 
-# forward declarations for objects used before their definition
+import glob as _g
+# forward declarations for objects used before their definition, and for the unit's own functions the data calls
 fwd = []
+HDR_ADD = []
+if APPEND:
+    _dtext = '\n'.join(rendered[o['name']][0] for o in emit)
+    _called = set(re.findall(r'\bCALL\((\w+)', _dtext))
+    for f in sorted(fns, key=lambda f: -f['addr']):   # declaration order sets function order: same as the definitions
+        _nm = re.escape(f['name'])
+        _declared = re.search(rf'(USER_FUNC|EVT_DEF)\({_nm}\)|\b{_nm}\s*\(', APPEND_PRE) or any(re.search(rf'(USER_FUNC|EVT_DEF)\({_nm}\)|\b{_nm}\s*\(', t) for t in hdrtext.values())
+        if re.search(rf'\b{_nm}\b', _dtext) and not _declared:
+            st = '' if f['scope'] == 'global' else 'static '
+            _sig = next((c[1] for c in fchunks if c[0] == f['name']), None)
+            if _sig is not None:   # the definition's own signature is the declaration
+                _head = re.sub(r'(?m)^\s*(//.*|#pragma.*)$', '', _sig.split('{')[0]).strip() + ';'
+            else:
+                _head = f"USER_FUNC({f['name']});" if f['name'] in _called else f"void {f['name']}(void);  // TODO: real signature"
+            if f['scope'] == 'global':
+                HDR_ADD.append(_head)   # a non-static prototype belongs in the unit's header (CI rejects it in a .c)
+            else:
+                fwd.append(_head if _head.startswith('static') else 'static ' + _head)
 for o in emit:
     n = o['name']
     dpos = min([p for p in (src.find(f'EVT_BEGIN({n})'), src.find(f' {n}[')) if p >= 0] or [0])
     if re.search(rf'[(&]\s*{re.escape(n)}\b', src[:dpos]):
         st = '' if o['scope'] == 'global' else 'static '
-        fwd.append(f"{st}s32 {n}[{o['size'] // 4}];" if isscript(o) else f"{st}u32 {n}[{o['size'] // 4}];")
+        fwd.append(f"{st}s32 {n}[{o['size'] // 4}];" if (isscript(o) or n in NOTSCRIPT or re.search(rf'EVT_DEF\({re.escape(n)}\)', ' '.join(hdrtext.values()))) else f"{st}u32 {n}[{o['size'] // 4}];")
 
 # names the data uses that the unit doesn't define: find the headers that declare them
-idents = set(re.findall(r'\b([A-Za-z_]\w*)\b', re.sub(r'"(?:[^"\\]|\\.)*"', '', re.sub(r'//[^\n]*', '', src)))) - defined - own_fns
+idents = set(re.findall(r'\b([A-Za-z_]\w*)\b', re.sub(r'"(?:[^"\\]|\\.)*"', '', re.sub(r'//[^\n]*', '', '\n'.join(rendered[o['name']][0] for o in emit))))) - defined - own_fns - names
 hdrs = set()
-hdrtext = {h: open(h, errors='replace').read() for h in glob.glob('include/**/*.h', recursive=True)}
 for h, t in hdrtext.items():
     for n in idents:
         if re.search(rf'(USER_FUNC|EVT_DEF)\({n}\)|\b{n}\s*\(|\b{n}\[\]', t):
             hdrs.add(h[8:])
 hdrs |= {'evt/evt_cmd.h'}
+if HDR_ADD:
+    _c = glob.glob(f'include/**/{os.path.basename(UNIT)}.h', recursive=True)
+    hdrs.add((_c[0] if _c else f'include/{UNIT}.h')[8:])
 skip = re.compile(r'^(LW|LF|GW|GF|GSW|GSWF|LSW|LSWF|UW|UF|FLOAT|STRING|PTR|EVT_BEGIN|EVT_END|EVTDAT_POINTER_MAX|extend_data|static|u8|u32|s32|u64|f32|f64|TODO|type|__declspec|section)$')
-missing = sorted(n for n in idents if not n.isupper() and not skip.match(n) and
-                 not any(re.search(rf'(USER_FUNC|EVT_DEF)\({n}\)|\b{n}\s*\(|\b{n}\[\]', hdrtext['include/' + h]) for h in hdrs))
-ext = [f'extern s32 {n}[];' for n in missing]
+missing = sorted(n for n in idents if n not in USED_EXT and not n.isupper() and not skip.match(n) and
+                 not any(re.search(rf'(USER_FUNC|EVT_DEF)\({n}\)|\b{n}\s*\(|\b{n}\[\]', hdrtext.get('include/' + h, '')) for h in hdrs))
+ext = [f'extern s32 {n}[];' for n in missing] + [f'extern const char {n}[];' for n in USED_EXT if not re.search(rf'\b{n}\s*\[', APPEND_PRE if APPEND else '')]
 
 pre = ''.join(f'#include "{h}"\n' for h in sorted(hdrs))
 decl = '\n'.join(ext + fwd)
 if APPEND:
-    text = open(APPEND).read()
+    text = APPEND_PRE
     m = list(re.finditer(r'^#include [^\n]*\n', text, re.M))[-1]
     inc = ''.join(f'#include "{h}"\n' for h in sorted(hdrs) if f'#include "{h}"' not in text)
     text = text[:m.end()] + inc + text[m.end():]
@@ -234,4 +397,30 @@ if APPEND:
 else:
     out = pre + ('\n#pragma force_active on\n' if FORCE else '\n') + (decl + '\n\n' if decl else '') + '// clang-format off\n' + src + '\n// clang-format on\n' + ('#pragma force_active off\n' if FORCE else '')
     sys.stdout.write(out)
+if HDR_ADD:
+    _cands = glob.glob(f'include/**/{os.path.basename(UNIT)}.h', recursive=True)
+    _hp = _cands[0] if _cands else f'include/{UNIT}.h'
+    _ht = open(_hp).read() if os.path.exists(_hp) else '#pragma once\n\n#include "evt/evt_cmd.h"\n'
+    _new = [d for d in HDR_ADD if d not in _ht]
+    if _new:
+        os.makedirs(os.path.dirname(_hp), exist_ok=True)
+        # the types the declarations use must be visible in the header: include the headers that define them
+        _incs = []
+        for d in _new:
+            for tname in set(re.findall(r'\b([A-Z][A-Za-z0-9_]+)\b', re.sub(r'USER_FUNC|EVT_DEF', '', d))):
+                if re.search(rf'\b{tname}\b', _ht):
+                    continue
+                for h, t in hdrtext.items():
+                    if h != _hp and re.search(rf'(\}}\s*{tname}\s*;|typedef\s+struct\s+\w*\s+{tname}\s*;|typedef\s+enum\s+\w*\s*\{{[^}}]*\}}\s*{tname}\s*;)', t):
+                        _incs.append(h[8:])
+                        break
+        if any('USER_FUNC' in d or 'EVT_DEF' in d for d in _new):
+            _incs.append('evt/evt_cmd.h')
+        _incs = [i for i in dict.fromkeys(_incs) if f'#include "{i}"' not in _ht]
+        if _incs and '#pragma once' in _ht:
+            _ht = _ht.replace('#pragma once\n', '#pragma once\n' + ''.join(f'\n#include "{i}"' for i in _incs) + '\n', 1)
+        open(_hp, 'w').write(_ht.rstrip('\n') + '\n' + '\n'.join(_new) + '\n')
+        print(f'declarations added to {_hp}: {len(_new)}', file=sys.stderr)
+        if _hp[8:] not in [h for h in hdrs]:
+            print(f'(include "{_hp[8:]}" in the source)', file=sys.stderr)
 print(f'{UNIT}: {len(emit)} objects, {sum(1 for o in emit if isscript(o))} scripts, {len(ext)} externs', file=sys.stderr)

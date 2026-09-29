@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_window.h"
+
 #include "evt/evt_cmd.h"
 USER_FUNC(evt_sub_get_coin);
 USER_FUNC(evt_sub_get_mapname);
@@ -67,3 +69,11 @@ USER_FUNC(evt_sub_status_gauge_force_close);
 USER_FUNC(evt_sub_status_gauge_force_open);
 EVT_DEF(evt_sub_stopwatch);
 USER_FUNC(evt_sub_system_flag_onoff);
+void coingetDisp(WinMgrEntry* entry);
+USER_FUNC(stone_ry);
+USER_FUNC(stone_bg_open);
+USER_FUNC(stageclear_wait);
+USER_FUNC(set_stop);
+USER_FUNC(get_stop);
+USER_FUNC(irai_mail_check);
+USER_FUNC(mail_evt_gor_04_keyoff_check);

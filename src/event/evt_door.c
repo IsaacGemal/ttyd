@@ -15,6 +15,16 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 #include "math_trig.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_party.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "party/party_motion.h"
 
 s32 DoorFLAG;
 s32 door_mapflag;
@@ -51,254 +61,381 @@ typedef struct DoorData {
     u32 data[0x48 / 4];
 } DoorData;
 
+extern s32 N_evt_mario_party_door_halve_hitbox[];
+s32 door_up_se[2];
+s32 house_close_se[4];
 
+// clang-format off
 USER_FUNC(snd_door_in) {
 	psndSetFlag(0x100);
 	return EVT_RETURN_DONE;
 }
+
 
 USER_FUNC(snd_door_out) {
 	psndClearFlag(0x100);
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(evt_door_end_wait) {
-	return DoorFLAG ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
+EVT_BEGIN(door_open_se)
+    CALL(evt_door_param, LW(0), 8, LW(1))
+    CALL(evt_door_param, LW(0), 1, LW(2), LW(3), LW(4))
+    CALL(evt_hit_get_position, LW(3), LW(10), LW(11), LW(12))
+    SWITCH(LW(1))
+        CASE_EQUAL(0)
+        CASE_EQUAL(1)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(2)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_WOOD1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(3)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_WOOD2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(4)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_WOOD3"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(5)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_IRON1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(6)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_IRON2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(7)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_GRILLE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(8)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_SLIDE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(9)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_TURN1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(10)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_ELEC1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(11)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_STONE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(12)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_CASTLE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(13)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_CASTLE2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(14)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN_METAL1"), LW(10), LW(11), LW(12), 0)
+    END_SWITCH
+    RETURN
+EVT_END()
 
-USER_FUNC(evt_door_set_param) {
+EVT_BEGIN(door_close_se)
+    CALL(evt_door_param, LW(0), 8, LW(1))
+    CALL(evt_door_param, LW(0), 1, LW(2), LW(3), LW(4))
+    CALL(evt_hit_get_position, LW(3), LW(10), LW(11), LW(12))
+    SWITCH(LW(1))
+        CASE_EQUAL(0)
+        CASE_EQUAL(1)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(2)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_WOOD1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(3)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_WOOD2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(4)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_WOOD2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(5)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_IRON1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(6)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_IRON2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(7)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_GRILLE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(8)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_SLIDE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(9)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_TURN1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(10)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_ELEC1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(11)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_STONE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(12)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_CASTLE1"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(13)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_CASTLE2"), LW(10), LW(11), LW(12), 0)
+        CASE_EQUAL(14)
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT_METAL1"), LW(10), LW(11), LW(12), 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_down_se)
+    CALL(evt_door_param, LW(0), 8, LW(1))
+    CALL(evt_door_param, LW(0), 1, LW(2), LW(3), LW(4))
+    CALL(evt_hit_get_position, LW(3), LW(10), LW(11), LW(12))
+    SWITCH(LW(1))
+        CASE_EQUAL(0)
+        CASE_DEFAULT
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_FALL1"), LW(10), LW(11), LW(12), 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(house_open_se)
+    CALL(evt_door_param, LW(0), 9, LW(1))
+    IF_BITS_SET(LW(1), 2)
+        RETURN
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(2), LW(3), LW(4))
+    CALL(evt_hit_get_position, LW(3), LW(10), LW(11), LW(12))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_OPEN1"), LW(10), LW(11), LW(12), 0)
+    RETURN
+EVT_END()
+
+
+USER_FUNC(door_entry) {
 	s32* args = event->args;
 	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
-	s32 which = evtGetValue(event, args[1]);
-	s32 value = evtGetValue(event, args[2]);
+	Vec a = { 0 };
+	Vec b = { 0 };
+	DoorWork* work = (DoorWork*)_mapAlloc(sizeof(DoorWork));
 
-	switch (which) {
+	work->param = param;
+	switch (param->field_00) {
 	case 0:
-		param->field_34 = (char**)value;
-		break;
-	default:
-		break;
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_door_data_copy) {
-	s32* args = event->args;
-	DoorData* src = (DoorData*)evtGetValue(event, args[0]);
-	DoorData* dst = (DoorData*)_mapAlloc(0x48);
-
-	*dst = *src;
-	evtSetValue(event, args[1], (s32)dst);
-	return EVT_RETURN_DONE;
-}
-
-// NONMATCHING (95.29%): 1 instruction differs, 1 extra, plus register differences.
-USER_FUNC(npc_hide_onoff) {
-	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
-	s32 flag = evtGetValue(event, args[1]);
-	char** npcs = param->field_34;
-	NpcEntry* npc;
-
-	while (*npcs != NULL) {
-		npc = npcNameToPtr_NoAssert(*npcs);
-		if (npc != NULL) {
-			if (flag != 0) {
-				npc->flags |= 0x800;
-			} else {
-				npc->flags &= ~0x800;
-			}
-		}
-		npcs++;
-	}
-	return event ? EVT_RETURN_DONE : EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_door_load_mapflag) {
-	s32* args = event->args;
-	char* name = (char*)evtGetValue(event, args[0]);
-	MapObject* obj = mapGetMapObj(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-		return EVT_RETURN_DONE;
-	}
-	*(s32*)obj = door_mapflag;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_door_save_mapflag) {
-	s32* args = event->args;
-	char* name = (char*)evtGetValue(event, args[0]);
-	MapObject* obj = mapGetMapObj(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-		return EVT_RETURN_DONE;
-	}
-	door_mapflag = *(s32*)obj;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_door_param) {
-	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
-	s32 mode = evtGetValue(event, args[1]);
-	Vec in = { 0 };
-	Vec out = { 0 };
-
-	switch (mode) {
-	case 0:
-		evtSetValue(event, args[2], param->field_04);
-		break;
 	case 1:
-		evtSetValue(event, args[2], param->field_0C);
-		evtSetValue(event, args[3], param->field_10);
-		evtSetValue(event, args[4], param->field_14);
+		hitObjGetPos((char*)param->field_08, &a);
+		hitObjGetNormal((char*)param->field_08, &b);
+		work->out.x = a.x + b.x * 40.0f - b.z * 10.0f;
+		work->out.z = a.z + b.z * 40.0f + b.x * 10.0f;
+		hitObjGetPos((char*)param->field_10, &a);
+		hitObjGetNormal((char*)param->field_10, &b);
+		work->in.x = a.x + b.x * 30.0f;
+		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 2:
-		evtSetValue(event, args[2], param->field_18);
-		evtSetValue(event, args[3], param->field_1C);
+		hitObjGetPos((char*)param->field_08, &a);
+		hitObjGetNormal((char*)param->field_08, &b);
+		work->out.x = a.x + b.x * 40.0f + b.z * 10.0f;
+		work->out.z = a.z + b.z * 40.0f - b.x * 10.0f;
+		hitObjGetPos((char*)param->field_10, &a);
+		hitObjGetNormal((char*)param->field_10, &b);
+		work->in.x = a.x + b.x * 30.0f;
+		work->in.z = a.z + b.z * 30.0f;
 		break;
 	case 3:
-		evtSetValue(event, args[2], param->field_20);
-		evtSetValue(event, args[3], param->field_24);
-		break;
-	case 4:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
-		evtSetValue(event, args[2], (s32)in.x);
-		evtSetValue(event, args[3], (s32)in.y);
-		evtSetValue(event, args[4], (s32)in.z);
-		break;
-	case 5:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
-		evtSetValue(event, args[2], (s32)out.x);
-		evtSetValue(event, args[3], (s32)out.y);
-		evtSetValue(event, args[4], (s32)out.z);
-		break;
-	case 6:
-		evtSetValue(event, args[2], param->field_28);
-		evtSetValue(event, args[3], param->field_2C);
-		evtSetValue(event, args[4], param->field_30);
-		break;
-	case 7:
-		evtSetValue(event, args[2], param->field_40);
-		evtSetValue(event, args[3], (s32)param->field_44);
-		break;
-	case 8:
-		evtSetValue(event, args[2], param->field_08);
-		break;
-	case 9:
-		evtSetValue(event, args[2], param->field_00);
-		break;
-	case 10:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
-		evtSetValue(event, args[2], (s32)in.x);
-		evtSetValue(event, args[3], (s32)in.y);
-		evtSetValue(event, args[4], (s32)in.z);
-		break;
-	case 11:
-		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
-		evtSetValue(event, args[2], (s32)out.x);
-		evtSetValue(event, args[3], (s32)out.y);
-		evtSetValue(event, args[4], (s32)out.z);
+		hitObjGetPos((char*)param->field_08, &a);
+		hitObjGetNormal((char*)param->field_08, &b);
+		work->out.x = a.x + b.x * 40.0f;
+		work->out.z = a.z + b.z * 40.0f;
+		hitObjGetPos((char*)param->field_10, &a);
+		hitObjGetNormal((char*)param->field_10, &b);
+		work->in.x = a.x + b.x * 40.0f;
+		work->in.z = a.z + b.z * 40.0f;
 		break;
 	}
+	evtSetValue(event, args[1], (s32)work);
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(door_dark_flag) {
+
+USER_FUNC(inout_hit) {
 	s32* args = event->args;
-	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
-	s32 flag = evtGetValue(event, args[1]);
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
 
-	door_dark_flag_sub(flag, (char**)param->field_34, (char**)param->field_38, (char**)param->field_3C);
+	evtSetValue(event, args[1], work->param->field_04);
+	evtSetValue(event, args[2], work->param->field_08);
+	evtSetValue(event, args[3], work->param->field_0C);
+	evtSetValue(event, args[4], work->param->field_10);
 	return EVT_RETURN_DONE;
 }
 
-void door_dark_flag_sub(s32 flag, char** npcs, char** mobjs, char** items) {
-	MarioWork* mario = marioGetPtr();
-	PartyEntry* party0 = partyGetPtr(0);
-	PartyEntry* party1 = partyGetPtr(1);
+
+USER_FUNC(out_pos) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], (s32)work->out.x);
+	evtSetValue(event, args[2], (s32)work->out.z);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(in_pos) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], (s32)work->in.x);
+	evtSetValue(event, args[2], (s32)work->in.z);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(outside_group) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], work->param->field_24);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(door_group) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], work->param->field_28);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(inside_group) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], work->param->field_2C);
+	evtSetValue(event, args[2], work->param->field_30);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(init_inside_group) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], (s32)work->param->field_34);
+	evtSetValue(event, args[2], work->param->field_38);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(animation) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], work->param->field_14);
+	evtSetValue(event, args[2], work->param->field_18);
+	evtSetValue(event, args[3], work->param->field_1C);
+	evtSetValue(event, args[4], work->param->field_20);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(npc_dark) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+	MarioWork* mario;
+	PartyEntry* party0;
+	PartyEntry* party1;
 	NpcEntry* npc;
 	MapObjectEntry* mobj;
 	ItemEntry* item;
+	char** list;
 	s32 i;
 
-	if (flag != 0) {
-		if (mario != NULL) {
-			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[0], 0x1800);
-			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[1], 0x1800);
-			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[2], 0x1800);
-		}
-		if (party0 != NULL) {
-			animPoseSetMaterialFlagOn(party0->paperAnimGroup, 0x1800);
-		}
-		if (party1 != NULL) {
-			animPoseSetMaterialFlagOn(party1->paperAnimGroup, 0x1800);
-		}
-		if (npcs != NULL) {
-			for (i = 0; npcs[i] != NULL; i++) {
-				npc = npcNameToPtr_NoAssert(npcs[i]);
-				if (npc != NULL) {
-					animPoseSetMaterialFlagOn(npc->poseId, 0x1800);
-				}
-			}
-		}
-		if (mobjs != NULL) {
-			for (i = 0; mobjs[i] != NULL; i++) {
-				mobj = mobjNameToPtrNoAssert(mobjs[i]);
-				if (mobj != NULL) {
-					animPoseSetMaterialFlagOn(mobj->poseId, 0x1800);
-				}
-			}
-		}
-		if (items != NULL) {
-			for (i = 0; items[i] != NULL; i++) {
-				item = itemNameToPtr(items[i]);
-				if (item != NULL) {
-					iconFlagOn(item->name, 0x40);
-				}
-			}
-		}
-	} else {
-		if (mario != NULL) {
-			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[0], 0x1800);
-			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[1], 0x1800);
-			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[2], 0x1800);
-		}
-		if (party0 != NULL) {
-			animPoseSetMaterialFlagOff(party0->paperAnimGroup, 0x1800);
-		}
-		if (party1 != NULL) {
-			animPoseSetMaterialFlagOff(party1->paperAnimGroup, 0x1800);
-		}
-		if (npcs != NULL) {
-			for (i = 0; npcs[i] != NULL; i++) {
-				npc = npcNameToPtr_NoAssert(npcs[i]);
-				if (npc != NULL) {
-					animPoseSetMaterialFlagOff(npc->poseId, 0x1800);
-				}
-			}
-		}
-		if (mobjs != NULL) {
-			for (i = 0; mobjs[i] != NULL; i++) {
-				mobj = mobjNameToPtrNoAssert(mobjs[i]);
-				if (mobj != NULL) {
-					animPoseSetMaterialFlagOff(mobj->poseId, 0x1800);
-				}
-			}
-		}
-		if (items != NULL) {
-			for (i = 0; items[i] != NULL; i++) {
-				item = itemNameToPtr(items[i]);
-				if (item != NULL) {
-					iconFlagOff(item->name, 0x40);
-				}
+	mario = marioGetPtr();
+	party0 = partyGetPtr(0);
+	party1 = partyGetPtr(1);
+	if (mario != NULL) {
+		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[0], 0x1800);
+		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[1], 0x1800);
+		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[2], 0x1800);
+	}
+	if (party0 != NULL) {
+		animPoseSetMaterialFlagOn(party0->paperAnimGroup, 0x1800);
+	}
+	if (party1 != NULL) {
+		animPoseSetMaterialFlagOn(party1->paperAnimGroup, 0x1800);
+	}
+	if (work->param->field_3C != NULL) {
+		list = work->param->field_3C;
+		for (i = 0; list[i] != NULL; i++) {
+			npc = npcNameToPtr_NoAssert(list[i]);
+			if (npc != NULL) {
+				animPoseSetMaterialFlagOn(npc->poseId, 0x1800);
 			}
 		}
 	}
+	if (work->param->field_44 != NULL) {
+		list = work->param->field_44;
+		for (i = 0; list[i] != NULL; i++) {
+			mobj = mobjNameToPtrNoAssert(list[i]);
+			if (mobj != NULL) {
+				animPoseSetMaterialFlagOn(mobj->poseId, 0x1800);
+			}
+		}
+	}
+	if (work->param->field_48 != NULL) {
+		list = work->param->field_48;
+		for (i = 0; list[i] != NULL; i++) {
+			item = itemNameToPtr(list[i]);
+			if (item != NULL) {
+				iconFlagOn(item->name, 0x40);
+			}
+		}
+	}
+	return EVT_RETURN_DONE;
 }
+
+
+USER_FUNC(npc_light) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+	MarioWork* mario;
+	PartyEntry* party0;
+	PartyEntry* party1;
+	NpcEntry* npc;
+	MapObjectEntry* mobj;
+	ItemEntry* item;
+	char** list;
+	s32 i;
+
+	mario = marioGetPtr();
+	party0 = partyGetPtr(0);
+	party1 = partyGetPtr(1);
+	if (mario != NULL) {
+		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[0], 0x1800);
+		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[1], 0x1800);
+		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[2], 0x1800);
+	}
+	if (party0 != NULL) {
+		animPoseSetMaterialFlagOff(party0->paperAnimGroup, 0x1800);
+	}
+	if (party1 != NULL) {
+		animPoseSetMaterialFlagOff(party1->paperAnimGroup, 0x1800);
+	}
+	if (work->param->field_3C != NULL) {
+		list = work->param->field_3C;
+		for (i = 0; list[i] != NULL; i++) {
+			npc = npcNameToPtr_NoAssert(list[i]);
+			if (npc != NULL) {
+				animPoseSetMaterialFlagOff(npc->poseId, 0x1800);
+			}
+		}
+	}
+	if (work->param->field_44 != NULL) {
+		list = work->param->field_44;
+		for (i = 0; list[i] != NULL; i++) {
+			mobj = mobjNameToPtrNoAssert(list[i]);
+			if (mobj != NULL) {
+				animPoseSetMaterialFlagOff(mobj->poseId, 0x1800);
+			}
+		}
+	}
+	if (work->param->field_48 != NULL) {
+		list = work->param->field_48;
+		for (i = 0; list[i] != NULL; i++) {
+			item = itemNameToPtr(list[i]);
+			if (item != NULL) {
+				iconFlagOff(item->name, 0x40);
+			}
+		}
+	}
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(get_noclip_map) {
+	s32* args = event->args;
+	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
+	s32 index = evtGetValue(event, args[1]);
+	void** list = (void**)work->param->field_40;
+
+	if (list != NULL) {
+		void* value = list[index];
+		if (value != NULL) {
+			evtSetValue(event, args[2], (s32)value);
+			return EVT_RETURN_DONE;
+		}
+	}
+	evtSetValue(event, args[2], -1);
+	return EVT_RETURN_DONE;
+}
+
 
 void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* in, Vec* out, s32 flag) {
 	MapObject* mapObj = mapGetMapObj(mapName);
@@ -423,250 +560,1315 @@ void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* 
 	}
 }
 
-USER_FUNC(get_noclip_map) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-	s32 index = evtGetValue(event, args[1]);
-	void** list = (void**)work->param->field_40;
 
-	if (list != NULL) {
-		void* value = list[index];
-		if (value != NULL) {
-			evtSetValue(event, args[2], (s32)value);
-			return EVT_RETURN_DONE;
-		}
-	}
-	evtSetValue(event, args[2], -1);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(npc_light) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-	MarioWork* mario;
-	PartyEntry* party0;
-	PartyEntry* party1;
+void door_dark_flag_sub(s32 flag, char** npcs, char** mobjs, char** items) {
+	MarioWork* mario = marioGetPtr();
+	PartyEntry* party0 = partyGetPtr(0);
+	PartyEntry* party1 = partyGetPtr(1);
 	NpcEntry* npc;
 	MapObjectEntry* mobj;
 	ItemEntry* item;
-	char** list;
 	s32 i;
 
-	mario = marioGetPtr();
-	party0 = partyGetPtr(0);
-	party1 = partyGetPtr(1);
-	if (mario != NULL) {
-		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[0], 0x1800);
-		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[1], 0x1800);
-		animPoseSetMaterialFlagOff(marioGetPtr()->paperAnimGroupId[2], 0x1800);
-	}
-	if (party0 != NULL) {
-		animPoseSetMaterialFlagOff(party0->paperAnimGroup, 0x1800);
-	}
-	if (party1 != NULL) {
-		animPoseSetMaterialFlagOff(party1->paperAnimGroup, 0x1800);
-	}
-	if (work->param->field_3C != NULL) {
-		list = work->param->field_3C;
-		for (i = 0; list[i] != NULL; i++) {
-			npc = npcNameToPtr_NoAssert(list[i]);
-			if (npc != NULL) {
-				animPoseSetMaterialFlagOff(npc->poseId, 0x1800);
+	if (flag != 0) {
+		if (mario != NULL) {
+			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[0], 0x1800);
+			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[1], 0x1800);
+			animPoseSetMaterialFlagOn(mario->paperAnimGroupId[2], 0x1800);
+		}
+		if (party0 != NULL) {
+			animPoseSetMaterialFlagOn(party0->paperAnimGroup, 0x1800);
+		}
+		if (party1 != NULL) {
+			animPoseSetMaterialFlagOn(party1->paperAnimGroup, 0x1800);
+		}
+		if (npcs != NULL) {
+			for (i = 0; npcs[i] != NULL; i++) {
+				npc = npcNameToPtr_NoAssert(npcs[i]);
+				if (npc != NULL) {
+					animPoseSetMaterialFlagOn(npc->poseId, 0x1800);
+				}
+			}
+		}
+		if (mobjs != NULL) {
+			for (i = 0; mobjs[i] != NULL; i++) {
+				mobj = mobjNameToPtrNoAssert(mobjs[i]);
+				if (mobj != NULL) {
+					animPoseSetMaterialFlagOn(mobj->poseId, 0x1800);
+				}
+			}
+		}
+		if (items != NULL) {
+			for (i = 0; items[i] != NULL; i++) {
+				item = itemNameToPtr(items[i]);
+				if (item != NULL) {
+					iconFlagOn(item->name, 0x40);
+				}
+			}
+		}
+	} else {
+		if (mario != NULL) {
+			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[0], 0x1800);
+			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[1], 0x1800);
+			animPoseSetMaterialFlagOff(mario->paperAnimGroupId[2], 0x1800);
+		}
+		if (party0 != NULL) {
+			animPoseSetMaterialFlagOff(party0->paperAnimGroup, 0x1800);
+		}
+		if (party1 != NULL) {
+			animPoseSetMaterialFlagOff(party1->paperAnimGroup, 0x1800);
+		}
+		if (npcs != NULL) {
+			for (i = 0; npcs[i] != NULL; i++) {
+				npc = npcNameToPtr_NoAssert(npcs[i]);
+				if (npc != NULL) {
+					animPoseSetMaterialFlagOff(npc->poseId, 0x1800);
+				}
+			}
+		}
+		if (mobjs != NULL) {
+			for (i = 0; mobjs[i] != NULL; i++) {
+				mobj = mobjNameToPtrNoAssert(mobjs[i]);
+				if (mobj != NULL) {
+					animPoseSetMaterialFlagOff(mobj->poseId, 0x1800);
+				}
+			}
+		}
+		if (items != NULL) {
+			for (i = 0; items[i] != NULL; i++) {
+				item = itemNameToPtr(items[i]);
+				if (item != NULL) {
+					iconFlagOff(item->name, 0x40);
+				}
 			}
 		}
 	}
-	if (work->param->field_44 != NULL) {
-		list = work->param->field_44;
-		for (i = 0; list[i] != NULL; i++) {
-			mobj = mobjNameToPtrNoAssert(list[i]);
-			if (mobj != NULL) {
-				animPoseSetMaterialFlagOff(mobj->poseId, 0x1800);
-			}
-		}
-	}
-	if (work->param->field_48 != NULL) {
-		list = work->param->field_48;
-		for (i = 0; list[i] != NULL; i++) {
-			item = itemNameToPtr(list[i]);
-			if (item != NULL) {
-				iconFlagOff(item->name, 0x40);
-			}
-		}
-	}
-	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(npc_dark) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-	MarioWork* mario;
-	PartyEntry* party0;
-	PartyEntry* party1;
-	NpcEntry* npc;
-	MapObjectEntry* mobj;
-	ItemEntry* item;
-	char** list;
-	s32 i;
 
-	mario = marioGetPtr();
-	party0 = partyGetPtr(0);
-	party1 = partyGetPtr(1);
-	if (mario != NULL) {
-		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[0], 0x1800);
-		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[1], 0x1800);
-		animPoseSetMaterialFlagOn(marioGetPtr()->paperAnimGroupId[2], 0x1800);
-	}
-	if (party0 != NULL) {
-		animPoseSetMaterialFlagOn(party0->paperAnimGroup, 0x1800);
-	}
-	if (party1 != NULL) {
-		animPoseSetMaterialFlagOn(party1->paperAnimGroup, 0x1800);
-	}
-	if (work->param->field_3C != NULL) {
-		list = work->param->field_3C;
-		for (i = 0; list[i] != NULL; i++) {
-			npc = npcNameToPtr_NoAssert(list[i]);
-			if (npc != NULL) {
-				animPoseSetMaterialFlagOn(npc->poseId, 0x1800);
-			}
-		}
-	}
-	if (work->param->field_44 != NULL) {
-		list = work->param->field_44;
-		for (i = 0; list[i] != NULL; i++) {
-			mobj = mobjNameToPtrNoAssert(list[i]);
-			if (mobj != NULL) {
-				animPoseSetMaterialFlagOn(mobj->poseId, 0x1800);
-			}
-		}
-	}
-	if (work->param->field_48 != NULL) {
-		list = work->param->field_48;
-		for (i = 0; list[i] != NULL; i++) {
-			item = itemNameToPtr(list[i]);
-			if (item != NULL) {
-				iconFlagOn(item->name, 0x40);
-			}
-		}
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(animation) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], work->param->field_14);
-	evtSetValue(event, args[2], work->param->field_18);
-	evtSetValue(event, args[3], work->param->field_1C);
-	evtSetValue(event, args[4], work->param->field_20);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(init_inside_group) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], (s32)work->param->field_34);
-	evtSetValue(event, args[2], work->param->field_38);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(inside_group) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], work->param->field_2C);
-	evtSetValue(event, args[2], work->param->field_30);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(door_group) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], work->param->field_28);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(outside_group) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], work->param->field_24);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(in_pos) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], (s32)work->in.x);
-	evtSetValue(event, args[2], (s32)work->in.z);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(out_pos) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], (s32)work->out.x);
-	evtSetValue(event, args[2], (s32)work->out.z);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(inout_hit) {
-	s32* args = event->args;
-	DoorWork* work = (DoorWork*)evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], work->param->field_04);
-	evtSetValue(event, args[2], work->param->field_08);
-	evtSetValue(event, args[3], work->param->field_0C);
-	evtSetValue(event, args[4], work->param->field_10);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(door_entry) {
+USER_FUNC(door_dark_flag) {
 	s32* args = event->args;
 	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
-	Vec a = { 0 };
-	Vec b = { 0 };
-	DoorWork* work = (DoorWork*)_mapAlloc(sizeof(DoorWork));
+	s32 flag = evtGetValue(event, args[1]);
 
-	work->param = param;
-	switch (param->field_00) {
-	case 0:
-	case 1:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
-		work->out.x = a.x + b.x * 40.0f - b.z * 10.0f;
-		work->out.z = a.z + b.z * 40.0f + b.x * 10.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
-		work->in.x = a.x + b.x * 30.0f;
-		work->in.z = a.z + b.z * 30.0f;
-		break;
-	case 2:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
-		work->out.x = a.x + b.x * 40.0f + b.z * 10.0f;
-		work->out.z = a.z + b.z * 40.0f - b.x * 10.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
-		work->in.x = a.x + b.x * 30.0f;
-		work->in.z = a.z + b.z * 30.0f;
-		break;
-	case 3:
-		hitObjGetPos((char*)param->field_08, &a);
-		hitObjGetNormal((char*)param->field_08, &b);
-		work->out.x = a.x + b.x * 40.0f;
-		work->out.z = a.z + b.z * 40.0f;
-		hitObjGetPos((char*)param->field_10, &a);
-		hitObjGetNormal((char*)param->field_10, &b);
-		work->in.x = a.x + b.x * 40.0f;
-		work->in.z = a.z + b.z * 40.0f;
-		break;
-	}
-	evtSetValue(event, args[1], (s32)work);
+	door_dark_flag_sub(flag, (char**)param->field_34, (char**)param->field_38, (char**)param->field_3C);
 	return EVT_RETURN_DONE;
 }
+
+EVT_BEGIN(evt_dark)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_dark2)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 255)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_light)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 255, 300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_map_blend_off, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_light2)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 255, 300)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 255)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_map_blend_off, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(in_houseanim)
+    WAIT_MS(500)
+    CALL(animation, LW(10), LW(0), LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        BEGIN_INLINE_EVENT
+            IF_STR_EQUAL(LW(0), STRING("S_mise_open"))
+                CALL(door_group, LW(10), LW(0))
+                CALL(evt_mapobj_get_position, LW(0), LW(2), LW(3), LW(4))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_OPEN1"), LW(2), LW(3), LW(4), 0)
+                LOOP(4)
+                    WAIT_MS(166)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_DOWN1"), LW(2), LW(3), LW(4), 0)
+                END_LOOP
+            ELSE
+                CALL(door_group, LW(10), LW(0))
+                CALL(evt_mapobj_get_position, LW(0), LW(2), LW(3), LW(4))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_OPEN1"), LW(2), LW(3), LW(4), 0)
+            END_IF
+        END_INLINE_EVENT
+        CALL(evt_map_playanim, LW(0), 0, 0)
+        CALL(evt_map_checkanim, LW(0), LW(4), LW(5))
+        WAIT_MS(LW(5))
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(out_houseanim)
+    CALL(animation, LW(10), LW(0), LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        BEGIN_INLINE_EVENT
+            IF_STR_EQUAL(LW(2), STRING("S_mise_close"))
+                CALL(door_group, LW(10), LW(0))
+                CALL(evt_mapobj_get_position, LW(0), LW(2), LW(3), LW(4))
+                LOOP(4)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_DOWN1"), LW(2), LW(3), LW(4), 0)
+                    WAIT_MS(166)
+                END_LOOP
+            END_IF
+        END_INLINE_EVENT
+        CALL(evt_map_playanim, LW(2), 0, 0)
+        CALL(evt_map_checkanim, LW(2), LW(4), LW(5))
+        WAIT_MS(LW(5))
+        BEGIN_INLINE_EVENT
+            CALL(door_group, LW(10), LW(0))
+            CALL(evt_mapobj_get_position, LW(0), LW(2), LW(3), LW(4))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_HOUSE_SHUT1"), LW(2), LW(3), LW(4), 0)
+        END_INLINE_EVENT
+    END_IF
+    RETURN
+EVT_END()
+
+
+USER_FUNC(evt_door_param) {
+	s32* args = event->args;
+	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	s32 mode = evtGetValue(event, args[1]);
+	Vec in = { 0 };
+	Vec out = { 0 };
+
+	switch (mode) {
+	case 0:
+		evtSetValue(event, args[2], param->field_04);
+		break;
+	case 1:
+		evtSetValue(event, args[2], param->field_0C);
+		evtSetValue(event, args[3], param->field_10);
+		evtSetValue(event, args[4], param->field_14);
+		break;
+	case 2:
+		evtSetValue(event, args[2], param->field_18);
+		evtSetValue(event, args[3], param->field_1C);
+		break;
+	case 3:
+		evtSetValue(event, args[2], param->field_20);
+		evtSetValue(event, args[3], param->field_24);
+		break;
+	case 4:
+		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
+		evtSetValue(event, args[2], (s32)in.x);
+		evtSetValue(event, args[3], (s32)in.y);
+		evtSetValue(event, args[4], (s32)in.z);
+		break;
+	case 5:
+		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 0);
+		evtSetValue(event, args[2], (s32)out.x);
+		evtSetValue(event, args[3], (s32)out.y);
+		evtSetValue(event, args[4], (s32)out.z);
+		break;
+	case 6:
+		evtSetValue(event, args[2], param->field_28);
+		evtSetValue(event, args[3], param->field_2C);
+		evtSetValue(event, args[4], param->field_30);
+		break;
+	case 7:
+		evtSetValue(event, args[2], param->field_40);
+		evtSetValue(event, args[3], (s32)param->field_44);
+		break;
+	case 8:
+		evtSetValue(event, args[2], param->field_08);
+		break;
+	case 9:
+		evtSetValue(event, args[2], param->field_00);
+		break;
+	case 10:
+		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
+		evtSetValue(event, args[2], (s32)in.x);
+		evtSetValue(event, args[3], (s32)in.y);
+		evtSetValue(event, args[4], (s32)in.z);
+		break;
+	case 11:
+		door_position_sub(param->field_04, (char*)param->field_0C, (char*)param->field_10, (char*)param->field_14, &in, &out, 1);
+		evtSetValue(event, args[2], (s32)out.x);
+		evtSetValue(event, args[3], (s32)out.y);
+		evtSetValue(event, args[4], (s32)out.z);
+		break;
+	}
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(evt_door_save_mapflag) {
+	s32* args = event->args;
+	char* name = (char*)evtGetValue(event, args[0]);
+	MapObject* obj = mapGetMapObj(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+		return EVT_RETURN_DONE;
+	}
+	door_mapflag = *(s32*)obj;
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(evt_door_load_mapflag) {
+	s32* args = event->args;
+	char* name = (char*)evtGetValue(event, args[0]);
+	MapObject* obj = mapGetMapObj(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+		return EVT_RETURN_DONE;
+	}
+	*(s32*)obj = door_mapflag;
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(npc_hide_onoff) {
+	s32* args = event->args;
+	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	s32 flag = evtGetValue(event, args[1]);
+	char** npcs = param->field_34;
+	NpcEntry* npc;
+	s32 i;
+
+	for (i = 0; npcs[i] != NULL; i++) {
+		npc = npcNameToPtr_NoAssert(npcs[i]);
+		if (npc != NULL) {
+			if (flag != 0) {
+				npc->flags |= 0x800;
+			} else {
+				npc->flags &= ~0x800;
+			}
+		}
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_door_data_copy) {
+	s32* args = event->args;
+	DoorData* src = (DoorData*)evtGetValue(event, args[0]);
+	DoorData* dst = (DoorData*)_mapAlloc(0x48);
+
+	*dst = *src;
+	evtSetValue(event, args[1], (s32)dst);
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(evt_door_set_param) {
+	s32* args = event->args;
+	DoorParam* param = (DoorParam*)evtGetValue(event, args[0]);
+	s32 which = evtGetValue(event, args[1]);
+	s32 value = evtGetValue(event, args[2]);
+
+	switch (which) {
+	case 0:
+		param->field_34 = (char**)value;
+		break;
+	default:
+		break;
+	}
+	return EVT_RETURN_DONE;
+}
+
+
+USER_FUNC(evt_door_end_wait) {
+	return DoorFLAG ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(in_dooranim)
+    CALL(door_group, LW(10), LW(9))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mapobj_get_position, LW(9), LW(2), LW(3), LW(4))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN1"), LW(2), LW(3), LW(4), 0)
+        WAIT_MS(1500)
+        CALL(evt_mapobj_get_position, LW(9), LW(2), LW(3), LW(4))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT1"), LW(2), LW(3), LW(4), 0)
+        WAIT_MS(500)
+        CALL(evt_mapobj_get_position, LW(9), LW(2), LW(3), LW(4))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_FALL1"), LW(2), LW(3), LW(4), 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 5, 0, 80, 500)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), 0, LW(0), 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_sub_intpl_msec_init, 2, 80, 0, 500)
+    LABEL(1)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), 0, LW(0), 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(1)
+    END_IF
+    CALL(evt_sub_intpl_msec_init, 2, 0, 90, 500)
+    LABEL(2)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), LW(0), 0, 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(2)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(out_dooranim)
+    CALL(door_group, LW(10), LW(9))
+    BEGIN_INLINE_EVENT
+        WAIT_MS(500)
+        CALL(evt_mapobj_get_position, LW(9), LW(2), LW(3), LW(4))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_OPEN1"), LW(2), LW(3), LW(4), 0)
+        WAIT_MS(1000)
+        CALL(evt_mapobj_get_position, LW(9), LW(2), LW(3), LW(4))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_DOOR_SHUT1"), LW(2), LW(3), LW(4), 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 5, 90, 0, 500)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), LW(0), 0, 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_sub_intpl_msec_init, 5, 0, 80, 500)
+    LABEL(1)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), 0, LW(0), 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(1)
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_sub_intpl_msec_init, 5, 80, 0, 500)
+    LABEL(2)
+    CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+    CALL(evt_mapobj_rotate, 1, LW(9), 0, LW(0), 0)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(2)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(house_in)
+    PEEK_INT(LW(0), PTR(&DoorFLAG))
+    IF_INT_EQUAL(LW(0), 1)
+        RETURN
+    END_IF
+    POKE_INT(1, PTR(&DoorFLAG))
+    CALL(evt_snd_bgmoff, 18432)
+    CALL(evt_snd_envoff, 18432)
+    CALL(evt_snd_env_lpf, 0, 800)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_cam_letter_box_disable, 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(in_pos, LW(10), LW(0), LW(2))
+        ADD(LW(1), 1)
+        CALL(evt_cam3d_evt_set_xyz, LW(0), LW(1), LW(2), 0, 150, 11)
+    END_INLINE_EVENT
+    SET_VALUE(LW(0), 0)
+    LOOP(0)
+        CALL(get_noclip_map, LW(10), LW(0), LW(1))
+        IF_INT_EQUAL(LW(1), -1)
+            BREAK_LOOP
+        END_IF
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2)
+        ADD(LW(0), 1)
+    END_LOOP
+    CALL(outside_group, LW(10), LW(0))
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 2048)
+    CALL(door_group, LW(10), LW(0))
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 4096)
+    CALL(inside_group, LW(10), LW(0), LW(1))
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 1)
+    CALL(evt_hitobj_onoff, LW(1), 1, 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 4096)
+    CALL(N_evt_mario_party_door_halve_hitbox)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(out_pos, LW(10), LW(0), LW(2))
+    CALL(evt_mario_mov_pos2, LW(0), LW(2), FLOAT(135.0f))
+    CALL(evt_party_move_beside_mario, 0)
+    CALL(evt_party_move_beside_mario, 1)
+    SPAWN_EVENT_GET_ID(PTR(in_dooranim), LW(15))
+    BEGIN_INLINE_EVENT
+        CALL(npc_dark, LW(10))
+        CALL_CHILD(in_houseanim)
+        SPAWN_EVENT(evt_dark2)
+    END_INLINE_EVENT
+    WAIT_MS(300)
+    SPAWN_EVENT(evt_dark)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(in_pos, LW(10), LW(0), LW(2))
+    CALL(evt_mario_party_door_move, LW(0), LW(2), FLOAT(135.0f))
+    CALL(evt_cam3d_evt_xyz_off, 0, 11)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_cam_letter_box_disable, 0)
+    LOOP(0)
+        IS_EVENT_RUNNING(LW(15), LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(snd_door_in)
+    POKE_INT(0, PTR(&DoorFLAG))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(house_out)
+    PEEK_INT(LW(0), PTR(&DoorFLAG))
+    IF_INT_EQUAL(LW(0), 1)
+        RETURN
+    END_IF
+    POKE_INT(1, PTR(&DoorFLAG))
+    CALL(evt_snd_bgmon, 160, 0)
+    CALL(evt_snd_envon, 160, 0)
+    CALL(evt_snd_env_lpf, 0, 0)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_cam_letter_box_disable, 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(out_pos, LW(10), LW(0), LW(2))
+        ADD(LW(1), 1)
+        CALL(evt_cam3d_evt_set_xyz, LW(0), LW(1), LW(2), 0, 150, 11)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        SPAWN_EVENT(evt_light2)
+        CALL_CHILD(out_houseanim)
+        SPAWN_EVENT(evt_light)
+    END_INLINE_EVENT
+    SPAWN_EVENT_GET_ID(PTR(out_dooranim), LW(15))
+    WAIT_MS(1000)
+    CALL(N_evt_mario_party_door_halve_hitbox)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(out_pos, LW(10), LW(0), LW(2))
+    CALL(evt_mario_party_door_move, LW(0), LW(2), FLOAT(135.0f))
+    SET_VALUE(LW(0), 0)
+    LOOP(0)
+        CALL(get_noclip_map, LW(10), LW(0), LW(1))
+        IF_INT_EQUAL(LW(1), -1)
+            BREAK_LOOP
+        END_IF
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2)
+        ADD(LW(0), 1)
+    END_LOOP
+    CALL(evt_cam3d_evt_xyz_off, 100, 11)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_cam_letter_box_disable, 0)
+    LOOP(0)
+        IS_EVENT_RUNNING(LW(15), LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    POKE_INT(0, PTR(&DoorFLAG))
+    CALL(inside_group, LW(10), LW(0), LW(1))
+    CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 1)
+    CALL(evt_hitobj_onoff, LW(1), 1, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 4096)
+    CALL(outside_group, LW(10), LW(0))
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 2048)
+    CALL(door_group, LW(10), LW(0))
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, LW(0), 4096)
+    CALL(npc_light, LW(10))
+    CALL(snd_door_out)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_setup)
+    CALL(door_entry, LW(0), LW(10))
+    POKE_INT(0, PTR(&DoorFLAG))
+    CALL(init_inside_group, LW(10), LW(0), LW(1))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(0), 1)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_hitobj_onoff, LW(1), 1, 0)
+    END_IF
+    CALL(inout_hit, LW(10), LW(0), LW(1), LW(2), LW(3))
+    CALL(evt_run_case_evt, LW(0), 1, LW(1), 0, PTR(house_in), 0)
+    CALL(evt_run_case_evt, LW(2), 1, LW(3), 0, PTR(house_out), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_dark)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 300)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_dark2)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 300)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 255)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_light)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 255, 300)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_map_blend_off, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_light2)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 255, 300)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_map_set_blend, 1, LW(0), LW(0), LW(0), 255)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_map_blend_off, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_open)
+    CALL(evt_cam_letter_box_disable, 1)
+    CALL(evt_mario_key_onoff, 0)
+    POKE_INT(1, PTR(&DoorFLAG))
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        SET_VALUE(LF(0), 0)
+        SPAWN_EVENT(LW(1))
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_save_mapflag, LW(1))
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2)
+    END_IF
+    BEGIN_INLINE_EVENT
+        CALL(evt_door_param, LW(0), 4, LW(1), LW(2), LW(3))
+        CALL(evt_mario_get_pos, 0, LW(4), LW(5), LW(6))
+        ADD(LW(5), 2)
+        CALL(evt_cam3d_evt_set_xyz, LW(1), LW(5), LW(3), 0, 150, 11)
+    END_INLINE_EVENT
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 1)
+    END_IF
+    CALL(evt_door_param, LW(0), 9, LW(1))
+    IF_BITS_SET(LW(1), 1)
+        CALL(npc_hide_onoff, LW(0), 0)
+    END_IF
+    CALL(door_dark_flag, LW(0), 1)
+    IF_BITS_SET(LW(15), 4)
+        CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+        IF_INT_NOT_EQUAL(LW(9), 0)
+            BEGIN_INLINE_EVENT
+                WAIT_MS(500)
+                SPAWN_EVENT(house_open_se)
+                CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+                SET_VALUE(LW(6), 0)
+                CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+                LABEL(2)
+                CALL(evt_sub_intpl_msec_get_value)
+                SET_VALUE(LW(5), LW(1))
+                SET_VALUE(LW(1), 0)
+                SET_VALUE(LF(0), 0)
+                SPAWN_EVENT(LW(9))
+                SET_VALUE(LW(6), 1)
+                WAIT_FRAMES(1)
+                IF_INT_EQUAL(LW(5), 1)
+                    GOTO(2)
+                END_IF
+            END_INLINE_EVENT
+        END_IF
+    END_IF
+    CALL(N_evt_mario_party_door_halve_hitbox)
+    CALL(evt_door_param, LW(0), 5, LW(1), LW(2), LW(3))
+    CALL(evt_mario_mov_pos2, LW(1), LW(3), FLOAT(135.0f))
+    CALL(evt_party_move_beside_mario, 0)
+    CALL(evt_party_move_beside_mario, 1)
+    IF_BITS_CLEAR(LW(15), 2)
+        SPAWN_EVENT(door_dark)
+    END_IF
+    SPAWN_EVENT(door_open_se)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
+            LABEL(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 0)
+            SET_VALUE(LF(0), 0)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(0)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_door_param, LW(0), 4, LW(1), LW(2), LW(3))
+    CALL(evt_mario_party_door_move, LW(1), LW(3), FLOAT(135.0f))
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            SPAWN_EVENT(door_close_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 2, 180, 0, 500)
+            LABEL(1)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 1)
+            SET_VALUE(LF(0), 0)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(1)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    IF_BITS_CLEAR(LW(15), 4)
+        CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+        IF_INT_NOT_EQUAL(LW(9), 0)
+            BEGIN_INLINE_EVENT
+                SPAWN_EVENT(house_open_se)
+                CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+                SET_VALUE(LW(6), 0)
+                CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+                LABEL(2)
+                CALL(evt_sub_intpl_msec_get_value)
+                SET_VALUE(LW(5), LW(1))
+                SET_VALUE(LW(1), 0)
+                SET_VALUE(LF(0), 0)
+                SPAWN_EVENT(LW(9))
+                SET_VALUE(LW(6), 1)
+                WAIT_FRAMES(1)
+                IF_INT_EQUAL(LW(5), 1)
+                    GOTO(2)
+                END_IF
+            END_INLINE_EVENT
+        END_IF
+    END_IF
+    WAIT_MS(500)
+    IF_BITS_CLEAR(LW(15), 2)
+        SPAWN_EVENT(door_dark2)
+    END_IF
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            WAIT_MS(500)
+            SPAWN_EVENT(door_down_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+            LABEL(3)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LF(0), 0)
+            SPAWN_EVENT(LW(8))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(3)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_cam3d_evt_xyz_off, 0, 11)
+    POKE_INT(0, PTR(&DoorFLAG))
+    WAIT_FRAMES(2)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_cam_letter_box_disable, 0)
+    CALL(snd_door_in)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_open_bom_01)
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        SPAWN_EVENT(LW(1))
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_save_mapflag, LW(1))
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 1)
+    END_IF
+    CALL(door_dark_flag, LW(0), 1)
+    SPAWN_EVENT(door_open_se)
+    CALL(N_evt_mario_party_door_halve_hitbox)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
+            LABEL(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 0)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(0)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    SET_VALUE(GF(0), 1)
+    LOOP(0)
+        IF_INT_EQUAL(GF(0), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    SPAWN_EVENT(door_dark)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            SPAWN_EVENT(door_close_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 2, 180, 0, 500)
+            LABEL(1)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 1)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(1)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 0)
+        BEGIN_INLINE_EVENT
+            SPAWN_EVENT(house_open_se)
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            SET_VALUE(LW(6), 0)
+            CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 0)
+            SPAWN_EVENT(LW(9))
+            SET_VALUE(LW(6), 1)
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(2)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    SPAWN_EVENT(door_dark2)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            WAIT_MS(500)
+            SPAWN_EVENT(door_down_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+            LABEL(3)
+            CALL(evt_sub_intpl_msec_get_value)
+            SPAWN_EVENT(LW(8))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(3)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    CALL(snd_door_in)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_open_roll)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        SPAWN_EVENT(LW(1))
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_save_mapflag, LW(1))
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 1)
+    END_IF
+    CALL(door_dark_flag, LW(0), 1)
+    SPAWN_EVENT(door_dark)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            SET_VALUE(LW(6), 0)
+            CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 0)
+            SPAWN_EVENT(LW(9))
+            SET_VALUE(LW(6), 1)
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(2)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    SPAWN_EVENT(door_dark2)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 2, 0, 180, 500)
+            LABEL(3)
+            CALL(evt_sub_intpl_msec_get_value)
+            SPAWN_EVENT(LW(8))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(3)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_cam3d_evt_xyz_off, 0, 11)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(snd_door_in)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_close)
+    CALL(evt_cam_letter_box_disable, 1)
+    CALL(evt_mario_key_onoff, 0)
+    POKE_INT(1, PTR(&DoorFLAG))
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        SET_VALUE(LF(0), 1)
+        SPAWN_EVENT(LW(2))
+    END_IF
+    BEGIN_INLINE_EVENT
+        IF_BITS_CLEAR(LW(15), 16)
+            CALL(evt_door_param, LW(0), 5, LW(1), LW(2), LW(3))
+        ELSE
+            CALL(evt_door_param, LW(0), 11, LW(1), LW(2), LW(3))
+        END_IF
+        CALL(evt_mario_get_pos, 0, LW(4), LW(5), LW(6))
+        ADD(LW(5), 2)
+        CALL(evt_cam3d_evt_set_xyz, LW(1), LW(5), LW(3), 0, 150, 11)
+    END_INLINE_EVENT
+    IF_BITS_CLEAR(LW(15), 2)
+        SPAWN_EVENT(door_light2)
+    END_IF
+    SPAWN_EVENT(door_up_se)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
+            LABEL(3)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LF(0), 1)
+            SPAWN_EVENT(LW(8))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(3)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 0)
+        BEGIN_INLINE_EVENT
+            WAIT_MS(400)
+            SPAWN_EVENT(house_close_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            SET_VALUE(LW(6), 0)
+            CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 3)
+            SET_VALUE(LF(0), 1)
+            SPAWN_EVENT(LW(9))
+            SET_VALUE(LW(6), 1)
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(2)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    IF_BITS_CLEAR(LW(15), 2)
+        SPAWN_EVENT(door_light)
+    END_IF
+    SPAWN_EVENT(door_open_se)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 0, 180, 500)
+            LABEL(1)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 2)
+            SET_VALUE(LF(0), 1)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(1)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    IF_BITS_CLEAR(LW(15), 16)
+        CALL(evt_door_param, LW(0), 5, LW(1), LW(2), LW(3))
+    ELSE
+        CALL(evt_door_param, LW(0), 11, LW(1), LW(2), LW(3))
+    END_IF
+    IF_BITS_CLEAR(LW(15), 8)
+        CALL(evt_mario_party_door_move, LW(1), LW(3), FLOAT(135.0f))
+    END_IF
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(7), 0)
+        BEGIN_INLINE_EVENT
+            SPAWN_EVENT(door_close_se)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
+            LABEL(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 3)
+            SET_VALUE(LF(0), 1)
+            SPAWN_EVENT(LW(7))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(0)
+            END_IF
+        END_INLINE_EVENT
+        WAIT_MS(500)
+    END_IF
+    CALL(evt_cam3d_evt_xyz_off, 100, 11)
+    CALL(door_dark_flag, LW(0), 0)
+    CALL(evt_door_param, LW(0), 9, LW(1))
+    IF_BITS_SET(LW(1), 1)
+        CALL(npc_hide_onoff, LW(0), 1)
+    END_IF
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        IF_BITS_CLEAR(LW(15), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 1)
+        END_IF
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_load_mapflag, LW(1))
+    END_IF
+    POKE_INT(0, PTR(&DoorFLAG))
+    WAIT_FRAMES(2)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_cam_letter_box_disable, 0)
+    CALL(snd_door_out)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_close_roll)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        SPAWN_EVENT(LW(2))
+    END_IF
+    BEGIN_INLINE_EVENT
+        CALL(evt_door_param, LW(0), 5, LW(1), LW(2), LW(3))
+        CALL(evt_mario_get_pos, 0, LW(4), LW(5), LW(6))
+        ADD(LW(5), 2)
+        CALL(evt_cam3d_evt_set_xyz, LW(1), LW(5), LW(3), 0, 150, 11)
+    END_INLINE_EVENT
+    SPAWN_EVENT(door_light2)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
+            LABEL(3)
+            CALL(evt_sub_intpl_msec_get_value)
+            SPAWN_EVENT(LW(8))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(3)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 0)
+        BEGIN_INLINE_EVENT
+            CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+            SET_VALUE(LW(6), 0)
+            CALL(evt_sub_intpl_msec_init, 5, 180, 0, 500)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(LW(5), LW(1))
+            SET_VALUE(LW(1), 3)
+            SPAWN_EVENT(LW(9))
+            SET_VALUE(LW(6), 1)
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(5), 1)
+                GOTO(2)
+            END_IF
+        END_INLINE_EVENT
+    END_IF
+    WAIT_MS(500)
+    SPAWN_EVENT(door_light)
+    CALL(evt_cam3d_evt_xyz_off, 100, 11)
+    CALL(door_dark_flag, LW(0), 0)
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        IF_BITS_CLEAR(LW(15), 1)
+            CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 1)
+        END_IF
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_load_mapflag, LW(1))
+    END_IF
+    CALL(evt_mario_key_onoff, 1)
+    CALL(snd_door_out)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_open_quick)
+    CALL(evt_door_param, LW(0), 7, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        SPAWN_EVENT(LW(1))
+    END_IF
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_door_save_mapflag, LW(1))
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 2)
+    END_IF
+    BEGIN_INLINE_EVENT
+        SET_VALUE(LW(10), LW(0))
+        CALL(evt_door_param, LW(10), 4, LW(0), LW(1), LW(2))
+        CALL(evt_mario_get_pos, 0, LW(4), LW(5), LW(6))
+        SET_VALUE(LW(1), LW(5))
+        CALL(evt_cam3d_get_shift, LW(0), LW(1), LW(2), LW(3))
+        CALL(evt_cam3d_event_from_road, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
+        CALL(evt_cam3d_evt_set, LW(4), LW(5), LW(6), LW(7), LW(8), LW(9), 0, 11)
+        WAIT_FRAMES(1)
+        CALL(evt_cam3d_evt_off, 0, 11)
+    END_INLINE_EVENT
+    CALL(evt_door_param, LW(0), 2, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 0, LW(1), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 2048)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 4096)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 1)
+    END_IF
+    CALL(door_dark_flag, LW(0), 1)
+    CALL(evt_map_set_blend, 0, 0, 0, 0, 0)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(9), 0)
+        BEGIN_INLINE_EVENT
+            SET_VALUE(LW(0), 180)
+            SPAWN_EVENT(LW(9))
+        END_INLINE_EVENT
+    END_IF
+    CALL(evt_map_set_blend, 1, 0, 0, 0, 0)
+    CALL(evt_door_param, LW(0), 6, LW(7), LW(8), LW(9))
+    IF_INT_NOT_EQUAL(LW(8), 0)
+        BEGIN_INLINE_EVENT
+            SET_VALUE(LW(0), 180)
+            SPAWN_EVENT(LW(8))
+        END_INLINE_EVENT
+    END_IF
+    CALL(snd_door_in)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door_entry)
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 1)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        SET_VALUE(LW(15), 0)
+        CALL(evt_run_case_evt, 9, 1, LW(2), 0, PTR(evt_door_close), 0)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        SET_VALUE(LW(15), 0)
+        CALL(evt_run_case_evt, 9, 1, LW(3), 0, PTR(evt_door_open), 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 9, LW(1))
+    IF_BITS_SET(LW(1), 1)
+        CALL(npc_hide_onoff, LW(0), 1)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(door_up_se)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(house_close_se)
+    CALL_CHILD(house_open_se)
+    RETURN
+EVT_END()
+// clang-format on

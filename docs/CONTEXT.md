@@ -1695,6 +1695,44 @@ strings as named byte arrays. Redone; every file still links (checksum, "32 file
   function's unit; `DEMOFont`, MSL `locale` and `unk_0x8025de70` (its strings are used only from RELs).
 - Objects the original keeps in `.data` though they are under 48 bytes need `__declspec(section ".data")`
   (`unit_bomzou`'s 8-byte `lbl_80398960`, which is padding).
+
+## Sep 29: data written for units whose functions were done, and how MWCC orders literals (Claude Sonnet 5.5)
+
+Units with nearly all functions at 100% but data never written can't link. `tools/dol_gen.py UNIT --append FILE` now adds a
+unit's data to a source that already has its functions (generated tables/scripts as in the previous chapter), and does
+the ordering work that linking needs. **`evt_door` (24/24 functions, 21 KB) and `evt_johoya` (16/16) link; the data of
+`battle_mario` (64 KB `.data`, byte-identical), `evt_sub` (11 KB) and `evt_movefloor` is written but they stay `NonMatching`
+on a partial function or a pool order** (below).
+
+**What `--append` does.** It leaves alone objects the source already defines and compiler-made ones (jump tables, `Vec`
+aggregate constants, float/double pool entries); scripts that name a scalar variable the source defines get `PTR(&var)`;
+strings a script uses that another unit owns (`str_802C...`) are named (`STRING((void*)str_802C32C0)`, `extern const char`),
+not copied as literals (the copy shows up as extra `.rodata`); a table the header declares as `EVT_DEF` is `s32` with `(s32)`
+casts (`(u32)` in an `s32` array, or `(s32)` in a `u32` one, is "illegal constant expression"); the unit's global function
+prototypes go into its header (CI rejects them in the `.c`), with `#include`s for the types they use; static ones are
+forward-declared from their own signature.
+
+**How MWCC orders literals** (worked out on `evt_door` and `battle_mario`; the generator's merge follows it):
+- A *string in a data initializer* and an *aggregate constant in a function* (`Vec p = {0,0,0}`, the compiler's
+  `vec3_802e....`) enter `.rodata` when parsed, in source order. Strings *inside functions* and `.sdata2` floats
+  enter at codegen, in text order. So a file's functions and data have to be interleaved: functions in reverse text order
+  (deferred codegen), data in address order, each function placed where its `vec3`s land in the original pool. The
+  generator merges the two sequences greedily against the original's `.rodata` order.
+- Function order follows definition order, not prototype order (swapping prototypes changed nothing).
+- Weak `sqrt`/`sqrtf` statics (`_half$localstatic...`) in a unit's object are merged by the linker; they are not a difference.
+- An object a `.c` defines by name (`const Vec vec3_802eeff0 = ...`) goes into the pool where it is defined; the original has
+  it as a literal at its use. `evt_movefloor` and `battle_mario` had such named objects; they are literals now.
+
+**Small fixes:** `npc_hide_onoff` is an index loop (`for (i = 0; npcs[i] != NULL; i++)`), 95.29% -> 100%; `johoya_set`
+returns `s16` (100%; the return register is not extended, and `evt_johoya.h` said `s32`: one existing header line
+changed); `work->speed *= -1.0f` keeps the operand order the literal form loses (`moving_floor_reverse` -> 100%).
+
+**Not done:** `battle_mario`'s `.sdata2` has `1.0` (from `_mario_fire_ball_controll`) before `0.6` (`_fire_wave`), the reverse of
+what MWCC gives when their text order is `_fire_wave`, `_mario_fire_ball_controll`; no source order gives both, and
+`_hammer_star_effect` is 97.6%. `evt_moving_floor_init` 99.85% (the 0.5/1.0 pool order and an `fsubs` register). `evt_sub`:
+four partial functions. `unit_party_clauda`: its weapon tables are typed `BattleWeapon` in `include/battle`, whose struct has
+no room for the pointers they contain, and the struct is not to change tonight. `evt_kinopio` is full of named string and
+pool-base hacks.
 ## Wave 18: the generated REL tables typed with existing structs (2026-09-29, Claude Opus 5.5 orchestrating, DeepSeek V4.1 Flash agents)
 
 Claude #1 launched it at Isaac's request (one wave per orchestrator); Claude #2 collected and reviewed it. 151 of the

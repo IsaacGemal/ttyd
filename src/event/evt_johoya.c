@@ -3,6 +3,7 @@
 #include <string.h>
 #include "manager/evtmgr_cmd.h"
 #include <stdio.h>
+#include "evt/evt_cmd.h"
 
 
 //.data
@@ -61,6 +62,7 @@ const char* evtNoLabel[] = {
 
 //local prototypes
 
+// clang-format off
 USER_FUNC(johoya_data_alloc) {
     InformantWork* wp = &_jdt;
     
@@ -72,6 +74,7 @@ USER_FUNC(johoya_data_alloc) {
     johoya_data_make(wp->prefix, 1);
     return 2;
 }
+
 
 USER_FUNC(johoya_data_free) {
     InformantWork* wp = &_jdt;
@@ -85,6 +88,144 @@ USER_FUNC(johoya_data_free) {
     wp->prefix = NULL;
     return 2;
 }
+
+
+USER_FUNC(johoya_keti_newjoho_check) {
+    InformantWork* wp = &_jdt;
+    s32* args = event->args;
+    u8* flag = wp->unk14.unk0;
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) == 0) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return 2;
+}
+
+
+USER_FUNC(johoya_keti_newjoho_makelabel) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    InformantWork* wp = &_jdt;
+    char sp[64];
+    u8* flag = wp->unk14.unk0;
+    const char* msg;
+    s32 matchCount = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) == 0) {
+            if (value == matchCount) {
+                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
+                sprintf(sp, "jketi_title_%04d", wp->info[i].storyId);
+                msg = msgSearch(sp);
+                evtSetValue(event, args[1], (s32)wp->infoEnd);
+                evtSetValue(event, args[2], (s32)msg);
+                evtSetValue(event, args[3], strlen(msg));
+                evtSetValue(event, args[4], wp->info[i].unkA);
+                *(s32*)wp->unk10 = i;
+                return 2;
+            }
+            matchCount++;
+        }
+    }
+    ((char*)wp->infoEnd)[0] = '\0';
+    evtSetValue(event, args[1], (s32)wp->infoEnd);
+    evtSetValue(event, args[2], (s32)wp->infoEnd);
+    evtSetValue(event, args[3], 0);
+    evtSetValue(event, args[4], 0);
+    return 2;
+}
+
+
+USER_FUNC(johoya_keti_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+    s32 index;
+
+    index = *(s32*)wp->unk10;
+    johoya_set(wp->unk14.unk0, wp->info[index].storyId, 1);
+    *(u16*)&wp->info[index].unk0 |= 1;
+    return 2;
+}
+
+
+USER_FUNC(johoya_keti_oldspeak_check) {
+    InformantWork* wp = &_jdt;
+    s32* args = event->args;
+    u8* flag = wp->unk14.unk0;
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) != 0
+            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return 2;
+}
+
+
+USER_FUNC(johoya_keti_oldspeak_makelabel) {
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+    InformantWork* wp = &_jdt;
+    u8* flag = wp->unk14.unk0;
+    s32 matchCount = 0;
+    s32 i;
+
+    for (i = 0; i < wp->count; i++) {
+        if (johoya_get(flag, wp->info[i].storyId) != 0
+            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
+            if (value == matchCount) {
+                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
+                evtSetValue(event, args[1], (s32)wp->infoEnd);
+                evtSetValue(event, args[2], wp->info[i].initEndPos);
+                evtSetValue(event, args[3], wp->info[i].tagEndPos);
+                evtSetValue(event, args[4], 0);
+                *(s32*)wp->unk10 = i;
+                return 2;
+            }
+            matchCount++;
+        }
+    }
+    ((char*)wp->infoEnd)[0] = '\0';
+    evtSetValue(event, args[1], (s32)wp->infoEnd);
+    evtSetValue(event, args[2], (s32)wp->infoEnd);
+    evtSetValue(event, args[3], 0);
+    evtSetValue(event, args[4], 0);
+    return 2;
+}
+
+
+USER_FUNC(johoya_keti_oldspeak_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    *(u16*)&wp->info[*(s32*)wp->unk10].unk0 |= 1;
+    return 2;
+}
+
+
+USER_FUNC(johoya_perfect_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    johoya_set(wp->unk14.unkD, wp->info[*(s32*)wp->unk10].storyId, 1);
+    return 2;
+}
+
+
+USER_FUNC(johoya_luigi_newjoho_setreadflag) {
+    InformantWork* wp = &_jdt;
+
+    johoya_set(wp->unk14.unk1A, wp->info[*(s32*)wp->unk10].storyId, 1);
+    return 2;
+}
+
 
 s32 johoya_data_make(const char* prefix, s32 type) {
     InformantWork* wp = &_jdt;
@@ -190,6 +331,7 @@ s32 johoya_data_make(const char* prefix, s32 type) {
     return count;
 }
 
+
 void johoya_init(void) {
     InformantUnknown* unk = &_jdt.unk14;
     
@@ -199,69 +341,7 @@ void johoya_init(void) {
 }
 
 
-
-
-
-s32 search_evt_no(const char* label) {
-    s32 labelId;
-
-    for (labelId = 0; labelId < (s32)(sizeof(evtNoLabel) / sizeof(char*)); labelId++) {
-        if (!strcmp(label, evtNoLabel[labelId])) {
-            return labelId;
-        }
-    }
-    return -1;
-}
-
-const char* search_evt_moji(s32 index) {
-    return evtNoLabel[index];
-}
-
-s16 johoya_get(u8* data, s16 id) {
-    u8 mask;
-    s32 shift;
-
-    switch (id & 7) {
-        case 0:
-            mask = 0x01;
-            shift = 0;
-            break;
-        case 1:
-            mask = 0x02;
-            shift = 1;
-            break;
-        case 2:
-            mask = 0x04;
-            shift = 2;
-            break;
-        case 3:
-            mask = 0x08;
-            shift = 3;
-            break;
-        case 4:
-            mask = 0x10;
-            shift = 4;
-            break;
-        case 5:
-            mask = 0x20;
-            shift = 5;
-            break;
-        case 6:
-            mask = 0x40;
-            shift = 6;
-            break;
-        case 7:
-            mask = 0x80;
-            shift = 7;
-            break;
-    }
-
-    return (data[id / 8] & mask) >> shift;
-}
-
-// NONMATCHING (99.81%): only one instruction differs: the original sign-extends `value` into r0
-// (`extsh r0, r5`), this build extends it in place (`extsh r5, r5`).
-s32 johoya_set(u8* data, s16 id, s16 value) {
+s16 johoya_set(u8* data, s16 id, s16 value) {
     u8 invmask;
     s32 shift;
     s32 index;
@@ -313,131 +393,67 @@ s32 johoya_set(u8* data, s16 id, s16 value) {
     return value;
 }
 
-USER_FUNC(johoya_luigi_newjoho_setreadflag) {
-    InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.unk1A, wp->info[*(s32*)wp->unk10].storyId, 1);
-    return 2;
+s16 johoya_get(u8* data, s16 id) {
+    u8 mask;
+    s32 shift;
+
+    switch (id & 7) {
+        case 0:
+            mask = 0x01;
+            shift = 0;
+            break;
+        case 1:
+            mask = 0x02;
+            shift = 1;
+            break;
+        case 2:
+            mask = 0x04;
+            shift = 2;
+            break;
+        case 3:
+            mask = 0x08;
+            shift = 3;
+            break;
+        case 4:
+            mask = 0x10;
+            shift = 4;
+            break;
+        case 5:
+            mask = 0x20;
+            shift = 5;
+            break;
+        case 6:
+            mask = 0x40;
+            shift = 6;
+            break;
+        case 7:
+            mask = 0x80;
+            shift = 7;
+            break;
+    }
+
+    return (data[id / 8] & mask) >> shift;
 }
 
-USER_FUNC(johoya_perfect_newjoho_setreadflag) {
-    InformantWork* wp = &_jdt;
 
-    johoya_set(wp->unk14.unkD, wp->info[*(s32*)wp->unk10].storyId, 1);
-    return 2;
-}
 
-USER_FUNC(johoya_keti_oldspeak_setreadflag) {
-    InformantWork* wp = &_jdt;
 
-    *(u16*)&wp->info[*(s32*)wp->unk10].unk0 |= 1;
-    return 2;
-}
 
-USER_FUNC(johoya_keti_newjoho_setreadflag) {
-    InformantWork* wp = &_jdt;
-    s32 index;
 
-    index = *(s32*)wp->unk10;
-    johoya_set(wp->unk14.unk0, wp->info[index].storyId, 1);
-    *(u16*)&wp->info[index].unk0 |= 1;
-    return 2;
-}
+s32 search_evt_no(const char* label) {
+    s32 labelId;
 
-USER_FUNC(johoya_keti_oldspeak_check) {
-    InformantWork* wp = &_jdt;
-    s32* args = event->args;
-    u8* flag = wp->unk14.unk0;
-    s32 count = 0;
-    s32 i;
-
-    for (i = 0; i < wp->count; i++) {
-        if (johoya_get(flag, wp->info[i].storyId) != 0
-            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
-            count++;
+    for (labelId = 0; labelId < (s32)(sizeof(evtNoLabel) / sizeof(char*)); labelId++) {
+        if (!strcmp(label, evtNoLabel[labelId])) {
+            return labelId;
         }
     }
-    evtSetValue(event, args[0], count);
-    return 2;
+    return -1;
 }
 
-USER_FUNC(johoya_keti_newjoho_check) {
-    InformantWork* wp = &_jdt;
-    s32* args = event->args;
-    u8* flag = wp->unk14.unk0;
-    s32 count = 0;
-    s32 i;
 
-    for (i = 0; i < wp->count; i++) {
-        if (johoya_get(flag, wp->info[i].storyId) == 0) {
-            count++;
-        }
-    }
-    evtSetValue(event, args[0], count);
-    return 2;
+const char* search_evt_moji(s32 index) {
+    return evtNoLabel[index];
 }
-
-USER_FUNC(johoya_keti_oldspeak_makelabel) {
-    s32* args = event->args;
-    s32 value = evtGetValue(event, args[0]);
-    InformantWork* wp = &_jdt;
-    u8* flag = wp->unk14.unk0;
-    s32 matchCount = 0;
-    s32 i;
-
-    for (i = 0; i < wp->count; i++) {
-        if (johoya_get(flag, wp->info[i].storyId) != 0
-            && (*(u16*)&wp->info[i].unk0 & 1) == 0) {
-            if (value == matchCount) {
-                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
-                evtSetValue(event, args[1], (s32)wp->infoEnd);
-                evtSetValue(event, args[2], wp->info[i].initEndPos);
-                evtSetValue(event, args[3], wp->info[i].tagEndPos);
-                evtSetValue(event, args[4], 0);
-                *(s32*)wp->unk10 = i;
-                return 2;
-            }
-            matchCount++;
-        }
-    }
-    ((char*)wp->infoEnd)[0] = '\0';
-    evtSetValue(event, args[1], (s32)wp->infoEnd);
-    evtSetValue(event, args[2], (s32)wp->infoEnd);
-    evtSetValue(event, args[3], 0);
-    evtSetValue(event, args[4], 0);
-    return 2;
-}
-
-USER_FUNC(johoya_keti_newjoho_makelabel) {
-    s32* args = event->args;
-    s32 value = evtGetValue(event, args[0]);
-    InformantWork* wp = &_jdt;
-    char sp[64];
-    u8* flag = wp->unk14.unk0;
-    const char* msg;
-    s32 matchCount = 0;
-    s32 i;
-
-    for (i = 0; i < wp->count; i++) {
-        if (johoya_get(flag, wp->info[i].storyId) == 0) {
-            if (value == matchCount) {
-                sprintf((char*)wp->infoEnd, "%s_%04d", wp->prefix, wp->info[i].storyId);
-                sprintf(sp, "jketi_title_%04d", wp->info[i].storyId);
-                msg = msgSearch(sp);
-                evtSetValue(event, args[1], (s32)wp->infoEnd);
-                evtSetValue(event, args[2], (s32)msg);
-                evtSetValue(event, args[3], strlen(msg));
-                evtSetValue(event, args[4], wp->info[i].unkA);
-                *(s32*)wp->unk10 = i;
-                return 2;
-            }
-            matchCount++;
-        }
-    }
-    ((char*)wp->infoEnd)[0] = '\0';
-    evtSetValue(event, args[1], (s32)wp->infoEnd);
-    evtSetValue(event, args[2], (s32)wp->infoEnd);
-    evtSetValue(event, args[3], 0);
-    evtSetValue(event, args[4], 0);
-    return 2;
-}
+// clang-format on
