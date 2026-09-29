@@ -118,7 +118,7 @@ void nameMaskGX(f32 alpha) {
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// NONMATCHING (88%): GX setup and all three quads match; the texture scale computation
+// NONMATCHING (88.29%): GX setup and all three quads match; the texture scale computation
 // (f32 spans / GXGetTexObj* the original does through fabs(double)) leaves the frame at
 // 0x140 vs the original 0x170 and differs in the scale arithmetic.
 void nameBG(void) {
@@ -140,7 +140,7 @@ void nameBG(void) {
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -270,7 +270,7 @@ void nameEntOff(void) {
 	wp->field_0x4 = 3;
 }
 
-// NONMATCHING (97%): the integer expression reassociates -- original does `x*24; (x/5)*30; add; subi 190`
+// NONMATCHING (97.07%): the integer expression reassociates -- original does `x*24; (x/5)*30; add; subi 190`
 // while ours does `x*24; subi 190; (x/5)*30; add` (r5 vs r0), and the final `if (type == 2)` branches
 // `beq then; b else` in the original but `bne else` in ours. Everything else matches.
 void nameEntOn(s32 type) {

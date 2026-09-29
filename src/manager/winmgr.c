@@ -498,7 +498,7 @@ void winMgrHelpMain(WinMgrEntry* entry) {
 
 // Keep winMgrHelpDraw out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (0%): just written.
+// NONMATCHING (99.90%): just written.
 void winMgrHelpDraw(WinMgrEntry* entry) {
     Mtx mtx1;
     Mtx mtx2;
@@ -701,7 +701,7 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 // qqsort callback, sub_80237A2C
 // qqsort callback, sub_802379E4
 
-// NONMATCHING (0%): just written.
+// NONMATCHING (99.10%): just written.
 void select_main(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 newIndex;
@@ -822,7 +822,6 @@ void select_main(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (0%): just written.
 void select_disp2(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     const char* msg;
@@ -879,7 +878,7 @@ void select_disp2(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (0%): just written.
+// NONMATCHING (99.87%): just written.
 s32 unk_802399f8(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
@@ -923,7 +922,6 @@ s32 unk_802399f8(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (0%): just written.
 s32 unk_80239b2c(EventEntry* event) {
     s32* args = event->args;
     PouchData* pouch = pouchGetPtr();
@@ -957,7 +955,7 @@ s32 unk_80239b2c(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (0%): just written.
+// NONMATCHING (93.32%): just written.
 void select_disp3_mario(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     PouchData* pouch;
@@ -989,7 +987,7 @@ void select_disp3_mario(WinMgrEntry* entry) {
     }
 }
 
-// NONMATCHING (0%): just written.
+// NONMATCHING (96.72%): just written.
 void select_disp3_party(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     PouchData* pouch = pouchGetPtr();

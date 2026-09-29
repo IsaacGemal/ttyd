@@ -156,7 +156,6 @@ s32 scissor_init(void) {
     return 2;
 }
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
 void scissor_disp_region(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     GXTexObj texObj;
@@ -220,7 +219,7 @@ s32 scissor_offscreen(void) {
     return 2;
 }
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
+// NONMATCHING (96.38%): newly written; see REPORT.md.
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     f32* points = work->field_0x114;
@@ -312,7 +311,7 @@ s32 scissor_damage_sub2(Vec* point) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
+// NONMATCHING (94.79%): newly written; see REPORT.md.
 void scissor_damage_sub(BattleUnit* unit, s32* out) {
     Vec pos;
     Vec point;
@@ -364,7 +363,7 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     }
 }
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
+// NONMATCHING (98.28%): newly written; see REPORT.md.
 s32 scissor_damage(EventEntry* event, s32 unused) {
     s32* args = event->args;
     BattleWork* battleWork = _battleWorkPointer;
@@ -391,7 +390,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
             if (BtlUnit_CheckStatus(unit, 0x1B) == 1) {
                 continue;
             }
-            if ((part->attributes & kUnknown_0x4000) || (part->attributes & kSemiImportantPart) || (part->attributes & kNotTargetable)) {
+            if ((part->attributes & kUnknown_0x4000) || (part->attributes & kUnk_ImmuneToDamageOrStatus) || (part->attributes & kNotTargetable)) {
                 continue;
             }
             if ((s8)part->defenseAttr->defenseAttrs[0] == 4 || (s8)part->defenseAttr->defenseAttrs[0] == 2) {
@@ -460,7 +459,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     return 2;
 }
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
+// NONMATCHING (93.32%): newly written; see REPORT.md.
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
     ScissorPoint* points = (ScissorPoint*)work->field_0x114;
@@ -618,7 +617,7 @@ s32 scissor_timer_get(EventEntry* event, BOOL isFirstCall) {
 }
 
 // Keep star_disp2D_sub out of line: star_disp2D must call (bl) it.
-// NONMATCHING (0.00%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
+// NONMATCHING (98.77%): 3 instructions differ, 60 missing, 132 extra, plus register differences.
 #pragma dont_inline on
 void star_disp2D_sub(s32 index, s32 alpha) {
     ScissorWork* work = GetScissorPtr();
@@ -694,7 +693,6 @@ s32 weaponGetPower_Scissor(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     return 0;
 }
 
-// NONMATCHING (0.00%): newly written; see REPORT.md.
 s32 tess(f32* points, s32 count) {
     ScissorWork* work = GetScissorPtr();
     s32 i;

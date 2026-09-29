@@ -621,7 +621,7 @@ static inline f32 npcCosf(f32 rad) {
     return cosv;
 }
 
-// NONMATCHING (76.7%): blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4
+// NONMATCHING (76.71%): blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4
 // draws with history 4..1 and alpha 0x80-100..0x80-25, flag save/restore). Diffs: MWCC schedules
 // the inline sin/cos constants per branch, li-forms the color, entry/flag in r31/r30 vs r30/r28.
 void npcDisp_blur(CameraId camId, void* param) {
@@ -1391,7 +1391,7 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
     }
 }
 
-// NONMATCHING (86%): logic is complete; MWCC picks a different callee-saved register
+// NONMATCHING (86.86%): logic is complete; MWCC picks a different callee-saved register
 // allocation (p/sel/i land in r26/r28/r25 instead of the original's r27/r27/r28) and the
 // level-range test/branch layout differs. All constants and offsets checked against the asm.
 void npcSetupBattleInfo(NpcEntry* npc, BattleGroupSetup* setup) {
@@ -1854,7 +1854,7 @@ s32 npcCheckBlow(NpcEntry* entry) {
     return cloudGetBreathPower(entry->width, &pos) > 0.0f;
 }
 
-// NONMATCHING (92.7%): hammer sweep over 12 elevation angles placing a point radius from Mario
+// NONMATCHING (92.71%): hammer sweep over 12 elevation angles placing a point radius from Mario
 // along (sin/cos of angle, elevation from the shared table), then the _npcHitCheckSphere test.
 // Diffs: local angle table pools to a different rodata symbol, and register/float allocation.
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
@@ -1948,7 +1948,7 @@ NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
     return found;
 }
 
-// NONMATCHING (76.6%): vertical overlap gate, two horizontal dist checks (position then
+// NONMATCHING (76.58%): vertical overlap gate, two horizontal dist checks (position then
 // prevPosition), mario->field_0x1D8 = entry, close/far branch at |compAngle(angle, directionView)|
 // < 40, inline sin/cos push offset clamped to length 2, then marioChkWallAround. Registers differ.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {

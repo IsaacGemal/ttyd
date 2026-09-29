@@ -51,12 +51,6 @@
   },
   {
     "path": "src/battle/battle_damage.c",
-    "name": "BattleCheckCounter",
-    "declaration": "s32 BattleCheckCounter(void* work, BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32* flags);",
-    "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."
-  },
-  {
-    "path": "src/battle/battle_damage.c",
     "name": "_getRegistStatus",
     "declaration": "u8 _getRegistStatus(BattleUnit* unit, s32 type);",
     "reason": "battle.c uses this function symbol as a byte array for split-owned jump-table relocations; a shared function declaration conflicts."

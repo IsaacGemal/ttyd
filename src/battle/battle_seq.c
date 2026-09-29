@@ -25,10 +25,10 @@ const u8 N_weapon_lucky_start[0xC0] = {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x01,0x00,0x40,0x20,0x10,0x00,0x00,0x00,0x00,0x00,0x03,0x02,
 	0x00,0x00,0x00,0x00,0x00,0x02,0x01,0x08,0x00,0x00,0x07,0xff,0x80,0x00,0x20,0x04,
-	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x64,0x03,0x64,0x03,0x00,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x64,0x03,0x64,0x03,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-	0x00,0x00,0x00,0x00,0x00,0x00,0x03,0x02,0x03,0x02,0x00,0x00,0x00,0x00,0x00,0x00,
-	0x00,0x00,0x00,0x64,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x03,0x02,0x03,0x02,0x00,0x00,
+	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x64,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
 f32 float_0_8041c280 = 0.0f;
@@ -66,7 +66,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 
 // Needed: -O4,p inlines btlseqInit into this function; the original calls it.
 #pragma optimize_for_size on
-// NONMATCHING (79%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
+// NONMATCHING (79.18%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
 // compiler inlines them away and the case-3 compare/branch tree differs.
 void BattleSequenceManager(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
@@ -355,7 +355,7 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 
 // Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 #pragma optimize_for_size on
-// NONMATCHING (80%): control-flow layout of the four event-id ifs differs (the original checks the condition
+// NONMATCHING (80.03%): control-flow layout of the four event-id ifs differs (the original checks the condition
 // after the body) and wp/i land in r28/r30 instead of r30/r28; logic is verified against the asm.
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	s32 i;
@@ -549,7 +549,7 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 
 // Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 #pragma optimize_for_size on
-// NONMATCHING (94%): logic matches; the original keeps wp in r31 and adds 0x120 to the loop offset
+// NONMATCHING (94.40%): logic matches; the original keeps wp in r31 and adds 0x120 to the loop offset
 // (r0 = offset + 0x120; lwzx r0, wp, r0) while mine hoists order = wp + 0x120 into r31, and uses one
 // fewer saved register (stmw r22 vs r23).
 void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
@@ -599,7 +599,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 }
 #pragma optimize_for_size off
 
-// NONMATCHING (94%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
+// NONMATCHING (94.43%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
 // r27, ret r30 vs r31, offset r27 vs r30) so the whole body shifts by one register.
 BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	BattleUnit* unit;
@@ -610,21 +610,20 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 
 	count = 0;
 	offset = 0;
-	for (i = 0; i < 3; i++) {
-		BattleAlliance* alliance = (BattleAlliance*)((u8*)wp + offset);
+	for (i = 0; i < 3; i++, offset += sizeof(BattleAlliance)) {
+		BattleAlliance* alliance = (BattleAlliance*)((u8*)wp->alliances + offset);
 		alliance->clearConditionMet = 0;
-		if (*(u16*)((u8*)alliance + 8) == 0) {
+		if ((u16)alliance->allianceId == 0) {
 			count++;
 			alliance->clearConditionMet = 1;
-			offset += 8;
 			continue;
 		}
-		if (*(u16*)((u8*)alliance + 8) & 1) {
+		if ((u16)alliance->allianceId & 1) {
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
 					!BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL) &&
-					!(unit->mAttributeFlags & kUnknown_0x4000) &&
+					!(unit->mAttributeFlags & kInactive) &&
 					!(unit->mAttributeFlags & 0x10000000))
 				{
 					break;
@@ -633,9 +632,10 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 			if (j >= 64) {
 				count++;
 				alliance->clearConditionMet = 1;
+				continue;
 			}
 		}
-		if (*(u16*)((u8*)alliance + 8) & 2) {
+		if ((u16)alliance->allianceId & 2) {
 			for (j = 0; j < 64; j++) {
 				unit = BattleGetUnitPtr(wp, j);
 				if (unit != NULL && unit->mAlliance == i &&
@@ -651,7 +651,6 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 				alliance->clearConditionMet = 1;
 			}
 		}
-		offset += 8;
 	}
 	if (count >= 2) {
 		return TRUE;

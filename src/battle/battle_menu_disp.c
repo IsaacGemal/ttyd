@@ -119,6 +119,7 @@ typedef struct BattleMenuDispScratch {
 
 // The Disp wrappers must emit a real call, not an inline expansion of these.
 #pragma dont_inline on
+// NONMATCHING (0.00%): 9 instructions differ, 4 missing, 91 extra, plus register differences.
 void DrawMultiItemWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -161,6 +162,7 @@ void DrawMultiItemWin(void) {
     }
 }
 
+// NONMATCHING (0.00%): 24 instructions differ, 7 missing, 97 extra, plus register differences.
 void DrawChangePartyWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -192,6 +194,7 @@ void DrawChangePartyWin(void) {
     }
 }
 
+// NONMATCHING (0.00%): 23 instructions differ, 6 missing, 96 extra, plus register differences.
 void DrawOperationWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -223,6 +226,7 @@ void DrawOperationWin(void) {
     }
 }
 
+// NONMATCHING (30.09%): 8 instructions differ, 9 missing, 90 extra, plus register differences.
 void DrawWeaponWin(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -857,6 +861,7 @@ void DrawMenuPartyChangeButton(void) {
 }
 
 #pragma dont_inline on
+// NONMATCHING (99.38%): same instructions; only register numbers or operands differ.
 void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s32* d, s32* e, void* table, s32 flag) {
     BattleWork* wp = _battleWorkPointer;
     BattleCursor* cursor;

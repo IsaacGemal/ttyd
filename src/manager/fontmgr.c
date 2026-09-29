@@ -405,7 +405,7 @@ u16 FontGetMessageWidth(const char* message) {
 	return FontGetMessageWidthLine(message, NULL);
 }
 
-// NONMATCHING (91.48%): full parse loop reconstructed; remaining diffs are register allocation and the
+// NONMATCHING (90.03%): full parse loop reconstructed; remaining diffs are register allocation and the
 // anonymous @-labels for the sscanf format strings / double_to_int constants.
 u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 	s32 maxwidth = 0;
@@ -457,7 +457,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 					iconGetWidthHight(&width, &height, (u16)id);
 					curwidth = (s32)((f32)width * scale + offset + (f32)(u16)curwidth);
 				}
-				else if ((s8)arg1[0] == 'R' || (s8)arg1[0] == '/') {
+				else if ((s8)arg1[0] == 'R') {
 					continue;
 				}
 				if (*message == '\n') {
@@ -614,7 +614,7 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (80.02%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
+// NONMATCHING (79.41%): draws each glyph with PSMTXTrans+PSMTXConcat+PSMTXTransApply. Command and icon
 // handling was reconstructed from asm; anon @-labels for the embedded strings and a few schedule diffs remain.
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
@@ -643,7 +643,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 				char arg1[128];
 				char arg2[128];
 				msg = msgGetCommand((char*)msg + 1, arg1, arg2);
-				if (arg1[0] == 'R' || arg1[0] == '/') {
+				if (arg1[0] == 'R') {
 					break;
 				}
 				if (*msg == '\n') {
@@ -883,7 +883,7 @@ void FontDrawStringPitch(const char* str, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// NONMATCHING (79.68%): full command/icon loop reconstructed from asm. Remaining: the compiler keeps a
+// NONMATCHING (79.37%): full command/icon loop reconstructed from asm. Remaining: the compiler keeps a
 // single .rodata base in r29 and names the command strings (str_8041A31C...) whereas ours emit anon @-labels,
 // and the icon block's float schedule / frame layout differs.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
@@ -962,7 +962,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					}
 					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
 				}
-				else if (arg1[0] == 'R' || arg1[0] == '/') {
+				else if (arg1[0] == 'R') {
 					break;
 				}
 				if (*msg == '\n') {
@@ -999,7 +999,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (80.20%): red|/red|col|/col|icon command loop reconstructed from asm; same anon @-label and
+// NONMATCHING (79.91%): red|/red|col|/col|icon command loop reconstructed from asm; same anon @-label and
 // icon-schedule/frame diffs as FontDrawMessageMtx.
 void FontDrawMessage(s32 x, s32 y, const char* msg) {
 	s32 x0 = x;
@@ -1080,7 +1080,7 @@ void FontDrawMessage(s32 x, s32 y, const char* msg) {
 					}
 					x = (s32)((f32)x + (f32)iw * scale + (f32)offset);
 				}
-				else if (arg1[0] == 'R' || arg1[0] == '/') {
+				else if (arg1[0] == 'R') {
 					break;
 				}
 				if (*msg == '\n') {

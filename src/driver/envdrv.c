@@ -173,7 +173,6 @@ void envCapture2(CameraId camId, void* param) { //1:1
     }
 }
 
-// NONMATCHING (86.96%): 3 missing.
 void envDisp(CameraId camId, void *param) {
     f32 vp[GX_VIEWPORT_SZ];
     f32 pm[GX_PROJECTION_SZ];
@@ -834,7 +833,7 @@ void envDisp_DepthOfField(void) {
 
 
 
-// NONMATCHING (88.69%): full logic; callee-saved locals land in r25-r31 instead of the original r24-r30 and a few scheduler moves differ.
+// NONMATCHING (88.71%): full logic; callee-saved locals land in r25-r31 instead of the original r24-r30 and a few scheduler moves differ.
 void envSetYami(EnvironmentYami* yami) {
     EnvironmentWork* wp = envGetWork();
     s32 tevStage = yami->tevStage;
@@ -859,8 +858,8 @@ void envSetYami(EnvironmentYami* yami) {
         }
     }
 
-    GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
-    GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
+    GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
     PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
@@ -880,22 +879,22 @@ void envSetYami(EnvironmentYami* yami) {
     GXLoadTexObj(&texObj, texMap + 1);
 
     GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
     GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
     GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
     GXSetTevOrder(tevStage + 1, texCoord + 1, texMap + 1, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-    GXSetTevAlphaOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevColorOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(tevStage + 1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
     GXSetTevAlphaIn(tevStage + 1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
     GXSetTevSwapMode(tevStage + 1, GX_TEV_SWAP0, GX_TEV_SWAP0);
 
     GXSetTevOrder(tevStage + 2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-    GXSetTevAlphaOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevColorOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(tevStage + 2, GX_CC_C0, GX_CC_ZERO, GX_CC_APREV, GX_CC_ZERO);
     GXSetTevAlphaIn(tevStage + 2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
     GXSetTevSwapMode(tevStage + 2, GX_TEV_SWAP0, GX_TEV_SWAP0);
@@ -967,7 +966,7 @@ void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
 }
 
 //almost 1:1, needs some regalloc work and type changes
-// NONMATCHING (91.29%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
+// NONMATCHING (98.53%): 6 instructions differ, 7 missing, 19 extra, plus register differences.
 void envGlare(EnvironmentGlare* glare) {
     EnvironmentWork* var_r4 = envGetWork();
     EnvironmentGlareFilter* temp_r30;

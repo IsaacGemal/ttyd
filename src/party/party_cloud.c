@@ -42,7 +42,7 @@ void cloudGetAt(Vec* position) {
 }
 
 #define cloud ((PartyCloud*)party->useStruct)
-// NONMATCHING (97.1%): mode offset and direction swap callee-saved float registers (f31/f30 vs the
+// NONMATCHING (97.65%): mode offset and direction swap callee-saved float registers (f31/f30 vs the
 // original's f30/f31); all instructions otherwise identical.
 void getHitBreatheout2(PartyEntry* party, f32 angle) {
     MarioWork* mario = party->playerPtr;
@@ -51,6 +51,7 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
     f32 dx, dz;
     f32 f31;
+    f32 dir;
     f32 f30;
     s16 mode;
 
@@ -113,8 +114,8 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    f31 = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
-    sincosf(&sin2, &cos2, f31);
+    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
+    sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
     hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                          party->position.x, mario->position.y + f30, party->position.z,
@@ -138,8 +139,8 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    f31 = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
-    sincosf(&sin2, &cos2, f31);
+    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
+    sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
     hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                          party->position.x, mario->position.y + f30, party->position.z,
@@ -192,7 +193,7 @@ void cloud_exit(PartyEntry* party) {
     *(f32*)((u8*)party + 0x98) += 10.0f; \
 } while (0)
 
-// NONMATCHING (91.9%): the compiler caches the address of party->[0x94] in a callee-saved register
+// NONMATCHING (93.16%): the compiler caches the address of party->[0x94] in a callee-saved register
 // across the inlined cloudMoveToMario body (stmw r27; addi r28), where the original re-materialises it;
 // that register pressure then perturbs several operand registers and the rodata magic-double pool slot.
 void N__cloud_use(PartyEntry* party) {
@@ -281,6 +282,9 @@ void N__cloud_use(PartyEntry* party) {
             angle = revise360(270.0f - *(f32*)((u8*)mario + 0x1AC));
             f31 = (angle <= 180.0f) ? -1.0f : 1.0f;
             mario->unk138 = 70.0f * f31;
+        }
+        if (party->useStruct != NULL && *(s32*)((u8*)party->useStruct + 0x34) == -1) {
+            *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &mario->position);
         }
         /* fallthrough */
     case 0xB:
@@ -415,7 +419,7 @@ void N__cloud_use(PartyEntry* party) {
 #undef cloud
 #undef MOVE_TO_MARIO
 
-// NONMATCHING (93.7%): original wraps the body in an `if (mot == 2)` with inverted branch (bne body;
+// NONMATCHING (93.73%): original wraps the body in an `if (mot == 2)` with inverted branch (bne body;
 // b end); ours emits `beq end`. Also caches party+0x94 in r29 and keeps the dir flag in r5 instead of r0.
 void cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;

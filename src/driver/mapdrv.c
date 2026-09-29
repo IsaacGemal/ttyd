@@ -1724,7 +1724,7 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 
 }
 
-// NONMATCHING (83%): logic/structure and call sequence match; MWCC register coloring differs (target
+// NONMATCHING (83.18%): logic/structure and call sequence match; MWCC register coloring differs (target
 // folds the entries+0x2C base into the displacement and keeps separate sx/sy copies) and float/
 // double pool constants use local @nnnn entries. Remaining: addressing/register allocation.
 void mapSetTextureMatrix(MapMaterialTex* mat) {

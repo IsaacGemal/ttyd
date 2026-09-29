@@ -4459,6 +4459,7 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
 }
 
 //s32* battleId, s32* partId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
+// NONMATCHING (96.27%): 1 instruction differs, 3 missing, 3 extra, plus register differences.
 USER_FUNC(btlevtcmd_JumpPartsPosition) {
     s32 btlId, id;
     s32* args = event->args;

@@ -481,7 +481,9 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 
 // The unpacked triangle path is reconstructed from the asm, but the packed branch's locals inflate the frame
 // and the packed s16->f32 reads lower to the integer xoris/lfd/fsubs path instead of retail's psq_l/psq_st.
-// NONMATCHING (50.32%): packed path and unpacked-branch register allocation still differ.
+// NONMATCHING (50.32%): the original reads packed s16 vertices with psq_lx through GQR5, scaled by 2^-shift using the map
+// file's fraction shift (mapGetWork()->entries[...] +0xA4 -> +0x44); this reads them as plain s16 and never scales, so
+// packed collision triangles are wrong whenever the shift is nonzero. Register allocation also differs.
 s16 hitCalcVtxPosition(HitEntry* hit) {
     s32 numVectors = 0;
     s32 partIndex;

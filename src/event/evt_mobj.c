@@ -345,6 +345,7 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
     return 0;
 }
 
+// NONMATCHING (80.09%): 8 instructions differ, 17 missing, 14 extra, plus register differences.
 s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -1395,6 +1396,7 @@ s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
     return 0;
 }
 
+// NONMATCHING (98.83%): 2 instructions differ, 1 extra, plus register differences.
 s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
@@ -1461,6 +1463,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// NONMATCHING (64.30%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
     u8* base = (u8*)vec3_802c3dc8;
@@ -1586,7 +1589,7 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
     }
     obj->unk1D4 = (s32*)unk1D4;
     obj->flags |= 4;
-    obj->flags |= 0xC1000000;
+    obj->flags |= 0xC10000;
     obj->unk1E4 = evtId;
     obj->unk1DC = 0;
     *(s32*)((u8*)obj + 0x1A0) = unk1A0;
@@ -1723,6 +1726,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
     return 0;
 }
 
+// NONMATCHING (99.30%): 2 instructions differ, plus register differences.
 s32 mobj_badgeblk(MapObjectEntry* obj) {
     u8* base = (u8*)vec3_802c3dc8;
 

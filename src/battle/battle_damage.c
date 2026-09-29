@@ -7,11 +7,9 @@
 
 #include <string.h>
 
-// These six symbols are declared as byte arrays in battle.c (see the switch-table comment there), so a
+// These five symbols are declared as byte arrays in battle.c (see the switch-table comment there), so a
 // prototype in battle_damage.h would clash when battle.c is compiled. Keep the prototypes local to this
 // translation unit until the tables are split out.
-s32 BattleCheckCounter(void* work, BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
-                       BattleWeapon* weapon, s32* flags);
 u8 _getRegistStatus(BattleUnit* unit, s32 type);
 void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2);
 s32 _getSickStatusRate(BattleWeapon* weapon, s32 type);

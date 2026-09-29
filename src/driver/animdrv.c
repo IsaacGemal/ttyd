@@ -540,7 +540,7 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (93.61%): register allocation only; the logic and stack frame match.
+// NONMATCHING (91.17%): register allocation only; the logic and stack frame match.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 type;
@@ -549,7 +549,7 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
 
     if (animName == NULL) {
         pose->paperId = -1;
-        wp->poses[poseId].flags &= ~1;
+        wp->poses[poseId].materialLightFlag &= ~1;
         return;
     }
     type = pose->type;
@@ -590,9 +590,9 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
         pose->flags &= ~2;
         pose->flags &= ~4;
     }
-    wp->poses[poseId].flags |= 1;
+    wp->poses[poseId].materialLightFlag |= 1;
 }
-// NONMATCHING (81.02%): 6 instructions differ, 14 missing, plus register differences.
+// NONMATCHING (81.14%): 6 instructions differ, 14 missing, plus register differences.
 void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = *wp->files[wp->poses[pose->paperId].fileId].handle->data;
@@ -616,7 +616,7 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     }
 }
 
-// NONMATCHING (95.57%): register allocation differs and the `id != -2` test
+// NONMATCHING (93.05%): register allocation differs and the `id != -2` test
 // branches to the create block in the original (bne) vs to the skip block here (beq).
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
@@ -657,7 +657,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     }
     if (animName == NULL) {
         pose->paperId = -1;
-        wp->poses[poseId].flags &= ~1;
+        wp->poses[poseId].materialLightFlag &= ~1;
         return;
     }
     {
@@ -680,7 +680,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     } else {
         pose->flags &= ~2;
     }
-    wp->poses[poseId].flags |= 1;
+    wp->poses[poseId].materialLightFlag |= 1;
 }
 
 // NONMATCHING (95.80%): 5 instructions differ, 2 missing, 1 extra, plus register differences.

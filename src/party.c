@@ -1229,7 +1229,7 @@ found:
     return slotId;
 }
 
-// NONMATCHING (89.01%): 4 saved registers instead of the original 5 (no `stmw`/`lmw`), so every
+// NONMATCHING (94.17%): 4 saved registers instead of the original 5 (no `stmw`/`lmw`), so every
 // register number is shifted; vec3_802ccdd8 is accessed via `@sda21` bases instead of one base+offset.
 s32 partyEntry2Pos(s32 memberId, f32 x, f32 y, f32 z) {
     MarioWork* player = marioGetPtr();

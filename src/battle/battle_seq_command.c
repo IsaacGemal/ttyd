@@ -1363,7 +1363,7 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 }
 
 // Keeping the original `bl _battleGetPartyIcon` needs the dont_inline pragma on that callee.
-// NONMATCHING (98.94%): instruction stream now matches; only callee-saved register
+// NONMATCHING (78.48%): instruction stream now matches; only callee-saved register
 // allocation differs (target keeps mario/cmd in r25/r24 and the loop counter in r20; ours
 // use r26/r25 and r24).
 // NONMATCHING (78.48%): _btlcmd_MakeMultiItemTable builds the multi-item menu table (Double/Triple Dip);
@@ -1426,6 +1426,7 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	}
 }
 
+// NONMATCHING (98.94%): same instructions; only register numbers or operands differ.
 s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleUnit* partner = BattleGetPartnerPtr(wp, mario);
