@@ -92,6 +92,25 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
     print(f"ok   [lint] {len(names)} changed file(s) vs {base}")
 
 
+def extend_data_ids():
+    """extend_data(id) is an inline function forcedata<id>: two files of one REL with the same id are merged by the
+    linker and the second one's constants vanish. Ids must be unique inside each rels/<mod>/src (common's are unit-named)."""
+    import re
+    problems = []
+    for mod_dir in sorted((ROOT / "rels").glob("*")):
+        if mod_dir.name == "common":   # its ids are named after the unit; variants (v2/) are never linked into one REL together
+            continue
+        seen = {}
+        for f in sorted(mod_dir.glob("src/**/*.c")):
+            for ident in set(re.findall(r"extend_data\((\w+),", f.read_text(errors="replace"))):
+                if ident in seen:
+                    problems.append(f"{f.relative_to(ROOT)}: extend_data({ident}) is also used in {seen[ident]}")
+                seen[ident] = f.relative_to(ROOT)
+    if problems:
+        fail("extend_data", "\n  " + "\n  ".join(problems))
+    print("ok   [extend_data] ids unique per REL directory")
+
+
 def build():
     r = run([sys.executable, "configure.py"])
     if r.returncode:
@@ -192,6 +211,7 @@ def main():
     if problems:
         fail("prototypes", "\n  " + "\n  ".join(problems))
     print(f"ok   [prototypes] {count} documented exceptions; no other external local prototypes")
+    extend_data_ids()
     build()
     ratchet(set(a.allow_regress))
     summary()

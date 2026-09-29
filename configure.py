@@ -1611,7 +1611,7 @@ config.libs = [
     Rel(
         "jon",
         [
-            Object(NonMatching, "jon_06.c"),
+            Object(Matching, "jon_06.c"),
             Object(Matching, "jon_00.c"),
             Object(Matching, "jon_01.c"),
             Object(Matching, "jon_02.c"),
