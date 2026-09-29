@@ -1,0 +1,1776 @@
+#include "rsh_02.h"
+#include "rsh_04.h"
+#include "driver/msgdrv.h"
+#include "driver/npcdrv.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_item.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_mobj.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_pouch.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_window.h"
+#include "forcedata.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "manager/evtmgr_cmd.h"
+#include "motion/mot_roll.h"
+#include "motion/mot_slit.h"
+#include "party/party_motion.h"
+#include "pmario_sound.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 evt_rsh_rnd_npc_init[];
+s32 talk_yuurei[451];
+s32 evt_toron_catch[281];
+s32 evt_nidome_bed[126];
+
+// clang-format off
+extend_data(12,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(13,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+static BeroEntry bero_data_a[3] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_a", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {NULL},
+};
+
+static BeroEntry bero_data_b[3] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_b", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_b", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {NULL},
+};
+
+static BeroEntry bero_data_c[3] = {
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_03_c", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {NULL},
+};
+
+EVT_BEGIN(evt_powan_msg)
+    CALL(evt_npc_set_anim, STRING("ポワン探偵"), STRING("A_1"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_QUESTION1_2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_eff_fukidashi, 0, STRING("hatena"), 0, 1, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_set_dir_to_target, STRING("グルメキノピオ"), STRING("mario"))
+    RETURN
+EVT_END()
+
+USER_FUNC(bgm_wait_stop) {
+    psndSetFlag(0x1000);
+    return EVT_RETURN_DONE;
+}
+
+void powan_callback(s32 state, smartEntry* smart) {
+    MessageData* data = smart->address;
+
+    if (state == 3) {
+        EventEntry* event = data->event;
+        s32 value = evtGetValue(event, LW(10));
+
+        switch (value) {
+        case 1:
+            evtEntry(evt_powan_msg, 0, 0);
+            break;
+        }
+        evtSetValue(event, LW(10), value + 1);
+    }
+}
+
+EVT_BEGIN(evt_nabe)
+    SET_VALUE(LF(0), 0)
+    IF_INT_EQUAL(GSW(0), 286)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_GREATER_OR_EQUAL(GSW(0), 287)
+        SET_VALUE(LF(0), 0)
+    END_IF
+    IF_INT_EQUAL(LF(0), 0)
+        CALL(evt_mario_key_onoff, 0)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_264"), 0, 0)
+        CALL(evt_mario_key_onoff, 1)
+        RETURN
+    END_IF
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_56"), 0, 0)
+    CALL(evt_item_entry, STRING("nabe"), 74, 0, 0, 0, 17, -1, 0)
+    CALL(evt_item_get_item, STRING("nabe"))
+    CALL(evt_item_get_item_end_wait, STRING("nabe"))
+    CALL(evt_mario_set_dir_npc, STRING("グルメキノピオ"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_57"), 0, STRING("グルメキノピオ"))
+    CALL(evt_fade_entry, 10, 1000, 0, 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_mario_set_pos, 205, 0, -175)
+    CALL(evt_party_set_pos, 0, 180, 0, -200)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_npc_set_position, STRING("ポワン探偵"), 265, 0, -175)
+    CALL(evt_npc_flag_onoff, 1, STRING("ポワン探偵"), 131088)
+    CALL(evt_set_dir_to_target, STRING("ポワン探偵"), STRING("グルメキノピオ"))
+    CALL(evt_set_dir_to_target, STRING("グルメキノピオ"), STRING("ポワン探偵"))
+    CALL(evt_cam3d_evt_zoom_in, 25, 0, 20, 11)
+    CALL(evt_fade_entry, 9, 1000, 0, 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_58"), 0, STRING("ポワン探偵"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_59"), 0, STRING("グルメキノピオ"))
+    WAIT_MS(500)
+    SET_VALUE(LW(10), 0)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_60_00"), PTR(powan_callback), STRING("ポワン探偵"))
+    WAIT_MS(500)
+    CALL(evt_npc_status_onoff, 1, STRING("ポワン探偵"), 2)
+    CALL(evt_npc_move_position, STRING("ポワン探偵"), 250, -150, 0, FLOAT(40.0f), 1)
+    CALL(evt_npc_move_position, STRING("ポワン探偵"), 251, -90, 0, FLOAT(40.0f), 1)
+    WAIT_MS(500)
+    CALL(evt_set_dir_to_target, STRING("ポワン探偵"), STRING("mario"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_60_01"), 0, STRING("ポワン探偵"))
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("ポワン探偵"), 131088)
+    CALL(evt_npc_move_position, STRING("ポワン探偵"), 252, 0, 0, FLOAT(40.0f), 1)
+    WAIT_MS(500)
+    CALL(evt_npc_set_position, STRING("ポワン探偵"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("ポワン探偵"), 131088)
+    CALL(evt_cam3d_evt_off, 500, 11)
+    WAIT_MS(500)
+    SET_VALUE(LSWF(3), 0)
+    SET_VALUE(GSW(0), 287)
+    CALL(evt_del_case_evt, 0, GW(10))
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH1"))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(init_gurume)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(310, 325)
+        CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+        CASE_BETWEEN(327, 332)
+        CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+    END_SWITCH
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    IF_INT_LESS(LW(1), 0)
+        CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_gurume)
+    SWITCH(GSW(0))
+        CASE_LESS(283)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_12"), 0, 0)
+        CASE_LESS(285)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_54_00"), 0, 0)
+        CASE_LESS(287)
+        SET_VALUE(GSW(0), 286)
+        IF_INT_EQUAL(LSWF(3), 0)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_54_01"), 0, 0)
+            SET_VALUE(LSWF(3), 1)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_55"), 0, 0)
+            SET_VALUE(LSWF(3), 0)
+        END_IF
+        CASE_LESS(295)
+        IF_INT_EQUAL(LSWF(3), 0)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_63"), 0, 0)
+            SET_VALUE(LSWF(3), 1)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_64"), 0, 0)
+            SET_VALUE(LSWF(3), 0)
+        END_IF
+        CASE_LESS(296)
+        IF_INT_EQUAL(GSWF(3434), 0)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_117"), 0, 0)
+            SET_VALUE(GSWF(3434), 1)
+        ELSE
+            IF_INT_EQUAL(GSWF(3435), 1)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_117_01"), 0, 0)
+            ELSE
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_117"), 0, 0)
+            END_IF
+        END_IF
+        CASE_LESS(301)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_117_02"), 0, 0)
+        CASE_LESS(303)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_147_04"), 0, 0)
+        CASE_LESS(310)
+        IF_INT_EQUAL(LSWF(4), 0)
+            SET_VALUE(LSWF(4), 1)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_161"), 0, 0)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_162"), 0, 0)
+        END_IF
+        CASE_LESS(327)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_222"), 0, 0)
+        CASE_LESS(346)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_258"), 0, 0)
+        CASE_LESS_OR_EQUAL(402)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_c_10_1"), 0, 0)
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_c_10_1_1"), 0, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_powan)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_yuurei)
+    SWITCH(GSW(0))
+        CASE_LESS(295)
+        RETURN
+        CASE_BETWEEN(295, 302)
+        CALL(evt_npc_set_position, STRING("me"), 30, 0, -170)
+        CASE_BETWEEN(304, 309)
+        CALL(evt_npc_set_position, STRING("me"), 30, 0, -170)
+        CASE_BETWEEN(310, 326)
+        CALL(evt_npc_set_position, STRING("me"), 30, 0, -170)
+        CASE_BETWEEN(327, 332)
+        CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+        CASE_GREATER_OR_EQUAL(334)
+        CALL(evt_npc_set_position, STRING("me"), 30, 0, -170)
+    END_SWITCH
+    CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("ゆうれい"), 262176)
+    CALL(evt_npc_change_interrupt, STRING("ゆうれい"), 6, 0)
+    BEGIN_INLINE_EVENT
+        IF_INT_EQUAL(GSWF(3445), 0)
+            SET_VALUE(LW(0), 0)
+            LOOP(0)
+                IF_INT_EQUAL(GSWF(3459), 1)
+                    CALL(evt_mario_party_use_check, LW(1))
+                    IF_INT_EQUAL(LW(1), 6)
+                        ADD(LW(0), 1)
+                        IF_INT_GREATER(LW(0), 240)
+                            BREAK_LOOP
+                        END_IF
+                    ELSE
+                        SET_VALUE(LW(0), 0)
+                    END_IF
+                END_IF
+                WAIT_FRAMES(1)
+            END_LOOP
+            CALL(evt_npc_set_position, STRING("ゆうれい"), 30, 0, -175)
+            CALL(evt_set_dir_to_target, STRING("ゆうれい"), STRING("mario"))
+            CALL(evt_snd_bgmoff, 2048)
+            CALL(evt_npc_get_position, STRING("ゆうれい"), LW(3), LW(4), LW(5))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_GHOST_APPEAR1"), LW(3), LW(4), LW(5), 0)
+            CALL(evt_sub_intpl_msec_init, 11, 0, 180, 1000)
+            LABEL(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(0)
+            END_IF
+            CALL(evt_npc_change_interrupt, STRING("ゆうれい"), 6, PTR(talk_yuurei))
+            SET_VALUE(GSWF(3445), 1)
+        ELSE
+            CALL(evt_npc_set_position, STRING("ゆうれい"), 30, 0, -175)
+            CALL(evt_npc_change_interrupt, STRING("ゆうれい"), 6, PTR(talk_yuurei))
+        END_IF
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_init, 11, 180, 64, 1000)
+            LABEL(1)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(1)
+            END_IF
+            CALL(evt_sub_intpl_msec_init, 11, 64, 180, 1000)
+            LABEL(2)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 1)
+                GOTO(2)
+            END_IF
+            IF_INT_EQUAL(GSWF(3448), 1)
+                SET_VALUE(GSWF(3449), 1)
+                LOOP(0)
+                    IF_INT_EQUAL(GSWF(3448), 0)
+                        BREAK_LOOP
+                    END_IF
+                    WAIT_FRAMES(1)
+                END_LOOP
+                SET_VALUE(GSWF(3449), 0)
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_shake)
+    WAIT_MS(300)
+    BEGIN_INLINE_EVENT
+        CALL(evt_snd_bgmoff, 1024)
+        CALL(evt_snd_bgmon, 1, STRING("BGM_FF_ENV_SURPRISED1"))
+        WAIT_MS(2000)
+        CALL(evt_snd_bgmoff, 1024)
+        CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_STG5_GHOST1"))
+    END_INLINE_EVENT
+    LOOP(0)
+        CALL(evt_cam3d_evt_zoom_in, 10, 0, 0, 11)
+        WAIT_FRAMES(2)
+        CALL(evt_cam3d_evt_off, 0, 11)
+        WAIT_FRAMES(2)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_shake2)
+    CALL(evt_cam3d_evt_off, 0, 11)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 item_tbl2[2] = {
+    0x0000004E, 0xFFFFFFFF,
+};
+
+void yuurei_callback(s32 state, smartEntry* smart) {
+    MessageData* data = smart->address;
+    EventEntry* event = data->event;
+
+    if (event->lwData[13] != 0 && state == 3) {
+        event->lwData[14]++;
+        if (event->lwData[14] == 1) {
+            event->lwData[15] = (s32)evtEntry(evt_shake, 0, 0);
+        } else if (event->lwData[14] == 2) {
+            if ((u32)event->lwData[15] != 0) {
+                evtDelete((EventEntry*)event->lwData[15]);
+                evtEntry(evt_shake2, 0, 0);
+            }
+        }
+    }
+}
+
+EVT_BEGIN(talk_yuurei)
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_STG5_GHOST1"))
+    SWITCH(GSW(0))
+        CASE_LESS(297)
+        SET_VALUE(LW(13), 0)
+        IF_INT_LESS(GSW(0), 296)
+            SET_VALUE(GSW(0), 296)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_118"), PTR(yuurei_callback), 0)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_119"), PTR(yuurei_callback), 0)
+        END_IF
+        CALL(evt_msg_select, 0, STRING("stg6_rsh_119_yn"))
+        IF_INT_EQUAL(LW(0), 0)
+            SET_VALUE(LW(13), 1)
+            SET_VALUE(LW(14), 0)
+            SET_VALUE(LW(15), 0)
+            CALL(evt_msg_print_add, 0, STRING("stg6_rsh_120"))
+            SET_VALUE(GSW(0), 297)
+        ELSE
+            CALL(evt_msg_print_add, 0, STRING("stg6_rsh_121"))
+        END_IF
+        CASE_LESS(299)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_122"), 0, 0)
+        CASE_LESS(300)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_135"), 0, 0)
+        CALL(evt_win_item_select, 0, PTR(item_tbl2), LW(1), 0)
+        IF_INT_NOT_EQUAL(LW(1), -1)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_136"), 0, 0)
+            CALL(evt_npc_set_anim, STRING("ゆうれい"), STRING("A_1"))
+            WAIT_MS(1000)
+            CALL(evt_npc_set_anim, STRING("ゆうれい"), STRING("S_1"))
+            CALL(evt_item_entry, STRING("mofu"), 79, 0, 0, 0, 17, -1, 0)
+            CALL(evt_item_flag_on, STRING("mofu"), 8)
+            CALL(evt_snd_bgmoff, 513)
+            CALL(evt_item_get_item, STRING("mofu"))
+            CALL(evt_item_get_item_end_wait, STRING("mofu"))
+            CALL(evt_snd_bgmoff, 1024)
+            CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_STG5_GHOST1"))
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_138"), 0, 0)
+            SET_VALUE(GSWF(3448), 1)
+            LOOP(0)
+                IF_INT_EQUAL(GSWF(3449), 1)
+                    BREAK_LOOP
+                END_IF
+                WAIT_FRAMES(1)
+            END_LOOP
+            CALL(evt_mapobj_flag_onoff, 1, 0, STRING("shouten"), 1)
+            CALL(evt_npc_get_position, STRING("ゆうれい"), LW(7), LW(8), LW(9))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_GHOST_PASSAWAY1"), LW(7), LW(8), LW(9), LW(6))
+            BEGIN_INLINE_EVENT
+                LOOP(10)
+                    CALL(evt_npc_get_position, STRING("ゆうれい"), LW(0), LW(1), LW(2))
+                    CALL(evt_eff64, 0, STRING("stardust2_n64"), 5, LW(0), LW(1), LW(2), 30, 30, 5, 30, 0, 0, 0, 0)
+                    WAIT_MS(500)
+                END_LOOP
+            END_INLINE_EVENT
+            BEGIN_INLINE_EVENT
+                CALL(evt_sub_intpl_msec_init, 0, 180, 60, 5000)
+                LOOP(0)
+                    CALL(evt_sub_intpl_msec_get_value)
+                    CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, LW(0))
+                    WAIT_FRAMES(1)
+                    IF_INT_EQUAL(LW(1), 0)
+                        BREAK_LOOP
+                    END_IF
+                END_LOOP
+            END_INLINE_EVENT
+            CALL(evt_sub_intpl_msec_init, 0, LW(8), 80, 5000)
+            LOOP(0)
+                CALL(evt_sub_intpl_msec_get_value)
+                CALL(evt_npc_set_position, STRING("ゆうれい"), LW(7), LW(0), LW(9))
+                WAIT_FRAMES(1)
+                IF_INT_EQUAL(LW(1), 0)
+                    BREAK_LOOP
+                END_IF
+            END_LOOP
+            CALL(evt_snd_sfxoff, LW(6))
+            WAIT_MS(1000)
+            CALL(evt_mapobj_flag_onoff, 1, 1, STRING("shouten"), 1)
+            CALL(evt_snd_bgmoff, 513)
+            CALL(evt_snd_bgmon, 288, 0)
+            BEGIN_INLINE_EVENT
+                CALL(evt_sub_intpl_msec_init, 0, 60, 180, 1000)
+                LOOP(0)
+                    CALL(evt_sub_intpl_msec_get_value)
+                    CALL(evt_npc_set_color, STRING("ゆうれい"), 255, 255, 255, LW(0))
+                    WAIT_FRAMES(1)
+                    IF_INT_EQUAL(LW(1), 0)
+                        BREAK_LOOP
+                    END_IF
+                END_LOOP
+            END_INLINE_EVENT
+            BEGIN_INLINE_EVENT
+                CALL(evt_npc_set_position, STRING("ゆうれい"), LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_GHOST_RETURN1"), LW(0), LW(1), LW(2), LW(10))
+                SET_VALUE(LW(0), 0)
+                LOOP(20)
+                    ADD(LW(0), -204)
+                    CALL(evt_snd_sfx_pit, LW(10), LW(0))
+                    WAIT_MS(50)
+                END_LOOP
+                CALL(evt_snd_sfxoff, LW(10))
+            END_INLINE_EVENT
+            CALL(evt_sub_intpl_msec_init, 12, 80, LW(8), 1000)
+            LOOP(0)
+                CALL(evt_sub_intpl_msec_get_value)
+                CALL(evt_npc_set_position, STRING("ゆうれい"), LW(7), LW(0), LW(9))
+                WAIT_FRAMES(1)
+                IF_INT_EQUAL(LW(1), 0)
+                    BREAK_LOOP
+                END_IF
+            END_LOOP
+            SET_VALUE(GSWF(3448), 0)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_139"), 0, 0)
+            CALL(evt_pouch_remove_item, 78, LW(0))
+            SET_VALUE(GSW(0), 300)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_140"), 0, 0)
+        END_IF
+        CASE_LESS(301)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_141"), 0, 0)
+        CASE_LESS(302)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_147_05"), 0, 0)
+        CASE_LESS(306)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_178_00"), 0, 0)
+        CASE_LESS(310)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_178"), 0, 0)
+        CASE_LESS(326)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_210"), 0, 0)
+        CASE_LESS(327)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_223"), 0, 0)
+        CASE_LESS(346)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_255"), 0, 0)
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_c_10"), 0, 0)
+    END_SWITCH
+    CALL(evt_snd_bgmoff, 513)
+    CALL(evt_snd_bgmon, 288, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(init_toron)
+    SWITCH(GSW(0))
+        CASE_EQUAL(308)
+        CALL(evt_npc_set_position, STRING("me"), -240, 0, -180)
+        SPAWN_EVENT(evt_toron_catch)
+        CASE_EQUAL(309)
+        CALL(evt_npc_set_anim, STRING("トロン"), STRING("D_1"))
+        CALL(evt_npc_set_autotalkpose, STRING("トロン"), STRING("D_1"), STRING("T_5"))
+    END_SWITCH
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    IF_INT_LESS(LW(1), 0)
+        CALL(evt_npc_flag_onoff, 0, STRING("me"), 131072)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_toron)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_186"), 0, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_sarary)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_192"), 0, 0)
+    RETURN
+EVT_END()
+
+static NpcSetupInfo npc_data[6] = {
+    {"グルメキノピオ", 0x40020610, 0, init_gurume, 0, talk_gurume},
+    {"ポワン探偵", 0x40000600, 0, 0, 0, talk_powan},
+    {"ゆうれい", 0x40000600, 0, init_yuurei, 0, talk_yuurei},
+    {"トロン", 0x40000608, 0, init_toron, 0, talk_toron},
+    {"サラリーマン", 0x40000600, 0, 0, 0, talk_sarary},
+    {NULL},
+};
+
+// TODO: type
+static u32 door_3[7] = {
+    (u32)"heya_3", (u32)"haikei_3", (u32)"tobira_3", (u32)"a_tobira_3",
+    (u32)"3_door_open", (u32)"a_tobira_3_heya", (u32)"3_door_close",
+};
+
+// TODO: type
+static u32 door_4[7] = {
+    (u32)"heya_4", (u32)"haikei_4", (u32)"tobira_4", (u32)"a_tobira_4",
+    (u32)"4_door_open", (u32)"a_tobira_4_heya", (u32)"4_door_close",
+};
+
+// TODO: type
+static u32 door_5[7] = {
+    (u32)"heya_5", (u32)"haikei_5", (u32)"tobira_5", (u32)"a_tobira_5",
+    (u32)"5_door_open", (u32)"a_tobira_5_heya", (u32)"5_door_close",
+};
+
+EVT_BEGIN(evt_1day_end)
+    CALL(evt_msg_print, 0, STRING("stg6_yado_02"), 0, 0)
+    CALL(evt_msg_select, 0, STRING("stg6_yado_02_yn"))
+    CALL(evt_msg_continue)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    SET_VALUE(GSW(0), 302)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_FF_GO_SLEEPING1"))
+    CALL(evt_snd_envoff, 1024)
+    SET_VALUE(GSWF(3444), 1)
+    CALL(evt_fade_set_mapchange_type, 0, 4, 3000, 9, 300)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        CALL(evt_fade_set_spot_pos, LW(0), LW(1), LW(2))
+    END_INLINE_EVENT
+    SET_VALUE(GSWF(3445), 0)
+    CALL(evt_pouch_mario_recovery)
+    CALL(evt_pouch_all_party_recovery)
+    CALL(bgm_wait_stop)
+    CALL(evt_bero_mapchange, STRING("rsh_02_a"), STRING("e_bero"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_2day_end)
+    CALL(evt_msg_print, 0, STRING("stg6_yado_02"), 0, 0)
+    CALL(evt_msg_select, 0, STRING("stg6_yado_02_yn"))
+    CALL(evt_msg_continue)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    SET_VALUE(GSW(0), 327)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_FF_GO_SLEEPING1"))
+    CALL(evt_snd_envoff, 1024)
+    SET_VALUE(GSWF(3444), 1)
+    CALL(evt_fade_set_mapchange_type, 0, 4, 3000, 9, 300)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        CALL(evt_fade_set_spot_pos, LW(0), LW(1), LW(2))
+    END_INLINE_EVENT
+    SET_VALUE(GSWF(3445), 0)
+    CALL(evt_pouch_mario_recovery)
+    CALL(evt_pouch_all_party_recovery)
+    CALL(bgm_wait_stop)
+    CALL(evt_bero_mapchange, STRING("rsh_02_a"), STRING("e_bero"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_normal_yado)
+    CALL(evt_msg_print, 0, STRING("stg6_yado_00"), 0, 0)
+    CALL(evt_msg_select, 0, STRING("stg6_yado_00_yn"))
+    CALL(evt_msg_continue)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_snd_bgmon, 1, STRING("BGM_FF_GO_SLEEPING1"))
+    CALL(evt_snd_envoff, 1024)
+    CALL(evt_fade_entry, 4, 3000, 0, 0, 0)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 30)
+    CALL(evt_fade_set_spot_pos, LW(0), LW(1), LW(2))
+    CALL(evt_fade_end_wait)
+    CALL(evt_pouch_mario_recovery)
+    CALL(evt_pouch_all_party_recovery)
+    CALL(evt_mario_set_pos, -240, 0, -210)
+    CALL(evt_party_set_pos, 0, -260, 0, -225)
+    CALL(evt_party_set_pos, 1, -250, 0, -240)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_party_set_dir, 1, 90, 0)
+    WAIT_MS(3000)
+    CALL(evt_fade_entry, 9, 1000, 0, 0, 0)
+    CALL(evt_fade_end_wait)
+    CALL(evt_msg_print, 0, STRING("stg6_yado_01"), 0, 0)
+    CALL(evt_snd_bgmoff, 513)
+    CALL(evt_snd_bgmon, 288, 0)
+    CALL(evt_snd_envoff, 513)
+    CALL(evt_snd_envon, 288, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_bed)
+    CALL(evt_mario_key_onoff, 0)
+    SWITCH(GSW(0))
+        CASE_EQUAL(301)
+        CALL_CHILD(evt_1day_end)
+        CASE_EQUAL(326)
+        CALL_CHILD(evt_2day_end)
+        CASE_DEFAULT
+        CALL_CHILD(evt_normal_yado)
+    END_SWITCH
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+USER_FUNC(toron_check) {
+    void* hit = fbatHitCheckAll();
+    NpcEntry* npc = npcNameToPtr("トロン");
+    s32 flag = 0;
+
+    if (marioKeyOffChk() || marioCtrlOffChk()) {
+        flag = 1;
+    }
+    if ((u32)marioStGetSystemLevel() != 0) {
+        flag = 1;
+    }
+    if ((void*)npc == hit && flag == 0) {
+        evtSetValue(event, LW(10), 1);
+    } else {
+        evtSetValue(event, LW(10), 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(unk_rsh_00002384) {
+    if (unk_8009fcbc() == 0) {
+        if (U_marioSlitContinueChk() == 0) {
+            return EVT_RETURN_DONE;
+        }
+    }
+    return 0;
+}
+
+EVT_BEGIN(evt_toron_catch)
+    SET_VALUE(LW(10), 0)
+    SET_VALUE(GF(0), 0)
+    SET_VALUE(GF(1), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_blur_onoff, 1, STRING("トロン"))
+        LOOP(0)
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_JUMP1"), -140, 16, -225, 0)
+            CALL(evt_npc_set_ry, STRING("トロン"), 90)
+            CALL(evt_npc_jump_position_nohit, STRING("トロン"), -140, 16, -225, 500, 40)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+            WAIT_MS(200)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_JUMP1"), -200, 30, -265, 0)
+            CALL(evt_npc_set_ry, STRING("トロン"), 270)
+            CALL(evt_npc_jump_position_nohit, STRING("トロン"), -200, 30, -265, 500, 40)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+            WAIT_MS(200)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_JUMP1"), -300, 75, -189, 0)
+            CALL(evt_npc_set_ry, STRING("トロン"), 270)
+            CALL(evt_npc_jump_position_nohit, STRING("トロン"), -300, 75, -189, 500, 40)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+            WAIT_MS(200)
+            IF_INT_EQUAL(GF(0), 1)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+        CALL(evt_npc_blur_onoff, 0, STRING("トロン"))
+        SET_VALUE(GF(1), 1)
+    END_INLINE_EVENT
+    LOOP(0)
+        CALL(toron_check)
+        IF_INT_EQUAL(LW(10), 1)
+            CALL(evt_mario_key_onoff, 0)
+            BEGIN_INLINE_EVENT
+                CALL(unk_rsh_00002384)
+                CALL(evt_mario_normalize)
+                CALL(evt_party_yoshi_ride, 0, 0)
+            END_INLINE_EVENT
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+    ADD(LW(1), 40)
+    CALL(evt_eff, 0, STRING("small_star"), 3, LW(0), LW(1), LW(2), 0, -1, 0, 2, 0, 0, 0, 0)
+    SET_VALUE(GF(0), 1)
+    LOOP(0)
+        IF_INT_EQUAL(GF(1), 1)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_flag_onoff, 1, STRING("トロン"), 32)
+    CALL(evt_npc_flag_onoff, 0, STRING("トロン"), 1024)
+    CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_DAMAGED1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("トロン"), STRING("C_1"))
+    CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+    SET_VALUE(LW(3), -220)
+    SET_VALUE(LW(4), -170)
+    ADD(LW(3), LW(0))
+    ADD(LW(4), LW(2))
+    DIVIDE(LW(3), 2)
+    DIVIDE(LW(4), 2)
+    CALL(evt_npc_jump_position_nohit, STRING("トロン"), LW(3), 0, LW(4), 500, 30)
+    CALL(evt_npc_jump_position_nohit, STRING("トロン"), -220, 0, -170, 500, 30)
+    CALL(evt_npc_set_autotalkpose, STRING("トロン"), STRING("C_1"), STRING("T_4"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_182"), 0, STRING("トロン"))
+    CALL(evt_snd_bgmoff, 512)
+    SET_VALUE(GSWF(3444), 1)
+    CALL(evt_fade_set_mapchange_type, 0, 10, 2000, 9, 2000)
+    SET_VALUE(GSW(0), 309)
+    CALL(evt_bero_mapchange, STRING("rsh_02_b"), STRING("w_bero"))
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 item_tbl[2] = {
+    0x00000051, 0xFFFFFFFF,
+};
+
+EVT_BEGIN(evt_toron_catch2)
+    CALL(evt_mario_normalize)
+    CALL(evt_party_yoshi_ride, 0, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_npc_set_anim, STRING("トロン"), STRING("D_1"))
+    CALL(evt_npc_set_autotalkpose, STRING("トロン"), STRING("D_1"), STRING("T_5"))
+    CALL(evt_mario_set_pos, -170, 0, -130)
+    CALL(evt_party_set_pos, 0, -130, 0, -140)
+    CALL(evt_npc_set_position, STRING("ポワン探偵"), -190, 0, -170)
+    CALL(evt_npc_set_position, STRING("トロン"), -225, 0, -160)
+    CALL(evt_npc_set_position, STRING("サラリーマン"), -260, 0, -135)
+    CALL(evt_npc_flag_onoff, 1, STRING("ポワン探偵"), 131088)
+    CALL(evt_npc_flag_onoff, 1, STRING("サラリーマン"), 131088)
+    CALL(evt_mario_set_dir, 270, 0, 0)
+    CALL(evt_party_set_dir, 0, 270, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("サラリーマン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ポワン探偵"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("トロン"), 32768)
+    CALL(evt_cam3d_evt_set, -215, 140, 200, -215, 40, -180, 0, 11)
+    WAIT_FRAMES(1)
+    BEGIN_INLINE_EVENT
+        LOOP(10)
+            CALL(evt_npc_set_anim, STRING("トロン"), STRING("D_1"))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    WAIT_MS(2000)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_183"), 0, STRING("ポワン探偵"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_184"), 0, STRING("トロン"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_185"), 0, STRING("ポワン探偵"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_186"), 0, STRING("トロン"))
+    WAIT_MS(500)
+    CALL(evt_mario_dispflag_onoff, 1, 4)
+    CALL(evt_mario_mov_pos2, -210, -150, FLOAT(60.0f))
+    WAIT_MS(1000)
+    CALL(evt_item_entry, STRING("a"), 81, 0, 0, 0, 17, -1, 0)
+    CALL(evt_item_get_item, STRING("a"))
+    CALL(evt_item_get_item_end_wait, STRING("a"))
+    WAIT_MS(1000)
+    CALL(evt_item_entry, STRING("b"), 75, 0, 0, 0, 17, -1, 0)
+    CALL(evt_item_get_item, STRING("b"))
+    CALL(evt_item_get_item_end_wait, STRING("b"))
+    WAIT_MS(1000)
+    CALL(evt_item_entry, STRING("c"), 76, 0, 0, 0, 17, -1, 0)
+    CALL(evt_item_get_item, STRING("c"))
+    CALL(evt_item_get_item_end_wait, STRING("c"))
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_188"), 0, STRING("サラリーマン"))
+    WAIT_MS(500)
+    CALL(evt_mario_set_dir_npc, STRING("サラリーマン"))
+    LOOP(0)
+        CALL(evt_win_item_select, 0, PTR(item_tbl), LW(1), 0)
+        IF_INT_NOT_EQUAL(LW(1), -1)
+            BREAK_LOOP
+        END_IF
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_190"), 0, STRING("サラリーマン"))
+    END_LOOP
+    CALL(evt_pouch_remove_item, 81, LW(0))
+    CALL(evt_mario_dispflag_onoff, 0, 4)
+    CALL(evt_mario_mov_pos2, -225, -130, FLOAT(60.0f))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(0), -20)
+    ADD(LW(1), 20)
+    CALL(evt_item_entry, STRING("kaban"), 81, LW(0), LW(1), LW(2), 17, -1, 0)
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_mario_set_pose, STRING("M_C_3"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_189_00"), 0, 0)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_item_delete, STRING("kaban"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_189_01"), 0, STRING("サラリーマン"))
+    WAIT_MS(500)
+    CALL(evt_mario_set_dir_npc, STRING("ポワン探偵"))
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_191"), 0, STRING("ポワン探偵"))
+    CALL(evt_npc_flag_onoff, 0, STRING("トロン"), 8)
+    CALL(evt_pouch_remove_item, 80, LW(0))
+    SET_VALUE(GSW(0), 309)
+    WAIT_MS(750)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_194"), 0, 0)
+    WAIT_MS(500)
+    WAIT_MS(1000)
+    CALL(evt_fade_set_mapchange_type, 1, 2, 500, 1, 500)
+    CALL(evt_bero_mapchange, STRING("hom_00"), STRING("hom_touchaku"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_toron_appear)
+    LABEL(100)
+    CALL(evt_npc_set_position, STRING("トロン"), 0, -1000, 0)
+    CALL(evt_npc_set_rotate, STRING("トロン"), 0, 0, 0)
+    CALL(evt_npc_set_ry, STRING("トロン"), 270)
+    CALL(evt_npc_pera_onoff, STRING("トロン"), 1)
+    WAIT_FRAMES(1)
+    IF_INT_LESS(GSW(0), 307)
+        GOTO(100)
+    END_IF
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    IF_INT_GREATER(LW(0), -110)
+        GOTO(100)
+    END_IF
+    IF_INT_LESS(LW(0), -330)
+        GOTO(100)
+    END_IF
+    IF_INT_GREATER(LW(2), -70)
+        GOTO(100)
+    END_IF
+    SET_VALUE(LW(0), 0)
+    LOOP(0)
+        CALL(evt_mario_party_use_check, LW(1))
+        IF_INT_EQUAL(LW(1), 6)
+            ADD(LW(0), 1)
+            IF_INT_GREATER(LW(0), 300)
+                BREAK_LOOP
+            END_IF
+        ELSE
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    IF_INT_LESS(LW(0), 300)
+        GOTO(100)
+    END_IF
+    CALL(evt_npc_flag_onoff, 1, STRING("トロン"), 32)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    IF_INT_LESS(LW(0), -200)
+        CALL(evt_npc_set_position, STRING("トロン"), -130, -50, -278)
+        CALL(evt_npc_set_ry, STRING("トロン"), 270)
+        CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_APPEAR1"), LW(0), LW(1), LW(2), 0)
+        SET_FLOAT_VALUE(LW(3), FLOAT(0.83301f))
+        SET_VALUE(LW(4), 1)
+        SET_VALUE(LF(0), 0)
+        LOOP(60)
+            ADD_FLOAT(LW(1), LW(3))
+            CALL(evt_npc_set_position, STRING("トロン"), LW(0), LW(1), LW(2))
+            CALL(evt_mario_party_use_check, LW(5))
+            IF_INT_NOT_EQUAL(LW(5), 6)
+                BEGIN_INLINE_EVENT
+                    LOOP(100)
+                        SUBTRACT_FLOAT(LW(1), LW(3))
+                        CALL(evt_npc_set_position, STRING("トロン"), LW(0), LW(1), LW(2))
+                        WAIT_FRAMES(1)
+                    END_LOOP
+                    CALL(evt_npc_set_position, STRING("トロン"), 0, -1000, 0)
+                END_INLINE_EVENT
+                SET_VALUE(LF(0), 1)
+                BREAK_LOOP
+            END_IF
+            ADD(LW(4), 1)
+            WAIT_FRAMES(1)
+        END_LOOP
+        IF_INT_EQUAL(LF(0), 1)
+            GOTO(100)
+        END_IF
+    ELSE
+        CALL(evt_npc_pera_onoff, STRING("トロン"), 0)
+        CALL(evt_npc_set_rotate, STRING("トロン"), 180, 180, 90)
+        CALL(evt_npc_set_position, STRING("トロン"), -300, 2, -220)
+        CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRON_APPEAR1"), LW(0), LW(1), LW(2), 0)
+        SET_FLOAT_VALUE(LW(3), FLOAT(0.5f))
+        SET_VALUE(LW(4), 1)
+        SET_VALUE(LF(0), 0)
+        LOOP(60)
+            ADD_FLOAT(LW(0), LW(3))
+            CALL(evt_npc_set_position, STRING("トロン"), LW(0), LW(1), LW(2))
+            CALL(evt_mario_party_use_check, LW(5))
+            IF_INT_NOT_EQUAL(LW(5), 6)
+                BEGIN_INLINE_EVENT
+                    LOOP(100)
+                        SUBTRACT_FLOAT(LW(0), LW(3))
+                        CALL(evt_npc_set_position, STRING("トロン"), LW(0), LW(1), LW(2))
+                        WAIT_FRAMES(1)
+                    END_LOOP
+                    CALL(evt_npc_set_position, STRING("トロン"), 0, -1000, 0)
+                END_INLINE_EVENT
+                SET_VALUE(LF(0), 1)
+                BREAK_LOOP
+            END_IF
+            ADD(LW(4), 1)
+            WAIT_FRAMES(1)
+        END_LOOP
+        IF_INT_EQUAL(LF(0), 1)
+            GOTO(100)
+        END_IF
+    END_IF
+    LABEL(2)
+    CALL(evt_mario_party_use_check, LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(0), 6)
+        GOTO(2)
+    END_IF
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_npc_pera_onoff, STRING("トロン"), 1)
+    CALL(evt_npc_set_rotate, STRING("トロン"), 0, 0, 0)
+    CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("トロン"), LW(0), LW(1), LW(2), 300, 20)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("トロン"), STRING("B_1"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("トロン"), STRING("B_2"))
+    CALL(evt_npc_set_autotalkpose, STRING("トロン"), STRING("B_2"), STRING("T_2"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    IF_INT_LESS(LW(0), -200)
+        LOOP(10)
+            CALL(evt_npc_get_position, STRING("トロン"), LW(0), LW(1), LW(2))
+            ADD(LW(1), 1)
+            CALL(evt_npc_set_position, STRING("トロン"), LW(0), LW(1), LW(2))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_IF
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_181"), 0, STRING("トロン"))
+    WAIT_MS(500)
+    CALL(evt_npc_pera_onoff, STRING("トロン"), 1)
+    CALL(evt_npc_set_rotate, STRING("トロン"), 0, 0, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("トロン"), 32)
+    SET_VALUE(GSW(0), 308)
+    CALL(evt_del_case_evt, 0, GW(11))
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG3_EGG1"))
+    SPAWN_EVENT(evt_toron_catch)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_daiji_kami)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_move_behind_mario, 0)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_DOUBTFUL_POINT1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_179"), 0, 0)
+    WAIT_MS(500)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_party_get_pos, 0, LW(1), LW(2), LW(3))
+    IF_INT_LESS(LW(0), LW(1))
+        CALL(evt_mario_set_dir, 90, 300, 0)
+    ELSE
+        CALL(evt_mario_set_dir, 270, 300, 0)
+    END_IF
+    CALL(evt_msg_print_party, STRING("stg6_rsh_180"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1_6"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(500)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_mario_key_onoff, 1)
+    SET_VALUE(GSW(0), 307)
+    CALL(evt_exit_case_evt)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_yuka_simi)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_DOUBTFUL_POINT1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_msg_print, 0, STRING("stg6_rsh_51"), 0, 0)
+    IF_INT_LESS(GSW(0), 285)
+        CALL(evt_party_stop, 0)
+        WAIT_MS(300)
+        CALL(evt_msg_print_party, STRING("stg6_rsh_52"))
+        CALL(evt_party_run, 0)
+    END_IF
+    SET_VALUE(GSW(0), 285)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_access)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_msg_print, 0, LW(1), 0, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_access2)
+    CALL(evt_mario_key_onoff, 0)
+    IF_INT_EQUAL(GSWF(3462), 0)
+        SET_VALUE(GSWF(3462), 1)
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_266"), 0, 0)
+        CALL(evt_item_entry, STRING("a"), 152, 0, -1000, 0, 17, -1, 0)
+        CALL(evt_item_get_item, STRING("a"))
+        CALL(evt_item_get_item_end_wait, STRING("a"))
+    ELSE
+        CALL(evt_msg_print, 0, STRING("stg6_rsh_267"), 0, 0)
+    END_IF
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_access_entry)
+    IF_INT_LESS(GSW(0), 345)
+        SET_VALUE(LW(1), STRING("stg6_rsh_267"))
+        CALL(evt_run_case_evt, 9, 1, STRING("tana_4"), 0, PTR(evt_access), 0)
+        CALL(evt_run_case_evt, 9, 1, STRING("tana_5"), 0, PTR(evt_access2), 0)
+    ELSE
+        SET_VALUE(LW(1), STRING("stg6_rsh_267"))
+        CALL(evt_run_case_evt, 9, 1, STRING("tana_3"), 0, PTR(evt_access), 0)
+        SET_VALUE(LW(1), STRING("stg6_rsh_267"))
+        CALL(evt_run_case_evt, 9, 1, STRING("tana_4"), 0, PTR(evt_access), 0)
+        SET_VALUE(LW(1), STRING("stg6_rsh_267"))
+        CALL(evt_run_case_evt, 9, 1, STRING("tana_5"), 0, PTR(evt_access), 0)
+        SET_VALUE(GSWF(3462), 1)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_init_evt)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(310, 325)
+        CASE_GREATER_OR_EQUAL(333)
+        CASE_DEFAULT
+        CALL(evt_map_playanim, STRING("yure"), 1, 0)
+        CALL(evt_map_playanim, STRING("hai_sora"), 1, 0)
+        CALL(evt_map_playanim, STRING("hai_yama"), 1, 0)
+        CALL(evt_map_playanim, STRING("hai_iwayama"), 1, 0)
+        CALL(evt_map_playanim, STRING("hai_saboten"), 1, 0)
+    END_SWITCH
+    CALL_CHILD(evt_rsh_door_init)
+    SET_VALUE(LW(0), PTR(door_3))
+    CALL_CHILD(evt_rsh_door_entry)
+    SET_VALUE(LW(0), PTR(door_4))
+    CALL_CHILD(evt_rsh_door_entry)
+    SET_VALUE(LW(0), PTR(door_5))
+    CALL_CHILD(evt_rsh_door_entry)
+    CALL(evt_npc_setup, PTR(npc_data))
+    CALL(evt_run_case_evt, 9, 1, STRING("tana_3"), 0, PTR(evt_nabe), 0)
+    IF_INT_GREATER_OR_EQUAL(GSW(0), 283)
+        IF_INT_NOT_EQUAL(GSW(0), 308)
+            CALL(evt_run_case_evt, 9, 1, STRING("bed"), 0, PTR(evt_bed), GW(11))
+        END_IF
+    END_IF
+    CALL_CHILD(evt_access_entry)
+    CALL(evt_mobj_kururing_floor, STRING("kururin1"), -70, 0, -125, STRING("heya_4"), 125, GSWF(5649))
+    CALL(evt_mobj_powerupblk, STRING("pblk00"), -317, 0, -127, 0, GSWF(5559), 0)
+    CALL(evt_mobj_save_blk, STRING("mobj_save"), -365, 60, -175, 0, 0)
+    SWITCH(GSW(0))
+        CASE_LESS(282)
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+        CASE_BETWEEN(284, 286)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_POWAN1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_BETWEEN(304, 307)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_POWAN1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_BETWEEN(308, 308)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG3_EGG1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_EQUAL(309)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_POWAN1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_BETWEEN(310, 325)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_HOM1"))
+        CALL(evt_snd_envoff, 512)
+        CALL(evt_snd_bgmoff, 26624)
+        CASE_BETWEEN(327, 328)
+        CALL(evt_snd_bgmoff, 512)
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_BETWEEN(329, 331)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_DANGER4"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1_3"))
+        CASE_BETWEEN(333, 344)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_PIK1"))
+        CALL(evt_snd_envoff, 512)
+        CALL(evt_snd_bgmoff, 26624)
+        CASE_DEFAULT
+        CALL(evt_sub_get_mapname, LW(0))
+        IF_STR_EQUAL(LW(0), STRING("rsh_02_a"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH1"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+        END_IF
+        IF_STR_EQUAL(LW(0), STRING("rsh_02_b"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH3"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+        END_IF
+        IF_STR_EQUAL(LW(0), STRING("rsh_02_c"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH2"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+        END_IF
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_a_init_evt)
+    IF_INT_EQUAL(GSW(0), 302)
+        SET_VALUE(GSWF(3444), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 327)
+        SET_VALUE(GSWF(3444), 1)
+    END_IF
+    CALL(evt_sub_get_system_flag, LW(0))
+    IF_BITS_CLEAR(LW(0), 2)
+        IF_INT_LESS(GSW(0), 282)
+            SET_VALUE(GSWF(3444), 1)
+        END_IF
+    END_IF
+    CALL_CHILD(rsh_02_init_evt)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(283, 302)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("s_yuka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("s_yuka_simi"), 1)
+        IF_INT_GREATER(GSW(0), 283)
+            IF_INT_LESS(GSW(0), 287)
+                CALL(evt_run_case_evt, 5, 1, STRING("a_yuka_simi"), 0, PTR(evt_yuka_simi), GW(10))
+            END_IF
+        END_IF
+        CASE_DEFAULT
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("s_yuka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("s_yuka_simi"), 1)
+    END_SWITCH
+    IF_INT_EQUAL(GSWF(3444), 0)
+        SET_VALUE(LW(0), PTR(bero_data_a))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(evt_bero_info_run)
+    ELSE
+        SET_VALUE(GSWF(3444), 0)
+        SET_VALUE(LW(0), PTR(bero_data_a))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(bero_case_entry)
+        CALL(evt_mario_set_pos, -240, 0, -175)
+        CALL(evt_party_set_pos, 0, -200, 0, -175)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_cam_shift_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+        SWITCH(GSW(0))
+            CASE_LESS(282)
+            SET_VALUE(GSW(0), 282)
+            CALL(evt_cam3d_evt_set, -195, 102, 113, -195, 50, -183, 0, 11)
+            CALL(evt_mario_set_pos, -175, 0, -225)
+            CALL(evt_party_set_pos, 0, -215, 0, -225)
+            CALL(evt_mario_set_dir, 270, 0, 0)
+            CALL(evt_party_set_dir, 0, 90, 0)
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                CALL(evt_seq_wait, 2)
+                CALL(evt_snd_bgmoff_f, 512, 5000)
+                WAIT_MS(3000)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_13"), 0, 0)
+                WAIT_MS(2000)
+                CALL(evt_msg_print_party, STRING("stg6_rsh_pro_01"))
+                WAIT_MS(300)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_HAND_UP1_1"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_mario_set_pose, STRING("M_N_2"))
+                WAIT_MS(600)
+                CALL(evt_mario_set_pose, STRING("M_S_1"))
+                CALL(evt_party_set_dir, 0, 270, 300)
+                WAIT_MS(300)
+                CALL(evt_eff_fukidashi, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                WAIT_MS(1500)
+                CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yuka_5_kami_2"), 1)
+                CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5"), 1)
+                CALL(evt_cam3d_evt_set, -220, 127, 285, -220, 45, -183, 500, 11)
+                WAIT_MS(500)
+                CALL(evt_msg_print_party, STRING("stg6_rsh_pro_02"))
+                WAIT_MS(300)
+                CALL(evt_party_move_pos2, 0, -225, -140, FLOAT(80.0f))
+                WAIT_MS(300)
+                CALL(evt_party_set_dir, 0, 90, 300)
+                WAIT_MS(300)
+                CALL(evt_cam3d_evt_set, -220, 109, 211, -220, 40, -183, 500, 11)
+                CALL(evt_mario_mov_pos2, -190, -130, FLOAT(80.0f))
+                CALL(evt_party_stop, 0)
+                WAIT_MS(300)
+                CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami_2"), 1)
+                CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yuka_5"), 1)
+                CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+                ADD(LW(0), 10)
+                ADD(LW(2), 5)
+                CALL(evt_item_entry, STRING("letter"), 80, LW(0), LW(1), LW(2), 17, -1, 0)
+                WAIT_MS(1000)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_pro_03"), 0, 0)
+                WAIT_MS(300)
+                CALL(evt_item_delete, STRING("letter"))
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2_3"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_mario_set_pose, STRING("M_N_5B"))
+                CALL(evt_eff_fukidashi, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                WAIT_MS(1500)
+                CALL(evt_mario_set_pose, STRING("M_S_1"))
+                CALL(evt_msg_print_party, STRING("stg6_rsh_pro_04"))
+                WAIT_MS(300)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1_4"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_mario_set_pose, STRING("M_N_2"))
+                WAIT_MS(600)
+                CALL(evt_mario_set_pose, STRING("M_S_1"))
+                CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH1"))
+                CALL(evt_cam3d_evt_off, 500, 11)
+                CALL(evt_party_run, 0)
+                CALL(evt_mario_key_onoff, 1)
+            END_INLINE_EVENT
+            CASE_LESS(303)
+            SET_VALUE(GSW(0), 303)
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                WAIT_MS(2000)
+                CALL(evt_msg_print, 0, STRING("stg6_yado_03"), 0, 0)
+                CALL(evt_mario_key_onoff, 1)
+            END_INLINE_EVENT
+            CASE_LESS(328)
+            SET_VALUE(GSW(0), 328)
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_msg_print, 0, STRING("stg6_yado_04"), 0, 0)
+                CALL(evt_mario_get_party, LW(0))
+                SWITCH(LW(0))
+                    CASE_EQUAL(1)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_0"), 0, STRING("party"))
+                    CASE_EQUAL(2)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_1"), 0, STRING("party"))
+                    CASE_EQUAL(4)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_2"), 0, STRING("party"))
+                    CASE_EQUAL(5)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_3"), 0, STRING("party"))
+                    CASE_EQUAL(6)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_4"), 0, STRING("party"))
+                    CASE_EQUAL(3)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_5"), 0, STRING("party"))
+                    CASE_EQUAL(7)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_230_6"), 0, STRING("party"))
+                END_SWITCH
+                CALL(evt_party_run, 0)
+                CALL(evt_mario_key_onoff, 1)
+            END_INLINE_EVENT
+            CASE_LESS(334)
+            SET_VALUE(GSW(0), 334)
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_259"), 0, 0)
+                WAIT_MS(300)
+                CALL(evt_msg_print_party, STRING("stg6_rsh_259_01"))
+                CALL(evt_party_run, 0)
+                CALL(evt_mario_key_onoff, 1)
+            END_INLINE_EVENT
+        END_SWITCH
+    END_IF
+    SWITCH(GSW(0))
+        CASE_BETWEEN(306, 307)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yuka_5_kami"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami_2"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5"), 1)
+        IF_INT_LESS(GSW(0), 307)
+            CALL(evt_run_case_evt, 5, 1, STRING("a_kami"), 0, PTR(evt_daiji_kami), 0)
+        END_IF
+        SPAWN_EVENT(evt_toron_appear)
+        CASE_DEFAULT
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami_2"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yuka_5"), 1)
+    END_SWITCH
+    CALL_CHILD(evt_rsh_moamoa_on_window)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_b_init_evt)
+    CALL_CHILD(rsh_02_init_evt)
+    IF_INT_EQUAL(GSWF(3444), 0)
+        SET_VALUE(LW(0), PTR(bero_data_b))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(evt_bero_info_run)
+    ELSE
+        SET_VALUE(GSWF(3444), 0)
+        SET_VALUE(LW(0), PTR(bero_data_b))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(bero_case_entry)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+        CALL(evt_mario_key_onoff, 0)
+        CALL(evt_mario_set_pos, -170, 0, -130)
+        CALL(evt_cam_road_reset)
+        SPAWN_EVENT(evt_toron_catch2)
+    END_IF
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("hom_touchaku"))
+        CALL(evt_mario_set_pos, -245, 0, -185)
+        CALL(evt_party_set_pos, 0, -205, 0, -185)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+    END_IF
+    CALL(evt_party_set_breed_pose, 0, 1)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 window_tbl[4] = {
+    (u32)"mado_3_uturu", (u32)"mado_4_uturu", (u32)"mado_5_uturu", 0x00000000,
+};
+
+EVT_BEGIN(rsh_02_c_init_evt)
+    SET_VALUE(LW(0), PTR(bero_data_c))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL_CHILD(rsh_02_init_evt)
+    CALL(evt_map_playanim, STRING("ranpu"), 1, 0)
+    SET_VALUE(LW(0), PTR(window_tbl))
+    CALL_CHILD(evt_rsh_window)
+    CALL(evt_map_playanim, STRING("shouten"), 1, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("shouten"), 1)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("hom_hassya"))
+        CALL(evt_mario_set_pos, -245, 0, -185)
+        CALL(evt_party_set_pos, 0, -205, 0, -185)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+        BEGIN_INLINE_EVENT
+            CALL(evt_mario_key_onoff, 0)
+            CALL(evt_seq_wait, 2)
+            WAIT_MS(1000)
+            CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+            CALL(evt_msg_print, 0, STRING("stg6_rsh_216"), 0, 0)
+            CALL(evt_mario_key_onoff, 1)
+        END_INLINE_EVENT
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_init_evt_nidome)
+    IF_INT_EQUAL(GSWF(3579), 0)
+        IF_INT_EQUAL(GSWF(3580), 0)
+            IF_INT_EQUAL(GSWF(3581), 0)
+                CALL(evt_map_playanim, STRING("yure"), 1, 0)
+                IF_INT_EQUAL(GSWF(3578), 0)
+                    CALL(evt_map_playanim, STRING("hai_sora"), 1, 0)
+                    CALL(evt_map_playanim, STRING("hai_yama"), 1, 0)
+                    CALL(evt_map_playanim, STRING("hai_iwayama"), 1, 0)
+                    CALL(evt_map_playanim, STRING("hai_saboten"), 1, 0)
+                ELSE
+                    CALL(evt_map_playanim, STRING("rt_hai_sora"), 1, 0)
+                    CALL(evt_map_playanim, STRING("rt_hai_yama"), 1, 0)
+                    CALL(evt_map_playanim, STRING("rt_hai_iwayama"), 1, 0)
+                    CALL(evt_map_playanim, STRING("rt_hai_saboten"), 1, 0)
+                END_IF
+            END_IF
+        END_IF
+    END_IF
+    CALL_CHILD(evt_rsh_door_init)
+    SET_VALUE(LW(0), PTR(door_3))
+    CALL_CHILD(evt_rsh_door_entry)
+    SET_VALUE(LW(0), PTR(door_4))
+    CALL_CHILD(evt_rsh_door_entry)
+    SET_VALUE(LW(0), PTR(door_5))
+    CALL_CHILD(evt_rsh_door_entry)
+    CALL(evt_npc_setup, PTR(npc_data))
+    IF_INT_EQUAL(GSWF(3456), 1)
+        SET_VALUE(GSWF(3456), 0)
+        CALL_CHILD(evt_rsh_rnd_npc_init)
+    END_IF
+    CALL_CHILD(evt_access_entry)
+    CALL(evt_mobj_kururing_floor, STRING("kururin1"), -70, 0, -125, STRING("heya_4"), 125, GSWF(5649))
+    CALL(evt_mobj_powerupblk, STRING("pblk00"), -317, 0, -127, 0, GSWF(5559), 0)
+    CALL(evt_mobj_save_blk, STRING("mobj_save"), -365, 60, -175, 0, 0)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("pik_touchaku"))
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_PIK1"))
+        CALL(evt_snd_envoff, 512)
+        CALL(evt_snd_bgmoff, 26624)
+    ELSE
+        IF_INT_EQUAL(GSWF(3460), 1)
+            CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_PIK1"))
+            CALL(evt_snd_envoff, 512)
+            CALL(evt_snd_bgmoff, 26624)
+        ELSE
+            IF_INT_EQUAL(GSWF(3461), 1)
+                CALL(evt_snd_bgmon, 512, STRING("BGM_STG0_GOR1"))
+                CALL(evt_snd_envoff, 512)
+                CALL(evt_snd_bgmoff, 26624)
+            ELSE
+                CALL(evt_sub_get_mapname, LW(0))
+                IF_STR_EQUAL(LW(0), STRING("rsh_02_a"))
+                    CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH1"))
+                    CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+                END_IF
+                IF_STR_EQUAL(LW(0), STRING("rsh_02_b"))
+                END_IF
+                IF_STR_EQUAL(LW(0), STRING("rsh_02_c"))
+                    CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH2"))
+                    CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+                END_IF
+            END_IF
+        END_IF
+    END_IF
+    CALL(evt_run_case_evt, 9, 1, STRING("bed"), 0, PTR(evt_nidome_bed), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_a_init_evt_nidome)
+    CALL_CHILD(rsh_02_init_evt_nidome)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("s_yuka"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("s_yuka_simi"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami_2"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("yuka_5"), 1)
+    SET_VALUE(LF(0), 0)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("nidome_start"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("nidome"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("pik_touchaku"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("gor_touchaku"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(LF(0), 1)
+        SET_VALUE(LW(0), PTR(bero_data_a))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(bero_case_entry)
+        CALL(evt_mario_set_pos, -245, 0, -185)
+        CALL(evt_party_set_pos, 0, -215, 0, -185)
+        CALL(evt_party_set_pos, 1, -230, 0, -195)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_party_set_dir, 1, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_cam_shift_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("yuka_5_kami_2"), 1)
+        CALL(evt_bero_get_entername, LW(0))
+        IF_STR_EQUAL(LW(0), STRING("nidome"))
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                IF_INT_EQUAL(GSWF(3578), 0)
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_c_03"), 0, 0)
+                ELSE
+                    CALL(evt_msg_print, 0, STRING("stg6_rsh_c_05"), 0, 0)
+                END_IF
+                WAIT_MS(2000)
+                IF_INT_EQUAL(GSWF(3578), 0)
+                    CALL(evt_fade_set_mapchange_type, 1, 2, 500, 1, 500)
+                    CALL(evt_bero_mapchange, STRING("pik_00"), STRING("resha"))
+                ELSE
+                    CALL(evt_bero_mapchange, STRING("gor_04"), STRING("resha_return"))
+                END_IF
+            END_INLINE_EVENT
+        END_IF
+        CALL(evt_bero_get_entername, LW(0))
+        IF_STR_EQUAL(LW(0), STRING("pik_touchaku"))
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_c_04"), 0, 0)
+                WAIT_MS(300)
+                SET_VALUE(GSWF(3460), 1)
+                CALL(evt_mario_key_onoff, 1)
+                CALL(evt_party_run, 0)
+            END_INLINE_EVENT
+        END_IF
+        CALL(evt_bero_get_entername, LW(0))
+        IF_STR_EQUAL(LW(0), STRING("gor_touchaku"))
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                WAIT_MS(300)
+                CALL(evt_mario_key_onoff, 1)
+                CALL(evt_party_run, 0)
+            END_INLINE_EVENT
+        END_IF
+    ELSE
+        SET_VALUE(LW(0), PTR(bero_data_a))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(evt_bero_info_run)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_b_init_evt_nidome)
+    CALL_CHILD(rsh_02_init_evt_nidome)
+    SET_VALUE(LF(0), 0)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("nidome"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("hom_touchaku"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(LF(0), 1)
+        SET_VALUE(LW(0), PTR(bero_data_b))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(bero_case_entry)
+        CALL(evt_mario_set_pos, -245, 0, -185)
+        CALL(evt_party_set_pos, 0, -215, 0, -185)
+        CALL(evt_party_set_pos, 1, -230, 0, -195)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_party_set_dir, 1, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_cam_shift_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+        CALL(evt_bero_get_entername, LW(0))
+        IF_STR_EQUAL(LW(0), STRING("nidome"))
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_RSH3"))
+                CALL(evt_snd_envon, 272, STRING("ENV_STG6_RSH1"))
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_c_01"), 0, 0)
+                WAIT_MS(300)
+                CALL(evt_bero_mapchange, STRING("hom_00"), STRING("nidome"))
+            END_INLINE_EVENT
+        ELSE
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_key_onoff, 0)
+                CALL(evt_party_stop, 0)
+                WAIT_MS(2000)
+                CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+                CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_TRAIN_CHIME1"), LW(0), LW(1), LW(2), 0)
+                CALL(evt_msg_print, 0, STRING("stg6_rsh_c_02"), 0, 0)
+                WAIT_MS(300)
+                CALL(evt_bero_mapchange, STRING("hom_00"), STRING("n_bero_1"))
+            END_INLINE_EVENT
+        END_IF
+    ELSE
+        SET_VALUE(LW(0), PTR(bero_data_b))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(evt_bero_info_run)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(rsh_02_c_init_evt_nidome)
+    CALL_CHILD(rsh_02_init_evt_nidome)
+    CALL(evt_map_playanim, STRING("ranpu"), 1, 0)
+    SET_VALUE(LW(0), PTR(window_tbl))
+    CALL_CHILD(evt_rsh_window)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("shouten"), 1)
+    SET_VALUE(LF(0), 0)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("nidome_start"))
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(LF(0), 1)
+        SET_VALUE(LW(0), PTR(bero_data_c))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(bero_case_entry)
+        CALL(evt_mario_set_pos, -245, 0, -185)
+        CALL(evt_party_set_pos, 0, -215, 0, -185)
+        CALL(evt_party_set_pos, 1, -230, 0, -195)
+        CALL(evt_mario_set_dir, 90, 0, 0)
+        CALL(evt_party_set_dir, 0, 270, 0)
+        CALL(evt_party_set_dir, 1, 270, 0)
+        CALL(evt_cam_road_reset)
+        CALL(evt_cam_shift_reset)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_3"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("heya_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("haikei_4"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("heya_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("haikei_5"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("rouka"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("tobira_5"), 1)
+    ELSE
+        SET_VALUE(LW(0), PTR(bero_data_c))
+        CALL(evt_bero_get_info)
+        CALL_CHILD(evt_bero_info_run)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_nidome_bed)
+    IF_INT_EQUAL(GSWF(3580), 1)
+        CALL(evt_mario_key_onoff, 0)
+        CALL_CHILD(evt_normal_yado)
+        CALL(evt_mario_key_onoff, 1)
+        RETURN
+    END_IF
+    IF_INT_EQUAL(GSWF(3581), 1)
+        CALL(evt_mario_key_onoff, 0)
+        CALL_CHILD(evt_normal_yado)
+        CALL(evt_mario_key_onoff, 1)
+        RETURN
+    END_IF
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_msg_print, 0, STRING("stg6_yado_02"), 0, 0)
+    CALL(evt_msg_select, 0, STRING("stg6_yado_02_yn"))
+    CALL(evt_msg_continue)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_mario_key_onoff, 1)
+        RETURN
+    END_IF
+    CALL(evt_snd_bgmon, 512, STRING("BGM_FF_GO_SLEEPING1"))
+    CALL(evt_snd_envoff, 1024)
+    CALL(evt_fade_set_mapchange_type, 1, 4, 3000, -1, -1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        CALL(evt_fade_set_spot_pos, LW(0), LW(1), LW(2))
+    END_INLINE_EVENT
+    CALL(evt_pouch_mario_recovery)
+    CALL(evt_pouch_all_party_recovery)
+    CALL(bgm_wait_stop)
+    IF_INT_EQUAL(GSWF(3579), 1)
+        IF_INT_EQUAL(GSWF(3578), 0)
+            SET_VALUE(GSW(870), 1)
+        ELSE
+            SET_VALUE(GSW(870), 3)
+        END_IF
+        CALL(evt_bero_mapchange, STRING("hom_10"), 0)
+        RETURN
+    END_IF
+    CALL(evt_sub_get_mapname, LW(0))
+    IF_STR_EQUAL(LW(0), STRING("rsh_02_a"))
+        CALL(evt_bero_mapchange, STRING("hom_11"), 0)
+    END_IF
+    IF_STR_EQUAL(LW(0), STRING("rsh_02_c"))
+        CALL(evt_bero_mapchange, STRING("hom_12"), 0)
+    END_IF
+    RETURN
+EVT_END()
+// clang-format on
