@@ -1459,7 +1459,7 @@ code against 8.5 KB of data, so data is most of the REL work.
 4. The missing script declarations for all RELs, and the configure.py entries (scriptable from the splits).
 5. A small test wave on one or two RELs before scaling.
 
-**Open.** objdiff scores aaa/aaa's data at 92% although the REL matches (the MSL floats' names differ); the checksum
+**Open.** objdiff scores aaa/aaa's data at 92% although the REL matches (the "aaa_00" string is a 7-byte object, 8 in symbols.txt with its pad byte); the checksum
 is the proof. The splits put evt_snd_* in party/party_motion.c (its .text runs to 0x8014CD30, evt_snd.c is only
 0x80077EC4-0x80077F88), so sound declarations are split across party_motion.h and evt_snd.h; probably a splits fix.
 evt_door.c keeps a local DoorParam (0x4C) for the same data as DoorEntry, and door_position_sub's parameters are
