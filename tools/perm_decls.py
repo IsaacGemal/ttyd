@@ -44,13 +44,15 @@ for _ in range(count):
     random.shuffle(d)
     cands.append(d)
 best = (score(decls), decls)
-print("base", best[0], flush=True)
-for d in cands:
-    if best[0] >= 100:
-        break
-    s = score(d)
-    if s > best[0]:
-        best = (s, d)
-        print(s, [x.split()[-1] for x in d], flush=True)
-score(best[1])
+try:
+    print("base", best[0], flush=True)
+    for d in cands:
+        if best[0] >= 100:
+            break
+        s = score(d)
+        if s > best[0]:
+            best = (s, d)
+            print(s, [x.split()[-1] for x in d], flush=True)
+finally:
+    score(best[1])
 print("BEST", best[0])

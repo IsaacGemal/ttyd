@@ -1874,3 +1874,7 @@ declaration sweep for REL-local symbols like the dol one; (3) las_08.c exports a
 (float_0p7_las_00012688), a workaround to redo with the literal-order rule; (4) about 30 functions return bare 0/2
 instead of EVT_RETURN_*; (5) BeroEntry.animeArg3/4 hold event pointers but are s32; (6) rel_gen.py overwrites a
 unit's header on rerun.
+
+- `cflags_rel` now has `-fp_contract on` like the DOL flags: without it REL code never fuses `a*b + c` into `fmadds`
+  (bllizard's `eff_ice_barrier` needed it). All 32 checksums and the ratchet were unchanged by the flag. Also linked:
+  unit_bllizard (bom, jon).
