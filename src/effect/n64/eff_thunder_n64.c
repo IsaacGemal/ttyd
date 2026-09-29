@@ -11,31 +11,12 @@
 
 // .rodata
 const Vec vec3_802fb868 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb878 = 4503601774854144.0;
-const char str_802FB880[] = "ThunderN64";
 
 // .sdata2
-u32 dat_80420028 = 0x000000FF;
-u32 dat_8042002c = 0x00000080;
-u32 dat_80420030 = 0xFF2FC6FF;
-u32 dat_80420034 = 0xFFFF0000;
-const f32 float_4_80420038 = 4.0f;
-const f32 float_deg2rad_8042003c = 0.017453292f;
-const f32 float_0_80420040 = 0.0f;
-const f32 float_1_80420044 = 1.0f;
-const f32 float_0p0078125_80420048 = 0.0078125f;
-const f32 float_0p03125_8042004c = 0.03125f;
-const f32 float_256_80420050 = 256.0f;
-const f32 float_64_80420054 = 64.0f;
-const f32 float_48_80420058 = 48.0f;
-const f32 float_32_8042005c = 32.0f;
-const f32 float_8_80420060 = 8.0f;
-const f32 float_neg118_80420064 = -118.0f;
-const f32 float_184_80420068 = 184.0f;
-const f32 float_79_8042006c = 79.0f;
-const f32 float_neg120_80420070 = -120.0f;
-const f32 float_189_80420074 = 189.0f;
-const f32 float_72_80420078 = 72.0f;
+const u32 dat_80420028 = 0x000000FF;
+const u32 dat_8042002c = 0x00000080;
+const u32 dat_80420030 = 0xFF2FC6FF;
+const u32 dat_80420034 = 0xFFFF0000;
 
 // .data: retail Ncube_inazuma_v vertex array (0x1E30 bytes).
 u32 Ncube_inazuma_v[1932] = {
@@ -288,7 +269,7 @@ EffectEntry* effThunderN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	EffThunderData* data;
 
 	effect = effEntry();
-	effect->type = str_802FB880;
+	effect->type = "ThunderN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffThunderData));
 	effect->userdata = data;
@@ -439,7 +420,12 @@ void effThunderMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&pos2), 2, effThunderDisp, effect);
 }
 
-// NONMATCHING (99.93%): only the GXColor stack slots and one branch direction differ (see REPORT.md).
+static inline void thunderSetColorA(u8 a) {
+	GXColor color = *(GXColor*)&dat_80420034;
+	color.a = a;
+	GXSetTevColor(1, color);
+}
+
 void effThunderDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
@@ -455,7 +441,6 @@ void effThunderDisp(CameraId camId, void* param) {
 	Mtx mtx3;
 	Mtx rot;
 	Mtx mtx2;
-	GXColor color;
 	GXTexObj texObj;
 
 	effect = param;
@@ -524,7 +509,10 @@ void effThunderDisp(CameraId camId, void* param) {
 	b = (s32)(scale * data->field_0x24);
 	a = (s32)(scale * data->field_0x28);
 
-	if (type < 3 && type >= 0) {
+	switch (type) {
+	case 0:
+	case 1:
+	case 2:
 		PSMTXTrans(mtx, data->x, data->y, data->z);
 		PSMTXRotRad(rot, 0x79, 0.017453292f * -camGetPtr(4)->viewYaw);
 		PSMTXConcat(mtx, rot, mtx2);
@@ -534,7 +522,8 @@ void effThunderDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx2, 0);
 		GXSetCurrentMtx(0);
 		GXSetTevColor(1, *(GXColor*)&dat_80420030);
-	} else {
+		break;
+	default:
 		PSMTXTrans(mtx, data->x, data->y, data->z);
 		PSMTXRotRad(rot, 0x79, 0.017453292f * -camGetPtr(4)->viewYaw);
 		PSMTXConcat(mtx, rot, mtx2);
@@ -543,9 +532,8 @@ void effThunderDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, 0);
 		GXSetCurrentMtx(0);
-		color = *(GXColor*)&dat_80420034;
-		color.a = data->field_0x10;
-		GXSetTevColor(1, color);
+		thunderSetColorA(data->field_0x10);
+		break;
 	}
 
 	effGetTexObjN64(0x54, &texObj);

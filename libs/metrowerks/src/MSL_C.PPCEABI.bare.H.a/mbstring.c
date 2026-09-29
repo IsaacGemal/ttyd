@@ -69,54 +69,50 @@ size_t wcstombs(char* s, const wchar_t* pwcs, size_t n) {
     return i;
 }
 
-// NONMATCHING (95.62%): every other instruction matches; the original funnels
-// all returns through r30 (`li r30,-1`, then `mr r30,r3`/`mr r3,r30`), the
-// compiler emits `li r3,-1` and returns r3.
+// NONMATCHING (98.47%): every instruction matches except the first test: the original compiles
+// `if (!s)` to `bne over; b end` (result already 0 in r30), here it becomes a single `beq end`.
 int mbtowc(wchar_t* pwc, const char* s, size_t n) {
     int result = 0;
     int len;
     int check;
     const char* p;
 
-    if (!s)
-        return result;
-    if (n == 0) {
-        result = -1;
-        return result;
-    }
+    if (s) {
+        if (n == 0) {
+            result = -1;
+        } else {
+            len = is_utf8_complete(s, n);
+            if (len < 0) {
+                result = -1;
+            } else {
+                p = s;
+                switch (len) {
+                    case 3:
+                        result = (*p++ & 0x0F) << 6;
+                    case 2:
+                        result = ((result | (*p++ & 0x3F)) << 6) & 0xFFFF;
+                    case 1:
+                        result = (result | (*p & 0x7F)) & 0xFFFF;
+                }
 
-    len = is_utf8_complete(s, n);
-    if (len < 0) {
-        result = -1;
-        return result;
+                if ((result & 0xFFFF) == 0)
+                    check = 0;
+                else if ((unsigned int)(result & 0xFFFF) < 0x80)
+                    check = 1;
+                else if ((unsigned int)(result & 0xFFFF) < 0x800)
+                    check = 2;
+                else
+                    check = 3;
+                if (check != len) {
+                    result = -1;
+                } else {
+                    if (pwc)
+                        *pwc = result;
+                    result = len;
+                }
+            }
+        }
     }
-
-    p = s;
-    switch (len) {
-        case 3:
-            result = (*p++ & 0x0F) << 6;
-        case 2:
-            result = ((result | (*p++ & 0x3F)) << 6) & 0xFFFF;
-        case 1:
-            result = (result | (*p & 0x7F)) & 0xFFFF;
-    }
-
-    if ((result & 0xFFFF) == 0)
-        check = 0;
-    else if ((unsigned int)(result & 0xFFFF) < 0x80)
-        check = 1;
-    else if ((unsigned int)(result & 0xFFFF) < 0x800)
-        check = 2;
-    else
-        check = 3;
-    if (check != len) {
-        result = -1;
-        return result;
-    }
-
-    if (pwc)
-        *pwc = result;
-    result = len;
     return result;
 }
 
