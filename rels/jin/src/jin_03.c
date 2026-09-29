@@ -91,11 +91,11 @@ EVT_BEGIN(w3_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"n_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_01", "s_bero_2", 5, 5, (s32)&n_close, (s32)&n_open},
-    {"s_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_02", "n_bero_2", 5, 5, (s32)&s_close, (s32)&s_open},
-    {"w_bero3", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_3", 5, 5, (s32)&w1_close, (s32)&w1_open},
-    {"w_bero1", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_1", 5, 5, (s32)&w3_close, (s32)&w3_open},
-    {"w_bero2", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_2", 5, 5, (s32)&w2_close, (s32)&w2_open},
+    {"n_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_01", "s_bero_2", 5, 5, &n_close, &n_open},
+    {"s_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_02", "n_bero_2", 5, 5, &s_close, &s_open},
+    {"w_bero3", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_3", 5, 5, &w1_close, &w1_open},
+    {"w_bero1", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_1", 5, 5, &w3_close, &w3_open},
+    {"w_bero2", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_2", 5, 5, &w2_close, &w2_open},
     {NULL},
 };
 

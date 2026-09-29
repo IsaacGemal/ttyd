@@ -62,7 +62,7 @@ EVT_END()
 
 static BeroEntry bero_entry_data[2] = {
     {"w_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "aji_10", "e_bero", 5, 5,
-     (s32)&w_door_close, (s32)&w_door_open},
+     &w_door_close, &w_door_open},
     {NULL},
 };
 
@@ -90,7 +90,7 @@ EVT_END()
 
 static BeroEntry bero_peach_data[2] = {
     {"w_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, peach_evt_bero, "aji_10", "e_bero", 5, 5,
-     (s32)&w_door_close, (s32)&w_door_open},
+     &w_door_close, &w_door_open},
     {NULL},
 };
 

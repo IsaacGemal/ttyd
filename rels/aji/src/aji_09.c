@@ -63,7 +63,7 @@ EVT_END()
 
 static BeroEntry bero_entry_data[] = {
     {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "aji_01", "n_bero_4", 5, 5,
-     (s32)s_door_close, (s32)s_door_open},
+     s_door_close, s_door_open},
     {NULL},
 };
 
@@ -81,7 +81,7 @@ EVT_END()
 
 BeroEntry bero_data_peach1[] = {
     {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, (s32*)peach_evt_bero_out1, "aji_01",
-     "n_bero_4", 5, 5, (s32)s_door_close, (s32)s_door_open},
+     "n_bero_4", 5, 5, s_door_close, s_door_open},
     {NULL},
 };
 
@@ -99,7 +99,7 @@ EVT_END()
 
 BeroEntry bero_data_peach2[] = {
     {"s_bero", 1, 10, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, (s32*)peach_evt_bero_out2, "aji_17",
-     "w_bero", 5, 5, (s32)s_door_close, (s32)s_door_open},
+     "w_bero", 5, 5, s_door_close, s_door_open},
     {NULL},
 };
 
@@ -204,14 +204,11 @@ EVT_BEGIN(evt_kou2)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 rokka_data[21] = {
-    (u32)"R_door_1", (u32)"a_door_1", (u32)"a_door_1_omote", (u32)"a_door_1_ura",
-    (u32)"a_R_1_asi", (u32)"R_door_2", (u32)"a_door_2", (u32)"a_door_2_omote",
-    (u32)"a_door_2_ura", (u32)"a_R_2_asi", (u32)"R_door_3", (u32)"a_door_3",
-    (u32)"a_door_3_omote", (u32)"a_door_3_ura", (u32)"a_R_3_asi", (u32)"R_door_4",
-    (u32)"a_door_4", (u32)"a_door_4_omote", (u32)"a_door_4_ura", (u32)"a_R_4_asi",
-    0x00000000,
+char* rokka_data[21] = {
+    "R_door_1", "a_door_1", "a_door_1_omote", "a_door_1_ura", "a_R_1_asi", "R_door_2", "a_door_2",
+    "a_door_2_omote", "a_door_2_ura", "a_R_2_asi", "R_door_3", "a_door_3", "a_door_3_omote",
+    "a_door_3_ura", "a_R_3_asi", "R_door_4", "a_door_4", "a_door_4_omote", "a_door_4_ura",
+    "a_R_4_asi", NULL,
 };
 
 EVT_BEGIN(evt_rokka_open)

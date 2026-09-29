@@ -8,10 +8,11 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "unit/party/unit_party_yoshi.h"
+#include "battle/battle_disp.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 pose_table_yoshi_stay[];
+extern BattleDispPose pose_table_yoshi_stay[];
 extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
 static BattleVulnerableStatus regist_yoshi;
 static BattleDataEntry data_table_yoshi[2];
@@ -41,89 +42,181 @@ extend_data(69,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_gullible_yoshi[49] = {
-    0x00000052, (u32)"btl_un_gullible_yoshi", 0x000A0000, 0x01010000,
-    0x00640032, 0x00090018, 0x001C0004, 0x00180000,
-    0x00000000, 0x41600000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x41400000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0x00000000, 0x41400000, 0x4191999A,
-    0x00000000, 0x00000000, 0x41600000, 0x00000000,
-    0x41C00000, 0x41E00000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_PARTY_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x10000000,
-    (u32)&regist_yoshi, 0x01000000, (u32)&parts_yoshi, (u32)&init_event_yoshi,
-    (u32)&data_table_yoshi,
+BattleUnitKind unit_gullible_yoshi = {
+    UNIT_YOSHI_CHAPTER4,        // mUnitType
+    "btl_un_gullible_yoshi",    // name
+    10,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    0,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    24,                         // width
+    28,                         // height
+    { 4, 24 },                  // statusIconOffset
+    { 0.0f, 14.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },      // talkTogeBaseOffset
+    { 12.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 12.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 12.0f, 18.2f, 0.0f },     // kissHitOffset
+    { 0.0f, 14.0f, 0.0f },      // cutBaseOffset
+    24.0f,                      // cutWidth
+    28.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_PARTY_DAMAGE1",        // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x10000000,                 // attributeFlags
+    &regist_yoshi,              // vulnStatus
+    1,                          // numParts
+    &parts_yoshi,               // mParts
+    init_event_yoshi,           // initEvtScript
+    data_table_yoshi,           // dataTable
 };
 
-static BattleWeapon enemyWeapon_YoshiNormalAttack[1] = {
-    {
-        {
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00,
-        },
-        0x01, 0x01, 0x01, 0x01,
-        weaponGetPowerFromGulliblePartyAttackLv,
-        { 0x00000001, 0x00000001, 0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
-        0x00000000,
-        { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
-        {
-            0x01, 0x00, 0x12, 0x60, 0x20, 0x00, 0x10, 0x04,
-            0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00,
-        },
-        0x00015097,
-        {
-            0x00, 0x00, 0x00, 0x0C, 0x80, 0x00, 0x20, 0x04,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        },
-        0x00000000,
-        { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
-    },
+static BattleWeapon enemyWeapon_YoshiNormalAttack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerFromGulliblePartyAttackLv,  // hpDamageFn
+    { 1, 1, 1, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00015097,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-static BattleUnitDefense defence_yoshi = {
-    { 0x00, 0x00, 0x00, 0x00, 0x00 },
-};
+static BattleUnitDefense defence_yoshi = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefenseAttr defence_attr_yoshi = {
-    { 0x00, 0x00, 0x00, 0x00, 0x00 },
-};
+static BattleUnitDefenseAttr defence_attr_yoshi = { { 0, 0, 0, 0, 0 } };
 
 static BattleVulnerableStatus regist_yoshi = {
-    0x3C, 0x50, 0x46, 0x64, 0x46, 0x64, 0x64, 0x46,
-    0x64, 0x46, 0x64, 0x46, 0x64, 0x5A, 0x46, 0x00,
-    0x00, 0x64, 0x46, 0x64, 0x64, 0x00,
+    60,  // sleepRate
+    80,  // stopRate
+    70,  // dizzyRate
+    100, // poisonRate
+    70,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    70,  // tinyRate
+    100, // attackUpRate
+    70,  // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    70,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    0,   // instaKillRate
 };
 
 static BattleDataEntry data_table_yoshi[2] = {
-    { 0x00000031, dead_event_yoshi },
-    { 0x00000000, 0x00000000 },
+    { 0x31, dead_event_yoshi },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts_yoshi = {
-    0x00000001,
-    "btl_un_yoshi",
-    "c_babyyoshi",
-    { 0.0f, 0.0f, 0.0f },
-    { 15.0f, 25.0f, 0.0f },
-    {
-        0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E,
-        0x00, 0xFF, 0x00, 0x00,
-    },
-    &defence_yoshi,
-    &defence_attr_yoshi,
-    0x00000009,
-    0x00000000,
-    pose_table_yoshi_stay,
+    1,                      // partNum
+    "btl_un_yoshi",         // partName
+    "c_babyyoshi",          // modelName
+    { 0.0f, 0.0f, 0.0f },   // positionOffset
+    { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+    20,                     // field_0x30
+    30,                     // field_0x32
+    255,                    // baseAlpha
+    &defence_yoshi,         // defense
+    &defence_attr_yoshi,    // defenseAttr
+    0x00000009,             // attributes
+    0,                      // counterAttributes
+    pose_table_yoshi_stay,  // poseTable
 };
 
 static EVT_BEGIN(init_event_yoshi)
@@ -206,7 +299,7 @@ static EVT_BEGIN(attack_event_yoshi)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    SET_VALUE(LW(12), PTR(enemyWeapon_YoshiNormalAttack))
+    SET_VALUE(LW(12), PTR(&enemyWeapon_YoshiNormalAttack))
     CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(0.0f), FLOAT(0.7f))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(12))

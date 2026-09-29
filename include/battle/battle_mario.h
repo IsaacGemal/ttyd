@@ -1,8 +1,9 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
-extern u32 marioWeapon_KaitenHammerInvolved[48];
-extern u32 marioWeapon_UltraHammerInvolved[48];
+#include "battle/battle_database_common.h"
+extern BattleWeapon marioWeapon_KaitenHammerInvolved;
+extern BattleWeapon marioWeapon_UltraHammerInvolved;
 
 USER_FUNC(_whirlwind_effect);
 USER_FUNC(_jump_star_effect);

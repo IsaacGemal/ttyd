@@ -42,11 +42,9 @@ extend_data(33,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 obj_list[12] = {
-    (u32)"S_item_01", (u32)"A_item_01", (u32)"S_item_02", (u32)"A_item_02",
-    (u32)"S_item_03", (u32)"A_item_03", (u32)"S_item_04", (u32)"A_item_04",
-    (u32)"S_item_05", (u32)"A_item_05", (u32)"S_item_06", (u32)"A_item_06",
+static char* obj_list[12] = {
+    "S_item_01", "A_item_01", "S_item_02", "A_item_02", "S_item_03", "A_item_03", "S_item_04",
+    "A_item_04", "S_item_05", "A_item_05", "S_item_06", "A_item_06",
 };
 
 // TODO: type
@@ -66,18 +64,14 @@ static u32 trade_list[24] = {
     0x0000008E, 0x00110000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 shopper_data[38] = {
-    (u32)"プニ店員", 0x00000000, 0x00000000, (u32)"stg2_shop_00",
-    (u32)"stg2_shop_01", (u32)"stg2_shop_02", (u32)"stg2_shop_03", (u32)"stg2_shop_04",
-    (u32)"stg2_shop_05", (u32)"stg2_shop_06", (u32)"stg2_shop_07", (u32)"stg2_shop_08",
-    (u32)"stg2_shop_09", (u32)"stg2_shop_10", (u32)"stg2_shop_11", (u32)"stg2_shop_12",
-    (u32)"stg2_shop_13", (u32)"stg2_shop_14", (u32)"stg2_shop_15", (u32)"stg2_shop_16",
-    (u32)"stg2_shop_17", (u32)"stg2_shop_18", (u32)"stg2_shop_19", (u32)"stg2_shop_20",
-    (u32)"stg2_shop_21", (u32)"stg2_shop_22", (u32)"stg2_shop_23", (u32)"stg2_shop_24",
-    (u32)"stg2_shop_25", (u32)"stg2_shop_26", (u32)"stg2_shop_27", (u32)"stg2_shop_28",
-    (u32)"stg2_shop_29", (u32)"stg2_shop_30", (u32)"stg2_shop_31", (u32)"stg2_shop_32",
-    (u32)"stg2_shop_33", (u32)"stg2_shop_34",
+static char* shopper_data[38] = {
+    "プニ店員", NULL, NULL, "stg2_shop_00", "stg2_shop_01", "stg2_shop_02", "stg2_shop_03",
+    "stg2_shop_04", "stg2_shop_05", "stg2_shop_06", "stg2_shop_07", "stg2_shop_08", "stg2_shop_09",
+    "stg2_shop_10", "stg2_shop_11", "stg2_shop_12", "stg2_shop_13", "stg2_shop_14", "stg2_shop_15",
+    "stg2_shop_16", "stg2_shop_17", "stg2_shop_18", "stg2_shop_19", "stg2_shop_20", "stg2_shop_21",
+    "stg2_shop_22", "stg2_shop_23", "stg2_shop_24", "stg2_shop_25", "stg2_shop_26", "stg2_shop_27",
+    "stg2_shop_28", "stg2_shop_29", "stg2_shop_30", "stg2_shop_31", "stg2_shop_32", "stg2_shop_33",
+    "stg2_shop_34",
 };
 
 EVT_BEGIN(chibitoge_nakama)
@@ -247,16 +241,9 @@ static u32 npcEnt[92] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 bero_entry_data[30] = {
-    (u32)"e_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_06", (u32)"w_bero",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[2] = {
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_06", "w_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(mri_07_init_evt)

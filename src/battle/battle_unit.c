@@ -59,13 +59,6 @@ typedef struct BattleUnitPartFields {
     u8 pad_3[0x500 - 0x4F4];
 } BattleUnitPartFields;
 
-typedef struct BattleUnitKindCoinFields {
-    u8 pad_0[0x10];
-    u8 field_0x10; // 0x10
-    u8 field_0x11; // 0x11
-    u8 field_0x12; // 0x12
-} BattleUnitKindCoinFields;
-
 typedef struct HpGaugeLocal {
     u16 field_0;  // 0x0
     u16 field_2;  // 0x2
@@ -107,9 +100,9 @@ s32 BtlUnit_GetCoin(BattleUnit* unit) {
     if (!unit) {
         return 0;
     }
-    coins = ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x12;
-    for (i = 0; i < ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x10; i++) {
-        if (irand(100) < ((BattleUnitKindCoinFields*)unit->mKindParams)->field_0x11) {
+    coins = unit->mKindParams->baseCoin;
+    for (i = 0; i < unit->mKindParams->bonusCoinRolls; i++) {
+        if (irand(100) < unit->mKindParams->bonusCoinRate) {
             coins++;
         }
     }

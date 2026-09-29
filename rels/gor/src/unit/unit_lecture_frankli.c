@@ -9,6 +9,8 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_unit.h"
+#include "battle/battle_database_common.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
@@ -44,85 +46,270 @@ extend_data(77,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_lecture_frankli[49] = {
-    0x000000B2, (u32)"btl_un_frankli", 0x000A0000, 0x01010100,
-    0x00000064, 0x0009001C, 0x00180005, 0x00190000,
-    0x00000000, 0x41600000, 0x00000000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x41600000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41600000,
-    0x00000000, 0x00000000, 0x41600000, 0x4179999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_KURI_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x12000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_lecture_frankli = {
+    UNIT_TUTORIAL_FRANKLY_B2,   // mUnitType
+    "btl_un_frankli",           // name
+    10,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    1,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    0,                          // bonusCoinRate
+    0,                          // baseCoin
+    100,                        // field_0x13
+    9,                          // field_0x14
+    28,                         // width
+    24,                         // height
+    { 5, 25 },                  // statusIconOffset
+    { 0.0f, 14.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 30.0f, 0.0f },      // talkTogeBaseOffset
+    { 14.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 14.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 14.0f, 15.6f, 0.0f },     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
+    0.0f,                       // cutWidth
+    0.0f,                       // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_KURI_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x12000000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence = { { 0 } };
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefenseAttr defence_attr = { { 0 } };
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-static BattleVulnerableStatus regist = { 0 };
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
+};
 
 static BattleDispPose pose_table[5] = {
-    { 0x1B, "D_1" }, { 0x1C, "S_1" }, { 0x1F, "D_2" }, { 0x27, "D_2" }, { 0x45, "S_1" },
+    { 0x1B, "D_1" },
+    { 0x1C, "S_1" },
+    { 0x1F, "D_2" },
+    { 0x27, "D_2" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-u32 _lec_weapon_jump[48] = {
-    (u32)"btl_wn_mario_normal_jump", 0x009F0000, 0x00000000, (u32)"msg_normal_jump",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00035807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&lecAttackEvent_Jump, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon _lec_weapon_jump = {
+    "btl_wn_mario_normal_jump",               // name
+    159,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_normal_jump",                        // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00035807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    lecAttackEvent_Jump,                      // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 _lec_weapon_hammer[48] = {
-    (u32)"btl_wn_mario_normal_hammer", 0x009C0000, 0x00000000, (u32)"msg_normal_hammer",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x00030887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&lecAttackEvent_Hammer, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon _lec_weapon_hammer = {
+    "btl_wn_mario_normal_hammer",             // name
+    156,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_normal_hammer",                      // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer",                          // acHelpMsg
+    0x00030887,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    lecAttackEvent_Hammer,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static BattleDataEntry data_table[4] = {
-    { 0x44, &_lec_weapon_jump }, { 0x45, &_lec_weapon_hammer },
-    { 0x46, &lecture_end_event }, { 0x00, NULL },
+    { 0x44, &_lec_weapon_jump },
+    { 0x45, &_lec_weapon_hammer },
+    { 0x46, lecture_end_event },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts[1] = {
     {
-        1,
-        "btl_un_frankli",
-        "c_kuri_h",
-        { 0.0f, 0.0f, 0.0f },
-        { 15.0f, 25.0f, 0.0f },
-        // 0x24..0x38 is unnamed in BattleUnitKindPart; bytes kept literal.
-        { 0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-          0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
-        &defence,
-        &defence_attr,
-        kMainPart | kUnknown_0x8 | kNotTargetable | kUntattleable,
-        0,
-        pose_table,
+        1,                      // partNum
+        "btl_un_frankli",       // partName
+        "c_kuri_h",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00090009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
     },
 };
 

@@ -25,6 +25,7 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
 static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for helpers that have no header yet. See REPORT.md.
@@ -456,772 +457,3748 @@ USER_FUNC(_majinai_powerup_check) {
     return EVT_RETURN_DONE;
 }
 
-// TODO: type
-u32 marioDefaultWeapon_Jump[48] = {
-    (u32)"btl_wn_mario_normal_jump", 0x009F0000, 0x00000000, (u32)"msg_normal_jump",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00035807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NormalJump, 0x00000064, 0x00020201, 0x01000000,
+BattleWeapon marioDefaultWeapon_Jump = {
+    "btl_wn_mario_normal_jump",               // name
+    159,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_normal_jump",                        // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00035807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NormalJump,              // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 2, 1, 1, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_KururinJump[48] = {
-    (u32)"btl_wn_mario_kururin_jump", 0x00A10000, 0x00000000, (u32)"msg_kururin_jump",
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_k_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_KururinJump, 0x00000064, 0x00020501, 0x01000000,
+BattleWeapon marioWeapon_KururinJump = {
+    "btl_wn_mario_kururin_jump",              // name
+    161,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_kururin_jump",                       // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_k_jump",                          // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_KururinJump,             // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 2, 5, 1, 1, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_KururinJump2[48] = {
-    (u32)"btl_wn_mario_kururin_jump", 0x00A10000, 0x00000000, (u32)"msg_kururin_jump",
-    0x64000000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_k_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_KururinJump, 0x00050564, 0x000A0A05, 0x05050000,
+BattleWeapon marioWeapon_KururinJump2 = {
+    "btl_wn_mario_kururin_jump",                // name
+    161,                                        // icon
+    ITEM_NULL,                                  // item
+    "msg_kururin_jump",                         // description
+    100,                                        // baseAccuracy
+    0,                                          // baseFpCost
+    0,                                          // baseSpCost
+    0,                                          // superguardType
+    1.0f,                                       // field_0x14
+    1,                                          // mStylishCommandMultiplier
+    5,                                          // field_0x19
+    100,                                        // mBingoSlotChance
+    50,                                         // field_0x1B
+    weaponGetPowerFromMarioJumpLv,              // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },                 // hpDamageWork
+    NULL,                                       // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+    0x01001260,                                 // targetClassFlags
+    0x20001004,                                 // targetPropertyFlags
+    0,                                          // element
+    0,                                          // field_0x6D
+    3,                                          // actionLevel
+    2,                                          // field_0x6F
+    "msg_ac_k_jump",                            // acHelpMsg
+    0x00025807,                                 // special
+    0x0000000C,                                 // counterResistanceFlags
+    0x80002004,                                 // targetWeightingFlags
+    0,                                          // sleepChance
+    0,                                          // sleepTime
+    0,                                          // stopChance
+    0,                                          // stopTime
+    0,                                          // dizzyChance
+    0,                                          // dizzyTime
+    0,                                          // poisonChance
+    0,                                          // poisonTime
+    0,                                          // poisonStrength
+    0,                                          // confuseChance
+    0,                                          // confuseTime
+    0,                                          // electricChance
+    0,                                          // electricTime
+    0,                                          // dodgyChance
+    0,                                          // dodgyTime
+    0,                                          // burnChance
+    0,                                          // burnTime
+    0,                                          // freezeChance
+    0,                                          // freezeTime
+    0,                                          // sizeChangeChance
+    0,                                          // sizeChangeTime
+    0,                                          // sizeChangeStrength
+    0,                                          // atkChangeChance
+    0,                                          // atkChangeTime
+    0,                                          // atkChangeStrength
+    0,                                          // defChangeChance
+    0,                                          // defChangeTime
+    0,                                          // defChangeStrength
+    0,                                          // allergicChance
+    0,                                          // allergicTime
+    0,                                          // ohkoChance
+    0,                                          // chargeStrength
+    0,                                          // fastChance
+    0,                                          // fastTime
+    0,                                          // slowChance
+    0,                                          // slowTime
+    0,                                          // frightChance
+    0,                                          // galeForceChance
+    0,                                          // paybackTime
+    0,                                          // holdFastTime
+    0,                                          // invisibleChance
+    0,                                          // invisibleTime
+    0,                                          // hpRegenTime
+    0,                                          // hpRegenStrength
+    0,                                          // fpRegenTime
+    0,                                          // fpRegenStrength
+    marioAttackEvent_KururinJump,               // mAttackEvtScript
+    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_JyabaraJump[48] = {
-    (u32)"btl_wn_mario_jyabara_jump", 0x00A00000, 0x00000000, (u32)"msg_jyabara_jump",
-    0x64040000, 0x3F800000, 0x02056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_j_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_JyabaraJump, 0x00050564, 0x000A0A05, 0x05050000,
+BattleWeapon marioWeapon_JyabaraJump = {
+    "btl_wn_mario_jyabara_jump",                // name
+    160,                                        // icon
+    ITEM_NULL,                                  // item
+    "msg_jyabara_jump",                         // description
+    100,                                        // baseAccuracy
+    4,                                          // baseFpCost
+    0,                                          // baseSpCost
+    0,                                          // superguardType
+    1.0f,                                       // field_0x14
+    2,                                          // mStylishCommandMultiplier
+    5,                                          // field_0x19
+    100,                                        // mBingoSlotChance
+    50,                                         // field_0x1B
+    weaponGetPowerFromMarioJumpLv,              // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },                 // hpDamageWork
+    NULL,                                       // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+    0x01001260,                                 // targetClassFlags
+    0x20001004,                                 // targetPropertyFlags
+    0,                                          // element
+    0,                                          // field_0x6D
+    3,                                          // actionLevel
+    2,                                          // field_0x6F
+    "msg_ac_j_jump",                            // acHelpMsg
+    0x00025807,                                 // special
+    0x0000000C,                                 // counterResistanceFlags
+    0x80002004,                                 // targetWeightingFlags
+    0,                                          // sleepChance
+    0,                                          // sleepTime
+    0,                                          // stopChance
+    0,                                          // stopTime
+    0,                                          // dizzyChance
+    0,                                          // dizzyTime
+    0,                                          // poisonChance
+    0,                                          // poisonTime
+    0,                                          // poisonStrength
+    0,                                          // confuseChance
+    0,                                          // confuseTime
+    0,                                          // electricChance
+    0,                                          // electricTime
+    0,                                          // dodgyChance
+    0,                                          // dodgyTime
+    0,                                          // burnChance
+    0,                                          // burnTime
+    0,                                          // freezeChance
+    0,                                          // freezeTime
+    0,                                          // sizeChangeChance
+    0,                                          // sizeChangeTime
+    0,                                          // sizeChangeStrength
+    0,                                          // atkChangeChance
+    0,                                          // atkChangeTime
+    0,                                          // atkChangeStrength
+    0,                                          // defChangeChance
+    0,                                          // defChangeTime
+    0,                                          // defChangeStrength
+    0,                                          // allergicChance
+    0,                                          // allergicTime
+    0,                                          // ohkoChance
+    0,                                          // chargeStrength
+    0,                                          // fastChance
+    0,                                          // fastTime
+    0,                                          // slowChance
+    0,                                          // slowTime
+    0,                                          // frightChance
+    0,                                          // galeForceChance
+    0,                                          // paybackTime
+    0,                                          // holdFastTime
+    0,                                          // invisibleChance
+    0,                                          // invisibleTime
+    0,                                          // hpRegenTime
+    0,                                          // hpRegenStrength
+    0,                                          // fpRegenTime
+    0,                                          // fpRegenStrength
+    marioAttackEvent_JyabaraJump,               // mAttackEvtScript
+    { 0, 5, 5, 100, 0, 10, 10, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_JyabaraJumpFailed[48] = {
-    (u32)"btl_wn_mario_jyabara_jump", 0x00A00000, 0x00000000, (u32)"msg_jyabara_jump",
-    0x64040000, 0x3F800000, 0x02050132, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    0x00000000, 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_JyabaraJump, 0x00323264, 0x00000032, 0x00000000,
+BattleWeapon marioWeapon_JyabaraJumpFailed = {
+    "btl_wn_mario_jyabara_jump",                 // name
+    160,                                         // icon
+    ITEM_NULL,                                   // item
+    "msg_jyabara_jump",                          // description
+    100,                                         // baseAccuracy
+    4,                                           // baseFpCost
+    0,                                           // baseSpCost
+    0,                                           // superguardType
+    1.0f,                                        // field_0x14
+    2,                                           // mStylishCommandMultiplier
+    5,                                           // field_0x19
+    1,                                           // mBingoSlotChance
+    50,                                          // field_0x1B
+    NULL,                                        // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // hpDamageWork
+    NULL,                                        // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // fpDamageWork
+    0x01001260,                                  // targetClassFlags
+    0x20001004,                                  // targetPropertyFlags
+    0,                                           // element
+    0,                                           // field_0x6D
+    3,                                           // actionLevel
+    2,                                           // field_0x6F
+    NULL,                                        // acHelpMsg
+    0x00025807,                                  // special
+    0x0000000C,                                  // counterResistanceFlags
+    0x80002004,                                  // targetWeightingFlags
+    0,                                           // sleepChance
+    0,                                           // sleepTime
+    0,                                           // stopChance
+    0,                                           // stopTime
+    0,                                           // dizzyChance
+    0,                                           // dizzyTime
+    0,                                           // poisonChance
+    0,                                           // poisonTime
+    0,                                           // poisonStrength
+    0,                                           // confuseChance
+    0,                                           // confuseTime
+    0,                                           // electricChance
+    0,                                           // electricTime
+    0,                                           // dodgyChance
+    0,                                           // dodgyTime
+    0,                                           // burnChance
+    0,                                           // burnTime
+    0,                                           // freezeChance
+    0,                                           // freezeTime
+    0,                                           // sizeChangeChance
+    0,                                           // sizeChangeTime
+    0,                                           // sizeChangeStrength
+    0,                                           // atkChangeChance
+    0,                                           // atkChangeTime
+    0,                                           // atkChangeStrength
+    0,                                           // defChangeChance
+    0,                                           // defChangeTime
+    0,                                           // defChangeStrength
+    0,                                           // allergicChance
+    0,                                           // allergicTime
+    0,                                           // ohkoChance
+    0,                                           // chargeStrength
+    0,                                           // fastChance
+    0,                                           // fastTime
+    0,                                           // slowChance
+    0,                                           // slowTime
+    0,                                           // frightChance
+    0,                                           // galeForceChance
+    0,                                           // paybackTime
+    0,                                           // holdFastTime
+    0,                                           // invisibleChance
+    0,                                           // invisibleTime
+    0,                                           // hpRegenTime
+    0,                                           // hpRegenStrength
+    0,                                           // fpRegenTime
+    0,                                           // fpRegenStrength
+    marioAttackEvent_JyabaraJump,                // mAttackEvtScript
+    { 0, 50, 50, 100, 0, 0, 0, 50, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioDefaultWeapon_FirstAttackKaitenHammer[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x000E0302,
-    0x00000000, 0x00020887, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_FirstAttackKaitenHammer, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    14,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020887,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_FirstAttackKaitenHammer, // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioDefaultWeapon_FirstAttackUltraHammer[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00100302,
-    0x00000000, 0x00020887, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_FirstAttackKaitenHammer, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    16,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020887,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_FirstAttackKaitenHammer, // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioDefaultWeapon_Hammer[48] = {
-    (u32)"btl_wn_mario_normal_hammer", 0x009C0000, 0x00000000, (u32)"msg_normal_hammer",
-    0x64000000, 0x3F800000, 0x01016432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x00030887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NormalHammer, 0x00030364, 0x03030203, 0x03000000,
+BattleWeapon marioDefaultWeapon_Hammer = {
+    "btl_wn_mario_normal_hammer",             // name
+    156,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_normal_hammer",                      // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer",                          // acHelpMsg
+    0x00030887,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NormalHammer,            // mAttackEvtScript
+    { 0, 3, 3, 100, 3, 3, 2, 3, 3, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_KaitenHammer[48] = {
-    (u32)"btl_wn_mario_kaiten_hammer", 0x009D0000, 0x00000000, (u32)"msg_kaiten_hammer",
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x000E0302,
-    (u32)"msg_ac_kaiten_hammer", 0x00020887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_KaitenHammer, 0x00000064, 0x00030500, 0x00000000,
+BattleWeapon marioWeapon_KaitenHammer = {
+    "btl_wn_mario_kaiten_hammer",             // name
+    157,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_kaiten_hammer",                      // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    14,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_kaiten_hammer",                   // acHelpMsg
+    0x00020887,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_KaitenHammer,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_KaitenHammerInvolved[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100060, 0x20102000, 0x000F0302,
-    0x00000000, 0x00020040, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_KaitenHammerInvolved = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100060,                               // targetClassFlags
+    0x20102000,                               // targetPropertyFlags
+    0,                                        // element
+    15,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_UltraHammer[48] = {
-    (u32)"btl_wn_mario_ultra_hammer", 0x009E0000, 0x00000000, (u32)"msg_ultra_hammer",
-    0x64040000, 0x3F800000, 0x02056432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00100302,
-    (u32)"msg_ac_ultra_hammer", 0x00020807, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_KaitenHammer, 0x00000064, 0x00030500, 0x00000000,
+BattleWeapon marioWeapon_UltraHammer = {
+    "btl_wn_mario_ultra_hammer",              // name
+    158,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ultra_hammer",                       // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    16,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_ultra_hammer",                    // acHelpMsg
+    0x00020807,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_KaitenHammer,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 5, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_UltraHammerInvolved[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100060, 0x20102000, 0x00110302,
-    0x00000000, 0x00020040, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_UltraHammerInvolved = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100060,                               // targetClassFlags
+    0x20102000,                               // targetPropertyFlags
+    0,                                        // element
+    17,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_UltraHammerFinish[48] = {
-    (u32)"btl_wn_mario_ultra_hammer", 0x009E0000, 0x00000000, (u32)"msg_ultra_hammer",
-    0x64000000, 0x3F800000, 0x02056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01100060, 0x20000000, 0x00130302,
-    0x00000000, 0x0002088F, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_KaitenHammer, 0x00000064, 0x00000000, 0x00050000,
+BattleWeapon marioWeapon_UltraHammerFinish = {
+    "btl_wn_mario_ultra_hammer",              // name
+    158,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_ultra_hammer",                       // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01100060,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    19,                                       // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x0002088F,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_KaitenHammer,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_TugitugiJump[48] = {
-    0x00000000, 0x00000000, 0x000000F1, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapJump1,
-    0x00000000, 0x00000000, 0x00000001, 0x00000001,
-    0x00000002, 0x00000002, 0x000000F1, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_TugiTugiJump, 0x00000064, 0x00050502, 0x02000000,
+BattleWeapon badgeWeapon_TugitugiJump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_MULTIBOUNCE,                         // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerOverlapJump1,               // hpDamageFn
+    { 0, 0, 1, 1, 2, 2, 241, 1 },             // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_TugiTugiJump,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_GatsunJump[48] = {
-    0x00000000, 0x00000000, 0x000000F0, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapJump1,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x000000F0, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_GatsunJump, 0x00191964, 0x19191905, 0x19050000,
+BattleWeapon badgeWeapon_GatsunJump = {
+    NULL,                                           // name
+    0,                                              // icon
+    ITEM_POWER_JUMP,                                // item
+    NULL,                                           // description
+    100,                                            // baseAccuracy
+    2,                                              // baseFpCost
+    0,                                              // baseSpCost
+    0,                                              // superguardType
+    1.0f,                                           // field_0x14
+    1,                                              // mStylishCommandMultiplier
+    5,                                              // field_0x19
+    100,                                            // mBingoSlotChance
+    50,                                             // field_0x1B
+    weaponGetPowerOverlapJump1,                     // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 240, 2 },                   // hpDamageWork
+    NULL,                                           // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                     // fpDamageWork
+    0x01001260,                                     // targetClassFlags
+    0x20001004,                                     // targetPropertyFlags
+    0,                                              // element
+    0,                                              // field_0x6D
+    3,                                              // actionLevel
+    2,                                              // field_0x6F
+    "msg_ac_jump",                                  // acHelpMsg
+    0x00025807,                                     // special
+    0x0000000C,                                     // counterResistanceFlags
+    0x80002004,                                     // targetWeightingFlags
+    0,                                              // sleepChance
+    0,                                              // sleepTime
+    0,                                              // stopChance
+    0,                                              // stopTime
+    0,                                              // dizzyChance
+    0,                                              // dizzyTime
+    0,                                              // poisonChance
+    0,                                              // poisonTime
+    0,                                              // poisonStrength
+    0,                                              // confuseChance
+    0,                                              // confuseTime
+    0,                                              // electricChance
+    0,                                              // electricTime
+    0,                                              // dodgyChance
+    0,                                              // dodgyTime
+    0,                                              // burnChance
+    0,                                              // burnTime
+    0,                                              // freezeChance
+    0,                                              // freezeTime
+    0,                                              // sizeChangeChance
+    0,                                              // sizeChangeTime
+    0,                                              // sizeChangeStrength
+    0,                                              // atkChangeChance
+    0,                                              // atkChangeTime
+    0,                                              // atkChangeStrength
+    0,                                              // defChangeChance
+    0,                                              // defChangeTime
+    0,                                              // defChangeStrength
+    0,                                              // allergicChance
+    0,                                              // allergicTime
+    0,                                              // ohkoChance
+    0,                                              // chargeStrength
+    0,                                              // fastChance
+    0,                                              // fastTime
+    0,                                              // slowChance
+    0,                                              // slowTime
+    0,                                              // frightChance
+    0,                                              // galeForceChance
+    0,                                              // paybackTime
+    0,                                              // holdFastTime
+    0,                                              // invisibleChance
+    0,                                              // invisibleTime
+    0,                                              // hpRegenTime
+    0,                                              // hpRegenStrength
+    0,                                              // fpRegenTime
+    0,                                              // fpRegenStrength
+    marioAttackEvent_GatsunJump,                    // mAttackEvtScript
+    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_DokanJump[48] = {
-    0x00000000, 0x00000000, 0x0000014C, 0x00000000,
-    0x64060000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapJump1,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x0000014C, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_DokanJump, 0x00191964, 0x19050505, 0x05050000,
+BattleWeapon badgeWeapon_DokanJump = {
+    NULL,                                        // name
+    0,                                           // icon
+    ITEM_MEGA_JUMP,                              // item
+    NULL,                                        // description
+    100,                                         // baseAccuracy
+    6,                                           // baseFpCost
+    0,                                           // baseSpCost
+    0,                                           // superguardType
+    1.0f,                                        // field_0x14
+    1,                                           // mStylishCommandMultiplier
+    5,                                           // field_0x19
+    100,                                         // mBingoSlotChance
+    50,                                          // field_0x1B
+    weaponGetPowerOverlapJump1,                  // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 332, 4 },                // hpDamageWork
+    NULL,                                        // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // fpDamageWork
+    0x01001260,                                  // targetClassFlags
+    0x20001004,                                  // targetPropertyFlags
+    0,                                           // element
+    0,                                           // field_0x6D
+    3,                                           // actionLevel
+    2,                                           // field_0x6F
+    "msg_ac_jump",                               // acHelpMsg
+    0x00025807,                                  // special
+    0x0000000C,                                  // counterResistanceFlags
+    0x80002004,                                  // targetWeightingFlags
+    0,                                           // sleepChance
+    0,                                           // sleepTime
+    0,                                           // stopChance
+    0,                                           // stopTime
+    0,                                           // dizzyChance
+    0,                                           // dizzyTime
+    0,                                           // poisonChance
+    0,                                           // poisonTime
+    0,                                           // poisonStrength
+    0,                                           // confuseChance
+    0,                                           // confuseTime
+    0,                                           // electricChance
+    0,                                           // electricTime
+    0,                                           // dodgyChance
+    0,                                           // dodgyTime
+    0,                                           // burnChance
+    0,                                           // burnTime
+    0,                                           // freezeChance
+    0,                                           // freezeTime
+    0,                                           // sizeChangeChance
+    0,                                           // sizeChangeTime
+    0,                                           // sizeChangeStrength
+    0,                                           // atkChangeChance
+    0,                                           // atkChangeTime
+    0,                                           // atkChangeStrength
+    0,                                           // defChangeChance
+    0,                                           // defChangeTime
+    0,                                           // defChangeStrength
+    0,                                           // allergicChance
+    0,                                           // allergicTime
+    0,                                           // ohkoChance
+    0,                                           // chargeStrength
+    0,                                           // fastChance
+    0,                                           // fastTime
+    0,                                           // slowChance
+    0,                                           // slowTime
+    0,                                           // frightChance
+    0,                                           // galeForceChance
+    0,                                           // paybackTime
+    0,                                           // holdFastTime
+    0,                                           // invisibleChance
+    0,                                           // invisibleTime
+    0,                                           // hpRegenTime
+    0,                                           // hpRegenStrength
+    0,                                           // fpRegenTime
+    0,                                           // fpRegenStrength
+    marioAttackEvent_DokanJump,                  // mAttackEvtScript
+    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_RenzokuJump[48] = {
-    0x00000000, 0x00000000, 0x000000F2, 0x00000000,
-    0x64030000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapJump1,
-    0x00000000, 0x00000000, 0x00000001, 0x00000001,
-    0x00000002, 0x00000002, 0x000000F2, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025817, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_RenzokuJump, 0x00000064, 0x00050502, 0x02000000,
+BattleWeapon badgeWeapon_RenzokuJump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_POWER_BOUNCE,                        // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerOverlapJump1,               // hpDamageFn
+    { 0, 0, 1, 1, 2, 2, 242, 1 },             // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00025817,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_RenzokuJump,             // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 2, 2, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_TatsumakiJump[48] = {
-    0x00000000, 0x00000000, 0x000000F3, 0x00000000,
-    0x64030000, 0x3F800000, 0x03056432, (u32)weaponGetPowerOverlapJump1,
-    0x00000000, 0x00000001, 0x00000001, 0x00000003,
-    0x00000002, 0x00000005, 0x000000F3, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_tatsumaki_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_TatsumakiJump, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_TatsumakiJump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_TORNADO_JUMP,                        // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    3,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerOverlapJump1,               // hpDamageFn
+    { 0, 1, 1, 3, 2, 5, 243, 1 },             // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_tatsumaki_jump",                  // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_TatsumakiJump,           // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_TatsumakiJumpInvolved[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, (u32)weaponGetPowerTatsumaki,
-    0x00000000, 0x00000002, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000010, 0x00000302,
-    0x00000000, 0x00020040, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_TatsumakiJumpInvolved = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    weaponGetPowerTatsumaki,                  // hpDamageFn
+    { 0, 2, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000010,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020040,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_MiniminiFumi[48] = {
-    0x00000000, 0x00000000, 0x000000F4, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000064, 0x03FE0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_MiniminiFumi, 0x00000064, 0x00030501, 0x01000000,
+BattleWeapon badgeWeapon_MiniminiFumi = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_SHRINK_STOMP,                        // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    100,                                      // sizeChangeChance
+    3,                                        // sizeChangeTime
+    -2,                                       // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_MiniminiFumi,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_NemuraseFumi[48] = {
-    0x00000000, 0x00000000, 0x000000F5, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x64050000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NemuraseFumi, 0x00000064, 0x00030501, 0x01000000,
+BattleWeapon badgeWeapon_NemuraseFumi = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_SLEEPY_STOMP,                        // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    100,                                      // sleepChance
+    5,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NemuraseFumi,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_FunyafunyaJump[48] = {
-    0x00000000, 0x00000000, 0x000000F6, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioJumpLv,
-    0x00000001, 0x00000001, 0x00000002, 0x00000002,
-    0x00000003, 0x00000003, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    (u32)"msg_ac_jump", 0x00025807, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x006403FD, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_FunyafunyaJump, 0x00000064, 0x00030501, 0x01000000,
+BattleWeapon badgeWeapon_FunyafunyaJump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_SOFT_STOMP,                          // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioJumpLv,            // hpDamageFn
+    { 1, 1, 2, 2, 3, 3, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_jump",                            // acHelpMsg
+    0x00025807,                               // special
+    0x0000000C,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    100,                                      // defChangeChance
+    3,                                        // defChangeTime
+    -3,                                       // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_FunyafunyaJump,          // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 3, 5, 1, 1, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_GatsunHammer[48] = {
-    0x00000000, 0x00000000, 0x000000F7, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapHammer1,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x000000F7, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x00020887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_GatsunHammer, 0x00191964, 0x19191905, 0x19050000,
+BattleWeapon badgeWeapon_GatsunHammer = {
+    NULL,                                           // name
+    0,                                              // icon
+    ITEM_POWER_SMASH,                               // item
+    NULL,                                           // description
+    100,                                            // baseAccuracy
+    2,                                              // baseFpCost
+    0,                                              // baseSpCost
+    0,                                              // superguardType
+    1.0f,                                           // field_0x14
+    1,                                              // mStylishCommandMultiplier
+    5,                                              // field_0x19
+    100,                                            // mBingoSlotChance
+    50,                                             // field_0x1B
+    weaponGetPowerOverlapHammer1,                   // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 247, 2 },                   // hpDamageWork
+    NULL,                                           // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                     // fpDamageWork
+    0x01001260,                                     // targetClassFlags
+    0x21002000,                                     // targetPropertyFlags
+    0,                                              // element
+    0,                                              // field_0x6D
+    3,                                              // actionLevel
+    2,                                              // field_0x6F
+    "msg_ac_hammer",                                // acHelpMsg
+    0x00020887,                                     // special
+    0x000007FB,                                     // counterResistanceFlags
+    0x80002004,                                     // targetWeightingFlags
+    0,                                              // sleepChance
+    0,                                              // sleepTime
+    0,                                              // stopChance
+    0,                                              // stopTime
+    0,                                              // dizzyChance
+    0,                                              // dizzyTime
+    0,                                              // poisonChance
+    0,                                              // poisonTime
+    0,                                              // poisonStrength
+    0,                                              // confuseChance
+    0,                                              // confuseTime
+    0,                                              // electricChance
+    0,                                              // electricTime
+    0,                                              // dodgyChance
+    0,                                              // dodgyTime
+    0,                                              // burnChance
+    0,                                              // burnTime
+    0,                                              // freezeChance
+    0,                                              // freezeTime
+    0,                                              // sizeChangeChance
+    0,                                              // sizeChangeTime
+    0,                                              // sizeChangeStrength
+    0,                                              // atkChangeChance
+    0,                                              // atkChangeTime
+    0,                                              // atkChangeStrength
+    0,                                              // defChangeChance
+    0,                                              // defChangeTime
+    0,                                              // defChangeStrength
+    0,                                              // allergicChance
+    0,                                              // allergicTime
+    0,                                              // ohkoChance
+    0,                                              // chargeStrength
+    0,                                              // fastChance
+    0,                                              // fastTime
+    0,                                              // slowChance
+    0,                                              // slowTime
+    0,                                              // frightChance
+    0,                                              // galeForceChance
+    0,                                              // paybackTime
+    0,                                              // holdFastTime
+    0,                                              // invisibleChance
+    0,                                              // invisibleTime
+    0,                                              // hpRegenTime
+    0,                                              // hpRegenStrength
+    0,                                              // fpRegenTime
+    0,                                              // fpRegenStrength
+    marioAttackEvent_GatsunHammer,                  // mAttackEvtScript
+    { 0, 25, 25, 100, 25, 25, 25, 5, 25, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_DokanHammer[48] = {
-    0x00000000, 0x00000000, 0x0000014D, 0x00000000,
-    0x64060000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapHammer1,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x0000014D, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x00020887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_GatsunHammer, 0x00191964, 0x19050505, 0x05050000,
+BattleWeapon badgeWeapon_DokanHammer = {
+    NULL,                                        // name
+    0,                                           // icon
+    ITEM_MEGA_SMASH,                             // item
+    NULL,                                        // description
+    100,                                         // baseAccuracy
+    6,                                           // baseFpCost
+    0,                                           // baseSpCost
+    0,                                           // superguardType
+    1.0f,                                        // field_0x14
+    1,                                           // mStylishCommandMultiplier
+    5,                                           // field_0x19
+    100,                                         // mBingoSlotChance
+    50,                                          // field_0x1B
+    weaponGetPowerOverlapHammer1,                // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 333, 4 },                // hpDamageWork
+    NULL,                                        // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // fpDamageWork
+    0x01001260,                                  // targetClassFlags
+    0x21002000,                                  // targetPropertyFlags
+    0,                                           // element
+    0,                                           // field_0x6D
+    3,                                           // actionLevel
+    2,                                           // field_0x6F
+    "msg_ac_hammer",                             // acHelpMsg
+    0x00020887,                                  // special
+    0x000007FB,                                  // counterResistanceFlags
+    0x80002004,                                  // targetWeightingFlags
+    0,                                           // sleepChance
+    0,                                           // sleepTime
+    0,                                           // stopChance
+    0,                                           // stopTime
+    0,                                           // dizzyChance
+    0,                                           // dizzyTime
+    0,                                           // poisonChance
+    0,                                           // poisonTime
+    0,                                           // poisonStrength
+    0,                                           // confuseChance
+    0,                                           // confuseTime
+    0,                                           // electricChance
+    0,                                           // electricTime
+    0,                                           // dodgyChance
+    0,                                           // dodgyTime
+    0,                                           // burnChance
+    0,                                           // burnTime
+    0,                                           // freezeChance
+    0,                                           // freezeTime
+    0,                                           // sizeChangeChance
+    0,                                           // sizeChangeTime
+    0,                                           // sizeChangeStrength
+    0,                                           // atkChangeChance
+    0,                                           // atkChangeTime
+    0,                                           // atkChangeStrength
+    0,                                           // defChangeChance
+    0,                                           // defChangeTime
+    0,                                           // defChangeStrength
+    0,                                           // allergicChance
+    0,                                           // allergicTime
+    0,                                           // ohkoChance
+    0,                                           // chargeStrength
+    0,                                           // fastChance
+    0,                                           // fastTime
+    0,                                           // slowChance
+    0,                                           // slowTime
+    0,                                           // frightChance
+    0,                                           // galeForceChance
+    0,                                           // paybackTime
+    0,                                           // holdFastTime
+    0,                                           // invisibleChance
+    0,                                           // invisibleTime
+    0,                                           // hpRegenTime
+    0,                                           // hpRegenStrength
+    0,                                           // fpRegenTime
+    0,                                           // fpRegenStrength
+    marioAttackEvent_GatsunHammer,               // mAttackEvtScript
+    { 0, 25, 25, 100, 25, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_JishinHammer[48] = {
-    0x00000000, 0x00000000, 0x000000F8, 0x00000000,
-    0x64030000, 0x3F800000, 0x02056432, (u32)weaponGetPowerOverlapHammer1,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x000000F8, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000008, 0x00000302,
-    (u32)"msg_ac_hammer", 0x000238C7, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_JishinHammer, 0x00323264, 0x32191905, 0x19050000,
+BattleWeapon badgeWeapon_JishinHammer = {
+    NULL,                                                    // name
+    0,                                                       // icon
+    ITEM_QUAKE_HAMMER,                                       // item
+    NULL,                                                    // description
+    100,                                                     // baseAccuracy
+    3,                                                       // baseFpCost
+    0,                                                       // baseSpCost
+    0,                                                       // superguardType
+    1.0f,                                                    // field_0x14
+    2,                                                       // mStylishCommandMultiplier
+    5,                                                       // field_0x19
+    100,                                                     // mBingoSlotChance
+    50,                                                      // field_0x1B
+    weaponGetPowerOverlapHammer1,                            // hpDamageFn
+    { 4294967295, 0, 4294967295, 0, 4294967295, 0, 248, 2 }, // hpDamageWork
+    NULL,                                                    // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                              // fpDamageWork
+    0x02101260,                                              // targetClassFlags
+    0x20000008,                                              // targetPropertyFlags
+    0,                                                       // element
+    0,                                                       // field_0x6D
+    3,                                                       // actionLevel
+    2,                                                       // field_0x6F
+    "msg_ac_hammer",                                         // acHelpMsg
+    0x000238C7,                                              // special
+    0x000007FF,                                              // counterResistanceFlags
+    0x80002004,                                              // targetWeightingFlags
+    0,                                                       // sleepChance
+    0,                                                       // sleepTime
+    0,                                                       // stopChance
+    0,                                                       // stopTime
+    0,                                                       // dizzyChance
+    0,                                                       // dizzyTime
+    0,                                                       // poisonChance
+    0,                                                       // poisonTime
+    0,                                                       // poisonStrength
+    0,                                                       // confuseChance
+    0,                                                       // confuseTime
+    0,                                                       // electricChance
+    0,                                                       // electricTime
+    0,                                                       // dodgyChance
+    0,                                                       // dodgyTime
+    0,                                                       // burnChance
+    0,                                                       // burnTime
+    0,                                                       // freezeChance
+    0,                                                       // freezeTime
+    0,                                                       // sizeChangeChance
+    0,                                                       // sizeChangeTime
+    0,                                                       // sizeChangeStrength
+    0,                                                       // atkChangeChance
+    0,                                                       // atkChangeTime
+    0,                                                       // atkChangeStrength
+    0,                                                       // defChangeChance
+    0,                                                       // defChangeTime
+    0,                                                       // defChangeStrength
+    0,                                                       // allergicChance
+    0,                                                       // allergicTime
+    0,                                                       // ohkoChance
+    0,                                                       // chargeStrength
+    0,                                                       // fastChance
+    0,                                                       // fastTime
+    0,                                                       // slowChance
+    0,                                                       // slowTime
+    0,                                                       // frightChance
+    0,                                                       // galeForceChance
+    0,                                                       // paybackTime
+    0,                                                       // holdFastTime
+    0,                                                       // invisibleChance
+    0,                                                       // invisibleTime
+    0,                                                       // hpRegenTime
+    0,                                                       // hpRegenStrength
+    0,                                                       // fpRegenTime
+    0,                                                       // fpRegenStrength
+    marioAttackEvent_JishinHammer,                           // mAttackEvtScript
+    { 0, 50, 50, 100, 50, 25, 25, 5, 25, 5, 0, 0 },          // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_UltraJishinHammer[48] = {
-    0x00000000, 0x00000000, 0x0000014E, (u32)"msg_ultra_attack",
-    0x64070000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapHammer1,
-    0x00000003, 0x00000006, 0x00000003, 0x00000006,
-    0x00000003, 0x00000006, 0x0000014E, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000008, 0x00000302,
-    (u32)"msg_ac_ultra_jishin_hammer", 0x000238C7, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_UltraJishinHammer, 0x00323264, 0x32050505, 0x05050000,
+BattleWeapon badgeWeapon_UltraJishinHammer = {
+    NULL,                                        // name
+    0,                                           // icon
+    ITEM_MEGA_QUAKE,                             // item
+    "msg_ultra_attack",                          // description
+    100,                                         // baseAccuracy
+    7,                                           // baseFpCost
+    0,                                           // baseSpCost
+    0,                                           // superguardType
+    1.0f,                                        // field_0x14
+    1,                                           // mStylishCommandMultiplier
+    5,                                           // field_0x19
+    100,                                         // mBingoSlotChance
+    50,                                          // field_0x1B
+    weaponGetPowerOverlapHammer1,                // hpDamageFn
+    { 3, 6, 3, 6, 3, 6, 334, 4 },                // hpDamageWork
+    NULL,                                        // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                  // fpDamageWork
+    0x02101260,                                  // targetClassFlags
+    0x20000008,                                  // targetPropertyFlags
+    0,                                           // element
+    0,                                           // field_0x6D
+    3,                                           // actionLevel
+    2,                                           // field_0x6F
+    "msg_ac_ultra_jishin_hammer",                // acHelpMsg
+    0x000238C7,                                  // special
+    0x000007FF,                                  // counterResistanceFlags
+    0x80002004,                                  // targetWeightingFlags
+    0,                                           // sleepChance
+    0,                                           // sleepTime
+    0,                                           // stopChance
+    0,                                           // stopTime
+    0,                                           // dizzyChance
+    0,                                           // dizzyTime
+    0,                                           // poisonChance
+    0,                                           // poisonTime
+    0,                                           // poisonStrength
+    0,                                           // confuseChance
+    0,                                           // confuseTime
+    0,                                           // electricChance
+    0,                                           // electricTime
+    0,                                           // dodgyChance
+    0,                                           // dodgyTime
+    0,                                           // burnChance
+    0,                                           // burnTime
+    0,                                           // freezeChance
+    0,                                           // freezeTime
+    0,                                           // sizeChangeChance
+    0,                                           // sizeChangeTime
+    0,                                           // sizeChangeStrength
+    0,                                           // atkChangeChance
+    0,                                           // atkChangeTime
+    0,                                           // atkChangeStrength
+    0,                                           // defChangeChance
+    0,                                           // defChangeTime
+    0,                                           // defChangeStrength
+    0,                                           // allergicChance
+    0,                                           // allergicTime
+    0,                                           // ohkoChance
+    0,                                           // chargeStrength
+    0,                                           // fastChance
+    0,                                           // fastTime
+    0,                                           // slowChance
+    0,                                           // slowTime
+    0,                                           // frightChance
+    0,                                           // galeForceChance
+    0,                                           // paybackTime
+    0,                                           // holdFastTime
+    0,                                           // invisibleChance
+    0,                                           // invisibleTime
+    0,                                           // hpRegenTime
+    0,                                           // hpRegenStrength
+    0,                                           // fpRegenTime
+    0,                                           // fpRegenStrength
+    marioAttackEvent_UltraJishinHammer,          // mAttackEvtScript
+    { 0, 50, 50, 100, 50, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_HammerNageru[48] = {
-    0x00000000, 0x00000000, 0x000000F9, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerOverlapHammer1,
-    0x00000000, 0x00000001, 0x00000001, 0x00000003,
-    0x00000002, 0x00000005, 0x000000F9, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20000000, 0x00000302,
-    (u32)"msg_ac_hammer_nageru", 0x00020887, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_HammerNageru, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_HammerNageru = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_HAMMER_THROW,                        // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerOverlapHammer1,             // hpDamageFn
+    { 0, 1, 1, 3, 2, 5, 249, 1 },             // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer_nageru",                   // acHelpMsg
+    0x00020887,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_HammerNageru,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_TsuranukiNaguri[48] = {
-    0x00000000, 0x00000000, 0x000000FA, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x000208C7, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_TsuranukiHammer, 0x00191964, 0x00050505, 0x05050000,
+BattleWeapon badgeWeapon_TsuranukiNaguri = {
+    NULL,                                       // name
+    0,                                          // icon
+    ITEM_PIERCING_BLOW,                         // item
+    NULL,                                       // description
+    100,                                        // baseAccuracy
+    2,                                          // baseFpCost
+    0,                                          // baseSpCost
+    0,                                          // superguardType
+    1.0f,                                       // field_0x14
+    1,                                          // mStylishCommandMultiplier
+    5,                                          // field_0x19
+    100,                                        // mBingoSlotChance
+    50,                                         // field_0x1B
+    weaponGetPowerFromMarioHammerLv,            // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },                 // hpDamageWork
+    NULL,                                       // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+    0x01001260,                                 // targetClassFlags
+    0x21002000,                                 // targetPropertyFlags
+    0,                                          // element
+    0,                                          // field_0x6D
+    3,                                          // actionLevel
+    2,                                          // field_0x6F
+    "msg_ac_hammer",                            // acHelpMsg
+    0x000208C7,                                 // special
+    0x000007FB,                                 // counterResistanceFlags
+    0x80002004,                                 // targetWeightingFlags
+    0,                                          // sleepChance
+    0,                                          // sleepTime
+    0,                                          // stopChance
+    0,                                          // stopTime
+    0,                                          // dizzyChance
+    0,                                          // dizzyTime
+    0,                                          // poisonChance
+    0,                                          // poisonTime
+    0,                                          // poisonStrength
+    0,                                          // confuseChance
+    0,                                          // confuseTime
+    0,                                          // electricChance
+    0,                                          // electricTime
+    0,                                          // dodgyChance
+    0,                                          // dodgyTime
+    0,                                          // burnChance
+    0,                                          // burnTime
+    0,                                          // freezeChance
+    0,                                          // freezeTime
+    0,                                          // sizeChangeChance
+    0,                                          // sizeChangeTime
+    0,                                          // sizeChangeStrength
+    0,                                          // atkChangeChance
+    0,                                          // atkChangeTime
+    0,                                          // atkChangeStrength
+    0,                                          // defChangeChance
+    0,                                          // defChangeTime
+    0,                                          // defChangeStrength
+    0,                                          // allergicChance
+    0,                                          // allergicTime
+    0,                                          // ohkoChance
+    0,                                          // chargeStrength
+    0,                                          // fastChance
+    0,                                          // fastTime
+    0,                                          // slowChance
+    0,                                          // slowTime
+    0,                                          // frightChance
+    0,                                          // galeForceChance
+    0,                                          // paybackTime
+    0,                                          // holdFastTime
+    0,                                          // invisibleChance
+    0,                                          // invisibleTime
+    0,                                          // hpRegenTime
+    0,                                          // hpRegenStrength
+    0,                                          // fpRegenTime
+    0,                                          // fpRegenStrength
+    marioAttackEvent_TsuranukiHammer,           // mAttackEvtScript
+    { 0, 25, 25, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_ConfuseHammer[48] = {
-    0x00000000, 0x00000000, 0x000000FB, 0x00000000,
-    0x64020000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    (u32)"msg_ac_hammer", 0x00020887, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00640300, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NormalHammer, 0x00050564, 0x00050505, 0x05050000,
+BattleWeapon badgeWeapon_ConfuseHammer = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_HEAD_RATTLE,                         // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer",                          // acHelpMsg
+    0x00020887,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    100,                                      // confuseChance
+    3,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NormalHammer,            // mAttackEvtScript
+    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_FireNaguri[48] = {
-    0x00000000, 0x00000000, 0x000000FC, 0x00000000,
-    0x64050000, 0x3F800000, 0x02056432, (u32)weaponGetPowerOverlapHammer1,
-    0xFFFFFFFF, 0x00000003, 0x00000000, 0x00000003,
-    0x00000001, 0x00000003, 0x000000FC, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02001260, 0x20002000, 0x01000302,
-    (u32)"msg_ac_fire_naguri", 0x00020867, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000064,
-    0x03000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_FireNaguri, 0x00000064, 0x00050505, 0x05050000,
+BattleWeapon badgeWeapon_FireNaguri = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_FIRE_DRIVE,                          // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    5,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerOverlapHammer1,             // hpDamageFn
+    { 4294967295, 3, 0, 3, 1, 3, 252, 2 },    // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02001260,                               // targetClassFlags
+    0x20002000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_fire_naguri",                     // acHelpMsg
+    0x00020867,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    100,                                      // burnChance
+    3,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_FireNaguri,              // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_FireNaguriFailed[48] = {
-    0x00000000, 0x00000000, 0x000000FC, 0x00000000,
-    0x64050000, 0x3F800000, 0x02050132, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000005, 0x00000002, 0x00000005,
-    0x00000003, 0x00000005, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100160, 0x10002000, 0x01000302,
-    0x00000000, 0x00020007, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000064,
-    0x03000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_FireNaguri, 0x00000064, 0x00050505, 0x05050000,
+BattleWeapon badgeWeapon_FireNaguriFailed = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_FIRE_DRIVE,                          // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    5,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    2,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 5, 2, 5, 3, 5, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100160,                               // targetClassFlags
+    0x10002000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020007,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    100,                                      // burnChance
+    3,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_FireNaguri,              // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_IceNaguri[48] = {
-    0x00000000, 0x00000000, 0x000000FD, 0x00000000,
-    0x64030000, 0x3F800000, 0x01056432, (u32)weaponGetPowerFromMarioHammerLv,
-    0x00000001, 0x00000002, 0x00000002, 0x00000004,
-    0x00000003, 0x00000006, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x02000302,
-    (u32)"msg_ac_hammer", 0x00020807, 0x000007FB, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00640200, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_IceNaguri, 0x00050564, 0x00050505, 0x05050000,
+BattleWeapon badgeWeapon_IceNaguri = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_ICE_SMASH,                           // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    3,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPowerFromMarioHammerLv,          // hpDamageFn
+    { 1, 2, 2, 4, 3, 6, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    2,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_ac_hammer",                          // acHelpMsg
+    0x00020807,                               // special
+    0x000007FB,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    100,                                      // freezeChance
+    2,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_IceNaguri,               // mAttackEvtScript
+    { 0, 5, 5, 100, 0, 5, 5, 5, 5, 5, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_Charge[48] = {
-    (u32)"btl_wn_mario_normal_charge", 0x009F0000, 0x00000100, (u32)"btl_hlp_cmd_operation_charge",
-    0x64010000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NormalCharge, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_Charge = {
+    "btl_wn_mario_normal_charge",             // name
+    159,                                      // icon
+    ITEM_CHARGE,                              // item
+    "btl_hlp_cmd_operation_charge",           // description
+    100,                                      // baseAccuracy
+    1,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    2,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NormalCharge,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_ChargeP[48] = {
-    (u32)"btl_wn_mario_normal_charge", 0x009F0000, 0x00000101, (u32)"btl_hlp_cmd_operation_charge",
-    0x64010000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_NormalChargeP, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_ChargeP = {
+    "btl_wn_mario_normal_charge",             // name
+    159,                                      // icon
+    ITEM_CHARGE_P,                            // item
+    "btl_hlp_cmd_operation_charge",           // description
+    100,                                      // baseAccuracy
+    1,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    2,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_NormalChargeP,           // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_SuperCharge[48] = {
-    (u32)"btl_wn_mario_super_charge", 0x009F0000, 0x00000151, (u32)"btl_hlp_cmd_operation_super_charge",
-    0x64020000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_SuperCharge, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_SuperCharge = {
+    "btl_wn_mario_super_charge",              // name
+    159,                                      // icon
+    ITEM_SUPER_CHARGE,                        // item
+    "btl_hlp_cmd_operation_super_charge",     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    2,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_SuperCharge,             // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_SuperChargeP[48] = {
-    (u32)"btl_wn_mario_super_charge", 0x009F0000, 0x00000152, (u32)"btl_hlp_cmd_operation_super_charge",
-    0x64020000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)&marioAttackEvent_SuperChargeP, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_SuperChargeP = {
+    "btl_wn_mario_super_charge",              // name
+    159,                                      // icon
+    ITEM_SUPER_CHARGE_P,                      // item
+    "btl_hlp_cmd_operation_super_charge",     // description
+    100,                                      // baseAccuracy
+    2,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    2,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_SuperChargeP,            // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_2KaiItem[48] = {
-    (u32)"btl_wn_2kai_item", 0x00000000, 0x000000FE, 0x00000000,
-    0x64040000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_2KaiItem = {
+    "btl_wn_2kai_item",                       // name
+    0,                                        // icon
+    ITEM_DOUBLE_DIP,                          // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    4,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_3KaiItem[48] = {
-    (u32)"btl_wn_3kai_item", 0x00000000, 0x00000149, 0x00000000,
-    0x64080000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020108, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_3KaiItem = {
+    "btl_wn_3kai_item",                       // name
+    0,                                        // icon
+    ITEM_TRIPLE_DIP,                          // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    8,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_DefenceCommand[48] = {
-    0x00000000, 0x00000000, 0x0000014F, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020008, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00640101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_DefenceCommand = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_UNUSED_DEFEND_BADGE,                 // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    100,                                      // defChangeChance
+    1,                                        // defChangeTime
+    1,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 badgeWeapon_DefenceCommandP[48] = {
-    0x00000000, 0x00000000, 0x00000150, 0x00000000,
-    0x64000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x10000000, 0x00000302,
-    0x00000000, 0x00020008, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00640101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon badgeWeapon_DefenceCommandP = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_UNUSED_DEFEND_BADGE_P,               // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    100,                                      // defChangeChance
+    1,                                        // defChangeTime
+    1,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_BakuGame[48] = {
-    (u32)"btl_wn_sac_bakugame", 0x01980000, 0x00000000, (u32)"msg_bakugame",
-    0x64000200, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100060, 0x20000000, 0x00000302,
-    (u32)"msg_sac_3", 0x00020088, 0x000007FF, 0x00000000,
-    0x00006401, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_BakuGame, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_BakuGame = {
+    "btl_wn_sac_bakugame",                    // name
+    408,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_bakugame",                           // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    2,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100060,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_3",                              // acHelpMsg
+    0x00020088,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    100,                                      // stopChance
+    1,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_BakuGame,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Scissor[48] = {
-    (u32)"btl_wn_sac_scissor", 0x019C0000, 0x00000000, (u32)"msg_scissor",
-    0x64000400, 0x3F800000, 0x01056432, (u32)weaponGetPower_Scissor,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_sac_5", 0x000200C8, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Scissor, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Scissor = {
+    "btl_wn_sac_scissor",                     // name
+    412,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_scissor",                            // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    4,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPower_Scissor,                   // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_5",                              // acHelpMsg
+    0x000200C8,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Scissor,                 // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_ZubaStar[48] = {
-    (u32)"btl_wn_sac_zubastar", 0x019B0000, 0x00000000, (u32)"msg_zubastar",
-    0x64000600, 0x3F800000, 0x01056432, (u32)weaponGetPower_ZubaStar,
-    0x00000000, 0x00000003, 0x00000006, 0x00000009,
-    0x0000000C, 0x0000000F, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_sac_8", 0x000200C8, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_ZubaStar, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_ZubaStar = {
+    "btl_wn_sac_zubastar",                    // name
+    411,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_zubastar",                           // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    6,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPower_ZubaStar,                  // hpDamageFn
+    { 0, 3, 6, 9, 12, 15, 0, 0 },             // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_8",                              // acHelpMsg
+    0x000200C8,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_ZubaStar,                // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Genki0[48] = {
-    (u32)"btl_wn_sac_genki0", 0x01310000, 0x00000000, (u32)"msg_genkigenki",
-    0x64000100, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100070, 0x10000000, 0x00000302,
-    (u32)"msg_sac_1", 0x00020008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Genki0, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Genki0 = {
+    "btl_wn_sac_genki0",                      // name
+    305,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_genkigenki",                         // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    1,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100070,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_1",                              // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Genki0,                  // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Genki1[48] = {
-    (u32)"btl_wn_sac_genki1", 0x019D0000, 0x00000000, (u32)"msg_super_genki",
-    0x64000500, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100070, 0x10000000, 0x00000302,
-    (u32)"msg_sac_6", 0x00020008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Genki1, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Genki1 = {
+    "btl_wn_sac_genki1",                      // name
+    413,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_super_genki",                        // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    5,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100070,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_6",                              // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Genki1,                  // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Deka[48] = {
-    (u32)"btl_wn_sac_dekkaku_dokkan", 0x01970000, 0x00000000, (u32)"msg_dekkaku_dokkan",
-    0x64000200, 0x3F800000, 0x01056432, (u32)weaponGetPower_Deka,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_sac_2", 0x000200C8, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Deka, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Deka = {
+    "btl_wn_sac_dekkaku_dokkan",              // name
+    407,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_dekkaku_dokkan",                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    2,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    weaponGetPower_Deka,                      // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_2",                              // acHelpMsg
+    0x000200C8,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Deka,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Muki[48] = {
-    (u32)"btl_wn_sac_mukimuki_body", 0x019A0000, 0x00000000, (u32)"msg_mukimuki_body",
-    0x64000300, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02100070, 0x10000000, 0x00000302,
-    (u32)"msg_sac_4", 0x00020008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Muki, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Muki = {
+    "btl_wn_sac_mukimuki_body",               // name
+    410,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_mukimuki_body",                      // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    3,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100070,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_4",                              // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Muki,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-u32 marioWeapon_Suki[48] = {
-    (u32)"btl_wn_sac_sukkari_sukkiri", 0x01990000, 0x00000000, (u32)"msg_sukkari_sukkiri",
-    0x64000200, 0x3F800000, 0x01056432, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x00000302,
-    (u32)"msg_sac_7", 0x00020008, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00006400,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)marioAttackEvent_Suki, 0x00000064, 0x00000000, 0x00000000,
+BattleWeapon marioWeapon_Suki = {
+    "btl_wn_sac_sukkari_sukkiri",             // name
+    409,                                      // icon
+    ITEM_NULL,                                // item
+    "msg_sukkari_sukkiri",                    // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    2,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    "msg_sac_7",                              // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    100,                                      // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Suki,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 // TODO: type
@@ -1241,8 +4218,8 @@ static EVT_BEGIN(marioAttackEvent_NormalJump)
         IF_INT_EQUAL(LW(3), -1)
             GOTO(99)
         END_IF
-        SET_VALUE(LW(12), PTR(marioDefaultWeapon_Jump))
-        CALL(btlevtcmd_ACHelpSet, PTR(marioDefaultWeapon_Jump))
+        SET_VALUE(LW(12), PTR(&marioDefaultWeapon_Jump))
+        CALL(btlevtcmd_ACHelpSet, PTR(&marioDefaultWeapon_Jump))
         CALL(evt_btl_camera_set_mode, 0, 10)
         CALL(evt_btl_camera_set_homing_unitparts, 0, LW(3), LW(4), -2, 1)
         CALL(evt_btl_camera_set_zoom, 0, 250)
@@ -1302,17 +4279,17 @@ static EVT_BEGIN(marioAttackEvent_NormalJump)
         CALL(btlevtcmd_ChangeFaceDirection, -2, LW(6))
         BEGIN_SIBLING_EVENT
             SWITCH(LW(12))
-                CASE_EQUAL(PTR(badgeWeapon_MiniminiFumi))
+                CASE_EQUAL(PTR(&badgeWeapon_MiniminiFumi))
                 SET_VALUE(LW(13), 4)
-                CASE_EQUAL(PTR(badgeWeapon_NemuraseFumi))
+                CASE_EQUAL(PTR(&badgeWeapon_NemuraseFumi))
                 SET_VALUE(LW(13), 3)
-                CASE_EQUAL(PTR(badgeWeapon_FunyafunyaJump))
+                CASE_EQUAL(PTR(&badgeWeapon_FunyafunyaJump))
                 SET_VALUE(LW(13), 1)
             END_SWITCH
             SWITCH(LW(12))
-                CASE_OR_EQUAL(PTR(badgeWeapon_MiniminiFumi))
-                CASE_OR_EQUAL(PTR(badgeWeapon_NemuraseFumi))
-                CASE_OR_EQUAL(PTR(badgeWeapon_FunyafunyaJump))
+                CASE_OR_EQUAL(PTR(&badgeWeapon_MiniminiFumi))
+                CASE_OR_EQUAL(PTR(&badgeWeapon_NemuraseFumi))
+                CASE_OR_EQUAL(PTR(&badgeWeapon_FunyafunyaJump))
                 CALL(_jump_star_effect, -2, LW(13))
                 CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
                 CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_MARIO_HAMMER_SHINE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -1483,8 +4460,8 @@ static EVT_BEGIN(marioAttackEvent_KururinJump)
     CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(0.0f), FLOAT(0.4f))
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(12), PTR(marioWeapon_KururinJump))
-        CALL(btlevtcmd_ACHelpSet, PTR(marioWeapon_KururinJump))
+        SET_VALUE(LW(12), PTR(&marioWeapon_KururinJump))
+        CALL(btlevtcmd_ACHelpSet, PTR(&marioWeapon_KururinJump))
         CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
         IF_INT_EQUAL(LW(3), -1)
             GOTO(99)
@@ -1708,11 +4685,11 @@ static EVT_BEGIN(marioAttackEvent_KururinJump)
     CALL(btlevtcmd_ResultAC)
     CALL(btlevtcmd_GetResultAC, LW(6))
     IF_BITS_SET(LW(6), 2)
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(marioWeapon_KururinJump2), 131328, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&marioWeapon_KururinJump2), 131328, LW(5))
         CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
         CALL(btlevtcmd_GetResultPrizeLv, LW(3), 1, LW(6))
         CALL(btlevtcmd_ACSuccessEffect, LW(6), LW(0), LW(1), LW(2))
-        CALL(btlevtcmd_AudienceDeclareACResult, PTR(marioWeapon_KururinJump2), LW(6))
+        CALL(btlevtcmd_AudienceDeclareACResult, PTR(&marioWeapon_KururinJump2), LW(6))
         CALL(evt_btl_camera_set_mode, 0, 0)
         CALL(btlevtcmd_StopAC)
         CALL(evt_audience_ap_recovery)
@@ -1730,9 +4707,9 @@ static EVT_BEGIN(marioAttackEvent_KururinJump)
         CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 8)
         CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 8, -1)
     ELSE
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(marioWeapon_KururinJump2), 256, LW(5))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&marioWeapon_KururinJump2), 256, LW(5))
         CALL(btlevtcmd_GetResultPrizeLv, LW(3), 0, LW(6))
-        CALL(btlevtcmd_AudienceDeclareACResult, PTR(marioWeapon_KururinJump2), LW(6))
+        CALL(btlevtcmd_AudienceDeclareACResult, PTR(&marioWeapon_KururinJump2), LW(6))
         CALL(evt_btl_camera_set_mode, 0, 0)
         CALL(btlevtcmd_StopAC)
         CALL(evt_audience_ap_recovery)
@@ -1853,7 +4830,7 @@ EVT_BEGIN(marioAttackEvent_JyabaraJump)
         DELETE_EVENT(LW(14))
         DELETE_EVENT(LW(15))
         CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
-        CALL(btlevtcmd_WeaponAftereffect, PTR(marioWeapon_JyabaraJumpFailed))
+        CALL(btlevtcmd_WeaponAftereffect, PTR(&marioWeapon_JyabaraJumpFailed))
         CALL(btlevtcmd_StopAC)
         CALL(evt_btl_camera_shake_h, 0, 2, 0, 10, 13)
         BEGIN_SIBLING_EVENT
@@ -2673,7 +5650,7 @@ EVT_BEGIN(marioAttackEvent_TatsumakiJump)
             SET_VALUE(LW(6), LW(3))
             CALL(_tatsumaki_effect, -2)
             SET_VALUE(LW(0), LW(15))
-            CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(badgeWeapon_TatsumakiJumpInvolved))
+            CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(&badgeWeapon_TatsumakiJumpInvolved))
             CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
             LABEL(50)
             IF_INT_EQUAL(LW(3), -1)
@@ -2682,7 +5659,7 @@ EVT_BEGIN(marioAttackEvent_TatsumakiJump)
             IF_INT_EQUAL(LW(3), LW(6))
                 GOTO(58)
             END_IF
-            CALL(btlevtcmd_PreCheckDamage, -5, LW(3), LW(4), PTR(badgeWeapon_TatsumakiJumpInvolved), 256, LW(5))
+            CALL(btlevtcmd_PreCheckDamage, -5, LW(3), LW(4), PTR(&badgeWeapon_TatsumakiJumpInvolved), 256, LW(5))
             SWITCH(LW(5))
                 CASE_EQUAL(2)
                 CALL(btlevtcmd_StartAvoid, LW(3), 40)
@@ -2694,12 +5671,12 @@ EVT_BEGIN(marioAttackEvent_TatsumakiJump)
                 CASE_EQUAL(1)
                 CALL(btlevtcmd_GetResultAC, LW(0))
                 IF_BITS_SET(LW(0), 2)
-                    CALL(btlevtcmd_CheckDamage, -5, LW(3), LW(4), PTR(badgeWeapon_TatsumakiJumpInvolved), 131328, LW(5))
+                    CALL(btlevtcmd_CheckDamage, -5, LW(3), LW(4), PTR(&badgeWeapon_TatsumakiJumpInvolved), 131328, LW(5))
                     CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
                     CALL(btlevtcmd_GetResultPrizeLv, LW(3), 1, LW(7))
                     CALL(btlevtcmd_ACSuccessEffect, LW(7), LW(0), LW(1), LW(2))
                 ELSE
-                    CALL(btlevtcmd_CheckDamage, -5, LW(3), LW(4), PTR(badgeWeapon_TatsumakiJumpInvolved), 256, LW(5))
+                    CALL(btlevtcmd_CheckDamage, -5, LW(3), LW(4), PTR(&badgeWeapon_TatsumakiJumpInvolved), 256, LW(5))
                 END_IF
                 CASE_DEFAULT
             END_SWITCH
@@ -3317,7 +6294,7 @@ EVT_END()
 EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(12), PTR(marioDefaultWeapon_Hammer))
+        SET_VALUE(LW(12), PTR(&marioDefaultWeapon_Hammer))
         CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
         IF_INT_EQUAL(LW(3), -1)
             GOTO(99)
@@ -3351,11 +6328,11 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
         CALL(btlevtcmd_GetWeaponActionLv, LW(12), LW(0))
         CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
         SWITCH(LW(12))
-            CASE_EQUAL(PTR(marioDefaultWeapon_Hammer))
+            CASE_EQUAL(PTR(&marioDefaultWeapon_Hammer))
             CALL(btlevtcmd_AcSetParamAll, 4, 25, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
-            CASE_EQUAL(PTR(badgeWeapon_ConfuseHammer))
+            CASE_EQUAL(PTR(&badgeWeapon_ConfuseHammer))
             CALL(btlevtcmd_AcSetParamAll, 4, 30, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
-            CASE_EQUAL(PTR(badgeWeapon_TsuranukiNaguri))
+            CASE_EQUAL(PTR(&badgeWeapon_TsuranukiNaguri))
             CALL(btlevtcmd_AcSetParamAll, 4, 30, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
             CASE_DEFAULT
             CALL(btlevtcmd_AcSetParamAll, 4, 40, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
@@ -3390,11 +6367,11 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
             CALL(btlevtcmd_GetWeaponActionLv, LW(12), LW(0))
             CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
             SWITCH(LW(12))
-                CASE_EQUAL(PTR(marioDefaultWeapon_Hammer))
+                CASE_EQUAL(PTR(&marioDefaultWeapon_Hammer))
                 CALL(btlevtcmd_AcSetParamAll, 4, 25, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
-                CASE_EQUAL(PTR(badgeWeapon_ConfuseHammer))
+                CASE_EQUAL(PTR(&badgeWeapon_ConfuseHammer))
                 CALL(btlevtcmd_AcSetParamAll, 4, 30, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
-                CASE_EQUAL(PTR(badgeWeapon_TsuranukiNaguri))
+                CASE_EQUAL(PTR(&badgeWeapon_TsuranukiNaguri))
                 CALL(btlevtcmd_AcSetParamAll, 4, 30, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
                 CASE_DEFAULT
                 CALL(btlevtcmd_AcSetParamAll, 4, 40, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
@@ -3422,7 +6399,7 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
         CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 256, LW(5))
         RETURN
     END_IF
-    IF_INT_EQUAL(LW(12), PTR(badgeWeapon_TsuranukiNaguri))
+    IF_INT_EQUAL(LW(12), PTR(&badgeWeapon_TsuranukiNaguri))
         CALL(_get_mario_hammer_lv, LW(0))
         SWITCH(LW(0))
             CASE_EQUAL(2)
@@ -3470,22 +6447,22 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
     END_SWITCH
     BEGIN_SIBLING_EVENT
         SWITCH(LW(12))
-            CASE_EQUAL(PTR(badgeWeapon_ConfuseHammer))
+            CASE_EQUAL(PTR(&badgeWeapon_ConfuseHammer))
             SET_VALUE(LW(13), 0)
-            CASE_EQUAL(PTR(badgeWeapon_TsuranukiNaguri))
+            CASE_EQUAL(PTR(&badgeWeapon_TsuranukiNaguri))
             SET_VALUE(LW(13), 2)
         END_SWITCH
         SWITCH(LW(12))
-            CASE_OR_EQUAL(PTR(badgeWeapon_ConfuseHammer))
-            CASE_OR_EQUAL(PTR(badgeWeapon_TsuranukiNaguri))
+            CASE_OR_EQUAL(PTR(&badgeWeapon_ConfuseHammer))
+            CASE_OR_EQUAL(PTR(&badgeWeapon_TsuranukiNaguri))
             CALL(btlevtcmd_ftomsec, 9, LW(0))
             WAIT_MS(LW(0))
             CALL(_hammer_star_effect, -2, LW(13))
             CASE_END
         END_SWITCH
         SWITCH(LW(12))
-            CASE_OR_EQUAL(PTR(badgeWeapon_ConfuseHammer))
-            CASE_OR_EQUAL(PTR(badgeWeapon_TsuranukiNaguri))
+            CASE_OR_EQUAL(PTR(&badgeWeapon_ConfuseHammer))
+            CASE_OR_EQUAL(PTR(&badgeWeapon_TsuranukiNaguri))
             CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
             CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_MARIO_HAMMER_SHINE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
             CASE_END
@@ -3507,7 +6484,7 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
     END_SWITCH
     CALL(btlevtcmd_AnimeChangePose, -2, 1, LW(2))
     WAIT_FRAMES(7)
-    IF_INT_EQUAL(LW(12), PTR(badgeWeapon_TsuranukiNaguri))
+    IF_INT_EQUAL(LW(12), PTR(&badgeWeapon_TsuranukiNaguri))
         CALL(evt_snd_sfxon, STRING("SFX_MARIO_HAMMER_TURANUKI1"), 0)
     ELSE
         CALL(_get_mario_hammer_lv, LW(0))
@@ -3566,7 +6543,7 @@ EVT_BEGIN(marioAttackEvent_NormalHammer_Core)
     IF_INT_GREATER_OR_EQUAL(LW(0), 1)
         WAIT_FRAMES(LW(0))
     END_IF
-    IF_INT_EQUAL(LW(12), PTR(badgeWeapon_TsuranukiNaguri))
+    IF_INT_EQUAL(LW(12), PTR(&badgeWeapon_TsuranukiNaguri))
         CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("M_H_16"))
     ELSE
         CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("M_S_1"))
@@ -3734,8 +6711,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     CALL(btlevtcmd_GetWeaponActionLv, LW(12), LW(0))
     CALL(btlevtcmd_AcSetDifficulty, -2, LW(0))
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         CALL(btlevtcmd_AcSetParamAll, 10, 8, 0, 0, 0, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
         CASE_END
         CASE_DEFAULT
@@ -3785,12 +6762,12 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, LW(0))
     CALL(_paper_light_off, -2, 1)
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_KaitenHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackKaitenHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_KaitenHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackKaitenHammer))
         CALL(btlevtcmd_snd_se, -2, STRING("SFX_MARIO_HAMMER_KAITEN1"), EVTDAT_POINTER_MAX, 0, LW(15))
         CASE_END
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         CALL(btlevtcmd_snd_se, -2, STRING("SFX_MARIO_HAMMER_ULTRA1"), EVTDAT_POINTER_MAX, 0, LW(15))
         CASE_END
         CASE_DEFAULT
@@ -3801,11 +6778,11 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     CALL(btlevtcmd_ResultAC)
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_KaitenHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackKaitenHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_KaitenHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackKaitenHammer))
         CALL(evt_snd_sfxoff, LW(15))
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         CALL(evt_snd_sfxoff, LW(15))
         CASE_END
         CASE_END
@@ -3835,8 +6812,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
         GOTO(90)
     END_IF
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(12), 131328, LW(5))
         CASE_END
         CASE_DEFAULT
@@ -3850,8 +6827,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     CALL(btlevtcmd_StopAC)
     CALL(btlevtcmd_WeaponAftereffect, LW(12))
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         SET_VALUE(LW(0), 1)
         CASE_END
         CASE_DEFAULT
@@ -3866,8 +6843,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
         BEGIN_SIBLING_EVENT_GET_ID(LW(9))
             LOOP(6)
                 SWITCH(LW(12))
-                    CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-                    CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+                    CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+                    CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
                     CALL(btlevtcmd_snd_se, -2, STRING("SFX_MARIO_HAMMER_ULTRA2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
                     CASE_END
                 END_SWITCH
@@ -3926,8 +6903,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
             BEGIN_SIBLING_EVENT_GET_ID(LW(9))
                 LOOP(6)
                     SWITCH(LW(12))
-                        CASE_OR_EQUAL(PTR(marioWeapon_KaitenHammer))
-                        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackKaitenHammer))
+                        CASE_OR_EQUAL(PTR(&marioWeapon_KaitenHammer))
+                        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackKaitenHammer))
                         CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_MARIO_HAMMER_KAITEN2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
                         CASE_END
                     END_SWITCH
@@ -3962,8 +6939,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
                 MULTIPLY(LW(0), 36)
                 LOOP(6)
                     SWITCH(LW(12))
-                        CASE_OR_EQUAL(PTR(marioWeapon_KaitenHammer))
-                        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackKaitenHammer))
+                        CASE_OR_EQUAL(PTR(&marioWeapon_KaitenHammer))
+                        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackKaitenHammer))
                         CALL(btlevtcmd_snd_se, -2, STRING("SFX_BTL_MARIO_HAMMER_KAITEN2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
                         CASE_END
                     END_SWITCH
@@ -3996,8 +6973,8 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
     CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
     CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
     SWITCH(LW(12))
-        CASE_OR_EQUAL(PTR(marioWeapon_UltraHammer))
-        CASE_OR_EQUAL(PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        CASE_OR_EQUAL(PTR(&marioWeapon_UltraHammer))
+        CASE_OR_EQUAL(PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
         CASE_END
         CASE_DEFAULT
         GOTO(99)
@@ -4029,7 +7006,7 @@ static EVT_BEGIN(marioAttackEvent_KaitenHammer)
         WAIT_FRAMES(1)
         GOTO(98)
     END_IF
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(marioWeapon_UltraHammerFinish), 131328, LW(5))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&marioWeapon_UltraHammerFinish), 131328, LW(5))
     LABEL(99)
     CALL(evt_audience_ap_recovery)
     CALL(btlevtcmd_InviteApInfoReport)
@@ -4042,9 +7019,9 @@ EVT_END()
 EVT_BEGIN(marioAttackEvent_FirstAttackKaitenHammer)
     CALL(_get_mario_hammer_lv, LW(0))
     IF_INT_NOT_EQUAL(LW(0), 3)
-        SET_VALUE(LW(12), PTR(marioDefaultWeapon_FirstAttackKaitenHammer))
+        SET_VALUE(LW(12), PTR(&marioDefaultWeapon_FirstAttackKaitenHammer))
     ELSE
-        SET_VALUE(LW(12), PTR(marioDefaultWeapon_FirstAttackUltraHammer))
+        SET_VALUE(LW(12), PTR(&marioDefaultWeapon_FirstAttackUltraHammer))
     END_IF
     CALL_CHILD(marioAttackEvent_KaitenHammer)
     RETURN
@@ -4856,7 +7833,7 @@ EVT_BEGIN(marioAttackEvent_FireNaguri)
         CALL(evt_btl_camera_off_posoffset_manual, 0)
         CALL(btlevtcmd_GetUnitId, -2, LW(6))
         CALL(btlevtcmd_GetEnemyBelong, LW(6), LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(badgeWeapon_FireNaguriFailed))
+        CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(&badgeWeapon_FireNaguriFailed))
         CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
         LABEL(15)
         IF_INT_EQUAL(LW(3), -1)
@@ -4871,7 +7848,7 @@ EVT_BEGIN(marioAttackEvent_FireNaguri)
         LABEL(17)
         CALL(btlevtcmd_GetUnitId, -2, LW(6))
         CALL(btlevtcmd_GetEnemyBelong, LW(6), LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(badgeWeapon_FireNaguriFailed))
+        CALL(btlevtcmd_SamplingEnemy, -5, LW(0), PTR(&badgeWeapon_FireNaguriFailed))
         CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
         LABEL(20)
         IF_INT_EQUAL(LW(3), -1)
@@ -5218,13 +8195,13 @@ EVT_BEGIN(marioAttackEvent_MajinaiExpUp)
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_GatsunJump)
-    SET_VALUE(LW(12), PTR(badgeWeapon_GatsunJump))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_GatsunJump))
     CALL_CHILD(marioAttackEvent_GatsuDokaJump)
     RETURN
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_DokanJump)
-    SET_VALUE(LW(12), PTR(badgeWeapon_DokanJump))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_DokanJump))
     CALL_CHILD(marioAttackEvent_GatsuDokaJump)
     RETURN
 EVT_END()
@@ -5269,25 +8246,25 @@ EVT_BEGIN(marioAttackEvent_TsuranukiHammer)
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_NormalCharge)
-    SET_VALUE(LW(12), PTR(badgeWeapon_Charge))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_Charge))
     CALL_CHILD(_NormalCharge_core)
     RETURN
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_NormalChargeP)
-    SET_VALUE(LW(12), PTR(badgeWeapon_ChargeP))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_ChargeP))
     CALL_CHILD(_NormalCharge_core)
     RETURN
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_SuperCharge)
-    SET_VALUE(LW(12), PTR(badgeWeapon_SuperCharge))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_SuperCharge))
     CALL_CHILD(_SuperCharge_core)
     RETURN
 EVT_END()
 
 EVT_BEGIN(marioAttackEvent_SuperChargeP)
-    SET_VALUE(LW(12), PTR(badgeWeapon_SuperChargeP))
+    SET_VALUE(LW(12), PTR(&badgeWeapon_SuperChargeP))
     CALL_CHILD(_SuperCharge_core)
     RETURN
 EVT_END()

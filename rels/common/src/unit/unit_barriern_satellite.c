@@ -6,16 +6,18 @@
 #include "battle/battle_sub.h"
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 static USER_FUNC(battleGetBarriernSatelliteInitPos);
-static u32 parts[114];
-static u32 regist[6];
-static u32 pose_table[34];
-static u32 data_table[2];
+static BattleUnitKindPart parts[6];
+static BattleVulnerableStatus regist;
+static BattleDispPose pose_table[17];
+static BattleDataEntry data_table[1];
 static s32 init_event[29];
 static s32 damage_event[10];
 static s32 unison_phase_event[5];
@@ -41,88 +43,204 @@ extend_data(barriern_satellite_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x0000001E, (u32)"btl_un_barriern_satellite", 0x00010000, 0x01010000,
-    0x00460032, 0x270F0010, 0x00100000, 0x00080000,
-    0x00000000, 0x00000000, 0x00000000, 0xFFFDFFFA,
-    0x00000000, 0x00000000, 0x00000000, 0x41000000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x40C00000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x41800000, 0x41800000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_BARRI_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000004,
-    (u32)&regist, 0x06000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_MINI_YUX,               // mUnitType
+    "btl_un_barriern_satellite", // name
+    1,                           // maxHp
+    0,                           // maxFp
+    1,                           // mDangerHP
+    1,                           // mPerilHP
+    0,                           // mLevel
+    0,                           // mBonusExp
+    0,                           // bonusCoinRolls
+    70,                          // bonusCoinRate
+    0,                           // baseCoin
+    50,                          // field_0x13
+    9999,                        // field_0x14
+    16,                          // width
+    16,                          // height
+    { 0, 8 },                    // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },        // centerOffset
+    { -3, -6 },                  // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },        // talkTogeBaseOffset
+    { 8.0f, 0.0f, -10.0f },      // field_0x3C
+    { 0.0f, 0.0f, 0.0f },        // burnFlameOffset
+    0.0f,                        // field_0x54
+    0.0f,                        // field_0x58
+    { 8.0f, 0.0f, 0.0f },        // bintaHitOffset
+    { 5.0f, 6.0f, 0.0f },        // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },        // cutBaseOffset
+    16.0f,                       // cutWidth
+    16.0f,                       // cutHeight
+    0,                           // turnOrder
+    0,                           // turnOrderVariance
+    0,                           // swallowRate
+    2,                           // swallowAttribute
+    100,                         // field_0x8C
+    20,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },        // starPointDispOffset
+    "SFX_ENM_BARRI_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",      // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
+    0x00000004,                  // attributeFlags
+    &regist,                     // vulnStatus
+    6,                           // numParts
+    parts,                       // mParts
+    init_event,                  // initEvtScript
+    data_table,                  // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitKindPart parts[6] = {
+    {
+        1,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x00600009,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
+    {
+        2,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x13010000,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
+    {
+        3,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x13010000,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
+    {
+        4,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x13010000,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
+    {
+        5,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x13010000,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
+    {
+        6,                           // partNum
+        "btl_un_barriern_satellite", // partName
+        "c_baria",                   // modelName
+        { 0.0f, 0.0f, 0.0f },        // positionOffset
+        { 0.0f, 5.0f, 0.0f },        // hitBaseOffset
+        { 0.0f, 10.0f, 0.0f },       // hitCursorBaseOffset
+        20,                          // field_0x30
+        30,                          // field_0x32
+        255,                         // baseAlpha
+        &defence,                    // defense
+        &defence_attr,               // defenseAttr
+        0x13010000,                  // attributes
+        0,                           // counterAttributes
+        pose_table,                  // poseTable
+    },
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleVulnerableStatus regist = {
+    80,  // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    0,   // poisonRate
+    90,  // confuseRate
+    100, // electricRate
+    0,   // burnRate
+    0,   // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    90,  // allergicRate
+    0,   // frightRate
+    100, // galeForceRate
+    100, // fastRate
+    90,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    100, // instaKillRate
 };
 
-// TODO: type
-static u32 parts[114] = {
-    0x00000001, (u32)"btl_un_barriern_satellite", (u32)"c_baria", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x40A00000,
-    0x00000000, 0x00000000, 0x41200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00600009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_barriern_satellite", (u32)"c_baria", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x00000000,
-    0x00000000, 0x41200000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_barriern_satellite",
-    (u32)"c_baria", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x40A00000, 0x00000000, 0x00000000,
-    0x41200000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table, 0x00000004, (u32)"btl_un_barriern_satellite", (u32)"c_baria",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x40A00000, 0x00000000, 0x00000000, 0x41200000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x13010000, 0x00000000, (u32)&pose_table,
-    0x00000005, (u32)"btl_un_barriern_satellite", (u32)"c_baria", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x40A00000,
-    0x00000000, 0x00000000, 0x41200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x13010000, 0x00000000, (u32)&pose_table, 0x00000006,
-    (u32)"btl_un_barriern_satellite", (u32)"c_baria", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x00000000,
-    0x00000000, 0x41200000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table,
+static BattleDispPose pose_table[17] = {
+    { 0x01, "N_2" },
+    { 0x02, "Y_2" },
+    { 0x09, "Y_2" },
+    { 0x05, "K_2" },
+    { 0x04, "X_2" },
+    { 0x03, "X_2" },
+    { 0x1C, "S_2" },
+    { 0x1D, "Q_2" },
+    { 0x1E, "Q_2" },
+    { 0x1F, "S_2" },
+    { 0x27, "D_2" },
+    { 0x2A, "R_2" },
+    { 0x29, "R_2" },
+    { 0x28, "W_2" },
+    { 0x38, "X_2" },
+    { 0x39, "X_2" },
+    { 0x45, "S_2" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x50646400, 0x5A640000, 0x645A645A, 0x645F5A00,
-    0x64645A64, 0x64640000,
-};
-
-// TODO: type
-static u32 pose_table[34] = {
-    0x00000001, (u32)"N_2", 0x00000002, (u32)"Y_2",
-    0x00000009, (u32)"Y_2", 0x00000005, (u32)"K_2",
-    0x00000004, (u32)"X_2", 0x00000003, (u32)"X_2",
-    0x0000001C, (u32)"S_2", 0x0000001D, (u32)"Q_2",
-    0x0000001E, (u32)"Q_2", 0x0000001F, (u32)"S_2",
-    0x00000027, (u32)"D_2", 0x0000002A, (u32)"R_2",
-    0x00000029, (u32)"R_2", 0x00000028, (u32)"W_2",
-    0x00000038, (u32)"X_2", 0x00000039, (u32)"X_2",
-    0x00000045, (u32)"S_2",
-};
-
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(init_event)

@@ -57,19 +57,9 @@ extern BattleUnitKind unitdata_Mario;
 extern BattleUnitKind unit_system;
 
 // clang-format off
-BattleUnitSetup entryunit_mario = {
-    &unitdata_Mario,
-    { 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x02,
-      0xC2, 0xC8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0xC0, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-};
+BattleUnitSetup entryunit_mario = { &unitdata_Mario, 0, 0x04000002, { -100.0f, 0.0f, -5.0f }, 0, { 0, 0, 0, 0 }, NULL };
 
-BattleUnitSetup entryunit_system = {
-    &unit_system,
-    { 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x02,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
-};
+BattleUnitSetup entryunit_system = { &unit_system, 0, 0x04000002, { 0.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, NULL };
 // clang-format on
 
 u8 gap_08_80418974_sbss[4];
@@ -732,7 +722,7 @@ BattleUnit* BattleChangeParty(BattleWork* wp) {
 
 BOOL BattlePartyAnimeLoad(BattleUnitType partyId) {
     BattleUnitSetup* setup = &entryunit_party[partyId - 0xE0];
-    return animEffectAsync(setup->mUnitKindParams->mParts->partName, 1);
+    return animEffectAsync(setup->mUnitKindParams->mParts->modelName, 1);
 }
 
 BattleUnit* BattleGetPartnerPtr(BattleWork* work, BattleUnit* unit) {

@@ -35,17 +35,17 @@ extend_data(45,
 
 // animeArg3/animeArg4 hold animation names; BeroEntry types them s32, so they are cast here.
 static BeroEntry bero_data_a[] = {
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_a", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_a", "w_bero", 1, 1, "w_door_close", "w_door_open"},
     {NULL},
 };
 
 static BeroEntry bero_data_b[] = {
-    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_b", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_b", "w_bero", 1, 1, "w_door_close", "w_door_open"},
     {NULL},
 };
 
 static BeroEntry bero_data_c[] = {
-    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_c", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_c", "w_bero", 1, 1, "w_door_close", "w_door_open"},
     {NULL},
 };
 

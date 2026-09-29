@@ -24,8 +24,8 @@ typedef struct BeroEntry {
 	const char* nextareaArg2; //0x2C
 	u16 animeArg1; //0x30
 	u16 animeArg2; //0x32
-	s32 animeArg3; //0x34
-	s32 animeArg4; //0x38
+	void* animeArg3; //0x34, an event or a string, by anime type
+	void* animeArg4; //0x38
 } BeroEntry;
 
 EVT_DEF(evt_bero_info_run);

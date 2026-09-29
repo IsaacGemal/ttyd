@@ -9,14 +9,17 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(togenoko_getnum);
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[4];
-static u32 parts[19];
+static BattleUnitKindPart parts[1];
 static s32 init_event[37];
 static s32 damage_event[10];
 static s32 dmg_avoid_counter_thorn_head_event[61];
@@ -49,195 +52,487 @@ extend_data(141,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_togenoko[49] = {
-    0x0000000B, (u32)"btl_un_togenoko", 0x00060000, 0x01011A00,
-    0x02460232, 0x270F0024, 0x0032FFFC, 0x00320000,
-    0x00000000, 0x41C80000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41900000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41900000,
-    0x00000000, 0x00000000, 0x41500000, 0x42000000,
-    0x00000000, 0x00000000, 0x41C80000, 0x00000000,
-    0x42100000, 0x42480000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_TOGENOKO_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_togenoko = {
+    UNIT_KOOPATROL,              // mUnitType
+    "btl_un_togenoko",           // name
+    6,                           // maxHp
+    0,                           // maxFp
+    1,                           // mDangerHP
+    1,                           // mPerilHP
+    26,                          // mLevel
+    0,                           // mBonusExp
+    2,                           // bonusCoinRolls
+    70,                          // bonusCoinRate
+    2,                           // baseCoin
+    50,                          // field_0x13
+    9999,                        // field_0x14
+    36,                          // width
+    50,                          // height
+    { -4, 50 },                  // statusIconOffset
+    { 0.0f, 25.0f, 0.0f },       // centerOffset
+    { 0, 0 },                    // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },        // talkTogeBaseOffset
+    { 18.0f, 0.0f, -10.0f },     // field_0x3C
+    { 0.0f, 0.0f, 0.0f },        // burnFlameOffset
+    0.0f,                        // field_0x54
+    0.0f,                        // field_0x58
+    { 18.0f, 0.0f, 0.0f },       // bintaHitOffset
+    { 13.0f, 32.0f, 0.0f },      // kissHitOffset
+    { 0.0f, 25.0f, 0.0f },       // cutBaseOffset
+    36.0f,                       // cutWidth
+    50.0f,                       // cutHeight
+    0,                           // turnOrder
+    0,                           // turnOrderVariance
+    0,                           // swallowRate
+    2,                           // swallowAttribute
+    100,                         // field_0x8C
+    20,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },        // starPointDispOffset
+    "SFX_ENM_TOGENOKO_DAMAGED1", // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",      // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
+    0,                           // attributeFlags
+    &regist,                     // vulnStatus
+    1,                           // numParts
+    parts,                       // mParts
+    init_event,                  // initEvtScript
+    data_table,                  // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x02020202, 0x02000000,
+static BattleUnitDefense defence = { { 2, 2, 2, 2, 2 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    70,  // sleepRate
+    75,  // stopRate
+    75,  // dizzyRate
+    100, // poisonRate
+    75,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    80,  // allergicRate
+    70,  // frightRate
+    70,  // galeForceRate
+    100, // fastRate
+    80,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence_turn = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr_turn = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist_turn = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    100, // frightRate
+    100, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    100, // instaKillRate
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x464B4B64, 0x4B646446, 0x645A645A, 0x645F5046,
-    0x46645064, 0x645F0000,
+static BattleUnitDefense defence_guard = { { 99, 99, 99, 99, 99 } };
+
+static BattleUnitDefenseAttr defence_attr_guard = { { 2, 2, 2, 2, 2 } };
+
+static BattleVulnerableStatus regist_guard = {
+    100, // sleepRate
+    100, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    100, // frightRate
+    100, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    100, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_turn[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "S_1" },
+    { 0x27, "D_1" },
+    { 0x32, "A_1" },
+    { 0x2A, "R_1" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-static u32 defence_attr_turn[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table_turn[15] = {
+    { 0x01, "N_2" },
+    { 0x02, "Z_2" },
+    { 0x09, "Z_2" },
+    { 0x05, "K_2" },
+    { 0x04, "S_2" },
+    { 0x03, "S_2" },
+    { 0x1C, "S_2" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "D_1" },
+    { 0x27, "D_1" },
+    { 0x38, "S_2" },
+    { 0x39, "S_2" },
+    { 0x41, "S_2" },
+    { 0x45, "S_2" },
 };
 
-// TODO: type
-static u32 regist_turn[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646464,
-    0x64646464, 0x64640000,
+static BattleDispPose pose_table_guard[15] = {
+    { 0x01, "A_1" },
+    { 0x02, "A_1" },
+    { 0x09, "A_1" },
+    { 0x05, "A_1" },
+    { 0x04, "A_1" },
+    { 0x03, "A_1" },
+    { 0x1C, "A_1" },
+    { 0x1D, "A_1" },
+    { 0x1E, "A_1" },
+    { 0x1F, "A_1" },
+    { 0x27, "A_1" },
+    { 0x38, "A_1" },
+    { 0x39, "A_1" },
+    { 0x41, "A_1" },
+    { 0x45, "A_1" },
 };
 
-// TODO: type
-static u32 defence_guard[2] = {
-    0x63636363, 0x63000000,
-};
-
-// TODO: type
-static u32 defence_attr_guard[2] = {
-    0x02020202, 0x02000000,
-};
-
-// TODO: type
-static u32 regist_guard[6] = {
-    0x64646464, 0x64646464, 0x64646464, 0x64646464,
-    0x64646464, 0x64640000,
-};
-
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"S_1", 0x0000001D, (u32)"Q_1",
-    0x0000001E, (u32)"Q_1", 0x0000001F, (u32)"S_1",
-    0x00000027, (u32)"D_1", 0x00000032, (u32)"A_1",
-    0x0000002A, (u32)"R_1", 0x00000028, (u32)"W_1",
-    0x00000038, (u32)"X_1", 0x00000039, (u32)"X_1",
-    0x00000041, (u32)"T_1", 0x00000045, (u32)"S_1",
-};
-
-// TODO: type
-static u32 pose_table_turn[30] = {
-    0x00000001, (u32)"N_2", 0x00000002, (u32)"Z_2",
-    0x00000009, (u32)"Z_2", 0x00000005, (u32)"K_2",
-    0x00000004, (u32)"S_2", 0x00000003, (u32)"S_2",
-    0x0000001C, (u32)"S_2", 0x0000001D, (u32)"Q_1",
-    0x0000001E, (u32)"Q_1", 0x0000001F, (u32)"D_1",
-    0x00000027, (u32)"D_1", 0x00000038, (u32)"S_2",
-    0x00000039, (u32)"S_2", 0x00000041, (u32)"S_2",
-    0x00000045, (u32)"S_2",
-};
-
-// TODO: type
-static u32 pose_table_guard[30] = {
-    0x00000001, (u32)"A_1", 0x00000002, (u32)"A_1",
-    0x00000009, (u32)"A_1", 0x00000005, (u32)"A_1",
-    0x00000004, (u32)"A_1", 0x00000003, (u32)"A_1",
-    0x0000001C, (u32)"A_1", 0x0000001D, (u32)"A_1",
-    0x0000001E, (u32)"A_1", 0x0000001F, (u32)"A_1",
-    0x00000027, (u32)"A_1", 0x00000038, (u32)"A_1",
-    0x00000039, (u32)"A_1", 0x00000041, (u32)"A_1",
-    0x00000045, (u32)"A_1",
-};
-
-// TODO: type
-static u32 pose_table_guard_turn[30] = {
-    0x00000001, (u32)"G_1", 0x00000002, (u32)"G_1",
-    0x00000009, (u32)"G_1", 0x00000005, (u32)"G_1",
-    0x00000004, (u32)"G_1", 0x00000003, (u32)"G_1",
-    0x0000001C, (u32)"G_1", 0x0000001D, (u32)"G_1",
-    0x0000001E, (u32)"G_1", 0x0000001F, (u32)"G_1",
-    0x00000027, (u32)"G_1", 0x00000038, (u32)"G_1",
-    0x00000039, (u32)"G_1", 0x00000041, (u32)"G_1",
-    0x00000045, (u32)"G_1",
+static BattleDispPose pose_table_guard_turn[15] = {
+    { 0x01, "G_1" },
+    { 0x02, "G_1" },
+    { 0x09, "G_1" },
+    { 0x05, "G_1" },
+    { 0x04, "G_1" },
+    { 0x03, "G_1" },
+    { 0x1C, "G_1" },
+    { 0x1D, "G_1" },
+    { 0x1E, "G_1" },
+    { 0x1F, "G_1" },
+    { 0x27, "G_1" },
+    { 0x38, "G_1" },
+    { 0x39, "G_1" },
+    { 0x41, "G_1" },
+    { 0x45, "G_1" },
 };
 
 static BattleDataEntry data_table[4] = {
     { 0x0D, dmg_turn_event },
     { 0x25, dmg_avoid_counter_thorn_head_event },
     { 0x30, btldefaultevt_Dummy },
-    { 0x00, 0 },
+    { 0x00, NULL },
 };
 
 static BattleDataEntry data_table_turn[3] = {
     { 0x0D, dmg_turn_event },
     { 0x30, btldefaultevt_Dummy },
-    { 0x00, 0 },
+    { 0x00, NULL },
 };
 
 static BattleDataEntry data_table_guard[4] = {
     { 0x25, dmg_avoid_counter_thorn_head_event },
     { 0x0D, dmg_turn_event },
     { 0x30, btldefaultevt_Dummy },
-    { 0x00, 0 },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_togenoko", (u32)"c_togenoko", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42200000,
-    0x00000000, 0x00000000, 0x42480000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00001009, 0x00000001, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_togenoko",     // partName
+        "c_togenoko",          // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 40.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 50.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00001009,            // attributes
+        0x00000001,            // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 weapon_togenoko_normal_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00080302,
-    0x00000000, 0x00000087, 0x00000002, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_togenoko_normal_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    8,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_togenoko_shell_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20004004, 0x00080302,
-    0x00000000, 0x00000087, 0x000005FF, 0x00002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_togenoko_shell_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20004004,                               // targetPropertyFlags
+    0,                                        // element
+    8,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000005FF,                               // counterResistanceFlags
+    0x00002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_togenoko_charge[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01004020, 0x20000000, 0x00000302,
-    0x00000000, 0x00000108, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000002,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_togenoko_charge = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01004020,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000108,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    2,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(init_event)
@@ -282,9 +577,9 @@ static EVT_BEGIN(dmg_turn_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
     CALL(btlevtcmd_SetHitOffset, LW(10), LW(11), 0, -20, 0)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence_turn))
-    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(defence_attr_turn))
-    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(regist_turn))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence_turn))
+    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(&defence_attr_turn))
+    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(&regist_turn))
     CALL(btlevtcmd_GetUnitWork, -2, 0, LW(0))
     IF_INT_EQUAL(LW(0), 0)
         CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_turn))
@@ -317,9 +612,9 @@ static EVT_BEGIN(wakeup_event)
         CALL(btlevtcmd_StartWaitEvent, LW(10))
         RETURN
     END_IF
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence))
-    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(defence_attr))
-    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(regist))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence))
+    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(&defence_attr))
+    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(&regist))
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table))
     CALL(btlevtcmd_ChangeDataTable, LW(10), PTR(data_table))
     CALL(btlevtcmd_OffStatusFlag, LW(10), 1)
@@ -335,11 +630,8 @@ static EVT_BEGIN(wakeup_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 entry_togenoko[12] = {
-    (u32)&unit_togenoko, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_togenoko[1] = {
+    { &unit_togenoko, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 USER_FUNC(togenoko_getnum) {
@@ -361,7 +653,7 @@ USER_FUNC(togenoko_getnum) {
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(9), PTR(weapon_togenoko_normal_attack))
+        SET_VALUE(LW(9), PTR(&weapon_togenoko_normal_attack))
         CALL_CHILD(normal_attack_event)
         GOTO(99)
     END_IF
@@ -391,11 +683,11 @@ static EVT_BEGIN(attack_event)
             CALL(evt_sub_random, LW(0), LW(1))
             SET_VALUE(LW(0), 25)
             IF_INT_LESS(LW(1), LW(0))
-                SET_VALUE(LW(9), PTR(weapon_togenoko_normal_attack))
+                SET_VALUE(LW(9), PTR(&weapon_togenoko_normal_attack))
                 CALL_CHILD(normal_attack_event)
                 GOTO(99)
             END_IF
-            SET_VALUE(LW(9), PTR(weapon_togenoko_shell_attack))
+            SET_VALUE(LW(9), PTR(&weapon_togenoko_shell_attack))
             CALL_CHILD(shell_attack_event)
             GOTO(99)
         END_IF
@@ -468,19 +760,19 @@ static EVT_BEGIN(attack_event)
         CALL(evt_sub_random, LW(0), LW(1))
         SET_VALUE(LW(0), 25)
         IF_INT_LESS(LW(1), LW(0))
-            SET_VALUE(LW(9), PTR(weapon_togenoko_normal_attack))
+            SET_VALUE(LW(9), PTR(&weapon_togenoko_normal_attack))
             CALL_CHILD(normal_attack_event)
             GOTO(99)
         END_IF
         ADD(LW(0), 25)
         IF_INT_LESS(LW(1), LW(0))
-            SET_VALUE(LW(9), PTR(weapon_togenoko_shell_attack))
+            SET_VALUE(LW(9), PTR(&weapon_togenoko_shell_attack))
             CALL_CHILD(shell_attack_event)
             GOTO(99)
         END_IF
         ADD(LW(0), 25)
         IF_INT_LESS(LW(1), LW(0))
-            SET_VALUE(LW(9), PTR(weapon_togenoko_charge))
+            SET_VALUE(LW(9), PTR(&weapon_togenoko_charge))
             CALL_CHILD(charge_event)
             GOTO(99)
         END_IF
@@ -737,9 +1029,9 @@ EVT_END()
 static EVT_BEGIN(charge_event)
     SET_VALUE(LW(3), -2)
     SET_VALUE(LW(4), 1)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_togenoko_charge))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_togenoko_charge))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_togenoko_charge))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_togenoko_charge))
     CALL(evt_btl_camera_set_mode, 0, 7)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
@@ -760,8 +1052,8 @@ static EVT_BEGIN(charge_event)
         WAIT_FRAMES(60)
         CALL(evt_btl_camera_set_mode, 0, 0)
     END_INLINE_EVENT
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_togenoko_charge))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_togenoko_charge), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_togenoko_charge))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_togenoko_charge), 256, LW(5))
     RETURN
 EVT_END()
 
@@ -789,9 +1081,9 @@ static EVT_BEGIN(guard_event)
         WAIT_FRAMES(1)
     END_LOOP
     CALL(btlevtcmd_SetRotate, LW(10), 0, 0, 0)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence_guard))
-    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(defence_attr_guard))
-    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(regist_guard))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence_guard))
+    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(&defence_attr_guard))
+    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(&regist_guard))
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_guard))
     CALL(btlevtcmd_ChangeDataTable, LW(10), PTR(data_table_guard))
     CALL(btlevtcmd_SetUnitWork, LW(10), 0, 1)
@@ -813,9 +1105,9 @@ static EVT_BEGIN(guard_cancel_event)
     CALL(btlevtcmd_JumpSetting, LW(10), 20, 0, FLOAT(0.5f))
     CALL(btlevtcmd_JumpPosition, LW(10), LW(0), LW(1), LW(2), 20, -1)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_TOGENOKO_MOVE6"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence))
-    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(defence_attr))
-    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(regist))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence))
+    CALL(btlevtcmd_SetPartsDefenceAttrTable, LW(10), LW(11), PTR(&defence_attr))
+    CALL(btlevtcmd_SetRegistStatus, LW(10), PTR(&regist))
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table))
     CALL(btlevtcmd_ChangeDataTable, LW(10), PTR(data_table))
     CALL(btlevtcmd_SetUnitWork, LW(10), 0, 0)

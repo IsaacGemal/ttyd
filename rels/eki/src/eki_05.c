@@ -57,9 +57,9 @@ static EVT_BEGIN(w_open)
 EVT_END()
 
 static BeroEntry bero_data[] = {
-    {"n_bero", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_04", "s_bero", 5, 5, (s32)&n_close, (s32)&n_open},
+    {"n_bero", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_04", "s_bero", 5, 5, &n_close, &n_open},
     {"w_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_06", "e_bero_2", 1, 1, 0, 0},
-    {"w_bero_2", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_06", "e_bero_1", 5, 5, (s32)&w_close, (s32)&w_open},
+    {"w_bero_2", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_06", "e_bero_1", 5, 5, &w_close, &w_open},
     {NULL},
 };
 

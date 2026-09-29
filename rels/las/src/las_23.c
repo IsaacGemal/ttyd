@@ -79,16 +79,16 @@ static EVT_BEGIN(e2_door_open)
 EVT_END()
 
 static BeroEntry bero_entry_data[] = {
-    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_1", 5, 5, (s32)&w_door_close, (s32)&w_door_open},
-    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, (s32)&e1_door_close, (s32)&e1_door_open},
-    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, (s32)&e2_door_close, (s32)&e2_door_open},
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_1", 5, 5, &w_door_close, &w_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, &e1_door_close, &e1_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_25", "w_bero", 5, 5, &e2_door_close, &e2_door_open},
     {"n_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_22", "s_bero", 1, 1},
     {"n_bero_2", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_24", "s_bero_1", 1, 1},
     {NULL},
 };
 
 static BeroEntry w_bero_mapchg[] = {
-    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_2", 5, 5, (s32)&w_door_close, (s32)&w_door_open},
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_21", "e_bero_2", 5, 5, &w_door_close, &w_door_open},
 };
 
 static HitDamageReturn dmgRetPoint[] = {

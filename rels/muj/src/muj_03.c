@@ -48,20 +48,10 @@ EVT_BEGIN(muj_03_event_01)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"muj_02", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, (u32)&muj_03_event_01, 0xFFFFFFFF,
-    0x00000000, (u32)"muj_04", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[3] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "muj_02", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, muj_03_event_01, -1, NULL, "muj_04", "w_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(nigeru_suifu01)

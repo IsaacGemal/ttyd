@@ -20,6 +20,7 @@
 #include "data/item_data.h"
 #include <string.h>
 #include <stdio.h>
+#include "battle/battle_database_common.h"
 
 extern BattleWeapon badgeWeapon_2KaiItem;
 extern BattleWeapon badgeWeapon_3KaiItem;
@@ -162,12 +163,12 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	iconPos.y = screen.y;
 	iconPos.z = float_0_8041c2f0;
 	iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
-	len = (f32)strlen(msgSearch((char*)*(u32*)partner->mKindParams->field_0x4));
+	len = (f32)strlen(msgSearch((char*)partner->mKindParams->name));
 	xoff = float_6p25_8041c318 * len;
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d8, iconPos.x - xoff, float_80_8041c31c + iconPos.y,
 	                      float_12p5_8041c320 * len, float_32_8041c30c, float_10_8041c2e4);
 	FontDrawStart();
-	FontDrawString(msgSearch((char*)*(u32*)partner->mKindParams->field_0x4),
+	FontDrawString(msgSearch((char*)partner->mKindParams->name),
 	               float_3_8041c2ec + iconPos.x - xoff, float_77_8041c324 + iconPos.y);
 }
 
@@ -446,12 +447,12 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				_btlcmd_SelectWeaponDecide(wp, arg, cursor->field_0);
 				BattleCommandDisplay_TargetSelectMenuSetup(wp);
 				cmd->unk0 = 0xA;
-				if (!(*(u32*)&wcmd->mWeaponTable[cursor->field_0].mWeaponParams->field_64[0] & 0x200)) {
+				if (!(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x200)) {
 					BattleStageOnLightFriendInCommand();
 				}
-				if (!(*(u32*)&wcmd->mWeaponTable[cursor->field_0].mWeaponParams->field_64[0] & 0x4000) &&
-				    !(*(u32*)&wcmd->mWeaponTable[cursor->field_0].mWeaponParams->field_64[0] & 0x100) &&
-				    !(*(u32*)&wcmd->mWeaponTable[cursor->field_0].mWeaponParams->field_64[0] & 0x10)) {
+				if (!(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x4000) &&
+				    !(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x100) &&
+				    !(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x10)) {
 					BattleStageOnLightEnemyInCommand();
 				}
 				result = 1;
@@ -1209,7 +1210,7 @@ s32 _btlcmd_CheckWeaponTargetNum(BattleWork* wp, BattleUnit* unit, BattleWeapon*
 		return -1;
 	}
 	belong = BtlUnit_GetEnemyBelong(unit);
-	BattleSamplingEnemy(work, weapon, unit->unitId, belong, *(s32*)&weapon->field_64[0], *(s32*)&weapon->field_64[4], -wp->alliances[belong].attackDirection);
+	BattleSamplingEnemy(work, weapon, unit->unitId, belong, weapon->targetClassFlags, weapon->targetPropertyFlags, -wp->alliances[belong].attackDirection);
 	return *(s8*)&work[0xa6c];
 }
 
@@ -1324,15 +1325,15 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
 #ifdef MUST_MATCH
 	// the field is already s8; the no-op cast changes the scheduling (98.75% without it)
-	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
-	                    *(s32*)&weapon->field_64[4], (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
+	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, weapon->targetClassFlags,
+	                    weapon->targetPropertyFlags, (s32)(s8)wp->alliances[unit->mAlliance].attackDirection);
 #else
-	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, *(s32*)&weapon->field_64[0],
-	                    *(s32*)&weapon->field_64[4], wp->alliances[unit->mAlliance].attackDirection);
+	BattleSamplingEnemy(work, weapon, wp->activeUnitId, belong, weapon->targetClassFlags,
+	                    weapon->targetPropertyFlags, wp->alliances[unit->mAlliance].attackDirection);
 #endif
 
 	work[0xAB7] = 0;
-	if (*(s32*)&weapon->field_64[4] & 0x30000000) {
+	if (weapon->targetPropertyFlags & 0x30000000) {
 		s8 ownBelong;
 
 		selected = -1;
@@ -1340,7 +1341,7 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 		for (i = 0; i < *(s8*)&work[0xA6C]; i++) {
 			s32 offset = ((s8)work[0xA6D + i]) * 0x24 + 4;
 
-			if (*(s32*)&weapon->field_64[4] & 0x10000000) {
+			if (weapon->targetPropertyFlags & 0x10000000) {
 				s32 uid = *(s16*)(work + offset);
 
 				if (ownBelong == BtlUnit_GetBelong(BattleGetUnitPtr(wp, uid))) {

@@ -67,8 +67,8 @@ static BeroEntry bero_entry_data[2] = {
         "w_bero", 0x0001, 0x000A, 0x00004E20,
         0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
         NULL, 0xFFFFFFFF, NULL, "aji_01",
-        "e_bero_2", 0x0005, 0x0005, (s32)w_door_close,
-        (s32)w_door_open,
+        "e_bero_2", 0x0005, 0x0005, w_door_close,
+        w_door_open,
     },
 };
 

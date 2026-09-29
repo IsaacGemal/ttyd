@@ -7,12 +7,15 @@
 #include "evt/evt_eff.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-static u32 data_table[4];
-static u32 parts[19];
-static u32 regist[6];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts[1];
+static BattleVulnerableStatus regist;
 static s32 init_event[42];
 static s32 damage_event[58];
 static s32 change_spark_event[70];
@@ -41,114 +44,308 @@ extend_data(bomhei_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x0000002B, (u32)"btl_un_bomhei", 0x00040000, 0x01010C00,
-    0x01460132, 0x270F0020, 0x001E0004, 0x001E0000,
-    0x00000000, 0x41700000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41800000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41800000,
-    0x00000000, 0x00000000, 0x41300000, 0x41800000,
-    0x00000000, 0x40000000, 0x41700000, 0x00000000,
-    0x42000000, 0x41F00000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_BOMB_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_BOB_OMB,               // mUnitType
+    "btl_un_bomhei",            // name
+    4,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    12,                         // mLevel
+    0,                          // mBonusExp
+    1,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    1,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    32,                         // width
+    30,                         // height
+    { 4, 30 },                  // statusIconOffset
+    { 0.0f, 15.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 16.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 16.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 11.0f, 16.0f, 0.0f },     // kissHitOffset
+    { 2.0f, 15.0f, 0.0f },      // cutBaseOffset
+    32.0f,                      // cutWidth
+    30.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_BOMB_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x01010101, 0x01000000,
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleDispPose pose_table[18] = {
+    { 0x01, "BOM_N_1" },
+    { 0x02, "BOM_Y_1" },
+    { 0x09, "BOM_Y_1" },
+    { 0x05, "BOM_K_1" },
+    { 0x04, "BOM_X_1" },
+    { 0x03, "BOM_X_1" },
+    { 0x1C, "BOM_S_1" },
+    { 0x1D, "BOM_Q_1" },
+    { 0x1E, "BOM_Q_1" },
+    { 0x1F, "BOM_S_1" },
+    { 0x27, "BOM_D_1" },
+    { 0x32, "BOM_A_1" },
+    { 0x2A, "BOM_R_1" },
+    { 0x28, "BOM_W_1" },
+    { 0x38, "BOM_X_1" },
+    { 0x39, "BOM_X_1" },
+    { 0x41, "BOM_T_1" },
+    { 0x45, "BOM_S_1" },
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table_spark[18] = {
+    { 0x01, "BOM_N_2" },
+    { 0x02, "BOM_Y_2" },
+    { 0x09, "BOM_Y_2" },
+    { 0x05, "BOM_K_2" },
+    { 0x04, "BOM_X_2" },
+    { 0x03, "BOM_X_2" },
+    { 0x1C, "BOM_S_2" },
+    { 0x1D, "BOM_Q_2" },
+    { 0x1E, "BOM_Q_2" },
+    { 0x1F, "BOM_S_2" },
+    { 0x27, "BOM_D_2" },
+    { 0x32, "BOM_A_2" },
+    { 0x2A, "BOM_R_2" },
+    { 0x28, "BOM_W_2" },
+    { 0x38, "BOM_X_2" },
+    { 0x39, "BOM_X_2" },
+    { 0x41, "BOM_T_2" },
+    { 0x45, "BOM_S_2" },
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"BOM_N_1", 0x00000002, (u32)"BOM_Y_1",
-    0x00000009, (u32)"BOM_Y_1", 0x00000005, (u32)"BOM_K_1",
-    0x00000004, (u32)"BOM_X_1", 0x00000003, (u32)"BOM_X_1",
-    0x0000001C, (u32)"BOM_S_1", 0x0000001D, (u32)"BOM_Q_1",
-    0x0000001E, (u32)"BOM_Q_1", 0x0000001F, (u32)"BOM_S_1",
-    0x00000027, (u32)"BOM_D_1", 0x00000032, (u32)"BOM_A_1",
-    0x0000002A, (u32)"BOM_R_1", 0x00000028, (u32)"BOM_W_1",
-    0x00000038, (u32)"BOM_X_1", 0x00000039, (u32)"BOM_X_1",
-    0x00000041, (u32)"BOM_T_1", 0x00000045, (u32)"BOM_S_1",
+static BattleDataEntry data_table[2] = {
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table_spark[36] = {
-    0x00000001, (u32)"BOM_N_2", 0x00000002, (u32)"BOM_Y_2",
-    0x00000009, (u32)"BOM_Y_2", 0x00000005, (u32)"BOM_K_2",
-    0x00000004, (u32)"BOM_X_2", 0x00000003, (u32)"BOM_X_2",
-    0x0000001C, (u32)"BOM_S_2", 0x0000001D, (u32)"BOM_Q_2",
-    0x0000001E, (u32)"BOM_Q_2", 0x0000001F, (u32)"BOM_S_2",
-    0x00000027, (u32)"BOM_D_2", 0x00000032, (u32)"BOM_A_2",
-    0x0000002A, (u32)"BOM_R_2", 0x00000028, (u32)"BOM_W_2",
-    0x00000038, (u32)"BOM_X_2", 0x00000039, (u32)"BOM_X_2",
-    0x00000041, (u32)"BOM_T_2", 0x00000045, (u32)"BOM_S_2",
+static BattleDataEntry data_table_spark[2] = {
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_bomhei",       // partName
+        "c_bomhey",            // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0x00001000,            // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table_spark[4] = {
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleVulnerableStatus regist = {
+    70,  // sleepRate
+    100, // stopRate
+    70,  // dizzyRate
+    0,   // poisonRate
+    70,  // confuseRate
+    150, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    80,  // allergicRate
+    90,  // frightRate
+    80,  // galeForceRate
+    100, // fastRate
+    80,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_bomhei", (u32)"c_bomhey", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00001000, (u32)&pose_table,
+static BattleWeapon weapon_bomhei_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21004004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0,                                        // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x46644600, 0x46966464, 0x645A645A, 0x645F505A,
-    0x50645064, 0x645F0000,
-};
-
-// TODO: type
-static u32 weapon_bomhei_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21004004, 0x00000302,
-    0x00000000, 0x00000087, 0x00000000, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_bomhei_bomb[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21004004, 0x00000302,
-    0x00000000, 0x00002087, 0x000007FF, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00191964, 0x00000000, 0x00000000,
+static BattleWeapon weapon_bomhei_bomb = {
+    NULL,                                       // name
+    0,                                          // icon
+    ITEM_NULL,                                  // item
+    NULL,                                       // description
+    100,                                        // baseAccuracy
+    0,                                          // baseFpCost
+    0,                                          // baseSpCost
+    2,                                          // superguardType
+    1.0f,                                       // field_0x14
+    1,                                          // mStylishCommandMultiplier
+    1,                                          // field_0x19
+    1,                                          // mBingoSlotChance
+    1,                                          // field_0x1B
+    weaponGetPowerDefault,                      // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+    NULL,                                       // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+    0x01101260,                                 // targetClassFlags
+    0x21004004,                                 // targetPropertyFlags
+    0,                                          // element
+    0,                                          // field_0x6D
+    3,                                          // actionLevel
+    2,                                          // field_0x6F
+    NULL,                                       // acHelpMsg
+    0x00002087,                                 // special
+    0x000007FF,                                 // counterResistanceFlags
+    0x00002004,                                 // targetWeightingFlags
+    0,                                          // sleepChance
+    0,                                          // sleepTime
+    0,                                          // stopChance
+    0,                                          // stopTime
+    0,                                          // dizzyChance
+    0,                                          // dizzyTime
+    0,                                          // poisonChance
+    0,                                          // poisonTime
+    0,                                          // poisonStrength
+    0,                                          // confuseChance
+    0,                                          // confuseTime
+    0,                                          // electricChance
+    0,                                          // electricTime
+    0,                                          // dodgyChance
+    0,                                          // dodgyTime
+    0,                                          // burnChance
+    0,                                          // burnTime
+    0,                                          // freezeChance
+    0,                                          // freezeTime
+    0,                                          // sizeChangeChance
+    0,                                          // sizeChangeTime
+    0,                                          // sizeChangeStrength
+    0,                                          // atkChangeChance
+    0,                                          // atkChangeTime
+    0,                                          // atkChangeStrength
+    0,                                          // defChangeChance
+    0,                                          // defChangeTime
+    0,                                          // defChangeStrength
+    0,                                          // allergicChance
+    0,                                          // allergicTime
+    0,                                          // ohkoChance
+    0,                                          // chargeStrength
+    0,                                          // fastChance
+    0,                                          // fastTime
+    0,                                          // slowChance
+    0,                                          // slowTime
+    0,                                          // frightChance
+    0,                                          // galeForceChance
+    0,                                          // paybackTime
+    0,                                          // holdFastTime
+    0,                                          // invisibleChance
+    0,                                          // invisibleTime
+    0,                                          // hpRegenTime
+    0,                                          // hpRegenStrength
+    0,                                          // fpRegenTime
+    0,                                          // fpRegenStrength
+    NULL,                                       // mAttackEvtScript
+    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(bomb_event)
@@ -250,8 +447,8 @@ static EVT_BEGIN(attack_event)
         RETURN
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_bomhei_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_bomhei_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_bomhei_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_bomhei_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -264,10 +461,10 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_bomhei_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_bomhei_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_bomhei_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_bomhei_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BOMB_MOVE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -284,7 +481,7 @@ static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 10)
     CALL(btlevtcmd_MovePosition, -2, LW(0), 0, LW(2), 0, -1, 0)
     CALL(evt_btl_camera_set_mode, 0, 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_bomhei_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_bomhei_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -324,8 +521,8 @@ static EVT_BEGIN(attack_event)
     WAIT_MS(500)
     GOTO(98)
     LABEL(91)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_bomhei_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_bomhei_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_bomhei_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_bomhei_attack), 256, LW(5))
     CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(2.0f), FLOAT(0.5f))
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 75)
@@ -375,8 +572,8 @@ static EVT_BEGIN(attack_event_spark)
         RETURN
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_bomhei_bomb))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_bomhei_bomb), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_bomhei_bomb))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_bomhei_bomb), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -389,10 +586,10 @@ static EVT_BEGIN(attack_event_spark)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_bomhei_bomb))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_bomhei_bomb))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_bomhei_bomb))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_bomhei_bomb))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BOMB_MOVE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -408,7 +605,7 @@ static EVT_BEGIN(attack_event_spark)
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 10)
     CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_bomhei_bomb), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_bomhei_bomb), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -440,8 +637,8 @@ static EVT_BEGIN(attack_event_spark)
     WAIT_MS(1000)
     RETURN
     LABEL(91)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_bomhei_bomb))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_bomhei_bomb), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_bomhei_bomb))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_bomhei_bomb), 256, LW(5))
     SET_VALUE(LW(15), 0)
     CALL_CHILD(bomb_event)
     CALL(evt_btl_camera_set_mode, 0, 0)

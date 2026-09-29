@@ -55,7 +55,7 @@ static BeroEntry bero_oshimodo[] = {
 static BeroEntry bero_entry_data[] = {
     {"dokan", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, "usu_00", "dokan_1", 1, 1},
     {"s_bero", 1, 1, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_07", "n_bero", 2, 2,
-     (s32)"door", 0},
+     "door", 0},
     {NULL},
 };
 

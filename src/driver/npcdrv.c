@@ -1398,8 +1398,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     NpcBattleInfo* info = &npc->battleInfo;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
-    NpcItemDropEntry* list;
-    NpcItemDropEntry* d;
+    ItemDropData* list;
+    ItemDropData* d;
     BattleUnitSetup* enemy;
     s8* p;
     s32 evt;
@@ -1413,10 +1413,10 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     if (setup == NULL) {
         return;
     }
-    if (*(u32*)((u8*)setup + 0x0) == 0) {
+    if ((u32)setup->name == 0) {
         return;
     }
-    *(s32*)((u8*)info + 0xAC) = *(s32*)((u8*)setup + 0x1C);
+    *(s32*)((u8*)info + 0xAC) = setup->field_0x1C;
     if (*(s32*)((u8*)info + 0xAC) == 0 || *(s32*)((u8*)info + 0xAC) < 0 ||
         *(s32*)((u8*)info + 0xAC) >= 3) {
         p = (s8*)setup;
@@ -1425,21 +1425,21 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
             p += 2;
         }
     }
-    info->field_4 = *(s32*)((u8*)setup + 0x18);
-    *(s32*)((u8*)info + 0x8) = *(s32*)((u8*)setup + 0x8);
+    info->field_4 = setup->field_0x18;
+    *(s32*)((u8*)info + 0x8) = setup->field_0x8;
     info->itemDropped = 0;
     info->heartsDropped = 0;
     info->flowersDropped = 0;
-    *(s32*)((u8*)info + 0xC0) = *(s32*)((u8*)setup + 0x40);
-    evt = *(s32*)((u8*)setup + 0xC);
+    *(s32*)((u8*)info + 0xC0) = (s32)setup->music;
+    evt = setup->flag;
     if (evt >= GSWF(0) && evt <= EVTDAT_GSWF_MAX) {
         if (swGet(evt + EVTDAT_GSWF_BASE)) {
-            sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x10);
+            sel = setup->onLoadouts;
         } else {
-            sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x14);
+            sel = setup->offLoadouts;
         }
     } else {
-        sel = *(NpcBattleSetupEntry**)((u8*)setup + 0x14);
+        sel = setup->offLoadouts;
     }
     info->groupSetup = NULL;
     if (sel != NULL) {
@@ -1455,7 +1455,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                 sel++;
             }
             info->groupSetup = sel->setup;
-            *(s32*)info = sel->field_8;
+            *(s32*)info = (s32)sel->stageData;
         }
     }
     if (info->groupSetup != NULL) {
@@ -1463,21 +1463,21 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         enemy = info->groupSetup->enemyData;
         memset(info->heldItems, 0, 0x20);
         for (i = 0; i < num; i++, enemy++) {
-            list = *(NpcItemDropEntry**)((u8*)enemy + 0x2C);
+            list = enemy->itemDropTable;
             if (list != NULL) {
                 d = list;
                 sum = 0;
-                while (d->weight > 0 || d->field_0 != 0) {
-                    sum += d->weight;
+                while (d->holdWeight > 0 || d->type != 0) {
+                    sum += d->holdWeight;
                     d++;
                 }
                 if (sum > 0) {
                     pick = irand(sum);
-                    while ((pick -= list->weight) >= 0) {
+                    while ((pick -= list->holdWeight) >= 0) {
                         list++;
                     }
-                    info->heldItems[i] = list->field_0;
-                    info->itemDropLists[i] = *(ItemDropData**)((u8*)enemy + 0x2C);
+                    info->heldItems[i] = list->type;
+                    info->itemDropLists[i] = enemy->itemDropTable;
                 }
             }
         }

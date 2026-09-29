@@ -3,9 +3,10 @@
 #include "battle/battle_event_default.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
 static BattleUnitKindPart parts;
 static s32 init_event[21];
@@ -32,70 +33,110 @@ extend_data(53,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_honeduka[49] = {
-    0x0000005E, (u32)"btl_un_honeduka", 0x00640000, 0x01010000,
-    0x00640032, 0x00090064, 0x00640000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42000000,
-    0x00000000, 0x00000000, 0x42480000, 0x42820000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_KOR_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x52200000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_honeduka = {
+    UNIT_CORTEZ_BONE_PILE,      // mUnitType
+    "btl_un_honeduka",          // name
+    100,                        // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    0,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    100,                        // width
+    100,                        // height
+    { 0, 0 },                   // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 50.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 32.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 50.0f, 65.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
+    0.0f,                       // cutWidth
+    0.0f,                       // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_KOR_DAMAGED1",    // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x52200000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    &parts,                     // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00500064, 0x00646432, 0x00006400, 0x64283200,
-    0x00643200, 0x00000000,
+static BattleVulnerableStatus regist = {
+    0,   // sleepRate
+    80,  // stopRate
+    0,   // dizzyRate
+    100, // poisonRate
+    0,   // confuseRate
+    100, // electricRate
+    100, // burnRate
+    50,  // freezeRate
+    0,   // hugeRate
+    0,   // tinyRate
+    100, // attackUpRate
+    0,   // attackDownRate
+    100, // defenseUpRate
+    40,  // defenseDownRate
+    50,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    50,  // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
 static BattleDispPose pose_table[4] = {
-    {0x1C, "KRT_Z_1"},
-    {0x1F, "KRT_Z_1"},
-    {0x27, "KRT_Z_1"},
-    {0x45, "KRT_Z_1"},
+    { 0x1C, "KRT_Z_1" },
+    { 0x1F, "KRT_Z_1" },
+    { 0x27, "KRT_Z_1" },
+    { 0x45, "KRT_Z_1" },
 };
 
 static BattleDataEntry data_table[2] = {
-    {0x09, &honeduka_damage_sub_event},
-    {0x00, NULL},
+    { 0x09, honeduka_damage_sub_event },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts = {
-    1,
-    "btl_un_honeduka",
-    "c_honezuka",
-    {0.0f, 0.0f, 0.0f},
-    {15.0f, 25.0f, 0.0f},
-    // struct has this region opaque (0x24..0x37); bytes kept verbatim
-    {
-        0x00, 0x00, 0x00, 0x00,
-        0x41, 0xF0, 0x00, 0x00, // 30.0f
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x14, 0x00, 0x1E,
-        0x00, 0xFF, 0x00, 0x00,
-    },
-    (BattleUnitDefense*)&defence,
-    (BattleUnitDefenseAttr*)&defence_attr,
-    0x02090009,
-    0x00000000,
-    &pose_table,
+    1,                      // partNum
+    "btl_un_honeduka",      // partName
+    "c_honezuka",           // modelName
+    { 0.0f, 0.0f, 0.0f },   // positionOffset
+    { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+    { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+    20,                     // field_0x30
+    30,                     // field_0x32
+    255,                    // baseAlpha
+    &defence,               // defense
+    &defence_attr,          // defenseAttr
+    0x02090009,             // attributes
+    0,                      // counterAttributes
+    pose_table,             // poseTable
 };
 
 static EVT_BEGIN(init_event)

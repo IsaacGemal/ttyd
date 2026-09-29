@@ -592,19 +592,14 @@ static EVT_BEGIN(evt_ramp)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pika_tbl[15] = {
-    (u32)"pika_1_1", (u32)"pika_1_2", (u32)"pika_1_3", (u32)"pika_1_4",
-    (u32)"pika_2", (u32)"pika_3", (u32)"pika_4", (u32)"pika_5",
-    (u32)"pika_6", (u32)"pika_1_1_c", (u32)"pika_1_2_c", (u32)"pika_1_3_c",
-    (u32)"pika_1_4_c", (u32)"pika_6_c", 0x00000000,
+static char* pika_tbl[15] = {
+    "pika_1_1", "pika_1_2", "pika_1_3", "pika_1_4", "pika_2", "pika_3", "pika_4", "pika_5",
+    "pika_6", "pika_1_1_c", "pika_1_2_c", "pika_1_3_c", "pika_1_4_c", "pika_6_c", NULL,
 };
 
-// TODO: type
-static u32 pika_tbl_rsh_06[10] = {
-    (u32)"pika_1_1", (u32)"pika_1_2", (u32)"pika_1_3", (u32)"pika_1_4",
-    (u32)"pika_2", (u32)"pika_3", (u32)"pika_4", (u32)"pika_5",
-    (u32)"pika_6", 0x00000000,
+static char* pika_tbl_rsh_06[10] = {
+    "pika_1_1", "pika_1_2", "pika_1_3", "pika_1_4", "pika_2", "pika_3", "pika_4", "pika_5",
+    "pika_6", NULL,
 };
 
 static void resha_tev(void* param) {

@@ -6,8 +6,8 @@
 typedef struct BattleStageObjectData {
 	char* name; //0x0
 	u16 mSpawnSpecialUnitType; //0x4
-	u16 mLayer; //0x8
-	Vec mPosition; //0xC
+	u16 mLayer; //0x6
+	Vec mPosition; //0x8
 	u8 mNumFramesToStartFalling; //0x14
 	u8 mNumFramesToFall; //0x15
 	u8 pad_16[2]; //0x16, TODO remove cuz compiler auto-pads

@@ -5,6 +5,8 @@
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma pool_data off
 // the original REL was compiled with fp contraction enabled (fmadds in _wave_offset)
@@ -17,32 +19,32 @@ extern s32 battle_flower_drop_param_default4[];
 extern s32 battle_heart_drop_param_default[];
 extern s32 battle_heart_drop_param_default3[];
 extern s32 battle_heart_drop_param_default4[];
-extern s32 battle_item_gesso[];
-extern s32 battle_item_hammer_bros[];
-extern s32 battle_item_hannya[];
-extern s32 battle_item_hennya[];
-extern s32 battle_item_hinnya[];
-extern s32 battle_item_kamec[];
-extern s32 battle_item_kuriboo[];
-extern s32 battle_item_kurikuri[];
-extern s32 battle_item_nokonoko[];
-extern s32 battle_item_patakuri[];
-extern s32 battle_item_patapata[];
-extern s32 battle_item_togekuri[];
-extern s32 battle_item_togenoko[];
-extern s32 unit_boss_gesso[];
-extern s32 unit_hammer_bros_26_data_240F0[];
-extern s32 unit_hannya_26_data_20220[];
-extern s32 unit_hennya_26_data_30370[];
-extern s32 unit_hinnya_26_data_20DE0[];
-extern s32 unit_kamec[];
-extern s32 unit_kuriboo_26_data_1CBF8[];
-extern s32 unit_lecture_frankli_kuriboo[];
-extern s32 unit_nokonoko_26_data_2DCC8[];
-extern s32 unit_patakuri_26_data_21998[];
-extern s32 unit_patapata_26_data_29498[];
-extern s32 unit_togekuri_26_data_23050[];
-extern s32 unit_togenoko[];
+extern ItemDropData battle_item_gesso[1];
+extern ItemDropData battle_item_hammer_bros[10];
+extern ItemDropData battle_item_hannya[10];
+extern ItemDropData battle_item_hennya[10];
+extern ItemDropData battle_item_hinnya[10];
+extern ItemDropData battle_item_kamec[10];
+extern ItemDropData battle_item_kuriboo[10];
+extern ItemDropData battle_item_kurikuri[1];
+extern ItemDropData battle_item_nokonoko[10];
+extern ItemDropData battle_item_patakuri[10];
+extern ItemDropData battle_item_patapata[10];
+extern ItemDropData battle_item_togekuri[10];
+extern ItemDropData battle_item_togenoko[10];
+extern BattleUnitKind unit_boss_gesso;
+extern BattleUnitKind unit_hammer_bros_26_data_240F0;
+extern BattleUnitKind unit_hannya_26_data_20220;
+extern BattleUnitKind unit_hennya_26_data_30370;
+extern BattleUnitKind unit_hinnya_26_data_20DE0;
+extern BattleUnitKind unit_kamec;
+extern BattleUnitKind unit_kuriboo_26_data_1CBF8;
+extern BattleUnitKind unit_lecture_frankli_kuriboo;
+extern BattleUnitKind unit_nokonoko_26_data_2DCC8;
+extern BattleUnitKind unit_patakuri_26_data_21998;
+extern BattleUnitKind unit_patapata_26_data_29498;
+extern BattleUnitKind unit_togekuri_26_data_23050;
+extern BattleUnitKind unit_togenoko;
 static USER_FUNC(_wave_offset);
 
 // clang-format off
@@ -64,38 +66,27 @@ extend_data(65,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 tik_btlobject_data[120] = {
-    (u32)"isi_2", 0x00020000, 0xC3160000, 0x00000000,
-    0xC1B80000, 0x0A320000, (u32)"isi_3", 0x00020000,
-    0xC2700000, 0x00000000, 0xC2580000, 0x14280000,
-    (u32)"isi_4", 0x00020000, 0x43300000, 0x00000000,
-    0xC2780000, 0x1E1E0000, (u32)"nami_0", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"nami_1", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"nami_2", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"nami_3", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"nami_0", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"nami_1", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"nami_2", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"nami_3", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"B_0", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"jon_0", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"isi_1", 0x00020001,
-    0xC34A0000, 0x00000000, 0xC1880000, 0x003C0000,
-    (u32)"isi_2", 0x00020001, 0x43480000, 0x00000000,
-    0xC1F00000, 0x0A320000, (u32)"A1", 0x00020000,
-    0x00000000, 0x00000000, 0xC2480000, 0x003C0000,
-    (u32)"B_mati", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"C", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+BattleStageObjectData tik_btlobject_data[20] = {
+    { "isi_2", 2, 0, { -150.0f, 0.0f, -23.0f }, 10, 50, { 0, 0 } },
+    { "isi_3", 2, 0, { -60.0f, 0.0f, -54.0f }, 20, 40, { 0, 0 } },
+    { "isi_4", 2, 0, { 176.0f, 0.0f, -62.0f }, 30, 30, { 0, 0 } },
+    { "nami_0", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_1", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_2", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_3", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_0", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_1", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_2", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "nami_3", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "B_0", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "jon_0", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "isi_1", 2, 1, { -202.0f, 0.0f, -17.0f }, 0, 60, { 0, 0 } },
+    { "isi_2", 2, 1, { 200.0f, 0.0f, -30.0f }, 10, 50, { 0, 0 } },
+    { "A1", 2, 0, { 0.0f, 0.0f, -50.0f }, 0, 60, { 0, 0 } },
+    { "B_mati", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "C", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
 };
 
 // TODO: type
@@ -211,1184 +202,910 @@ u32 tik_btlstage_data[436] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 btlparty_tik_tik_gesso[12] = {
-    (u32)unit_boss_gesso, 0x01000000, 0x04000004, 0x42F40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_gesso,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_gesso[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_gesso, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleUnitSetup btlparty_tik_tik_gesso[1] = {
+    { &unit_boss_gesso, 1, 0x04000004, { 122.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gesso },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_01_01_off_1[48] = {
-    (u32)unit_kuriboo_26_data_1CBF8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kurikuri,
-    (u32)unit_togekuri_26_data_23050, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_patakuri_26_data_21998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-    (u32)unit_lecture_frankli_kuriboo, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+BattleGroupSetup btlgrp_tik_tik_gesso = { 1, btlparty_tik_tik_gesso, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_01_01_off_1[4] = {
+    { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
+    { &unit_togekuri_26_data_23050, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_patakuri_26_data_21998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+    { &unit_lecture_frankli_kuriboo, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+BattleGroupSetup btlgrp_tik_tik_01_01_off_1 = { 4, btlparty_tik_tik_01_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_01_02_off_1[2] = {
+    { &unit_togekuri_26_data_23050, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+    { &unit_togekuri_26_data_23050, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_01_02_off_1 = { 2, btlparty_tik_tik_01_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_01_off_1[1] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_01_off_1 = { 1, btlparty_tik_tik_04_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_01_on_1[1] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_01_on_1 = { 1, btlparty_tik_tik_04_01_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_01_on_2[2] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_01_on_2 = { 2, btlparty_tik_tik_04_01_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_02_off_1[2] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_02_off_1 = { 2, btlparty_tik_tik_04_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_02_on_1[2] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_02_on_1 = { 2, btlparty_tik_tik_04_02_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_02_on_2[3] = {
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_02_on_2 = { 3, btlparty_tik_tik_04_02_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_03_off_1[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_patapata_26_data_29498, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_03_off_1 = { 2, btlparty_tik_tik_04_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_03_off_2[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_03_off_2 = { 2, btlparty_tik_tik_04_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_03_off_3[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_03_off_3 = { 2, btlparty_tik_tik_04_03_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_04_off_1[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_togekuri_26_data_23050, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_04_off_1 = { 2, btlparty_tik_tik_04_04_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_04_off_2[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_04_off_2 = { 2, btlparty_tik_tik_04_04_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_04_04_off_3[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_04_04_off_3 = { 2, btlparty_tik_tik_04_04_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_01_off_1[3] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_01_off_1 = { 3, btlparty_tik_tik_07_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_01_off_2[2] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_01_off_2 = { 2, btlparty_tik_tik_07_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_02_off_1[2] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_02_off_1 = { 2, btlparty_tik_tik_07_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_02_off_2[3] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_02_off_2 = { 3, btlparty_tik_tik_07_02_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_03_off_1[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_nokonoko_26_data_2DCC8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_03_off_1 = { 2, btlparty_tik_tik_07_03_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_03_off_2[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_03_off_2 = { 2, btlparty_tik_tik_07_03_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_03_off_3[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_03_off_3 = { 2, btlparty_tik_tik_07_03_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_04_off_1[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_04_off_1 = { 2, btlparty_tik_tik_07_04_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_04_off_2[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_04_off_2 = { 2, btlparty_tik_tik_07_04_off_2, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_07_04_off_3[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_07_04_off_3 = { 2, btlparty_tik_tik_07_04_off_3, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_01_off_1[1] = {
+    { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_01_off_1 = { 1, btlparty_tik_tik_15_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_02_off_1[1] = {
+    { &unit_patakuri_26_data_21998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_02_off_1 = { 1, btlparty_tik_tik_15_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_03_off_1[1] = {
+    { &unit_togekuri_26_data_23050, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_03_off_1 = { 1, btlparty_tik_tik_15_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_04_off_1[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_04_off_1 = { 2, btlparty_tik_tik_15_04_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_04_off_2[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_04_off_2 = { 2, btlparty_tik_tik_15_04_off_2, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_04_off_3[2] = {
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_04_off_3 = { 2, btlparty_tik_tik_15_04_off_3, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_05_off_1[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_patakuri_26_data_21998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_05_off_1 = { 2, btlparty_tik_tik_15_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_05_off_2[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_05_off_2 = { 2, btlparty_tik_tik_15_05_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_15_05_off_3[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
+};
+
+BattleGroupSetup btlgrp_tik_tik_15_05_off_3 = { 2, btlparty_tik_tik_15_05_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_01_off_1[2] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_01_off_1 = { 2, btlparty_tik_tik_18_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_01_off_2[3] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_01_off_2 = { 3, btlparty_tik_tik_18_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_02_off_1[4] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_02_off_1 = { 4, btlparty_tik_tik_18_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_02_off_2[2] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_02_off_2 = { 2, btlparty_tik_tik_18_02_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_03_off_1[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_patakuri_26_data_21998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_03_off_1 = { 2, btlparty_tik_tik_18_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_03_off_2[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_03_off_2 = { 2, btlparty_tik_tik_18_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_03_off_3[2] = {
+    { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_03_off_3 = { 2, btlparty_tik_tik_18_03_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_04_off_1[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_04_off_1 = { 2, btlparty_tik_tik_18_04_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_04_off_2[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_04_off_2 = { 2, btlparty_tik_tik_18_04_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_18_04_off_3[2] = {
+    { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
+    { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
+};
+
+BattleGroupSetup btlgrp_tik_tik_18_04_off_3 = { 2, btlparty_tik_tik_18_04_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_20_01_off_1[5] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_01_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_tik_tik_01_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_01_02_off_1[24] = {
-    (u32)unit_togekuri_26_data_23050, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-    (u32)unit_togekuri_26_data_23050, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
+BattleGroupSetup btlgrp_tik_tik_20_01_off_1 = { 5, btlparty_tik_tik_20_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
-// TODO: type
-u32 btlgrp_tik_tik_01_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_01_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_04_01_off_1[12] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_04_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_04_01_on_1[12] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_01_on_1[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_04_01_on_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
+BattleUnitSetup btlparty_tik_tik_20_02_off_1[4] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_20_02_off_1 = { 4, btlparty_tik_tik_20_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_20_03_off_1[3] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_04_01_on_2[24] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_01_on_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_01_on_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
+BattleGroupSetup btlgrp_tik_tik_20_03_off_1 = { 3, btlparty_tik_tik_20_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_20_04_off_1[4] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_tik_tik_20_04_off_1 = { 4, btlparty_tik_tik_20_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_tik_tik_20_05_off_1[5] = {
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_04_02_off_1[24] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
+BattleGroupSetup btlgrp_tik_tik_20_05_off_1 = { 5, btlparty_tik_tik_20_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
-// TODO: type
-u32 btlgrp_tik_tik_04_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+BattleUnitSetup btlparty_tik_tik_20_06_off_1[5] = {
+    { &unit_hennya_26_data_30370, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_04_02_on_1[24] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
+BattleGroupSetup btlgrp_tik_tik_20_06_off_1 = { 5, btlparty_tik_tik_20_06_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
-// TODO: type
-u32 btlgrp_tik_tik_04_02_on_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_02_on_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_test1_off[2] = {
+    { 50, &btlgrp_tik_tik_01_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_04_02_on_2[36] = {
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_test2_off[2] = {
+    { 50, &btlgrp_tik_tik_01_01_off_1, (struct BattleStageData*)tik_btlstage_data },
+    { 0, NULL, NULL },
 };
-
-// TODO: type
-u32 btlgrp_tik_tik_04_02_on_2[8] = {
-    0x00000003, (u32)&btlparty_tik_tik_04_02_on_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_test3_off[2] = {
+    { 50, &btlgrp_tik_tik_01_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_gesso_off[2] = {
+    { 50, &btlgrp_tik_tik_gesso, (struct BattleStageData*)tik_btlstage_data },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_04_03_off_1[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_patapata_26_data_29498, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patapata,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_01_01_off[2] = {
+    { 50, &btlgrp_tik_tik_01_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_04_03_off_2[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_01_02_off[2] = {
+    { 50, &btlgrp_tik_tik_01_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_04_03_off_3[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_03_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_03_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_01_on[3] = {
+    { 20, &btlgrp_tik_tik_04_01_on_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_01_on_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_04_04_off_1[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_togekuri_26_data_23050, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_04_04_off_2[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_04_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_04_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_04_04_off_3[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_04_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_04_04_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_01_off_1[36] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_07_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_tik_tik_07_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_01_off_2[24] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_07_01_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_02_off_1[24] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_07_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_02_off_2[36] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_07_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_tik_tik_07_02_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_03_off_1[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_nokonoko_26_data_2DCC8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_nokonoko,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_01_off[2] = {
+    { 20, &btlgrp_tik_tik_04_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlgrp_tik_tik_07_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_07_03_off_2[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_02_on[3] = {
+    { 20, &btlgrp_tik_tik_04_02_on_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_02_on_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_07_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_02_off[2] = {
+    { 20, &btlgrp_tik_tik_04_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_07_03_off_3[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_03_off[4] = {
+    { 20, &btlgrp_tik_tik_04_03_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_03_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_03_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_07_03_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_03_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_04_04_off[4] = {
+    { 20, &btlgrp_tik_tik_04_04_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_04_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_04_04_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_07_04_off_1[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_07_01_off[3] = {
+    { 20, &btlgrp_tik_tik_07_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_01_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_07_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_07_02_off[3] = {
+    { 20, &btlgrp_tik_tik_07_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_02_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_07_04_off_2[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_07_03_off[4] = {
+    { 20, &btlgrp_tik_tik_07_03_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_03_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_03_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_07_04_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_04_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_07_04_off[4] = {
+    { 20, &btlgrp_tik_tik_07_04_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_04_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_07_04_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_07_04_off_3[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_15_01_off[2] = {
+    { 20, &btlgrp_tik_tik_15_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_07_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_07_04_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_15_02_off[2] = {
+    { 20, &btlgrp_tik_tik_15_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_15_01_off_1[12] = {
-    (u32)unit_kuriboo_26_data_1CBF8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_15_03_off[2] = {
+    { 20, &btlgrp_tik_tik_15_03_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_15_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_15_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_15_04_off[4] = {
+    { 20, &btlgrp_tik_tik_15_04_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_15_04_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_15_04_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlparty_tik_tik_15_02_off_1[12] = {
-    (u32)unit_patakuri_26_data_21998, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_15_05_off[4] = {
+    { 20, &btlgrp_tik_tik_15_05_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_15_05_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_15_05_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_15_02_off_1[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_15_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_18_01_off[3] = {
+    { 20, &btlgrp_tik_tik_18_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_01_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_15_03_off_1[12] = {
-    (u32)unit_togekuri_26_data_23050, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togekuri,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_18_02_off[3] = {
+    { 20, &btlgrp_tik_tik_18_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_02_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_15_03_off_1[8] = {
-    0x00000001, (u32)&btlparty_tik_tik_15_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_18_03_off[4] = {
+    { 20, &btlgrp_tik_tik_18_03_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_03_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_03_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_15_04_off_1[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_kuriboo_26_data_1CBF8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kuriboo,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_18_04_off[4] = {
+    { 20, &btlgrp_tik_tik_18_04_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_04_off_2, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 20, &btlgrp_tik_tik_18_04_off_3, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrp_tik_tik_15_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_01_off[2] = {
+    { 20, &btlgrp_tik_tik_20_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_15_04_off_2[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-};
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_02_off[2] = {
+    { 20, &btlgrp_tik_tik_20_02_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
 
-// TODO: type
-u32 btlgrp_tik_tik_15_04_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_04_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_03_off[2] = {
+    { 20, &btlgrp_tik_tik_20_03_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlparty_tik_tik_15_04_off_3[24] = {
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_15_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_04_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_15_05_off_1[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_patakuri_26_data_21998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_15_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_15_05_off_2[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_15_05_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_05_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_15_05_off_3[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_hammer_bros_26_data_240F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hammer_bros,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_15_05_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_15_05_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_01_off_1[24] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_01_off_2[36] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_tik_tik_18_01_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_02_off_1[48] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_tik_tik_18_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_02_off_2[24] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_26_data_20DE0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_02_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_02_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_03_off_1[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_patakuri_26_data_21998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_03_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_03_off_2[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_03_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_03_off_3[24] = {
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_03_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_03_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_04_off_1[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_04_off_1[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_04_off_2[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_04_off_2[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_04_off_2, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_18_04_off_3[24] = {
-    (u32)unit_togenoko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko,
-    (u32)unit_kamec, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_kamec,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_18_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_tik_tik_18_04_off_3, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_01_off_1[60] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_01_off_1[8] = {
-    0x00000005, (u32)&btlparty_tik_tik_20_01_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_02_off_1[48] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_tik_tik_20_02_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_03_off_1[36] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_tik_tik_20_03_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_04_off_1[48] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_tik_tik_20_04_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_05_off_1[60] = {
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_05_off_1[8] = {
-    0x00000005, (u32)&btlparty_tik_tik_20_05_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_tik_tik_20_06_off_1[60] = {
-    (u32)unit_hennya_26_data_30370, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_26_data_20220, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_tik_tik_20_06_off_1[8] = {
-    0x00000005, (u32)&btlparty_tik_tik_20_06_off_1, 0x00000019, 0x00000019,
-    0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_01_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_test2_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_01_01_off_1, (u32)&tik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_test3_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_01_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x368), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_gesso_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_gesso, (u32)&tik_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_01_01_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_01_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_01_02_off[6] = {
-    0x00000032, (u32)&btlgrp_tik_tik_01_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_01_on[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_01_on_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_04_01_on_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_01_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_02_on[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_02_on_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_04_02_on_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_02_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_03_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_03_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_04_03_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_04_03_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_04_04_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_04_04_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_04_04_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_04_04_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_07_01_off[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_07_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_07_01_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_07_02_off[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_07_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_07_02_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_04_off[2] = {
+    { 20, &btlgrp_tik_tik_20_04_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_07_03_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_07_03_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_07_03_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_07_03_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
+
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_05_off[2] = {
+    { 20, &btlgrp_tik_tik_20_05_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_07_04_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_07_04_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_07_04_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_07_04_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_20_06_off[2] = {
+    { 20, &btlgrp_tik_tik_20_06_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
 };
 
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_15_01_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_15_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_15_02_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_15_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_15_03_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_15_03_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_15_04_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_15_04_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_15_04_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_15_04_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_15_05_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_15_05_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_15_05_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_15_05_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_18_01_off[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_18_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_18_01_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_18_02_off[9] = {
-    0x00000014, (u32)&btlgrp_tik_tik_18_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_18_02_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000,
-    0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_18_03_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_18_03_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_18_03_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_18_03_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_18_04_off[12] = {
-    0x00000014, (u32)&btlgrp_tik_tik_18_04_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014,
-    (u32)&btlgrp_tik_tik_18_04_off_2, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000014, (u32)&btlgrp_tik_tik_18_04_off_3,
-    (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_01_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_01_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_02_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_02_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_03_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_03_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_04_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_04_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_05_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_05_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_tik_btlno_tik_20_06_off[6] = {
-    0x00000014, (u32)&btlgrp_tik_tik_20_06_off_1, (u32)((u8*)&tik_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_tik_tbl[510] = {
-    (u32)"マップstg_00_1", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_test1_off, 0x00000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_00_2", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_test2_off, 0x00000000,
-    0x00000000, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マップstg_00_3", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_test3_off,
-    0x00000000, 0x00000000, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik12ゲッソー",
-    (u32)"tik_02", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_gesso_off, 0x20000010, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x00000000,
-    0x05050000, 0x01010101, 0x01010101, (u32)"BGM_CHUBOSS_BATTLE1",
-    (u32)"tik01クリボー３人衆", (u32)"tik_01", 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_01_01_off, 0x20000010, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x05050000, 0x00000101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik01トゲクリボー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_01_02_off, 0x00000000,
-    0x00000000, 0x05050000, 0x00000000, 0x00000505,
-    0x00000000, 0x00000000, 0x0A0A0000, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik04ヒンニャー1", 0x00000000,
-    0x00000000, 0xF840605E, (u32)&btlgrpsel_tik_btlno_tik_04_01_on, (u32)&btlgrpsel_tik_btlno_tik_04_01_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x00000000, 0x05050000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik04ヒンニャー2",
-    0x00000000, 0x00000000, 0xF840605E, (u32)&btlgrpsel_tik_btlno_tik_04_02_on,
-    (u32)&btlgrpsel_tik_btlno_tik_04_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x00000000,
-    0x05050000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik04カメック", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_04_03_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik04トゲノコ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_04_04_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik07ハンニャー1", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_07_01_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050505,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik07ハンニャー2",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_07_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik07トゲノコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_07_03_off, 0x00000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik07ハンマーブロス", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_07_04_off, 0x00000000,
-    0x00000000, 0x03030303, 0x0303030A, 0x0A030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik15クリボー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_15_01_off,
-    0x00000000, 0x00000000, 0x05050000, 0x00000000,
-    0x00000505, 0x00000000, 0x00000000, 0x0A0A0000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik15パタクリボー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_15_02_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x00000505, 0x00000000, 0x00000000,
-    0x0A0A0000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik15トゲクリボー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_15_03_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x00000505, 0x00000000,
-    0x00000000, 0x0A0A0000, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik15ハンマーブロス", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_15_04_off, 0x00000000,
-    0x00000000, 0x03030303, 0x0303030A, 0x0A030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik15カメック", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_15_05_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik18ハンニャー1",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_18_01_off, 0x00000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050505, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik18ハンニャー2", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_18_02_off, 0x00000000, 0x00000000,
-    0x05050000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050505, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik18カメック", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_18_03_off, 0x00000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik18トゲノコ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_18_04_off,
-    0x00000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik20ハンニャー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_20_01_off, 0x00000000, 0x00000000, 0x02020202,
-    0x02020202, 0x02020202, 0x02020202, 0x02020202,
-    0x02020202, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik20ハンニャー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_20_02_off, 0x00000000, 0x00000000,
-    0x02020202, 0x02020202, 0x02020202, 0x02020202,
-    0x02020202, 0x02020202, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"tik20ハンニャー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_20_03_off, 0x00000000,
-    0x00000000, 0x02020202, 0x02020202, 0x02020202,
-    0x02020202, 0x02020202, 0x02020202, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik20ハンニャー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_tik_btlno_tik_20_04_off,
-    0x00000000, 0x00000000, 0x02020202, 0x02020202,
-    0x02020202, 0x02020202, 0x02020202, 0x02020202,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"tik20ハンニャー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_tik_btlno_tik_20_05_off, 0x00000000, 0x00000000, 0x02020202,
-    0x02020202, 0x02020202, 0x02020202, 0x02020202,
-    0x02020202, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"tik20ヘンニャー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_tik_btlno_tik_20_06_off, 0x00000000, 0x00000000,
-    0x02020202, 0x02020202, 0x02020202, 0x02020202,
-    0x02020202, 0x02020202, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleSetupData btlsetup_tik_tbl[30] = {
+    {
+        "マップstg_00_1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_test1_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_00_2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_test2_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マップstg_00_3",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_test3_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik12ゲッソー",                                                                                        // name
+        "tik_02",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_gesso_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_CHUBOSS_BATTLE1",                                                                              // music
+    },
+    {
+        "tik01クリボー３人衆",                                                                                     // name
+        "tik_01",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_01_01_off,                                                                  // offLoadouts
+        536870928,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik01トゲクリボー",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_01_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik04ヒンニャー1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129998754,                                                                                         // flag
+        btlgrpsel_tik_btlno_tik_04_01_on,                                                                   // onLoadouts
+        btlgrpsel_tik_btlno_tik_04_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik04ヒンニャー2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -129998754,                                                                                         // flag
+        btlgrpsel_tik_btlno_tik_04_02_on,                                                                   // onLoadouts
+        btlgrpsel_tik_btlno_tik_04_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik04カメック",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_04_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik04トゲノコ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_04_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik07ハンニャー1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_07_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik07ハンニャー2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_07_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik07トゲノコ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_07_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik07ハンマーブロス",                                                                                       // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_07_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik15クリボー",                                                                                          // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_15_01_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik15パタクリボー",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_15_02_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik15トゲクリボー",                                                                                        // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_15_03_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik15ハンマーブロス",                                                                                       // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_tik_btlno_tik_15_04_off,                                                                    // offLoadouts
+        0,                                                                                                    // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 10, 10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "tik15カメック",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_15_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik18ハンニャー1",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_18_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik18ハンニャー2",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_18_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 5, 5, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik18カメック",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_18_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik18トゲノコ",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_18_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ハンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_01_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ハンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_02_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ハンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_03_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ハンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_04_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ハンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_05_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "tik20ヘンニャー",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_tik_btlno_tik_20_06_off,                                                                  // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

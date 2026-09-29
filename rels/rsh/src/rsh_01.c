@@ -57,23 +57,23 @@ EVT_BEGIN(s_bero_open)
 EVT_END()
 
 static BeroEntry bero_data_a[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_a", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_a", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
 static BeroEntry bero_data_b[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_b", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_b", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
 static BeroEntry bero_data_c[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_c", "w_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_00_c", "w_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 0x11, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
@@ -476,28 +476,28 @@ EVT_BEGIN(talk_syasyou)
 EVT_END()
 
 static BeroEntry bero_data_a_return[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_a", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "pik_00", "n_bero", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
 static BeroEntry bero_data_b_return[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_b", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hom_00", "n_bero_1", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
 static BeroEntry bero_data_c_return[4] = {
-    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
-    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, (s32)"e_door_close", (s32)"e_door_open"},
-    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"w_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_02_c", "e_bero", 1, 1, "w_door_close", "w_door_open"},
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_08_a", "e_bero", 1, 1, "e_door_close", "e_door_open"},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_01_c", "s_bero", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 
 BeroEntry gor_bero[2] = {
-    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gor_04", "n_bero", 5, 5, (s32)s_bero_close, (s32)s_bero_open},
+    {"s_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "gor_04", "n_bero", 5, 5, s_bero_close, s_bero_open},
     {NULL},
 };
 

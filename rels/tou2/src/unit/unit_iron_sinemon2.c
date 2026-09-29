@@ -11,16 +11,18 @@
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario_pouch.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(yoshi_exist);
 static USER_FUNC(get_id);
-static u32 regist[6];
-static u32 parts[19];
-static u32 pose_table[36];
-static u32 data_table[6];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[1];
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[3];
 static s32 init_event2[18];
 static s32 init_event_sub[47];
 static s32 dmg_avoid_counter_thorn_head_event[76];
@@ -48,86 +50,207 @@ extend_data(77,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_iron_sinemon2[49] = {
-    0x0000003E, (u32)"btl_un_iron_sinemon2", 0x00060000, 0x01011200,
-    0x02640146, 0x00090034, 0x00360004, 0x00360000,
-    0x00000000, 0x41D80000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41D00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41D00000,
-    0x00000000, 0x00000000, 0x41800000, 0x42100000,
-    0x00000000, 0x00000000, 0x41D80000, 0x00000000,
-    0x42500000, 0x42580000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_ISIN_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00040000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event2,
-    (u32)&data_table,
+BattleUnitKind unit_iron_sinemon2 = {
+    UNIT_IRON_CLEFT_GREEN,      // mUnitType
+    "btl_un_iron_sinemon2",     // name
+    6,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    18,                         // mLevel
+    0,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    1,                          // baseCoin
+    70,                         // field_0x13
+    9,                          // field_0x14
+    52,                         // width
+    54,                         // height
+    { 4, 54 },                  // statusIconOffset
+    { 0.0f, 27.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 26.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 26.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 16.0f, 36.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 27.0f, 0.0f },      // cutBaseOffset
+    52.0f,                      // cutWidth
+    54.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_ISIN_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00040000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event2,                // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 4, 4, 4, 4, 4 } };
+
+static BattleUnitDefense defence_turn = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x04040404, 0x04000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                      // partNum
+        "btl_un_iron_sinemon2", // partName
+        "c_sinemon_m",          // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 0.0f, 37.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 45.0f, 0.0f },  // hitCursorBaseOffset
+        30,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00000009,             // attributes
+        0x00000001,             // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
-// TODO: type
-static u32 defence_turn[2] = {
-    0x00000000, 0x00000000,
+static BattleWeapon weapon_iron_sinemon_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x000000C7,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[18] = {
+    { 0x01, "SIN_N_1" },
+    { 0x02, "SIN_Y_1" },
+    { 0x09, "SIN_Y_1" },
+    { 0x05, "SIN_K_1" },
+    { 0x04, "SIN_I_1" },
+    { 0x03, "SIS_I_1" },
+    { 0x1C, "SIN_S_1" },
+    { 0x1D, "SIN_Q_1" },
+    { 0x1E, "SIN_Q_1" },
+    { 0x1F, "SIN_A_1a" },
+    { 0x27, "SIN_D_1" },
+    { 0x32, "SIN_A_1a" },
+    { 0x28, "SIN_W_1" },
+    { 0x2A, "SIN_R_1" },
+    { 0x41, "SIN_T_1" },
+    { 0x38, "SIN_I_1" },
+    { 0x39, "SIN_I_1" },
+    { 0x45, "SIN_S_1" },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_iron_sinemon2", (u32)"c_sinemon_m", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42140000,
-    0x00000000, 0x00000000, 0x42340000, 0x00000000,
-    0x001E001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000001, (u32)&pose_table,
-};
-
-// TODO: type
-static u32 weapon_iron_sinemon_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x000000C7, 0x000007FF, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"SIN_N_1", 0x00000002, (u32)"SIN_Y_1",
-    0x00000009, (u32)"SIN_Y_1", 0x00000005, (u32)"SIN_K_1",
-    0x00000004, (u32)"SIN_I_1", 0x00000003, (u32)"SIS_I_1",
-    0x0000001C, (u32)"SIN_S_1", 0x0000001D, (u32)"SIN_Q_1",
-    0x0000001E, (u32)"SIN_Q_1", 0x0000001F, (u32)"SIN_A_1a",
-    0x00000027, (u32)"SIN_D_1", 0x00000032, (u32)"SIN_A_1a",
-    0x00000028, (u32)"SIN_W_1", 0x0000002A, (u32)"SIN_R_1",
-    0x00000041, (u32)"SIN_T_1", 0x00000038, (u32)"SIN_I_1",
-    0x00000039, (u32)"SIN_I_1", 0x00000045, (u32)"SIN_S_1",
-};
-
-// TODO: type
-static u32 data_table[6] = {
-    0x00000025, (u32)&dmg_avoid_counter_thorn_head_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x25, dmg_avoid_counter_thorn_head_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 // The original object's functions are emitted in reverse source order
@@ -325,8 +448,8 @@ static EVT_BEGIN(attack_event)
         RETURN
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_iron_sinemon_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_iron_sinemon_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_iron_sinemon_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_iron_sinemon_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -339,10 +462,10 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_set_zoom, 0, 200)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_iron_sinemon_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_iron_sinemon_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_iron_sinemon_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_iron_sinemon_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     BEGIN_SIBLING_EVENT_GET_ID(LW(14))
@@ -363,7 +486,7 @@ static EVT_BEGIN(attack_event)
     SUBTRACT(LW(2), FLOAT(30.0f))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 25)
     CALL(btlevtcmd_MovePosition, -2, LW(0), 0, LW(2), 0, -1, 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_iron_sinemon_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_iron_sinemon_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -395,8 +518,8 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_iron_sinemon_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_iron_sinemon_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_iron_sinemon_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_iron_sinemon_attack), 256, LW(5))
     CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(1.0f), FLOAT(0.4f))
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 75)

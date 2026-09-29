@@ -194,7 +194,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
             if (unit->mAttributeFlags & 0x20000) {
                 weights[e] = 1;
             }
-            switch (*(s32*)(s->weapon->field_0x0 + 0x8)) {
+            switch (s->weapon->item) {
                 case 0x86:
                     if (BtlUnit_CheckStatus(unit, 0x12)) weights[e] = 1;
                     break;
@@ -240,7 +240,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 case 0x0:
                     break;
                 default: {
-                    s32 id = *(s32*)(s->weapon->field_0x0 + 0x8);
+                    s32 id = s->weapon->item;
                     s32 maxFp;
 
                     if (itemDataTable[id].fp_restored == 0) {
@@ -360,7 +360,7 @@ void _btlSamplingEnemy(u8* sampling) {
         }
 
         part = unit->mParts;
-        numParts = unit->mKindParams->field_0x10[0xB4 - 0x10];
+        numParts = unit->mKindParams->numParts;
         for (j = 0; j < numParts; j++) {
             BattleSamplingEntry* entry;
             BattleUnitKindPart* kindPart;

@@ -3095,7 +3095,7 @@ USER_FUNC(btlevtcmd_CommandGetWeaponActionLv) {
     s32 index = *event->args;
 
     weapon = BattleGetSelectWeapon(_battleWorkPointer);
-    evtSetValue(event, index, *(u8*)BTLW_OFF(weapon, 0x6E));
+    evtSetValue(event, index, weapon->actionLevel);
     return EVT_RETURN_DONE;
 }
 
@@ -3105,7 +3105,7 @@ USER_FUNC(btlevtcmd_CommandGetWeaponItemId) {
     s32 index = *event->args;
 
     weapon = (BattleWeapon*)evtGetValue(event, event->args[1]);
-    evtSetValue(event, index, *(s32*)BTLW_OFF(weapon, 0x8));
+    evtSetValue(event, index, weapon->item);
     return EVT_RETURN_DONE;
 }
 
@@ -3137,7 +3137,7 @@ USER_FUNC(btlevtcmd_GetWeaponActionLv) {
     s32* args = event->args;
     BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, args[0]);
 
-    evtSetValue(event, args[1], *(u8*)BTLW_OFF(weapon, 0x6E));
+    evtSetValue(event, args[1], weapon->actionLevel);
     return EVT_RETURN_DONE;
 }
 
@@ -3174,8 +3174,7 @@ USER_FUNC(btlevtcmd_CheckWeaponPluralTarget) {
     BattleWeapon* weapon = (BattleWeapon*)evtGetValue(event, args[0]);
     s32 index = args[1];
 
-    // 0x64 is inside the unnamed field_64[].
-    if (*(u32*)BTLW_OFF(weapon, 0x64) & 0x01000000) {
+    if (weapon->targetClassFlags & 0x01000000) {
         evtSetValue(event, index, 0);
     }
     else {
@@ -3475,7 +3474,7 @@ USER_FUNC(btlevtcmd_ChoiceSamplingEnemy) {
     weapon = (BattleWeapon*)evtGetValue(event, args[0]);
     index1 = args[1];
     index2 = args[2];
-    BattleChoiceSamplingEnemy(sampling, *(u32*)BTLW_OFF(weapon, 0x7C), &outId, &outPartId);
+    BattleChoiceSamplingEnemy(sampling, weapon->targetWeightingFlags, &outId, &outPartId);
     evtSetValue(event, index1, outId);
     evtSetValue(event, index2, outPartId);
     return EVT_RETURN_DONE;
@@ -3496,11 +3495,11 @@ USER_FUNC(btlevtcmd_SamplingEnemy) {
     belong = (s8)evtGetValue(event, args[1]);
     weapon = (BattleWeapon*)evtGetValue(event, args[2]);
     direction = -wp->alliances[belong].attackDirection;
-    if (*(s32*)BTLW_OFF(weapon, 0x68) & 0x10000000) {
+    if (weapon->targetPropertyFlags & 0x10000000) {
         direction *= -1;
     }
-    BattleSamplingEnemy(sampling, weapon, id, belong, *(s32*)BTLW_OFF(weapon, 0x64),
-                        *(s32*)BTLW_OFF(weapon, 0x68), direction);
+    BattleSamplingEnemy(sampling, weapon, id, belong, weapon->targetClassFlags,
+                        weapon->targetPropertyFlags, direction);
     return EVT_RETURN_DONE;
 }
 

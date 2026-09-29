@@ -2,10 +2,12 @@
 #include "battle/battle_event_default.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
-static u32 data_table[14];
-static u32 regist[6];
-static u32 parts[38];
+static BattleDataEntry data_table[7];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[2];
 static s32 init_event[46];
 static s32 phase_event[38];
 s32 koura_open[72];
@@ -19,80 +21,150 @@ static s32 wait_event[6];
 static s32 attack_event[2];
 
 // clang-format off
-// TODO: type
-u32 unit_koura[49] = {
-    0x000000DF, (u32)"btl_un_koura", 0x00080000, 0x05010100,
-    0x00000064, 0x00090018, 0x00180018, 0x00180000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41C80000, 0x4179999A,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x0000FF00, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BTL_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x10000000,
-    (u32)&regist, 0x02000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_koura = {
+    UNIT_SHELL_SHIELD,          // mUnitType
+    "btl_un_koura",             // name
+    8,                          // maxHp
+    0,                          // maxFp
+    5,                          // mDangerHP
+    1,                          // mPerilHP
+    1,                          // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    0,                          // bonusCoinRate
+    0,                          // baseCoin
+    100,                        // field_0x13
+    9,                          // field_0x14
+    24,                         // width
+    24,                         // height
+    { 24, 24 },                 // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 0.0f, 0.0f, 0.0f },       // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 25.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 25.0f, 15.6f, 0.0f },     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
+    0.0f,                       // cutWidth
+    0.0f,                       // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    -1,                         // swallowRate
+    0,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BTL_DAMAGE1",          // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x10000000,                 // attributeFlags
+    &regist,                    // vulnStatus
+    2,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 data_table[14] = {
-    0x0000003B, (u32)&koura_open, 0x0000003C, (u32)&koura_close,
-    0x00000009, (u32)&damage_core, 0x0000003D, (u32)&pose_tbl_reset,
-    0x0000003E, (u32)&destroy_event, 0x00000031, (u32)&dead_event,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[7] = {
+    { 0x3B, koura_open },
+    { 0x3C, koura_close },
+    { 0x09, damage_core },
+    { 0x3D, pose_tbl_reset },
+    { 0x3E, destroy_event },
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0, // sleepRate
+    0, // stopRate
+    0, // dizzyRate
+    0, // poisonRate
+    0, // confuseRate
+    0, // electricRate
+    0, // burnRate
+    0, // freezeRate
+    0, // hugeRate
+    0, // tinyRate
+    0, // attackUpRate
+    0, // attackDownRate
+    0, // defenseUpRate
+    0, // defenseDownRate
+    0, // allergicRate
+    0, // frightRate
+    0, // galeForceRate
+    0, // fastRate
+    0, // slowRate
+    0, // dodgyRate
+    0, // invisibleRate
+    0, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[5] = {
+    { 0x1C, "PKO_S_1" },
+    { 0x1F, "PKO_S_1" },
+    { 0x27, "PKO_D_1" },
+    { 0x44, "PKO_Z_1" },
+    { 0x45, "PKO_S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BattleDispPose pose_table_crack_lv1[5] = {
+    { 0x1C, "PKO_S_2" },
+    { 0x1F, "PKO_S_2" },
+    { 0x27, "PKO_D_2" },
+    { 0x44, "PKO_Z_2" },
+    { 0x45, "PKO_S_2" },
 };
 
-// TODO: type
-static u32 pose_table[10] = {
-    0x0000001C, (u32)"PKO_S_1", 0x0000001F, (u32)"PKO_S_1",
-    0x00000027, (u32)"PKO_D_1", 0x00000044, (u32)"PKO_Z_1",
-    0x00000045, (u32)"PKO_S_1",
+BattleDispPose pose_table_crack_lv2[5] = {
+    { 0x1C, "PKO_S_3" },
+    { 0x1F, "PKO_S_3" },
+    { 0x27, "PKO_D_3" },
+    { 0x44, "PKO_Z_3" },
+    { 0x45, "PKO_S_3" },
 };
 
-// TODO: type
-u32 pose_table_crack_lv1[10] = {
-    0x0000001C, (u32)"PKO_S_2", 0x0000001F, (u32)"PKO_S_2",
-    0x00000027, (u32)"PKO_D_2", 0x00000044, (u32)"PKO_Z_2",
-    0x00000045, (u32)"PKO_S_2",
-};
-
-// TODO: type
-u32 pose_table_crack_lv2[10] = {
-    0x0000001C, (u32)"PKO_S_3", 0x0000001F, (u32)"PKO_S_3",
-    0x00000027, (u32)"PKO_D_3", 0x00000044, (u32)"PKO_Z_3",
-    0x00000045, (u32)"PKO_S_3",
-};
-
-// TODO: type
-static u32 parts[38] = {
-    0x00000001, (u32)"btl_un_koura", (u32)"c_koura", 0x00000000,
-    0x00000000, 0x00000000, 0x41A00000, 0x42200000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00080009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_koura", (u32)"c_koura", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x03010000,
-    0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[2] = {
+    {
+        1,                      // partNum
+        "btl_un_koura",         // partName
+        "c_koura",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 20.0f, 40.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00080009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        2,                      // partNum
+        "btl_un_koura",         // partName
+        "c_koura",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x03010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
 static EVT_BEGIN(init_event)

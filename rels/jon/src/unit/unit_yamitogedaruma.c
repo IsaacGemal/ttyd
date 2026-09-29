@@ -8,10 +8,12 @@
 #include "evt/evt_eff.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_unit.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-static u32 regist[6];
+static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[6];
 static BattleUnitKindPart parts;
 static s32 init_event[21];
@@ -41,124 +43,227 @@ extend_data(141,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_yamitogedaruma[49] = {
-    0x000000A5, (u32)"btl_un_yamitogedaruma", 0x00080000, 0x01012201,
-    0x02460232, 0x270F002E, 0x00280004, 0x00280000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41B80000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41B80000,
-    0x00000000, 0x00000000, 0x41A00000, 0x41D00000,
-    0x00000000, 0x00000000, 0x41A00000, 0x00000000,
-    0x42380000, 0x42200000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_TOGEDA_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_yamitogedaruma = {
+    UNIT_DARK_BRISTLE,          // mUnitType
+    "btl_un_yamitogedaruma",    // name
+    8,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    34,                         // mLevel
+    1,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    2,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    46,                         // width
+    40,                         // height
+    { 4, 40 },                  // statusIconOffset
+    { 0.0f, 20.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 23.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 23.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 20.0f, 26.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 20.0f, 0.0f },      // cutBaseOffset
+    46.0f,                      // cutWidth
+    40.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_TOGEDA_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    &parts,                     // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-static BattleUnitDefense defence[1] = {
-    { 4, 4, 4, 4, 4 },
-};
+static BattleUnitDefense defence = { { 4, 4, 4, 4, 4 } };
 
-static BattleUnitDefenseAttr defence_attr[1] = {
-    { 0, 0, 0, 0, 0 },
-};
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
 
-static BattleUnitDefense defence_turn[1] = {
-    { 0, 0, 0, 0, 0 },
-};
+static BattleUnitDefense defence_turn = { { 0, 0, 0, 0, 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x14501464, 0x14646428, 0x64326432, 0x6464281E,
-    0x14642864, 0x641E0000,
+static BattleVulnerableStatus regist = {
+    20,  // sleepRate
+    80,  // stopRate
+    20,  // dizzyRate
+    100, // poisonRate
+    20,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    40,  // freezeRate
+    100, // hugeRate
+    50,  // tinyRate
+    100, // attackUpRate
+    50,  // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    40,  // allergicRate
+    30,  // frightRate
+    20,  // galeForceRate
+    100, // fastRate
+    40,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    30,  // instaKillRate
 };
 
 static BattleDispPose pose_table[18] = {
-    { 0x00000001, "TGD_N_1" },
-    { 0x00000002, "TGD_I_1" },
-    { 0x00000009, "TGD_I_1" },
-    { 0x00000005, "TGD_K_1" },
-    { 0x00000004, "TGD_X_1" },
-    { 0x00000003, "TGD_X_1" },
-    { 0x0000001C, "TGD_S_4" },
-    { 0x0000001D, "TGD_Q_1" },
-    { 0x0000001E, "TGD_Q_1" },
-    { 0x0000001F, "TGD_S_2" },
-    { 0x00000027, "TGD_D_1" },
-    { 0x00000032, "TGD_A_1" },
-    { 0x00000028, "TGD_S_4" },
-    { 0x0000002A, "TGD_S_4" },
-    { 0x00000038, "TGD_X_1" },
-    { 0x00000039, "TGD_X_1" },
-    { 0x00000041, "TGD_T_1" },
-    { 0x00000045, "TGD_S_4" },
+    { 0x01, "TGD_N_1" },
+    { 0x02, "TGD_I_1" },
+    { 0x09, "TGD_I_1" },
+    { 0x05, "TGD_K_1" },
+    { 0x04, "TGD_X_1" },
+    { 0x03, "TGD_X_1" },
+    { 0x1C, "TGD_S_4" },
+    { 0x1D, "TGD_Q_1" },
+    { 0x1E, "TGD_Q_1" },
+    { 0x1F, "TGD_S_2" },
+    { 0x27, "TGD_D_1" },
+    { 0x32, "TGD_A_1" },
+    { 0x28, "TGD_S_4" },
+    { 0x2A, "TGD_S_4" },
+    { 0x38, "TGD_X_1" },
+    { 0x39, "TGD_X_1" },
+    { 0x41, "TGD_T_1" },
+    { 0x45, "TGD_S_4" },
 };
 
 static BattleDispPose pose_table_turn[15] = {
-    { 0x00000001, "TGD_N_2" },
-    { 0x00000002, "TGD_I_2" },
-    { 0x00000009, "TGD_Z_4" },
-    { 0x00000005, "TGD_K_2" },
-    { 0x00000004, "TGD_X_2" },
-    { 0x00000003, "TGD_X_2" },
-    { 0x0000001C, "TGD_S_5" },
-    { 0x0000001D, "TGD_Q_2" },
-    { 0x0000001E, "TGD_Q_2" },
-    { 0x0000001F, "TGD_S_3" },
-    { 0x00000027, "TGD_D_2" },
-    { 0x00000038, "TGD_X_2" },
-    { 0x00000039, "TGD_X_2" },
-    { 0x00000041, "TGD_S_5" },
-    { 0x00000045, "TGD_S_5" },
+    { 0x01, "TGD_N_2" },
+    { 0x02, "TGD_I_2" },
+    { 0x09, "TGD_Z_4" },
+    { 0x05, "TGD_K_2" },
+    { 0x04, "TGD_X_2" },
+    { 0x03, "TGD_X_2" },
+    { 0x1C, "TGD_S_5" },
+    { 0x1D, "TGD_Q_2" },
+    { 0x1E, "TGD_Q_2" },
+    { 0x1F, "TGD_S_3" },
+    { 0x27, "TGD_D_2" },
+    { 0x38, "TGD_X_2" },
+    { 0x39, "TGD_X_2" },
+    { 0x41, "TGD_S_5" },
+    { 0x45, "TGD_S_5" },
 };
 
 static BattleDataEntry data_table[6] = {
-    { 0x0000000D, dmg_turn_event },
-    { 0x00000025, dmg_avoid_counter_thorn_head_event },
-    { 0x00000027, dmg_avoid_counter_thorn_front_event },
-    { 0x00000026, dmg_avoid_counter_thorn_front_event },
-    { 0x00000030, btldefaultevt_Dummy },
-    { 0x00000000, NULL },
+    { 0x0D, dmg_turn_event },
+    { 0x25, dmg_avoid_counter_thorn_head_event },
+    { 0x27, dmg_avoid_counter_thorn_front_event },
+    { 0x26, dmg_avoid_counter_thorn_front_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static BattleUnitKindPart parts = {
-    0x00000001,
-    "btl_un_yamitogedaruma",
-    "c_togedaruma_b",
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 35.0f, 0.0f },
-    { 0x00, 0x00, 0x00, 0x00, 0x42, 0x34, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
-    (BattleUnitDefense*)defence,
-    (BattleUnitDefenseAttr*)defence_attr,
-    kMainPart | kUnknown_0x8 | kIsBombFlippable,
-    kCounterTopSpiky | kCounterPreemptiveFrontSpiky | kCounterFrontSpiky,
-    pose_table,
+    1,                       // partNum
+    "btl_un_yamitogedaruma", // partName
+    "c_togedaruma_b",        // modelName
+    { 0.0f, 0.0f, 0.0f },    // positionOffset
+    { 0.0f, 35.0f, 0.0f },   // hitBaseOffset
+    { 0.0f, 45.0f, 0.0f },   // hitCursorBaseOffset
+    20,                      // field_0x30
+    30,                      // field_0x32
+    255,                     // baseAlpha
+    &defence,                // defense
+    &defence_attr,           // defenseAttr
+    0x00002009,              // attributes
+    0x00000007,              // counterAttributes
+    pose_table,              // poseTable
 };
 
-static BattleWeapon weapon_togedaruma_attack[1] = {{
-    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
-    1,
-    1,
-    1,
-    1,
-    (void*)weaponGetPowerDefault,
-    { 0x00000008, 0, 0, 0, 0, 0, 0, 0 },
-    NULL,
-    { 0 },
-    { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00,
-      0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
-    0x00000087,
-    { 0x00, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x20, 0x04 },
-    NULL,
-    { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00 },
-}};
+static BattleWeapon weapon_togedaruma_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 8, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x0000001E,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -237,7 +342,7 @@ EVT_END()
 static EVT_BEGIN(dmg_turn_event)
     SET_VALUE(LW(10), -2)
     SET_VALUE(LW(11), 1)
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence_turn))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence_turn))
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table_turn))
     CALL(btlevtcmd_OnStatusFlag, LW(10), 1)
     CALL(btlevtcmd_GetOverTurnCount, LW(10), LW(12))
@@ -281,7 +386,7 @@ static EVT_BEGIN(wakeup_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(defence))
+    CALL(btlevtcmd_SetPartsDefenceTable, LW(10), LW(11), PTR(&defence))
     CALL(btlevtcmd_OffStatusFlag, LW(10), 1)
     CALL(btlevtcmd_AnimeSetPoseTable, LW(10), LW(11), PTR(pose_table))
     SET_VALUE(LW(12), 0)
@@ -328,8 +433,8 @@ static EVT_BEGIN(attack_event)
             RETURN
         END_IF
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_togedaruma_attack))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_togedaruma_attack), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_togedaruma_attack))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_togedaruma_attack), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -339,10 +444,10 @@ static EVT_BEGIN(attack_event)
         END_IF
         GOTO(99)
     END_IF
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_togedaruma_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_togedaruma_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_togedaruma_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_togedaruma_attack))
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_TOGEDA_MOVE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("TGD_J_1"))
     WAIT_FRAMES(10)
@@ -356,7 +461,7 @@ static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(7.0f))
     CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, -1, 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_togedaruma_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_togedaruma_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -396,8 +501,8 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_togedaruma_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_togedaruma_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_togedaruma_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_togedaruma_attack), 256, LW(5))
     CALL(evt_snd_sfxoff, LW(15))
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_TOGEDA_MOVE3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     GOTO(98)

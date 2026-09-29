@@ -29,14 +29,27 @@ typedef struct NpcDeadInfo {
 typedef struct BattleGroupSetup {
     s32 numEnemies;             // 0x0
     BattleUnitSetup* enemyData; // 0x4
-    u8 field_0[0x20 - 0x0];     // 0x8
+    s32 field_0x8;              // 0x8
+    s32 field_0xC;              // 0xC
+    s32 field_0x10;             // 0x10
+    s32* heartDropParams;       // 0x14, battle_heart_drop_param_default*
+    s32* flowerDropParams;      // 0x18, battle_flower_drop_param_default*
+    s32 field_0x1C;             // 0x1C
 } BattleGroupSetup;
 
-// One entry of an area's battle setup list (name at 0x0, item-drop and loadout tables at 0x10/0x14, music at
-// 0x40); npcSetBattleInfo walks them 0x44 apart and hands one to npcSetupBattleInfo.
+// One entry of an area's battle setup list (btlsetup_*_tbl); npcSetBattleInfo finds one by name and hands it to
+// npcSetupBattleInfo.
 typedef struct BattleSetupData {
-    const char* name;       // 0x0
-    u8 field_4[0x44 - 0x4]; // 0x4
+    const char* name;                         // 0x0
+    const char* field_0x4;                    // 0x4, a map name where set (aji_14 for the Magnum Battender fight)
+    s32 field_0x8;                            // 0x8, copied to NpcBattleInfo+0x8
+    s32 flag;                                 // 0xC, a GSWF: while it is set, onLoadouts is used
+    struct NpcBattleSetupEntry* onLoadouts;   // 0x10, btlgrpsel_*_on
+    struct NpcBattleSetupEntry* offLoadouts;  // 0x14, btlgrpsel_*_off
+    s32 field_0x18;                           // 0x18, copied to NpcBattleInfo.field_4
+    s32 field_0x1C;                           // 0x1C, copied to NpcBattleInfo+0xAC; outside 1-2, field_0x20 is rolled
+    s8 field_0x20[16][2];                     // 0x20, min/max pairs, each rolled into NpcBattleInfo+0xB0
+    const char* music;                        // 0x40, copied to NpcBattleInfo+0xC0
 } BattleSetupData;
 
 typedef struct NpcBattleInfo {
@@ -58,15 +71,8 @@ typedef struct NpcBattleInfo {
 typedef struct NpcBattleSetupEntry {
     s32 weight;              // 0x0
     BattleGroupSetup* setup; // 0x4
-    s32 field_8;             // 0x8
+    struct BattleStageData* stageData; // 0x8
 } NpcBattleSetupEntry;
-
-// The 8-byte entries of an enemy item drop list (see setup+0x10/setup+0x14).
-typedef struct NpcItemDropEntry {
-    s32 field_0;   // 0x0, item type
-    s16 weight;    // 0x4
-    u8 pad_6[2];   // 0x6
-} NpcItemDropEntry;
 
 typedef struct NpcTribeInfo {
     const char* nameJp;           // 0x0
