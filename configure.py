@@ -1927,7 +1927,7 @@ config.libs = [
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_26_data_240F0"]),
             Object(Matching, "unit/unit_dokugassun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_15_data_5CC90"]),
             Object(Matching, "unit/unit_dokugassun.c", modules=["win"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
-            Object(NonMatching, "unit/unit_dokugassun.c", modules=["mri"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
+            Object(Matching, "unit/unit_dokugassun.c", modules=["mri"], source="v2/unit/unit_dokugassun.c", cflags=[*cflags_rel_nodefer, "-i rels/common/include"], extra_cflags=["-DUNIT_DATA_SYM=unit_dokugassun_local_data"]),
         ],
     ),
 ]
