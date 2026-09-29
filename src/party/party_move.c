@@ -1856,22 +1856,22 @@ void partyMoveWalk(PartyEntry* party) {
     partyWalkMain(party);
 }
 
-// Inlined slot-1 footmark writer used by partyWalkMain (same shape as partyRecordFootmarkSub).
-static inline void partyWalkFootmarkSub(Vec* pos, s32 flags) {
+// Inlined footmark writer for one party slot's ring, used by partyWalkMain (same shape as partyRecordFootmarkSub).
+static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot) {
     Footmark* f;
     s32 id;
 
     marioGetPtr();
-    id = writeId[1];
-    f = (Footmark*)(footmarkBuf + 0x500 + id * 0x10);
+    id = writeId[slot];
+    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
     if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
         if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
-            if (readId[1] != id + 1) {
-                writeId[1] = id + 1;
-                if (writeId[1] >= 0x50) {
-                    writeId[1] = 0;
+            if (readId[slot] != id + 1) {
+                writeId[slot] = id + 1;
+                if (writeId[slot] >= 0x50) {
+                    writeId[slot] = 0;
                 }
-                f = (Footmark*)(footmarkBuf + 0x500 + writeId[1] * 0x10);
+                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
                 f->x = pos->x;
                 f->y = pos->y;
                 f->z = pos->z;
@@ -1890,7 +1890,7 @@ static inline void partyWalkFootmarkSub(Vec* pos, s32 flags) {
     }
 }
 
-// NONMATCHING (76.42%): `flags |= (cond)` and the inlined writer codegen differ (extrwi/mr
+// NONMATCHING (87.35%): `flags |= (cond)` and the inlined writer codegen differ (extrwi/mr
 // instead of rlwinm./li r3, plus an early `li r31`), same class as partyRecordFootmark.
 void partyWalkMain(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
@@ -1904,7 +1904,7 @@ void partyWalkMain(PartyEntry* party) {
             flags |= 4;
         }
         pos = player->position;
-        partyWalkFootmarkSub(&pos, flags);
+        partyWalkFootmarkSub(&pos, flags, 0);
     } else {
         target = anotherPartyGetPtr(party->currentSlotId);
         if (target != NULL) {
@@ -1914,20 +1914,20 @@ void partyWalkMain(PartyEntry* party) {
                 flags = 0;
                 flags |= (marioGetPtr()->flags & 0x10000) != 0;
                 pos = marioGetPtr()->position;
-                partyWalkFootmarkSub(&pos, flags);
+                partyWalkFootmarkSub(&pos, flags, 1);
             } else {
                 flags = 0;
                 if (target->flags & PARTY_FLAG_IS_JUMPING) {
                     flags |= 1;
                 }
                 pos = target->position;
-                partyWalkFootmarkSub(&pos, flags);
+                partyWalkFootmarkSub(&pos, flags, 1);
             }
         } else {
             flags = 0;
             flags |= (marioGetPtr()->flags & 0x10000) != 0;
             pos = marioGetPtr()->position;
-            partyWalkFootmarkSub(&pos, flags);
+            partyWalkFootmarkSub(&pos, flags, 1);
         }
     }
     walkMain(party);

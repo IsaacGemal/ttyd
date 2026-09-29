@@ -1463,7 +1463,7 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (64.30%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
+// NONMATCHING (73.98%): 21 instructions differ, 41 missing, 25 extra, plus register differences.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
     u8* base = (u8*)vec3_802c3dc8;
@@ -1472,8 +1472,8 @@ void kururing_capture(CameraId cameraId, void* param) {
     AnimationPoseData* animData;
     Vec bboxMax;
     Vec bboxMin;
-    s32 texWidth;
-    s32 texHeight;
+    u16 texWidth;
+    u16 texHeight;
     f32 t;
 
     memcpy(&save, camGetPtr(cameraId), 0x260);

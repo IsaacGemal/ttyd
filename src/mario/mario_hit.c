@@ -589,7 +589,7 @@ extern const f32 float_75_8041a840;
 extern const f32 float_50_8041a844;
 extern const Vec vec3_802c57fc;
 
-// NONMATCHING (56.43%): stack/register layout differs; the dead sqrtf block is omitted.
+// NONMATCHING (57.32%): 21 instructions differ, 103 missing, 37 extra, plus register differences.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
@@ -680,7 +680,7 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
                 float_100_8041a7f8;
-            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, normal.x, -normal.y);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrt(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
 

@@ -1363,7 +1363,7 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
 }
 
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
-    BattleGroupSetup* setup;
+    BattleSetupData* setup;
     s32 i;
 
     if (battleInfoId == -1) {
@@ -1377,7 +1377,7 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
         areaName[2] = gp->currentMapName[2];
         areaName[3] = 0;
         area = areaDataPtr(areaName);
-        setup = (BattleGroupSetup*)area->field_8;
+        setup = (BattleSetupData*)area->field_8;
         while (battleInfoId > 0) {
             setup++;
             battleInfoId--;
@@ -1394,7 +1394,7 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
 // NONMATCHING (86.86%): logic is complete; MWCC picks a different callee-saved register
 // allocation (p/sel/i land in r26/r28/r25 instead of the original's r27/r27/r28) and the
 // level-range test/branch layout differs. All constants and offsets checked against the asm.
-void npcSetupBattleInfo(NpcEntry* npc, BattleGroupSetup* setup) {
+void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     NpcBattleInfo* info = &npc->battleInfo;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;

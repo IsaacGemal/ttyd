@@ -884,7 +884,7 @@ void party_motion_jump2(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (74.56%): frame is 0x140 (orig 0x120) and the first marioGetScreenPos uses a named Vec where the original copies to a scratch slot; callee-saved GPR set differs.
+// NONMATCHING (74.94%): frame is 0x140 (orig 0x120) and the first marioGetScreenPos uses a named Vec where the original copies to a scratch slot; callee-saved GPR set differs.
 void party_force_reset_outofscreen(PartyEntry* party) {
     extern Vec vec3_802f3ef4;
     MarioWork* mario;
@@ -919,7 +919,7 @@ void party_force_reset_outofscreen(PartyEntry* party) {
         party->position = screenPos;
         return;
     }
-    if (sx >= -100.0f && sx <= 700.0f && sy > 650.0f) {
+    if (sx >= -100.0f && sx <= 700.0f && sy <= 650.0f) {
         return;
     }
     if (!(party->flags & 0x8)) {
@@ -1775,7 +1775,7 @@ void party_motion_behind_mario(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (81.11%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
+// NONMATCHING (81.24%): original copies the appear position through a scratch Vec seeded from vec3_802f3e40+0x18 (a compiler struct-assignment idiom) which this elides; frame size differs.
 void party_motion_jump(PartyEntry* party) {
     MarioWork* mario;
     HitEntry* hit;
@@ -1887,7 +1887,7 @@ void party_motion_jump(PartyEntry* party) {
         }
         party->jumpPara3 = -f3 * mario->playerGravity;
         party->flags = (party->flags | 0x10);
-        party->flags = (party->flags & ~0x3);
+        party->flags = (party->flags & ~0x2);
         partyChgPoseId(party, 4);
         psndSFXOn_3D((const char*)0x927, &party->position);
         *(u8*)((u8*)party + 0x38) = 0xa;

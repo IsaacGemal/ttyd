@@ -29,8 +29,15 @@ typedef struct NpcDeadInfo {
 typedef struct BattleGroupSetup {
     s32 numEnemies;             // 0x0
     BattleUnitSetup* enemyData; // 0x4
-    u8 field_0[0x44 - 0x8];     // 0x8
+    u8 field_0[0x20 - 0x0];     // 0x8
 } BattleGroupSetup;
+
+// One entry of an area's battle setup list (name at 0x0, item-drop and loadout tables at 0x10/0x14, music at
+// 0x40); npcSetBattleInfo walks them 0x44 apart and hands one to npcSetupBattleInfo.
+typedef struct BattleSetupData {
+    const char* name;       // 0x0
+    u8 field_4[0x44 - 0x4]; // 0x4
+} BattleSetupData;
 
 typedef struct NpcBattleInfo {
     u8 field_0[0x4 - 0x0];          // 0x0
@@ -235,7 +242,7 @@ FieldBattleData* fbatGetPointer(void);
 
 void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id);
 void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId);
-void npcSetupBattleInfo(NpcEntry* npc, BattleGroupSetup* setup);
+void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup);
 void fbatChangeMode(s16 mode);
 
 NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description);

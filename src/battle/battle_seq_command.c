@@ -98,9 +98,7 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (62.71%): all logic is present; the first btlDispTexPlane block is scheduled
-// differently (target keeps newX in f3 and loads the constants before storing pos->x; ours stores then
-// reloads), and the field_0x0 test is lhz+cmpwi vs our lhz+extsh+cmpwi (bne vs beq+b).
+// NONMATCHING (73.48%): 10 instructions differ, 12 missing, 10 extra, plus register differences.
 void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	BattleWorkHpGauge* gauge = &unit->hpGauge;
@@ -125,11 +123,11 @@ void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 		}
 		btlDispTexPlane(0xB, *color,
 		                float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
-		                pos->y - float_3_8041c2ec, float_0_8041c2f0, float_1_8041c2f4, float_1_8041c2f4);
+		                pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
 	} else {
 		btlDispTexPlane(0xB, *color,
 		                float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
-		                pos->y - float_3_8041c2ec, float_0_8041c2f0, float_1_8041c2f4, float_1_8041c2f4);
+		                pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
 	}
 }
 
@@ -269,7 +267,7 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (94.53%): branch layout of the t==0/t==1 flag checks, cmplwi vs cmpwi, pooled labels.
+// NONMATCHING (96.67%): 11 instructions differ, 4 missing, plus register differences.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -412,6 +410,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			result = 1;
 			cmd->unk0 = 0x1D;
 		}
+		break;
 	}
 end:
 	BattleMenuDisp_ActSelect_Main();
@@ -425,7 +424,7 @@ void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (57.60%): field offset folded into indexed lwzx and a shifted register allocation.
+// NONMATCHING (59.31%): 8 instructions differ, 1 missing, 79 extra, plus register differences.
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -518,6 +517,7 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 			BattleCommandDisplay_WeaponSelectMenuEnd(wp);
 			wp->commandMenu.unk540[0x18] = 1;
 		}
+		break;
 	}
 end:
 	BattleMenuDisp_WeaponSelect_Main();

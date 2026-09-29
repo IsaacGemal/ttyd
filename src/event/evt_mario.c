@@ -1346,7 +1346,7 @@ USER_FUNC(evt_mario_get_party) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (82.51%): f22-f31 float register assignment and two int->float conversion sites.
+// NONMATCHING (82.68%): 11 instructions differ, 43 missing, 56 extra, plus register differences.
 USER_FUNC(evt_mario_jump_jumpstand) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
@@ -1428,7 +1428,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             dy = float_20_8041b8cc;
         }
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        tmp = (dy + dy) / (t - t * t);
+        tmp = (dy + dy) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = tmp * t;
         *(f32*)((u8*)mario + 0x80) = -tmp;
         *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
@@ -1451,7 +1451,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             break;
         }
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t - t * t);
+        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x80) = tmp;
         *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
@@ -1517,7 +1517,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             mario->directionView = angleABf(mario->position.x, mario->position.z, ax, az);
             *(f32*)((u8*)mario + 0x19C) = mario->directionView;
             t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-            tmp = float_20_8041b8cc / (t - t * t);
+            tmp = float_20_8041b8cc / (t * t - t);
             *(f32*)((u8*)mario + 0x7C) = tmp * t;
             *(f32*)((u8*)mario + 0x80) = -tmp;
             *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
@@ -1543,7 +1543,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             break;
         }
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t - t * t);
+        tmp = ((ty - mario->position.y) + (ty - mario->position.y)) / (t * t - t);
         *(f32*)((u8*)mario + 0x7C) = float_0_8041b8ac;
         *(f32*)((u8*)mario + 0x80) = tmp;
         *(f32*)((u8*)mario + 0x84) = float_0_8041b8ac;
