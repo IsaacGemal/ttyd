@@ -16,3 +16,8 @@ USER_FUNC(evt_mario_set_party_pos);
 USER_FUNC(evt_mario_set_pos);
 USER_FUNC(evt_mario_cont_onoff);
 USER_FUNC(evt_mario_set_pos);
+USER_FUNC(evt_mario_balloon_bikkuri);
+USER_FUNC(evt_mario_balloon_off);
+USER_FUNC(evt_mario_kill_party);
+USER_FUNC(evt_mario_set_dir);
+USER_FUNC(evt_mario_set_pose);

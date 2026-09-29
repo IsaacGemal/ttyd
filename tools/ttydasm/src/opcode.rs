@@ -377,7 +377,8 @@ impl Opcode {
             | Self::InlineEvent
             | Self::InlineEventId
             | Self::SiblingEvent
-            | Self::SiblingEventId => {
+            | Self::SiblingEventId
+            | Self::Else => {
                 *indentation = indentation.saturating_add(1);
             }
 
@@ -387,7 +388,7 @@ impl Opcode {
 
     pub fn decrease_indent(&self, indentation: &mut usize) {
         match self {
-            Self::While | Self::EndIf | Self::EndSwitch | Self::EndInline | Self::EndSibling => {
+            Self::While | Self::EndIf | Self::Else | Self::EndSwitch | Self::EndInline | Self::EndSibling => {
                 *indentation = indentation.saturating_sub(1)
             }
 

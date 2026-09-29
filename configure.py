@@ -1381,6 +1381,13 @@ config.libs = [
         ],
     ),
     Rel(
+        "aaa",
+        [
+            Object(Matching, "aaa.c"),
+            Object(Matching, "aaa_00.c"),
+        ],
+    ),
+    Rel(
         "dig",
         [
             Object(NonMatching, "dig.c"),
