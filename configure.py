@@ -1881,6 +1881,8 @@ config.libs = [
             Object(Matching, "unit/unit_heavy_bom.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_local_data"]),
             Object(Matching, "unit/unit_bllizard.c", modules=["bom"], extra_cflags=["-DUNIT_DATA_SYM=unit_bllizard_3_data_B7F0"]),
             Object(Matching, "unit/unit_bllizard.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_bllizard_15_data_60E68"]),
+            Object(NonMatching, "unit/unit_wanwan.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_wanwan_15_data_3F3F0"]),
+            Object(NonMatching, "unit/unit_wanwan.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_wanwan_17_data_50DF8"]),
         ],
     ),
 ]
