@@ -538,6 +538,8 @@ typedef struct HammerBrosSampling {
 } HammerBrosSampling;
 
 #pragma dont_inline on
+// NONMATCHING (68.52%): the register assignment of the locals and the loop shape differ; the helpers below carry the same
+// "addi before lbz" scheduling difference.
 static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     s32* args;
     s32 unitIds[20];
@@ -567,6 +569,7 @@ static USER_FUNC(hammer_bros_nagemakuri_set_target) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (88.24%): the original computes wp+0x428 before loading the selected index (lbz 0xedf); ours loads first.
 static void hammer_bros_get_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
     u8* base = (u8*)wp + 0x428;
@@ -577,6 +580,7 @@ static void hammer_bros_get_target(s32* unitId, s32* partId) {
     *partId = entry->partId;
 }
 
+// NONMATCHING (89.31%): same scheduling difference, and the original loads _battleWorkPointer with lis/addi/lwz.
 static void hammer_bros_get_next_target(s32* unitId, s32* partId) {
     BattleWork* wp = _battleWorkPointer;
     u8* base = (u8*)wp + 0x428;

@@ -48,12 +48,14 @@ USER_FUNC(puni_get_id) {
     return EVT_RETURN_DONE;
 }
 
-static s32 ss_set(EventEntry* event, BOOL isFirstCall) {
+static USER_FUNC(ss_set) {
     ssf = evtGetValue(event, event->args[0]);
     return EVT_RETURN_DONE;
 }
 
-static s32 ss_check(EventEntry* event, BOOL isFirstCall) {
+// NONMATCHING (86.91%): the target loads ssf into r5 and event->args before the int->float conversion; ours keeps the
+// argument load until after it (no source variant changed it).
+static USER_FUNC(ss_check) {
     evtSetFloat(event, event->args[0], ssf);
     return EVT_RETURN_DONE;
 }

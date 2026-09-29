@@ -28,7 +28,6 @@
 
 #pragma pool_data off
 
-#pragma fp_contract on // REL: target has fused fmsubs/fmadds; the REL flag is missing it (report)
 
 #pragma force_active on
 
@@ -687,9 +686,9 @@ USER_FUNC(evt_mapgrp_translate2) {
     z = 10.0f * (z / 10.0f);
     hit = marioGetPtr()->hitobjStandOn;
     if (hit != NULL && strcmp((const char*)ridingName, hitGetName(hit)) == 0) {
-        *(f32*)((u8*)mario + 0x174) = x - work[0];
-        *(f32*)((u8*)mario + 0x178) = y - work[1];
-        *(f32*)((u8*)mario + 0x17C) = z - work[2];
+        mario->riderDelta.x = x - work[0];
+        mario->riderDelta.y = y - work[1];
+        mario->riderDelta.z = z - work[2];
     }
     work[0] = 10.0f * (x / 10.0f);
     work[1] = 10.0f * (y / 10.0f);

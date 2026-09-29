@@ -1,4 +1,5 @@
 #include "battle/battle.h"
+#include "data/item_icon_view.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -19,12 +20,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-typedef struct ItemIcon {
-    u8 pad[0x20];
-    u16 icon_id;
-    u8 pad2[6];
-} ItemIcon;
-extern ItemIcon itemDataTable[];
 static USER_FUNC(_steal_item);
 static u32 regist[6];
 static u32 data_table[2];
@@ -335,8 +330,6 @@ static EVT_BEGIN(_borodo_normal_attack)
     RETURN
 EVT_END()
 
-// TODO: write _steal_item (static, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_badge_borodo.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(_steal_item) {
     s32* args;
     PouchData* pouch;

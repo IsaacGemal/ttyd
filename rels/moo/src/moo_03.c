@@ -131,6 +131,7 @@ static EVT_BEGIN(mario_fly)
     RETURN
 EVT_END()
 
+// NONMATCHING (98.88%): float constant load order differs.
 static USER_FUNC(mario_kirimomi) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(0);
@@ -151,6 +152,7 @@ static USER_FUNC(mario_kirimomi) {
     }
     return EVT_RETURN_BLOCK;
 }
+// NONMATCHING (83.17%): see the ledger (wave 17 leftovers).
 static USER_FUNC(z) {
     event->lwData[0] = (s32)(1024.0f * ((240.0f / (f32)tan(0.21816612780094147)) * 0.5f)) - EVTDAT_FLOAT_BASE;
     return EVT_RETURN_DONE;

@@ -24,7 +24,7 @@
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 static USER_FUNC(_mario_makkuro_set);
-static s32 vivian_comeback(void);
+static USER_FUNC(vivian_comeback);
 static USER_FUNC(eff_scanning);
 static u32 regist[6];
 static u32 data_table[4];
@@ -46,9 +46,6 @@ static s32 marioAttackEvent_NormalHammer[299];
 static s32 marioAttackEvent_KaitenHammer[299];
 static s32 wait_event_fmario[6];
 
-// Functions are emitted by MWCC in reverse source order, so they are written here
-// reversed (_mario_makkuro_set, vivian_comeback, eff_scanning) to keep .text in the
-// original order _mario_makkuro_set, vivian_comeback, eff_scanning.
 static USER_FUNC(eff_scanning) {
     s32* args;
     s32 id;
@@ -69,9 +66,9 @@ static USER_FUNC(eff_scanning) {
     return EVT_RETURN_DONE;
 }
 
-static s32 vivian_comeback(void) {
+static USER_FUNC(vivian_comeback) {
     pouchGetPtr()->partyData[PARTNER_VIVIAN].flags &= ~2;
-    return 1;
+    return EVT_RETURN_YIELD;
 }
 
 static USER_FUNC(_mario_makkuro_set) {
@@ -189,8 +186,6 @@ EVT_BEGIN(rampell_zoom)
     RETURN
 EVT_END()
 
-// TODO: write eff_scanning (static, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_boss_rampell.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(to_faker_mario)
     CALL(btlevtcmd_SetUnitWork, -2, 0, 2)
@@ -650,8 +645,6 @@ static EVT_BEGIN(gparty_zoom)
     RETURN
 EVT_END()
 
-// TODO: write _mario_makkuro_set (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_boss_rampell.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(init_event_fmario)
     CALL(btlevtcmd_AnimeSetPoseTable, -2, LW(11), PTR(pose_table_fmario_stay))
@@ -1126,6 +1119,3 @@ static EVT_BEGIN(wait_event_fmario)
     RETURN
 EVT_END()
 
-// TODO: write vivian_comeback (static, 0x30 bytes) here:
-// its asm is in build/G8MJ01/jin/asm/unit/unit_boss_rampell.s; this is where the original has it, just before the first script that uses it
-// clang-format on

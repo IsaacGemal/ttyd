@@ -144,8 +144,6 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-// TODO: write get_attacker (static, 0x90 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_yami_togekuri.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(get_attacker) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -162,9 +160,6 @@ static USER_FUNC(get_attacker) {
     return EVT_RETURN_DONE;
 }
 
-// TODO: write krb_comp_dir (static, 0x170 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_yami_togekuri.s; this is where the original has it, just before the first script that uses it
-#pragma opt_common_subs off // the target keeps a fresh SinTable[mid] load for the second compare; CSE collapses it
 static u16 krb_comp_dir(f32 x, f32 y) {
     f32 dist;
     f32 value;
@@ -179,8 +174,7 @@ static u16 krb_comp_dir(f32 x, f32 y) {
     lo = 0;
     hi = 90;
     for (i = 0; i < 7; i++) {
-        mid = (u16)lo + (hi - lo) / 2;
-        if (((f32*)SinTable)[mid] < value) {
+        if (((f32*)SinTable)[mid = lo + (hi - lo) / 2] < value) {
             lo = mid;
         }
         if (!(((f32*)SinTable)[mid] < value)) {
@@ -203,7 +197,6 @@ static u16 krb_comp_dir(f32 x, f32 y) {
     }
     return (u16)out;
 }
-#pragma opt_common_subs on
 
 static EVT_BEGIN(dmg_avoid_counter_thorn_head_event)
     WAIT_FRAMES(30)
@@ -281,8 +274,6 @@ static u32 SinTable[91] = {
     0x3F7FD817, 0x3F7FF60A, 0x3F800000,
 };
 
-// TODO: write krb_get_dir (static, 0x118 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_yami_togekuri.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(krb_get_dir) {
     s32* args = event->args;
     f32 x0;

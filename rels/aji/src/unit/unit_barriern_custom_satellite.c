@@ -11,7 +11,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 btldefaultevt_Confuse[];
 static USER_FUNC(battleGetBarriernSatelliteInitPos);  // local to this file in the original
 static u32 parts[114];
 static u32 regist[6];

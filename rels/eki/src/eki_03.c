@@ -231,7 +231,6 @@ EVT_BEGIN(evt_poster_15)
     RETURN
 EVT_END()
 
-// TODO: write test_glare (static, 0x118 bytes) here:
 extern const f32 float_31p416_eki_000091e0;
 extern const f32 float_0p015625_eki_000091e4;
 extern const f32 float_0p125_eki_000091e8;
@@ -269,7 +268,6 @@ static USER_FUNC(test_glare) {
     return 0;
 }
 
-// TODO: write sun_tev (static, 0x308 bytes) here:
 static void sun_tev(EnvironmentYami* yami) {
     GXTexObj texObj;
     u8* image;

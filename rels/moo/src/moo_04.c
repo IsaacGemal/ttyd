@@ -73,6 +73,8 @@ static EVT_BEGIN(party_damage_pose)
     RETURN
 EVT_END()
 
+// NONMATCHING (99.11%): the target loads the 0.5f/10.0f constant addresses (lis/addi) before the fmuls; the operand order
+// of the multiplications did not change it.
 static USER_FUNC(mario_kirimomi) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(0);

@@ -1907,3 +1907,11 @@ unit's header on rerun.
   `intplGetValue` schedules differently, same as battle_seq_end.c), hammer_bros (helper functions inline unless wrapped in
   `#pragma dont_inline`; two of three at 88-89%). Still open in wave 17: eki_03/hom_00 (`test_glare`, `sun_tev`, `tokei`),
   moo_03/moo_04 (`mario_kirimomi`), mri_13, mri_16 (`ss_check` 86.9%).
+- Review fixes for #34: `vivian_comeback` is static and returns EVT_RETURN_YIELD (no header, no `cats` pragma); the
+  `ItemIcon` view of `itemDataTable` (the steal-item functions load `icon_id` with `lhz`; ItemData has it as s16, and
+  changing it drops `btlUnitItemDisp` from 91.6% to 82.9% because its dead `(f32)BtlUnit_GetHeight` statement stops
+  compiling like the target) lives once, in `include/data/item_icon_view.h`; `MarioWork.riderDelta` (+0x174) is named;
+  agent pragmas (`opt_propagation`, `opt_common_subs`, `fp_contract`, `defer_codegen`) were removed where the literal
+  and index-assignment forms above make them unnecessary; NONMATCHING labels added to the unlinked units. The
+  `mri_puni:evt_make_texbuf` -0.01 (64.86 -> 64.85) is a side effect of compiling mri without deferral; that unit is still
+  NonMatching.

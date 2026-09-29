@@ -283,9 +283,6 @@ static u32 bero_entry_data[45] = {
 };
 
 
-// TODO: write toge_enter_func00 here (moved from the generated end position: its {450,0,0} constant
-// must be emitted at .rodata+0x228, between bero_entry_data and puni_win_offscreen)
-#pragma opt_propagation off // keep the named .rodata Vec ref and the original copy schedule
 USER_FUNC(toge_enter_func00) {
     Vec pos = { 450.0f, 0.0f, 0.0f };
 
@@ -294,7 +291,6 @@ USER_FUNC(toge_enter_func00) {
     togeMakeRetsu(&pos, 116, 117, 119);
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation on
 
 static EVT_BEGIN(puni_win_offscreen)
     CALL(evt_paper_entry, STRING("OFF_d_bom"))
@@ -621,6 +617,3 @@ EVT_BEGIN(mri_08_init_evt)
     RETURN
 EVT_END()
 
-// TODO: write toge_enter_func00 (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_08.s; this is where the original has it, just before the first script that uses it
-// clang-format on

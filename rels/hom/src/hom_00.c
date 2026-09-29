@@ -30,8 +30,6 @@
 #include <dolphin/os.h>
 
 #pragma pool_data off
-// RELs are built without -fp_contract on (unlike the DOL flags); the original hom_00 has fmadds/fmsubs.
-#pragma fp_contract on
 
 #pragma force_active on
 extern s32 hom_10_evt_resha_left_13_data_38E4[];
@@ -635,7 +633,7 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
     total = td.hour * 3600 + td.min * 60 + td.sec;
     event->lwData[0] = (s32)(1024.0f * -(360.0f * ((f32)total / 3600.0f) / 12.0f)) - 0x0DB58580;
     event->lwData[1] = (s32)(1024.0f * -(360.0f * ((f32)total / 60.0f) / 60.0f)) - 0x0DB58580;
-    return 2;
+    return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (0%): first draft, checking against the original.

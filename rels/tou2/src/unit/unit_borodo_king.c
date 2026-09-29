@@ -1,4 +1,5 @@
 #include "battle/battle.h"
+#include "data/item_icon_view.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -18,12 +19,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-typedef struct ItemIcon {
-    u8 pad[0x20];
-    u16 icon_id;
-    u8 pad2[6];
-} ItemIcon;
-extern ItemIcon itemDataTable[];
 static USER_FUNC(_steal_item);
 static u32 regist[6];
 static u32 data_table[2];

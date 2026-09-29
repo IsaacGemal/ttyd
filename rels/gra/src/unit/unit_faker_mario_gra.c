@@ -1,4 +1,3 @@
-#include "unit_faker_mario_gra.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -11,8 +10,8 @@
 
 #pragma pool_data off
 
-#pragma cats on
 #pragma force_active on
+static USER_FUNC(vivian_comeback);
 static u32 regist_fmario[6];
 static u32 data_table_fmario[4];
 static u32 parts_fmario[19];
@@ -638,13 +637,11 @@ static EVT_BEGIN(wait_event_fmario)
     RETURN
 EVT_END()
 
-s32 vivian_comeback(void)
-{
+static USER_FUNC(vivian_comeback) {
     PouchData* pouch = pouchGetPtr();
 
     pouch->partyData[PARTNER_VIVIAN].flags &= ~2;
-    return 1;
+    return EVT_RETURN_YIELD;
 }
 
 // clang-format on
-#pragma cats off
