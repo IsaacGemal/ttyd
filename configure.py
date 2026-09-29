@@ -1537,7 +1537,7 @@ config.libs = [
             Object(Matching, "gon_bt00.c"),
             Object(Matching, "gon_13.c"),
             Object(Matching, "gon_06.c", cflags=[*cflags_rel_nodefer, "-i rels/gon/include"]),
-            Object(NonMatching, "gon_12.c"),
+            Object(Matching, "gon_12.c"),
         ],
     ),
     Rel(

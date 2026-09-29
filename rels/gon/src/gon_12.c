@@ -87,8 +87,6 @@ static USER_FUNC(evt_chuchu_back_loop) {
     return EVT_RETURN_DONE;
 }
 
-const f32 unusedA = 1.25f;
-const f32 unusedB = 2.75f;
 
 static EVT_BEGIN(chuchurina_sogu)
     IF_INT_GREATER_OR_EQUAL(GSW(0), 50)
