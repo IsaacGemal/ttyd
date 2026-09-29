@@ -6,7 +6,7 @@
 
 
 //.data
-InformantWork _jdt;
+InformantWork _jdt = { 0 };
 const char* evtNoLabel[] = {
 	"STG0_00", "STG0_01", "STG0_02", "STG0_03", "STG0_04", "STG0_05", "STG0_06", "STG0_07", "STG0_08",
 	"STG0_09", "STG0_10", "STG0_10_01", "STG0_11", "STG0_12", "STG0_12_01", "STG0_12_02", "STG0_13",
@@ -259,8 +259,8 @@ s16 johoya_get(u8* data, s16 id) {
     return (data[id / 8] & mask) >> shift;
 }
 
-// NONMATCHING (99.43%): only register allocation differs below the switch; the original
-// keeps the value temp in r0 and the data temp in r4, this build swaps them.
+// NONMATCHING (99.81%): only one instruction differs: the original sign-extends `value` into r0
+// (`extsh r0, r5`), this build extends it in place (`extsh r5, r5`).
 s32 johoya_set(u8* data, s16 id, s16 value) {
     u8 invmask;
     s32 shift;
@@ -309,7 +309,7 @@ s32 johoya_set(u8* data, s16 id, s16 value) {
     else if (value > 1) {
         value = 1;
     }
-    data[index] = (u8)(value << shift) + (u8)(data[index] & invmask);
+    data[index] = (u8)(data[index] & invmask) + (u8)((s32)value << shift);
     return value;
 }
 
