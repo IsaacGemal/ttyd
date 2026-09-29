@@ -80,11 +80,42 @@ impl fmt::Display for Arg {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Symbol { name } => write!(f, "{name}"),
-            Self::Float(value) => write!(f, "FLOAT({value:?}f)"),
+            Self::Float(value) => write!(f, "FLOAT({}f)", short_float(*value)),
             Self::Stored { location, value } => write!(f, "{location}({value})"),
             Self::Imm(value) => write!(f, "{value}"),
         }
     }
+}
+
+/// The shortest decimal that FLOAT() encodes to the same word: FLOAT truncates value * 1024 to an integer.
+fn short_float(value: f32) -> String {
+    let word = (value * 1024.0) as i32;
+    for digits in 1..=8 {
+        let text = format!("{value:.digits$}");
+        if let Ok(parsed) = text.parse::<f32>() {
+            if (parsed * 1024.0) as i32 == word {
+                let text = text.trim_end_matches('0');
+                return if text.ends_with('.') { format!("{text}0") } else { text.to_string() };
+            }
+        }
+    }
+    format!("{value:?}")
+}
+
+/// A C string literal's contents: everything passes through except quotes, backslashes and control characters.
+fn c_escape(text: &str) -> String {
+    let mut out = String::new();
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 || c as u32 == 0x7F => out.push_str(&format!("\\{:03o}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
 }
 
 pub(crate) struct EventScript<'a> {
@@ -145,7 +176,7 @@ impl<'a> EventScript<'a> {
             let (cow, _, had_errors) = encoding_rs::SHIFT_JIS.decode(text);
             match had_errors {
                 true => Ok(Arg::Symbol { name: name.to_string() }),
-                false => Ok(Arg::Symbol { name: format!("STRING({cow:?})") }),
+                false => Ok(Arg::Symbol { name: format!("STRING(\"{}\")", c_escape(&cow)) }),
             }
         } else {
             match category {

@@ -11,9 +11,9 @@ void door_position_sub(s32 mode, char* mapName, char* hitIn, char* hitOut, Vec* 
 
 // A map's door, read by evt_door_entry and evt_door_param
 typedef struct DoorEntry {
-    s32 flags;                    // 0x00 bit 0: hide npcNames while inside
+    s32 flags;                    // 0x00 bit 0: npcNames hidden until the door is entered
     s32 type;                     // 0x04 door_position_sub's mode
-    s32 field_0x8;                // 0x08
+    s32 field_0x8;                // 0x08 door_open_se picks the sound by it
     const char* doorMapObj;       // 0x0C
     const char* closeHit;         // 0x10
     const char* openHit;          // 0x14
@@ -23,9 +23,9 @@ typedef struct DoorEntry {
     const char* insideHit;        // 0x24
     s32* doorEvt;                 // 0x28
     s32 field_0x2C;               // 0x2C
-    s32* wallEvt;                 // 0x30
+    s32* houseEvt;                // 0x30 run with house_open_se/house_close_se
     const char** npcNames;        // 0x34
-    const char** mapObjNames;     // 0x38
+    const char** mobjNames;       // 0x38
     const char** itemNames;       // 0x3C
     s32* openEvt;                 // 0x40
     s32* closeEvt;                // 0x44

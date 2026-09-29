@@ -20,9 +20,9 @@ typedef struct TreeAccessEntry {
     s32* event;           // 0x14
 } TreeAccessEntry;
 
-// evt_sub_kusa_access_entry's table, ended by kind 4
+// evt_sub_kusa_access_entry's table, ended by field_0x0 == 4
 typedef struct KusaAccessEntry {
-    s32 kind;             // 0x00
+    s32 field_0x0;        // 0x00
     const char* hitName;  // 0x04
     const char* mapObj;   // 0x08
     s32* event;           // 0x0C
