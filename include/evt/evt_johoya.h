@@ -38,3 +38,12 @@ s32 johoya_data_make(const char* prefix, s32 type);
 s16 johoya_get(u8* data, s16 id);
 s32 johoya_set(u8* data, s16 id, s16 value);
 const char* search_evt_moji(s32 index);
+
+USER_FUNC(johoya_keti_newjoho_check);
+USER_FUNC(johoya_keti_newjoho_makelabel);
+USER_FUNC(johoya_keti_newjoho_setreadflag);
+USER_FUNC(johoya_keti_oldspeak_check);
+USER_FUNC(johoya_keti_oldspeak_makelabel);
+USER_FUNC(johoya_keti_oldspeak_setreadflag);
+USER_FUNC(johoya_luigi_newjoho_setreadflag);
+USER_FUNC(johoya_perfect_newjoho_setreadflag);

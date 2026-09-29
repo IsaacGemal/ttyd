@@ -114,17 +114,21 @@
 // Sequential Reads
 #define SET_INT_READ_ADDR(ptr) EVT_CMD(1, OPCODE_SET_READ), ptr,
 #define READ_INT(dest) EVT_CMD(1, OPCODE_READ), dest,
-#define READ_INT2(dest) EVT_CMD(1, OPCODE_READ2), dest,
-#define READ_INT3(dest) EVT_CMD(1, OPCODE_READ3), dest,
-#define READ_INT4(dest) EVT_CMD(1, OPCODE_READ4), dest,
+#define READ_INT2(dest1, dest2) EVT_CMD(2, OPCODE_READ2), dest1, dest2,
+#define READ_INT3(dest1, dest2, dest3) EVT_CMD(3, OPCODE_READ3), dest1, dest2, dest3,
+#define READ_INT4(dest1, dest2, dest3, dest4) EVT_CMD(4, OPCODE_READ4), dest1, dest2, dest3, dest4,
 #define READ_INT_INDEXED(dest, offset) EVT_CMD(2, OPCODE_READ_N), dest, offset,
 
 #define SET_FLOAT_READ_ADDR(ptr) EVT_CMD(1, OPCODE_SET_READF), ptr,
 #define READ_FLOAT(dest) EVT_CMD(1, OPCODE_READF), dest,
-#define READ_FLOAT2(dest) EVT_CMD(1, OPCODE_READF2), dest,
-#define READ_FLOAT3(dest) EVT_CMD(1, OPCODE_READF3), dest,
-#define READ_FLOAT4(dest) EVT_CMD(1, OPCODE_READF4), dest,
+#define READ_FLOAT2(dest1, dest2) EVT_CMD(2, OPCODE_READF2), dest1, dest2,
+#define READ_FLOAT3(dest1, dest2, dest3) EVT_CMD(3, OPCODE_READF3), dest1, dest2, dest3,
+#define READ_FLOAT4(dest1, dest2, dest3, dest4) EVT_CMD(4, OPCODE_READF4), dest1, dest2, dest3, dest4,
 #define READ_FLOAT_INDEXED(dest, offset) EVT_CMD(2, OPCODE_READF_N), dest, offset,
+
+// Debug output (does nothing in retail)
+#define DEBUG_PUT_MSG(msg) EVT_CMD(1, OPCODE_DEBUG_PUT_MSG), msg,
+#define DEBUG_PUT_REG(var) EVT_CMD(1, OPCODE_DEBUG_PUT_REG), var,
 
 // User Work / User Flag Base
 #define SET_UW_BASE(expr) EVT_CMD(1, OPCODE_SET_USER_WORK), expr,

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 #include <dolphin/types.h>
 
 typedef struct PiantaParlorWork {
@@ -87,3 +89,14 @@ void yuugijou_init(void);
 
 struct EventEntry* evtYuuWindow(void);
 BOOL evtYuuWindowEndChk(void);
+
+USER_FUNC(yuugijou_add_montemedal);
+USER_FUNC(yuugijou_add_montemedal_moto);
+USER_FUNC(yuugijou_get_montemedal);
+USER_FUNC(yuugijou_get_montemedal_keep);
+USER_FUNC(yuugijou_get_takeoutflag);
+USER_FUNC(yuugijou_montemedal_disp_onoff);
+USER_FUNC(yuugijou_montemedal_keep);
+USER_FUNC(yuugijou_montemedal_return);
+USER_FUNC(yuugijou_montemedal_wait);
+USER_FUNC(yuugijou_set_yupflag);

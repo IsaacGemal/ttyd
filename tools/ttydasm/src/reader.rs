@@ -124,7 +124,7 @@ pub(crate) struct EventScript<'a> {
     /// The raw data backing the actual script.
     data: &'a [u8],
     /// Mapping from section-relative offset -> (symbol_name, addend)
-    lookup: &'a HashMap<u64, String>,
+    lookup: &'a HashMap<u64, (String, object::SymbolIndex)>,
     /// Section-relative address of [`Self::data`]
     base: u64,
     /// Current position within [`Self::data`]
@@ -132,7 +132,7 @@ pub(crate) struct EventScript<'a> {
 }
 
 impl<'a> EventScript<'a> {
-    pub fn new(file: File<'a>, data: &'a [u8], base: u64, lookup: &'a HashMap<u64, String>) -> Self {
+    pub fn new(file: File<'a>, data: &'a [u8], base: u64, lookup: &'a HashMap<u64, (String, object::SymbolIndex)>) -> Self {
         Self { file, data, lookup, base, pos: 0 }
     }
 
@@ -157,8 +157,8 @@ impl<'a> EventScript<'a> {
         let category = ExpressionType::category(raw);
 
         // There may be a symbol at this offset but doesn't show up because object didn't resolve it.
-        if let Some(name) = self.lookup.get(&offset) {
-            let symbol = self.file.symbol_by_name(name).context("symbol not found")?;
+        if let Some((name, index)) = self.lookup.get(&offset) {
+            let symbol = self.file.symbol_by_index(*index)?;
 
             let Some(section_index) = symbol.section_index() else {
                 return Ok(Arg::Symbol { name: name.to_string() });
@@ -180,11 +180,12 @@ impl<'a> EventScript<'a> {
             }
         } else {
             match category {
-                ExpressionType::Address | ExpressionType::Pointer => {
-                    let name =
-                        self.lookup.get(&offset).context("Unable to get relocation for index {raw}")?;
-                    Ok(Arg::Symbol { name: name.to_string() })
-                }
+                // No relocation here, so not a pointer: -250000000 is the "no value" sentinel scripts pass to
+                // battle commands, anything else a plain constant.
+                ExpressionType::Address | ExpressionType::Pointer => Ok(match raw {
+                    -250000000 => Arg::Symbol { name: "EVTDAT_POINTER_MAX".to_string() },
+                    _ => Arg::Symbol { name: format!("0x{:08X}", raw as u32) },
+                }),
                 ExpressionType::Float => {
                     let value = ExpressionType::decode(raw) as f32;
                     Ok(Arg::Float(value / 1024.0))
@@ -258,6 +259,10 @@ impl<'a> EventScript<'a> {
                 }
             }
             opcode.increase_indent(&mut indentation);
+            // Past the last END_SCRIPT, the symbol may hold alignment padding
+            if opcode == Opcode::EndScript && self.data[self.pos..].iter().all(|&b| b == 0) {
+                break;
+            }
         }
         println!("EVT_END()");
         Ok(())

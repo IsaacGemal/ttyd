@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 typedef struct EventEntry EventEntry;
 
 typedef struct MapObjectEntry MapObjectEntry;
@@ -38,3 +40,57 @@ s32 mobj_itembox(MapObjectEntry* obj);
 s32 mobj_switch_float_blk(MapObjectEntry* obj);
 s32 mobj_timerswitch(MapObjectEntry* obj);
 void kururing_capture(CameraId cameraId, void* param);
+
+USER_FUNC(evt_mobj_badgeblk);
+USER_FUNC(evt_mobj_breaking_floor);
+USER_FUNC(evt_mobj_brick);
+USER_FUNC(evt_mobj_check);
+USER_FUNC(evt_mobj_delete);
+USER_FUNC(evt_mobj_entry);
+USER_FUNC(evt_mobj_exec_cancel);
+USER_FUNC(evt_mobj_flag_onoff);
+USER_FUNC(evt_mobj_float_blk);
+USER_FUNC(evt_mobj_floatswitch_blue);
+USER_FUNC(evt_mobj_floatswitch_red);
+USER_FUNC(evt_mobj_get_kindname);
+USER_FUNC(evt_mobj_get_position);
+USER_FUNC(evt_mobj_get_x_position);
+USER_FUNC(evt_mobj_get_y_position);
+USER_FUNC(evt_mobj_hit_onoff);
+USER_FUNC(evt_mobj_hitevt_onoff);
+USER_FUNC(evt_mobj_itembox);
+USER_FUNC(evt_mobj_jumpstand_blue);
+USER_FUNC(evt_mobj_jumpstand_red);
+USER_FUNC(evt_mobj_koopa_badgeblk);
+USER_FUNC(evt_mobj_koopa_blk);
+USER_FUNC(evt_mobj_koopa_brick);
+USER_FUNC(evt_mobj_koopa_dokan);
+USER_FUNC(evt_mobj_koopa_fireber_dodai);
+USER_FUNC(evt_mobj_koopa_hidden_blk);
+USER_FUNC(evt_mobj_koopa_ojama_blk);
+USER_FUNC(evt_mobj_koopa_pole);
+USER_FUNC(evt_mobj_koopa_sango);
+USER_FUNC(evt_mobj_koopa_stone_blk);
+USER_FUNC(evt_mobj_kururing_floor);
+USER_FUNC(evt_mobj_lock);
+USER_FUNC(evt_mobj_lock_unlock);
+USER_FUNC(evt_mobj_lv_blk);
+USER_FUNC(evt_mobj_powerupblk);
+USER_FUNC(evt_mobj_recovery_blk);
+USER_FUNC(evt_mobj_rideswitch_lightblue);
+USER_FUNC(evt_mobj_save_blk);
+USER_FUNC(evt_mobj_set_anim);
+USER_FUNC(evt_mobj_set_camid);
+USER_FUNC(evt_mobj_set_gravity_bound);
+USER_FUNC(evt_mobj_set_position);
+USER_FUNC(evt_mobj_set_scale);
+USER_FUNC(evt_mobj_set_x_position);
+USER_FUNC(evt_mobj_set_y_position);
+USER_FUNC(evt_mobj_set_z_position);
+USER_FUNC(evt_mobj_signboard);
+USER_FUNC(evt_mobj_switch_blue);
+USER_FUNC(evt_mobj_switch_float_blk);
+USER_FUNC(evt_mobj_switch_red);
+USER_FUNC(evt_mobj_timerswitch);
+USER_FUNC(evt_mobj_tornadoswitch_blue);
+USER_FUNC(evt_mobj_wait_animation_end);

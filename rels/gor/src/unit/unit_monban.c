@@ -1,0 +1,459 @@
+#include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_event_default.h"
+#include "battle/battle_event_subset.h"
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+
+#pragma force_active on
+extern s32 btldefaultevt_Dummy[];
+static u32 regist[6];
+static BattleDataEntry data_table[3];
+static BattleUnitDefense defence;
+static BattleUnitDefenseAttr defence_attr;
+static BattleDispPose pose_table[18];
+static BattleUnitKindPart parts[2];
+static s32 init_event[46];
+static s32 dmg_avoid_counter_thorn_head_event[76];
+static s32 damage_event[10];
+static s32 phase_event[68];
+static s32 attack_event[52];
+static s32 normal_attack_event[391];
+static s32 throw_attack_event[343];
+static s32 wait_event[6];
+
+// clang-format off
+extend_data(40,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(41,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+u32 unit_monban[49] = {
+    0x00000007, (u32)"btl_un_monban", 0x00140000, 0x01012D00,
+    0x00640064, 0x0009001F, 0x002E0000, 0x002E0000,
+    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x41800000,
+    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x41780000,
+    0x00000000, 0x00000000, 0x41780000, 0x41EF3333,
+    0x00000000, 0x00000000, 0x41A00000, 0x00000000,
+    0x41E00000, 0x42200000, 0x00000002, 0x64140000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_MONBAN_DAMAGED1",
+    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
+    (u32)&regist, 0x02000000, (u32)&parts, (u32)&init_event,
+    (u32)&data_table,
+};
+
+static BattleUnitDefense defence = {
+    { 0x00, 0x00, 0x00, 0x00, 0x00 },
+};
+
+static BattleUnitDefenseAttr defence_attr = {
+    { 0x00, 0x00, 0x00, 0x00, 0x00 },
+};
+
+// TODO: type
+static u32 regist[6] = {
+    0x5A505028, 0x5A286446, 0x1E5A1E5A, 0x285F4600,
+    0x3C644646, 0x46320000,
+};
+
+static BattleDispPose pose_table[18] = {
+    { 0x00000001, "N_1" }, { 0x00000002, "Y_1" },
+    { 0x00000009, "Y_1" }, { 0x00000005, "K_1" },
+    { 0x00000004, "X_1" }, { 0x00000003, "X_1" },
+    { 0x0000001C, "S_2" }, { 0x0000001D, "Q_1" },
+    { 0x0000001E, "Q_1" }, { 0x0000001F, "A_1" },
+    { 0x00000027, "D_1" }, { 0x00000032, "A_1" },
+    { 0x0000002A, "R_1" }, { 0x00000028, "W_1" },
+    { 0x00000038, "X_1" }, { 0x00000039, "X_1" },
+    { 0x00000041, "T_1" }, { 0x00000045, "S_2" },
+};
+
+static BattleDataEntry data_table[3] = {
+    { 0x00000025, dmg_avoid_counter_thorn_head_event },
+    { 0x00000030, btldefaultevt_Dummy },
+    { 0x00000000, NULL },
+};
+
+static BattleUnitKindPart parts[2] = {
+    {
+        0x00000001, "btl_un_monban", "c_monban",
+        { 0.0f, 0.0f, 0.0f },
+        { 8.0f, 35.0f, 0.0f },
+        { 0x00, 0x00, 0x00, 0x00, 0x42, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+        &defence, &defence_attr,
+        0x00000009, 0x00000001, &pose_table,
+    },
+    {
+        0x00000002, "btl_un_monban", "c_monban",
+        { 0.0f, 0.0f, 0.0f },
+        { 0.0f, 0.0f, 0.0f },
+        { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+        &defence, &defence_attr,
+        0x13010000, 0x00000000, &pose_table,
+    },
+};
+
+static BattleWeapon weapon_monban_attack[1] = {{
+    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+    0x01, 0x01, 0x01, 0x01,
+    (void*)weaponGetPowerDefault,
+    { 0x00000003 },
+    NULL,
+    { 0 },
+    { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+    0x00000087,
+    { 0x00, 0x00, 0x07, 0xFB, 0x00, 0x00, 0x20, 0x04 },
+    NULL,
+    { 0x00, 0x00, 0x00, 0x64 },
+}};
+
+static BattleWeapon weapon_monban_throw_attack[1] = {{
+    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x02, 0x3F, 0x80, 0x00, 0x00 },
+    0x01, 0x01, 0x01, 0x01,
+    (void*)weaponGetPowerDefault,
+    { 0x00000003 },
+    NULL,
+    { 0 },
+    { 0x01, 0x10, 0x12, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+    0x00004087,
+    { 0x00, 0x00, 0x07, 0xFF, 0x80, 0x00, 0x20, 0x00 },
+    NULL,
+    { 0x00, 0x00, 0x00, 0x64 },
+}};
+
+// TODO: type
+static u32 pose_sound_timing_table[10] = {
+    (u32)"S_2", 0x3F2AAAAB, 0x00000000, (u32)"SFX_ENM_MONBAN_WAIT1",
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000001,
+};
+
+static EVT_BEGIN(init_event)
+    CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
+    CALL(btlevtcmd_SetEventPhase, -2, PTR(phase_event))
+    CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetEventDamage, -2, PTR(damage_event))
+    CALL(btlevtcmd_SetEventConfusion, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetRunSound, -2, STRING("SFX_ENM_MONBAN_MOVE2R"), STRING("SFX_ENM_MONBAN_MOVE2L"), 0, 5, 5)
+    CALL(btlevtcmd_SetWalkSound, -2, STRING("SFX_ENM_MONBAN_MOVE2R"), STRING("SFX_ENM_MONBAN_MOVE2L"), 0, 10, 10)
+    CALL(btlevtcmd_AnimeSetPoseSoundTable, -2, 1, PTR(pose_sound_timing_table))
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(dmg_avoid_counter_thorn_head_event)
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_CheckStatus, -2, 10, LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 18)
+        ADD(LW(1), 60)
+        GOTO(90)
+    END_IF
+    CALL(btlevtcmd_CheckStatus, -2, 11, LW(3))
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 10)
+        ADD(LW(1), 33)
+        GOTO(90)
+    END_IF
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 14)
+    ADD(LW(1), 48)
+    GOTO(90)
+    LABEL(90)
+    CALL(evt_eff, STRING(""), STRING("toge_flush"), 0, LW(0), LW(1), LW(2), 60, 0, 0, 0, 0, 0, 0, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(damage_event)
+    SET_VALUE(LW(10), -2)
+    SET_VALUE(LW(11), 1)
+    CALL_CHILD(btldefaultevt_Damage)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(phase_event)
+    IF_INT_EQUAL(GSWF(1208), 0)
+        CALL(btlevtcmd_GetHp, -3, LW(0))
+        IF_INT_LESS_OR_EQUAL(LW(0), 5)
+            CALL(btlevtcmd_CheckPhase, LW(0), 67108866)
+            IF_INT_NOT_EQUAL(LW(0), 0)
+                CALL(btlevtcmd_CheckActStatus, -2, LW(0))
+                IF_INT_NOT_EQUAL(LW(0), 0)
+                    CALL(btlevtcmd_StatusWindowOnOff, 0)
+                    CALL(evt_btl_camera_set_mode, 0, 3)
+                    CALL(evt_btl_camera_set_moveto, 0, 88, 88, 432, 88, 60, 0, 30, 11)
+                    WAIT_FRAMES(30)
+                    CALL(evt_msg_print, 2, STRING("gor_02_008_01"), 0, -2)
+                    CALL(btlevtcmd_StatusWindowOnOff, 1)
+                    SET_VALUE(GSWF(1208), 1)
+                    CALL(evt_btl_camera_set_mode, 0, 0)
+                    WAIT_FRAMES(60)
+                END_IF
+            END_IF
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(attack_event)
+    CALL(btlevtcmd_EnemyItemUseCheck, -2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL_CHILD(LW(0))
+        CALL(btlevtcmd_StartWaitEvent, -2)
+        RETURN
+    END_IF
+    SET_VALUE(LW(0), 50)
+    ADD(LW(0), 50)
+    SUBTRACT(LW(0), 1)
+    CALL(evt_sub_random, LW(0), LW(1))
+    IF_INT_LESS(LW(1), 50)
+        SET_VALUE(LW(9), PTR(weapon_monban_attack))
+        CALL_CHILD(normal_attack_event)
+        GOTO(99)
+    END_IF
+    SET_VALUE(LW(9), PTR(weapon_monban_throw_attack))
+    CALL_CHILD(throw_attack_event)
+    GOTO(99)
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(normal_attack_event)
+    CALL(btlevtcmd_check_battleflag, LW(0), 2)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
+    ELSE
+        CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
+    END_IF
+    IF_INT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL_CHILD(subsetevt_confuse_flustered)
+            RETURN
+        END_IF
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_WeaponAftereffect, LW(9))
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_PayWeaponCost, -2, LW(9))
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
+    CALL(evt_btl_camera_set_mode, 0, 8)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(evt_btl_camera_set_zoom, 0, 250)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_1"))
+    WAIT_FRAMES(20)
+    BEGIN_SIBLING_EVENT
+        LOOP(6)
+            CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE2R"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+            WAIT_FRAMES(5)
+            CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE2L"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+            WAIT_FRAMES(5)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("R_2"))
+    WAIT_FRAMES(60)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE3"), EVTDAT_POINTER_MAX, 0, LW(15))
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    SET_VALUE(LW(5), 30)
+    CALL(btlevtcmd_GetStatusMg, -2, LW(6))
+    MULTIPLY_FLOAT(LW(5), LW(6))
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), LW(5))
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(8.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), 0, LW(2), 0, -1, 0)
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), LW(9), 0, LW(5))
+    SWITCH(LW(5))
+        CASE_OR_EQUAL(4)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(3)
+        CALL(btlevtcmd_StartAvoid, LW(3), 38)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(6)
+        CALL(btlevtcmd_StartAvoid, LW(3), 39)
+        GOTO(90)
+        CASE_EQUAL(2)
+        CALL(btlevtcmd_StartAvoid, LW(3), 40)
+        GOTO(90)
+        CASE_EQUAL(1)
+        GOTO(91)
+        CASE_END
+        CASE_DEFAULT
+        GOTO(98)
+        CASE_END
+    END_SWITCH
+    LABEL(90)
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 30)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(8.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), 0, LW(2), 0, -1, 0)
+    WAIT_FRAMES(60)
+    GOTO(98)
+    LABEL(91)
+    CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_add_zoom, 0, -50)
+    CALL(btlevtcmd_ResultACDefence, LW(3), LW(9))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 20)
+    CALL(btlevtcmd_JumpSetting, -2, 0, FLOAT(1.0f), FLOAT(1.0f))
+    CALL(btlevtcmd_JumpPosition, -2, LW(0), 0, LW(2), 0, -1)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE2R"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_FaceDirectionSub, -2, LW(0), 10)
+    CALL(btlevtcmd_JumpSetting, -2, 0, FLOAT(1.0f), FLOAT(1.0f))
+    CALL(btlevtcmd_JumpPosition, -2, LW(0), 0, LW(2), 0, -1)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_MOVE2L"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    GOTO(98)
+    LABEL(98)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(5.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), 0, LW(2), 0, -1, 0)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("T_1"))
+    LOOP(3)
+        CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_LAUGH1"), EVTDAT_POINTER_MAX, 0, LW(15))
+        WAIT_FRAMES(10)
+    END_LOOP
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("S_2"))
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(throw_attack_event)
+    CALL(btlevtcmd_check_battleflag, LW(0), 2)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
+    ELSE
+        CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(9))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, LW(9), LW(3), LW(4))
+    END_IF
+    IF_INT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL_CHILD(subsetevt_confuse_flustered)
+            RETURN
+        END_IF
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_WeaponAftereffect, LW(9))
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_PayWeaponCost, -2, LW(9))
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
+    CALL(evt_btl_camera_set_mode, 0, 8)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(evt_btl_camera_set_zoom, 0, 250)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_THROW1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_2"))
+    WAIT_FRAMES(28)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_THROW2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_OffPartsAttribute, -2, 2, 16777216)
+    CALL(btlevtcmd_OffPartsAttribute, -2, 2, 33554432)
+    CALL(btlevtcmd_AnimeChangePose, -2, 2, STRING("A_3"))
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 5)
+    ADD(LW(1), 10)
+    CALL(btlevtcmd_SetPartsPos, -2, 2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetPartsRotateOffset, -2, 2, 10, 0, 0)
+    IF_INT_EQUAL(LW(15), -1)
+        CALL(btlevtcmd_SetPartsRotate, -2, 2, 0, 0, -45)
+    ELSE
+        CALL(btlevtcmd_SetPartsRotate, -2, 2, 0, 180, -45)
+    END_IF
+    BEGIN_SIBLING_EVENT
+        LOOP(30)
+            CALL(btlevtcmd_AddPartsRotate, -2, 2, 0, 0, 3)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_JumpPartsSetting, -2, 2, 30, 0, FLOAT(0.5f))
+    CALL(btlevtcmd_JumpPartsPosition, -2, 2, LW(0), LW(1), LW(2), 30, -1)
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), LW(9), 0, LW(5))
+    SWITCH(LW(5))
+        CASE_OR_EQUAL(4)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(3)
+        CALL(btlevtcmd_StartAvoid, LW(3), 38)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(6)
+        CALL(btlevtcmd_StartAvoid, LW(3), 39)
+        GOTO(90)
+        CASE_EQUAL(2)
+        CALL(btlevtcmd_StartAvoid, LW(3), 40)
+        GOTO(90)
+        CASE_EQUAL(1)
+        GOTO(91)
+        CASE_END
+        CASE_DEFAULT
+        GOTO(98)
+        CASE_END
+    END_SWITCH
+    LABEL(90)
+    CALL(btlevtcmd_JumpPartsContinue, -2, 2)
+    CALL(btlevtcmd_OnPartsAttribute, -2, 2, 16777216)
+    CALL(btlevtcmd_OnPartsAttribute, -2, 2, 33554432)
+    GOTO(98)
+    LABEL(91)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(btlevtcmd_OnPartsAttribute, -2, 2, 16777216)
+    CALL(btlevtcmd_OnPartsAttribute, -2, 2, 33554432)
+    CALL(btlevtcmd_ResultACDefence, LW(3), LW(9))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    WAIT_FRAMES(2)
+    GOTO(98)
+    LABEL(98)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("T_1"))
+    LOOP(3)
+        CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_MONBAN_LAUGH1"), EVTDAT_POINTER_MAX, 0, LW(15))
+        WAIT_FRAMES(10)
+    END_LOOP
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("S_2"))
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wait_event)
+    CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off

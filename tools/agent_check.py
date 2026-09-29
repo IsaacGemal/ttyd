@@ -13,13 +13,16 @@ FINAL = sys.argv[1] == "--final"
 if FINAL:
     sys.argv.pop(1)
 unit_path = sys.argv[1]
-unit = "MarioSt/" + unit_path
 import glob, os
+# a REL unit is MOD/UNIT (e.g. gor/gor_12), its source rels/MOD/src/UNIT.c; a dol unit is src/UNIT.c
+mod, _, rest = unit_path.partition("/")
+REL = bool(rest) and os.path.isdir(f"config/G8MJ01/{mod}") and mod != "G8MJ01"
+unit = unit_path if REL else "MarioSt/" + unit_path
 # the unit's source, as objdiff.json names it (libs/<lib>/src/..., any extension); else src/UNIT.c or a library's
 src = next((u.get("metadata", {}).get("source_path") for u in json.load(open("objdiff.json"))["units"]
             if u["name"] == unit), None) if os.path.exists("objdiff.json") else None
 src = src or next(iter(glob.glob(f"libs/*/src/{unit_path}.[cC]")), None) if not os.path.exists(f"src/{unit_path}.c") else src
-src = src or f"src/{unit_path}.c"
+src = src or (f"rels/{mod}/src/{rest}.c" if REL else f"src/{unit_path}.c")
 if os.path.exists(src) and src not in open("build.ninja").read():
     subprocess.run(["python3", "configure.py"], capture_output=True)  # a new source file needs a build rule
 # Build and score only this unit: its object, then objdiff's report for a one-unit copy of objdiff.json (the same
@@ -62,11 +65,20 @@ if FINAL:
     # made from, or /dev/null for a new file.
     base = os.path.join(os.path.expanduser(os.environ.get("TTYD_BASE", "~/ttyd")), src)
     base = base if os.path.exists(base) else "/dev/null"
+    linked = None
+    if REL:
+        # a REL unit is done when it links: its object equals the original and the REL's checksum passes
+        link = subprocess.run(["python3", "tools/rel_link.py", unit_path], capture_output=True, text=True)
+        linked = link.stdout.strip()
     lint = subprocess.run(["python3", "tools/lint_patch.py", src, base], capture_output=True, text=True)
     fns = u.get("functions", [])
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
     print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
     todo = [l for l in lint.stdout.splitlines() if l.strip()]
+    if linked is not None:
+        print(linked)
+        if not linked.startswith("LINKED"):
+            todo.append("LINK  not linked yet (see above)")
     # Function prototypes belong in the header of the file that defines the function, not in your .c file.
     sys.path.insert(0, "tools")
     import local_prototypes

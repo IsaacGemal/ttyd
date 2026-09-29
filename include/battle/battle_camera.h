@@ -76,3 +76,11 @@ USER_FUNC(evt_btl_camera_set_moveSpeedLv);
 USER_FUNC(evt_btl_camera_set_zoom);
 USER_FUNC(evt_btl_camera_shake_h);
 USER_FUNC(evt_btl_camera_add_zoom);
+
+USER_FUNC(evt_btl_camera_nomove_y_onoff);
+USER_FUNC(evt_btl_camera_noshake);
+USER_FUNC(evt_btl_camera_set_homing_unitparts);
+USER_FUNC(evt_btl_camera_set_moveto);
+USER_FUNC(evt_btl_camera_set_posoffset);
+USER_FUNC(evt_btl_camera_set_prilimit);
+USER_FUNC(evt_btl_camera_shake_w);

@@ -634,7 +634,7 @@ static KusaAccessEntry kusa_data[] = {
 };
 
 static BeroEntry bero_entry_data[] = {
-    {"dokan_1", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, 0, "dokan_1", 1, 1},
+    {"dokan_1", 2, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan_1", 1, 1},
     {NULL},
 };
 

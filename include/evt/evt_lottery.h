@@ -11,3 +11,8 @@ typedef struct lottery_info {
 
 lottery_info* lotteryGetPtr(void);
 USER_FUNC(evt_lottery);
+
+USER_FUNC(evt_lottery_buy);
+USER_FUNC(evt_lottery_error_check);
+USER_FUNC(evt_lottery_flag);
+USER_FUNC(evt_lottery_todaynum);

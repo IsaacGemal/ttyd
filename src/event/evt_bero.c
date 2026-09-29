@@ -283,7 +283,7 @@ USER_FUNC(evt_bero_get_info_nextarea) {
 	s32* args = event->args;
 
 	bero = BeroINFOARR[evtGetValue(event, args[0])];
-	evtSetValue(event, args[1], bero->nextareaArg1);
+	evtSetValue(event, args[1], (s32)bero->nextareaArg1);
 	evtSetValue(event, args[2], (s32)bero->nextareaArg2);
 	return EVT_RETURN_DONE;
 }
@@ -868,7 +868,7 @@ USER_FUNC(evt_bero_get_info_num) {
 	}
 	event->lwData[11] = entry->exitEvent ? (s32)entry->exitEvent : (s32)default_outevt;
 	event->lwData[12] = 0xffff0000;
-	event->lwData[13] = entry->nextareaArg1;
+	event->lwData[13] = (s32)entry->nextareaArg1;
 	event->lwData[14] = (s32)entry->nextareaArg2;
 	return EVT_RETURN_DONE;
 }
