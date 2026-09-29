@@ -1,6 +1,9 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_stage_object.h"
+#include "battle/battle_unit.h"
+#include "driver/npcdrv.h"
 
 #pragma force_active on
 extern s32 battle_flower_drop_param_default[];
@@ -13,104 +16,104 @@ extern s32 battle_heart_drop_param_default2[];
 extern s32 battle_heart_drop_param_default3[];
 extern s32 battle_heart_drop_param_default4[];
 extern s32 battle_heart_drop_param_default5[];
-extern s32 battle_item_badge_borodo[];
-extern s32 battle_item_basabasa_chururu[];
-extern s32 battle_item_basabasa_green[];
-extern s32 battle_item_bllizard[];
-extern s32 battle_item_bomhei[];
-extern s32 battle_item_borodo[];
-extern s32 battle_item_bubble[];
-extern s32 battle_item_burst_wanwan[];
-extern s32 battle_item_chorobon[];
-extern s32 battle_item_churantalar[];
-extern s32 battle_item_dark_keeper[];
-extern s32 battle_item_dokugassun[];
-extern s32 battle_item_flower_chorobon[];
-extern s32 battle_item_giant_bomb[];
-extern s32 battle_item_hannya[];
-extern s32 battle_item_heavy_bom[];
-extern s32 battle_item_hennya[];
-extern s32 battle_item_hinnya[];
-extern s32 battle_item_honenoko[];
-extern s32 battle_item_hyper_jyugem[];
-extern s32 battle_item_hyper_sinemon[];
-extern s32 battle_item_ice_pakkun[];
-extern s32 battle_item_jyugem[];
-extern s32 battle_item_karon[];
-extern s32 battle_item_mahorn[];
-extern s32 battle_item_mahorn_custom[];
-extern s32 battle_item_monochrome_kurokumorn[];
-extern s32 battle_item_pakkun_flower[];
-extern s32 battle_item_patamet[];
-extern s32 battle_item_patatogemet[];
-extern s32 battle_item_phantom[];
-extern s32 battle_item_piders[];
-extern s32 battle_item_purple_teresa[];
-extern s32 battle_item_sambo[];
-extern s32 battle_item_sambo_mummy[];
-extern s32 battle_item_sinemon[];
-extern s32 battle_item_super_mahorn[];
-extern s32 battle_item_teresa[];
-extern s32 battle_item_togenoko_ace[];
-extern s32 battle_item_twinkling_pansy[];
-extern s32 battle_item_ura_noko[];
-extern s32 battle_item_wanwan[];
-extern s32 battle_item_yami_kuriboo[];
-extern s32 battle_item_yami_noko[];
-extern s32 battle_item_yami_patakuri[];
-extern s32 battle_item_yami_togekuri[];
-extern s32 battle_item_yamitogedaruma[];
-extern s32 battle_item_zonbaba[];
+extern ItemDropData battle_item_badge_borodo[10];
+extern ItemDropData battle_item_basabasa_chururu[10];
+extern ItemDropData battle_item_basabasa_green[10];
+extern ItemDropData battle_item_bllizard[9];
+extern ItemDropData battle_item_bomhei[10];
+extern ItemDropData battle_item_borodo[10];
+extern ItemDropData battle_item_bubble[8];
+extern ItemDropData battle_item_burst_wanwan[7];
+extern ItemDropData battle_item_chorobon[9];
+extern ItemDropData battle_item_churantalar[6];
+extern ItemDropData battle_item_dark_keeper[10];
+extern ItemDropData battle_item_dokugassun[9];
+extern ItemDropData battle_item_flower_chorobon[9];
+extern ItemDropData battle_item_giant_bomb[9];
+extern ItemDropData battle_item_hannya[10];
+extern ItemDropData battle_item_heavy_bom[9];
+extern ItemDropData battle_item_hennya[10];
+extern ItemDropData battle_item_hinnya[10];
+extern ItemDropData battle_item_honenoko[9];
+extern ItemDropData battle_item_hyper_jyugem[10];
+extern ItemDropData battle_item_hyper_sinemon[9];
+extern ItemDropData battle_item_ice_pakkun[5];
+extern ItemDropData battle_item_jyugem[10];
+extern ItemDropData battle_item_karon[9];
+extern ItemDropData battle_item_mahorn[9];
+extern ItemDropData battle_item_mahorn_custom[9];
+extern ItemDropData battle_item_monochrome_kurokumorn[9];
+extern ItemDropData battle_item_pakkun_flower[7];
+extern ItemDropData battle_item_patamet[10];
+extern ItemDropData battle_item_patatogemet[10];
+extern ItemDropData battle_item_phantom[8];
+extern ItemDropData battle_item_piders[4];
+extern ItemDropData battle_item_purple_teresa[10];
+extern ItemDropData battle_item_sambo[7];
+extern ItemDropData battle_item_sambo_mummy[8];
+extern ItemDropData battle_item_sinemon[8];
+extern ItemDropData battle_item_super_mahorn[9];
+extern ItemDropData battle_item_teresa[10];
+extern ItemDropData battle_item_togenoko_ace[10];
+extern ItemDropData battle_item_twinkling_pansy[10];
+extern ItemDropData battle_item_ura_noko[10];
+extern ItemDropData battle_item_wanwan[7];
+extern ItemDropData battle_item_yami_kuriboo[10];
+extern ItemDropData battle_item_yami_noko[10];
+extern ItemDropData battle_item_yami_patakuri[10];
+extern ItemDropData battle_item_yami_togekuri[10];
+extern ItemDropData battle_item_yamitogedaruma[5];
+extern ItemDropData battle_item_zonbaba[1];
 extern s32 unit_badge_borodo[];
-extern s32 unit_basabasa_chururu_15_data_62428[];
-extern s32 unit_basabasa_green[];
-extern s32 unit_bllizard_15_data_60E68[];
-extern s32 unit_bomhei_15_data_24850[];
-extern s32 unit_borodo_15_data_211F8[];
-extern s32 unit_boss_zonbaba[];
-extern s32 unit_bubble_15_data_35518[];
-extern s32 unit_burst_wanwan_15_data_5F390[];
-extern s32 unit_chorobon_15_data_127B8[];
-extern s32 unit_churantalar[];
-extern s32 unit_dark_keeper_15_data_5E0F0[];
-extern s32 unit_dokugassun_15_data_5CC90[];
-extern s32 unit_flower_chorobon_15_data_2FE08[];
-extern s32 unit_giant_bomb[];
-extern s32 unit_hannya_15_data_13DF0[];
-extern s32 unit_heavy_bom_15_data_33E08[];
-extern s32 unit_hennya_15_data_5A9C0[];
-extern s32 unit_hinnya_15_data_149B0[];
-extern s32 unit_honenoko_15_data_15568[];
-extern s32 unit_hyper_jyugem_15_data_58998[];
-extern s32 unit_hyper_sinemon_15_data_2A3A8[];
-extern s32 unit_ice_pakkun_15_data_577D8[];
-extern s32 unit_jyugem_15_data_22B10[];
-extern s32 unit_karon_15_data_55368[];
+extern BattleUnitKind unit_basabasa_chururu_15_data_62428;
+extern BattleUnitKind unit_basabasa_green;
+extern BattleUnitKind unit_bllizard_15_data_60E68;
+extern BattleUnitKind unit_bomhei_15_data_24850;
+extern BattleUnitKind unit_borodo_15_data_211F8;
+extern BattleUnitKind unit_boss_zonbaba;
+extern BattleUnitKind unit_bubble_15_data_35518;
+extern BattleUnitKind unit_burst_wanwan_15_data_5F390;
+extern BattleUnitKind unit_chorobon_15_data_127B8;
+extern BattleUnitKind unit_churantalar;
+extern BattleUnitKind unit_dark_keeper_15_data_5E0F0;
+extern BattleUnitKind unit_dokugassun_15_data_5CC90;
+extern BattleUnitKind unit_flower_chorobon_15_data_2FE08;
+extern BattleUnitKind unit_giant_bomb;
+extern BattleUnitKind unit_hannya_15_data_13DF0;
+extern BattleUnitKind unit_heavy_bom_15_data_33E08;
+extern BattleUnitKind unit_hennya_15_data_5A9C0;
+extern BattleUnitKind unit_hinnya_15_data_149B0;
+extern BattleUnitKind unit_honenoko_15_data_15568;
+extern BattleUnitKind unit_hyper_jyugem_15_data_58998;
+extern BattleUnitKind unit_hyper_sinemon_15_data_2A3A8;
+extern BattleUnitKind unit_ice_pakkun_15_data_577D8;
+extern BattleUnitKind unit_jyugem_15_data_22B10;
+extern BattleUnitKind unit_karon_15_data_55368;
 extern s32 unit_mahorn[];
 extern s32 unit_mahorn_custom[];
-extern s32 unit_monochrome_kurokumorn_15_data_1E998[];
-extern s32 unit_monochrome_sinemon_15_data_191F8[];
-extern s32 unit_pakkun_flower_15_data_4C6D0[];
-extern s32 unit_patamet_15_data_2B728[];
-extern s32 unit_patatogemet_15_data_3B6C8[];
-extern s32 unit_phantom_15_data_4AC38[];
-extern s32 unit_piders_15_data_66660[];
+extern BattleUnitKind unit_monochrome_kurokumorn_15_data_1E998;
+extern BattleUnitKind unit_monochrome_sinemon_15_data_191F8;
+extern BattleUnitKind unit_pakkun_flower_15_data_4C6D0;
+extern BattleUnitKind unit_patamet_15_data_2B728;
+extern BattleUnitKind unit_patatogemet_15_data_3B6C8;
+extern BattleUnitKind unit_phantom_15_data_4AC38;
+extern BattleUnitKind unit_piders_15_data_66660;
 extern s32 unit_purple_teresa_15_data_493B8[];
-extern s32 unit_sambo_15_data_1A280[];
-extern s32 unit_sambo_mummy_15_data_36FB0[];
-extern s32 unit_sinemon_15_data_48330[];
-extern s32 unit_super_mahorn_15_data_43F68[];
-extern s32 unit_teresa_15_data_25D30[];
-extern s32 unit_togenoko_ace_15_data_41A18[];
-extern s32 unit_twinkling_pansy_15_data_40EC8[];
-extern s32 unit_ura_noko_15_data_2E060[];
-extern s32 unit_wanwan_15_data_3F3F0[];
-extern s32 unit_yami_kuriboo[];
-extern s32 unit_yami_noko[];
-extern s32 unit_yami_pata[];
-extern s32 unit_yami_patakuri[];
+extern BattleUnitKind unit_sambo_15_data_1A280;
+extern BattleUnitKind unit_sambo_mummy_15_data_36FB0;
+extern BattleUnitKind unit_sinemon_15_data_48330;
+extern BattleUnitKind unit_super_mahorn_15_data_43F68;
+extern BattleUnitKind unit_teresa_15_data_25D30;
+extern BattleUnitKind unit_togenoko_ace_15_data_41A18;
+extern BattleUnitKind unit_twinkling_pansy_15_data_40EC8;
+extern BattleUnitKind unit_ura_noko_15_data_2E060;
+extern BattleUnitKind unit_wanwan_15_data_3F3F0;
+extern BattleUnitKind unit_yami_kuriboo;
+extern BattleUnitKind unit_yami_noko;
+extern BattleUnitKind unit_yami_pata;
+extern BattleUnitKind unit_yami_patakuri;
 extern s32 unit_yami_togekuri[];
-extern s32 unit_yamitogedaruma[];
+extern BattleUnitKind unit_yamitogedaruma;
 
 // clang-format off
 extend_data(32,
@@ -131,20 +134,15 @@ extend_data(33,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 jon_btlobject_data[48] = {
-    (u32)"B_0", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"jon_0", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"B_1", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"jon_1", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"B_2", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"jon_2", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"B_6", 0x00020002, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000, (u32)"jon_6", 0x00020003,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
+BattleStageObjectData jon_btlobject_data[8] = {
+    { "B_0", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "jon_0", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "B_1", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "jon_1", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "B_2", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "jon_2", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "B_6", 2, 2, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
+    { "jon_6", 2, 3, { 0.0f, 0.0f, 0.0f }, 0, 60, { 0, 0 } },
 };
 
 // TODO: type
@@ -260,3612 +258,2260 @@ u32 jon_btlstage_data[436] = {
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-u32 btlparty_jon_jon_100_01_off_1[12] = {
-    (u32)unit_boss_zonbaba, 0x01000000, 0x04000004, 0x43B68000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_zonbaba,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_100_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_jon_jon_100_01_off_1, 0x00000000, 0x00000000,
-    0x00000064, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_01_off_1[12] = {
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_01_off_1[8] = {
-    0x00000001, (u32)&btlparty_jon_jon_01_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_01_off_2[24] = {
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_01_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_01_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_01_off_3[24] = {
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_01_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_01_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_02_off_1[60] = {
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_02_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_01_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_02_off_2[24] = {
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_02_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_01_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_02_off_3[60] = {
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_02_off_3[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_01_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_03_off_1[48] = {
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_01_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_03_off_2[24] = {
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_01_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_03_off_3[48] = {
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_hannya_15_data_13DF0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hannya,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_01_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_04_off_1[48] = {
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_01_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_04_off_2[24] = {
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_04_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_01_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_04_off_3[36] = {
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-    (u32)unit_hinnya_15_data_149B0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hinnya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_04_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_01_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_05_off_1[60] = {
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_05_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_01_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_05_off_2[36] = {
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_yami_kuriboo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_kuriboo,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_01_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_01_05_off_3[48] = {
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-    (u32)unit_chorobon_15_data_127B8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_chorobon,
-    (u32)unit_honenoko_15_data_15568, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_honenoko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_01_05_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_01_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_01_off_1[24] = {
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_11_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_01_off_2[36] = {
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_01_off_3[36] = {
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_02_off_1[48] = {
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_11_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_02_off_2[36] = {
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_02_off_3[36] = {
-    (u32)unit_monochrome_sinemon_15_data_191F8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_03_off_1[48] = {
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_11_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_03_off_2[24] = {
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_11_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_03_off_3[48] = {
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_11_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_04_off_1[36] = {
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_04_off_2[36] = {
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_11_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_04_off_3[24] = {
-    (u32)unit_monochrome_kurokumorn_15_data_1E998, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_monochrome_kurokumorn,
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_11_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_05_off_1[48] = {
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_11_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_05_off_2[24] = {
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_yami_patakuri, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_05_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_11_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_11_05_off_3[48] = {
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-    (u32)unit_piders_15_data_66660, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_piders,
-    (u32)unit_sambo_15_data_1A280, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_11_05_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_11_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_01_off_1[36] = {
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_21_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_01_off_2[48] = {
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_01_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_01_off_3[48] = {
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_01_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_02_off_1[60] = {
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_02_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_21_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_02_off_2[24] = {
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_02_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_21_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_02_off_3[60] = {
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_02_off_3[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_21_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_03_off_1[48] = {
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_03_off_2[24] = {
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_03_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_21_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_03_off_3[48] = {
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_jyugem_15_data_22B10, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_jyugem,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_04_off_1[48] = {
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_04_off_2[36] = {
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_21_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_04_off_3[48] = {
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_bomhei_15_data_24850, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bomhei,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_04_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_05_off_1[48] = {
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_05_off_2[36] = {
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_yami_togekuri, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_togekuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_21_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_21_05_off_3[48] = {
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_teresa_15_data_25D30, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_teresa,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-    (u32)unit_borodo_15_data_211F8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_borodo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_21_05_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_21_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_01_off_1[24] = {
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_01_off_1[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_31_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_01_off_2[36] = {
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_01_off_3[36] = {
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_02_off_1[36] = {
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_02_off_2[36] = {
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_02_off_3[36] = {
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_03_off_1[48] = {
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_31_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_03_off_2[48] = {
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_03_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_31_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_03_off_3[24] = {
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_03_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_31_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_04_off_1[48] = {
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_31_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_04_off_2[36] = {
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_04_off_3[36] = {
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_ura_noko_15_data_2E060, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ura_noko,
-    (u32)unit_patamet_15_data_2B728, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patamet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_04_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_05_off_1[60] = {
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_05_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_31_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_05_off_2[36] = {
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_yami_noko, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_noko,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_31_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_31_05_off_3[24] = {
-    (u32)unit_flower_chorobon_15_data_2FE08, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_flower_chorobon,
-    (u32)unit_hyper_sinemon_15_data_2A3A8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_31_05_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_31_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_01_off_1[48] = {
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_01_off_2[36] = {
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_41_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_01_off_3[36] = {
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_41_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_02_off_1[48] = {
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_02_off_2[24] = {
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_02_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_41_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_02_off_3[36] = {
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_41_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_03_off_1[36] = {
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_41_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_03_off_2[36] = {
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_41_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_03_off_3[48] = {
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_heavy_bom_15_data_33E08, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_heavy_bom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_04_off_1[48] = {
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_04_off_2[48] = {
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_04_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_04_off_3[24] = {
-    (u32)unit_sambo_mummy_15_data_36FB0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sambo_mummy,
-    (u32)unit_yami_pata, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yami_patakuri,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_41_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_05_off_1[24] = {
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_05_off_1[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_41_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_05_off_2[48] = {
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_05_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_41_05_off_3[48] = {
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_patatogemet_15_data_3B6C8, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_patatogemet,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-    (u32)unit_bubble_15_data_35518, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bubble,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_41_05_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_41_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_01_off_1[36] = {
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_01_off_2[36] = {
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_01_off_3[36] = {
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_02_off_1[48] = {
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_51_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_02_off_2[36] = {
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_02_off_3[24] = {
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_02_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_51_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_03_off_1[48] = {
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_51_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_03_off_2[36] = {
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_badge_borodo, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_badge_borodo,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_03_off_3[36] = {
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_03_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_04_off_1[36] = {
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_04_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_04_off_2[36] = {
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_04_off_3[36] = {
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-    (u32)unit_bllizard_15_data_60E68, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_bllizard,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_04_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_05_off_1[48] = {
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_51_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_05_off_2[36] = {
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_burst_wanwan_15_data_5F390, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_burst_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_51_05_off_3[36] = {
-    (u32)unit_sinemon_15_data_48330, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_sinemon,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-    (u32)unit_purple_teresa_15_data_493B8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_purple_teresa,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_51_05_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_51_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_01_off_1[36] = {
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_01_off_2[36] = {
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_01_off_3[24] = {
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_01_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_61_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_02_off_1[48] = {
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_61_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_02_off_2[24] = {
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_02_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_61_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_02_off_3[36] = {
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_03_off_1[36] = {
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_03_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_03_off_2[36] = {
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_03_off_3[36] = {
-    (u32)unit_super_mahorn_15_data_43F68, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_super_mahorn,
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-    (u32)unit_karon_15_data_55368, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_karon,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_03_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_04_off_1[48] = {
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_61_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_04_off_2[36] = {
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_04_off_3[24] = {
-    (u32)unit_ice_pakkun_15_data_577D8, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_ice_pakkun,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_04_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_61_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_05_off_1[36] = {
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_05_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_61_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_05_off_2[24] = {
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-    (u32)unit_hyper_jyugem_15_data_58998, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hyper_jyugem,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_05_off_2[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_61_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_61_05_off_3[24] = {
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-    (u32)unit_dark_keeper_15_data_5E0F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dark_keeper,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_61_05_off_3[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_61_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_01_off_1[36] = {
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_01_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_01_off_2[36] = {
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_01_off_3[36] = {
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_02_off_1[36] = {
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_02_off_1[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_02_off_2[36] = {
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_02_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_02_off_3[36] = {
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default2, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_03_off_1[60] = {
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_03_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_71_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_03_off_2[48] = {
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_03_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_03_off_3[48] = {
-    (u32)unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_phantom,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x428C0000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_04_off_1[48] = {
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x41F00000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x428C0000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x42DC0000,
-    0x43020000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x43160000,
-    0x43020000, 0x41A00000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_04_off_2[48] = {
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x41F00000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x428C0000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_04_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_04_off_3[48] = {
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x41F00000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_basabasa_chururu_15_data_62428, 0x01000000, 0x04000004, 0x42DC0000,
-    0x43020000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_chururu,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_04_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default2, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_05_off_1[48] = {
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_71_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_05_off_2[36] = {
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-    (u32)unit_togenoko_ace_15_data_41A18, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_togenoko_ace,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_71_05_off_3[36] = {
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_wanwan_15_data_3F3F0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_wanwan,
-    (u32)unit_mahorn, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_71_05_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_71_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_01_off_1[48] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_01_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_01_off_2[48] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_01_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_01_off_3[36] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_02_off_1[24] = {
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_02_off_1[8] = {
-    0x00000002, (u32)&btlparty_jon_jon_81_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_02_off_2[48] = {
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_02_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_02_off_3[36] = {
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_02_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_03_off_1[48] = {
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_03_off_2[36] = {
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_03_off_3[36] = {
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x42480000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_churantalar, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_churantalar,
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_03_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_04_off_1[48] = {
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_04_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_04_off_2[36] = {
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_yamitogedaruma, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_yamitogedaruma,
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_04_off_3[48] = {
-    (u32)unit_pakkun_flower_15_data_4C6D0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_pakkun_flower,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_04_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_05_off_1[48] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_05_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_81_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_05_off_2[36] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_05_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_81_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_81_05_off_3[60] = {
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-    (u32)unit_hennya_15_data_5A9C0, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_hennya,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_81_05_off_3[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_81_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_01_off_1[60] = {
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_01_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_91_01_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_01_off_2[36] = {
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_01_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_91_01_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_01_off_3[36] = {
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x43020000,
-    0x43020000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_01_off_3[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_91_01_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default4, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_02_off_1[48] = {
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x43160000,
-    0x42200000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_02_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_02_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_02_off_2[48] = {
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x428C0000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_02_off_2[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_02_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_02_off_3[48] = {
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x41F00000,
-    0x42200000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x428C0000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x42DC0000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_02_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_02_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default3, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_03_off_1[48] = {
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_03_off_1[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_03_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default5, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_03_off_2[36] = {
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_03_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_91_03_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default5, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_03_off_3[48] = {
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x41F00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_giant_bomb, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_giant_bomb,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_03_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_03_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default5, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_04_off_1[60] = {
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x41200000,
-    0x43020000, 0xC1A00000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x42480000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x42B40000,
-    0x43020000, 0x00000000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x43020000,
-    0x43020000, 0x41200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x432A0000,
-    0x43020000, 0x41A00000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_04_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_91_04_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_04_off_2[36] = {
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x42480000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x42B40000,
-    0x42200000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-    (u32)unit_dokugassun_15_data_5CC90, 0x01000000, 0x04000004, 0x43020000,
-    0x42200000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_dokugassun,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_04_off_2[8] = {
-    0x00000003, (u32)&btlparty_jon_jon_91_04_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_04_off_3[48] = {
-    (u32)unit_basabasa_green, 0x01000000, 0x04000004, 0x41F00000,
-    0x43020000, 0xC1200000, 0x00000000, 0x00000001,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_basabasa_green,
-    (u32)unit_mahorn_custom, 0x01000000, 0x04000004, 0x428C0000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_mahorn_custom,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42DC0000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43160000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_04_off_3[8] = {
-    0x00000004, (u32)&btlparty_jon_jon_91_04_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default4, (u32)battle_flower_drop_param_default, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_05_off_1[60] = {
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_05_off_1[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_91_05_off_1, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_05_off_2[60] = {
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_05_off_2[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_91_05_off_2, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlparty_jon_jon_91_05_off_3[60] = {
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x41200000,
-    0x00000000, 0xC1A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42480000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x42B40000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x43020000,
-    0x00000000, 0x41200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-    (u32)unit_twinkling_pansy_15_data_40EC8, 0x01000000, 0x04000004, 0x432A0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)battle_item_twinkling_pansy,
-};
-
-// TODO: type
-u32 btlgrp_jon_jon_91_05_off_3[8] = {
-    0x00000005, (u32)&btlparty_jon_jon_91_05_off_3, 0x00000014, 0x00000014,
-    0x0000003C, (u32)battle_heart_drop_param_default3, (u32)battle_flower_drop_param_default5, 0x00000005,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_jon_jon_01_01_off_1, (u32)&jon_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_01_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_01_01_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_01_01_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_01_01_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_02_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_01_02_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_01_02_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_01_02_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_03_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_01_03_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_01_03_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_01_03_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_04_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_01_04_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_01_04_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_01_04_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_05_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_01_05_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_01_05_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_01_05_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_11_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_11_01_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_11_01_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_11_01_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_12_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_11_02_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_11_02_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_11_02_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_13_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_11_03_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_11_03_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_11_03_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_14_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_11_04_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_11_04_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_11_04_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_15_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_11_05_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_11_05_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_11_05_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_21_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_21_01_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_21_01_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_21_01_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_22_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_21_02_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_21_02_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_21_02_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_23_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_21_03_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_21_03_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_21_03_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_24_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_21_04_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_21_04_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_21_04_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_25_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_21_05_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_21_05_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_21_05_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_31_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_31_01_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_31_01_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_31_01_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_32_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_31_02_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_31_02_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_31_02_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_33_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_31_03_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_31_03_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_31_03_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_34_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_31_04_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_31_04_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_31_04_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_35_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_31_05_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_31_05_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_31_05_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_41_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_41_01_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_41_01_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_41_01_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_42_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_41_02_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_41_02_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_41_02_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_43_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_41_03_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_41_03_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_41_03_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_44_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_41_04_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_41_04_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_41_04_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_45_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_41_05_off_1, (u32)&jon_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_jon_jon_41_05_off_2, (u32)&jon_btlstage_data, 0x0000000A, (u32)&btlgrp_jon_jon_41_05_off_3,
-    (u32)&jon_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_51_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_51_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_51_01_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_51_01_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_52_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_51_02_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_51_02_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_51_02_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_53_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_51_03_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_51_03_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_51_03_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_54_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_51_04_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_51_04_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_51_04_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_55_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_51_05_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_51_05_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_51_05_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_61_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_61_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_61_01_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_61_01_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_62_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_61_02_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_61_02_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_61_02_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_63_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_61_03_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_61_03_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_61_03_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_64_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_61_04_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_61_04_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_61_04_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_65_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_61_05_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_61_05_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_61_05_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_71_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_71_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_71_01_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_71_01_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_72_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_71_02_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_71_02_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_71_02_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_73_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_71_03_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_71_03_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_71_03_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_74_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_71_04_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_71_04_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_71_04_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_75_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_71_05_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_71_05_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_71_05_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_81_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_81_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_81_01_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_81_01_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_82_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_81_02_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_81_02_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_81_02_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_83_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_81_03_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_81_03_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_81_03_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_84_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_81_04_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_81_04_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_81_04_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_85_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_81_05_off_1, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A,
-    (u32)&btlgrp_jon_jon_81_05_off_2, (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x0000000A, (u32)&btlgrp_jon_jon_81_05_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x1b4), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_91_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_91_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A,
-    (u32)&btlgrp_jon_jon_91_01_off_2, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A, (u32)&btlgrp_jon_jon_91_01_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x368), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_92_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_91_02_off_1, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A,
-    (u32)&btlgrp_jon_jon_91_02_off_2, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A, (u32)&btlgrp_jon_jon_91_02_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x368), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_93_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_91_03_off_1, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A,
-    (u32)&btlgrp_jon_jon_91_03_off_2, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A, (u32)&btlgrp_jon_jon_91_03_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x368), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_94_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_91_04_off_1, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A,
-    (u32)&btlgrp_jon_jon_91_04_off_2, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A, (u32)&btlgrp_jon_jon_91_04_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x368), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_95_off[12] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_91_05_off_1, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A,
-    (u32)&btlgrp_jon_jon_91_05_off_2, (u32)((u8*)&jon_btlstage_data + 0x368), 0x0000000A, (u32)&btlgrp_jon_jon_91_05_off_3,
-    (u32)((u8*)&jon_btlstage_data + 0x368), 0x00000000, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlgrpsel_jon_btlno_jon_100_zonbaba_off[6] = {
-    0x0000000A, (u32)&btlgrp_jon_jon_100_01_off_1, (u32)((u8*)&jon_btlstage_data + 0x51c), 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-u32 btlsetup_jon_tbl[901] = {
-    (u32)"マップstg_00_3", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_test1_off, 0x10000000, 0x00000000,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    0x01010101, 0x01010101, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ヤミクリボー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_01_off, 0x10000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x0A0A0000, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ヒンニャー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_02_off,
-    0x10000000, 0x00000000, 0x05050000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ハンニャー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_03_off, 0x10000000, 0x00000000, 0x05050000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ホネノコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_04_off, 0x10000000, 0x00000000,
-    0x05050000, 0x00000000, 0x0A0A0505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"チョロボン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_05_off, 0x10000000,
-    0x00000000, 0x05050000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050000, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ヤミパタクリ", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_11_off,
-    0x10000000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x0A0A0000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"モノクロシンエモン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_12_off, 0x10000000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"サンボ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_13_off, 0x10000000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"モノクロクロクモーン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_14_off, 0x10000000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050000, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"パイダース", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_15_off,
-    0x10000000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ヤミトゲクリ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_21_off, 0x10000000, 0x00000000, 0x05050505,
-    0x00000000, 0x05050505, 0x00000000, 0x05050000,
-    0x0A0A0000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ボロドー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_22_off, 0x10000000, 0x00000000,
-    0x05050505, 0x00000000, 0x05050505, 0x00000000,
-    0x05050000, 0x05050000, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ジュゲム", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_23_off, 0x10000000,
-    0x00000000, 0x05050505, 0x00000000, 0x05050505,
-    0x00000000, 0x05050000, 0x05050000, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ボムへい", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_24_off,
-    0x10000000, 0x00000000, 0x05050505, 0x00000000,
-    0x05050505, 0x00000000, 0x05050000, 0x05050000,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"テレサ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_25_off, 0x10000000, 0x00000000, 0x05050505,
-    0x0A0A0000, 0x05050505, 0x00000000, 0x05050000,
-    0x05050000, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ヤミノコノコ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_31_off, 0x10000000, 0x00000000,
-    0x04040404, 0x04040000, 0x04040404, 0x04040404,
-    0x0A0A0000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ハイパーシンエモン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_32_off, 0x10000000,
-    0x00000000, 0x04040404, 0x04040000, 0x04040404,
-    0x04040404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"パタメット", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_33_off,
-    0x10000000, 0x00000000, 0x04040404, 0x04040000,
-    0x04040404, 0x04040404, 0x04040000, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ウラノコ",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_34_off, 0x10000000, 0x00000000, 0x04040404,
-    0x04040000, 0x04040404, 0x04040404, 0x0A0A0000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"フラワーチョロボン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_35_off, 0x10000000, 0x00000000,
-    0x04040404, 0x04040000, 0x04040404, 0x04040404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ヤミパタパタ", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_41_off, 0x10000000,
-    0x00000000, 0x04040404, 0x04040000, 0x04040404,
-    0x04040404, 0x0A0A0000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ヘビーボム", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_42_off,
-    0x10000000, 0x00000000, 0x04040404, 0x04040000,
-    0x04040404, 0x04040404, 0x04040A0A, 0x04040404,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"バブル",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_43_off, 0x10000000, 0x00000000, 0x04040404,
-    0x04040000, 0x04040404, 0x04040404, 0x04040000,
-    0x04040404, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"サンボマミー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_44_off, 0x10000000, 0x00000000,
-    0x04040404, 0x04040000, 0x04040404, 0x04040404,
-    0x04040000, 0x04040404, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"パタトゲメット", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_45_off, 0x10000000,
-    0x00000000, 0x04040404, 0x04040000, 0x04040404,
-    0x04040404, 0x04040000, 0x04040404, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"バッジボロドー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_51_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ブリザード",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_52_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"パープルテレサ", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_53_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"バーストワンワン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_54_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"シンエモン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_55_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ハイパージュゲム",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_61_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"カロン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_62_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"スーパーマホーン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_63_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"アイスパックン", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_64_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ダークキーパー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_65_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"マホーン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_71_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"トゲノコエース", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_72_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ファントム", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_73_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"バサバサチュルル",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_74_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ワンワン", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_75_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ヘンニャー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_81_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ヤミトゲダルマー", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_82_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"チュランタラー",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_83_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"パックンフラワー", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_84_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"ヘンニャー", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_85_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"マホーンカスタム", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_91_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ドクガッスン",
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_92_off, 0x10000000, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1",
-    (u32)"ジャイアントボム", 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)&btlgrpsel_jon_btlno_jon_93_off, 0x10000000, 0x00000000,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x01010101, 0x01010101,
-    (u32)"BGM_ZAKO_BATTLE1", (u32)"バサバサグリーン", 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_94_off, 0x10000000,
-    0x00000000, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x01010101,
-    0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"きらめくパンジーさん", 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)&btlgrpsel_jon_btlno_jon_95_off,
-    0x10000000, 0x00000000, 0x03030303, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x01010101, 0x01010101, (u32)"BGM_ZAKO_BATTLE1", (u32)"ゾンババ",
-    (u32)"jon_06", 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)&btlgrpsel_jon_btlno_jon_100_zonbaba_off, 0x20100010, 0x00000000, 0x03030303,
-    0x03030303, 0x03030303, 0x03030303, 0x03030303,
-    0x03030303, 0x01010101, 0x01010101, (u32)"BGM_BOSS_STG1_GONBABA1",
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+BattleUnitSetup btlparty_jon_jon_100_01_off_1[1] = {
+    { &unit_boss_zonbaba, 1, 0x04000004, { 365.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_zonbaba },
+};
+
+BattleGroupSetup btlgrp_jon_jon_100_01_off_1 = { 1, btlparty_jon_jon_100_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_01_off_1[1] = {
+    { &unit_yami_kuriboo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_01_off_1 = { 1, btlparty_jon_jon_01_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_01_off_2[2] = {
+    { &unit_yami_kuriboo, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_01_off_2 = { 2, btlparty_jon_jon_01_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_01_off_3[2] = {
+    { &unit_yami_kuriboo, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_01_off_3 = { 2, btlparty_jon_jon_01_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_02_off_1[5] = {
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_02_off_1 = { 5, btlparty_jon_jon_01_02_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_02_off_2[2] = {
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_yami_kuriboo, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_02_off_2 = { 2, btlparty_jon_jon_01_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_02_off_3[5] = {
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_02_off_3 = { 5, btlparty_jon_jon_01_02_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_03_off_1[4] = {
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_03_off_1 = { 4, btlparty_jon_jon_01_03_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_03_off_2[2] = {
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_yami_kuriboo, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_03_off_2 = { 2, btlparty_jon_jon_01_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_03_off_3[4] = {
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_hannya_15_data_13DF0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_03_off_3 = { 4, btlparty_jon_jon_01_03_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_04_off_1[4] = {
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_04_off_1 = { 4, btlparty_jon_jon_01_04_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_04_off_2[2] = {
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_yami_kuriboo, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_04_off_2 = { 2, btlparty_jon_jon_01_04_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_04_off_3[3] = {
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+    { &unit_hinnya_15_data_149B0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_04_off_3 = { 3, btlparty_jon_jon_01_04_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_05_off_1[5] = {
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_05_off_1 = { 5, btlparty_jon_jon_01_05_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_05_off_2[3] = {
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_yami_kuriboo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_kuriboo },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_05_off_2 = { 3, btlparty_jon_jon_01_05_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_01_05_off_3[4] = {
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+    { &unit_chorobon_15_data_127B8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_chorobon },
+    { &unit_honenoko_15_data_15568, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_honenoko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_01_05_off_3 = { 4, btlparty_jon_jon_01_05_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_01_off_1[2] = {
+    { &unit_yami_patakuri, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_patakuri, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_01_off_1 = { 2, btlparty_jon_jon_11_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_01_off_2[3] = {
+    { &unit_yami_patakuri, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_01_off_2 = { 3, btlparty_jon_jon_11_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_01_off_3[3] = {
+    { &unit_yami_patakuri, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_01_off_3 = { 3, btlparty_jon_jon_11_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_02_off_1[4] = {
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_02_off_1 = { 4, btlparty_jon_jon_11_02_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_02_off_2[3] = {
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_yami_patakuri, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_02_off_2 = { 3, btlparty_jon_jon_11_02_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_02_off_3[3] = {
+    { &unit_monochrome_sinemon_15_data_191F8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_02_off_3 = { 3, btlparty_jon_jon_11_02_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_03_off_1[4] = {
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_03_off_1 = { 4, btlparty_jon_jon_11_03_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_03_off_2[2] = {
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_03_off_2 = { 2, btlparty_jon_jon_11_03_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_03_off_3[4] = {
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_03_off_3 = { 4, btlparty_jon_jon_11_03_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_04_off_1[3] = {
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_04_off_1 = { 3, btlparty_jon_jon_11_04_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_04_off_2[3] = {
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_04_off_2 = { 3, btlparty_jon_jon_11_04_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_04_off_3[2] = {
+    { &unit_monochrome_kurokumorn_15_data_1E998, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_monochrome_kurokumorn },
+    { &unit_yami_patakuri, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_04_off_3 = { 2, btlparty_jon_jon_11_04_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_05_off_1[4] = {
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_05_off_1 = { 4, btlparty_jon_jon_11_05_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_05_off_2[2] = {
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_yami_patakuri, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_05_off_2 = { 2, btlparty_jon_jon_11_05_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_11_05_off_3[4] = {
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+    { &unit_piders_15_data_66660, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_piders },
+    { &unit_sambo_15_data_1A280, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_11_05_off_3 = { 4, btlparty_jon_jon_11_05_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_01_off_1[3] = {
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_01_off_1 = { 3, btlparty_jon_jon_21_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_01_off_2[4] = {
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_01_off_2 = { 4, btlparty_jon_jon_21_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_01_off_3[4] = {
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_01_off_3 = { 4, btlparty_jon_jon_21_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_02_off_1[5] = {
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_02_off_1 = { 5, btlparty_jon_jon_21_02_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_02_off_2[2] = {
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_02_off_2 = { 2, btlparty_jon_jon_21_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_02_off_3[5] = {
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_02_off_3 = { 5, btlparty_jon_jon_21_02_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_03_off_1[4] = {
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_03_off_1 = { 4, btlparty_jon_jon_21_03_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_03_off_2[2] = {
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_03_off_2 = { 2, btlparty_jon_jon_21_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_03_off_3[4] = {
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_03_off_3 = { 4, btlparty_jon_jon_21_03_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_04_off_1[4] = {
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_04_off_1 = { 4, btlparty_jon_jon_21_04_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_04_off_2[3] = {
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_04_off_2 = { 3, btlparty_jon_jon_21_04_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_04_off_3[4] = {
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_bomhei_15_data_24850, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_04_off_3 = { 4, btlparty_jon_jon_21_04_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_05_off_1[4] = {
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_05_off_1 = { 4, btlparty_jon_jon_21_05_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_05_off_2[3] = {
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_05_off_2 = { 3, btlparty_jon_jon_21_05_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_21_05_off_3[4] = {
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_teresa_15_data_25D30, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+    { &unit_borodo_15_data_211F8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_21_05_off_3 = { 4, btlparty_jon_jon_21_05_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_01_off_1[2] = {
+    { &unit_yami_noko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+    { &unit_yami_noko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_01_off_1 = { 2, btlparty_jon_jon_31_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_01_off_2[3] = {
+    { &unit_yami_noko, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_01_off_2 = { 3, btlparty_jon_jon_31_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_01_off_3[3] = {
+    { &unit_yami_noko, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_01_off_3 = { 3, btlparty_jon_jon_31_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_02_off_1[3] = {
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_02_off_1 = { 3, btlparty_jon_jon_31_02_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_02_off_2[3] = {
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_02_off_2 = { 3, btlparty_jon_jon_31_02_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_02_off_3[3] = {
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_02_off_3 = { 3, btlparty_jon_jon_31_02_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_03_off_1[4] = {
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_03_off_1 = { 4, btlparty_jon_jon_31_03_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_03_off_2[4] = {
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_03_off_2 = { 4, btlparty_jon_jon_31_03_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_03_off_3[2] = {
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_03_off_3 = { 2, btlparty_jon_jon_31_03_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_04_off_1[4] = {
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_04_off_1 = { 4, btlparty_jon_jon_31_04_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_04_off_2[3] = {
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_yami_noko, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_04_off_2 = { 3, btlparty_jon_jon_31_04_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_04_off_3[3] = {
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_ura_noko_15_data_2E060, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ura_noko },
+    { &unit_patamet_15_data_2B728, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patamet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_04_off_3 = { 3, btlparty_jon_jon_31_04_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_05_off_1[5] = {
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_05_off_1 = { 5, btlparty_jon_jon_31_05_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_05_off_2[3] = {
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_yami_noko, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_noko },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_05_off_2 = { 3, btlparty_jon_jon_31_05_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_31_05_off_3[2] = {
+    { &unit_flower_chorobon_15_data_2FE08, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_flower_chorobon },
+    { &unit_hyper_sinemon_15_data_2A3A8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_sinemon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_31_05_off_3 = { 2, btlparty_jon_jon_31_05_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_01_off_1[4] = {
+    { &unit_yami_pata, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_pata, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_pata, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_pata, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_01_off_1 = { 4, btlparty_jon_jon_41_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_01_off_2[3] = {
+    { &unit_yami_pata, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_pata, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_01_off_2 = { 3, btlparty_jon_jon_41_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_01_off_3[3] = {
+    { &unit_yami_pata, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_yami_pata, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_01_off_3 = { 3, btlparty_jon_jon_41_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_02_off_1[4] = {
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_02_off_1 = { 4, btlparty_jon_jon_41_02_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_02_off_2[2] = {
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_02_off_2 = { 2, btlparty_jon_jon_41_02_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_02_off_3[3] = {
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_02_off_3 = { 3, btlparty_jon_jon_41_02_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_03_off_1[3] = {
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_03_off_1 = { 3, btlparty_jon_jon_41_03_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_03_off_2[3] = {
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_yami_pata, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_03_off_2 = { 3, btlparty_jon_jon_41_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_03_off_3[4] = {
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_heavy_bom_15_data_33E08, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_heavy_bom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_03_off_3 = { 4, btlparty_jon_jon_41_03_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_04_off_1[4] = {
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_04_off_1 = { 4, btlparty_jon_jon_41_04_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_04_off_2[4] = {
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_04_off_2 = { 4, btlparty_jon_jon_41_04_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_04_off_3[2] = {
+    { &unit_sambo_mummy_15_data_36FB0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sambo_mummy },
+    { &unit_yami_pata, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_patakuri },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_04_off_3 = { 2, btlparty_jon_jon_41_04_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_05_off_1[2] = {
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_05_off_1 = { 2, btlparty_jon_jon_41_05_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_05_off_2[4] = {
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_05_off_2 = { 4, btlparty_jon_jon_41_05_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_41_05_off_3[4] = {
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_patatogemet_15_data_3B6C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patatogemet },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+    { &unit_bubble_15_data_35518, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_bubble },
+};
+
+BattleGroupSetup btlgrp_jon_jon_41_05_off_3 = { 4, btlparty_jon_jon_41_05_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_01_off_1[3] = {
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_01_off_1 = { 3, btlparty_jon_jon_51_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_01_off_2[3] = {
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_01_off_2 = { 3, btlparty_jon_jon_51_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_01_off_3[3] = {
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_01_off_3 = { 3, btlparty_jon_jon_51_01_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_02_off_1[4] = {
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_02_off_1 = { 4, btlparty_jon_jon_51_02_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_02_off_2[3] = {
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_02_off_2 = { 3, btlparty_jon_jon_51_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_02_off_3[2] = {
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_02_off_3 = { 2, btlparty_jon_jon_51_02_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_03_off_1[4] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_03_off_1 = { 4, btlparty_jon_jon_51_03_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_03_off_2[3] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_03_off_2 = { 3, btlparty_jon_jon_51_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_03_off_3[3] = {
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_03_off_3 = { 3, btlparty_jon_jon_51_03_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_04_off_1[3] = {
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_04_off_1 = { 3, btlparty_jon_jon_51_04_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_04_off_2[3] = {
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_04_off_2 = { 3, btlparty_jon_jon_51_04_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_04_off_3[3] = {
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+    { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_04_off_3 = { 3, btlparty_jon_jon_51_04_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_05_off_1[4] = {
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_05_off_1 = { 4, btlparty_jon_jon_51_05_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_05_off_2[3] = {
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { &unit_burst_wanwan_15_data_5F390, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_burst_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_05_off_2 = { 3, btlparty_jon_jon_51_05_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_51_05_off_3[3] = {
+    { &unit_sinemon_15_data_48330, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+};
+
+BattleGroupSetup btlgrp_jon_jon_51_05_off_3 = { 3, btlparty_jon_jon_51_05_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_01_off_1[3] = {
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_01_off_1 = { 3, btlparty_jon_jon_61_01_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_01_off_2[3] = {
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_01_off_2 = { 3, btlparty_jon_jon_61_01_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_01_off_3[2] = {
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_01_off_3 = { 2, btlparty_jon_jon_61_01_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_02_off_1[4] = {
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_02_off_1 = { 4, btlparty_jon_jon_61_02_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_02_off_2[2] = {
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_02_off_2 = { 2, btlparty_jon_jon_61_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_02_off_3[3] = {
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_02_off_3 = { 3, btlparty_jon_jon_61_02_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_03_off_1[3] = {
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_03_off_1 = { 3, btlparty_jon_jon_61_03_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_03_off_2[3] = {
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_03_off_2 = { 3, btlparty_jon_jon_61_03_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_03_off_3[3] = {
+    { &unit_super_mahorn_15_data_43F68, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_super_mahorn },
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+    { &unit_karon_15_data_55368, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_karon },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_03_off_3 = { 3, btlparty_jon_jon_61_03_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_04_off_1[4] = {
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_04_off_1 = { 4, btlparty_jon_jon_61_04_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_04_off_2[3] = {
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_04_off_2 = { 3, btlparty_jon_jon_61_04_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_04_off_3[2] = {
+    { &unit_ice_pakkun_15_data_577D8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_ice_pakkun },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_04_off_3 = { 2, btlparty_jon_jon_61_04_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_05_off_1[3] = {
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_05_off_1 = { 3, btlparty_jon_jon_61_05_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_05_off_2[2] = {
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+    { &unit_hyper_jyugem_15_data_58998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hyper_jyugem },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_05_off_2 = { 2, btlparty_jon_jon_61_05_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_61_05_off_3[2] = {
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+    { &unit_dark_keeper_15_data_5E0F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dark_keeper },
+};
+
+BattleGroupSetup btlgrp_jon_jon_61_05_off_3 = { 2, btlparty_jon_jon_61_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_01_off_1[3] = {
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_01_off_1 = { 3, btlparty_jon_jon_71_01_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_01_off_2[3] = {
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_01_off_2 = { 3, btlparty_jon_jon_71_01_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_01_off_3[3] = {
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_01_off_3 = { 3, btlparty_jon_jon_71_01_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_02_off_1[3] = {
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_02_off_1 = { 3, btlparty_jon_jon_71_02_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_02_off_2[3] = {
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_02_off_2 = { 3, btlparty_jon_jon_71_02_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_02_off_3[3] = {
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_02_off_3 = { 3, btlparty_jon_jon_71_02_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default2, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_03_off_1[5] = {
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_03_off_1 = { 5, btlparty_jon_jon_71_03_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_03_off_2[4] = {
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_03_off_2 = { 4, btlparty_jon_jon_71_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_03_off_3[4] = {
+    { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_03_off_3 = { 4, btlparty_jon_jon_71_03_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_04_off_1[4] = {
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 110.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 150.0f, 130.0f, 20.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_04_off_1 = { 4, btlparty_jon_jon_71_04_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_04_off_2[4] = {
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_04_off_2 = { 4, btlparty_jon_jon_71_04_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_04_off_3[4] = {
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 110.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_04_off_3 = { 4, btlparty_jon_jon_71_04_off_3, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_05_off_1[4] = {
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_05_off_1 = { 4, btlparty_jon_jon_71_05_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_05_off_2[3] = {
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+    { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_05_off_2 = { 3, btlparty_jon_jon_71_05_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_71_05_off_3[3] = {
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
+    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+};
+
+BattleGroupSetup btlgrp_jon_jon_71_05_off_3 = { 3, btlparty_jon_jon_71_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_01_off_1[4] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_01_off_1 = { 4, btlparty_jon_jon_81_01_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_01_off_2[4] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_churantalar, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_churantalar, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_01_off_2 = { 4, btlparty_jon_jon_81_01_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_01_off_3[3] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_yamitogedaruma, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_01_off_3 = { 3, btlparty_jon_jon_81_01_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_02_off_1[2] = {
+    { &unit_yamitogedaruma, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+    { &unit_yamitogedaruma, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_02_off_1 = { 2, btlparty_jon_jon_81_02_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_02_off_2[4] = {
+    { &unit_yamitogedaruma, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+    { &unit_churantalar, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_02_off_2 = { 4, btlparty_jon_jon_81_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_02_off_3[3] = {
+    { &unit_yamitogedaruma, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+    { &unit_yamitogedaruma, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_02_off_3 = { 3, btlparty_jon_jon_81_02_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_03_off_1[4] = {
+    { &unit_churantalar, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_03_off_1 = { 4, btlparty_jon_jon_81_03_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_03_off_2[3] = {
+    { &unit_churantalar, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_churantalar, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_03_off_2 = { 3, btlparty_jon_jon_81_03_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_03_off_3[3] = {
+    { &unit_churantalar, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_churantalar, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_churantalar },
+    { &unit_yamitogedaruma, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_03_off_3 = { 3, btlparty_jon_jon_81_03_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_04_off_1[4] = {
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_04_off_1 = { 4, btlparty_jon_jon_81_04_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default5, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_04_off_2[3] = {
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_yamitogedaruma, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yamitogedaruma },
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_04_off_2 = { 3, btlparty_jon_jon_81_04_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default5, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_04_off_3[4] = {
+    { &unit_pakkun_flower_15_data_4C6D0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_pakkun_flower },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_04_off_3 = { 4, btlparty_jon_jon_81_04_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default5, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_05_off_1[4] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_05_off_1 = { 4, btlparty_jon_jon_81_05_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_05_off_2[3] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_05_off_2 = { 3, btlparty_jon_jon_81_05_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_81_05_off_3[5] = {
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+    { &unit_hennya_15_data_5A9C0, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
+};
+
+BattleGroupSetup btlgrp_jon_jon_81_05_off_3 = { 5, btlparty_jon_jon_81_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_01_off_1[5] = {
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_01_off_1 = { 5, btlparty_jon_jon_91_01_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_01_off_2[3] = {
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_01_off_2 = { 3, btlparty_jon_jon_91_01_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_01_off_3[3] = {
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_basabasa_green, 1, 0x04000004, { 130.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_01_off_3 = { 3, btlparty_jon_jon_91_01_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default4, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_02_off_1[4] = {
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_02_off_1 = { 4, btlparty_jon_jon_91_02_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_02_off_2[4] = {
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_giant_bomb, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_02_off_2 = { 4, btlparty_jon_jon_91_02_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_02_off_3[4] = {
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 30.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_basabasa_green, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_02_off_3 = { 4, btlparty_jon_jon_91_02_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default3, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_03_off_1[4] = {
+    { &unit_giant_bomb, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_03_off_1 = { 4, btlparty_jon_jon_91_03_off_1, 20, 20, 60, battle_heart_drop_param_default5, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_03_off_2[3] = {
+    { &unit_giant_bomb, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_03_off_2 = { 3, btlparty_jon_jon_91_03_off_2, 20, 20, 60, battle_heart_drop_param_default5, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_03_off_3[4] = {
+    { &unit_giant_bomb, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_giant_bomb, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_03_off_3 = { 4, btlparty_jon_jon_91_03_off_3, 20, 20, 60, battle_heart_drop_param_default5, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_04_off_1[5] = {
+    { &unit_basabasa_green, 1, 0x04000004, { 10.0f, 130.0f, -20.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_basabasa_green, 1, 0x04000004, { 50.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_basabasa_green, 1, 0x04000004, { 90.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_basabasa_green, 1, 0x04000004, { 130.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_basabasa_green, 1, 0x04000004, { 170.0f, 130.0f, 20.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_04_off_1 = { 5, btlparty_jon_jon_91_04_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_04_off_2[3] = {
+    { &unit_basabasa_green, 1, 0x04000004, { 50.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+    { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_04_off_2 = { 3, btlparty_jon_jon_91_04_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_04_off_3[4] = {
+    { &unit_basabasa_green, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
+    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_04_off_3 = { 4, btlparty_jon_jon_91_04_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_05_off_1[5] = {
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_05_off_1 = { 5, btlparty_jon_jon_91_05_off_1, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default5, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_05_off_2[5] = {
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_05_off_2 = { 5, btlparty_jon_jon_91_05_off_2, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default5, 5 };
+
+BattleUnitSetup btlparty_jon_jon_91_05_off_3[5] = {
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+    { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
+};
+
+BattleGroupSetup btlgrp_jon_jon_91_05_off_3 = { 5, btlparty_jon_jon_91_05_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default5, 5 };
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_test1_off[2] = {
+    { 50, &btlgrp_jon_jon_01_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_01_off[4] = {
+    { 10, &btlgrp_jon_jon_01_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_01_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_01_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_02_off[4] = {
+    { 10, &btlgrp_jon_jon_01_02_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_02_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_02_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_03_off[4] = {
+    { 10, &btlgrp_jon_jon_01_03_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_03_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_03_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_04_off[4] = {
+    { 10, &btlgrp_jon_jon_01_04_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_04_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_04_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_05_off[4] = {
+    { 10, &btlgrp_jon_jon_01_05_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_05_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_01_05_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_11_off[4] = {
+    { 10, &btlgrp_jon_jon_11_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_01_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_01_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_12_off[4] = {
+    { 10, &btlgrp_jon_jon_11_02_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_02_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_02_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_13_off[4] = {
+    { 10, &btlgrp_jon_jon_11_03_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_03_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_03_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_14_off[4] = {
+    { 10, &btlgrp_jon_jon_11_04_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_04_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_04_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_15_off[4] = {
+    { 10, &btlgrp_jon_jon_11_05_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_05_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_11_05_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_21_off[4] = {
+    { 10, &btlgrp_jon_jon_21_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_01_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_01_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_22_off[4] = {
+    { 10, &btlgrp_jon_jon_21_02_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_02_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_02_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_23_off[4] = {
+    { 10, &btlgrp_jon_jon_21_03_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_03_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_03_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_24_off[4] = {
+    { 10, &btlgrp_jon_jon_21_04_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_04_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_04_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_25_off[4] = {
+    { 10, &btlgrp_jon_jon_21_05_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_05_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_21_05_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_31_off[4] = {
+    { 10, &btlgrp_jon_jon_31_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_01_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_01_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_32_off[4] = {
+    { 10, &btlgrp_jon_jon_31_02_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_02_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_02_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_33_off[4] = {
+    { 10, &btlgrp_jon_jon_31_03_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_03_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_03_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_34_off[4] = {
+    { 10, &btlgrp_jon_jon_31_04_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_04_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_04_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_35_off[4] = {
+    { 10, &btlgrp_jon_jon_31_05_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_05_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_31_05_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_41_off[4] = {
+    { 10, &btlgrp_jon_jon_41_01_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_01_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_01_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_42_off[4] = {
+    { 10, &btlgrp_jon_jon_41_02_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_02_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_02_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_43_off[4] = {
+    { 10, &btlgrp_jon_jon_41_03_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_03_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_03_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_44_off[4] = {
+    { 10, &btlgrp_jon_jon_41_04_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_04_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_04_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_45_off[4] = {
+    { 10, &btlgrp_jon_jon_41_05_off_1, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_05_off_2, (struct BattleStageData*)jon_btlstage_data },
+    { 10, &btlgrp_jon_jon_41_05_off_3, (struct BattleStageData*)jon_btlstage_data },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_51_off[4] = {
+    { 10, &btlgrp_jon_jon_51_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_01_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_01_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_52_off[4] = {
+    { 10, &btlgrp_jon_jon_51_02_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_02_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_02_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_53_off[4] = {
+    { 10, &btlgrp_jon_jon_51_03_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_03_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_03_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_54_off[4] = {
+    { 10, &btlgrp_jon_jon_51_04_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_04_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_04_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_55_off[4] = {
+    { 10, &btlgrp_jon_jon_51_05_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_05_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_51_05_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_61_off[4] = {
+    { 10, &btlgrp_jon_jon_61_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_01_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_01_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_62_off[4] = {
+    { 10, &btlgrp_jon_jon_61_02_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_02_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_02_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_63_off[4] = {
+    { 10, &btlgrp_jon_jon_61_03_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_03_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_03_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_64_off[4] = {
+    { 10, &btlgrp_jon_jon_61_04_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_04_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_04_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_65_off[4] = {
+    { 10, &btlgrp_jon_jon_61_05_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_05_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_61_05_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_71_off[4] = {
+    { 10, &btlgrp_jon_jon_71_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_01_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_01_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_72_off[4] = {
+    { 10, &btlgrp_jon_jon_71_02_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_02_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_02_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_73_off[4] = {
+    { 10, &btlgrp_jon_jon_71_03_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_03_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_03_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_74_off[4] = {
+    { 10, &btlgrp_jon_jon_71_04_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_04_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_04_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_75_off[4] = {
+    { 10, &btlgrp_jon_jon_71_05_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_05_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_71_05_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_81_off[4] = {
+    { 10, &btlgrp_jon_jon_81_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_01_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_01_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_82_off[4] = {
+    { 10, &btlgrp_jon_jon_81_02_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_02_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_02_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_83_off[4] = {
+    { 10, &btlgrp_jon_jon_81_03_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_03_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_03_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_84_off[4] = {
+    { 10, &btlgrp_jon_jon_81_04_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_04_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_04_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_85_off[4] = {
+    { 10, &btlgrp_jon_jon_81_05_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_05_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 10, &btlgrp_jon_jon_81_05_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x1B4) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_91_off[4] = {
+    { 10, &btlgrp_jon_jon_91_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_01_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_01_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_92_off[4] = {
+    { 10, &btlgrp_jon_jon_91_02_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_02_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_02_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_93_off[4] = {
+    { 10, &btlgrp_jon_jon_91_03_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_03_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_03_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_94_off[4] = {
+    { 10, &btlgrp_jon_jon_91_04_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_04_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_04_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_95_off[4] = {
+    { 10, &btlgrp_jon_jon_91_05_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_05_off_2, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 10, &btlgrp_jon_jon_91_05_off_3, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x368) },
+    { 0, NULL, NULL },
+};
+
+NpcBattleSetupEntry btlgrpsel_jon_btlno_jon_100_zonbaba_off[2] = {
+    { 10, &btlgrp_jon_jon_100_01_off_1, (struct BattleStageData*)(void*)((u8*)jon_btlstage_data + 0x51C) },
+    { 0, NULL, NULL },
+};
+
+BattleSetupData btlsetup_jon_tbl[53] = {
+    {
+        "マップstg_00_3",                                                                                      // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_test1_off,                                                                  // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミクリボー",                                                                                             // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_01_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ヒンニャー",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_02_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ハンニャー",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_03_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ホネノコ",                                                                                               // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_04_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 10, 10, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "チョロボン",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_05_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミパタクリ",                                                                                             // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_11_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "モノクロシンエモン",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_12_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "サンボ",                                                                                              // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_13_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "モノクロクロクモーン",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_14_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "パイダース",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_15_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミトゲクリ",                                                                                             // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_21_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 10, 10, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ボロドー",                                                                                             // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_22_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ジュゲム",                                                                                             // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_23_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ボムへい",                                                                                             // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_24_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "テレサ",                                                                                                // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_25_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 5, 5, 5, 5, 10, 10, 0, 0, 5, 5, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 5, 5, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ヤミノコノコ",                                                                                             // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_31_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ハイパーシンエモン",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_32_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "パタメット",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_33_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ウラノコ",                                                                                               // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_34_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "フラワーチョロボン",                                                                                        // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_35_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミパタパタ",                                                                                             // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_41_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 10, 10, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "ヘビーボム",                                                                                              // name
+        NULL,                                                                                                 // field_0x4
+        0,                                                                                                    // field_0x8
+        -1,                                                                                                   // flag
+        NULL,                                                                                                 // onLoadouts
+        btlgrpsel_jon_btlno_jon_42_off,                                                                       // offLoadouts
+        268435456,                                                                                            // field_0x18
+        0,                                                                                                    // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 10, 10, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                   // music
+    },
+    {
+        "バブル",                                                                                              // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_43_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "サンボマミー",                                                                                           // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_44_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "パタトゲメット",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_45_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "バッジボロドー",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_51_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ブリザード",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_52_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "パープルテレサ",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_53_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "バーストワンワン",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_54_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "シンエモン",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_55_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ハイパージュゲム",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_61_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "カロン",                                                                                              // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_62_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "スーパーマホーン",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_63_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "アイスパックン",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_64_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ダークキーパー",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_65_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マホーン",                                                                                             // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_71_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "トゲノコエース",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_72_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ファントム",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_73_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "バサバサチュルル",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_74_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ワンワン",                                                                                             // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_75_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヘンニャー",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_81_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヤミトゲダルマー",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_82_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "チュランタラー",                                                                                          // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_83_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "パックンフラワー",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_84_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ヘンニャー",                                                                                            // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_85_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "マホーンカスタム",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_91_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ドクガッスン",                                                                                           // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_92_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ジャイアントボム",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_93_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "バサバサグリーン",                                                                                         // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_94_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "きらめくパンジーさん",                                                                                       // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_95_off,                                                                     // offLoadouts
+        268435456,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_ZAKO_BATTLE1",                                                                                 // music
+    },
+    {
+        "ゾンババ",                                                                                             // name
+        "jon_06",                                                                                           // field_0x4
+        0,                                                                                                  // field_0x8
+        -1,                                                                                                 // flag
+        NULL,                                                                                               // onLoadouts
+        btlgrpsel_jon_btlno_jon_100_zonbaba_off,                                                            // offLoadouts
+        537919504,                                                                                          // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1 }, // field_0x20
+        "BGM_BOSS_STG1_GONBABA1",                                                                           // music
+    },
+    {
+        NULL,                                                                                               // name
+        NULL,                                                                                               // field_0x4
+        0,                                                                                                  // field_0x8
+        0,                                                                                                  // flag
+        NULL,                                                                                               // onLoadouts
+        NULL,                                                                                               // offLoadouts
+        0,                                                                                                  // field_0x18
+        0,                                                                                                  // field_0x1C
+        { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_0x20
+        NULL,                                                                                               // music
+    },
 };
 
 // TODO: type

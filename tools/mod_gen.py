@@ -74,6 +74,8 @@ for kind, sym in sorted(decls):
     new_decls.append(f"EVT_DEF({sym});" if kind == "evt" else f"extern u32 {sym}[];")
 incs = ['#include "data/mapdata.h"', '#include "forcedata.h"']
 os.makedirs(os.path.dirname(own_hdr), exist_ok=True)
+if os.path.exists(f"rels/{mod}/src/{mod}.c"):
+    sys.exit(f"rels/{mod}/src/{mod}.c exists: not overwriting")
 open(own_hdr, "w").write('#pragma once\n\n#include "evt/evt_cmd.h"\n\nvoid _prolog(void);\nvoid _epilog(void);\nvoid _unresolved(void);\n' + ("\n" + "\n".join(new_decls) + "\n" if new_decls else ""))
 incs.insert(0, f'#include "{mod}.h"')
 # headers that declare the symbols
@@ -128,6 +130,8 @@ void _epilog(void) {
 
 void _unresolved(void) {}
 """
+if os.path.exists(f"rels/{mod}/src/{mod}.c"):
+    sys.exit(f"rels/{mod}/src/{mod}.c exists: not overwriting")
 os.makedirs(f"rels/{mod}/src", exist_ok=True)
 open(f"rels/{mod}/src/{mod}.c", "w").write(out)
 print(f"{mod}: wrote rels/{mod}/src/{mod}.c ({len(lines)} calls, {len(new_decls)} new declarations)")

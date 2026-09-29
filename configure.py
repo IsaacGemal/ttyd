@@ -290,7 +290,6 @@ cflags_rel = [
 ]
 
 # REL flags without deferred inlining (a few unit copies were compiled that way: functions in source order)
-cflags_rel_norostr = [f for f in cflags_rel if f != "-rostr"]
 cflags_rel_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" for f in cflags_rel]
 
 config.linker_version = "GC/2.6"

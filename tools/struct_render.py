@@ -136,6 +136,10 @@ def enum_names(name):
 
 # ---------------------------------------------------------------- original objects
 def asm_path(cfile):
+    m = re.match(r'rels/common/src/(v\d+)/(.+)\.c$', cfile)
+    if m:  # a variant: its asm is the first module configure.py builds from it
+        mods = re.search(r'modules=\["(\w+)"\][^)]*source="%s/%s\.c"' % (m.group(1), re.escape(m.group(2))), open('configure.py').read())
+        return f'build/G8MJ01/{mods.group(1)}/asm/{m.group(2)}.s' if mods else None
     m = re.match(r'rels/common/src/(.+)\.c$', cfile)
     if m:
         import glob
