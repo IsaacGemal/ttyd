@@ -1,3 +1,4 @@
+#include "unit_faker_mario_gra.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -12,8 +13,6 @@
 
 #pragma cats on
 #pragma force_active on
-extern s32 btldefaultevt_Confuse[];
-s32 vivian_comeback(void);
 static u32 regist_fmario[6];
 static u32 data_table_fmario[4];
 static u32 parts_fmario[19];

@@ -7,7 +7,6 @@
 #include "battle/battle_message.h"
 #include "battle/battle_sub.h"
 #include "battle/battle_weapon_power.h"
-#include "data/item_data.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
@@ -19,6 +18,12 @@
 #pragma pool_data off
 
 #pragma force_active on
+typedef struct ItemIcon {
+    u8 pad[0x20];
+    u16 icon_id;
+    u8 pad2[6];
+} ItemIcon;
+extern ItemIcon itemDataTable[];
 static USER_FUNC(_steal_item);
 static u32 regist[6];
 static u32 data_table[2];
