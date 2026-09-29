@@ -1508,7 +1508,7 @@ config.libs = [
             Object(Matching, "dou_07.c"),
             Object(Matching, "unit/unit_killer_cannon.c"),
             Object(Matching, "data/battle/battle_database_dou.c"),
-            Object(NonMatching, "dou_04.c"),
+            Object(Matching, "dou_04.c"),
         ],
     ),
     Rel(

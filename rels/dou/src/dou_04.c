@@ -705,12 +705,7 @@ USER_FUNC(evt_box_pukapuka) {
         event->userdata[0] = 0;
         event->userdata[1] = 0;
     }
-    value = 0.7f * sinfd((f32)event->userdata[1]) - 0.7f;
-    {
-        f32 b = 1.5f;
-        b = b * sinfd((f32)event->userdata[0]) - b;
-        value = b + value;
-    }
+    value = (1.5f * sinfd((f32)event->userdata[0]) - 1.5f) + (0.7f * sinfd((f32)event->userdata[1]) - 0.7f);
     event->userdata[0] = (s32)reviseAngle((f32)(event->userdata[0] + 2));
     event->userdata[1] = (s32)reviseAngle((f32)(event->userdata[1] + 1));
     value -= 25.0f;
