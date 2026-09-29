@@ -1628,6 +1628,7 @@ config.libs = [
             Object(Matching, "unit/unit_giant_bomb.c"),
             Object(Matching, "unit/unit_yami_togekuri.c"),
             Object(Matching, "unit/unit_badge_borodo.c"),
+            Object(Matching, "data/battle/battle_database_jon.c"),
         ],
     ),
     Rel(
