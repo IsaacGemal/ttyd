@@ -1085,7 +1085,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/printf.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/qsort.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/rand.c"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/float.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/float.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/scanf.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/string.c"),
             Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/strtold.c"),
