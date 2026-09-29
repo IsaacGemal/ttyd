@@ -417,7 +417,7 @@ config.libs = [
             Object(NonMatching, "battle/sac/sac_scissor.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_zubastar.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_genki.c"),
-            Object(NonMatching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_deka.c"),
             Object(NonMatching, "battle/sac/sac_muki.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_suki.c", extra_cflags=["-O4,s"]),
@@ -430,7 +430,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "data/item_data.c"),
-            Object(NonMatching, "data/mail_data.c"),
+            Object(Matching, "data/mail_data.c"),
             Object(Matching, "data/mapdata.c"),
             Object(Matching, "data/npc_data.c"),
         ],
@@ -778,7 +778,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "party/party_yoshi.c"),
             Object(NonMatching, "party/party_bomhei.c"),
-            Object(NonMatching, "party/party_data.c"),
+            Object(Matching, "data/party_data.c"),
             Object(NonMatching, "party/party_hit.c"),
             Object(NonMatching, "party/party_kuribo.c"),
             Object(NonMatching, "party/party_move.c"),
