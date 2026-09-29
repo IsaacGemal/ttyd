@@ -1542,6 +1542,7 @@ config.libs = [
             Object(Matching, "gra_05.c"),
             Object(Matching, "unit/unit_hyper_kuriboo.c"),
             Object(Matching, "unit/unit_hyper_patakuri.c"),
+            Object(Matching, "unit/unit_hyper_togekuri.c"),
             Object(Matching, "event/evt_iwamove.c"),
         ],
     ),

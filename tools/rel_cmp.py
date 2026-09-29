@@ -45,5 +45,28 @@ for sec in ('.text','.data','.rodata','.bss'):
         ta=target(ra[off],A) if off in ra else None; tb=target(rb[off],B) if off in rb else None
         if ta!=tb: bad.append(f'{sec}+{off:#x}: original -> {ta}, ours -> {tb}'); 
         if len(bad)>12: break
+def force_active(path):
+    # per-symbol flags of the object's .comment section (8 bytes each after a 0x2C header): 0x0008 keeps the symbol
+    # through the linker's dead-stripping. An unreferenced static function without it vanishes from the REL while the
+    # object still compares equal.
+    d=open(path,'rb').read()
+    shoff,=struct.unpack('>I',d[0x20:0x24]); shentsize,shnum,shstrndx=struct.unpack('>HHH',d[0x2E:0x34])
+    secs=[struct.unpack('>IIIIIIIIII',d[shoff+i*shentsize:shoff+(i+1)*shentsize]) for i in range(shnum)]
+    so=secs[shstrndx][4]
+    names=[d[so+s[0]:d.index(b'\0',so+s[0])].decode() for s in secs]
+    if '.comment' not in names or '.symtab' not in names: return {}
+    cm=secs[names.index('.comment')]; st=secs[names.index('.symtab')]; ss=secs[st[6]]
+    out={}
+    for j in range(st[5]//16):
+        n,val,sz,info,oth,shn=struct.unpack('>IIIBBH',d[st[4]+j*16:st[4]+j*16+16])
+        if info&0xf!=2: continue   # functions only
+        e=cm[4]+0x2c+8*j
+        nm=d[ss[4]+n:d.index(b'\0',ss[4]+n)].decode('latin1')
+        out[nm]=bool(struct.unpack('>H',d[e+4:e+6])[0]&8)
+    return out
+_orig=f'build/G8MJ01/{MOD}/obj/{UNIT}.o'; _ours=_u['base_path'] if _u else f'build/G8MJ01/src/{UNIT}.o'
+_fa,_fb=force_active(_orig),force_active(_ours)
+for nm in sorted(_fa):
+    if _fa[nm] and not _fb.get(nm,True): bad.append(f'function {nm} lacks the force-active flag (write `#pragma force_active on` and do not end the file with `off`)')
 print('OK' if not bad else '\n'.join(bad[:12]))
 sys.exit(1 if bad else 0)
