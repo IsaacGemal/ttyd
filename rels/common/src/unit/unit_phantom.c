@@ -1,3 +1,8 @@
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
+#include "driver/effdrv.h"
+#include "eff/eff_fire.h"
+#include "manager/evtmgr_cmd.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -13,6 +18,9 @@
 #pragma force_active on
 static USER_FUNC(eff_all_fire);
 static USER_FUNC(eff_fire);
+static EffectEntry* eff[1];
+static EffectEntry* eff2[10];
+static s32 step[10];
 static USER_FUNC(bubble_copy_status);
 static u32 regist[6];
 static u32 data_table[8];
@@ -28,7 +36,7 @@ static s32 fire_attack_event[365];
 static s32 wait_event[6];
 
 // clang-format off
-extend_data(168,
+extend_data(unit_phantom_0,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -37,7 +45,7 @@ extend_data(168,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-extend_data(169,
+extend_data(unit_phantom_1,
      u64, negone_one, 0xBF8000003F800000,
      u32, neg_one, 0xBF800000,
      f32, __local_PI, 3.1415926535897932384626433832795f,
@@ -47,7 +55,7 @@ extend_data(169,
      f32, one, 1.0f)
 
 // TODO: type
-u32 unit_phantom_15_data_4AC38[49] = {
+u32 UNIT_DATA_SYM[49] = {
     0x0000007C, (u32)"btl_un_phantom", 0x000A0000, 0x01011E00,
     0x02460232, 0x270F001A, 0x00240008, 0x00180000,
     0x00000000, 0x41900000, 0x00000000, 0x0000FFFD,
@@ -146,7 +154,7 @@ static u32 weapon_bubble_fire_attack[48] = {
 
 // TODO: type
 static u32 entry_bubble[12] = {
-    (u32)&unit_phantom_15_data_4AC38, 0x01000000, 0x04000004, 0xC47A0000,
+    (u32)&UNIT_DATA_SYM, 0x01000000, 0x04000004, 0xC47A0000,
     0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
@@ -215,8 +223,32 @@ static EVT_BEGIN(damage_fire_explosion_event)
     RETURN
 EVT_END()
 
-// TODO: write bubble_copy_status (static, 0x114 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_phantom.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(bubble_copy_status) {
+    s32* args;
+    s32 srcId;
+    s32 dstId;
+    BattleWork* wp;
+    BattleUnit* src;
+    BattleUnit* dst;
+
+    args = event->args;
+    srcId = BattleTransID(event, evtGetValue(event, args[0]));
+    dstId = BattleTransID(event, evtGetValue(event, args[1]));
+    wp = _battleWorkPointer;
+    src = BattleGetUnitPtr(wp, srcId);
+    dst = BattleGetUnitPtr(wp, dstId);
+    dst->currentHp = src->currentHp;
+    if (dst->currentHp > dst->maxHp) {
+        dst->currentHp = dst->maxHp;
+    }
+    dst->mSizeChangeTurns = src->mSizeChangeTurns;
+    dst->mSizeChangeStrength = src->mSizeChangeStrength;
+    dst->hpGauge.field_0xC = dst->currentHp;
+    dst->hpGauge.field_0x10 = dst->currentHp;
+    dst->hpGauge.field_0x14 = dst->hpGauge.field_0x18 = (f32)dst->currentHp / (f32)dst->maxHp;
+    return EVT_RETURN_DONE;
+}
+
 
 static EVT_BEGIN(friend_event)
     CALL(btlevtcmd_AnimeChangePose, LW(10), LW(11), STRING("S_1"))
@@ -387,8 +419,45 @@ static EVT_BEGIN(normal_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write eff_fire (static, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_phantom.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_fire) {
+    s32 id;
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    effFireData* data;
+    f32 x;
+    f32 y;
+    f32 z;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 2);
+    if (isFirstCall) {
+        eff[0] = effFireEntry(7, 106, 0.0f, -1000.0f, 0.0f, 1.0f);
+        ((effFireData*)eff[0]->userdata)->field_0x78 = 0.0f;
+        ((effFireData*)eff[0]->userdata)->field_0x7C = 0.0f;
+    }
+    data = eff[0]->userdata;
+    if (data != NULL) {
+        BtlUnit_GetPartsPos(part, &x, &y, &z);
+        {
+        Vec pos = { 0.0f, 0.0f, 0.0f };
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
+        data->position = pos;
+        data->field_0x78 += 0.1f * unit->mSizeMultiplier;
+        if (data->field_0x78 >= unit->mSizeMultiplier) {
+            data->field_0x78 = unit->mSizeMultiplier;
+        }
+        data->field_0x7C += 0.1f * unit->mSizeMultiplier;
+        if (data->field_0x7C >= unit->mSizeMultiplier) {
+            data->field_0x7C = unit->mSizeMultiplier;
+        }
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
 
 static EVT_BEGIN(fire_attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
@@ -490,8 +559,42 @@ static EVT_BEGIN(fire_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write eff_all_fire (static, 0x21c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_phantom.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(eff_all_fire) {
+    s32* args;
+    BattleUnit* unit;
+    effFireData* data;
+    s32 id;
+    s32 index;
+    f32 x;
+    f32 y;
+    f32 z;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    index = evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    {
+    f32 scale[10] = { 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.0f, 1.75f, 1.5f, 1.25f };
+    if (isFirstCall) {
+        eff2[index] = effFireEntry(7, 120, 0.0f, -1000.0f, 0.0f, 1.0f);
+        ((effFireData*)eff2[index]->userdata)->field_0x78 = 2.0f;
+        ((effFireData*)eff2[index]->userdata)->field_0x7C = unit->mSizeMultiplier * scale[index];
+    }
+    data = eff2[index]->userdata;
+    if (data != NULL) {
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        {
+        Vec pos = { 0.0f, 0.0f, 0.0f };
+        pos.x = x + 24.0f * unit->faceDirection * (index + 1);
+        pos.y = y - 15.0f - 2.0f * scale[index];
+        pos.z = z - 10.0f;
+        data->position = pos;
+        }
+    }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
 
 static EVT_BEGIN(all_fire_attackEvent_sub)
     BEGIN_SIBLING_EVENT
@@ -608,22 +711,4 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 step[10] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 eff2[10] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 eff[1] = {
-    0x00000000,
-};
 // clang-format on
