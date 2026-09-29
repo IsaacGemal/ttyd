@@ -189,7 +189,7 @@ void effParticleDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (87.88%): retail keeps a 0x14 stack copy of the position Vec plus a 0x8 init scratch; mine keeps one slot at 0x8.
+// NONMATCHING (39.80%): retail keeps a 0x14 stack copy of the position Vec plus a 0x8 init scratch; mine keeps one slot at 0x8.
 void effParticleMain(EffectEntry* effect) {
 	ParticleWork* work = effect->userdata;
 	Vec position = vec3_8030026c;
@@ -305,6 +305,8 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	return entry;
 }
 
+// dont_inline: the original calls EmitterEmit from effParticleMain (deferred inlining would pull it in).
+#pragma dont_inline on
 void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 	ParticleWork* work = effect->userdata;
 	u32 oldCount;
@@ -335,8 +337,9 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 		}
 	}
 }
+#pragma dont_inline reset
 
-// NONMATCHING (89.48%): the inline sqrtf u32->f32 mask is pooled after the sqrtf doubles (retail pools it before the string); several FP register assignments differ.
+// NONMATCHING (90.24%): the inline sqrtf u32->f32 mask is pooled after the sqrtf doubles (retail pools it before the string); several FP register assignments differ.
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static s32 use_last;
 	static f32 y2;
@@ -360,6 +363,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		} while (radius > float_1_80421cf8);
 		factor = particle_sqrtf(float_neg2_80421d14 * (f32)log(radius) / radius);
 		random = x * factor;
+		use_last = 1;
 		y2 = z * factor;
 	}
 
