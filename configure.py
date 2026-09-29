@@ -1417,7 +1417,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_kanbu2.c"),
             Object(Matching, "mri_17.c"),
             Object(Matching, "mri_14.c"),
-            Object(NonMatching, "mri_04.c"),
+            Object(Matching, "mri_04.c"),
             Object(NonMatching, "mri_08.c"),
             Object(NonMatching, "mri_13.c"),
             Object(NonMatching, "mri_16.c"),

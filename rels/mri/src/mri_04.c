@@ -137,8 +137,6 @@ static u32 npcEnt[46] = {
     0x00000000, 0x00000000,
 };
 
-static const f32 zero;
-static const f32 threeSixty;
 USER_FUNC(evt_chuchu_back_loop) {
     s32* args = event->args;
     NpcEntry* npc = evtNpcNameToPtr(event, "チュチュリーナ");
@@ -150,15 +148,12 @@ USER_FUNC(evt_chuchu_back_loop) {
     }
     curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
     if (curStep < steps) {
-        npc->rotation.z = intplGetValue(11, curStep, steps, zero, threeSixty);
+        npc->rotation.z = intplGetValue(11, curStep, steps, 0.0f, 360.0f);
         return EVT_RETURN_BLOCK;
     }
-    npc->rotation.z = zero;
+    npc->rotation.z = 0.0f;
     return EVT_RETURN_DONE;
 }
-
-static const f32 zero = 0.0f;
-static const f32 threeSixty = 360.0f;
 
 static EVT_BEGIN(chuchurina_sogu)
     CALL(evt_mario_key_onoff, 0)
