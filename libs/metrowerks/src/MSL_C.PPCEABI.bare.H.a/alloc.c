@@ -50,7 +50,7 @@ typedef struct __mem_pool {
 } __mem_pool;
 
 static inline SubBlock* SubBlock_merge_prev(SubBlock*, SubBlock**);
-static void SubBlock_merge_next(SubBlock*, SubBlock**);
+static inline void SubBlock_merge_next(SubBlock*, SubBlock**);
 
 const unsigned long fix_pool_sizes[] = {4, 12, 20, 36, 52, 68};
 
@@ -129,7 +129,7 @@ static inline SubBlock* SubBlock_merge_prev(SubBlock* ths, SubBlock** start)
     return ths;
 }
 
-static void SubBlock_merge_next(SubBlock* pBlock, SubBlock** pStart)
+static inline void SubBlock_merge_next(SubBlock* pBlock, SubBlock** pStart)
 {
     SubBlock* next_sub_block;
     unsigned long this_cur_size;
@@ -202,29 +202,17 @@ void __pool_free(__mem_pool* pool, void* ptr);
 void deallocate_from_fixed_pools(__mem_pool_obj* pool_obj, void* ptr, unsigned long size);
 void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr);
 
-void free(void* ptr)
+void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr)
 {
-    __begin_critical_region(1);
-    __pool_free((__mem_pool*)get_malloc_pool(), ptr);
-    __end_critical_region(1);
-}
+    SubBlock* sb = SubBlock_from_pointer(ptr);
+    SubBlock* _sb;
 
-void __pool_free(__mem_pool* pool, void* ptr)
-{
-    __mem_pool_obj* pool_obj;
-    unsigned long size;
+    Block* bp = SubBlock_block(sb);
+    Block_link(bp, sb);
 
-    if (ptr == 0) {
-        return;
-    }
-
-    pool_obj = (__mem_pool_obj*)pool;
-    size = __msize_inline(ptr);
-
-    if (size <= 68) {
-        deallocate_from_fixed_pools(pool_obj, ptr, size);
-    } else {
-        deallocate_from_var_pools(pool_obj, ptr);
+    if (Block_empty(bp)) {
+        __unlink(pool_obj, bp);
+        __sys_free(bp);
     }
 }
 
@@ -285,16 +273,28 @@ void deallocate_from_fixed_pools(__mem_pool_obj* pool_obj, void* ptr, unsigned l
     }
 }
 
-void deallocate_from_var_pools(__mem_pool_obj* pool_obj, void* ptr)
+void __pool_free(__mem_pool* pool, void* ptr)
 {
-    SubBlock* sb = SubBlock_from_pointer(ptr);
-    SubBlock* _sb;
+    __mem_pool_obj* pool_obj;
+    unsigned long size;
 
-    Block* bp = SubBlock_block(sb);
-    Block_link(bp, sb);
-
-    if (Block_empty(bp)) {
-        __unlink(pool_obj, bp);
-        __sys_free(bp);
+    if (ptr == 0) {
+        return;
     }
+
+    pool_obj = (__mem_pool_obj*)pool;
+    size = __msize_inline(ptr);
+
+    if (size <= 68) {
+        deallocate_from_fixed_pools(pool_obj, ptr, size);
+    } else {
+        deallocate_from_var_pools(pool_obj, ptr);
+    }
+}
+
+void free(void* ptr)
+{
+    __begin_critical_region(1);
+    __pool_free((__mem_pool*)get_malloc_pool(), ptr);
+    __end_critical_region(1);
 }

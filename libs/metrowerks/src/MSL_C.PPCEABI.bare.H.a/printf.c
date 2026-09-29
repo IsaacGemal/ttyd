@@ -1175,29 +1175,33 @@ static unsigned long __StringWrite(void* pCtrl, const char* pBuffer, size_t char
     return 1;
 }
 
-int sprintf(char* s, const char* format, ...) {
-    int end;
-    int len;
+int printf(const char* format, ...) {
+    int res;
     va_list args;
-    __OutStrCtrl osc;
 
-    va_start(args, format);
-
-    osc.CharStr = s;
-    osc.MaxCharCount = (size_t)-1;
-    osc.CharsWritten = 0;
-
-    end = __pformatter(&__StringWrite, &osc, format, args);
-
-    if (s != NULL) {
-        len = -2;
-        if (end < (size_t)-1) {
-            len = end;
-        }
-        s[len] = '\0';
+    if (fwide(stdout, -1) >= 0) {
+        return -1;
     }
 
-    return end;
+    __begin_critical_region(2);
+    va_start(args, format);
+    res = __pformatter(&__FileWrite, (void*)stdout, format, args);
+    __end_critical_region(2);
+
+    return res;
+}
+
+int vprintf(const char* format, va_list arg) {
+    int ret;
+
+    if (fwide(stdout, -1) >= 0) {
+        return -1;
+    }
+
+    __begin_critical_region(2);
+    ret = __pformatter(&__FileWrite, (void*)stdout, format, arg);
+    __end_critical_region(2);
+    return ret;
 }
 
 int vsprintf(char* s, const char* format, va_list arg) {
@@ -1222,31 +1226,27 @@ int vsprintf(char* s, const char* format, va_list arg) {
     return end;
 }
 
-int vprintf(const char* format, va_list arg) {
-    int ret;
-
-    if (fwide(stdout, -1) >= 0) {
-        return -1;
-    }
-
-    __begin_critical_region(2);
-    ret = __pformatter(&__FileWrite, (void*)stdout, format, arg);
-    __end_critical_region(2);
-    return ret;
-}
-
-int printf(const char* format, ...) {
-    int res;
+int sprintf(char* s, const char* format, ...) {
+    int end;
+    int len;
     va_list args;
+    __OutStrCtrl osc;
 
-    if (fwide(stdout, -1) >= 0) {
-        return -1;
+    va_start(args, format);
+
+    osc.CharStr = s;
+    osc.MaxCharCount = (size_t)-1;
+    osc.CharsWritten = 0;
+
+    end = __pformatter(&__StringWrite, &osc, format, args);
+
+    if (s != NULL) {
+        len = -2;
+        if (end < (size_t)-1) {
+            len = end;
+        }
+        s[len] = '\0';
     }
 
-    __begin_critical_region(2);
-    va_start(args, format);
-    res = __pformatter(&__FileWrite, (void*)stdout, format, args);
-    __end_critical_region(2);
-
-    return res;
+    return end;
 }

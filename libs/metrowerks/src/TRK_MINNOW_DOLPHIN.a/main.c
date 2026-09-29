@@ -26,66 +26,28 @@ static const char ddh_cc_read_error[] = "cc_read : error reading bytes from EXI2
 static const char ddh_cc_initialize_calling_exi2_init[] = "CALLING EXI2_Init\n";
 static const char ddh_cc_initialize_done_calling_exi2_init[] = "DONE CALLING EXI2_Init\n";
 
-int ddh_cc_initinterrupts(void) {
-    EXI2_EnableInterrupts();
+int ddh_cc_initialize(void* inputPendingPtrRef, __OSInterruptHandler monitorCallback) {
+    MWTRACE(1, (char*)ddh_cc_initialize_calling_exi2_init);
+    EXI2_Init(inputPendingPtrRef, monitorCallback);
+    MWTRACE(1, (char*)ddh_cc_initialize_done_calling_exi2_init);
+    CircleBufferInitialize(&gRecvCB, gRecvBuf, DDH_BUF_SIZE);
     return 0;
 }
 
-int ddh_cc_peek(void) {
-    int poll;
-    u8 buff[DDH_BUF_SIZE];
-
-    poll = EXI2_Poll();
-    if (poll <= 0) {
-        return 0;
-    }
-
-    if (EXI2_ReadN(buff, poll) == 0) {
-        CircleBufferWriteBytes(&gRecvCB, buff, poll);
-    } else {
-        return DDH_ERR_READ_ERROR;
-    }
-
-    return poll;
-}
-
-int ddh_cc_post_stop(void) {
-    EXI2_Reserve();
+int ddh_cc_shutdown(void) {
     return 0;
 }
 
-int ddh_cc_pre_continue(void) {
-    EXI2_Unreserve();
+int ddh_cc_open(void) {
+    if (gIsInitialized != 0) {
+        return DDH_ERR_ALREADY_INITIALIZED;
+    }
+
+    gIsInitialized = TRUE;
     return 0;
 }
 
-int ddh_cc_write(const u8* bytes, int length) {
-    int exi2Len;
-    int nCopy;
-    u32 bytesAddr;
-
-    bytesAddr = (u32)bytes;
-    nCopy = length;
-
-    if (gIsInitialized == FALSE) {
-        MWTRACE(8, (char*)ddh_cc_write_not_initialized);
-        return DDH_ERR_NOT_INITIALIZED;
-    }
-
-    MWTRACE(8, (char*)ddh_cc_write_output_data, bytes, length);
-
-    while (nCopy > 0) {
-        MWTRACE(1, (char*)ddh_cc_write_sending, nCopy);
-        exi2Len = EXI2_WriteN((const void*)bytesAddr, nCopy);
-
-        if (exi2Len == AMC_EXI_NO_ERROR) {
-            break;
-        }
-
-        bytesAddr += exi2Len;
-        nCopy -= exi2Len;
-    }
-
+int ddh_cc_close(void) {
     return 0;
 }
 
@@ -125,27 +87,65 @@ int ddh_cc_read(u8* data, int size) {
     return result;
 }
 
-int ddh_cc_close(void) {
-    return 0;
-}
+int ddh_cc_write(const u8* bytes, int length) {
+    int exi2Len;
+    int nCopy;
+    u32 bytesAddr;
 
-int ddh_cc_open(void) {
-    if (gIsInitialized != 0) {
-        return DDH_ERR_ALREADY_INITIALIZED;
+    bytesAddr = (u32)bytes;
+    nCopy = length;
+
+    if (gIsInitialized == FALSE) {
+        MWTRACE(8, (char*)ddh_cc_write_not_initialized);
+        return DDH_ERR_NOT_INITIALIZED;
     }
 
-    gIsInitialized = TRUE;
+    MWTRACE(8, (char*)ddh_cc_write_output_data, bytes, length);
+
+    while (nCopy > 0) {
+        MWTRACE(1, (char*)ddh_cc_write_sending, nCopy);
+        exi2Len = EXI2_WriteN((const void*)bytesAddr, nCopy);
+
+        if (exi2Len == AMC_EXI_NO_ERROR) {
+            break;
+        }
+
+        bytesAddr += exi2Len;
+        nCopy -= exi2Len;
+    }
+
     return 0;
 }
 
-int ddh_cc_shutdown(void) {
+int ddh_cc_pre_continue(void) {
+    EXI2_Unreserve();
     return 0;
 }
 
-int ddh_cc_initialize(void* inputPendingPtrRef, __OSInterruptHandler monitorCallback) {
-    MWTRACE(1, (char*)ddh_cc_initialize_calling_exi2_init);
-    EXI2_Init(inputPendingPtrRef, monitorCallback);
-    MWTRACE(1, (char*)ddh_cc_initialize_done_calling_exi2_init);
-    CircleBufferInitialize(&gRecvCB, gRecvBuf, DDH_BUF_SIZE);
+int ddh_cc_post_stop(void) {
+    EXI2_Reserve();
+    return 0;
+}
+
+int ddh_cc_peek(void) {
+    int poll;
+    u8 buff[DDH_BUF_SIZE];
+
+    poll = EXI2_Poll();
+    if (poll <= 0) {
+        return 0;
+    }
+
+    if (EXI2_ReadN(buff, poll) == 0) {
+        CircleBufferWriteBytes(&gRecvCB, buff, poll);
+    } else {
+        return DDH_ERR_READ_ERROR;
+    }
+
+    return poll;
+}
+
+int ddh_cc_initinterrupts(void) {
+    EXI2_EnableInterrupts();
     return 0;
 }

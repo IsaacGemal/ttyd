@@ -2813,12 +2813,15 @@ TRK_MINNOW_DOLPHIN.a/UDP_Stubs.c:
 
 TRK_MINNOW_DOLPHIN.a/main.c:
 	.text       start:0x8025DE00 end:0x8025E144
-	.rodata     start:0x80302200 end:0x803023C0
-	.bss        start:0x803E3A40 end:0x803E4780
-	.sbss       start:0x80418C28 end:0x80418C38
+	.rodata     start:0x80302200 end:0x803022E0
+	.bss        start:0x803E3A40 end:0x803E4260
+	.sbss       start:0x80418C28 end:0x80418C30
 
 TRK_MINNOW_DOLPHIN.a/CircleBuffer.c:
 	.text       start:0x8025E144 end:0x8025E6F8
+	.rodata     start:0x803022E0 end:0x803023C0
+	.bss        start:0x803E4260 end:0x803E4780
+	.sbss       start:0x80418C30 end:0x80418C38
 
 TRK_MINNOW_DOLPHIN.a/MWTrace.c:
 	.text       start:0x8025E6F8 end:0x8025E748

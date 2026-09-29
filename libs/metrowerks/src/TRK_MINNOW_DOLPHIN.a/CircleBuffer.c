@@ -33,12 +33,10 @@ typedef struct CircleBuffer {
 
 typedef struct GdevRecvCB {
 	CircleBuffer cb;
-	u32 reserved;
 } GdevRecvCB;
 
 typedef struct GdevInitFlag {
 	BOOL value;
-	u32 reserved;
 } GdevInitFlag;
 
 void MWInitializeCriticalSection(u32* section);
@@ -58,14 +56,22 @@ void CircleBufferInitialize(CircleBuffer* cb, u8* buf, s32 size);
 int CircleBufferWriteBytes(CircleBuffer* cb, u8* buf, u32 size);
 int CircleBufferReadBytes(CircleBuffer* cb, u8* buf, u32 size);
 
-extern GdevRecvCB gRecvCB_803E4760;
-extern u8 gRecvBuf_803E4260[GDEV_BUF_SIZE];
-__declspec(section ".sdata") extern GdevInitFlag gIsInitialized_80418C30;
+const char str_803022E0[20] = "cc not initialized\n";
+const char str_803022F4[44] = "cc_write : Output data 0x%08x %ld bytes\n";
+const char str_80302320[28] = "cc_write sending %ld bytes\n";
+const char str_8030233C[40] = "Expected packet size : 0x%08x (%ld)\n";
+const char str_80302364[48] = "cc_read : error reading bytes from EXI2 %ld\n";
+const char str_80302394[20] = "CALLING EXI2_Init\n";
+const char str_803023A8[24] = "DONE CALLING EXI2_Init\n";
+
+GdevRecvCB gRecvCB_803E4760 ATTRIBUTE_ALIGN(8);
+u8 gRecvBuf_803E4260[GDEV_BUF_SIZE];
+__declspec(section ".sdata") GdevInitFlag gIsInitialized_80418C30;
 
 int gdev_cc_initialize(void* inputPendingPtrRef, __OSInterruptHandler monitorCallback) {
-	MWTRACE(1, (char*)"CALLING EXI2_Init\n");
+	MWTRACE(1, (char*)str_80302394);
 	DBInitComm(inputPendingPtrRef, monitorCallback);
-	MWTRACE(1, (char*)"DONE CALLING EXI2_Init\n");
+	MWTRACE(1, (char*)str_803023A8);
 	CircleBufferInitialize(&gRecvCB_803E4760.cb, gRecvBuf_803E4260, GDEV_BUF_SIZE);
 	return 0;
 }
@@ -99,7 +105,7 @@ int gdev_cc_read(u8* data, int size) {
 		return GDEV_ERR_NOT_INITIALIZED;
 	}
 
-	MWTRACE(1, (char*)"Expected packet size : 0x%08x (%ld)\n", size, size);
+	MWTRACE(1, (char*)str_8030233C, size, size);
 	originalDataSize = expectedDataSize = size;
 
 	while ((u32)CBGetBytesAvailableForRead(&gRecvCB_803E4760.cb) < expectedDataSize) {
@@ -117,7 +123,7 @@ int gdev_cc_read(u8* data, int size) {
 	if (result == 0) {
 		CircleBufferReadBytes(&gRecvCB_803E4760.cb, data, originalDataSize);
 	} else {
-		MWTRACE(8, (char*)"cc_read : error reading bytes from EXI2 %ld\n", result);
+		MWTRACE(8, (char*)str_80302364, result);
 	}
 
 	return result;
@@ -132,14 +138,14 @@ int gdev_cc_write(const u8* bytes, int length) {
 	nCopy = length;
 
 	if (gIsInitialized_80418C30.value == FALSE) {
-		MWTRACE(8, (char*)"cc not initialized\n");
+		MWTRACE(8, (char*)str_803022E0);
 		return GDEV_ERR_NOT_INITIALIZED;
 	}
 
-	MWTRACE(8, (char*)"cc_write : Output data 0x%08x %ld bytes\n", bytes, length);
+	MWTRACE(8, (char*)str_803022F4, bytes, length);
 
 	while (nCopy > 0) {
-		MWTRACE(1, (char*)"cc_write sending %ld bytes\n", nCopy);
+		MWTRACE(1, (char*)str_80302320, nCopy);
 		exi2Len = DBWrite((const void*)bytesAddr, nCopy);
 		if (exi2Len == 0) {
 			break;
