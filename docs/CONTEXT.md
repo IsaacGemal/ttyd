@@ -1577,3 +1577,25 @@ compile yet), and auto_* rodata units.
 where each function goes, declarations so it builds), writes the functions, types the raw tables, and runs
 `check.py --final` until LINKED. 32 agents at a time over the list, 30 minutes each, from ~/ttyd-w17base on the
 tower (this branch plus the units' configure entries).
+
+## Wave 17: 82 REL units with functions linked (2026-09-29, Claude Opus 5.5; agents DeepSeek V4.1 Flash)
+
+104 unique-name REL units with 1-3 functions (none over 1.2 KB), smallest first; 24 agents at a time over the list,
+30 minutes each, 00:41-02:35. Each got its generated source (data equal to the original; a TODO where each function
+goes, placed before the first script that uses it; declarations so the file built) and the job: write the
+functions, type what tables it could, `check.py --final` until LINKED. **82 LINKED** (each rechecked by a fresh
+`tools/rel_link.py` at collection), all merged; 18 headers gained lines (7 new, several under the existing
+include/rel/<mod>/ convention), none lost one. **Functions 4,994 -> 5,131; linked data 13.94% -> 23.67% on this
+branch.** Small units took 2-4 minutes; the 2-3 function ones used most of the 30.
+
+Not linked (19; their generated data is still good, the functions aren't):
+- ~10 function mismatches (.text bytes or size differ): ordinary near-misses, plus two where the agent never
+  wrote the function (hei_01, mri_13).
+- 3 constant/string pool differences (.rodata size or bytes; a float literal in dou_04), the literal-order rule
+  (see the grind chapters) applies.
+- 6 where tools/rel_cmp.py says the object equals the original but the REL's checksum fails (unit_faker_mario_gra,
+  unit_hyper_togekuri, unit_boss_rampell, unit_yami_togekuri, las_21, win_00). The compare misses something;
+  first look shows the symbol tables differ (the original names every string, ours are anonymous), which
+  shouldn't matter to the REL, so the cause is still open. Until found, only the checksum counts.
+- The agents started from the old brief, before rule 18 (reverse function order); some multi-function units may
+  fail only on that.
