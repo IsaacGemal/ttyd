@@ -21,7 +21,7 @@ anything worth keeping into a chapter here.
   `IsaacGemal/ttyd`. `upstream` is fetch-only; its push URL is `DISABLED`. `gh` defaults to this repo.
 - Target: `G8MJ01` (Japan, Rev 0), the only version the project supports. The disc is already extracted into
   `orig/G8MJ01/`.
-- Progress (local build, Sep 27 after wave 14, PR #15): 4,840 of 9,770 functions matched, 24.66% of code; linked code 11.19%, linked data 4.94%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
+- Progress (local build, Sep 28 after wave 16, PR #21): 4,902 of 9,770 functions matched, 25.64% of code (fuzzy 40.24%); linked code 11.19%, linked data 4.94%. Before the fork's first wave: 12.16%, 2,065, linked 8.12%.
 - Nothing in flight. Isaac picks the orchestrator per wave (wave 6: the session that ran waves 1-5; wave 7: the work-account session; wave 8: the personal-account session, overlapping wave 7). Overnight
   runs are paused (Isaac, Sep 26): waves run during the day while he checks in, not on an unattended /loop.
 - Review routine: three rounds in sequence, each followed by fixes, from Claude and Codex only (Claude twice
@@ -1380,3 +1380,31 @@ PR #18 was closed unmerged; the branch `semcheck` keeps the code, the mutation h
   bugs looked like success while nine flags in ten were noise.
 - Things that did hold up: the planted-bug method for testing a checker, and that objdiff's JSON omits unchanged
   symbols' bytes (`data_diff`), which matters to any tool reading it.
+
+## Wave 16: effect files, and data compared byte for byte before review (2026-09-28, Claude Opus 5.5 ("TTYD Claude #2"); agents DeepSeek V4.1 Flash; reviews Claude Opus 5.5, GPT-5.6 Sol, Claude Opus 5.5)
+
+Ran alongside wave 15 (the other orchestrator, from its own copy of main on the tower). 24 agents, 45 minutes,
+19:04-19:50, on the 24 largest unstarted non-n64 effect files; three hit the cap. The prompt added wave 13's effect
+lessons: a work struct goes in the effect's own header as one block, prototypes go in the defining file's header,
+data tables are copied word for word from the asm, and brief rule 17 before finishing. All 24 merged (four header
+rejects salvaged; `effMObjBrokenEntry` returns its `EffectEntry*`, fixed in its own commit). **4,872 -> 4,902 (+30),
+fuzzy code 40.24%; PR #21, merged first.** Effect files are slow: seven have no function at 100% yet.
+
+**Data compared before review.** A short script (scratch/wave16/datacmp.py, pyelftools) compares every data object a
+wave defines with the same symbol in the original object, relocations masked. It found five wrong tables that no
+score shows: eff_updown's scale_data with every word byte-reversed and icon_id with its halfwords swapped, eff_levelup's
+y_scale and eff_nozle's scale_dt missing their leading zero bytes, eff_sandars' first value in the wrong byte; plus
+eff_mugi's Vec[3] where the original has three Vecs. All rewritten from the asm. This is the bug class wave 13's review
+3 found by hand; the script is worth running on every wave.
+
+**Reviews.** Review 1 found six logic bugs in partial functions (a matrix product in the wrong order, a radius step
+that grew without bound, a mirror on the wrong branch, a counter never zeroed, swapped x/z, an icon drawn during the
+intro) and a callback missing its second argument. Review 2 (Codex) found ParticleEmit never set its "use the second
+Gaussian value" flag; the fix tipped MWCC into inlining EmitterEmit (88% -> 40%), undone with dont_inline. Review 3
+found nothing above low. iconGetTexObj takes a u16 id now (the original loads it with lhz).
+
+**Open:** ItemData.icon_id is read unsigned (lhz) everywhere, but making it u16 drops battle_disp (92% -> 81%), as in
+wave 10; eff_naniga reads it through a u16 pointer under MUST_MATCH. 16 of the 24 files only extern their own
+.sdata2 constants, so they can't link yet (eff_mario_balloon is 3/3 at 100%). eff_sheep's double_to_int is writable
+(const drops the unit's matched data until the rest of its .rodata exists). Colour constants typed as u32 in batten,
+sandars, nozle and spark; locals named after registers in several files.
