@@ -12,6 +12,9 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -22,9 +25,9 @@ static EffectEntry* eff[1];
 static EffectEntry* eff2[10];
 static s32 step[10];
 static USER_FUNC(bubble_copy_status);
-static u32 regist[6];
-static u32 data_table[8];
-static u32 parts[38];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[4];
+static BattleUnitKindPart parts[2];
 static s32 init_event[39];
 static s32 damage_event[10];
 static s32 avoid_fire_event[16];
@@ -54,109 +57,304 @@ extend_data(unit_bubble_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000055, (u32)"btl_un_bubble", 0x00060000, 0x01011500,
-    0x02460132, 0x270F001A, 0x00240008, 0x00180000,
-    0x00000000, 0x41900000, 0x00000000, 0x0000FFFD,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41500000,
-    0x00000000, 0x00000000, 0x41500000, 0x41BB3333,
-    0x00000000, 0x00000000, 0x41900000, 0x00000000,
-    0x41D00000, 0x42100000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_BUBBLE_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000004,
-    (u32)&regist, 0x02000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_LAVA_BUBBLE,           // mUnitType
+    "btl_un_bubble",            // name
+    6,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    21,                         // mLevel
+    0,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    1,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    26,                         // width
+    36,                         // height
+    { 8, 24 },                  // statusIconOffset
+    { 0.0f, 18.0f, 0.0f },      // centerOffset
+    { 0, -3 },                  // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 13.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 13.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 13.0f, 23.4f, 0.0f },     // kissHitOffset
+    { 0.0f, 18.0f, 0.0f },      // cutBaseOffset
+    26.0f,                      // cutWidth
+    36.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_BUBBLE_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00000004,                 // attributeFlags
+    &regist,                    // vulnStatus
+    2,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 3, 1, 1, 0 } };
+
+static BattleVulnerableStatus regist = {
+    50,  // sleepRate
+    90,  // stopRate
+    105, // dizzyRate
+    100, // poisonRate
+    75,  // confuseRate
+    100, // electricRate
+    0,   // burnRate
+    50,  // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    75,  // allergicRate
+    50,  // frightRate
+    90,  // galeForceRate
+    100, // fastRate
+    75,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00030101, 0x00000000,
+static BattleDispPose pose_table[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "A_2B" },
+    { 0x27, "D_1" },
+    { 0x32, "A_1" },
+    { 0x2A, "R_1" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x325A6964, 0x4B640032, 0x645A645A, 0x645F4B32,
-    0x5A644B64, 0x645F0000,
+static BattleDataEntry data_table[4] = {
+    { 0x0B, damage_fire_explosion_event },
+    { 0x28, avoid_fire_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"N_1", 0x00000002, (u32)"Y_1",
-    0x00000009, (u32)"Y_1", 0x00000005, (u32)"K_1",
-    0x00000004, (u32)"X_1", 0x00000003, (u32)"X_1",
-    0x0000001C, (u32)"S_1", 0x0000001D, (u32)"Q_1",
-    0x0000001E, (u32)"Q_1", 0x0000001F, (u32)"A_2B",
-    0x00000027, (u32)"D_1", 0x00000032, (u32)"A_1",
-    0x0000002A, (u32)"R_1", 0x00000028, (u32)"W_1",
-    0x00000038, (u32)"X_1", 0x00000039, (u32)"X_1",
-    0x00000041, (u32)"T_1", 0x00000045, (u32)"S_1",
+static BattleUnitKindPart parts[2] = {
+    {
+        1,                     // partNum
+        "btl_un_bubble",       // partName
+        "c_bubble",            // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 35.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000109,            // attributes
+        0x00000010,            // counterAttributes
+        pose_table,            // poseTable
+    },
+    {
+        2,                    // partNum
+        NULL,                 // partName
+        "c_bubble",           // modelName
+        { 0.0f, 0.0f, 0.0f }, // positionOffset
+        { 0.0f, 0.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f }, // hitCursorBaseOffset
+        15,                   // field_0x30
+        15,                   // field_0x32
+        255,                  // baseAlpha
+        &defence,             // defense
+        &defence_attr,        // defenseAttr
+        0x13010000,           // attributes
+        0,                    // counterAttributes
+        pose_table,           // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table[8] = {
-    0x0000000B, (u32)&damage_fire_explosion_event, 0x00000028, (u32)&avoid_fire_event,
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleWeapon weapon_bubble_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000070,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    3,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[38] = {
-    0x00000001, (u32)"btl_un_bubble", (u32)"c_bubble", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x420C0000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000109, 0x00000010, (u32)&pose_table, 0x00000002,
-    0x00000000, (u32)"c_bubble", 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x000F000F,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table,
+static BattleWeapon weapon_bubble_fire_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x000000C7,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    75,                                       // burnChance
+    3,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_bubble_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x01000302,
-    0x00000000, 0x00000087, 0x00000070, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x03000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_bubble_fire_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x01000302,
-    0x00000000, 0x000000C7, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x0000004B,
-    0x03000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 entry_bubble[12] = {
-    (u32)&UNIT_DATA_SYM, 0x01000000, 0x04000004, 0xC47A0000,
-    0xC47A0000, 0xC47A0000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BattleUnitSetup entry_bubble[1] = {
+    { &UNIT_DATA_SYM, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
 static EVT_BEGIN(init_event)
@@ -290,11 +488,11 @@ static EVT_BEGIN(attack_event)
     SUBTRACT(LW(0), 1)
     CALL(evt_sub_random, LW(0), LW(1))
     IF_INT_LESS(LW(1), 70)
-        SET_VALUE(LW(9), PTR(weapon_bubble_attack))
+        SET_VALUE(LW(9), PTR(&weapon_bubble_attack))
         CALL_CHILD(normal_attack_event)
         GOTO(99)
     END_IF
-    SET_VALUE(LW(9), PTR(weapon_bubble_fire_attack))
+    SET_VALUE(LW(9), PTR(&weapon_bubble_fire_attack))
     CALL_CHILD(fire_attack_event)
     GOTO(99)
     LABEL(99)

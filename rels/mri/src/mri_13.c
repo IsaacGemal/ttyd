@@ -60,28 +60,14 @@ extend_data(57,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 bero_dai3_kanbu[15] = {
-    (u32)"e_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_14", (u32)"",
-    0x00010001, 0x00000000, 0x00000000,
+BeroEntry bero_dai3_kanbu[1] = {
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_14", "", 1, 1},
 };
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"e_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_14", (u32)"w_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"dokan",
-    0x00020000, 0x00000006, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0x0000000A,
-    0x00000000, (u32)"mri_16", (u32)"dokan7", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[3] = {
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_14", "w_bero", 1, 1},
+    {"dokan", 2, 0, 0x06, 100000, 0, 0, -1, NULL, 10, NULL, "mri_16", "dokan7", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(punipuni_mario_halt)

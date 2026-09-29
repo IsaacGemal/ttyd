@@ -11,6 +11,9 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -19,10 +22,10 @@ static USER_FUNC(shadow_scale_return);
 static USER_FUNC(shadow_scale_small);
 static USER_FUNC(shadow_scale_memory);
 static USER_FUNC(pakkun_ceil_exist);
-static u32 regist[6];
-static u32 parts[19];
-static u32 pose_table[36];
-static u32 data_table[30];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[1];
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[15];
 static s32 init_event[31];
 static s32 dmg_avoid_counter_thorn_head_event[71];
 static s32 damage_event[10];
@@ -50,68 +53,184 @@ extend_data(unit_ice_pakkun_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000071, (u32)"btl_un_ice_pakkun", 0x000A0000, 0x01011A00,
-    0x03460132, 0x270F0028, 0x00300004, 0x00300000,
-    0x00000000, 0x41C00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A00000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A00000,
-    0x00000000, 0x00000000, 0x41800000, 0x42000000,
-    0x00000000, 0x00000000, 0x41C00000, 0x00000000,
-    0x42200000, 0x42400000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_PAKKUN_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_FROST_PIRANHA,         // mUnitType
+    "btl_un_ice_pakkun",        // name
+    10,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    26,                         // mLevel
+    0,                          // mBonusExp
+    3,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    1,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    40,                         // width
+    48,                         // height
+    { 4, 48 },                  // statusIconOffset
+    { 0.0f, 24.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 20.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 20.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 16.0f, 32.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 24.0f, 0.0f },      // cutBaseOffset
+    40.0f,                      // cutWidth
+    48.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_PAKKUN_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 1, 3, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    70,  // stopRate
+    40,  // dizzyRate
+    100, // poisonRate
+    80,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    0,   // freezeRate
+    100, // hugeRate
+    85,  // tinyRate
+    100, // attackUpRate
+    85,  // attackDownRate
+    100, // defenseUpRate
+    85,  // defenseDownRate
+    70,  // allergicRate
+    10,  // frightRate
+    40,  // galeForceRate
+    100, // fastRate
+    70,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00010300, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_ice_pakkun",   // partName
+        "c_pakflwr_a",         // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 40.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },  // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0x00000001,            // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x64462864, 0x50646400, 0x64556455, 0x6455460A,
-    0x28644664, 0x645F0000,
-};
-
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_ice_pakkun", (u32)"c_pakflwr_a", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42200000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000001, (u32)&pose_table,
-};
-
-// TODO: type
-static u32 weapon_ice_pakkun_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000002, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x001E0200, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_ice_pakkun_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    30,                                       // freezeChance
+    2,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
     IF_INT_NOT_EQUAL(LW(0), 0)
-        SET_VALUE(LW(9), PTR(weapon_ice_pakkun_attack))
+        SET_VALUE(LW(9), PTR(&weapon_ice_pakkun_attack))
         CALL_CHILD(normal_attack_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
@@ -122,48 +241,70 @@ static EVT_BEGIN(attack_event)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    SET_VALUE(LW(9), PTR(weapon_ice_pakkun_attack))
+    SET_VALUE(LW(9), PTR(&weapon_ice_pakkun_attack))
     CALL_CHILD(normal_attack_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"PKF_N_1", 0x00000002, (u32)"PKF_Y_1",
-    0x00000009, (u32)"PKF_Y_1", 0x00000005, (u32)"PKF_K_1",
-    0x00000004, (u32)"PKF_X_1", 0x00000003, (u32)"PKF_X_1",
-    0x0000001C, (u32)"PKF_S_1", 0x0000001D, (u32)"PKF_Q_1",
-    0x0000001E, (u32)"PKF_Q_1", 0x0000001F, (u32)"PKF_S_2",
-    0x00000027, (u32)"PKF_D_1", 0x00000032, (u32)"PKF_A_1B",
-    0x00000028, (u32)"PKF_S_1", 0x0000002A, (u32)"PKF_S_1",
-    0x00000038, (u32)"PKF_X_1", 0x00000039, (u32)"PKF_X_1",
-    0x00000041, (u32)"PKF_T_1", 0x00000045, (u32)"PKF_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "PKF_N_1" },
+    { 0x02, "PKF_Y_1" },
+    { 0x09, "PKF_Y_1" },
+    { 0x05, "PKF_K_1" },
+    { 0x04, "PKF_X_1" },
+    { 0x03, "PKF_X_1" },
+    { 0x1C, "PKF_S_1" },
+    { 0x1D, "PKF_Q_1" },
+    { 0x1E, "PKF_Q_1" },
+    { 0x1F, "PKF_S_2" },
+    { 0x27, "PKF_D_1" },
+    { 0x32, "PKF_A_1B" },
+    { 0x28, "PKF_S_1" },
+    { 0x2A, "PKF_S_1" },
+    { 0x38, "PKF_X_1" },
+    { 0x39, "PKF_X_1" },
+    { 0x41, "PKF_T_1" },
+    { 0x45, "PKF_S_1" },
 };
 
-// TODO: type
-static u32 pose_table_ceil[36] = {
-    0x00000001, (u32)"PKF_N_2", 0x00000002, (u32)"PKF_Y_2",
-    0x00000009, (u32)"PKF_Y_2", 0x00000005, (u32)"PKF_K_2",
-    0x00000004, (u32)"PKF_X_2", 0x00000003, (u32)"PKF_X_2",
-    0x0000001C, (u32)"PKF_S_3", 0x0000001D, (u32)"PKF_Q_2",
-    0x0000001E, (u32)"PKF_Q_2", 0x0000001F, (u32)"PKF_S_4",
-    0x00000027, (u32)"PKF_D_2", 0x00000032, (u32)"PKF_A_5",
-    0x00000028, (u32)"PKF_S_3", 0x0000002A, (u32)"PKF_S_3",
-    0x00000038, (u32)"PKF_X_2", 0x00000039, (u32)"PKF_X_2",
-    0x00000041, (u32)"PKF_S_3", 0x00000045, (u32)"PKF_S_3",
+static BattleDispPose pose_table_ceil[18] = {
+    { 0x01, "PKF_N_2" },
+    { 0x02, "PKF_Y_2" },
+    { 0x09, "PKF_Y_2" },
+    { 0x05, "PKF_K_2" },
+    { 0x04, "PKF_X_2" },
+    { 0x03, "PKF_X_2" },
+    { 0x1C, "PKF_S_3" },
+    { 0x1D, "PKF_Q_2" },
+    { 0x1E, "PKF_Q_2" },
+    { 0x1F, "PKF_S_4" },
+    { 0x27, "PKF_D_2" },
+    { 0x32, "PKF_A_5" },
+    { 0x28, "PKF_S_3" },
+    { 0x2A, "PKF_S_3" },
+    { 0x38, "PKF_X_2" },
+    { 0x39, "PKF_X_2" },
+    { 0x41, "PKF_S_3" },
+    { 0x45, "PKF_S_3" },
 };
 
-// TODO: type
-static u32 data_table[30] = {
-    0x00000025, (u32)&dmg_avoid_counter_thorn_head_event, 0x0000001A, (u32)&counter_damage_event,
-    0x00000019, (u32)&counter_damage_event, 0x0000001B, (u32)&counter_damage_event,
-    0x0000001C, (u32)&counter_damage_event, 0x0000001D, (u32)&counter_damage_event,
-    0x0000001E, (u32)&counter_damage_event, 0x0000001F, (u32)&counter_damage_event,
-    0x00000020, (u32)&counter_damage_event, 0x00000021, (u32)&counter_damage_event,
-    0x00000022, (u32)&counter_damage_event, 0x00000023, (u32)&counter_damage_event,
-    0x00000024, (u32)&counter_damage_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[15] = {
+    { 0x25, dmg_avoid_counter_thorn_head_event },
+    { 0x1A, counter_damage_event },
+    { 0x19, counter_damage_event },
+    { 0x1B, counter_damage_event },
+    { 0x1C, counter_damage_event },
+    { 0x1D, counter_damage_event },
+    { 0x1E, counter_damage_event },
+    { 0x1F, counter_damage_event },
+    { 0x20, counter_damage_event },
+    { 0x21, counter_damage_event },
+    { 0x22, counter_damage_event },
+    { 0x23, counter_damage_event },
+    { 0x24, counter_damage_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static USER_FUNC(pakkun_ceil_exist) {

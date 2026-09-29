@@ -20,15 +20,18 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(chain_main);
 static USER_FUNC(chain_init);
-static u32 regist[6];
-static u32 data_table[30];
-static u32 parts[171];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[15];
+static BattleUnitKindPart parts[9];
 static s32 init_event[41];
 static s32 chain_event[23];
 static s32 damage_event[33];
@@ -59,126 +62,346 @@ extend_data(unit_burst_wanwan_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x0000003B, (u32)"btl_un_burst_wanwan", 0x00060000, 0x01011800,
-    0x01460332, 0x270F0022, 0x00240006, 0x002C0000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41880000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41880000,
-    0x00000000, 0x00000000, 0x41880000, 0x41BB3333,
-    0x00000000, 0x00000000, 0x41900000, 0x00000000,
-    0x42080000, 0x42100000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_WAN_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x09000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_RED_CHOMP,             // mUnitType
+    "btl_un_burst_wanwan",      // name
+    6,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    24,                         // mLevel
+    0,                          // mBonusExp
+    1,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    3,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    34,                         // width
+    36,                         // height
+    { 6, 44 },                  // statusIconOffset
+    { 0.0f, 20.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 17.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 17.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 17.0f, 23.4f, 0.0f },     // kissHitOffset
+    { 0.0f, 18.0f, 0.0f },      // cutBaseOffset
+    34.0f,                      // cutWidth
+    36.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_WAN_DAMAGED1",     // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    9,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x03636303, 0x03000000,
+static BattleUnitDefense defence = { { 3, 99, 99, 3, 3 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 2, 2, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    0,   // sleepRate
+    70,  // stopRate
+    65,  // dizzyRate
+    100, // poisonRate
+    65,  // confuseRate
+    100, // electricRate
+    0,   // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    90,  // tinyRate
+    100, // attackUpRate
+    90,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    65,  // allergicRate
+    45,  // frightRate
+    30,  // galeForceRate
+    100, // fastRate
+    65,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00020200, 0x00000000,
+static BattleDispPose pose_table[19] = {
+    { 0x01, "WAN_N_1" },
+    { 0x02, "WAN_Y_1" },
+    { 0x09, "WAN_Y_1" },
+    { 0x05, "WAN_K_1" },
+    { 0x04, "WAN_X_1" },
+    { 0x03, "WAN_X_1" },
+    { 0x1B, "WAN_Z_1" },
+    { 0x1C, "WAN_S_1A" },
+    { 0x1D, "WAN_D_1" },
+    { 0x1E, "WAN_D_1" },
+    { 0x1F, "WAN_A_1" },
+    { 0x27, "WAN_D_1" },
+    { 0x32, "WAN_A_1" },
+    { 0x2A, "WAN_R_1" },
+    { 0x28, "WAN_W_1" },
+    { 0x38, "WAN_X_1" },
+    { 0x39, "WAN_X_1" },
+    { 0x41, "WAN_S_1A" },
+    { 0x45, "WAN_S_1A" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00464164, 0x41640046, 0x645A645A, 0x645F412D,
-    0x1E644164, 0x645F0000,
+static BattleDataEntry data_table[15] = {
+    { 0x31, dead_event },
+    { 0x1A, counter_damage_event },
+    { 0x19, counter_damage_event },
+    { 0x1B, counter_damage_event },
+    { 0x1C, counter_damage_event },
+    { 0x1D, counter_damage_event },
+    { 0x1E, counter_damage_event },
+    { 0x1F, counter_damage_event },
+    { 0x20, counter_damage_event },
+    { 0x21, counter_damage_event },
+    { 0x22, counter_damage_event },
+    { 0x23, counter_damage_event },
+    { 0x24, counter_damage_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table[38] = {
-    0x00000001, (u32)"WAN_N_1", 0x00000002, (u32)"WAN_Y_1",
-    0x00000009, (u32)"WAN_Y_1", 0x00000005, (u32)"WAN_K_1",
-    0x00000004, (u32)"WAN_X_1", 0x00000003, (u32)"WAN_X_1",
-    0x0000001B, (u32)"WAN_Z_1", 0x0000001C, (u32)"WAN_S_1A",
-    0x0000001D, (u32)"WAN_D_1", 0x0000001E, (u32)"WAN_D_1",
-    0x0000001F, (u32)"WAN_A_1", 0x00000027, (u32)"WAN_D_1",
-    0x00000032, (u32)"WAN_A_1", 0x0000002A, (u32)"WAN_R_1",
-    0x00000028, (u32)"WAN_W_1", 0x00000038, (u32)"WAN_X_1",
-    0x00000039, (u32)"WAN_X_1", 0x00000041, (u32)"WAN_S_1A",
-    0x00000045, (u32)"WAN_S_1A",
+static BattleUnitKindPart parts[9] = {
+    {
+        1,                     // partNum
+        "btl_un_burst_wanwan", // partName
+        "c_wanwan_a",          // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 5.0f, 30.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 40.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x10000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
+    {
+        2,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        3,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        4,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        5,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        6,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        7,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        8,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        9,                      // partNum
+        "btl_un_burst_wanwan",  // partName
+        "c_wanwan_a",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x12010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table[30] = {
-    0x00000031, (u32)&dead_event, 0x0000001A, (u32)&counter_damage_event,
-    0x00000019, (u32)&counter_damage_event, 0x0000001B, (u32)&counter_damage_event,
-    0x0000001C, (u32)&counter_damage_event, 0x0000001D, (u32)&counter_damage_event,
-    0x0000001E, (u32)&counter_damage_event, 0x0000001F, (u32)&counter_damage_event,
-    0x00000020, (u32)&counter_damage_event, 0x00000021, (u32)&counter_damage_event,
-    0x00000022, (u32)&counter_damage_event, 0x00000023, (u32)&counter_damage_event,
-    0x00000024, (u32)&counter_damage_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 parts[171] = {
-    0x00000001, (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a", 0x00000000,
-    0x00000000, 0x00000000, 0x40A00000, 0x41F00000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x10000009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x12010000,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_burst_wanwan",
-    (u32)"c_wanwan_a", 0x00000000, 0x00000000, 0x00000000,
-    0x41700000, 0x41C80000, 0x00000000, 0x00000000,
-    0x41F00000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x12010000, 0x00000000,
-    (u32)&pose_table, 0x00000004, (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a",
-    0x00000000, 0x00000000, 0x00000000, 0x41700000,
-    0x41C80000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x12010000, 0x00000000, (u32)&pose_table,
-    0x00000005, (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x12010000, 0x00000000, (u32)&pose_table, 0x00000006,
-    (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x12010000,
-    0x00000000, (u32)&pose_table, 0x00000007, (u32)"btl_un_burst_wanwan",
-    (u32)"c_wanwan_a", 0x00000000, 0x00000000, 0x00000000,
-    0x41700000, 0x41C80000, 0x00000000, 0x00000000,
-    0x41F00000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x12010000, 0x00000000,
-    (u32)&pose_table, 0x00000008, (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a",
-    0x00000000, 0x00000000, 0x00000000, 0x41700000,
-    0x41C80000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x12010000, 0x00000000, (u32)&pose_table,
-    0x00000009, (u32)"btl_un_burst_wanwan", (u32)"c_wanwan_a", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x12010000, 0x00000000, (u32)&pose_table,
-};
-
-// TODO: type
-static u32 weapon_wanwan_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000072, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_wanwan_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 5, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000072,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 // NONMATCHING (99.79%): only the temporaries r4/r5 of the first two loads (args, _battleWorkPointer@ha) are swapped.
@@ -472,8 +695,8 @@ static EVT_BEGIN(attack_event)
             RETURN
         END_IF
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_wanwan_attack))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_wanwan_attack), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_wanwan_attack))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_wanwan_attack), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -485,10 +708,10 @@ static EVT_BEGIN(attack_event)
     END_IF
     CALL(btlevtcmd_SetUnitWork, -2, 1, 127)
     CALL(btlevtcmd_GetUnitWork, -2, 1, LW(14))
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_wanwan_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_wanwan_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_wanwan_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_wanwan_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangePartsFaceDirection, -2, 1, LW(15))
     CALL(btlevtcmd_SetUnitWork, -2, 0, 0)
@@ -527,7 +750,7 @@ static EVT_BEGIN(attack_event)
     END_IF
     CALL(btlevtcmd_JumpPartsSetting, -2, 1, 0, FLOAT(16.0f), FLOAT(0.0f))
     CALL(btlevtcmd_JumpPartsPosition, -2, 1, LW(0), LW(1), 10, 0, -1)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_wanwan_attack), 0, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_wanwan_attack), 0, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -561,8 +784,8 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_wanwan_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_wanwan_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_wanwan_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_wanwan_attack), 256, LW(5))
     WAIT_FRAMES(30)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_WAN_WAIT1"), LW(14), 0, EVTDAT_POINTER_MAX)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("WAN_S_1A"))

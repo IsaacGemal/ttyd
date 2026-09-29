@@ -7,14 +7,17 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "mario/mario_pouch.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 static USER_FUNC(vivian_comeback);
-static u32 regist_fmario[6];
-static u32 data_table_fmario[4];
-static u32 parts_fmario[19];
+static BattleVulnerableStatus regist_fmario;
+static BattleDataEntry data_table_fmario[2];
+static BattleUnitKindPart parts_fmario[1];
 static s32 init_event_fmario[42];
 static s32 dead_event_fmario[2];
 static s32 damage_event_fmario[10];
@@ -44,127 +47,435 @@ extend_data(49,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_faker_mario_gra[49] = {
-    0x0000004E, (u32)"btl_un_hatena", 0x00280000, 0x01010000,
-    0x00640046, 0x00070018, 0x0028000C, 0x00280000,
-    0x00000000, 0x41A00000, 0x00000000, 0x00000000,
-    0x00000000, 0x42200000, 0x00000000, 0x41400000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0x00000000, 0x41400000, 0x42000000,
-    0x00000000, 0x00000000, 0x41A00000, 0x00000000,
-    0x41C00000, 0x42200000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_MARIO_DAMAGE1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist_fmario, 0x01000000, (u32)&parts_fmario, (u32)&init_event_fmario,
-    (u32)&data_table_fmario,
+BattleUnitKind unit_faker_mario_gra = {
+    UNIT_DOOPLISS_CHAPTER4_INVINCIBLE, // mUnitType
+    "btl_un_hatena",                   // name
+    40,                                // maxHp
+    0,                                 // maxFp
+    1,                                 // mDangerHP
+    1,                                 // mPerilHP
+    0,                                 // mLevel
+    0,                                 // mBonusExp
+    0,                                 // bonusCoinRolls
+    100,                               // bonusCoinRate
+    0,                                 // baseCoin
+    70,                                // field_0x13
+    7,                                 // field_0x14
+    24,                                // width
+    40,                                // height
+    { 12, 40 },                        // statusIconOffset
+    { 0.0f, 20.0f, 0.0f },             // centerOffset
+    { 0, 0 },                          // hpGaugeOffset
+    { 0.0f, 40.0f, 0.0f },             // talkTogeBaseOffset
+    { 12.0f, 0.0f, -10.0f },           // field_0x3C
+    { 0.0f, 0.0f, 0.0f },              // burnFlameOffset
+    0.0f,                              // field_0x54
+    0.0f,                              // field_0x58
+    { 12.0f, 0.0f, 0.0f },             // bintaHitOffset
+    { 12.0f, 32.0f, 0.0f },            // kissHitOffset
+    { 0.0f, 20.0f, 0.0f },             // cutBaseOffset
+    24.0f,                             // cutWidth
+    40.0f,                             // cutHeight
+    0,                                 // turnOrder
+    0,                                 // turnOrderVariance
+    0,                                 // swallowRate
+    2,                                 // swallowAttribute
+    100,                               // field_0x8C
+    20,                                // itemStealParam
+    { 0.0f, 0.0f, 0.0f },              // starPointDispOffset
+    "SFX_MARIO_DAMAGE1",               // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",            // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",             // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",        // electricDamageSfxName
+    0,                                 // attributeFlags
+    &regist_fmario,                    // vulnStatus
+    1,                                 // numParts
+    parts_fmario,                      // mParts
+    init_event_fmario,                 // initEvtScript
+    data_table_fmario,                 // dataTable
 };
 
-// TODO: type
-static u32 defence_fmario[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence_fmario = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr_fmario = { { 2, 2, 2, 2, 2 } };
+
+static BattleVulnerableStatus regist_fmario = {
+    0,   // sleepRate
+    0,   // stopRate
+    0,   // dizzyRate
+    100, // poisonRate
+    0,   // confuseRate
+    0,   // electricRate
+    0,   // burnRate
+    0,   // freezeRate
+    0,   // hugeRate
+    0,   // tinyRate
+    0,   // attackUpRate
+    0,   // attackDownRate
+    0,   // defenseUpRate
+    0,   // defenseDownRate
+    0,   // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    0,   // fastRate
+    0,   // slowRate
+    0,   // dodgyRate
+    0,   // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr_fmario[2] = {
-    0x02020202, 0x02000000,
+static BattleDispPose pose_table_fmario_stay[15] = {
+    { 0x01, "EM_N_1" },
+    { 0x02, "EM_Y_2" },
+    { 0x09, "EM_Y_2" },
+    { 0x05, "EM_K_1" },
+    { 0x04, "EM_K_1" },
+    { 0x03, "EM_K_1" },
+    { 0x1C, "EM_S_1" },
+    { 0x27, "EM_D_1" },
+    { 0x32, "EM_A_1" },
+    { 0x2A, "EM_R_1" },
+    { 0x28, "EM_W_1" },
+    { 0x38, "EM_D_3" },
+    { 0x39, "EM_D_3" },
+    { 0x41, "EM_T_1" },
+    { 0x45, "EM_S_1" },
 };
 
-// TODO: type
-static u32 regist_fmario[6] = {
-    0x00000064, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table_fmario[2] = {
+    { 0x31, dead_event_fmario },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table_fmario_stay[30] = {
-    0x00000001, (u32)"EM_N_1", 0x00000002, (u32)"EM_Y_2",
-    0x00000009, (u32)"EM_Y_2", 0x00000005, (u32)"EM_K_1",
-    0x00000004, (u32)"EM_K_1", 0x00000003, (u32)"EM_K_1",
-    0x0000001C, (u32)"EM_S_1", 0x00000027, (u32)"EM_D_1",
-    0x00000032, (u32)"EM_A_1", 0x0000002A, (u32)"EM_R_1",
-    0x00000028, (u32)"EM_W_1", 0x00000038, (u32)"EM_D_3",
-    0x00000039, (u32)"EM_D_3", 0x00000041, (u32)"EM_T_1",
-    0x00000045, (u32)"EM_S_1",
+static BattleUnitKindPart parts_fmario[1] = {
+    {
+        1,                      // partNum
+        "btl_un_hatena",        // partName
+        "c_mario",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 3.0f, 27.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence_fmario,        // defense
+        &defence_attr_fmario,   // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table_fmario_stay, // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table_fmario[4] = {
-    0x00000031, (u32)&dead_event_fmario, 0x00000000, 0x00000000,
+static BattleWeapon weapon_masao_jump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00015807,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts_fmario[19] = {
-    0x00000001, (u32)"btl_un_hatena", (u32)"c_mario", 0x00000000,
-    0x00000000, 0x00000000, 0x40400000, 0x41D80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence_fmario, (u32)&defence_attr_fmario,
-    0x00000009, 0x00000000, (u32)&pose_table_fmario_stay,
+static BattleWeapon weapon_masao_hammer = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00010807,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_masao_jump[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    0x00000000, 0x00015807, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_masao_kururin_jump = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x20001004,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00015807,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_masao_hammer[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    0x00000000, 0x00010807, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_masao_kururin_jump[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x00000302,
-    0x00000000, 0x00015807, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_masao_kaiten_hammer[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x21002000, 0x00000302,
-    0x00000000, 0x00010807, 0x000007FF, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_masao_kaiten_hammer = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01001260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00010807,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(mario_zoom)
@@ -228,16 +539,16 @@ static EVT_BEGIN(attack_event_fmario)
     CALL(btlevtcmd_DrawLots, LW(0), 4, 50, 50, 20, 20)
     SWITCH(LW(0))
         CASE_EQUAL(0)
-        SET_VALUE(LW(9), PTR(weapon_masao_jump))
+        SET_VALUE(LW(9), PTR(&weapon_masao_jump))
         CALL_CHILD(marioAttackEvent_NormalJump)
         CASE_EQUAL(1)
-        SET_VALUE(LW(9), PTR(weapon_masao_hammer))
+        SET_VALUE(LW(9), PTR(&weapon_masao_hammer))
         CALL_CHILD(marioAttackEvent_NormalHammer)
         CASE_EQUAL(2)
-        SET_VALUE(LW(9), PTR(weapon_masao_kururin_jump))
+        SET_VALUE(LW(9), PTR(&weapon_masao_kururin_jump))
         CALL_CHILD(marioAttackEvent_KururinJump)
         CASE_EQUAL(3)
-        SET_VALUE(LW(9), PTR(weapon_masao_kaiten_hammer))
+        SET_VALUE(LW(9), PTR(&weapon_masao_kaiten_hammer))
         CALL_CHILD(marioAttackEvent_KaitenHammer)
     END_SWITCH
     LABEL(90)

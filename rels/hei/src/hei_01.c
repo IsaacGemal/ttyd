@@ -54,27 +54,12 @@ EVT_BEGIN(bero_out_event)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"hei_13", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    (u32)&bero_out_event, (u32)"nok_00", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, (u32)"dokan_h", 0x10020000,
-    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0x00000006, 0x00000000,
-    0x00000000, (u32)"dokan", 0x00010001, 0x00000000,
-    0x00000000, (u32)"dokan", 0x00020000, 0x00000009,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x00000006, 0x00000000, 0x00000000,
-    (u32)"dokan_h", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[5] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_13", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, bero_out_event, "nok_00", "w_bero", 1, 1},
+    {"dokan_h", 4098, 0, 0x09, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan", 1, 1},
+    {"dokan", 2, 0, 0x09, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan_h", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_kusa_2)
@@ -132,15 +117,10 @@ EVT_BEGIN(kusa_dokan)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 name_tbl[25] = {
-    (u32)"hasi_1", (u32)"hasi_2", (u32)"hasi_3", (u32)"hasi_4",
-    (u32)"hasi_5", (u32)"hasi_6", (u32)"hasi_7", (u32)"hasi_8",
-    (u32)"hasi_9", (u32)"hasi_10", (u32)"hasi_11", (u32)"hasi_12",
-    (u32)"hasi_13", (u32)"hasi_14", (u32)"hasi_15", (u32)"hasi_16",
-    (u32)"hasi_17", (u32)"hasi_18", (u32)"hasi_19", (u32)"hasi_20",
-    (u32)"hasi_21", (u32)"hasi_22", (u32)"hasi_23", (u32)"hasi_24",
-    (u32)"hasi_25",
+static char* name_tbl[25] = {
+    "hasi_1", "hasi_2", "hasi_3", "hasi_4", "hasi_5", "hasi_6", "hasi_7", "hasi_8", "hasi_9",
+    "hasi_10", "hasi_11", "hasi_12", "hasi_13", "hasi_14", "hasi_15", "hasi_16", "hasi_17",
+    "hasi_18", "hasi_19", "hasi_20", "hasi_21", "hasi_22", "hasi_23", "hasi_24", "hasi_25",
 };
 
 EVT_BEGIN(bridge_evt_02)

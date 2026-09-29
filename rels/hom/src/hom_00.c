@@ -78,32 +78,15 @@ static EVT_BEGIN(n_2_door_close)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[45] = {
-    (u32)"n_bero_1", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0x0000002D, 0x00000000,
-    0xFFFFFFFF, (u32)&evt_train_door, (u32)"rsh_01_b", (u32)"s_bero",
-    0x00010001, (u32)"n_1_door_close", (u32)"n_1_door_open", (u32)"n_bero_2",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"eki_00", (u32)"s_bero", 0x00050005,
-    (u32)&n_2_door_close, (u32)&n_2_door_open, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_data[3] = {
+    {"n_bero_1", 1, 8, 0x4E20, 100000, 0, 0, 45, NULL, -1, evt_train_door, "rsh_01_b", "s_bero", 1, 1, "n_1_door_close", "n_1_door_open"},
+    {"n_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_00", "s_bero", 5, 5, n_2_door_close, n_2_door_open},
+    {NULL},
 };
 
-// TODO: type
-u32 bero_data_nidome[30] = {
-    (u32)"n_bero_1", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0x0000002D, 0x00000000,
-    0xFFFFFFFF, (u32)&evt_train_nidome, (u32)"rsh_01_b", (u32)"s_bero",
-    0x00010001, (u32)"n_1_door_close", (u32)"n_1_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+BeroEntry bero_data_nidome[2] = {
+    {"n_bero_1", 1, 8, 0x4E20, 100000, 0, 0, 45, NULL, -1, evt_train_nidome, "rsh_01_b", "s_bero", 1, 1, "n_1_door_close", "n_1_door_open"},
+    {NULL},
 };
 
 EVT_BEGIN(evt_carry_up_bridge)

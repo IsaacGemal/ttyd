@@ -67,20 +67,10 @@ static EVT_BEGIN(w2_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[45] = {
-    (u32)"w_bero_1", 0x00010003, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"eki_01", (u32)"e_bero",
-    0x00050005, (u32)&w1_close, (u32)&w1_open, (u32)"w_bero_2",
-    0x00010003, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"eki_04", (u32)"e_bero", 0x00050005,
-    (u32)&w2_close, (u32)&w2_open, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_data[3] = {
+    {"w_bero_1", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_01", "e_bero", 5, 5, w1_close, w1_open},
+    {"w_bero_2", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_04", "e_bero", 5, 5, w2_close, w2_open},
+    {NULL},
 };
 
 EVT_BEGIN(evt_poster)

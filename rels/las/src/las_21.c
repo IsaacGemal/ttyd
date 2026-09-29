@@ -93,19 +93,19 @@ static BeroEntry bero_entry_data[5] = {
         "w_bero", 0x0001, 0x0006, 0x00004E20, 0x000186A0,
         0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
         0xFFFFFFFF, NULL, "las_19", "e_bero_1",
-        0x0005, 0x0005, (s32)&w_door_close, (s32)&w_door_open,
+        0x0005, 0x0005, w_door_close, w_door_open,
     },
     {
         "e_bero_1", 0x0001, 0x0006, 0x00004E20, 0x000186A0,
         0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
         0xFFFFFFFF, NULL, "las_23", "w_bero",
-        0x0005, 0x0005, (s32)&e1_door_close, (s32)&e1_door_open,
+        0x0005, 0x0005, e1_door_close, e1_door_open,
     },
     {
         "e_bero_2", 0x0001, 0x0006, 0x00004E20, 0x000186A0,
         0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
         0xFFFFFFFF, NULL, "las_23", "w_bero",
-        0x0005, 0x0005, (s32)&e2_door_close, (s32)&e2_door_open,
+        0x0005, 0x0005, e2_door_close, e2_door_open,
     },
     {
         "n_bero", 0x0000, 0x0000, 0x00004E20, 0x000186A0,
@@ -126,7 +126,7 @@ static BeroEntry w_bero_mapchg[1] = {
         "w_bero", 0x0001, 0x0006, 0x00004E20, 0x000186A0,
         0x00000000, 0x00000000, 0xFFFFFFFF, NULL,
         0xFFFFFFFF, NULL, "las_19", "e_bero_2",
-        0x0005, 0x0005, (s32)&w_door_close, (s32)&w_door_open,
+        0x0005, 0x0005, w_door_close, w_door_open,
     },
 };
 

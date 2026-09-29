@@ -10,6 +10,9 @@
 #include "evt/evt_cmd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -17,9 +20,9 @@
 static void hammer_bros_get_next_target(s32* unitId, s32* partId);
 static void hammer_bros_get_target(s32* unitId, s32* partId);
 static USER_FUNC(hammer_bros_nagemakuri_set_target);
-static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[114];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[6];
 static s32 init_event[21];
 static s32 damage_event[10];
 static s32 attack_event[96];
@@ -52,136 +55,439 @@ extend_data(unit_hammer_bros_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000038, (u32)"btl_un_hammer_bros", 0x00070000, 0x01011A00,
-    0x02460232, 0x270F0024, 0x002C0003, 0x002C0000,
-    0x00000000, 0x41B00000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41900000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41700000,
-    0x00000000, 0x00000000, 0x41200000, 0x41E00000,
-    0x00000000, 0x00000000, 0x41B00000, 0x00000000,
-    0x42100000, 0x42300000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_HUMMER_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x06000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_HAMMER_BRO,            // mUnitType
+    "btl_un_hammer_bros",       // name
+    7,                          // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    26,                         // mLevel
+    0,                          // mBonusExp
+    2,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    2,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    36,                         // width
+    44,                         // height
+    { 3, 44 },                  // statusIconOffset
+    { 0.0f, 22.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 18.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 15.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 10.0f, 28.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 22.0f, 0.0f },      // cutBaseOffset
+    36.0f,                      // cutWidth
+    44.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_HUMMER_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    6,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x01010101, 0x01000000,
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    80,  // sleepRate
+    80,  // stopRate
+    70,  // dizzyRate
+    100, // poisonRate
+    80,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    70,  // freezeRate
+    100, // hugeRate
+    80,  // tinyRate
+    100, // attackUpRate
+    80,  // attackDownRate
+    100, // defenseUpRate
+    95,  // defenseDownRate
+    80,  // allergicRate
+    70,  // frightRate
+    60,  // galeForceRate
+    100, // fastRate
+    80,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    95,  // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[18] = {
+    { 0x01, "BRO_N_1" },
+    { 0x02, "BRO_Y_1" },
+    { 0x09, "BRO_Y_1" },
+    { 0x05, "BRO_K_1" },
+    { 0x04, "BRO_X_1" },
+    { 0x03, "BRO_X_1" },
+    { 0x1B, "BRO_D_1" },
+    { 0x1C, "BRO_S_1" },
+    { 0x1D, "BRO_Q_1" },
+    { 0x1E, "BRO_Q_1" },
+    { 0x1F, "BRO_S_1" },
+    { 0x27, "BRO_D_1" },
+    { 0x2A, "BRO_R_1" },
+    { 0x28, "BRO_W_1" },
+    { 0x38, "BRO_X_1" },
+    { 0x39, "BRO_X_1" },
+    { 0x41, "BRO_T_1" },
+    { 0x45, "BRO_S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x50504664, 0x50646446, 0x64506450, 0x645F5046,
-    0x3C645064, 0x645F0000,
+static BattleDataEntry data_table[1] = {
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"BRO_N_1", 0x00000002, (u32)"BRO_Y_1",
-    0x00000009, (u32)"BRO_Y_1", 0x00000005, (u32)"BRO_K_1",
-    0x00000004, (u32)"BRO_X_1", 0x00000003, (u32)"BRO_X_1",
-    0x0000001B, (u32)"BRO_D_1", 0x0000001C, (u32)"BRO_S_1",
-    0x0000001D, (u32)"BRO_Q_1", 0x0000001E, (u32)"BRO_Q_1",
-    0x0000001F, (u32)"BRO_S_1", 0x00000027, (u32)"BRO_D_1",
-    0x0000002A, (u32)"BRO_R_1", 0x00000028, (u32)"BRO_W_1",
-    0x00000038, (u32)"BRO_X_1", 0x00000039, (u32)"BRO_X_1",
-    0x00000041, (u32)"BRO_T_1", 0x00000045, (u32)"BRO_S_1",
+static BattleUnitKindPart parts[6] = {
+    {
+        1,                     // partNum
+        "btl_un_hammer_bros",  // partName
+        "c_burosu_h",          // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 35.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 45.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
+    {
+        2,                      // partNum
+        "btl_un_hammer_bros",   // partName
+        "c_burosu_h",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x13010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        3,                      // partNum
+        "btl_un_hammer_bros",   // partName
+        "c_burosu_h",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x13010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        4,                      // partNum
+        "btl_un_hammer_bros",   // partName
+        "c_burosu_h",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x13010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        5,                      // partNum
+        "btl_un_hammer_bros",   // partName
+        "c_burosu_h",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x13010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
+    {
+        6,                      // partNum
+        "btl_un_hammer_bros",   // partName
+        "c_burosu_h",           // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 15.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x13010000,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleWeapon weapon_hammer_bros_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 4, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[114] = {
-    0x00000001, (u32)"btl_un_hammer_bros", (u32)"c_burosu_h", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x420C0000,
-    0x00000000, 0x00000000, 0x42340000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table, 0x00000002,
-    (u32)"btl_un_hammer_bros", (u32)"c_burosu_h", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table, 0x00000003, (u32)"btl_un_hammer_bros",
-    (u32)"c_burosu_h", 0x00000000, 0x00000000, 0x00000000,
-    0x41700000, 0x41C80000, 0x00000000, 0x00000000,
-    0x41F00000, 0x00000000, 0x0014001E, 0x00FF0000,
-    (u32)&defence, (u32)&defence_attr, 0x13010000, 0x00000000,
-    (u32)&pose_table, 0x00000004, (u32)"btl_un_hammer_bros", (u32)"c_burosu_h",
-    0x00000000, 0x00000000, 0x00000000, 0x41700000,
-    0x41C80000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x0014001E, 0x00FF0000, (u32)&defence,
-    (u32)&defence_attr, 0x13010000, 0x00000000, (u32)&pose_table,
-    0x00000005, (u32)"btl_un_hammer_bros", (u32)"c_burosu_h", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x13010000, 0x00000000, (u32)&pose_table, 0x00000006,
-    (u32)"btl_un_hammer_bros", (u32)"c_burosu_h", 0x00000000, 0x00000000,
-    0x00000000, 0x41700000, 0x41C80000, 0x00000000,
-    0x00000000, 0x41F00000, 0x00000000, 0x0014001E,
-    0x00FF0000, (u32)&defence, (u32)&defence_attr, 0x13010000,
-    0x00000000, (u32)&pose_table,
+static BattleWeapon weapon_hammer_bros_renzoku_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_hammer_bros_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_hammer_bros_renzoku_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_hammer_bros_nagemakuri_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000002, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_hammer_bros_nagemakuri_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80000000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(init_event)
@@ -387,7 +693,7 @@ static EVT_BEGIN(damage_check_event_sub)
     GOTO(99)
     LABEL(91)
     IF_INT_EQUAL(LW(11), 1)
-        IF_INT_EQUAL(LW(9), PTR(weapon_hammer_bros_renzoku_attack))
+        IF_INT_EQUAL(LW(9), PTR(&weapon_hammer_bros_renzoku_attack))
             CALL(btlevtcmd_SetUnitWork, -2, 10, 1)
         ELSE
             SET_VALUE(LW(13), 0)
@@ -427,8 +733,8 @@ static EVT_BEGIN(normal_attack_event)
         CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
     ELSE
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_hammer_bros_attack))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_hammer_bros_attack), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_hammer_bros_attack))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_hammer_bros_attack), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -439,16 +745,16 @@ static EVT_BEGIN(normal_attack_event)
         GOTO(99)
     END_IF
     CALL(evt_btl_camera_set_mode, 0, 0)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_hammer_bros_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_hammer_bros_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_hammer_bros_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_hammer_bros_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("BRO_A_1A"))
     WAIT_FRAMES(27)
     SET_VALUE(LW(15), 2)
-    SET_VALUE(LW(9), PTR(weapon_hammer_bros_attack))
+    SET_VALUE(LW(9), PTR(&weapon_hammer_bros_attack))
     SET_VALUE(LW(10), 1)
     SET_VALUE(LW(11), 0)
     CALL_CHILD(damage_check_event_sub)
@@ -461,8 +767,8 @@ EVT_END()
 
 static EVT_BEGIN(renzoku_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_hammer_bros_renzoku_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_hammer_bros_renzoku_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_hammer_bros_renzoku_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_hammer_bros_renzoku_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -472,10 +778,10 @@ static EVT_BEGIN(renzoku_attack_event)
         GOTO(99)
     END_IF
     CALL(evt_btl_camera_set_mode, 0, 0)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_hammer_bros_renzoku_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_hammer_bros_renzoku_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_hammer_bros_renzoku_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_hammer_bros_renzoku_attack))
     CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
     CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
     SET_VALUE(LW(14), 0)
@@ -503,7 +809,7 @@ static EVT_BEGIN(renzoku_attack_event)
 EVT_END()
 
 static EVT_BEGIN(renzoku_attack_event_sub_no_last)
-    SET_VALUE(LW(9), PTR(weapon_hammer_bros_renzoku_attack))
+    SET_VALUE(LW(9), PTR(&weapon_hammer_bros_renzoku_attack))
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), 1)
     CALL_CHILD(damage_check_event_sub)
@@ -514,11 +820,11 @@ static EVT_BEGIN(renzoku_attack_event_sub_last)
     CALL(btlevtcmd_GetUnitWork, -2, 10, LW(0))
     IF_INT_EQUAL(LW(0), 1)
         CALL_CHILD(hammer_bros_attack_common_event2)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_hammer_bros_renzoku_attack))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_hammer_bros_renzoku_attack), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_hammer_bros_renzoku_attack))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_hammer_bros_renzoku_attack), 256, LW(5))
         CALL_CHILD(hammer_bros_attack_common_event3)
     ELSE
-        SET_VALUE(LW(9), PTR(weapon_hammer_bros_renzoku_attack))
+        SET_VALUE(LW(9), PTR(&weapon_hammer_bros_renzoku_attack))
         SET_VALUE(LW(10), 1)
         SET_VALUE(LW(11), 0)
         CALL_CHILD(damage_check_event_sub)
@@ -601,8 +907,8 @@ static void hammer_bros_get_next_target(s32* unitId, s32* partId) {
 
 static EVT_BEGIN(nagemakuri_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_hammer_bros_nagemakuri_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_hammer_bros_nagemakuri_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_hammer_bros_nagemakuri_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_hammer_bros_nagemakuri_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -612,10 +918,10 @@ static EVT_BEGIN(nagemakuri_attack_event)
         GOTO(99)
     END_IF
     CALL(evt_btl_camera_set_mode, 0, 0)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_hammer_bros_nagemakuri_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_hammer_bros_nagemakuri_attack))
     CALL(btlevtcmd_AttackDeclareAll, -2)
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_hammer_bros_nagemakuri_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_hammer_bros_nagemakuri_attack))
     CALL(hammer_bros_nagemakuri_set_target, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
     CALL(btlevtcmd_SetUnitWork, -2, 0, LW(0))
     CALL(btlevtcmd_SetUnitWork, -2, 1, LW(2))
@@ -678,7 +984,7 @@ static EVT_BEGIN(nagemakuri_attack_event_sub)
 EVT_END()
 
 static EVT_BEGIN(nagemakuri_attack_event_sub_no_last)
-    SET_VALUE(LW(9), PTR(weapon_hammer_bros_nagemakuri_attack))
+    SET_VALUE(LW(9), PTR(&weapon_hammer_bros_nagemakuri_attack))
     SET_VALUE(LW(10), 0)
     SET_VALUE(LW(11), 1)
     CALL_CHILD(damage_check_event_sub)
@@ -703,11 +1009,11 @@ static EVT_BEGIN(nagemakuri_attack_event_sub_last)
     END_LOOP
     IF_INT_EQUAL(LW(0), 1)
         CALL_CHILD(hammer_bros_attack_common_event2)
-        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_hammer_bros_nagemakuri_attack))
-        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_hammer_bros_nagemakuri_attack), 256, LW(5))
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_hammer_bros_nagemakuri_attack))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_hammer_bros_nagemakuri_attack), 256, LW(5))
         CALL_CHILD(hammer_bros_attack_common_event3)
     ELSE
-        SET_VALUE(LW(9), PTR(weapon_hammer_bros_nagemakuri_attack))
+        SET_VALUE(LW(9), PTR(&weapon_hammer_bros_nagemakuri_attack))
         SET_VALUE(LW(10), 1)
         SET_VALUE(LW(11), 0)
         CALL_CHILD(damage_check_event_sub)

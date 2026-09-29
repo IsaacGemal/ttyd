@@ -274,7 +274,6 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: type
 static f32 SinTable[91] = {
     0.0f, 0.0174519997f, 0.0348990001f, 0.0523359999f,
     0.0697560012f, 0.0871559978f, 0.104528002f, 0.121868998f,
