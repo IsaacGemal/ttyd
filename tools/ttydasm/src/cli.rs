@@ -24,6 +24,9 @@ pub(crate) struct ExtractCommand {
     #[argp(option, short = 's')]
     /// The symbol to search for and convert.
     pub(crate) symbol: String,
+    /// The symbol's address in its section (hex), to pick one of several symbols with the same name.
+    #[argp(option, short = 'a')]
+    pub(crate) address: Option<String>,
     /// Relative path to the root of the decomp-toolkit project.
     #[argp(option, short = 'p', default = "String::from(\"../..\")")]
     pub(crate) relative_path: String,
