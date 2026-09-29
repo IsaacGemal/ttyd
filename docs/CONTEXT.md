@@ -1408,3 +1408,51 @@ wave 10; eff_naniga reads it through a u16 pointer under MUST_MATCH. 16 of the 2
 .sdata2 constants, so they can't link yet (eff_mario_balloon is 3/3 at 100%). eff_sheep's double_to_int is writable
 (const drops the unit's matched data until the rest of its .rodata exists). Colour constants typed as u32 in batten,
 sandars, nozle and spark; locals named after registers in several files.
+
+## RELs: the first whole REL built from source (2026-09-28, Claude Opus 5.5)
+
+Isaac asked for a hands-on look at the RELs before planning REL waves: decompile a function or two and find out what
+prep a wave needs. It went on to a complete REL. **aaa.rel (Mario's house in the prologue) now links from our
+source and matches its checksum: aaa.c (_prolog, _epilog, _unresolved) and aaa_00.c (three functions, 11 event
+scripts, the map's tables, ~110 strings).** Linked data +0.17 points from one small map.
+
+**The shape of the RELs.** 31 RELs, 606 units, 2,781 functions (910 KB code) and 4.3 MB data; 7 units configured
+before this. A third of the functions are copies: 1,859 distinct bodies (700 KB), counted as identical instructions
+once disassembler auto-names (str_, float_, ...) are ignored. Enemy units are compiled into every area that uses
+them (unit_kuriboo in 12 RELs; 60 units shared, 156 copies), map helpers are copy-pasted (krb_get_dir in 25), and
+every REL has the same entry file. Of the distinct bodies, 1,311 are 300 bytes or less. aaa_00 is typical: 720 B of
+code against 8.5 KB of data, so data is most of the REL work.
+
+**How a REL unit is written.**
+- Event scripts are `EVT_BEGIN` macros, never hex. tools/ttydasm (upstream, Rust; `ttydasm extract -m aaa -s NAME
+  -p .`) turns a script into macros, reading build/G8MJ01/<rel>/<rel>.plf. Its output compiled to the right bytes
+  unchanged apart from `PTR()` around pointer arguments (the macros cast only a CALL's first argument). It printed
+  a string's NUL padding inside the literal ("S_ie_door   "); fixed. It also treats every symbol as a script, so it
+  can't do tables (it panics on ie_npc, a name list).
+- Tables get real types with named fields. NpcSetupInfo and BeroEntry existed; DoorEntry (evt_door.h) and
+  TreeAccessEntry/KusaAccessEntry (evt_sub.h) are new, named from how evt_door_param and the dol's tree and bush
+  scripts read them. unit_purple_teresa (wave 6) has its scripts as hex arrays; it matches but should be redone.
+- Functions sit just before the first script that uses them: draw's constants are in .rodata between evt_prologue's
+  strings and evt_prologue2's, the script that calls mapdraw. Strings are merged and placed in order of first use.
+- The scripts call dozens of dol functions and scripts no header declared (34 for this one map); they now go in
+  their owning headers (evt_map.h, evt_item.h and evt_bg.h are new). Worth doing for all RELs at once.
+
+**What the compiler and linker need.**
+- `#pragma pool_data off`: without it MWCC loads a function's constants through one base register; the originals
+  load each one. dig_00.c already had it. It may belong in cflags_rel.
+- The REL linker strips anything unreferenced that isn't in the generated ldscript's FORCEACTIVE (globals from
+  symbols.txt), so an unused static (aaa_00's evt_door2) and the MSL floats extend_data makes need
+  `#pragma force_active on`.
+- `extend_data` indices must be unique across the whole REL: aaa.c and aaa_00.c both defining forcedata0 kept one.
+- The objdiff score of a REL function is right, but a unit is only done when the REL's checksum matches; the object
+  compare that found the problems is section bytes plus relocations resolved to section and offset.
+
+**Prep before a REL wave, in order.**
+1. Object paths: tools/project.py builds every object to build/G8MJ01/src/<name>.o, so a unit in two RELs (or
+   a REL unit named like a dol one) overwrites itself. One shared source compiled into each REL is also how the
+   original was built.
+2. REL-aware agent tools: check.py, lint_patch, label_partials, claims and merge_agent assume MarioSt/ and src/
+   (check.py needed three lines). Each REL needs rels/<rel>/include/.
+3. ttydasm: tables, and a way to extract a whole unit's data in order.
+4. The missing script declarations for all RELs, and the configure.py entries (scriptable from the splits).
+5. A small test wave on one or two RELs before scaling.
