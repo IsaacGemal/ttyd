@@ -189,7 +189,7 @@ BattleWeapon weapon_bunbaba_fumituke_attack = {
     100,                                       // baseAccuracy
     0,                                         // baseFpCost
     0,                                         // baseSpCost
-    0,                                         // superguardsAllowed
+    0,                                         // superguardType
     1.0f,                                      // field_0x14
     1,                                         // mStylishCommandMultiplier
     1,                                         // field_0x19
@@ -267,7 +267,7 @@ BattleWeapon weapon_bunbaba_kamituki_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -345,7 +345,7 @@ BattleWeapon weapon_bunbaba_poison_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -423,7 +423,7 @@ BattleWeapon weapon_bunbaba_eq_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -501,7 +501,7 @@ BattleWeapon weapon_bunbaba_charge = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -579,7 +579,7 @@ BattleWeapon weapon_bunbaba_mega_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

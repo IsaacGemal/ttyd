@@ -106,7 +106,7 @@ static BattleWeapon weapon_heavy_bomb_super_explosion = {
     100,                                        // baseAccuracy
     0,                                          // baseFpCost
     0,                                          // baseSpCost
-    0,                                          // superguardsAllowed
+    0,                                          // superguardType
     1.0f,                                       // field_0x14
     1,                                          // mStylishCommandMultiplier
     1,                                          // field_0x19
@@ -184,7 +184,7 @@ static BattleWeapon weapon_heavy_bomb_guard = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -262,7 +262,7 @@ static BattleWeapon weapon_heavy_bomb_guard_2 = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -340,7 +340,7 @@ static BattleWeapon weapon_heavy_bomb_guard_3 = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

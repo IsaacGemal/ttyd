@@ -81,7 +81,7 @@ BattleUnitSetup btlparty_rsh_rsh_06_01_off_1[1] = {
     { &unit_boss_moamoa, 1, 0x04000004, { 70.0f, -20.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_moamoa },
 };
 
-BattleGroupSetup btlgrp_rsh_rsh_06_01_off_1 = { 1, btlparty_rsh_rsh_06_01_off_1, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
+BattleGroupSetup btlgrp_rsh_rsh_06_01_off_1 = { 1, btlparty_rsh_rsh_06_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 NpcBattleSetupEntry btlgrpsel_rsh_btlno_rsh_test1_off[2] = {
     { 50, &btlgrp_rsh_rsh_06_01_off_1, (struct BattleStageData*)rsh_btlstage_data },

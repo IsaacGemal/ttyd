@@ -247,7 +247,7 @@ BattleWeapon weapon_gesso_right_arm_front_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    1,                                        // superguardsAllowed
+    1,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -325,7 +325,7 @@ BattleWeapon weapon_gesso_right_arm_rear_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    1,                                        // superguardsAllowed
+    1,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

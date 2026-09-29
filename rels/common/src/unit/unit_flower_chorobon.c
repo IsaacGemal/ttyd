@@ -149,7 +149,7 @@ static BattleWeapon weapon_chorobon_drain_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    1,                                        // superguardsAllowed
+    1,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -227,7 +227,7 @@ static BattleWeapon weapon_chorobon_drain_attack_fp = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    1,                                        // superguardsAllowed
+    1,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -305,7 +305,7 @@ static BattleWeapon weapon_chorobon_magic_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -491,7 +491,7 @@ static BattleWeapon weapon_chorobon_drain_attack_biribiri_counterd = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

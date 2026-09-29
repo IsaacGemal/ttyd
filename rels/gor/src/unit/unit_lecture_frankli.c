@@ -139,7 +139,7 @@ BattleWeapon _lec_weapon_jump = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -217,7 +217,7 @@ BattleWeapon _lec_weapon_hammer = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

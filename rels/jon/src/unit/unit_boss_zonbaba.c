@@ -200,7 +200,7 @@ BattleWeapon weapon_zonbaba_fumituke_attack = {
     100,                                       // baseAccuracy
     0,                                         // baseFpCost
     0,                                         // baseSpCost
-    0,                                         // superguardsAllowed
+    0,                                         // superguardType
     1.0f,                                      // field_0x14
     1,                                         // mStylishCommandMultiplier
     1,                                         // field_0x19
@@ -278,7 +278,7 @@ BattleWeapon weapon_zonbaba_kamituki_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -356,7 +356,7 @@ BattleWeapon weapon_zonbaba_cold_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -434,7 +434,7 @@ BattleWeapon weapon_zonbaba_confuze_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -512,7 +512,7 @@ BattleWeapon weapon_zonbaba_sleep_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -590,7 +590,7 @@ BattleWeapon weapon_zonbaba_minimini_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -668,7 +668,7 @@ BattleWeapon weapon_zonbaba_recover = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

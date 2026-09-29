@@ -206,7 +206,7 @@ BattleUnitSetup btlparty_tik_tik_gesso[1] = {
     { &unit_boss_gesso, 1, 0x04000004, { 122.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gesso },
 };
 
-BattleGroupSetup btlgrp_tik_tik_gesso = { 1, btlparty_tik_tik_gesso, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_gesso = { 1, btlparty_tik_tik_gesso, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_01_01_off_1[4] = {
     { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kurikuri },
@@ -215,47 +215,47 @@ BattleUnitSetup btlparty_tik_tik_01_01_off_1[4] = {
     { &unit_lecture_frankli_kuriboo, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-BattleGroupSetup btlgrp_tik_tik_01_01_off_1 = { 4, btlparty_tik_tik_01_01_off_1, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_01_01_off_1 = { 4, btlparty_tik_tik_01_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_01_02_off_1[2] = {
     { &unit_togekuri_26_data_23050, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
     { &unit_togekuri_26_data_23050, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_01_02_off_1 = { 2, btlparty_tik_tik_01_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_01_02_off_1 = { 2, btlparty_tik_tik_01_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_01_off_1[1] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_01_off_1 = { 1, btlparty_tik_tik_04_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_01_off_1 = { 1, btlparty_tik_tik_04_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_01_on_1[1] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_01_on_1 = { 1, btlparty_tik_tik_04_01_on_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_01_on_1 = { 1, btlparty_tik_tik_04_01_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_01_on_2[2] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_01_on_2 = { 2, btlparty_tik_tik_04_01_on_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_01_on_2 = { 2, btlparty_tik_tik_04_01_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_02_off_1[2] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_02_off_1 = { 2, btlparty_tik_tik_04_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_02_off_1 = { 2, btlparty_tik_tik_04_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_02_on_1[2] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_02_on_1 = { 2, btlparty_tik_tik_04_02_on_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_02_on_1 = { 2, btlparty_tik_tik_04_02_on_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_02_on_2[3] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
@@ -263,49 +263,49 @@ BattleUnitSetup btlparty_tik_tik_04_02_on_2[3] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_02_on_2 = { 3, btlparty_tik_tik_04_02_on_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_02_on_2 = { 3, btlparty_tik_tik_04_02_on_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_03_off_1[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_patapata_26_data_29498, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patapata },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_03_off_1 = { 2, btlparty_tik_tik_04_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_03_off_1 = { 2, btlparty_tik_tik_04_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_03_off_2[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_03_off_2 = { 2, btlparty_tik_tik_04_03_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_03_off_2 = { 2, btlparty_tik_tik_04_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_03_off_3[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_03_off_3 = { 2, btlparty_tik_tik_04_03_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_03_off_3 = { 2, btlparty_tik_tik_04_03_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_04_off_1[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_togekuri_26_data_23050, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_04_off_1 = { 2, btlparty_tik_tik_04_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_04_off_1 = { 2, btlparty_tik_tik_04_04_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_04_off_2[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_04_off_2 = { 2, btlparty_tik_tik_04_04_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_04_off_2 = { 2, btlparty_tik_tik_04_04_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_04_04_off_3[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_04_04_off_3 = { 2, btlparty_tik_tik_04_04_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_04_04_off_3 = { 2, btlparty_tik_tik_04_04_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_01_off_1[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -313,21 +313,21 @@ BattleUnitSetup btlparty_tik_tik_07_01_off_1[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_01_off_1 = { 3, btlparty_tik_tik_07_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_01_off_1 = { 3, btlparty_tik_tik_07_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_01_off_2[2] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_01_off_2 = { 2, btlparty_tik_tik_07_01_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_01_off_2 = { 2, btlparty_tik_tik_07_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_02_off_1[2] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_02_off_1 = { 2, btlparty_tik_tik_07_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_02_off_1 = { 2, btlparty_tik_tik_07_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_02_off_2[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -335,116 +335,116 @@ BattleUnitSetup btlparty_tik_tik_07_02_off_2[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_02_off_2 = { 3, btlparty_tik_tik_07_02_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_02_off_2 = { 3, btlparty_tik_tik_07_02_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_03_off_1[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_nokonoko_26_data_2DCC8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_nokonoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_03_off_1 = { 2, btlparty_tik_tik_07_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_03_off_1 = { 2, btlparty_tik_tik_07_03_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_03_off_2[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_03_off_2 = { 2, btlparty_tik_tik_07_03_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_03_off_2 = { 2, btlparty_tik_tik_07_03_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_03_off_3[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_03_off_3 = { 2, btlparty_tik_tik_07_03_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_03_off_3 = { 2, btlparty_tik_tik_07_03_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_04_off_1[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_04_off_1 = { 2, btlparty_tik_tik_07_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_04_off_1 = { 2, btlparty_tik_tik_07_04_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_04_off_2[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_04_off_2 = { 2, btlparty_tik_tik_07_04_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_04_off_2 = { 2, btlparty_tik_tik_07_04_off_2, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_07_04_off_3[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_07_04_off_3 = { 2, btlparty_tik_tik_07_04_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_07_04_off_3 = { 2, btlparty_tik_tik_07_04_off_3, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_01_off_1[1] = {
     { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_01_off_1 = { 1, btlparty_tik_tik_15_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_01_off_1 = { 1, btlparty_tik_tik_15_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_02_off_1[1] = {
     { &unit_patakuri_26_data_21998, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_02_off_1 = { 1, btlparty_tik_tik_15_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_02_off_1 = { 1, btlparty_tik_tik_15_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_03_off_1[1] = {
     { &unit_togekuri_26_data_23050, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togekuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_03_off_1 = { 1, btlparty_tik_tik_15_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_03_off_1 = { 1, btlparty_tik_tik_15_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_04_off_1[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_kuriboo_26_data_1CBF8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kuriboo },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_04_off_1 = { 2, btlparty_tik_tik_15_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_04_off_1 = { 2, btlparty_tik_tik_15_04_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_04_off_2[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_04_off_2 = { 2, btlparty_tik_tik_15_04_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_04_off_2 = { 2, btlparty_tik_tik_15_04_off_2, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_04_off_3[2] = {
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_04_off_3 = { 2, btlparty_tik_tik_15_04_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_04_off_3 = { 2, btlparty_tik_tik_15_04_off_3, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_05_off_1[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_patakuri_26_data_21998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_05_off_1 = { 2, btlparty_tik_tik_15_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_05_off_1 = { 2, btlparty_tik_tik_15_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_05_off_2[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_05_off_2 = { 2, btlparty_tik_tik_15_05_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_05_off_2 = { 2, btlparty_tik_tik_15_05_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_15_05_off_3[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_hammer_bros_26_data_240F0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hammer_bros },
 };
 
-BattleGroupSetup btlgrp_tik_tik_15_05_off_3 = { 2, btlparty_tik_tik_15_05_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_15_05_off_3 = { 2, btlparty_tik_tik_15_05_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_01_off_1[2] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_01_off_1 = { 2, btlparty_tik_tik_18_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_01_off_1 = { 2, btlparty_tik_tik_18_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_01_off_2[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -452,7 +452,7 @@ BattleUnitSetup btlparty_tik_tik_18_01_off_2[3] = {
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_01_off_2 = { 3, btlparty_tik_tik_18_01_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_01_off_2 = { 3, btlparty_tik_tik_18_01_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_02_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -461,56 +461,56 @@ BattleUnitSetup btlparty_tik_tik_18_02_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_02_off_1 = { 4, btlparty_tik_tik_18_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_02_off_1 = { 4, btlparty_tik_tik_18_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_02_off_2[2] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
     { &unit_hinnya_26_data_20DE0, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hinnya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_02_off_2 = { 2, btlparty_tik_tik_18_02_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_02_off_2 = { 2, btlparty_tik_tik_18_02_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_03_off_1[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_patakuri_26_data_21998, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_patakuri },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_03_off_1 = { 2, btlparty_tik_tik_18_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_03_off_1 = { 2, btlparty_tik_tik_18_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_03_off_2[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_03_off_2 = { 2, btlparty_tik_tik_18_03_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_03_off_2 = { 2, btlparty_tik_tik_18_03_off_2, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_03_off_3[2] = {
     { &unit_kamec, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_03_off_3 = { 2, btlparty_tik_tik_18_03_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default4, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_03_off_3 = { 2, btlparty_tik_tik_18_03_off_3, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_04_off_1[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_04_off_1 = { 2, btlparty_tik_tik_18_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_04_off_1 = { 2, btlparty_tik_tik_18_04_off_1, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_04_off_2[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_togenoko, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_04_off_2 = { 2, btlparty_tik_tik_18_04_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_04_off_2 = { 2, btlparty_tik_tik_18_04_off_2, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_18_04_off_3[2] = {
     { &unit_togenoko, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko },
     { &unit_kamec, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_kamec },
 };
 
-BattleGroupSetup btlgrp_tik_tik_18_04_off_3 = { 2, btlparty_tik_tik_18_04_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default4, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_18_04_off_3 = { 2, btlparty_tik_tik_18_04_off_3, 25, 25, 50, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_01_off_1[5] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -520,7 +520,7 @@ BattleUnitSetup btlparty_tik_tik_20_01_off_1[5] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_01_off_1 = { 5, btlparty_tik_tik_20_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_01_off_1 = { 5, btlparty_tik_tik_20_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_02_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -529,7 +529,7 @@ BattleUnitSetup btlparty_tik_tik_20_02_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_02_off_1 = { 4, btlparty_tik_tik_20_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_02_off_1 = { 4, btlparty_tik_tik_20_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_03_off_1[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -537,7 +537,7 @@ BattleUnitSetup btlparty_tik_tik_20_03_off_1[3] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_03_off_1 = { 3, btlparty_tik_tik_20_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_03_off_1 = { 3, btlparty_tik_tik_20_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_04_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -546,7 +546,7 @@ BattleUnitSetup btlparty_tik_tik_20_04_off_1[4] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_04_off_1 = { 4, btlparty_tik_tik_20_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_04_off_1 = { 4, btlparty_tik_tik_20_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_05_off_1[5] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
@@ -556,7 +556,7 @@ BattleUnitSetup btlparty_tik_tik_20_05_off_1[5] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_05_off_1 = { 5, btlparty_tik_tik_20_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_05_off_1 = { 5, btlparty_tik_tik_20_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_tik_tik_20_06_off_1[5] = {
     { &unit_hennya_26_data_30370, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hennya },
@@ -566,7 +566,7 @@ BattleUnitSetup btlparty_tik_tik_20_06_off_1[5] = {
     { &unit_hannya_26_data_20220, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_hannya },
 };
 
-BattleGroupSetup btlgrp_tik_tik_20_06_off_1 = { 5, btlparty_tik_tik_20_06_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_tik_tik_20_06_off_1 = { 5, btlparty_tik_tik_20_06_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 NpcBattleSetupEntry btlgrpsel_tik_btlno_tik_test1_off[2] = {
     { 50, &btlgrp_tik_tik_01_01_off_1, (struct BattleStageData*)(void*)((u8*)tik_btlstage_data + 0x51C) },

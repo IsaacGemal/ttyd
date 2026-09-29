@@ -465,7 +465,7 @@ BattleWeapon marioDefaultWeapon_Jump = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -543,7 +543,7 @@ BattleWeapon marioWeapon_KururinJump = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -621,7 +621,7 @@ BattleWeapon marioWeapon_KururinJump2 = {
     100,                                        // baseAccuracy
     0,                                          // baseFpCost
     0,                                          // baseSpCost
-    0,                                          // superguardsAllowed
+    0,                                          // superguardType
     1.0f,                                       // field_0x14
     1,                                          // mStylishCommandMultiplier
     5,                                          // field_0x19
@@ -699,7 +699,7 @@ BattleWeapon marioWeapon_JyabaraJump = {
     100,                                        // baseAccuracy
     4,                                          // baseFpCost
     0,                                          // baseSpCost
-    0,                                          // superguardsAllowed
+    0,                                          // superguardType
     1.0f,                                       // field_0x14
     2,                                          // mStylishCommandMultiplier
     5,                                          // field_0x19
@@ -777,7 +777,7 @@ BattleWeapon marioWeapon_JyabaraJumpFailed = {
     100,                                         // baseAccuracy
     4,                                           // baseFpCost
     0,                                           // baseSpCost
-    0,                                           // superguardsAllowed
+    0,                                           // superguardType
     1.0f,                                        // field_0x14
     2,                                           // mStylishCommandMultiplier
     5,                                           // field_0x19
@@ -855,7 +855,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -933,7 +933,7 @@ BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -1011,7 +1011,7 @@ BattleWeapon marioDefaultWeapon_Hammer = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -1089,7 +1089,7 @@ BattleWeapon marioWeapon_KaitenHammer = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1167,7 +1167,7 @@ BattleWeapon marioWeapon_KaitenHammerInvolved = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -1245,7 +1245,7 @@ BattleWeapon marioWeapon_UltraHammer = {
     100,                                      // baseAccuracy
     4,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     2,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1323,7 +1323,7 @@ BattleWeapon marioWeapon_UltraHammerInvolved = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -1401,7 +1401,7 @@ BattleWeapon marioWeapon_UltraHammerFinish = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     2,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1479,7 +1479,7 @@ BattleWeapon badgeWeapon_TugitugiJump = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1557,7 +1557,7 @@ BattleWeapon badgeWeapon_GatsunJump = {
     100,                                            // baseAccuracy
     2,                                              // baseFpCost
     0,                                              // baseSpCost
-    0,                                              // superguardsAllowed
+    0,                                              // superguardType
     1.0f,                                           // field_0x14
     1,                                              // mStylishCommandMultiplier
     5,                                              // field_0x19
@@ -1635,7 +1635,7 @@ BattleWeapon badgeWeapon_DokanJump = {
     100,                                         // baseAccuracy
     6,                                           // baseFpCost
     0,                                           // baseSpCost
-    0,                                           // superguardsAllowed
+    0,                                           // superguardType
     1.0f,                                        // field_0x14
     1,                                           // mStylishCommandMultiplier
     5,                                           // field_0x19
@@ -1713,7 +1713,7 @@ BattleWeapon badgeWeapon_RenzokuJump = {
     100,                                      // baseAccuracy
     3,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1791,7 +1791,7 @@ BattleWeapon badgeWeapon_TatsumakiJump = {
     100,                                      // baseAccuracy
     3,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     3,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -1869,7 +1869,7 @@ BattleWeapon badgeWeapon_TatsumakiJumpInvolved = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -1947,7 +1947,7 @@ BattleWeapon badgeWeapon_MiniminiFumi = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2025,7 +2025,7 @@ BattleWeapon badgeWeapon_NemuraseFumi = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2103,7 +2103,7 @@ BattleWeapon badgeWeapon_FunyafunyaJump = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2181,7 +2181,7 @@ BattleWeapon badgeWeapon_GatsunHammer = {
     100,                                            // baseAccuracy
     2,                                              // baseFpCost
     0,                                              // baseSpCost
-    0,                                              // superguardsAllowed
+    0,                                              // superguardType
     1.0f,                                           // field_0x14
     1,                                              // mStylishCommandMultiplier
     5,                                              // field_0x19
@@ -2259,7 +2259,7 @@ BattleWeapon badgeWeapon_DokanHammer = {
     100,                                         // baseAccuracy
     6,                                           // baseFpCost
     0,                                           // baseSpCost
-    0,                                           // superguardsAllowed
+    0,                                           // superguardType
     1.0f,                                        // field_0x14
     1,                                           // mStylishCommandMultiplier
     5,                                           // field_0x19
@@ -2337,7 +2337,7 @@ BattleWeapon badgeWeapon_JishinHammer = {
     100,                                                     // baseAccuracy
     3,                                                       // baseFpCost
     0,                                                       // baseSpCost
-    0,                                                       // superguardsAllowed
+    0,                                                       // superguardType
     1.0f,                                                    // field_0x14
     2,                                                       // mStylishCommandMultiplier
     5,                                                       // field_0x19
@@ -2415,7 +2415,7 @@ BattleWeapon badgeWeapon_UltraJishinHammer = {
     100,                                         // baseAccuracy
     7,                                           // baseFpCost
     0,                                           // baseSpCost
-    0,                                           // superguardsAllowed
+    0,                                           // superguardType
     1.0f,                                        // field_0x14
     1,                                           // mStylishCommandMultiplier
     5,                                           // field_0x19
@@ -2493,7 +2493,7 @@ BattleWeapon badgeWeapon_HammerNageru = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2571,7 +2571,7 @@ BattleWeapon badgeWeapon_TsuranukiNaguri = {
     100,                                        // baseAccuracy
     2,                                          // baseFpCost
     0,                                          // baseSpCost
-    0,                                          // superguardsAllowed
+    0,                                          // superguardType
     1.0f,                                       // field_0x14
     1,                                          // mStylishCommandMultiplier
     5,                                          // field_0x19
@@ -2649,7 +2649,7 @@ BattleWeapon badgeWeapon_ConfuseHammer = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2727,7 +2727,7 @@ BattleWeapon badgeWeapon_FireNaguri = {
     100,                                      // baseAccuracy
     5,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     2,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2805,7 +2805,7 @@ BattleWeapon badgeWeapon_FireNaguriFailed = {
     100,                                      // baseAccuracy
     5,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     2,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2883,7 +2883,7 @@ BattleWeapon badgeWeapon_IceNaguri = {
     100,                                      // baseAccuracy
     3,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -2961,7 +2961,7 @@ BattleWeapon badgeWeapon_Charge = {
     100,                                      // baseAccuracy
     1,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -3039,7 +3039,7 @@ BattleWeapon badgeWeapon_ChargeP = {
     100,                                      // baseAccuracy
     1,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -3117,7 +3117,7 @@ BattleWeapon badgeWeapon_SuperCharge = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -3195,7 +3195,7 @@ BattleWeapon badgeWeapon_SuperChargeP = {
     100,                                      // baseAccuracy
     2,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19
@@ -3273,7 +3273,7 @@ BattleWeapon badgeWeapon_2KaiItem = {
     100,                                      // baseAccuracy
     4,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -3351,7 +3351,7 @@ BattleWeapon badgeWeapon_3KaiItem = {
     100,                                      // baseAccuracy
     8,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -3429,7 +3429,7 @@ BattleWeapon badgeWeapon_DefenceCommand = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -3507,7 +3507,7 @@ BattleWeapon badgeWeapon_DefenceCommandP = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     0.0f,                                     // field_0x14
     0,                                        // mStylishCommandMultiplier
     0,                                        // field_0x19
@@ -3585,7 +3585,7 @@ BattleWeapon marioWeapon_BakuGame = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     2,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -3663,7 +3663,7 @@ BattleWeapon marioWeapon_Scissor = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     4,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -3741,7 +3741,7 @@ BattleWeapon marioWeapon_ZubaStar = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     6,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -3819,7 +3819,7 @@ BattleWeapon marioWeapon_Genki0 = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     1,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -3897,7 +3897,7 @@ BattleWeapon marioWeapon_Genki1 = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     5,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -3975,7 +3975,7 @@ BattleWeapon marioWeapon_Deka = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     2,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -4053,7 +4053,7 @@ BattleWeapon marioWeapon_Muki = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     3,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19
@@ -4131,7 +4131,7 @@ BattleWeapon marioWeapon_Suki = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     2,                                        // baseSpCost
-    0,                                        // superguardsAllowed
+    0,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     5,                                        // field_0x19

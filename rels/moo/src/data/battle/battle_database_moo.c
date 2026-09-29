@@ -87,21 +87,21 @@ BattleUnitSetup btlparty_moo_moo_00_01_off_1[3] = {
     { &unit_kuriboo_18_data_4608, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-BattleGroupSetup btlgrp_moo_moo_00_01_off_1 = { 3, btlparty_moo_moo_00_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_00_01_off_1 = { 3, btlparty_moo_moo_00_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_01_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_01_off_1 = { 2, btlparty_moo_moo_01_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_01_off_1 = { 2, btlparty_moo_moo_01_01_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_02_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_02_off_1 = { 2, btlparty_moo_moo_01_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_02_off_1 = { 2, btlparty_moo_moo_01_02_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_02_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -109,7 +109,7 @@ BattleUnitSetup btlparty_moo_moo_01_02_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_02_off_2 = { 3, btlparty_moo_moo_01_02_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_02_off_2 = { 3, btlparty_moo_moo_01_02_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_03_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -117,14 +117,14 @@ BattleUnitSetup btlparty_moo_moo_01_03_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_03_off_1 = { 3, btlparty_moo_moo_01_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_03_off_1 = { 3, btlparty_moo_moo_01_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_04_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_04_off_1 = { 2, btlparty_moo_moo_01_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_04_off_1 = { 2, btlparty_moo_moo_01_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_04_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -132,7 +132,7 @@ BattleUnitSetup btlparty_moo_moo_01_04_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_04_off_2 = { 3, btlparty_moo_moo_01_04_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_04_off_2 = { 3, btlparty_moo_moo_01_04_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_04_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -141,7 +141,7 @@ BattleUnitSetup btlparty_moo_moo_01_04_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_04_off_3 = { 4, btlparty_moo_moo_01_04_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_04_off_3 = { 4, btlparty_moo_moo_01_04_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_01_05_off_1[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -150,28 +150,28 @@ BattleUnitSetup btlparty_moo_moo_01_05_off_1[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_01_05_off_1 = { 4, btlparty_moo_moo_01_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_01_05_off_1 = { 4, btlparty_moo_moo_01_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_02_01_off_1[2] = {
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_moo_moo_02_01_off_1 = { 2, btlparty_moo_moo_02_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_02_01_off_1 = { 2, btlparty_moo_moo_02_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_02_02_off_1[2] = {
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_02_02_off_1 = { 2, btlparty_moo_moo_02_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_02_02_off_1 = { 2, btlparty_moo_moo_02_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_02_03_off_1[2] = {
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_moo_moo_02_03_off_1 = { 2, btlparty_moo_moo_02_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_02_03_off_1 = { 2, btlparty_moo_moo_02_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_02_04_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -179,21 +179,21 @@ BattleUnitSetup btlparty_moo_moo_02_04_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_02_04_off_1 = { 3, btlparty_moo_moo_02_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_02_04_off_1 = { 3, btlparty_moo_moo_02_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_02_05_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_barriern_z_18_data_72F0, 1, 0x04000004, { 110.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_moo_moo_02_05_off_1 = { 2, btlparty_moo_moo_02_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_02_05_off_1 = { 2, btlparty_moo_moo_02_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_01_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_01_off_1 = { 2, btlparty_moo_moo_05_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_01_off_1 = { 2, btlparty_moo_moo_05_01_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_01_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -201,7 +201,7 @@ BattleUnitSetup btlparty_moo_moo_05_01_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_01_off_2 = { 3, btlparty_moo_moo_05_01_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_01_off_2 = { 3, btlparty_moo_moo_05_01_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_01_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -210,21 +210,21 @@ BattleUnitSetup btlparty_moo_moo_05_01_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_01_off_3 = { 4, btlparty_moo_moo_05_01_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_01_off_3 = { 4, btlparty_moo_moo_05_01_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_02_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_02_off_1 = { 2, btlparty_moo_moo_05_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_02_off_1 = { 2, btlparty_moo_moo_05_02_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_03_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_03_off_1 = { 2, btlparty_moo_moo_05_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_03_off_1 = { 2, btlparty_moo_moo_05_03_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_03_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -232,7 +232,7 @@ BattleUnitSetup btlparty_moo_moo_05_03_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_03_off_2 = { 3, btlparty_moo_moo_05_03_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_03_off_2 = { 3, btlparty_moo_moo_05_03_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_04_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -240,14 +240,14 @@ BattleUnitSetup btlparty_moo_moo_05_04_off_1[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_04_off_1 = { 3, btlparty_moo_moo_05_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_04_off_1 = { 3, btlparty_moo_moo_05_04_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_05_off_1[2] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_05_off_1 = { 2, btlparty_moo_moo_05_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_05_off_1 = { 2, btlparty_moo_moo_05_05_off_1, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_05_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -255,7 +255,7 @@ BattleUnitSetup btlparty_moo_moo_05_05_off_2[3] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_05_off_2 = { 3, btlparty_moo_moo_05_05_off_2, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_05_off_2 = { 3, btlparty_moo_moo_05_05_off_2, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_moo_moo_05_05_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
@@ -264,7 +264,7 @@ BattleUnitSetup btlparty_moo_moo_05_05_off_3[4] = {
     { &unit_sinemon_18_data_5D28, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_sinemon },
 };
 
-BattleGroupSetup btlgrp_moo_moo_05_05_off_3 = { 4, btlparty_moo_moo_05_05_off_3, 25, 25, 50, (u32*)battle_heart_drop_param_default2, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_moo_moo_05_05_off_3 = { 4, btlparty_moo_moo_05_05_off_3, 25, 25, 50, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
 
 NpcBattleSetupEntry btlgrpsel_moo_btlno_moo_test1_off[2] = {
     { 50, &btlgrp_moo_moo_00_01_off_1, (struct BattleStageData*)moo_btlstage_data },

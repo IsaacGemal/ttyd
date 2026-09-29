@@ -50,11 +50,11 @@ LAYOUTS = {
         (0x0, 'ptr', 'mUnitKindParams', 'BattleUnitKind'), (0x4, 's8', 'alliance'), (0x8, 'x32', 'field_0x8'),
         (0xC, 'vec', 'position'), (0x18, 's32', 'field_0x18'), (0x1C, 'arr', 'unitWork', ('s32', 4)),
         (0x2C, 'ptr', 'itemDropTable', 'ItemDropData')]),
-    'ItemDropData': (0x8, [(0x0, 'enum', 'type', 'ItemType'), (0x4, 's16', 'holdWeight'), (0x6, 's16', 'field_0x6')]),
+    'ItemDropData': (0x8, [(0x0, 'enum', 'type', 'ItemType'), (0x4, 's16', 'holdWeight'), (0x6, 's16', 'dropWeight')]),
     'BattleGroupSetup': (0x20, [
         (0x0, 's32', 'numEnemies'), (0x4, 'ptr', 'enemyData', 'BattleUnitSetup'), (0x8, 's32', 'field_0x8'),
-        (0xC, 's32', 'field_0xC'), (0x10, 's32', 'field_0x10'), (0x14, 'ptr', 'heartDropParams', 'u32'),
-        (0x18, 'ptr', 'flowerDropParams', 'u32'), (0x1C, 's32', 'field_0x1C')]),
+        (0xC, 's32', 'field_0xC'), (0x10, 's32', 'field_0x10'), (0x14, 'ptr', 'heartDropParams', 's32'),
+        (0x18, 'ptr', 'flowerDropParams', 's32'), (0x1C, 's32', 'field_0x1C')]),
     'NpcBattleSetupEntry': (0xC, [
         (0x0, 's32', 'weight'), (0x4, 'ptr', 'setup', 'BattleGroupSetup'),
         (0x8, 'ptr', 'stageData', 'BattleStageData')]),
@@ -78,8 +78,8 @@ LAYOUTS = {
         (0x32, 'u16', 'animeArg2'), (0x34, 'ptr', 'animeArg3', None), (0x38, 'ptr', 'animeArg4', None)]),
     'BattleWeapon': (0xC0, [
         (0x0, 'str', 'name'), (0x4, 's16', 'icon'), (0x8, 'enum', 'item', 'ItemType'), (0xC, 'str', 'description'),
-        (0x10, 's8', 'baseAccuracy'), (0x11, 's8', 'baseFpCost'), (0x12, 's8', 'baseSpCost'),
-        (0x13, 's8', 'superguardsAllowed'), (0x14, 'f32', 'field_0x14'), (0x18, 's8', 'mStylishCommandMultiplier'),
+        (0x10, 'u8', 'baseAccuracy'), (0x11, 'u8', 'baseFpCost'), (0x12, 'u8', 'baseSpCost'),
+        (0x13, 'u8', 'superguardType'), (0x14, 'f32', 'field_0x14'), (0x18, 's8', 'mStylishCommandMultiplier'),
         (0x19, 's8', 'field_0x19'), (0x1A, 's8', 'mBingoSlotChance'), (0x1B, 's8', 'field_0x1B'),
         (0x1C, 'ptr', 'hpDamageFn', None), (0x20, 'arr', 'hpDamageWork', ('u32', 8)),
         (0x40, 'ptr', 'fpDamageFn', None), (0x44, 'arr', 'fpDamageWork', ('u32', 8)),
@@ -87,7 +87,7 @@ LAYOUTS = {
         (0x6D, 's8', 'field_0x6D'), (0x6E, 'u8', 'actionLevel'), (0x6F, 's8', 'field_0x6F'),
         (0x70, 'str', 'acHelpMsg'), (0x74, 'x32', 'special'), (0x78, 'x32', 'counterResistanceFlags'),
         (0x7C, 'x32', 'targetWeightingFlags')] +
-        [(0x80 + i, 's8', n) for i, n in enumerate(
+        [(0x80 + i, 'u8' if n.endswith('Chance') else 's8', n) for i, n in enumerate(
             'sleepChance sleepTime stopChance stopTime dizzyChance dizzyTime poisonChance poisonTime poisonStrength '
             'confuseChance confuseTime electricChance electricTime dodgyChance dodgyTime burnChance burnTime '
             'freezeChance freezeTime sizeChangeChance sizeChangeTime sizeChangeStrength atkChangeChance '
@@ -146,6 +146,15 @@ def asm_path(cfile):
         return f'build/G8MJ01/{m.group(1)}/asm/{m.group(2)}.s'
     m = re.match(r'src/(.+)\.c$', cfile)
     return f'build/G8MJ01/asm/{m.group(1)}.s'
+
+
+def is_string_object(o):
+    """The object is its string: the bytes up to the NUL, then only padding."""
+    d = o['data']
+    if d is None or o['rel'] or b'\0' not in d:
+        return False
+    n = d.index(b'\0')
+    return not any(d[n:]) and o['size'] - n <= 4
 
 
 def cstr(s):
@@ -275,7 +284,7 @@ class Renderer:
     def ref(self, sym, add, pointee):
         sym = self.alias.get(sym, sym)
         o = self.objs.get(sym)
-        if o and o['string'] is not None and o['sec'] in ('.rodata', '.data') and add == 0 and len(o['data']) - 1 <= len(o['string'].encode()) + 3:
+        if o and o['string'] is not None and o['sec'] in ('.rodata', '.data') and add == 0 and is_string_object(o):
             return cstr(o['string'])
         typ, arr = self.decls.get(sym, (None, True))
         typ = self.types.get(sym, typ)
@@ -294,7 +303,9 @@ class Renderer:
                 sym, add = rel[off]
                 return self.ref(sym, add, extra if kind == 'ptr' else None)
             v = int.from_bytes(data[off:off + 4], 'big')
-            return 'NULL' if v == 0 else (f'(void*){v:#x}' if kind == 'ptr' else f'(const char*){v:#x}')
+            if v:
+                raise ValueError(f'{fname}: {v:#x} is not a pointer')
+            return 'NULL'
         assert off not in rel, f'pointer where {fname} expects a {kind}'
         if kind == 'vec':
             return '{ ' + ', '.join(fmt_float(data[off + i:off + i + 4]) for i in (0, 4, 8)) + ' }'
@@ -383,7 +394,6 @@ LISTS = {'BattleSetupData', 'BeroEntry', 'ItemDropData', 'BattleUnitKindPart', '
          'BattleStageObjectData'}
 RESHAPED = {}  # (file, symbol): (now_array, is_static), for fix_refs
 RETYPED = {}  # (file, symbol): (old element size, new stride, is_static), for fix_index
-GLOBAL_TYPED = {}  # filled by rewrite(): global symbols typed in this run, for update_externs
 HEADERS = {'BattleSetupData': 'driver/npcdrv.h', 'BeroEntry': 'evt/evt_bero.h', 'ItemDropData': 'battle/battle_unit.h', 'BattleDispPose': 'battle/battle_disp.h', 'BattleWeapon': 'battle/battle_database_common.h',
            'BattleGroupSetup': 'driver/npcdrv.h', 'NpcBattleSetupEntry': 'driver/npcdrv.h',
            'BattleStageData': 'battle/battle_stage.h', 'BattleStageObjectData': 'battle/battle_stage_object.h'}
@@ -443,18 +453,25 @@ def fix_index(src, sym, old_size, stride):
 
 
 def fix_refs(src, sym, now_array):
-    """Adjust uses of SYM whose declaration changed between array and scalar: `x` <-> `&x`. Declarations and
-    definitions are left alone; member and index uses are left for the compiler to point out."""
-    decl = re.compile(r'^(?:extern |static |const )*[A-Za-z_]\w* ' + re.escape(sym) + r'\b', re.M)
+    """Adjust uses of SYM whose declaration changed between array and scalar: `x` <-> `&x`. Declarations,
+    comments, strings and sizeof are left alone; arithmetic, indexing and member access on SYM raise, since
+    their meaning changes with the shape."""
+    decl = re.compile(r'^\s*(?:extern |static |const |struct )*[A-Za-z_]\w*\s*\*?\s*' + re.escape(sym) + r'\s*(\[\w*\])?\s*[;=,)]')
     out, pos = [], 0
-    for m in re.finditer(r'(&\s*)?\b' + re.escape(sym) + r'\b(?!\s*[.\[(])', src):
+    code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'|(&\s*)?\b' + re.escape(sym) + r'\b', re.S)
+    for m in code.finditer(src):
+        if not m.group(0).lstrip('&').lstrip().startswith(sym):
+            continue  # a comment, string or char literal
         line_start = src.rfind('\n', 0, m.start()) + 1
-        if decl.match(src, line_start) and src.find(sym, line_start) == m.start() - (len(m.group(1)) if m.group(1) else 0) + (len(m.group(1)) if m.group(1) else 0):
-            if decl.match(src, line_start).end() >= m.end():
-                continue
-        prev = src[max(0, m.start() - 1):m.start()]
-        if prev in ('"', '.') or src[max(0, m.start() - 2):m.start()] == '->':
+        line_end = src.find('\n', m.end())
+        if decl.match(src[line_start:line_end if line_end >= 0 else None]):
             continue
+        before = src[max(0, m.start() - 8):m.start()]
+        after = src[m.end():m.end() + 3]
+        if re.search(r'(sizeof\s*\(?\s*|[\w.]|->)$', before):
+            continue
+        if re.match(r'\s*(\[|->|\.|[-+](?![>=]))', after) or re.search(r'[-+]\s*$', before.rstrip('&').rstrip()):
+            raise ValueError(f'{sym}: arithmetic, index or member use near {src[line_start:line_end]!r}')
         out.append(src[pos:m.start()])
         if now_array and m.group(1):
             out.append(sym)
@@ -544,9 +561,8 @@ def rewrite(cfile, mapping, objs=None, alias=None):
         while k and lines[k - 1].startswith('//'):
             k -= 1
         block = lines[k:]
-        notes = [l for l in block if not l.startswith('// clang-format')]
-        if notes and STALE.search('\n'.join(notes)):
-            keep = [l for l in block if l.startswith('// clang-format')]
+        if any(STALE.search(l) for l in block):
+            keep = [l for l in block if not STALE.search(l)]
             head = '\n'.join(lines[:k] + keep)
             src = head + ('\n' if head else '') + text + '\n' + src[dm[1]:]
         else:
@@ -555,16 +571,15 @@ def rewrite(cfile, mapping, objs=None, alias=None):
         src = re.sub(r'^((?:static )?(?:const )?)[A-Za-z_]\w* ' + re.escape(sym) + r'(\[\w*\])?;$',
                      lambda mm: f'{mm.group(1)}{typ} {sym}{"[" + n.group(1) + "]" if n else ""};', src, flags=re.M)
         done.append(sym)
-        GLOBAL_TYPED[sym] = (typ, int(n.group(1)) if n else None) if not dm[2].startswith('static') else None
     if done:
         src = add_includes(src, {mapping[d] for d in done if mapping[d].isidentifier()})
     open(cfile, 'w').write(src)
     return done, failed
 
 
-STALE = re.compile(r'opaque|field_0x24|field_4\[|header|byte-identical|verbatim|kept as-is|bytes kept|byte-for-byte|'
-                   r'5-byte|0x16 bytes|no existing type|casts? point|stays? raw|left raw|pad(ded)? to 8|u8 field|TODO: type',
-                   re.I)
+STALE = re.compile(r'opaque|field_0x24|field_4\[|header (struct|has|hides|names|only|can)|byte-identical|verbatim|'
+                   r'kept as-is|bytes kept|byte-for-byte|5-byte|0x16 bytes|no existing type|casts? point|stays? raw|'
+                   r'left raw|pad(ded)? to 8|u8 field|TODO: type', re.I)
 ROOTS = [(re.compile(r'^unit_\w+$|^UNIT_DATA_SYM$'), 'BattleUnitKind'), (re.compile(r'^btlgrp_\w+$'), 'BattleGroupSetup'),
          (re.compile(r'^btlparty_\w+$'), 'BattleUnitSetup'), (re.compile(r'^btlgrpsel\w*$'), 'NpcBattleSetupEntry'),
          (re.compile(r'weapon', re.I), 'BattleWeapon'), (re.compile(r'_btlstage_data$'), 'BattleStageData'),
@@ -659,7 +674,8 @@ def run_all(skip=()):
     import collections, glob
     counts = collections.Counter()
     for f in c_files():
-        if f in skip or (f.startswith('src/') and '// TODO: type' not in open(f).read()):
+        if f in skip or (f.startswith('src/') and '// TODO: type' not in open(f).read() and
+                         not re.search(r'^(?:static |const )*(' + STRUCTS_RE + r') \w+', open(f).read(), re.M)):
             continue
         ap = asm_path(f)
         if not ap or not os.path.exists(ap):
@@ -693,7 +709,11 @@ def run_all(skip=()):
     for (f, sym), (arr, static) in RESHAPED.items():
         for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
             text = open(p, errors='replace').read()
-            new = fix_refs(text, sym, arr)
+            try:
+                new = fix_refs(text, sym, arr)
+            except ValueError as e:
+                print('FIX BY HAND', p, e)
+                continue
             if new != text:
                 open(p, 'w').write(new)
     typed, seen = {}, collections.defaultdict(set)
@@ -711,6 +731,9 @@ def run_all(skip=()):
     global _HEADER_DECLS
     _HEADER_DECLS = None
     hd = header_declarations()
+    defined_anywhere = set()
+    for f in c_files():
+        defined_anywhere.update(re.findall(r'^(?:static |const )*[A-Za-z_]\w* (\w+)(?:\[\w*\])? = ', open(f).read(), re.M))
     for f in c_files():
         text = open(f).read()
         if '(struct ' not in text:
@@ -732,7 +755,7 @@ def run_all(skip=()):
                 continue
             t = ts.pop()
             em = re.search(r'^extern (?:s32|u32) ' + re.escape(name) + r'\[\w*\];$', text, re.M)
-            if not em:
+            if not em or name in defined_anywhere:
                 continue
             rest = re.sub(r'\(struct ' + t + r'\*\)&?' + re.escape(name) + r'\b', '', text[:em.start()] + text[em.end():])
             if re.search(r'\b' + re.escape(name) + r'\b', rest):

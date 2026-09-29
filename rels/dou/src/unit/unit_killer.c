@@ -142,7 +142,7 @@ static BattleWeapon weapon_killer_charge_attack = {
     100,                                      // baseAccuracy
     0,                                        // baseFpCost
     0,                                        // baseSpCost
-    2,                                        // superguardsAllowed
+    2,                                        // superguardType
     1.0f,                                     // field_0x14
     1,                                        // mStylishCommandMultiplier
     1,                                        // field_0x19

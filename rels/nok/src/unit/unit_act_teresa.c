@@ -78,6 +78,7 @@ BattleUnitKind unit_act_teresa = {
     data_table,                 // dataTable
 };
 
+// Per damage-type defence; pointed to by BattleUnitKindPart::defense.
 static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
 
 // Per damage-type defence attributes; BattleUnitKindPart::defenseAttr.

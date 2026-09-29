@@ -294,21 +294,21 @@ BattleUnitSetup btlparty_aji_aji_mbmkII[1] = {
     { &unit_boss_magnum_battender_mkII, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_default_param_list },
 };
 
-BattleGroupSetup btlgrp_aji_aji_mbmkII = { 1, btlparty_aji_aji_mbmkII, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_mbmkII = { 1, btlparty_aji_aji_mbmkII, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_zako[2] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
     { &unit_gundan_zako_elite, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_zako = { 2, btlparty_aji_aji_zako, 0, 0, 100, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_zako = { 2, btlparty_aji_aji_zako, 0, 0, 100, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_01_off_1[2] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
     { &unit_gundan_zako_elite, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_01_off_1 = { 2, btlparty_aji_aji_01_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_01_off_1 = { 2, btlparty_aji_aji_01_01_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_02_off_1[3] = {
     { &unit_gundan_zako_2_data_2E898, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
@@ -316,7 +316,7 @@ BattleUnitSetup btlparty_aji_aji_01_02_off_1[3] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_02_off_1 = { 3, btlparty_aji_aji_01_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_02_off_1 = { 3, btlparty_aji_aji_01_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_03_off_1[4] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
@@ -325,21 +325,21 @@ BattleUnitSetup btlparty_aji_aji_01_03_off_1[4] = {
     { &unit_gundan_zako_2_data_2E898, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_03_off_1 = { 4, btlparty_aji_aji_01_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_03_off_1 = { 4, btlparty_aji_aji_01_03_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_04_off_1[2] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
     { &unit_gundan_zako_elite, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_04_off_1 = { 2, btlparty_aji_aji_01_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_04_off_1 = { 2, btlparty_aji_aji_01_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_05_off_1[2] = {
     { &unit_barriern_z_2_data_303C8, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_05_off_1 = { 2, btlparty_aji_aji_01_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_05_off_1 = { 2, btlparty_aji_aji_01_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_06_off_1[4] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
@@ -348,7 +348,7 @@ BattleUnitSetup btlparty_aji_aji_01_06_off_1[4] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_06_off_1 = { 4, btlparty_aji_aji_01_06_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_06_off_1 = { 4, btlparty_aji_aji_01_06_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_07_off_1[3] = {
     { &unit_gundan_zako_2_data_2E898, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
@@ -356,7 +356,7 @@ BattleUnitSetup btlparty_aji_aji_01_07_off_1[3] = {
     { &unit_barriern_z_2_data_303C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_07_off_1 = { 3, btlparty_aji_aji_01_07_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_07_off_1 = { 3, btlparty_aji_aji_01_07_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_01_08_off_1[4] = {
     { &unit_gundan_zako_2_data_2E898, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
@@ -365,21 +365,21 @@ BattleUnitSetup btlparty_aji_aji_01_08_off_1[4] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_01_08_off_1 = { 4, btlparty_aji_aji_01_08_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_01_08_off_1 = { 4, btlparty_aji_aji_01_08_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_04_01_off_1[2] = {
     { &unit_barriern_custom, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_custom },
     { &unit_barriern_custom, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_custom },
 };
 
-BattleGroupSetup btlgrp_aji_aji_04_01_off_1 = { 2, btlparty_aji_aji_04_01_off_1, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_04_01_off_1 = { 2, btlparty_aji_aji_04_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_06_01_off_1[2] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
 };
 
-BattleGroupSetup btlgrp_aji_aji_06_01_off_1 = { 2, btlparty_aji_aji_06_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+BattleGroupSetup btlgrp_aji_aji_06_01_off_1 = { 2, btlparty_aji_aji_06_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
 
 BattleUnitSetup btlparty_aji_aji_08_01_off_1[3] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
@@ -387,7 +387,7 @@ BattleUnitSetup btlparty_aji_aji_08_01_off_1[3] = {
     { &unit_barriern_z_2_data_303C8, 1, 0x04000004, { 150.0f, 40.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_aji_aji_08_01_off_1 = { 3, btlparty_aji_aji_08_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+BattleGroupSetup btlgrp_aji_aji_08_01_off_1 = { 3, btlparty_aji_aji_08_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
 
 BattleUnitSetup btlparty_aji_aji_09_01_off_1[5] = {
     { &unit_gundan_zako_2_data_2E898, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako },
@@ -397,13 +397,13 @@ BattleUnitSetup btlparty_aji_aji_09_01_off_1[5] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
 };
 
-BattleGroupSetup btlgrp_aji_aji_09_01_off_1 = { 5, btlparty_aji_aji_09_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_09_01_off_1 = { 5, btlparty_aji_aji_09_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_10_01_off_1[1] = {
     { &unit_barriern_custom, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_custom },
 };
 
-BattleGroupSetup btlgrp_aji_aji_10_01_off_1 = { 1, btlparty_aji_aji_10_01_off_1, 0, 0, 100, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_10_01_off_1 = { 1, btlparty_aji_aji_10_01_off_1, 0, 0, 100, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_13_01_off_1[4] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
@@ -412,20 +412,20 @@ BattleUnitSetup btlparty_aji_aji_13_01_off_1[4] = {
     { &unit_gundan_zako_magician_2_data_34AD8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_magician },
 };
 
-BattleGroupSetup btlgrp_aji_aji_13_01_off_1 = { 4, btlparty_aji_aji_13_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default3, 5 };
+BattleGroupSetup btlgrp_aji_aji_13_01_off_1 = { 4, btlparty_aji_aji_13_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
 
 BattleUnitSetup btlparty_aji_aji_13_02_off_1[2] = {
     { &unit_barriern_z_2_data_303C8, 1, 0x04000004, { 50.0f, 40.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
     { &unit_barriern_z_2_data_303C8, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_barriern_z },
 };
 
-BattleGroupSetup btlgrp_aji_aji_13_02_off_1 = { 2, btlparty_aji_aji_13_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_13_02_off_1 = { 2, btlparty_aji_aji_13_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_aji_aji_15_01_off_1[1] = {
     { &unit_gundan_zako_elite, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_gundan_zako_elite },
 };
 
-BattleGroupSetup btlgrp_aji_aji_15_01_off_1 = { 1, btlparty_aji_aji_15_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default3, (u32*)battle_flower_drop_param_default, 5 };
+BattleGroupSetup btlgrp_aji_aji_15_01_off_1 = { 1, btlparty_aji_aji_15_01_off_1, 25, 25, 50, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 NpcBattleSetupEntry btlgrpsel_aji_btlno_aji_test1_off[2] = {
     { 50, &btlgrp_aji_aji_zako, (struct BattleStageData*)(void*)((u8*)aji_btlstage_data + 0x1B4) },

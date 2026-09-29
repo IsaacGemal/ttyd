@@ -8,7 +8,7 @@
 extern s32 battle_flower_drop_param_default2[];
 extern s32 battle_heart_drop_param_default[];
 extern ItemDropData battle_item_purple_teresa[10];
-extern BattleUnitKind unit_purple_teresa_22_data_E620;
+extern s32 unit_purple_teresa_22_data_E620[];
 
 // clang-format off
 extend_data(24,
@@ -69,71 +69,71 @@ u32 pik_btlstage_data[109] = {
 };
 
 BattleUnitSetup btlparty_pik_pik_06_01_off_1[2] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_01_off_1 = { 2, btlparty_pik_pik_06_01_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_01_off_1 = { 2, btlparty_pik_pik_06_01_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_02_off_1[3] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_02_off_1 = { 3, btlparty_pik_pik_06_02_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_02_off_1 = { 3, btlparty_pik_pik_06_02_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_03_off_1[1] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_03_off_1 = { 1, btlparty_pik_pik_06_03_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_03_off_1 = { 1, btlparty_pik_pik_06_03_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_04_off_1[2] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_04_off_1 = { 2, btlparty_pik_pik_06_04_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_04_off_1 = { 2, btlparty_pik_pik_06_04_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_05_off_1[2] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_05_off_1 = { 2, btlparty_pik_pik_06_05_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_05_off_1 = { 2, btlparty_pik_pik_06_05_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_06_off_1[4] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_06_off_1 = { 4, btlparty_pik_pik_06_06_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_06_off_1 = { 4, btlparty_pik_pik_06_06_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_07_off_1[1] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_07_off_1 = { 1, btlparty_pik_pik_06_07_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_07_off_1 = { 1, btlparty_pik_pik_06_07_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_08_off_1[3] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_08_off_1 = { 3, btlparty_pik_pik_06_08_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_08_off_1 = { 3, btlparty_pik_pik_06_08_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_pik_pik_06_09_off_1[4] = {
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { &unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
+    { (struct BattleUnitKind*)unit_purple_teresa_22_data_E620, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
-BattleGroupSetup btlgrp_pik_pik_06_09_off_1 = { 4, btlparty_pik_pik_06_09_off_1, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_flower_drop_param_default2, 5 };
+BattleGroupSetup btlgrp_pik_pik_06_09_off_1 = { 4, btlparty_pik_pik_06_09_off_1, 25, 25, 50, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
 
 NpcBattleSetupEntry btlgrpsel_pik_btlno_pik_test1_off[2] = {
     { 50, &btlgrp_pik_pik_06_01_off_1, (struct BattleStageData*)pik_btlstage_data },

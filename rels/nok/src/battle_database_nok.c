@@ -79,7 +79,7 @@ BattleUnitSetup btlparty_nok_hei_ep[1] = {
 };
 // clang-format on
 
-BattleGroupSetup btlgrp_nok_hei_ep = { 1, btlparty_nok_hei_ep, 25, 25, 50, (u32*)battle_heart_drop_param_default, (u32*)battle_heart_drop_param_default, 5 };
+BattleGroupSetup btlgrp_nok_hei_ep = { 1, btlparty_nok_hei_ep, 25, 25, 50, battle_heart_drop_param_default, battle_heart_drop_param_default, 5 };
 
 // The weighted setup list npcSetupBattleInfo() walks: entries are { weight, groupSetup, stageData }, and the
 // zero-weight entry terminates the list.

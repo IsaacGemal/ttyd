@@ -32,8 +32,8 @@ typedef struct BattleGroupSetup {
     s32 field_0x8;              // 0x8
     s32 field_0xC;              // 0xC
     s32 field_0x10;             // 0x10
-    u32* heartDropParams;       // 0x14, battle_heart_drop_param_default*
-    u32* flowerDropParams;      // 0x18, battle_flower_drop_param_default*
+    s32* heartDropParams;       // 0x14, battle_heart_drop_param_default*
+    s32* flowerDropParams;      // 0x18, battle_flower_drop_param_default*
     s32 field_0x1C;             // 0x1C
 } BattleGroupSetup;
 

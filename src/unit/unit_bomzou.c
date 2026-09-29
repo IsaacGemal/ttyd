@@ -81,7 +81,7 @@ BattleWeapon weapon_bomzou_explosion = {
     100,                                         // baseAccuracy
     0,                                           // baseFpCost
     0,                                           // baseSpCost
-    0,                                           // superguardsAllowed
+    0,                                           // superguardType
     0.0f,                                        // field_0x14
     0,                                           // mStylishCommandMultiplier
     0,                                           // field_0x19

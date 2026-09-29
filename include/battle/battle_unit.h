@@ -332,7 +332,7 @@ typedef struct BattleUnitKindPart {
     const char* modelName;                         // 0x8
     Vec positionOffset;                            // 0xC, TODO: shorter name?
     Vec hitBaseOffset;                             // 0x18, TODO: better name?
-    Vec hitCursorBaseOffset;                       // 0x24
+    Vec hitCursorBaseOffset;                       // 0x24, copied to BattleUnitPart.mHitCursorBaseOffset
     s16 field_0x30;                                // 0x30, copied to BattleUnitPart+0x1A2
     s16 field_0x32;                                // 0x32, copied to BattleUnitPart+0x1A4
     s16 baseAlpha;                                 // 0x34
@@ -462,7 +462,7 @@ typedef struct BattleWorkHpGauge { // TODO: diff header file?
 typedef struct ItemDropData {
     ItemType type;  // 0x0
     s16 holdWeight; // 0x4, npcSetupBattleInfo picks the enemy's held item by this
-    s16 field_0x6;  // 0x6
+    s16 dropWeight; // 0x6, BattleInformationSetDropMaterial picks the dropped item by this
 } ItemDropData;
 
 // note to self: +4 is near mUnk_HpGauge at 0x1FC
