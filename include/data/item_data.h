@@ -22,3 +22,5 @@ typedef struct ItemData {
 	s16 field_0x22; //0x22
 	BattleWeapon* battle_params; //0x24
 } ItemData;
+
+extern ItemData itemDataTable[];

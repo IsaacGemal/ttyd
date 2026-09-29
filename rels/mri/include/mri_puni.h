@@ -31,3 +31,5 @@ typedef struct PuniTexInfo {
 } PuniTexInfo;
 
 USER_FUNC(evt_puni_mem_init);
+
+PuniData* puniGetPunidat(void);

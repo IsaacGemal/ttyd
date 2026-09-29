@@ -1,6 +1,6 @@
 #include "battle/battle.h"
+#include "data/item_icon_view.h"
 #include "battle/battle_sub.h"
-#include "data/item_data.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mario_pouch.h"
 #include "system.h"
@@ -22,12 +22,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-typedef struct ItemIcon {
-    u8 pad[0x20];
-    u16 icon_id;
-    u8 pad2[6];
-} ItemIcon;
-extern ItemIcon itemDataTable[];
 static USER_FUNC(_steal_item);
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[1];

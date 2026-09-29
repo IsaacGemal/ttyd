@@ -29,7 +29,6 @@
 
 #pragma force_active on
 // Functions must be emitted in the original (forward) order for the REL to link; deferred codegen reverses them.
-#pragma defer_codegen off
 static USER_FUNC(evtflash);
 
 static USER_FUNC(evtflash) {

@@ -163,7 +163,8 @@ typedef struct MarioWork {
     u8 unk160[0x168 - 0x160];      // 0x160
     s32 unk168;                    // 0x168
     s32 unk16C;                    // 0x16C
-    u8 unk170[0x180 - 0x170];      // 0x170
+    u8 unk170[0x174 - 0x170];      // 0x170
+    Vec riderDelta;                // 0x174, movement of the object Mario stands on (evt_mapgrp_translate2)
 	f32 baseSpeed;                 // 0x180, same on US
     f32 mBaseWalkSpeed;            // 0x184
     f32 mBaseDashSpeed;            // 0x188, same on US

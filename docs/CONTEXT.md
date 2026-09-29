@@ -1794,10 +1794,7 @@ unit_togenoko_ace, unit_jyugem, unit_hyper_jyugem, unit_heavy_bom, unit_kuriboo 
   undo when that header changes (wave 10 found battle_disp drops if it changes alone, so fix its users together).
 - Shared sources whose data refers to another unit's per-REL table name use `UNIT_REF_<UNIT>` with a `-D` per REL
   (`share_unit.py` does it).
-- Unsolved: the gon and mri copies of unit_kuriboo and the gon copy of unit_patakuri have the function's `0.0f` pooled
-  before the last script string (`SFX_ENM_KURI_ATTACK1`), every other REL after it. The source position of the function
-  (place_fn.py tried every top-level position), a non-static table, `pool_data` and `inline` did not change it. Those three
-  Objects stay NonMatching.
+- Solved later (see "Non-deferred REL modules"): the gon and mri copies were compiled without `-inline deferred`.
 ## Wave 18: the generated REL tables typed with existing structs (2026-09-29, Claude Opus 5.5 orchestrating, DeepSeek V4.1 Flash agents)
 
 Claude #1 launched it at Isaac's request (one wave per orchestrator); Claude #2 collected and reviewed it. 151 of the
@@ -1879,6 +1876,45 @@ unit's header on rerun.
   (bllizard's `eff_ice_barrier` needed it). All 32 checksums and the ratchet were unchanged by the flag. Also linked:
   unit_bllizard (bom, jon).
 
+## 2026-09-29 (afternoon): non-deferred REL modules, wave 17 leftovers (Claude #3)
+
+- **gon and mri compile without deferred inlining** (`-inline auto`): functions come out in source order, not reversed,
+  and a function's literals are pooled where the function sits among the scripts, so its position matters
+  (`tools/place_fn.py` finds it; run it on a module that has the right flags). This is why the gon/mri copies of
+  kuriboo, patakuri and togekuri looked different: the first ledger note called it "0.0f pooled before the last string".
+  configure.py: `cflags_rel_nodefer`, used for the whole gon and mri Rels; shared units in `common` get it per Object
+  (`cflags=[*cflags_rel_nodefer, "-i rels/common/include"]`) and a `v2/` source with the functions moved.
+  Other modules that fail with function-order or pool-order diffs may be the same (moo, hom, eki are still unexplained).
+- Shared units can have real variants: togekuri's gon copy defines `hypotf` and orders its functions differently from the
+  tik/hei copies (`v2/`), so the earlier "copies only differ in padding" held for the function-free units only.
+- **The six wave-17 units where `rel_cmp.py` said equal but the checksum failed** lost their static functions in the
+  link: the agents ended the file with `#pragma force_active off`, and with deferred inlining a function is emitted
+  after the pragma has been switched off, so its symbol has no force-active flag and the linker drops it when nothing
+  references it. `rel_cmp.py` now compares the per-symbol force-active flag of every function
+  (".comment" section, bit 0x8) and says so. Fixed by removing the trailing `off` (boss_rampell, yami_togekuri, las_21,
+  win_00, faker_mario_gra, hyper_togekuri).
+- Agent hacks found and removed while linking their units: named `const` floats standing in for pool entries (mri_04,
+  gon_12's `unusedA/unusedB`, custom_satellite's `VecData`/`double_to_int`), which existed only because the module's
+  flags were wrong; the literals are back.
+- Constant pool order follows the order of the constants in one expression (`dou_04`: writing `(1.5f * a - 1.5f) +
+  (0.7f * b - 0.7f)` in one line pools 1.5 before 0.7 while the calls still run b first).
+- `tools/adopt_agent.py` brings an agent's scratch directory into the tree; `tools/rel_diff.py` shows where a built REL
+  first differs from the original; `tools/copy_fns.py`, `tools/place_fn.py` as above.
+- Linked in this pass: unit_togekuri (gon, tik, hei), kuriboo (all 12), patakuri (all 3), bubble, hermos, phantom, teresa,
+  jyugem/hyper_jyugem earlier, wave 17's 6 above plus badge_borodo, borodo_king, barriern_custom_satellite, boss_kanbu3,
+  dou_04, gon_06, gon_12, mri_04, mri_08, hei_01. Written but not matching: wanwan/burst_wanwan (chain_init, chain_main at
+  99.8%/99.7%: the first two loads swap r4/r5), ice_pakkun (`shadow_scale_return/small`: the argument setup for
+  `intplGetValue` schedules differently, same as battle_seq_end.c), hammer_bros (helper functions inline unless wrapped in
+  `#pragma dont_inline`; two of three at 88-89%). Still open in wave 17: eki_03/hom_00 (`test_glare`, `sun_tev`, `tokei`),
+  moo_03/moo_04 (`mario_kirimomi`), mri_13, mri_16 (`ss_check` 86.9%).
+- Review fixes for #34: `vivian_comeback` is static and returns EVT_RETURN_YIELD (no header, no `cats` pragma); the
+  `ItemIcon` view of `itemDataTable` (the steal-item functions load `icon_id` with `lhz`; ItemData has it as s16, and
+  changing it drops `btlUnitItemDisp` from 91.6% to 82.9% because its dead `(f32)BtlUnit_GetHeight` statement stops
+  compiling like the target) lives once, in `include/data/item_icon_view.h`; `MarioWork.riderDelta` (+0x174) is named;
+  agent pragmas (`opt_propagation`, `opt_common_subs`, `fp_contract`, `defer_codegen`) were removed where the literal
+  and index-assignment forms above make them unnecessary; NONMATCHING labels added to the unlinked units. The
+  `mri_puni:evt_make_texbuf` -0.01 (64.86 -> 64.85) is a side effect of compiling mri without deferral; that unit is still
+  NonMatching.
 ## Wave 20: the battle structs completed, and the tables typed by a renderer instead of agents (2026-09-29, Claude Opus 5.5)
 
 Isaac's go, via Claude #1: complete the battle structs, then type the ~2,000 raw `u32` tables (the generators' `// TODO: type`)
