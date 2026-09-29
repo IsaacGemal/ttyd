@@ -1,10 +1,11 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
 #pragma force_active on
 static u32 regist[6];
-static u32 data_table[2];
+static BattleDataEntry data_table[1];
 static u32 parts[19];
 static s32 init_event[9];
 static s32 wait_event[6];
@@ -61,17 +62,18 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[14] = {
-    0x0000001C, (u32)"S_1", 0x0000001F, (u32)"S_1",
-    0x00000027, (u32)"D_1", 0x0000002A, (u32)"R_1",
-    0x00000028, (u32)"W_1", 0x00000041, (u32)"T_1",
-    0x00000045, (u32)"S_1",
+static BattleDispPose pose_table[7] = {
+    { 0x0000001C, "S_1" },
+    { 0x0000001F, "S_1" },
+    { 0x00000027, "D_1" },
+    { 0x0000002A, "R_1" },
+    { 0x00000028, "W_1" },
+    { 0x00000041, "T_1" },
+    { 0x00000045, "S_1" },
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0x00000000, NULL },
 };
 
 // TODO: type

@@ -40,16 +40,9 @@ static EVT_BEGIN(check_roll)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[30] = {
-    (u32)"s_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, (u32)&check_roll, (u32)"jin_00", (u32)"n_bero_1",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"s_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, check_roll, "jin_00", "n_bero_1", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(item_box_00)

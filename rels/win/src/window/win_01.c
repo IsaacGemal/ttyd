@@ -62,31 +62,13 @@ EVT_BEGIN(evt_dokan1)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[90] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"win_00", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"win_02", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, (u32)"dokan1", 0x00020000,
-    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, (u32)&evt_dokan1, 0x00000006, 0x00000000,
-    0x00000000, (u32)"dokan_2", 0x00010001, 0x00000000,
-    0x00000000, (u32)"dokan_2", 0x10020000, 0x00000009,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0x00000006, 0x00000000, 0x00000000,
-    (u32)"dokan1", 0x00010001, 0x00000000, 0x00000000,
-    (u32)"n_bero", 0x10000000, 0x00000002, 0x000000F8,
-    0x0000002C, 0xFFFFFE3E, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"mri_00", (u32)"w_bero",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "win_00", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "win_02", "w_bero", 1, 1},
+    {"dokan1", 2, 0, 9, 100000, 0, 0, -1, evt_dokan1, 6, NULL, NULL, "dokan_2", 1, 1},
+    {"dokan_2", 0x1002, 0, 9, 100000, 0, 0, -1, NULL, 6, NULL, NULL, "dokan1", 1, 1},
+    {"n_bero", 0x1000, 0, 2, 248, 44, -450, -1, NULL, -1, NULL, "mri_00", "w_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(guide_bigtree)
@@ -262,16 +244,12 @@ EVT_BEGIN(ki_data_evt_03)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 tree_access_data[30] = {
-    0x00000004, (u32)"A_tree_01", (u32)"S_tree_mki_01", (u32)"S_tree_ha01",
-    0x00000000, 0x00000000, 0x00000004, (u32)"A_tree_02",
-    (u32)"S_tree_mki_02", (u32)"S_tree_ha02", 0x00000000, 0x00000000,
-    0x00000004, (u32)"A_tree_03", (u32)"S_tree_mki_03", (u32)"S_tree_ha03",
-    0x00000000, (u32)&ki_data_evt_03, 0x00000004, (u32)"A_tree_04",
-    (u32)"S_tree_mki_04", (u32)"S_tree_ha04", 0x00000000, 0x00000000,
-    0x00000007, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static TreeAccessEntry tree_access_data[] = {
+    {4, "A_tree_01", "S_tree_mki_01", "S_tree_ha01", NULL, NULL},
+    {4, "A_tree_02", "S_tree_mki_02", "S_tree_ha02", NULL, NULL},
+    {4, "A_tree_03", "S_tree_mki_03", "S_tree_ha03", NULL, ki_data_evt_03},
+    {4, "A_tree_04", "S_tree_mki_04", "S_tree_ha04", NULL, NULL},
+    {7},
 };
 
 EVT_BEGIN(win_01_init_evt)

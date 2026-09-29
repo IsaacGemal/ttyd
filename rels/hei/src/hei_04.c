@@ -29,20 +29,10 @@ extend_data(21,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[45] = {
-    (u32)"w_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"hei_03", (u32)"e_bero",
-    0x00010001, 0x00000000, 0x00000000, (u32)"e_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"hei_05", (u32)"w_bero", 0x00010001,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_03", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "hei_05", "w_bero", 1, 1},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_ki_3)
@@ -53,14 +43,11 @@ static EVT_BEGIN(evt_ki_3)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ki_data[24] = {
-    0x00000000, (u32)"a_ki_1", (u32)"miki_1", (u32)"ha_temae",
-    (u32)"ha_usiro", 0x00000000, 0x00000000, (u32)"a_ki_2",
-    (u32)"miki_2", (u32)"ha_temae_2", (u32)"ha_usiro_2", 0x00000000,
-    0x00000000, (u32)"a_ki_3", (u32)"miki_3", (u32)"ha_temae_3",
-    (u32)"ha_usiro_3", (u32)&evt_ki_3, 0x00000007, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static TreeAccessEntry ki_data[] = {
+    {0, "a_ki_1", "miki_1", "ha_temae", "ha_usiro", NULL},
+    {0, "a_ki_2", "miki_2", "ha_temae_2", "ha_usiro_2", NULL},
+    {0, "a_ki_3", "miki_3", "ha_temae_3", "ha_usiro_3", evt_ki_3},
+    {7},
 };
 
 EVT_BEGIN(evt_kusa_11)
@@ -79,20 +66,19 @@ EVT_BEGIN(evt_kusa_12)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 kusa_data[48] = {
-    0x00000000, (u32)"a_kusa_1", (u32)"kusa_1", 0x00000000,
-    0x00000000, (u32)"a_kusa_2", (u32)"kusa_2", 0x00000000,
-    0x00000000, (u32)"a_kusa_3", (u32)"kusa_3", 0x00000000,
-    0x00000000, (u32)"a_kusa_4", (u32)"kusa_4", 0x00000000,
-    0x00000000, (u32)"a_kisa_5", (u32)"kusa_5", 0x00000000,
-    0x00000000, (u32)"a_kusa_6", (u32)"kusa_6", 0x00000000,
-    0x00000000, (u32)"a_kusa_7", (u32)"kusa_7", 0x00000000,
-    0x00000000, (u32)"a_kusa_9", (u32)"kusa_9", 0x00000000,
-    0x00000000, (u32)"a_kusa_10", (u32)"kusa_10", 0x00000000,
-    0x00000000, (u32)"a_kusa_11", (u32)"kusa_11", (u32)&evt_kusa_11,
-    0x00000000, (u32)"a_kusa_12", (u32)"kusa_12", (u32)&evt_kusa_12,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry kusa_data[] = {
+    {0, "a_kusa_1", "kusa_1", NULL},
+    {0, "a_kusa_2", "kusa_2", NULL},
+    {0, "a_kusa_3", "kusa_3", NULL},
+    {0, "a_kusa_4", "kusa_4", NULL},
+    {0, "a_kisa_5", "kusa_5", NULL},
+    {0, "a_kusa_6", "kusa_6", NULL},
+    {0, "a_kusa_7", "kusa_7", NULL},
+    {0, "a_kusa_9", "kusa_9", NULL},
+    {0, "a_kusa_10", "kusa_10", NULL},
+    {0, "a_kusa_11", "kusa_11", evt_kusa_11},
+    {0, "a_kusa_12", "kusa_12", evt_kusa_12},
+    {4},
 };
 
 EVT_BEGIN(hei_04_init_evt)

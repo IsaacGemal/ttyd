@@ -1,4 +1,6 @@
+#include "battle/battle_stage_object.h"
 #include "battle/battle_weapon_power.h"
+#include "driver/npcdrv.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
@@ -35,16 +37,12 @@ extend_data(29,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 win_btlobject_data[30] = {
-    (u32)"A1", 0x00020000, 0x42B80000, 0x00000000,
-    0xC2380000, 0x003C0000, (u32)"S_hana", 0x00020001,
-    0x40000000, 0x00000000, 0xC2380000, 0x003C0000,
-    (u32)"S_kusa", 0x00020001, 0x40000000, 0x00000000,
-    0x42800000, 0x003C0000, (u32)"B", 0x00020002,
-    0x00000000, 0x00000000, 0x00000000, 0x003C0000,
-    (u32)"C", 0x00020003, 0x00000000, 0x00000000,
-    0x00000000, 0x003C0000,
+BattleStageObjectData win_btlobject_data[5] = {
+    { "A1",     0x0002, 0x0000, { 92.0f, 0.0f, -46.0f }, 0, 0x3C, { 0x00, 0x00 } },
+    { "S_hana", 0x0002, 0x0001, {  2.0f, 0.0f, -46.0f }, 0, 0x3C, { 0x00, 0x00 } },
+    { "S_kusa", 0x0002, 0x0001, {  2.0f, 0.0f,  64.0f }, 0, 0x3C, { 0x00, 0x00 } },
+    { "B",      0x0002, 0x0002, {  0.0f, 0.0f,   0.0f }, 0, 0x3C, { 0x00, 0x00 } },
+    { "C",      0x0002, 0x0003, {  0.0f, 0.0f,   0.0f }, 0, 0x3C, { 0x00, 0x00 } },
 };
 
 // TODO: type
@@ -505,95 +503,85 @@ u32 btlgrp_win_win_03_01_on_4[8] = {
     0x00000032, (u32)battle_heart_drop_param_default, (u32)battle_flower_drop_param_default2, 0x00000005,
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_test1_off[6] = {
-    0x00000032, (u32)&btlgrp_win_win_00_01_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_test1_off[2] = {
+    { 0x32, (BattleGroupSetup*)&btlgrp_win_win_00_01_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_01_on[12] = {
-    0x00000014, (u32)&btlgrp_win_win_00_01_on_1, (u32)&win_btlstage_data, 0x00000014,
-    (u32)&btlgrp_win_win_00_01_on_2, (u32)&win_btlstage_data, 0x0000000A, (u32)&btlgrp_win_win_00_01_on_3,
-    (u32)&win_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_01_on[4] = {
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_01_on_1, (s32)&win_btlstage_data },
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_01_on_2, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_00_01_on_3, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_00_01_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_01_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_00_01_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_02_on[9] = {
-    0x00000014, (u32)&btlgrp_win_win_00_02_on_1, (u32)&win_btlstage_data, 0x00000014,
-    (u32)&btlgrp_win_win_00_02_on_2, (u32)&win_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_02_on[3] = {
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_02_on_1, (s32)&win_btlstage_data },
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_02_on_2, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_00_02_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_02_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_00_02_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_03_on[9] = {
-    0x00000014, (u32)&btlgrp_win_win_00_03_on_1, (u32)&win_btlstage_data, 0x00000014,
-    (u32)&btlgrp_win_win_00_03_on_2, (u32)&win_btlstage_data, 0x00000000, 0x00000000,
-    0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_03_on[3] = {
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_03_on_1, (s32)&win_btlstage_data },
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_00_03_on_2, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_03_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_00_03_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_03_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_00_03_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_00_04_off[6] = {
-    0x00000032, (u32)&btlgrp_win_win_00_04_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_00_04_off[2] = {
+    { 0x32, (BattleGroupSetup*)&btlgrp_win_win_00_04_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_02_01_on[12] = {
-    0x00000014, (u32)&btlgrp_win_win_02_01_on_1, (u32)&win_btlstage_data, 0x00000014,
-    (u32)&btlgrp_win_win_02_01_on_2, (u32)&win_btlstage_data, 0x0000000A, (u32)&btlgrp_win_win_02_01_on_3,
-    (u32)&win_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_02_01_on[4] = {
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_02_01_on_1, (s32)&win_btlstage_data },
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_02_01_on_2, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_02_01_on_3, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_02_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_02_01_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_02_01_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_02_01_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_02_02_on[12] = {
-    0x00000014, (u32)&btlgrp_win_win_02_02_on_1, (u32)&win_btlstage_data, 0x00000014,
-    (u32)&btlgrp_win_win_02_02_on_2, (u32)&win_btlstage_data, 0x0000000A, (u32)&btlgrp_win_win_02_02_on_3,
-    (u32)&win_btlstage_data, 0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_02_02_on[4] = {
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_02_02_on_1, (s32)&win_btlstage_data },
+    { 0x14, (BattleGroupSetup*)&btlgrp_win_win_02_02_on_2, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_02_02_on_3, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_02_02_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_02_02_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_02_02_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_02_02_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_03_01_on[15] = {
-    0x0000000A, (u32)&btlgrp_win_win_03_01_on_1, (u32)&win_btlstage_data, 0x0000000A,
-    (u32)&btlgrp_win_win_03_01_on_2, (u32)&win_btlstage_data, 0x0000000A, (u32)&btlgrp_win_win_03_01_on_3,
-    (u32)&win_btlstage_data, 0x0000000A, (u32)&btlgrp_win_win_03_01_on_4, (u32)&win_btlstage_data,
-    0x00000000, 0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_03_01_on[5] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_03_01_on_1, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_03_01_on_2, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_03_01_on_3, (s32)&win_btlstage_data },
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_03_01_on_4, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
-// TODO: type
-u32 btlgrpsel_win_btlno_win_03_01_off[6] = {
-    0x0000000A, (u32)&btlgrp_win_win_03_01_off_1, (u32)&win_btlstage_data, 0x00000000,
-    0x00000000, 0x00000000,
+NpcBattleSetupEntry btlgrpsel_win_btlno_win_03_01_off[2] = {
+    { 0x0A, (BattleGroupSetup*)&btlgrp_win_win_03_01_off_1, (s32)&win_btlstage_data },
+    { 0x00, 0, 0 },
 };
 
 // TODO: type

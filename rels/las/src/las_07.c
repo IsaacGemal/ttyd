@@ -102,27 +102,12 @@ static EVT_BEGIN(door_matigai_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"w_bero_1", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, (u32)&door_matigai_evt,
-    0xFFFFFFFF, 0x00000000, (u32)"las_06", (u32)"e_bero",
-    0x00050005, (u32)&w1_door_close, (u32)&w1_door_open, (u32)"e_bero_1",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, (u32)&door_matigai_evt, 0xFFFFFFFF,
-    0x00000000, (u32)"las_08", (u32)"w_bero_1", 0x00050005,
-    (u32)&e1_door_close, (u32)&e1_door_open, (u32)"w_bero_2", 0x00010006,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, (u32)&door_matigai_evt, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_08", (u32)"e_bero_2", 0x00050005, (u32)&w2_door_close,
-    (u32)&w2_door_open, (u32)"e_bero_2", 0x00010006, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    (u32)&door_matigai_evt, 0xFFFFFFFF, 0x00000000, (u32)"las_08",
-    (u32)"w_bero_2", 0x00050005, (u32)&e2_door_close, (u32)&e2_door_open,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_06", "e_bero", 5, 5, (s32)w1_door_close, (s32)w1_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_1", 5, 5, (s32)e1_door_close, (s32)e1_door_open},
+    {"w_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "e_bero_2", 5, 5, (s32)w2_door_close, (s32)w2_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, door_matigai_evt, -1, NULL, "las_08", "w_bero_2", 5, 5, (s32)e2_door_close, (s32)e2_door_open},
+    {NULL},
 };
 
 EVT_BEGIN(las_07_init_evt)

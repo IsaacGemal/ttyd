@@ -92,23 +92,11 @@ EVT_BEGIN(gra_06_ido_in)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[60] = {
-    (u32)"n_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"jin_00", (u32)"w_bero",
-    0x00050005, (u32)&ne_close, (u32)&ne_open, (u32)"sw_bero",
-    0x00000000, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"gra_05", (u32)"e_bero", 0x00010001,
-    0x00000000, 0x00000000, (u32)"ana", 0x0F000000,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, (u32)&gra_06_ido_in, 0x00000000, (u32)&gra_06_ido,
-    (u32)"jin_09", 0x00000000, 0x00040004, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"n_bero", 1, 6, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "jin_00", "w_bero", 5, 5, (s32)&ne_close, (s32)&ne_open},
+    {"sw_bero", 0, 0, 0x4E20, 0x186A0, 0, 0, -1, NULL, -1, NULL, "gra_05", "e_bero", 1, 1, 0, 0},
+    {"ana", 0x0F00, 0, 0x4E20, 0x186A0, 0, 0, -1, gra_06_ido_in, 0, gra_06_ido, "jin_09", NULL, 4, 4, 0, 0},
+    {NULL},
 };
 
 EVT_BEGIN(gra_06_saku_open)

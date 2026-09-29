@@ -81,35 +81,16 @@ static EVT_BEGIN(e2_door_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[75] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_23", (u32)"e_bero_1",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open, (u32)"e_bero_1",
-    0x00010006, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"las_26", (u32)"w_bero", 0x00050005,
-    (u32)&e1_door_close, (u32)&e1_door_open, (u32)"e_bero_2", 0x00010006,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"las_27", (u32)"w_bero", 0x00050005, (u32)&e2_door_close,
-    (u32)&e2_door_open, (u32)"n_bero_1", 0x00000000, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"las_24",
-    (u32)"s_bero_2", 0x00010001, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_1", 5, 5, (s32)w_door_close, (s32)w_door_open},
+    {"e_bero_1", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_26", "w_bero", 5, 5, (s32)e1_door_close, (s32)e1_door_open},
+    {"e_bero_2", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_27", "w_bero", 5, 5, (s32)e2_door_close, (s32)e2_door_open},
+    {"n_bero_1", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_24", "s_bero_2", 1, 1, 0, 0},
+    {NULL},
 };
 
-// TODO: type
-static u32 w_bero_mapchg[15] = {
-    (u32)"w_bero", 0x00010006, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"las_23", (u32)"e_bero_2",
-    0x00050005, (u32)&w_door_close, (u32)&w_door_open,
+static BeroEntry w_bero_mapchg[] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_23", "e_bero_2", 5, 5, (s32)w_door_close, (s32)w_door_open},
 };
 
 // TODO: type

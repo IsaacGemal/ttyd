@@ -106,23 +106,13 @@ EVT_BEGIN(evt_in)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[60] = {
-    (u32)"n_bero", 0x00010004, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"tou_04", (u32)"s_bero_2",
-    0x00050005, (u32)&n_door_close, (u32)&n_door_open, (u32)"dokan",
-    0x00020000, 0x00000009, 0x000186A0, 0x00000000,
-    0x00000000, 0x00000064, (u32)&toile_in, 0x00000006,
-    (u32)&toile_out, (u32)"tou_04", (u32)"toire", 0x00010001,
-    0x00000000, 0x00000000, (u32)"a_door_9_omote", 0x00010010,
-    0x00000006, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, (u32)&evt_in, 0xFFFFFFFF, 0x00000000,
-    (u32)"tou_11", (u32)"e_bero", 0x00050005, (u32)&w_door_close,
-    (u32)&w_door_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data[] = {
+    {"n_bero", 1, 4, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tou_04", "s_bero_2", 5, 5,
+     (s32)n_door_close, (s32)n_door_open},
+    {"dokan", 2, 0, 9, 100000, 0, 0, 100, toile_in, 6, toile_out, "tou_04", "toire", 1, 1, 0, 0},
+    {"a_door_9_omote", 1, 0x10, 6, 100000, 0, 0, -1, evt_in, -1, NULL, "tou_11", "e_bero", 5, 5,
+     (s32)w_door_close, (s32)w_door_open},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_toile)
