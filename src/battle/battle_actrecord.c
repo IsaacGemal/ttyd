@@ -1,72 +1,61 @@
 #include "battle/battle_actrecord.h"
 
-// dont_inline keeps these helpers out of the Judge functions: retail emits a real `bl` at each call.
-#pragma dont_inline on
-u8 _check_turn_count_0_end(s32 flag) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
-    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
+void BtlActRec_AddCount(void* p) {
+    if (*(u8*)p < 100) {
+        *(u8*)p += 1;
+    }
+}
 
-    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
-        if (flag == 0) {
-            rec[0x19] = 2;
+void BtlActRec_AddPoint(void* p, u8 value) {
+    *(u8*)p += value;
+    if (*(u8*)p > 100) {
+        *(u8*)p = 100;
+    }
+}
+
+#define WP(i) (f[(i) - 0x1C])
+
+void BtlActRec_JudgeTurnRuleKeep(void) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* f = wp->field_16F1C;
+    u8* rec = (u8*)wp->fbatInfo;
+    u8 cond = rec[0x18];
+
+    switch (cond) {
+    case 0x3C:
+    case 0x3D:
+    case 0x3E: {
+        s32 sum;
+
+        if (cond == 0x3E) {
+            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x37) + WP(0x39) + WP(0x3A) + WP(0x27) + WP(0x28) + WP(0x2A) + WP(0x34) + WP(0x36) + WP(0x38);
+        } else if (cond == 0x3C) {
+            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x37);
         } else {
-            rec[0x19] = 1;
+            sum = WP(0x39) + WP(0x3A) + WP(0x27) + WP(0x28) + WP(0x2A) + WP(0x34) + WP(0x36) + WP(0x38);
         }
+        _check_turn_count_0_turn(sum);
+        break;
     }
-    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
-        if (flag == 0) {
-            rec[0x19] = 6;
-        } else if (!(rec[0x19] & 2)) {
-            rec[0x19] = 1;
-        }
-    }
-    return rec[0x19];
-}
+    case 0x3F:
+    case 0x40:
+    case 0x41: {
+        s32 sum;
 
-u8 _check_turn_count_0_turn(s32 flag) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
-    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
-
-    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
-        if (flag == 0) {
-            rec[0x19] = 2;
+        if (cond == 0x41) {
+            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x25) + WP(0x39) + WP(0x27);
+        } else if (cond == 0x3F) {
+            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x25);
         } else {
-            rec[0x19] = 1;
+            sum = WP(0x39) + WP(0x27);
         }
+        _check_turn_count_0_turn(sum);
+        break;
     }
-    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
-        if (flag == 0) {
-            rec[0x19] = 6;
-        } else if (!(rec[0x19] & 2)) {
-            rec[0x19] = 1;
-        }
     }
-    return rec[0x19];
 }
 
-s32 _check_no_use(s32 arg) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
-
-    if (arg >= rec[0x1B]) {
-        return 1;
-    }
-    return (arg >= rec[0x1A]) ? 2 : 6;
-}
-
-s32 _check_use(s32 arg) {
-    BattleWork* wp = _battleWorkPointer;
-    u8* rec = (u8*)wp->fbatInfo;
-
-    if (arg >= rec[0x1A]) {
-        return 6;
-    }
-    return (arg >= rec[0x1B]) + 1;
-}
-#pragma dont_inline reset
-
+#undef WP
 
 #define WP(i) (f[(i) - 0x1C])
 
@@ -333,59 +322,69 @@ void BtlActRec_JudgeRuleKeep(void) {
 
 #undef WP
 
-#define WP(i) (f[(i) - 0x1C])
-
-void BtlActRec_JudgeTurnRuleKeep(void) {
+// dont_inline keeps these helpers out of the Judge functions: retail emits a real `bl` at each call.
+#pragma dont_inline on
+s32 _check_use(s32 arg) {
     BattleWork* wp = _battleWorkPointer;
-    u8* f = wp->field_16F1C;
     u8* rec = (u8*)wp->fbatInfo;
-    u8 cond = rec[0x18];
 
-    switch (cond) {
-    case 0x3C:
-    case 0x3D:
-    case 0x3E: {
-        s32 sum;
+    if (arg >= rec[0x1A]) {
+        return 6;
+    }
+    return (arg >= rec[0x1B]) + 1;
+}
 
-        if (cond == 0x3E) {
-            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x37) + WP(0x39) + WP(0x3A) + WP(0x27) + WP(0x28) + WP(0x2A) + WP(0x34) + WP(0x36) + WP(0x38);
-        } else if (cond == 0x3C) {
-            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x1F) + WP(0x25) + WP(0x26) + WP(0x29) + WP(0x33) + WP(0x35) + WP(0x37);
+s32 _check_no_use(s32 arg) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* rec = (u8*)wp->fbatInfo;
+
+    if (arg >= rec[0x1B]) {
+        return 1;
+    }
+    return (arg >= rec[0x1A]) ? 2 : 6;
+}
+
+u8 _check_turn_count_0_turn(s32 flag) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* rec = (u8*)wp->fbatInfo;
+    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
+
+    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
+        if (flag == 0) {
+            rec[0x19] = 2;
         } else {
-            sum = WP(0x39) + WP(0x3A) + WP(0x27) + WP(0x28) + WP(0x2A) + WP(0x34) + WP(0x36) + WP(0x38);
+            rec[0x19] = 1;
         }
-        _check_turn_count_0_turn(sum);
-        break;
     }
-    case 0x3F:
-    case 0x40:
-    case 0x41: {
-        s32 sum;
+    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
+        if (flag == 0) {
+            rec[0x19] = 6;
+        } else if (!(rec[0x19] & 2)) {
+            rec[0x19] = 1;
+        }
+    }
+    return rec[0x19];
+}
 
-        if (cond == 0x41) {
-            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x25) + WP(0x39) + WP(0x27);
-        } else if (cond == 0x3F) {
-            sum = WP(0x1C) + WP(0x1D) + WP(0x1E) + WP(0x25);
+u8 _check_turn_count_0_end(s32 flag) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* rec = (u8*)wp->fbatInfo;
+    u8* turn = &wp->field_16F1C[0x3B - 0x1C];
+
+    if (*turn <= rec[0x1B] || rec[0x1B] == 0xFF) {
+        if (flag == 0) {
+            rec[0x19] = 2;
         } else {
-            sum = WP(0x39) + WP(0x27);
+            rec[0x19] = 1;
         }
-        _check_turn_count_0_turn(sum);
-        break;
     }
+    if (*turn <= rec[0x1A] || rec[0x1A] == 0xFF) {
+        if (flag == 0) {
+            rec[0x19] = 6;
+        } else if (!(rec[0x19] & 2)) {
+            rec[0x19] = 1;
+        }
     }
+    return rec[0x19];
 }
-
-#undef WP
-
-void BtlActRec_AddPoint(void* p, u8 value) {
-    *(u8*)p += value;
-    if (*(u8*)p > 100) {
-        *(u8*)p = 100;
-    }
-}
-
-void BtlActRec_AddCount(void* p) {
-    if (*(u8*)p < 100) {
-        *(u8*)p += 1;
-    }
-}
+#pragma dont_inline reset
