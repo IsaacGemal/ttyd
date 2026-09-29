@@ -414,6 +414,8 @@ if HDR_ADD:
                     if h != _hp and re.search(rf'(\}}\s*{tname}\s*;|typedef\s+struct\s+\w*\s+{tname}\s*;|typedef\s+enum\s+\w*\s*\{{[^}}]*\}}\s*{tname}\s*;)', t):
                         _incs.append(h[8:])
                         break
+        if any('USER_FUNC' in d or 'EVT_DEF' in d for d in _new):
+            _incs.append('evt/evt_cmd.h')
         _incs = [i for i in dict.fromkeys(_incs) if f'#include "{i}"' not in _ht]
         if _incs and '#pragma once' in _ht:
             _ht = _ht.replace('#pragma once\n', '#pragma once\n' + ''.join(f'\n#include "{i}"' for i in _incs) + '\n', 1)
