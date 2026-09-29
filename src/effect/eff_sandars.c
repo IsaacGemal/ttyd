@@ -12,13 +12,19 @@
 
 // .sdata2 constants (definitions live in the retail object, referenced by name).
 extern const u32 dat_80421b98;
-extern const volatile u32 dat_80421b9c;
+// MUST_MATCH: volatile forces the per-vertex reloads the original has; the objects aren't volatile.
+#ifdef MUST_MATCH
+#define MATCH_VOLATILE volatile
+#else
+#define MATCH_VOLATILE
+#endif
+extern const MATCH_VOLATILE u32 dat_80421b9c;
 extern const f32 float_deg2rad_80421ba0;
 extern const f32 float_32_80421ba4;
 extern const f32 float_0p5_80421ba8;
 extern const f32 float_16_80421bac;
-extern const volatile f32 float_0_80421bb0;
-extern const volatile f32 float_1_80421bb4;
+extern const MATCH_VOLATILE f32 float_0_80421bb0;
+extern const MATCH_VOLATILE f32 float_1_80421bb4;
 extern const f32 float_4_80421bb8;
 extern const f32 float_100_80421bbc;
 const char str_80421BC0[] = "Z_1";
@@ -110,6 +116,7 @@ void effSandarsDisp2(CameraId camId, void* param) {
 	posSize = float_16_80421bac;
 	negSize = -float_32_80421ba4 * float_0p5_80421ba8;
 #else
+	deg = float_deg2rad_80421ba0;
 	posSize = 16.0f;
 	negSize = -16.0f;
 #endif

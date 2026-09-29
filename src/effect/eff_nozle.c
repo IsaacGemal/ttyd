@@ -64,6 +64,24 @@ extern const f32 float_20_8042126c;
 extern const u32 unk_80423300;
 
 extern u8 lbl_803AE260[];
+// The original reaches this file's tables from its .data section anchor, lbl_803AE260.
+#ifdef MUST_MATCH
+#define DATA_AT(off, sym) (base + (off))
+#else
+extern u8 nozle_1_vertex_tbl[];
+extern u8 nozle_1_texcoord0_tbl[];
+extern u8 nozle_1_texcoord1_tbl[];
+extern u8 nozle_3_vertex_tbl[];
+extern u8 nozle_3_color0_tbl[];
+extern u8 nozle_3_texcoord0_tbl[];
+extern u8 nozle_3_texcoord1_tbl[];
+extern u8 nozle_3_dl_1_tbl[];
+extern u8 nozle_3_dl_0_tbl[];
+extern u8 nozle_4_vertex_tbl[];
+extern u8 nozle_4_texcoord0_tbl[];
+extern u8 nozle_4_texcoord1_tbl[];
+#define DATA_AT(off, sym) ((u8*)(sym))
+#endif
 __declspec(section ".sdata") extern u8* nozle_1_dl_0_tbl[];
 __declspec(section ".sdata") extern u8 nozle_1_dl_0_size_tbl[];
 __declspec(section ".sdata") extern u8* nozle_1_dl_1_tbl[];
@@ -90,7 +108,7 @@ static u8 scale_dt[] = {
 	0x6F, 0x56, 0x6B, 0x53, 0x67, 0x51, 0x65, 0x50, 0x64, 0x00, 0x00,
 };
 
-// NONMATCHING (98.33%): the entry-table fill loop's counter is allocated to r6 instead of the
+// NONMATCHING (99.37%): the entry-table fill loop's counter is allocated to r6 instead of the
 // target's r8, and the int->float pool stores are scheduled in a different order.
 EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX, f32 rotY) {
 	EffectEntry* effect;
@@ -147,9 +165,9 @@ EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX
 	entry = data->entries;
 	for (i = 1; i < effect->count; i++) {
 		dir = (i & 1) ? -1 : 1;
-		entry->field_0x04 = (f32)i;
+		entry->field_0x04 = (f32)(dir * 400);
 		entry->field_0x08 = float_0_80421234;
-		entry->field_0x0C = float_20_8042126c * (f32)(dir * 400);
+		entry->field_0x0C = float_20_8042126c * (f32)i;
 		entry->field_0x10 = (f32)((i & 1) ? 1 : -1);
 		entry->field_0x14 = float_1_80421238;
 		entry->field_0x1C = float_0_80421234;
@@ -320,7 +338,7 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 2);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, base + 0x40, 6);
+		GXSetArray(9, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
 		GXSetVtxDesc(0xA, 2);
 		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
 		GXSetArray(0xA, nozle_1_normal_tbl, 3);
@@ -329,17 +347,17 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetArray(0xB, nozle_1_color0_tbl, 4);
 		GXSetVtxDesc(0xD, 2);
 		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, base + 0x200, 4);
+		GXSetArray(0xD, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
 		GXSetVtxDesc(0xE, 2);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, base + 0x2E0, 4);
+		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		for (j = 0; j < 10; j++) {
 			GXCallDisplayList(nozle_1_dl_0_tbl[j], nozle_1_dl_0_size_tbl[j] << 5);
 		}
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 2);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, base + 0x40, 6);
+		GXSetArray(9, DATA_AT(0x40, nozle_1_vertex_tbl), 6);
 		GXSetVtxDesc(0xA, 2);
 		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
 		GXSetArray(0xA, nozle_1_normal_tbl, 3);
@@ -348,10 +366,10 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXSetArray(0xB, nozle_1_color0_tbl, 4);
 		GXSetVtxDesc(0xD, 2);
 		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, base + 0x200, 4);
+		GXSetArray(0xD, DATA_AT(0x200, nozle_1_texcoord0_tbl), 4);
 		GXSetVtxDesc(0xE, 2);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, base + 0x2E0, 4);
+		GXSetArray(0xE, DATA_AT(0x2E0, nozle_1_texcoord1_tbl), 4);
 		for (j = 0; j < 10; j++) {
 			GXCallDisplayList(nozle_1_dl_1_tbl[j], nozle_1_dl_1_size_tbl[j] << 5);
 		}
@@ -360,40 +378,40 @@ void effNozleDisp(CameraId camId, void* param) {
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 3);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, base + 0x640, 6);
+		GXSetArray(9, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
 		GXSetVtxDesc(0xA, 3);
 		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
 		GXSetArray(0xA, nozle_3_normal_tbl, 3);
 		GXSetVtxDesc(0xB, 3);
 		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, base + 0xBC0, 4);
+		GXSetArray(0xB, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
 		GXSetVtxDesc(0xD, 3);
 		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, base + 0x8C0, 4);
+		GXSetArray(0xD, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
 		GXSetVtxDesc(0xE, 3);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, base + 0xA40, 4);
+		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		for (j = 0; j < 0x11; j++) {
-			GXCallDisplayList(((u8**)(base + 0x1820))[j], nozle_3_dl_1_size_tbl[j] << 5);
+			GXCallDisplayList(((u8**)(DATA_AT(0x1820, nozle_3_dl_1_tbl)))[j], nozle_3_dl_1_size_tbl[j] << 5);
 		}
 		GXClearVtxDesc();
 		GXSetVtxDesc(9, 3);
 		GXSetVtxAttrFmt(0, 9, 1, 3, 7);
-		GXSetArray(9, base + 0x640, 6);
+		GXSetArray(9, DATA_AT(0x640, nozle_3_vertex_tbl), 6);
 		GXSetVtxDesc(0xA, 3);
 		GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
 		GXSetArray(0xA, nozle_3_normal_tbl, 3);
 		GXSetVtxDesc(0xB, 3);
 		GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-		GXSetArray(0xB, base + 0xBC0, 4);
+		GXSetArray(0xB, DATA_AT(0xBC0, nozle_3_color0_tbl), 4);
 		GXSetVtxDesc(0xD, 3);
 		GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xE);
-		GXSetArray(0xD, base + 0x8C0, 4);
+		GXSetArray(0xD, DATA_AT(0x8C0, nozle_3_texcoord0_tbl), 4);
 		GXSetVtxDesc(0xE, 3);
 		GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xE);
-		GXSetArray(0xE, base + 0xA40, 4);
+		GXSetArray(0xE, DATA_AT(0xA40, nozle_3_texcoord1_tbl), 4);
 		for (j = 0; j < 0x11; j++) {
-			GXCallDisplayList(((u8**)(base + 0x1200))[j], nozle_3_dl_0_size_tbl[j] << 5);
+			GXCallDisplayList(((u8**)(DATA_AT(0x1200, nozle_3_dl_0_tbl)))[j], nozle_3_dl_0_size_tbl[j] << 5);
 		}
 		break;
 	case 3:
@@ -416,7 +434,7 @@ void effNozleDisp(CameraId camId, void* param) {
 			GXClearVtxDesc();
 			GXSetVtxDesc(9, 2);
 			GXSetVtxAttrFmt(0, 9, 1, 3, 6);
-			GXSetArray(9, base + 0x1880, 6);
+			GXSetArray(9, DATA_AT(0x1880, nozle_4_vertex_tbl), 6);
 			GXSetVtxDesc(0xA, 2);
 			GXSetVtxAttrFmt(0, 0xA, 0, 1, 6);
 			GXSetArray(0xA, nozle_4_normal_tbl, 3);
@@ -425,10 +443,10 @@ void effNozleDisp(CameraId camId, void* param) {
 			GXSetArray(0xB, nozle_4_color0_tbl, 4);
 			GXSetVtxDesc(0xD, 2);
 			GXSetVtxAttrFmt(0, 0xD, 1, 3, 0xD);
-			GXSetArray(0xD, base + 0x1940, 4);
+			GXSetArray(0xD, DATA_AT(0x1940, nozle_4_texcoord0_tbl), 4);
 			GXSetVtxDesc(0xE, 2);
 			GXSetVtxAttrFmt(0, 0xE, 1, 3, 0xD);
-			GXSetArray(0xE, base + 0x19C0, 4);
+			GXSetArray(0xE, DATA_AT(0x19C0, nozle_4_texcoord1_tbl), 4);
 			for (j = 0; j < 8; j++) {
 				GXCallDisplayList(nozle_4_dl_0_tbl[j], nozle_4_dl_0_size_tbl[j] << 5);
 			}

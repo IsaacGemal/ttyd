@@ -13,6 +13,15 @@ extern const Vec vec3_803006c0;
 extern const GXColor dat_80421f00;
 extern const GXColor dat_80421f04;
 extern u8 lbl_803B4860[];
+// The original reaches this file's tables from its .data section anchor, lbl_803B4860.
+#ifdef MUST_MATCH
+#define DATA_AT(off, sym) (base + (off))
+#else
+extern u8 ibuki_vertex_tbl[];
+extern u8 ibuki_texcoord0_tbl[];
+extern u8 ibuki_texcoord1_tbl[];
+#define DATA_AT(off, sym) ((u8*)(sym))
+#endif
 extern const f32 float_0_80421f08;
 extern const f32 float_0p5_80421f18;
 extern const f32 float_8_80421f1c;
@@ -43,7 +52,7 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 const f64 double_to_int_803006d0 = 4503601774854144.0;
 const char str_80421F48[] = "Ibuki";
 
-// NONMATCHING (95.31%): whole body present; callee-saved register allocation differs (fewer regs, 0x120
+// NONMATCHING (95.27%): whole body present; callee-saved register allocation differs (fewer regs, 0x120
 // frame vs 0x130), float constants land in a different FPR order, folded int->float magic is an @N.
 void effIbukiDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
@@ -107,9 +116,9 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	camera = camGetPtr(cameraId);
 	PSMTXRotRad(rot, 'y', float_deg2rad_80421f10 * -camera->viewYaw);
 	if (data->type != 0) {
-		PSMTXScale(scale, data->scale, data->scale, data->scale);
-	} else {
 		PSMTXScale(scale, -data->scale, data->scale, data->scale);
+	} else {
+		PSMTXScale(scale, data->scale, data->scale, data->scale);
 	}
 	PSMTXConcat(mtx, rot, out);
 	PSMTXConcat(out, scale, out);
@@ -123,7 +132,7 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 6);
-	GXSetArray(GX_VA_POS, base + 0x40, 6);
+	GXSetArray(GX_VA_POS, DATA_AT(0x40, ibuki_vertex_tbl), 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
 	GXSetArray(GX_VA_NRM, ibuki_normal_tbl, 3);
@@ -132,10 +141,10 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 	GXSetArray(GX_VA_CLR0, ibuki_color0_tbl, 4);
 	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xe);
-	GXSetArray(GX_VA_TEX0, base + 0xa0, 4);
+	GXSetArray(GX_VA_TEX0, DATA_AT(0xa0, ibuki_texcoord0_tbl), 4);
 	GXSetVtxDesc(GX_VA_TEX1, GX_INDEX8);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_S16, 0xe);
-	GXSetArray(GX_VA_TEX1, base + 0xe0, 4);
+	GXSetArray(GX_VA_TEX1, DATA_AT(0xe0, ibuki_texcoord1_tbl), 4);
 	for (i = 0; i < 4u; i++) {
 		GXCallDisplayList(ibuki_dl_0_tbl[i], ibuki_dl_0_size_tbl[i] << 5);
 	}

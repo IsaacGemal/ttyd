@@ -49,6 +49,13 @@ const char str_80421108[] = "Z_1";
 const char str_802FE658[0xC] = "EFF_sango";
 const char str_802FE664[0xC] = "MObjBroken";
 
+// The volatile read only steers MWCC's scheduling of the polynomial seeds.
+#ifdef MUST_MATCH
+#define MATCH_RELOAD(x) (*(volatile f32*)&(x))
+#else
+#define MATCH_RELOAD(x) (x)
+#endif
+
 static void rendermodeFunc(s32 wXluStage) {
 	AnimationWork* wp = animGetPtr();
 
@@ -198,7 +205,7 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (92.49%): frame 0xc0 vs 0xb0 (forcing the polynomial constants into live locals
+// NONMATCHING (93.74%): frame 0xc0 vs 0xb0 (forcing the polynomial constants into live locals
 // hoists them like retail, and the `d` interpolation temp fixes the fmuls operand order, but
 // the compiler also keeps float_0p00761/float_0p03705 live so it saves one extra FPR), the
 // `disp` zero-init still fuses to lwzu instead of retail's three lwz + three stw, and the
@@ -250,7 +257,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		}
 		{
 			f32 angle = float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8;
-			f32 s = *(volatile f32*)&float_0p00761_8042110c;
+			f32 s = MATCH_RELOAD(float_0p00761_8042110c);
 			f32 t;
 			f32 t2;
 
@@ -289,7 +296,7 @@ void effMObjBrokenMain(EffectEntry* effect) {
 		}
 		{
 			f32 angle = float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8;
-			f32 c = *(volatile f32*)&float_0p03705_80421120;
+			f32 c = MATCH_RELOAD(float_0p03705_80421120);
 			f32 t;
 			f32 t2;
 

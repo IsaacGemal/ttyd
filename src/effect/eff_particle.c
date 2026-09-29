@@ -85,8 +85,6 @@ u32 hibana_col[] = {
 u32 seed = 1;
 
 // .sbss
-static s32 use_last;
-static f32 y2;
 
 #define particle_fpclassify(x) __fpclassifyf(x)
 #define particle_isnan(x) (particle_fpclassify(x) == FP_NAN)
@@ -340,6 +338,8 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 
 // NONMATCHING (89.48%): the inline sqrtf u32->f32 mask is pooled after the sqrtf doubles (retail pools it before the string); several FP register assignments differ.
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
+	static s32 use_last;
+	static f32 y2;
 	ParticleWork* work = effect->userdata;
 	f32 random;
 	f32 x;

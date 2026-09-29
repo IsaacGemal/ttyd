@@ -55,7 +55,7 @@ static u8 a_data2[12] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 };
 
-// NONMATCHING (92.02%): the GX setup, matrix order and quad draw match. The original reloads the named
+// NONMATCHING (92.09%): logic checked against the asm in review. The original reloads the named
 // .sdata2 float constants (float_0/float_1) for each vertex while MWCC reuses the loaded registers, and a
 // few GX call fronts differ in scheduling; the rest are register-number operands.
 void effSparkDisp(CameraId camId, void* param) {
@@ -111,7 +111,7 @@ void effSparkDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtxTrans, mtxRot, mtxParticle);
 		PSMTXConcat(mtxParticle, mtxScale, mtxParticle);
 		PSMTXConcat(mtxGlobal, mtxParticle, mtxParticle);
-		PSMTXConcat(mtxParticle, cam->view, mtxParticle);
+		PSMTXConcat(cam->view, mtxParticle, mtxParticle);
 		GXLoadPosMtxImm(mtxParticle, 0);
 		GXSetCurrentMtx(0);
 

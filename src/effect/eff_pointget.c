@@ -103,7 +103,7 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// NONMATCHING (97.22%): all logic and GX calls match. We save f21-f31/r25-r31,
+// NONMATCHING (97.35%): all logic and GX calls match. We save f21-f31/r25-r31,
 // the original f19-f31/r26-r31 (frame 0x1c0 vs 0x1e0); one inner-loop bound uses
 // cmpw vs cmplw. The .sdata2 pool and mtx offsets (0xb8/0x88/0x58) match.
 void effPointGetDisp(CameraId camId, void* param) {
@@ -183,7 +183,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 		{
 			s32 j;
 
-			for (j = 0; j < (s32)strlen(buf); j++) {
+			for (j = 0; j < strlen(buf); j++) {
 			{
 				f32 t = f24 * (f32)j + f27;
 				PSMTXTrans(mtxB8, ox + t, nx, 0.0f);

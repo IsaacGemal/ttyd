@@ -39,6 +39,14 @@ extern const GXColor dat_80421b48;
 extern const GXColor dat_80421b4c;
 extern const GXColor dat_80421b50;
 
+// ItemData.icon_id is read unsigned (lhz) in the original; the header's s16 is kept because other files'
+// matches depend on it.
+#ifdef MUST_MATCH
+#define ICON_ID(field) (*(u16*)&(field))
+#else
+#define ICON_ID(field) ((u16)(field))
+#endif
+
 EVT_BEGIN(sound_evt)
 CALL(evt_snd_sfxon_3d, STRING("SFX_ITEM_WHAT3"), LW(0), LW(1), LW(2), 0)
 WAIT_MS(0x341)
@@ -69,7 +77,7 @@ void effNanigaDisp3(CameraId camId, void* param) {
 		iconDispGxCol(mtx, 0, 0x184, dat_80421b4c);
 	}
 	else {
-		iconDispGxCol(mtx, 0, *(u16*)&item->icon_id, dat_80421b50);
+		iconDispGxCol(mtx, 0, ICON_ID(item->icon_id), dat_80421b50);
 	}
 }
 
@@ -165,7 +173,7 @@ void effNanigaDisp(CameraId camId, void* param) {
 	GXTexCoord2f32(0.0f, 1.0f);
 
 	for (i = 0; i < data->count + 5; i++) {
-		(*(void (*)(GXTexObj*, u16))iconGetTexObj)(&tex, *(u16*)&itemDataTable[data->itemList[i % data->count]].icon_id);
+		iconGetTexObj(&tex, ICON_ID(itemDataTable[data->itemList[i % data->count]].icon_id));
 		GXLoadTexObj(&tex, 0);
 		PSMTXTrans(mtx, 0.0f, data->field_0x34 + float_neg40_80421b78 * (f32)i, 0.0f);
 		PSMTXScale(scale, 0.9f, 0.9f, 0.9f);
@@ -200,8 +208,8 @@ inline Vec initializeVec(Vec* input) {
 
 
 
-// NONMATCHING (95.26%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
-// the compiler's state-dispatch decision tree shape, and register allocation.
+// NONMATCHING (96.35%): remaining diffs are .rodata layout (the zero-Vec/double/string pool offsets),
+// the compiler's switch layout, and register allocation.
 void effNanigaMain(EffectEntry* effect) {
 	effNanigaData* data = effect->userdata;
 	BOOL inBattle;
@@ -345,11 +353,22 @@ void effNanigaMain(EffectEntry* effect) {
 		data->field_0x34 -= float_40_80421b6c * (f32)data->count;
 	}
 
-	if ((data->state >= 2 && data->state < 6) || data->state == 10) {
+	switch (data->state) {
+	case 2:
+	case 3:
+	case 4:
+	case 5:
+	case 10:
 		dispEntry(CAMERA_2D, dispCalcZ(&vec), 1, effNanigaDisp, effect);
-	}
-	else if (data->state != 11 || animPoseGetLoopTimes(data->poseId) >= float_0p8_80421b90) {
-		dispEntry(CAMERA_3D, dispCalcZ(&vec), 1, effNanigaDisp3, effect);
+		break;
+	case 0:
+	case 1:
+		break;
+	default:
+		if (data->state != 11 || !(animPoseGetLoopTimes(data->poseId) < float_0p8_80421b90)) {
+			dispEntry(CAMERA_3D, dispCalcZ(&vec), 1, effNanigaDisp3, effect);
+		}
+		break;
 	}
 	if (data->poseId != -1) {
 		dispEntry(CAMERA_3D, dispCalcZ(&vec), 2, effNanigaDisp2, effect);

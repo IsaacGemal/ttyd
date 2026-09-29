@@ -36,7 +36,7 @@ const Vec vec3_802fe908 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fe918 = 4503601774854144.0;
 const char str_8042150C[] = "Mist";
 
-// NONMATCHING (97.7%): instruction sequence and data match; only GPR/FPR register numbers differ
+// NONMATCHING (97.68%): instruction sequence and data match; only GPR/FPR register numbers differ
 // and the compiler emits the int->float magic constant as an anonymous @240 instead of
 // double_to_int_802fe918 (known pool-naming limitation).
 void effMistDisp(CameraId cameraId, void* param) {
@@ -113,7 +113,7 @@ void effMistDisp(CameraId cameraId, void* param) {
 	}
 }
 
-// NONMATCHING (95.6%): register allocation and the Vec setup instruction schedule differ; the
+// NONMATCHING (95.64%): register allocation and the Vec setup instruction schedule differ; the
 // int->float magic constant is @240 instead of double_to_int_802fe918 (known pool-naming limitation).
 void effMistMain(EffectEntry* effect) {
 	MistWork* work = effect->userdata;
@@ -186,7 +186,7 @@ void effMistMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMistDisp, effect);
 }
 
-// NONMATCHING (94.6%): register allocation differs, the int->float magic constant is @240 instead
+// NONMATCHING (98.59%): register allocation differs, the int->float magic constant is @240 instead
 // of double_to_int_802fe918, and the generated jump table symbol is anonymous (known pool-naming
 // limitation).
 EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {

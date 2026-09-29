@@ -40,6 +40,7 @@ extern const f32 float_0p25_8041e2e0;
 extern const f32 float_0p1_8041e2e4;
 
 // .text:0x0 | 0x8018DB2C | size: 0x45C
+// NONMATCHING (99.53%): same instructions; only register numbers or operands differ.
 void effUpdownDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	u8 alpha;
@@ -199,6 +200,7 @@ static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 
 }
 
 // .text:0x644 | 0x8018E170 | size: 0x1D8
+// NONMATCHING (89.14%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
 void effUpdownMain(EffectEntry* effect) {
 	EffUpdownWork* work = effect->userdata;
 	s32 type;

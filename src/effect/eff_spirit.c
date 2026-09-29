@@ -10,7 +10,7 @@
 
 // .rodata
 const Vec vec3_80301320 = { 0.0f, 0.0f, 0.0f };
-static const f64 double_to_int_80301330 = 4503601774854144.0;
+const f64 double_to_int_80301330 = 4503601774854144.0;
 const char str_80301338[] = "Spirit";
 
 // .sdata2

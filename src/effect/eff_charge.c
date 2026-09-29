@@ -138,7 +138,7 @@ void effChargeDisp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (96.26%): register allocation only. The s32->f32 conversion uses a TU-local pool copy of
+// NONMATCHING (97.17%): register allocation only. The s32->f32 conversion uses a TU-local pool copy of
 // double_to_int_802f8e70, which costs one register and shifts the trig/loop register sets.
 void effChargeMain(EffectEntry* effect) {
     ChargeEffectData* data = effect->userdata;
@@ -194,7 +194,7 @@ void effChargeMain(EffectEntry* effect) {
             data->alpha = 0xff;
         }
         data->scale = float_0p2_8041e318 + data->radius / float_80_8041e31c;
-        data->radius -= (f32)(i + i + 2);
+        data->radius -= (f32)((i & 3) * 2 + 2);
         if (data->radius < float_0_8041e2f0) {
             data->radius = float_0_8041e2f0;
             data->scale = float_0_8041e2f0;

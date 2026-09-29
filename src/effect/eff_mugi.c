@@ -17,6 +17,7 @@ const Vec vec3_802f34a4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f34b0 = { 0.0f, 0.0f, 0.0f };
 const char str_802F34BC[12] = "EFF_Hana";
 const char str_802F34C8[12] = "EFF_Mugi";
+// dtk padding labels, defined only to reproduce the original's .rodata alignment.
 const char gap_04_802F34D4_rodata[4] = { 0 };
 const f64 double_0p005_802f34d8 = 0.005;
 const char str_802F34E0[12] = "MugiKemuri2";
@@ -119,12 +120,13 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 	}
 }
 
-// NONMATCHING (84.27%): the pos/disp Vec pair is coalesced instead of copied,
+// NONMATCHING (86.15%): the pos/disp Vec pair is coalesced instead of copied,
 // the rodata strings are addressed directly instead of base+0x24/0x30, and the
 // work pointer/FPR allocation differs.
 void effMugiKemuri2Main(EffectEntry* effect) {
 	MugiKemuriWork* work = effect->userdata;
 	MugiKemuriWork* w;
+	MarioWork* mario;
 	Vec disp;
 	Vec pos;
 	s32 i;
@@ -173,7 +175,8 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 			continue;
 		}
 		anyActive = TRUE;
-		if (w->type == 0 && w->speed != float_0_8041ca74 && marioGetPtr()->currMotionId == 0) {
+		mario = marioGetPtr();
+		if (w->type == 0 && w->speed != float_0_8041ca74 && mario->currMotionId == 0) {
 			w->lifetime++;
 			continue;
 		}

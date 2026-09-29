@@ -27,6 +27,8 @@ const Vec vec3_802ffa0c = {0.0f, 0.0f, 0.0f};
 const char str_802FFA18[] = "SFX_ITEM_SLEEP1";
 const char str_802FFA28[] = "SFX_ITEM_SLEEP2";
 const char str_802FFA38[] = "EFF_hituji";
+// The original has this in .rodata; const moves it there but drops the unit's matched data (65% -> 0%)
+// until the rest of its .rodata is defined.
 f64 double_to_int_802ffa48 = 4503601774854144.0;
 const char str_80421950[] = "A_1";
 const char str_80421964[] = "sheep";
@@ -60,7 +62,7 @@ void effSheepDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (95.74%): the whole state machine matches; the remaining diffs are register numbers
+// NONMATCHING (95.18%): the whole state machine matches; the remaining diffs are register numbers
 // (p/sfx1/sfx2 are r30/r28/r29 instead of r28/r30/r29) and a few float temporaries in the type==1 block.
 void effSheepMain(EffectEntry* effect) {
 	EffSheepWork* p;
@@ -72,7 +74,7 @@ void effSheepMain(EffectEntry* effect) {
 	Vec soundPos2;
 	Vec soundPos3;
 	s32 i;
-	s32 living;
+	s32 living = 0;
 	s32 inBattle;
 
 	pos = vec3_802ff9e8;
