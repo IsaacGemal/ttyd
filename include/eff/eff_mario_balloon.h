@@ -4,6 +4,7 @@ typedef struct EffectEntry EffectEntry;
 typedef struct NpcEntry NpcEntry;
 
 #include <dolphin/types.h>
+#include "driver/camdrv.h"
 EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc);
 // Work data behind EffectEntry->userdata for the Mario balloon effect.
 typedef struct EffMarioBalloonData {
@@ -16,3 +17,5 @@ typedef struct EffMarioBalloonData {
 	NpcEntry* npc;   // 0x18
 	s32 cameraId;    // 0x1C
 } EffMarioBalloonData;
+void effMarioBalloonMain(EffectEntry* effect);
+void effMarioBalloonDisp(CameraId camId, void* param);

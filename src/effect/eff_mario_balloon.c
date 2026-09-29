@@ -41,6 +41,58 @@ extern BALLOON_CONST f32 float_0p8_8041ca64;
 // .rodata (defined at the bottom of this file).
 extern BALLOON_CONST Vec vec3_802f3478;
 extern const char str_802F3484[];
+EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc) {
+	EffectEntry* entry;
+	EffMarioBalloonData* data;
+
+	entry = effEntry();
+	entry->type = str_802F3484;
+	entry->count = 1;
+	data = __memAlloc(3, entry->count << 5);
+	entry->userdata = data;
+	entry->callback = effMarioBalloonMain;
+	data->type = type;
+	data->angle = float_0_8041ca38;
+	data->npc = npc;
+	data->cameraId = 4;
+	switch (type) {
+		case 0:
+			data->scale = float_0p4_8041ca60;
+			break;
+		case 1:
+			data->scale = float_0p8_8041ca64;
+			break;
+	}
+	return entry;
+}
+
+void effMarioBalloonMain(EffectEntry* effect) {
+	EffMarioBalloonData* data = effect->userdata;
+	MarioWork* mario;
+	NpcEntry* npc;
+
+	npc = data->npc;
+	if (npc == NULL) {
+		mario = marioGetPtr();
+		data->x = mario->position.x;
+		data->y = mario->position.y + mario->wPlayerCollisionBox.y + float_10_8041ca58;
+		data->z = mario->position.z;
+	} else {
+		data->x = npc->position.x;
+		data->y = npc->position.y + npc->height + float_10_8041ca58;
+		data->z = npc->position.z;
+	}
+
+	data->angle += float_4_8041ca5c;
+	{
+		Vec pos = vec3_802f3478;
+
+		pos.x = data->x;
+		pos.y = data->y;
+		pos.z = data->z;
+		dispEntry(data->cameraId, dispCalcZ(&pos), 8, effMarioBalloonDisp, effect);
+	}
+}
 
 void effMarioBalloonDisp(CameraId camId, void* param) {
 	EffMarioBalloonData* data = ((EffectEntry*)param)->userdata;
@@ -222,59 +274,28 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 	}
 }
 
-void effMarioBalloonMain(EffectEntry* effect) {
-	EffMarioBalloonData* data = effect->userdata;
-	MarioWork* mario;
-	NpcEntry* npc;
-
-	npc = data->npc;
-	if (npc == NULL) {
-		mario = marioGetPtr();
-		data->x = mario->position.x;
-		data->y = mario->position.y + mario->wPlayerCollisionBox.y + float_10_8041ca58;
-		data->z = mario->position.z;
-	} else {
-		data->x = npc->position.x;
-		data->y = npc->position.y + npc->height + float_10_8041ca58;
-		data->z = npc->position.z;
-	}
-
-	data->angle += float_4_8041ca5c;
-	{
-		Vec pos = vec3_802f3478;
-
-		pos.x = data->x;
-		pos.y = data->y;
-		pos.z = data->z;
-		dispEntry(data->cameraId, dispCalcZ(&pos), 8, effMarioBalloonDisp, effect);
-	}
-}
-
-EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc) {
-	EffectEntry* entry;
-	EffMarioBalloonData* data;
-
-	entry = effEntry();
-	entry->type = str_802F3484;
-	entry->count = 1;
-	data = __memAlloc(3, entry->count << 5);
-	entry->userdata = data;
-	entry->callback = effMarioBalloonMain;
-	data->type = type;
-	data->angle = float_0_8041ca38;
-	data->npc = npc;
-	data->cameraId = 4;
-	switch (type) {
-		case 0:
-			data->scale = float_0p4_8041ca60;
-			break;
-		case 1:
-			data->scale = float_0p8_8041ca64;
-			break;
-	}
-	return entry;
-}
-
 // .rodata
 BALLOON_CONST Vec vec3_802f3478 = { 0.0f, 0.0f, 0.0f };
 const char str_802F3484[] = "MarioBalloon";
+
+// .sdata2
+BALLOON_CONST GXColor dat_8041ca18 = { 0xFF, 0xFF, 0xFF, 0xFF };
+BALLOON_CONST GXColor dat_8041ca1c = { 0xA0, 0xA0, 0xA0, 0xFF };
+BALLOON_CONST GXColor dat_8041ca20 = { 0xFF, 0xFF, 0xFF, 0xFF };
+BALLOON_CONST GXColor dat_8041ca24 = { 0xA0, 0xA0, 0xA0, 0xFF };
+BALLOON_CONST f32 float_deg2rad_8041ca28 = 0.017453292f;
+BALLOON_CONST f32 float_0p7_8041ca2c = 0.7f;
+BALLOON_CONST f32 float_1_8041ca30 = 1.0f;
+BALLOON_CONST f32 float_neg1_8041ca34 = -1.0f;
+BALLOON_CONST f32 float_0_8041ca38 = 0.0f;
+BALLOON_CONST f32 float_neg16_8041ca3c = -16.0f;
+BALLOON_CONST f32 float_64_8041ca40 = 64.0f;
+BALLOON_CONST f32 float_16_8041ca44 = 16.0f;
+BALLOON_CONST f32 float_2_8041ca48 = 2.0f;
+BALLOON_CONST f32 float_neg20_8041ca4c = -20.0f;
+BALLOON_CONST f32 float_32_8041ca50 = 32.0f;
+BALLOON_CONST f32 float_20_8041ca54 = 20.0f;
+BALLOON_CONST f32 float_10_8041ca58 = 10.0f;
+BALLOON_CONST f32 float_4_8041ca5c = 4.0f;
+BALLOON_CONST f32 float_0p4_8041ca60 = 0.4f;
+BALLOON_CONST f32 float_0p8_8041ca64 = 0.8f;

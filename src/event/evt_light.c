@@ -13,6 +13,76 @@
 const Vec vec3_802f3148 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802f3154 = {0.0f, 0.0f, 0.0f};
 
+USER_FUNC(evt_light_charalight_all_onoff) {
+	s32* args = event->args;
+	LightEntry* entry;
+	s32 i;
+
+	if (evtGetValue(event, args[0]) != 0) {
+		for (i = 0; i < lightGetEntryNum(); i++) {
+			entry = lightNumberToPtr(i);
+			entry->flags |= LIGHT_CHARA;
+		}
+	} else {
+		for (i = 0; i < lightGetEntryNum(); i++) {
+			entry = lightNumberToPtr(i);
+			entry->flags &= ~LIGHT_CHARA;
+		}
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_light_mario_lighting_onoff) {
+	s32* args = event->args;
+	MarioWork* mario;
+	s32 onoff;
+
+	onoff = evtGetValue(event, args[0]);
+	mario = marioGetPtr();
+	if (onoff != 0) {
+		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[0], 2);
+		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[1], 2);
+		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[2], 2);
+	} else {
+		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[0], 2);
+		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[1], 2);
+		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[2], 2);
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_light_party_lighting_onoff) {
+	s32* args = event->args;
+	PartyEntry* party;
+	s32 onoff;
+
+	onoff = evtGetValue(event, args[0]);
+	party = partyGetPtr(marioGetPartyId());
+	if (onoff != 0) {
+		animPoseSetMaterialLightFlagOn(party->paperAnimGroup, 2);
+	} else {
+		animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 2);
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_light_npc_lighting_onoff) {
+	s32* args = event->args;
+	NpcEntry* npc;
+	s32 onoff;
+	s32 name;
+
+	onoff = evtGetValue(event, args[0]);
+	name = evtGetValue(event, args[1]);
+	npc = npcNameToPtr((const char*)name);
+	if (onoff != 0) {
+		animPoseSetMaterialLightFlagOn(npc->poseId, 2);
+	} else {
+		animPoseSetMaterialLightFlagOff(npc->poseId, 2);
+	}
+	return EVT_RETURN_DONE;
+}
+
 USER_FUNC(evt_light_bind_mapobj) {
 	s32* args = event->args;
 	LightEntry* light;
@@ -53,74 +123,4 @@ USER_FUNC(evt_light_bind_mapobj) {
 	PSMTXMultVec(mapObj->modelWorldMtx, &v, &v);
 	PSVECAdd(&v, &pos, &light->position);
 	return EVT_RETURN_BLOCK;
-}
-
-USER_FUNC(evt_light_npc_lighting_onoff) {
-	s32* args = event->args;
-	NpcEntry* npc;
-	s32 onoff;
-	s32 name;
-
-	onoff = evtGetValue(event, args[0]);
-	name = evtGetValue(event, args[1]);
-	npc = npcNameToPtr((const char*)name);
-	if (onoff != 0) {
-		animPoseSetMaterialLightFlagOn(npc->poseId, 2);
-	} else {
-		animPoseSetMaterialLightFlagOff(npc->poseId, 2);
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_light_party_lighting_onoff) {
-	s32* args = event->args;
-	PartyEntry* party;
-	s32 onoff;
-
-	onoff = evtGetValue(event, args[0]);
-	party = partyGetPtr(marioGetPartyId());
-	if (onoff != 0) {
-		animPoseSetMaterialLightFlagOn(party->paperAnimGroup, 2);
-	} else {
-		animPoseSetMaterialLightFlagOff(party->paperAnimGroup, 2);
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_light_mario_lighting_onoff) {
-	s32* args = event->args;
-	MarioWork* mario;
-	s32 onoff;
-
-	onoff = evtGetValue(event, args[0]);
-	mario = marioGetPtr();
-	if (onoff != 0) {
-		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[0], 2);
-		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[1], 2);
-		animPoseSetMaterialLightFlagOn(mario->paperAnimGroupId[2], 2);
-	} else {
-		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[0], 2);
-		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[1], 2);
-		animPoseSetMaterialLightFlagOff(mario->paperAnimGroupId[2], 2);
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_light_charalight_all_onoff) {
-	s32* args = event->args;
-	LightEntry* entry;
-	s32 i;
-
-	if (evtGetValue(event, args[0]) != 0) {
-		for (i = 0; i < lightGetEntryNum(); i++) {
-			entry = lightNumberToPtr(i);
-			entry->flags |= LIGHT_CHARA;
-		}
-	} else {
-		for (i = 0; i < lightGetEntryNum(); i++) {
-			entry = lightNumberToPtr(i);
-			entry->flags &= ~LIGHT_CHARA;
-		}
-	}
-	return EVT_RETURN_DONE;
 }

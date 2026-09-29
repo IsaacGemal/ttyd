@@ -16,97 +16,97 @@ static OffscreenWork work[2]; //field, battle
 
 //local prototypes
 
-s32 offscreenGetBoundingBox_BeforeFrame(s32 id, u16* left, u16* top, u16* right, u16* bottom) {
-	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
-
-	if (!(entry->flags & 1)) {
-		return 0;
-	}
-	if (entry->prevLeft > entry->prevRight) {
-		return 0;
-	}
-	*left = entry->prevLeft;
-	*top = entry->prevTop;
-	*right = entry->prevRight;
-	*bottom = entry->prevBottom;
-	return 1;
+void offscreenInit(void) { //1:1
+	OffscreenWork* wp;
+	wp = offscreenGetWork(0);
+	wp->count = 10;
+	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(OffscreenEntry));
+	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
+	wp = offscreenGetWork(1);
+	wp->count = 10;
+	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(OffscreenEntry));
+	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
 }
 
-void offscreenDelete(const char* name) {
+void offscreenReset(BOOL inBattle) { //1:1
+	OffscreenWork* wp = offscreenGetWork(inBattle);
+	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
+}
+
+s32 offscreenEntry(const char* name) { //1:1, needs variable names
 	OffscreenWork* wp = offscreenGetWorkGp();
 	int i, count;
 	OffscreenEntry* entry;
 
+	//check if already created
 	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
 		if (entry->flags & 1 && !strcmp(entry->name, name)) {
 			break;
 		}
 	}
-	entry->flags = 0;
-}
 
-OffscreenEntry* offscreenNameToPtr(const char* name) {
-	OffscreenWork* wp = offscreenGetWorkGp();
-	int i, count;
-	OffscreenEntry* entry;
-
-	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
-		if (entry->flags & 1 && !strcmp(entry->name, name)) {
-			break;
-		}
+	//find new slot
+	for (i = 0, entry = wp->entries; i < count; i++, entry++) {
+		if (!(entry->flags & 1)) break;
 	}
-	return entry;
-}
 
-s32 offscreenNameToId(const char* name) {
-	OffscreenWork* wp = offscreenGetWorkGp();
-	int i, count;
-	OffscreenEntry* entry;
-
-	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
-		if (entry->flags & 1 && !strcmp(entry->name, name)) {
-			break;
-		}
-	}
+	entry->flags = 1;
+	strcpy(entry->name, name);
+	entry->currLeft = 1020;
+	entry->currTop = 1020;
+	entry->currRight = 2;
+	entry->currBottom = 2;
+	entry->prevLeft = 1020;
+	entry->prevTop = 2;
+	entry->prevRight = 2;
+	entry->prevBottom = 2;
+	entry->unk3C = 5;
+	entry->unk40 = 5;
 	return i;
 }
 
-void offscreenGetTexObj(s32 id, GXTexObj** texObj, smartEntry** image) {
-	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
+void offscreenDisp(CameraId camId, void* param) {
+	OffscreenWork* wp = offscreenGetWorkGp();
+	int i, count;
+	OffscreenEntry* entry;
+	u16 width, height;
 
-	if (!(entry->flags & 1)) {
-		*texObj = NULL;
-		*image = NULL;
-		return;
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1 && entry->flags & 2) {
+			width = entry->currRight - entry->currLeft;
+			height = entry->currBottom - entry->currTop;
+			GXSetTexCopySrc(entry->currLeft, entry->currTop, width, height);
+			GXSetTexCopyDst(width, height, entry->unk3C, GX_FALSE);
+			entry->image = smartAlloc(GXGetTexBufferSize(width, height, entry->unk3C, GX_FALSE, 0), 3);
+			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+			GXCopyTex(entry->image->address, GX_TRUE);
+			GXPixModeSync();
+			GXInitTexObj(&entry->texObj, entry->image->address, width, height, entry->unk40, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			entry->flags |= 4;
+		}
 	}
-	if (!(entry->flags & 2)) {
-		*texObj = NULL;
-		*image = NULL;
-		return;
-	}
-	if (!(entry->flags & 4)) {
-		*texObj = NULL;
-		*image = NULL;
-		return;
-	}
-	*texObj = &entry->texObj;
-	*image = entry->image;
 }
 
-s32 offscreenGetBoundingBox(s32 id, u16* left, u16* top, u16* right, u16* bottom) {
-	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
+void offscreenMain(void) { //1:1, need variable names
+	OffscreenWork* wp = offscreenGetWorkGp();
+	int i, count;
+	OffscreenEntry* entry;
 
-	if (!(entry->flags & 1)) {
-		return 0;
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1) {
+			entry->flags &= ~2;
+			entry->flags &= ~4;
+			entry->prevLeft = entry->currLeft;
+			entry->prevTop = entry->currTop;
+			entry->prevRight = entry->currRight;
+			entry->prevBottom = entry->currBottom;
+			entry->currLeft = 1020;
+			entry->currTop = 1020;
+			entry->currRight = 2;
+			entry->currBottom = 2;
+		}
 	}
-	if (!(entry->flags & 2)) {
-		return 0;
-	}
-	*left = entry->currLeft;
-	*top = entry->currTop;
-	*right = entry->currRight;
-	*bottom = entry->currBottom;
-	return 1;
+	dispEntry(CAMERA_OFFSCREEN2, 0.0f, 7, offscreenDisp, NULL);
 }
 
 void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom) { //1:1
@@ -151,95 +151,95 @@ void offscreenAddBoundingBox(s32 id, u16 left, u16 top, u16 right, u16 bottom) {
 	}
 }
 
-void offscreenMain(void) { //1:1, need variable names
-	OffscreenWork* wp = offscreenGetWorkGp();
-	int i, count;
-	OffscreenEntry* entry;
+s32 offscreenGetBoundingBox(s32 id, u16* left, u16* top, u16* right, u16* bottom) {
+	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
 
-	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
-		if (entry->flags & 1) {
-			entry->flags &= ~2;
-			entry->flags &= ~4;
-			entry->prevLeft = entry->currLeft;
-			entry->prevTop = entry->currTop;
-			entry->prevRight = entry->currRight;
-			entry->prevBottom = entry->currBottom;
-			entry->currLeft = 1020;
-			entry->currTop = 1020;
-			entry->currRight = 2;
-			entry->currBottom = 2;
-		}
+	if (!(entry->flags & 1)) {
+		return 0;
 	}
-	dispEntry(CAMERA_OFFSCREEN2, 0.0f, 7, offscreenDisp, NULL);
+	if (!(entry->flags & 2)) {
+		return 0;
+	}
+	*left = entry->currLeft;
+	*top = entry->currTop;
+	*right = entry->currRight;
+	*bottom = entry->currBottom;
+	return 1;
 }
 
-void offscreenDisp(CameraId camId, void* param) {
-	OffscreenWork* wp = offscreenGetWorkGp();
-	int i, count;
-	OffscreenEntry* entry;
-	u16 width, height;
+void offscreenGetTexObj(s32 id, GXTexObj** texObj, smartEntry** image) {
+	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
 
-	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
-		if (entry->flags & 1 && entry->flags & 2) {
-			width = entry->currRight - entry->currLeft;
-			height = entry->currBottom - entry->currTop;
-			GXSetTexCopySrc(entry->currLeft, entry->currTop, width, height);
-			GXSetTexCopyDst(width, height, entry->unk3C, GX_FALSE);
-			entry->image = smartAlloc(GXGetTexBufferSize(width, height, entry->unk3C, GX_FALSE, 0), 3);
-			GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
-			GXCopyTex(entry->image->address, GX_TRUE);
-			GXPixModeSync();
-			GXInitTexObj(&entry->texObj, entry->image->address, width, height, entry->unk40, GX_CLAMP, GX_CLAMP, GX_FALSE);
-			entry->flags |= 4;
-		}
+	if (!(entry->flags & 1)) {
+		*texObj = NULL;
+		*image = NULL;
+		return;
 	}
+	if (!(entry->flags & 2)) {
+		*texObj = NULL;
+		*image = NULL;
+		return;
+	}
+	if (!(entry->flags & 4)) {
+		*texObj = NULL;
+		*image = NULL;
+		return;
+	}
+	*texObj = &entry->texObj;
+	*image = entry->image;
 }
 
-s32 offscreenEntry(const char* name) { //1:1, needs variable names
+s32 offscreenNameToId(const char* name) {
 	OffscreenWork* wp = offscreenGetWorkGp();
 	int i, count;
 	OffscreenEntry* entry;
 
-	//check if already created
 	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
 		if (entry->flags & 1 && !strcmp(entry->name, name)) {
 			break;
 		}
 	}
-
-	//find new slot
-	for (i = 0, entry = wp->entries; i < count; i++, entry++) {
-		if (!(entry->flags & 1)) break;
-	}
-
-	entry->flags = 1;
-	strcpy(entry->name, name);
-	entry->currLeft = 1020;
-	entry->currTop = 1020;
-	entry->currRight = 2;
-	entry->currBottom = 2;
-	entry->prevLeft = 1020;
-	entry->prevTop = 2;
-	entry->prevRight = 2;
-	entry->prevBottom = 2;
-	entry->unk3C = 5;
-	entry->unk40 = 5;
 	return i;
 }
 
-void offscreenReset(BOOL inBattle) { //1:1
-	OffscreenWork* wp = offscreenGetWork(inBattle);
-	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
+OffscreenEntry* offscreenNameToPtr(const char* name) {
+	OffscreenWork* wp = offscreenGetWorkGp();
+	int i, count;
+	OffscreenEntry* entry;
+
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1 && !strcmp(entry->name, name)) {
+			break;
+		}
+	}
+	return entry;
 }
 
-void offscreenInit(void) { //1:1
-	OffscreenWork* wp;
-	wp = offscreenGetWork(0);
-	wp->count = 10;
-	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(OffscreenEntry));
-	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
-	wp = offscreenGetWork(1);
-	wp->count = 10;
-	wp->entries = __memAlloc(HEAP_DEFAULT, wp->count * sizeof(OffscreenEntry));
-	memset(wp->entries, 0, wp->count * sizeof(OffscreenEntry));
+void offscreenDelete(const char* name) {
+	OffscreenWork* wp = offscreenGetWorkGp();
+	int i, count;
+	OffscreenEntry* entry;
+
+	for (i = 0, count = wp->count, entry = wp->entries; i < count; i++, entry++) {
+		if (entry->flags & 1 && !strcmp(entry->name, name)) {
+			break;
+		}
+	}
+	entry->flags = 0;
+}
+
+s32 offscreenGetBoundingBox_BeforeFrame(s32 id, u16* left, u16* top, u16* right, u16* bottom) {
+	OffscreenEntry* entry = &offscreenGetWorkGp()->entries[id];
+
+	if (!(entry->flags & 1)) {
+		return 0;
+	}
+	if (entry->prevLeft > entry->prevRight) {
+		return 0;
+	}
+	*left = entry->prevLeft;
+	*top = entry->prevTop;
+	*right = entry->prevRight;
+	*bottom = entry->prevBottom;
+	return 1;
 }

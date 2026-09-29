@@ -19,44 +19,32 @@ typedef struct EffIrekaeruData {
 	s32 alpha;     // 0x20
 } EffIrekaeruData;
 
-extern const u32 dat_80421c00;
-extern const f32 float_deg2rad_80421c04;
-extern const f32 float_0_80421c08;
-extern const f32 float_2_80421c0c;
-extern const f32 float_1_80421c14;
-extern const f32 float_0p75_80421c18;
+const u32 dat_80421c00 = 0xFFFFFF00;
 
-const Vec vec3_80300198 = {0.0f, 0.0f, 0.0f};
-const char str_803001A4[] = "EFF_Irekae";
-const char str_803001B0[] = "Irekaeru";
-const char str_80421C10[] = "Z_1";
 
-// NONMATCHING (99.93%): only the GXColor stack slots differ. The target builds the color in a temp at r1+8,
-// copies it to r1+0xc and passes r1+0xc; mwcc builds at r1+0xc, copies to r1+8 and passes r1+8. Every
-// instruction matches otherwise.
-void effIrekaeruDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	EffIrekaeruData* userdata = effect->userdata;
-	Mtx mtx;
-	Mtx scaleMtx;
-	Mtx rotMtx;
-	GXColor color;
+EffectEntry* effIrekaeruEntry(s32 type, f32 x, f32 y, f32 z) {
+	EffIrekaeruData* userdata;
+	EffectEntry* effect;
 
-	if (userdata->poseId != -1) {
-		PSMTXTrans(mtx, userdata->x, userdata->y, userdata->z);
-		PSMTXScale(scaleMtx, userdata->scale, userdata->scale, userdata->scale);
-		PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_80421c04);
-		PSMTXConcat(mtx, rotMtx, mtx);
-		PSMTXConcat(mtx, scaleMtx, mtx);
-		animPoseSetMaterialFlagOn(userdata->poseId, 0x40);
-		color = *(GXColor*)&dat_80421c00;
-		color.a = userdata->alpha;
-		animPoseSetMaterialEvtColor(userdata->poseId, color);
-		animPoseMain(userdata->poseId);
-		animPoseDrawMtx(userdata->poseId, mtx, 1, float_0_80421c08, float_2_80421c0c);
-		animPoseDrawMtx(userdata->poseId, mtx, 2, float_0_80421c08, float_2_80421c0c);
-		animPoseDrawMtx(userdata->poseId, mtx, 3, float_0_80421c08, float_2_80421c0c);
-	}
+	effect = effEntry();
+	effect->type = "Irekaeru";
+	effect->count = 1;
+	userdata = __memAlloc(HEAP_EFFECT, sizeof(EffIrekaeruData) * effect->count);
+	effect->userdata = userdata;
+	effect->callback = effIrekaeruMain;
+	effect->flags |= 2;
+
+	userdata->type = type;
+	userdata->x = x;
+	userdata->y = y;
+	userdata->z = z;
+	userdata->scale = 1.0f;
+	userdata->poseId = -1;
+	userdata->state = 0;
+	userdata->field_0x1C = 0;
+	userdata->alpha = 0;
+
+	return effect;
 }
 
 void effIrekaeruMain(EffectEntry* effect) {
@@ -83,15 +71,15 @@ void effIrekaeruMain(EffectEntry* effect) {
 
 	switch (userdata->state) {
 		case 0:
-			if (!animGroupBaseAsync(str_803001A4, inBattle, NULL)) {
+			if (!animGroupBaseAsync("EFF_Irekae", inBattle, NULL)) {
 				return;
 			}
-			userdata->poseId = animPoseEntry(str_803001A4, inBattle);
-			animPoseSetAnim(userdata->poseId, str_80421C10, TRUE);
+			userdata->poseId = animPoseEntry("EFF_Irekae", inBattle);
+			animPoseSetAnim(userdata->poseId, "Z_1", TRUE);
 			userdata->state++;
 			break;
 		case 1:
-			if (animPoseGetLoopTimes(userdata->poseId) > float_1_80421c14) {
+			if (animPoseGetLoopTimes(userdata->poseId) > 1.0f) {
 				animPoseRelease(userdata->poseId);
 				effDelete(effect);
 				return;
@@ -99,7 +87,7 @@ void effIrekaeruMain(EffectEntry* effect) {
 			break;
 	}
 
-	if (animPoseGetLoopTimes(userdata->poseId) < float_0p75_80421c18) {
+	if (animPoseGetLoopTimes(userdata->poseId) < 0.75f) {
 		userdata->alpha += 20;
 		if (userdata->alpha > 0xFF) {
 			userdata->alpha = 0xFF;
@@ -114,27 +102,30 @@ void effIrekaeruMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effIrekaeruDisp, effect);
 }
 
-EffectEntry* effIrekaeruEntry(s32 type, f32 x, f32 y, f32 z) {
-	EffIrekaeruData* userdata;
-	EffectEntry* effect;
+static inline void irekaeruSetColor(EffIrekaeruData* userdata) {
+	GXColor color = *(GXColor*)&dat_80421c00;
+	color.a = userdata->alpha;
+	animPoseSetMaterialEvtColor(userdata->poseId, color);
+}
 
-	effect = effEntry();
-	effect->type = str_803001B0;
-	effect->count = 1;
-	userdata = __memAlloc(HEAP_EFFECT, sizeof(EffIrekaeruData) * effect->count);
-	effect->userdata = userdata;
-	effect->callback = effIrekaeruMain;
-	effect->flags |= 2;
+void effIrekaeruDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	EffIrekaeruData* userdata = effect->userdata;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
 
-	userdata->type = type;
-	userdata->x = x;
-	userdata->y = y;
-	userdata->z = z;
-	userdata->scale = float_1_80421c14;
-	userdata->poseId = -1;
-	userdata->state = 0;
-	userdata->field_0x1C = 0;
-	userdata->alpha = 0;
-
-	return effect;
+	if (userdata->poseId != -1) {
+		PSMTXTrans(mtx, userdata->x, userdata->y, userdata->z);
+		PSMTXScale(scaleMtx, userdata->scale, userdata->scale, userdata->scale);
+		PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+		PSMTXConcat(mtx, rotMtx, mtx);
+		PSMTXConcat(mtx, scaleMtx, mtx);
+		animPoseSetMaterialFlagOn(userdata->poseId, 0x40);
+		irekaeruSetColor(userdata);
+		animPoseMain(userdata->poseId);
+		animPoseDrawMtx(userdata->poseId, mtx, 1, 0.0f, 2.0f);
+		animPoseDrawMtx(userdata->poseId, mtx, 2, 0.0f, 2.0f);
+		animPoseDrawMtx(userdata->poseId, mtx, 3, 0.0f, 2.0f);
+	}
 }

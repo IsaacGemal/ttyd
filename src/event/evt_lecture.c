@@ -30,17 +30,46 @@ f32 stXdir3;
 f32 stXdir4;
 s32 lect_work;
 
-USER_FUNC(lect_juyoitem_rel_get) {
+USER_FUNC(lect_set_systemlevel) {
     s32* args = event->args;
 
-    evtSetValue(event, args[0], lect_work);
+    marioStSystemLevel(evtGetValue(event, args[0]));
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(lect_juyoitem_rel_set) {
-    s32* args = event->args;
+USER_FUNC(lect_test_systemlevel) {
+    marioStGetSystemLevel();
+    return EVT_RETURN_DONE;
+}
 
-    lect_work = evtGetValue(event, args[0]);
+USER_FUNC(lect_cam_save) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    PartyEntry* extraParty = partyGetPtr(marioGetExtraPartyId());
+
+    stPt = cam->cameraPos;
+    stAt = cam->cameraAt;
+    stMpos = mario->position;
+    stMdir1 = mario->unk1A8;
+    stMdir2 = *(f32*)mario->unk1AC;
+    stMdir3 = mario->directionView;
+    stMdir4 = *(f32*)mario->unk19C;
+
+    if (party != NULL) {
+        stPpos = party->position;
+        stPdir1 = party->field_10C;
+        stPdir2 = party->field_110;
+        stPdir3 = party->dir;
+        stPdir4 = party->field_FC;
+    }
+    if (extraParty != NULL) {
+        stXpos = extraParty->position;
+        stXdir1 = extraParty->field_10C;
+        stXdir2 = extraParty->field_110;
+        stXdir3 = extraParty->dir;
+        stXdir4 = extraParty->field_FC;
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -84,46 +113,17 @@ USER_FUNC(lect_cam_load) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(lect_cam_save) {
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    MarioWork* mario = marioGetPtr();
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    PartyEntry* extraParty = partyGetPtr(marioGetExtraPartyId());
-
-    stPt = cam->cameraPos;
-    stAt = cam->cameraAt;
-    stMpos = mario->position;
-    stMdir1 = mario->unk1A8;
-    stMdir2 = *(f32*)mario->unk1AC;
-    stMdir3 = mario->directionView;
-    stMdir4 = *(f32*)mario->unk19C;
-
-    if (party != NULL) {
-        stPpos = party->position;
-        stPdir1 = party->field_10C;
-        stPdir2 = party->field_110;
-        stPdir3 = party->dir;
-        stPdir4 = party->field_FC;
-    }
-    if (extraParty != NULL) {
-        stXpos = extraParty->position;
-        stXdir1 = extraParty->field_10C;
-        stXdir2 = extraParty->field_110;
-        stXdir3 = extraParty->dir;
-        stXdir4 = extraParty->field_FC;
-    }
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(lect_test_systemlevel) {
-    marioStGetSystemLevel();
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(lect_set_systemlevel) {
+USER_FUNC(lect_juyoitem_rel_set) {
     s32* args = event->args;
 
-    marioStSystemLevel(evtGetValue(event, args[0]));
+    lect_work = evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(lect_juyoitem_rel_get) {
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], lect_work);
     return EVT_RETURN_DONE;
 }
 

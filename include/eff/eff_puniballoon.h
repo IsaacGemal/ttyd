@@ -21,3 +21,5 @@ typedef struct EffPuniBalloonData {
 EffectEntry* effPuniBalloonEntry(s32 type, f32 x, f32 y, f32 z, f32 scale);
 void effPuniBalloonMain(EffectEntry* effect);
 void effPuniBalloonDisp(CameraId camId, void* param);
+void balloon_0(CameraId camId, EffectEntry* effect);
+void balloon_1(CameraId camId, EffectEntry* effect);
