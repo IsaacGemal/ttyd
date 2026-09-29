@@ -1,3 +1,4 @@
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_hit.h"
@@ -31,16 +32,9 @@ extend_data(85,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_entry_data[30] = {
-    (u32)"s_bero", 0x00000000, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"tik_15", (u32)"n_bero",
-    0x00010001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"s_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_15", "n_bero", 1, 1},
+    {NULL},
 };
 
 EVT_BEGIN(hari_trap)
@@ -78,11 +72,10 @@ EVT_BEGIN(hari_trap)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 hitDmgRetPoints[12] = {
-    (u32)"mod_1", 0x00000000, 0xC47A0000, 0x00000000,
-    (u32)"mod_2", 0x43020000, 0x00000000, 0xC2800000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static HitDamageReturn hitDmgRetPoints[] = {
+    {"mod_1", {0.0f, -1000.0f, 0.0f}},
+    {"mod_2", {130.0f, 0.0f, -64.0f}},
+    {NULL},
 };
 
 static EVT_BEGIN(mobj_box00)

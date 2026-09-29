@@ -1,6 +1,8 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_database_common.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
+#include "battle/battle_unit.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_msg.h"
 #include "evt/evt_sub.h"
@@ -11,8 +13,8 @@ extern s32 btldefaultevt_Confuse[];
 extern s32 pose_table_clauda_stay[];
 extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
 static u32 regist_clauda[6];
-static u32 data_table_clauda[4];
-static u32 parts_clauda[19];
+static BattleDataEntry data_table_clauda[2];
+static BattleUnitKindPart parts_clauda;
 static s32 init_event_clauda[50];
 s32 damage_event_clauda[22];
 static s32 dead_event_clauda[177];
@@ -55,20 +57,24 @@ u32 unit_gullible_clauda[49] = {
     (u32)&data_table_clauda,
 };
 
-// TODO: type
-static u32 enemyWeapon_ClaudaNormalAttack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerFromGulliblePartyAttackLv,
-    0x00000002, 0x00000004, 0x00000006, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01001260, 0x20001004, 0x000A0302,
-    0x00000000, 0x00014087, 0x0000000C, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon enemyWeapon_ClaudaNormalAttack = {
+    {0,    0,    0,    0,    0,    0,    0,    0,
+     0,    0,    0,    0,    0,    0,    0,    0,
+     0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00},
+    1,
+    1,
+    1,
+    1,
+    weaponGetPowerFromGulliblePartyAttackLv,
+    {2, 4, 6, 0, 0, 0, 0, 0},
+    NULL,
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0x01, 0x00, 0x12, 0x60, 0x20, 0x00, 0x10, 0x04,
+     0x00, 0x0A, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00},
+    0x00014087,
+    {0x00, 0x00, 0x00, 0x0C, 0x80, 0x00, 0x20, 0x04},
+    NULL,
+    {0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 };
 
 // TODO: type
@@ -87,18 +93,24 @@ static u32 regist_clauda[6] = {
     0x00644664, 0x64000000,
 };
 
-// TODO: type
-static u32 data_table_clauda[4] = {
-    0x00000031, (u32)&dead_event_clauda, 0x00000000, 0x00000000,
+static BattleDataEntry data_table_clauda[2] = {
+    {0x31, dead_event_clauda},
+    {0, NULL},
 };
 
-// TODO: type
-static u32 parts_clauda[19] = {
-    0x00000001, (u32)"btl_un_clauda", (u32)"c_windy", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence_clauda, (u32)&defence_attr_clauda,
-    0x00000009, 0x00000000, (u32)pose_table_clauda_stay,
+static BattleUnitKindPart parts_clauda = {
+    1,
+    "btl_un_clauda",
+    "c_windy",
+    {0.0f, 0.0f, 0.0f},
+    {15.0f, 25.0f, 0.0f},
+    {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+    (BattleUnitDefense*)defence_clauda,
+    (BattleUnitDefenseAttr*)defence_attr_clauda,
+    9,
+    0,
+    pose_table_clauda_stay,
 };
 
 static EVT_BEGIN(init_event_clauda)
@@ -184,7 +196,7 @@ static EVT_BEGIN(attack_event_clauda)
         CALL(btlevtcmd_StartWaitEvent, -2)
         RETURN
     END_IF
-    SET_VALUE(LW(12), PTR(enemyWeapon_ClaudaNormalAttack))
+    SET_VALUE(LW(12), PTR(&enemyWeapon_ClaudaNormalAttack))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), LW(12))
     CALL(btlevtcmd_ChoiceSamplingEnemy, LW(12), LW(3), LW(4))

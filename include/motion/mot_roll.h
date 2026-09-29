@@ -12,3 +12,4 @@ void rollEvtJumpSetup(void);
 void setRollEvtFlag(void);
 void clrRollEvtFlag(void);
 void marioRollForceCancel(void);
+BOOL unk_8009fcbc(void);

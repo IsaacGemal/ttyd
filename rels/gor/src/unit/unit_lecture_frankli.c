@@ -1,5 +1,6 @@
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_audience.h"
@@ -12,9 +13,9 @@
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
 extern s32 weaponGetPowerFromMarioJumpLv[];
-static u32 regist[6];
-static u32 data_table[8];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[4];
+static BattleUnitKindPart parts[1];
 static s32 init_event[38];
 static s32 damage_event[10];
 static s32 phase_event[681];
@@ -60,27 +61,14 @@ u32 unit_lecture_frankli[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence = { { 0 } };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr = { { 0 } };
 
-// TODO: type
-static u32 regist[6] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
-};
+static BattleVulnerableStatus regist = { 0 };
 
-// TODO: type
-static u32 pose_table[10] = {
-    0x0000001B, (u32)"D_1", 0x0000001C, (u32)"S_1",
-    0x0000001F, (u32)"D_2", 0x00000027, (u32)"D_2",
-    0x00000045, (u32)"S_1",
+static BattleDispPose pose_table[5] = {
+    { 0x1B, "D_1" }, { 0x1C, "S_1" }, { 0x1F, "D_2" }, { 0x27, "D_2" }, { 0x45, "S_1" },
 };
 
 // TODO: type
@@ -115,19 +103,27 @@ u32 _lec_weapon_hammer[48] = {
     (u32)&lecAttackEvent_Hammer, 0x00000064, 0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 data_table[8] = {
-    0x00000044, (u32)&_lec_weapon_jump, 0x00000045, (u32)&_lec_weapon_hammer,
-    0x00000046, (u32)&lecture_end_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[4] = {
+    { 0x44, &_lec_weapon_jump }, { 0x45, &_lec_weapon_hammer },
+    { 0x46, &lecture_end_event }, { 0x00, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_frankli", (u32)"c_kuri_h", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00090009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,
+        "btl_un_frankli",
+        "c_kuri_h",
+        { 0.0f, 0.0f, 0.0f },
+        { 15.0f, 25.0f, 0.0f },
+        // 0x24..0x38 is unnamed in BattleUnitKindPart; bytes kept literal.
+        { 0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+        &defence,
+        &defence_attr,
+        kMainPart | kUnknown_0x8 | kNotTargetable | kUntattleable,
+        0,
+        pose_table,
+    },
 };
 
 static EVT_BEGIN(init_event)

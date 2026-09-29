@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -9,9 +10,9 @@
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
 static u32 regist[6];
-static u32 parts[19];
-static u32 pose_table[36];
-static u32 data_table[6];
+static BattleUnitKindPart parts;
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[3];
 static s32 init_event[42];
 static s32 damage_event[58];
 static s32 dmg_turn_event[91];
@@ -54,20 +55,11 @@ u32 unit_sinnosuke[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x02630202, 0x02000000,
-};
+static BattleUnitDefense defence[1] = {{0x02, 0x63, 0x02, 0x02, 0x02}};
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00020000, 0x00000000,
-};
+static BattleUnitDefenseAttr defence_attr[1] = {{0x00, 0x02, 0x00, 0x00, 0x00}};
 
-// TODO: type
-static u32 defence_turn[2] = {
-    0x00000000, 0x00000000,
-};
+static BattleUnitDefense defence_turn[1] = {{0x00, 0x00, 0x00, 0x00, 0x00}};
 
 // TODO: type
 static u32 regist[6] = {
@@ -75,60 +67,61 @@ static u32 regist[6] = {
     0x28644664, 0x645F0000,
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_sinnosuke", (u32)"c_sinnosuke", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00002009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    0x00000001, "btl_un_sinnosuke", "c_sinnosuke",
+    {0.0f, 0.0f, 0.0f},
+    {0.0f, 25.0f, 0.0f},
+    // header gap 0x24-0x37: (0, 30.0f, 0), 0x0014001E, 0x00FF0000
+    {0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00},
+    defence, defence_attr,
+    kMainPart | kUnknown_0x8 | kIsBombFlippable, 0x00000000, pose_table,
 };
 
-// TODO: type
-static u32 weapon_sinnosuke_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x0000001E, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_sinnosuke_attack[1] = {{
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+     0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00},
+    0x01, 0x01, 0x01, 0x01,
+    (void*)weaponGetPowerDefault,
+    {0x00000001, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    NULL,
+    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+    {0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00,
+     0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00},
+    0x00000087,
+    {0x00, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x20, 0x04},
+    NULL,
+    {0x00, 0x00, 0x00, 0x64},
+}};
+
+static BattleDispPose pose_table[18] = {
+    {0x00000001, "SIS_N_1"}, {0x00000002, "SIS_Y_1"},
+    {0x00000009, "SIS_Y_1"}, {0x00000005, "SIS_K_1"},
+    {0x00000004, "SIS_I_1"}, {0x00000003, "SIS_I_1"},
+    {0x0000001C, "SIS_S_1"}, {0x0000001D, "SIS_Q_1"},
+    {0x0000001E, "SIS_Q_1"}, {0x0000001F, "SIS_A_1a"},
+    {0x00000027, "SIS_D_1"}, {0x00000032, "SIS_A_1a"},
+    {0x00000028, "SIS_W_1"}, {0x0000002A, "SIS_R_1"},
+    {0x00000038, "SIS_I_1"}, {0x00000039, "SIS_I_1"},
+    {0x00000041, "SIS_T_1"}, {0x00000045, "SIS_S_1"},
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"SIS_N_1", 0x00000002, (u32)"SIS_Y_1",
-    0x00000009, (u32)"SIS_Y_1", 0x00000005, (u32)"SIS_K_1",
-    0x00000004, (u32)"SIS_I_1", 0x00000003, (u32)"SIS_I_1",
-    0x0000001C, (u32)"SIS_S_1", 0x0000001D, (u32)"SIS_Q_1",
-    0x0000001E, (u32)"SIS_Q_1", 0x0000001F, (u32)"SIS_A_1a",
-    0x00000027, (u32)"SIS_D_1", 0x00000032, (u32)"SIS_A_1a",
-    0x00000028, (u32)"SIS_W_1", 0x0000002A, (u32)"SIS_R_1",
-    0x00000038, (u32)"SIS_I_1", 0x00000039, (u32)"SIS_I_1",
-    0x00000041, (u32)"SIS_T_1", 0x00000045, (u32)"SIS_S_1",
+static BattleDispPose pose_table_turn[15] = {
+    {0x00000001, "SIS_N_2"}, {0x00000002, "SIS_Y_2"},
+    {0x00000009, "SIS_Y_2"}, {0x00000005, "SIS_K_2"},
+    {0x00000004, "SIS_K_2"}, {0x00000003, "SIS_K_2"},
+    {0x0000001C, "SIS_D_2"}, {0x0000001D, "SIS_D_2"},
+    {0x0000001E, "SIS_D_2"}, {0x0000001F, "SIS_D_2"},
+    {0x00000027, "SIS_D_2"}, {0x00000038, "SIS_K_2"},
+    {0x00000039, "SIS_K_2"}, {0x00000041, "SIS_D_2"},
+    {0x00000045, "SIS_D_2"},
 };
 
-// TODO: type
-static u32 pose_table_turn[30] = {
-    0x00000001, (u32)"SIS_N_2", 0x00000002, (u32)"SIS_Y_2",
-    0x00000009, (u32)"SIS_Y_2", 0x00000005, (u32)"SIS_K_2",
-    0x00000004, (u32)"SIS_K_2", 0x00000003, (u32)"SIS_K_2",
-    0x0000001C, (u32)"SIS_D_2", 0x0000001D, (u32)"SIS_D_2",
-    0x0000001E, (u32)"SIS_D_2", 0x0000001F, (u32)"SIS_D_2",
-    0x00000027, (u32)"SIS_D_2", 0x00000038, (u32)"SIS_K_2",
-    0x00000039, (u32)"SIS_K_2", 0x00000041, (u32)"SIS_D_2",
-    0x00000045, (u32)"SIS_D_2",
-};
-
-// TODO: type
-static u32 data_table[6] = {
-    0x0000000D, (u32)&dmg_turn_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    {0x0000000D, &dmg_turn_event},
+    {0x00000030, btldefaultevt_Dummy},
+    {0x00000000, NULL},
 };
 
 static EVT_BEGIN(init_event)
