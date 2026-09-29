@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -9,9 +10,9 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-static u32 data_table[6];
+static BattleDataEntry data_table[3];
 static u32 regist[6];
-static u32 parts[19];
+static BattleUnitKindPart parts;
 static s32 init_event[41];
 static s32 damage_event[10];
 static s32 dmg_turn_event[78];
@@ -54,36 +55,34 @@ u32 unit_nokonoko_fighter[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"NKT_N_1", 0x00000002, (u32)"NKT_Y_1",
-    0x00000009, (u32)"NKT_Y_1", 0x00000005, (u32)"NKT_K_1",
-    0x00000004, (u32)"NKT_X_1", 0x00000003, (u32)"NKT_X_1",
-    0x0000001C, (u32)"NKT_S_1", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_S_1",
-    0x00000027, (u32)"NKT_D_1", 0x00000032, (u32)"NKT_A_1",
-    0x0000002A, (u32)"NKT_R_1", 0x00000028, (u32)"NKT_W_1",
-    0x00000038, (u32)"NKT_X_1", 0x00000039, (u32)"NKT_X_1",
-    0x00000041, (u32)"NKT_T_1", 0x00000045, (u32)"NKT_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x00000001, "NKT_N_1" }, { 0x00000002, "NKT_Y_1" },
+    { 0x00000009, "NKT_Y_1" }, { 0x00000005, "NKT_K_1" },
+    { 0x00000004, "NKT_X_1" }, { 0x00000003, "NKT_X_1" },
+    { 0x0000001C, "NKT_S_1" }, { 0x0000001D, "NKT_Q_1" },
+    { 0x0000001E, "NKT_Q_1" }, { 0x0000001F, "NKT_S_1" },
+    { 0x00000027, "NKT_D_1" }, { 0x00000032, "NKT_A_1" },
+    { 0x0000002A, "NKT_R_1" }, { 0x00000028, "NKT_W_1" },
+    { 0x00000038, "NKT_X_1" }, { 0x00000039, "NKT_X_1" },
+    { 0x00000041, "NKT_T_1" }, { 0x00000045, "NKT_S_1" },
 };
 
-// TODO: type
-static u32 pose_table_turn[34] = {
-    0x00000001, (u32)"NKT_N_2", 0x00000002, (u32)"NKT_B_1",
-    0x00000009, (u32)"NKT_B_1", 0x00000005, (u32)"NKT_K_2",
-    0x00000004, (u32)"NKT_K_2", 0x00000003, (u32)"NKT_K_2",
-    0x0000001C, (u32)"NKT_S_2", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_D_1",
-    0x00000027, (u32)"NKT_D_1", 0x0000002A, (u32)"NKT_R_1",
-    0x00000028, (u32)"NKT_W_1", 0x00000038, (u32)"NKT_K_2",
-    0x00000039, (u32)"NKT_K_2", 0x00000041, (u32)"NKT_S_2",
-    0x00000045, (u32)"NKT_S_2",
+static BattleDispPose pose_table_turn[17] = {
+    { 0x00000001, "NKT_N_2" }, { 0x00000002, "NKT_B_1" },
+    { 0x00000009, "NKT_B_1" }, { 0x00000005, "NKT_K_2" },
+    { 0x00000004, "NKT_K_2" }, { 0x00000003, "NKT_K_2" },
+    { 0x0000001C, "NKT_S_2" }, { 0x0000001D, "NKT_Q_1" },
+    { 0x0000001E, "NKT_Q_1" }, { 0x0000001F, "NKT_D_1" },
+    { 0x00000027, "NKT_D_1" }, { 0x0000002A, "NKT_R_1" },
+    { 0x00000028, "NKT_W_1" }, { 0x00000038, "NKT_K_2" },
+    { 0x00000039, "NKT_K_2" }, { 0x00000041, "NKT_S_2" },
+    { 0x00000045, "NKT_S_2" },
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x0000000D, (u32)&dmg_turn_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x0000000D, &dmg_turn_event },
+    { 0x00000030, btldefaultevt_Dummy },
+    { 0x00000000, NULL },
 };
 
 // TODO: type
@@ -107,29 +106,40 @@ static u32 regist[6] = {
     0x50645064, 0x64640000,
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_nokonoko_fighter", (u32)"c_touginoko", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41F00000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00001009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    0x00000001,
+    "btl_un_nokonoko_fighter",
+    "c_touginoko",
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 30.0f, 0.0f },
+    { 0x00, 0x00, 0x00, 0x00, 0x42, 0x20, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+    (BattleUnitDefense*)&defence,
+    (BattleUnitDefenseAttr*)&defence_attr,
+    (PartsAttribute_Flags)(kMainPart | kUnknown_0x8 | kIsShelled),
+    0x00000000,
+    &pose_table,
 };
 
-// TODO: type
-static u32 weapon_nokonoko_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00080302,
-    0x00000000, 0x00000087, 0x000005FF, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_nokonoko_attack[1] = {
+  {
+    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+    0x01, 0x01, 0x01, 0x01,
+    (void*)weaponGetPowerDefault,
+    { 0x00000002, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+    NULL,
+    { 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 },
+    { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00, 0x00, 0x08, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+    (BattleWeaponSpecialFlags)0x00000087,
+    { 0x00, 0x00, 0x05, 0xFF, 0x00, 0x00, 0x20, 0x04, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+    NULL,
+    { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+  },
 };
 
 static EVT_BEGIN(init_event)

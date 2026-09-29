@@ -7,3 +7,5 @@
 extern s32 btldefaultevt_Damage[];
 
 EVT_DEF(btldefaultevt_SuitoruBadgeEffect);
+extern s32 btldefaultevt_Confuse[];
+extern s32 btldefaultevt_Dummy[];

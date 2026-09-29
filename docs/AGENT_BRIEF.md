@@ -117,8 +117,10 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 18. **Functions in the original's order, which is the reverse of the asm's.** Game code (and the RELs) is compiled
    with `-inline auto,deferred`, which emits a file's functions in reverse source order. So write your file's
    functions in the REVERSE of the order they appear in the asm (the last function in the .s comes first in the .c).
-   Written in the asm's order, every function can reach 100% and the file still won't link. Exceptions:
-   battle.c and dispdrv.c (built without deferred), and the libraries under libs/.
+   Written in the asm's order, every function can reach 100% and the file still won't link. It applies to every
+   file built with `-inline auto,deferred`: game code, the RELs, and in libs/ at least MetroTRK, MSL and the
+   runtime. Check your unit's cflags in configure.py; battle.c and dispdrv.c are built without it, as are the
+   Dolphin SDK libraries.
 
 ## Signedness hints from the assembly
 

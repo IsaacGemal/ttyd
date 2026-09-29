@@ -1,11 +1,13 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
+#include "battle/battle_unit.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 
 #pragma force_active on
 static u32 regist[6];
-static u32 data_table[2];
-static u32 parts[19];
+static BattleDataEntry data_table[1];
+static BattleUnitKindPart parts[1];
 static s32 init_event[9];
 static s32 wait_event[6];
 
@@ -61,26 +63,36 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[14] = {
-    0x0000001C, (u32)"KNP_S_1", 0x0000001F, (u32)"KNP_S_1",
-    0x00000027, (u32)"KNP_D_1", 0x0000002A, (u32)"KNP_R_1",
-    0x00000028, (u32)"KNP_W_1", 0x00000041, (u32)"KNP_T_1",
-    0x00000045, (u32)"KNP_S_1",
+static BattleDispPose pose_table[7] = {
+    { 0x0000001C, "KNP_S_1" },
+    { 0x0000001F, "KNP_S_1" },
+    { 0x00000027, "KNP_D_1" },
+    { 0x0000002A, "KNP_R_1" },
+    { 0x00000028, "KNP_W_1" },
+    { 0x00000041, "KNP_T_1" },
+    { 0x00000045, "KNP_S_1" },
 };
 
-// TODO: type
-static u32 data_table[2] = {
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[1] = {
+    { 0, 0 },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_teresa", (u32)"c_kinopio", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts[1] = {
+    {
+        0x00000001,
+        "btl_un_teresa",
+        "c_kinopio",
+        { 0.0f, 0.0f, 0.0f },
+        { 15.0f, 25.0f, 0.0f },
+        { 0x00, 0x00, 0x00, 0x00, 0x41, 0xF0, 0x00, 0x00,
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E,
+          0x00, 0xFF, 0x00, 0x00 },
+        (BattleUnitDefense*)&defence,
+        (BattleUnitDefenseAttr*)&defence_attr,
+        0x00000009,
+        0x00000000,
+        pose_table,
+    },
 };
 
 static EVT_BEGIN(init_event)

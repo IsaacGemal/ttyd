@@ -81,11 +81,12 @@ EVT_BEGIN(evt_anim)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 spline_dt[9] = {
-    0xC44A0000, 0x4472C000, 0x45990800, 0xC4484000,
-    0x445FC000, 0x45883800, 0xC43A0000, 0x445C0000,
-    0x4578E000,
+// Spline control points for evt_anim2: three xyz positions handed to
+// evt_sub_spline_init. Flattened in the order spline_getvalue indexes them.
+static f32 spline_dt[9] = {
+    -808.0f, 971.0f, 4897.0f,
+    -801.0f, 895.0f,  4359.0f,
+    -744.0f, 880.0f,  3982.0f,
 };
 
 EVT_BEGIN(evt_anim2)

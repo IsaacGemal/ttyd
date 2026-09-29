@@ -33,40 +33,20 @@ extend_data(45,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-static u32 bero_data_a[30] = {
-    (u32)"e_bero", 0x00010008, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_04_a", (u32)"w_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+// animeArg3/animeArg4 hold animation names; BeroEntry types them s32, so they are cast here.
+static BeroEntry bero_data_a[] = {
+    {"e_bero", 1, 8, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_a", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_b[30] = {
-    (u32)"w_bero", 0x00010000, 0x00000002, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_04_b", (u32)"w_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_data_b[] = {
+    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_b", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {NULL},
 };
 
-// TODO: type
-static u32 bero_data_c[30] = {
-    (u32)"w_bero", 0x00010000, 0x00000002, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"rsh_04_c", (u32)"w_bero",
-    0x00010001, (u32)"w_door_close", (u32)"w_door_open", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_data_c[] = {
+    {"w_bero", 1, 0, 2, 100000, 0, 0, -1, NULL, -1, NULL, "rsh_04_c", "w_bero", 1, 1, (s32)"w_door_close", (s32)"w_door_open"},
+    {NULL},
 };
 
 static EVT_BEGIN(init_unten)
@@ -83,26 +63,13 @@ static EVT_BEGIN(talk_unten)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npc_data[46] = {
-    (u32)"運転手", 0x40020610, 0x00000000, (u32)&init_unten,
-    0x00000000, (u32)&talk_unten, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static NpcSetupInfo npc_data[] = {
+    {"運転手", 0x40020610, 0, init_unten, NULL, talk_unten},
+    {NULL},
 };
 
-// TODO: type
-static u32 access_tbl[5] = {
-    (u32)"nittei", (u32)"stg6_rsh_c_00_1", (u32)"soujyuu", (u32)"stg6_rsh_260",
-    0x00000000,
+static char* access_tbl[] = {
+    "nittei", "stg6_rsh_c_00_1", "soujyuu", "stg6_rsh_260", NULL,
 };
 
 static EVT_BEGIN(evt_access)
@@ -181,10 +148,8 @@ EVT_BEGIN(rsh_07_b_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 window_tbl[5] = {
-    (u32)"mado_uturi_1", (u32)"mado_uturi_2", (u32)"mado_uturi_3", (u32)"mado_uturi_4",
-    0x00000000,
+static char* window_tbl[] = {
+    "mado_uturi_1", "mado_uturi_2", "mado_uturi_3", "mado_uturi_4", NULL,
 };
 
 EVT_BEGIN(rsh_07_c_init_evt)

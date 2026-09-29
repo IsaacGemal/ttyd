@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -13,8 +14,8 @@ extern s32 btldefaultevt_Confuse[];
 extern s32 moamoa1_weakness_pose_table[];
 extern s32 moamoa_defence_no_parts[];
 static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts;
 static s32 init_event[26];
 static s32 damage_event[10];
 static s32 dead_event[115];
@@ -74,40 +75,83 @@ static u32 regist[6] = {
     0x00000000, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[8] = {
-    0x0000001C, (u32)"S_1B_1", 0x0000001F, (u32)"D_1B_1",
-    0x00000027, (u32)"D_1B_1", 0x00000045, (u32)"S_1B_1",
+static BattleDispPose pose_table[] = {
+    { 0x1C, "S_1B_1" },
+    { 0x1F, "D_1B_1" },
+    { 0x27, "D_1B_1" },
+    { 0x45, "S_1B_1" },
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000031, (u32)&dead_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[] = {
+    { 0x31, dead_event },
+    { 0, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_moamoa_tentacle_b", (u32)"c_g_moamoa_b", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x42A00000,
-    0x41A00000, 0x00000000, 0x42C80000, 0x41A00000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00600001, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    1,
+    "btl_un_moamoa_tentacle_b",
+    "c_g_moamoa_b",
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 80.0f, 20.0f },
+    {
+        0x00, 0x00, 0x00, 0x00,
+        0x42, 0xC8, 0x00, 0x00,
+        0x41, 0xA0, 0x00, 0x00,
+        0x00, 0x14, 0x00, 0x1E,
+        0x00, 0xFF, 0x00, 0x00,
+    },
+    (BattleUnitDefense*)&defence,
+    (BattleUnitDefenseAttr*)&defence_attr,
+    0x00600001,
+    0,
+    &pose_table,
 };
 
-// TODO: type
-static u32 weapon_moamoa_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000005, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00000087, 0x000007FF, 0x80000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_moamoa_attack[] = {
+    {
+        {
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x64, 0x00, 0x00, 0x00,
+            0x3F, 0x80, 0x00, 0x00,
+        },
+        0x01, 0x01, 0x01, 0x01,
+        (void*)weaponGetPowerDefault,
+        { 5, 0, 0, 0, 0, 0, 0, 0 },
+        NULL,
+        { 0, 0, 0, 0, 0, 0, 0, 0 },
+        {
+            0x01, 0x10, 0x12, 0x60,
+            0x20, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x03, 0x02,
+            0x00, 0x00, 0x00, 0x00,
+        },
+        0x87,
+        {
+            0x00, 0x00, 0x07, 0xFF,
+            0x80, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        },
+        NULL,
+        {
+            0x00, 0x00, 0x00, 0x64,
+            0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        },
+    },
 };
 
 static EVT_BEGIN(init_event)
@@ -207,29 +251,25 @@ static EVT_BEGIN(evt_attack_other_arm)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 A_of_B_Attack[3] = {
-    (u32)"S_1A_1", 0x00000000, 0x00000000,
+char* A_of_B_Attack[] = {
+    "S_1A_1", NULL, NULL,
 };
 
-// TODO: type
-u32 B_of_B_Attack_front[10] = {
-    (u32)"M_1B_3", (u32)"A_1B_1", (u32)"A_1B_2", 0x00000000,
-    (u32)"A_1B_3", 0x00000000, (u32)"A_1B_4", (u32)"M_1B_4",
-    (u32)"S_1B_1", 0x00000000,
+char* B_of_B_Attack_front[] = {
+    "M_1B_3", "A_1B_1", "A_1B_2", NULL,
+    "A_1B_3", NULL, "A_1B_4", "M_1B_4",
+    "S_1B_1", NULL,
 };
 
-// TODO: type
-u32 B_of_B_Attack_back[10] = {
-    (u32)"M_1B_3", (u32)"A_1B_5", (u32)"A_1B_6", 0x00000000,
-    (u32)"A_1B_7", 0x00000000, (u32)"A_1B_8", (u32)"M_1B_4",
-    (u32)"S_1B_1", 0x00000000,
+char* B_of_B_Attack_back[] = {
+    "M_1B_3", "A_1B_5", "A_1B_6", NULL,
+    "A_1B_7", NULL, "A_1B_8", "M_1B_4",
+    "S_1B_1", NULL,
 };
 
-// TODO: type
-u32 C_of_B_Attack[6] = {
-    (u32)"M_1C_1", (u32)"S_1C_2", 0x00000000, (u32)"M_1C_2",
-    (u32)"S_1C_1", 0x00000000,
+char* C_of_B_Attack[] = {
+    "M_1C_1", "S_1C_2", NULL, "M_1C_2",
+    "S_1C_1", NULL,
 };
 
 static EVT_BEGIN(evt_attack)

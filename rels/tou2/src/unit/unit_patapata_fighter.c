@@ -1,4 +1,5 @@
 #include "battle/battle_camera.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
@@ -11,14 +12,14 @@
 extern s32 btldefaultevt_Dummy[];
 static u32 regist_patapata[6];
 static u32 parts_patapata[19];
-static u32 pose_table_patapata[36];
-static u32 data_table_patapata[6];
+static BattleDispPose pose_table_patapata[18];
+static BattleDataEntry data_table_patapata[3];
 static s32 init_event_patapata[26];
 static s32 dmg_fall_event[185];
 static s32 patapata_dmg_first_attack_pos[19];
 static s32 attack_event_patapata[541];
-static u32 pose_table[36];
-static u32 data_table[6];
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[3];
 static u32 parts[19];
 static s32 damage_event[10];
 static s32 dmg_turn_event[78];
@@ -102,23 +103,22 @@ static u32 parts_patapata[19] = {
     0x00600809, 0x00000000, (u32)&pose_table_patapata,
 };
 
-// TODO: type
-static u32 pose_table_patapata[36] = {
-    0x00000001, (u32)"PTP_N_1", 0x00000002, (u32)"PTP_Y_1",
-    0x00000009, (u32)"PTP_Y_1", 0x00000005, (u32)"PTP_K_1",
-    0x00000004, (u32)"PTP_X_1", 0x00000003, (u32)"PTP_X_1",
-    0x0000001C, (u32)"PTP_S_1", 0x0000001D, (u32)"PTP_Q_1",
-    0x0000001E, (u32)"PTP_Q_1", 0x0000001F, (u32)"PTP_S_1",
-    0x00000027, (u32)"PTP_D_1", 0x00000032, (u32)"PTP_A_1",
-    0x0000002A, (u32)"PTP_R_1", 0x00000028, (u32)"PTP_W_1",
-    0x00000038, (u32)"PTP_X_1", 0x00000039, (u32)"PTP_X_1",
-    0x00000041, (u32)"PTP_T_1", 0x00000045, (u32)"PTP_S_1",
+static BattleDispPose pose_table_patapata[18] = {
+    { 0x01, "PTP_N_1" }, { 0x02, "PTP_Y_1" },
+    { 0x09, "PTP_Y_1" }, { 0x05, "PTP_K_1" },
+    { 0x04, "PTP_X_1" }, { 0x03, "PTP_X_1" },
+    { 0x1C, "PTP_S_1" }, { 0x1D, "PTP_Q_1" },
+    { 0x1E, "PTP_Q_1" }, { 0x1F, "PTP_S_1" },
+    { 0x27, "PTP_D_1" }, { 0x32, "PTP_A_1" },
+    { 0x2A, "PTP_R_1" }, { 0x28, "PTP_W_1" },
+    { 0x38, "PTP_X_1" }, { 0x39, "PTP_X_1" },
+    { 0x41, "PTP_T_1" }, { 0x45, "PTP_S_1" },
 };
 
-// TODO: type
-static u32 data_table_patapata[6] = {
-    0x0000000E, (u32)&dmg_fall_event, 0x00000030, (u32)&patapata_dmg_first_attack_pos,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table_patapata[3] = {
+    { 0x0E, &dmg_fall_event },
+    { 0x30, &patapata_dmg_first_attack_pos },
+    { 0x00, NULL },
 };
 
 // TODO: type
@@ -340,36 +340,34 @@ static EVT_BEGIN(attack_event_patapata)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"NKT_N_1", 0x00000002, (u32)"NKT_Y_1",
-    0x00000009, (u32)"NKT_Y_1", 0x00000005, (u32)"NKT_K_1",
-    0x00000004, (u32)"NKT_X_1", 0x00000003, (u32)"NKT_X_1",
-    0x0000001C, (u32)"NKT_S_1", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_S_1",
-    0x00000027, (u32)"NKT_D_1", 0x00000032, (u32)"NKT_A_1",
-    0x0000002A, (u32)"NKT_R_1", 0x00000028, (u32)"NKT_W_1",
-    0x00000038, (u32)"NKT_X_1", 0x00000039, (u32)"NKT_X_1",
-    0x00000041, (u32)"NKT_T_1", 0x00000045, (u32)"NKT_S_1",
+static BattleDispPose pose_table[18] = {
+    { 0x01, "NKT_N_1" }, { 0x02, "NKT_Y_1" },
+    { 0x09, "NKT_Y_1" }, { 0x05, "NKT_K_1" },
+    { 0x04, "NKT_X_1" }, { 0x03, "NKT_X_1" },
+    { 0x1C, "NKT_S_1" }, { 0x1D, "NKT_Q_1" },
+    { 0x1E, "NKT_Q_1" }, { 0x1F, "NKT_S_1" },
+    { 0x27, "NKT_D_1" }, { 0x32, "NKT_A_1" },
+    { 0x2A, "NKT_R_1" }, { 0x28, "NKT_W_1" },
+    { 0x38, "NKT_X_1" }, { 0x39, "NKT_X_1" },
+    { 0x41, "NKT_T_1" }, { 0x45, "NKT_S_1" },
 };
 
-// TODO: type
-static u32 pose_table_turn[34] = {
-    0x00000001, (u32)"NKT_N_2", 0x00000002, (u32)"NKT_B_1",
-    0x00000009, (u32)"NKT_B_1", 0x00000005, (u32)"NKT_K_2",
-    0x00000004, (u32)"NKT_K_2", 0x00000003, (u32)"NKT_K_2",
-    0x0000001C, (u32)"NKT_S_2", 0x0000001D, (u32)"NKT_Q_1",
-    0x0000001E, (u32)"NKT_Q_1", 0x0000001F, (u32)"NKT_D_1",
-    0x00000027, (u32)"NKT_D_1", 0x0000002A, (u32)"NKT_R_1",
-    0x00000028, (u32)"NKT_W_1", 0x00000038, (u32)"NKT_K_2",
-    0x00000039, (u32)"NKT_K_2", 0x00000041, (u32)"NKT_S_2",
-    0x00000045, (u32)"NKT_S_2",
+static BattleDispPose pose_table_turn[17] = {
+    { 0x01, "NKT_N_2" }, { 0x02, "NKT_B_1" },
+    { 0x09, "NKT_B_1" }, { 0x05, "NKT_K_2" },
+    { 0x04, "NKT_K_2" }, { 0x03, "NKT_K_2" },
+    { 0x1C, "NKT_S_2" }, { 0x1D, "NKT_Q_1" },
+    { 0x1E, "NKT_Q_1" }, { 0x1F, "NKT_D_1" },
+    { 0x27, "NKT_D_1" }, { 0x2A, "NKT_R_1" },
+    { 0x28, "NKT_W_1" }, { 0x38, "NKT_K_2" },
+    { 0x39, "NKT_K_2" }, { 0x41, "NKT_S_2" },
+    { 0x45, "NKT_S_2" },
 };
 
-// TODO: type
-static u32 data_table[6] = {
-    0x0000000D, (u32)&dmg_turn_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x0D, &dmg_turn_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 // TODO: type

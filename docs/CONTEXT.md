@@ -1662,8 +1662,8 @@ compile yet), and auto_* rodata units.
 - BeroEntry.nextareaArg1 is the destination map's name, not a number: linking hei_09 showed it.
 - tools/agent_check.py takes REL units as MOD/UNIT; `--final` runs tools/rel_link.py, which compares the object
   and then tries the link, printing LINKED or NOT LINKED with what differs.
-- 256 tables in 105 of the linked files are still raw u32 arrays: typing them is agent work (the link keeps it
-  honest).
+- The generated files' other tables are raw u32 arrays marked `// TODO: type` (256 in the first 118 units; 1,485 in
+  198 linked files once wave 17's units are in): typing them is agent work, and the link keeps it honest.
 
 **Wave 17** (scratch/wave17): the 104 unique-name REL units with 1-3 functions, none over 1.2 KB (34 KB of code,
 732 KB of data). Each agent gets its unit's generated source (data done, verified; a `// TODO: write NAME here`
@@ -1733,3 +1733,79 @@ what MWCC gives when their text order is `_fire_wave`, `_mario_fire_ball_control
 four partial functions. `unit_party_clauda`: its weapon tables are typed `BattleWeapon` in `include/battle`, whose struct has
 no room for the pointers they contain, and the struct is not to change tonight. `evt_kinopio` is full of named string and
 pool-base hacks.
+## Wave 18: the generated REL tables typed with existing structs (2026-09-29, Claude Opus 5.5 orchestrating, DeepSeek V4.1 Flash agents)
+
+Claude #1 launched it at Isaac's request (one wave per orchestrator); Claude #2 collected and reviewed it. 151 of the
+generator's linked units, one agent each (24 at a time, 20 minutes), replaced `// TODO: type` u32 arrays with struct
+types already in include/, no header edits, and had to stay LINKED (tools/agent_check.py --final).
+
+**140 units taken, 419 of their 738 raw tables typed; 96 units have none left. Bytes unchanged (32 checksums OK),
+so the scores don't move; the gain is readable source.** 144 finished LINKED; 4 of those changed nothing; 7 ended
+NOT LINKED and stay as generated (6 hit the time limit mid-edit, basabasa_green stopped with a file that doesn't
+build). The launcher's other_changes.txt listed "Only in rels/X: include" for every unit: empty directories the
+workspace setup created, not agent changes.
+
+Typed as: BeroEntry 116 (every bero_entry_data/bero_data table), BattleDispPose 46, BattleDataEntry 40,
+BattleUnitKindPart 30, BattleWeapon 25, BattleUnitDefense 21, NpcSetupInfo 19, BattleUnitDefenseAttr 18,
+NpcBattleSetupEntry 15 (btlgrpsel_*), HitDamageReturn 14 (hitDmgRetPoints), TreeAccessEntry 11 and
+KusaAccessEntry 11 (ki/tree and kusa/ueki tables), BattleVulnerableStatus 6, BattleUnitSetup 3, DoorEntry 2,
+BattleStageObjectData 2, ItemType 1 (a -1-terminated key list).
+
+**Left raw, and why: the header types, not the agents.** Nearly every leftover is a battle unit's own tables:
+- BattleUnitKind: the unit's name string sits at 0x4, which the header has as `u8[8]`, and 0x10-0xB7 is one opaque
+  block, so no unit could be typed without dropping a relocation.
+- BattleVulnerableStatus (`regist`) is 0x16 bytes in the header; the objects are 0x18. BattleUnitDefenseAttr is
+  5 bytes against 8. A few agents typed them anyway (the tail padding still links); most left them raw.
+- BattleUnitKindPart's 0x24-0x37 is opaque; typed parts keep those bytes verbatim.
+- 5-word pose_sound_timing_table entries have no struct.
+Fixing those four headers (BattleUnitKind first) is the next step; after it, a rerun over the same units would
+type most of what's left.
+
+**Review (one fresh Claude, semantic):** no table has the wrong type; every typed table was traced to the command
+that receives it (BeroEntry to evt_bero_*, NpcSetupInfo to evt_npc_setup, HitDamageReturn to
+evt_hit_damage_return_set, BattleUnitSetup to btlevtcmd_SpawnUnit, ...). Fixed: false or contradictory comments
+(three files claimed the 5-byte defence structs can't be used, while five others use them and link), a `PTR()` in a
+C initializer, and a note on the Blooper arm's data table, which has no terminator and runs on into the next object
+(the original's symbols have them as two objects). Left as inconsistencies for the rerun: part flags written as
+symbols in some files and hex in others, item-select lists as ItemType or s32, `regist` typed in 6 files and raw in
+30. More header follow-ups it found: BeroEntry.animeArg3/4 hold event pointers and strings (typed s32, so every
+row casts); NpcBattleSetupEntry.field_8 is the stage-data pointer; BattleUnitKind.mParts should be
+BattleUnitKindPart*; BattleWeapon's 0x0-0x18 is opaque (every weapon spells 1.0f as four bytes); BattleUnitSetup's
+field_4 holds alliance, attack phase and position; BattleStageObjectData's offset comments are wrong;
+ITEM_STEEPLE_KEY_0x19 is used at Riverside Station, so 0x18/0x19 may be the Station Keys. Full list:
+scratch/wave18m/review.md (gitignored).
+## Wave 17: 82 REL units with functions linked (2026-09-29, Claude Opus 5.5; agents DeepSeek V4.1 Flash)
+
+104 unique-name REL units with 1-3 functions (none over 1.2 KB), smallest first; 24 agents at a time over the list,
+30 minutes each, 00:41-02:35. Each got its generated source (data equal to the original; a TODO where each function
+goes, placed before the first script that uses it; declarations so the file built) and the job: write the
+functions, type what tables it could, `check.py --final` until LINKED. **82 LINKED** (each rechecked by a fresh
+`tools/rel_link.py` at collection), all merged; 18 headers gained lines (7 new, several under the existing
+include/rel/<mod>/ convention), none lost one. **Functions 4,994 -> 5,131; linked data 13.94% -> 23.67% on this
+branch.** Small units took 2-4 minutes; the 2-3 function ones used most of the 30.
+
+Not linked (22; the last 3 timed out after the first count; their generated data is still good, the functions
+aren't):
+- ~10 function mismatches (.text bytes or size differ): ordinary near-misses, plus two where the agent never
+  wrote the function (hei_01, mri_13).
+- 3 constant/string pool differences (.rodata size or bytes; a float literal in dou_04), the literal-order rule
+  (see the grind chapters) applies.
+- 6 where tools/rel_cmp.py says the object equals the original but the REL's checksum fails (unit_faker_mario_gra,
+  unit_hyper_togekuri, unit_boss_rampell, unit_yami_togekuri, las_21, win_00). The compare misses something;
+  first look shows the symbol tables differ (the original names every string, ours are anonymous), which
+  shouldn't matter to the REL, so the cause is still open. Until found, only the checksum counts.
+- The agents started from the old brief, before rule 18 (reverse function order); some multi-function units may
+  fail only on that.
+
+**Review of PR #30** (one fresh Claude): nothing high; fixed: rel_link.py restores the unit's previous state on any
+failure (it used to leave it NonMatching), two duplicate prototypes, stale generator TODO comments in 7 linked
+files, include/rel/mri/mri.h's 12 functions declared as USER_FUNC instead of `extern s32 x[]`, the counts above.
+Follow-ups, not done: (1) several unit headers declare other units' symbols (aji_09.h/aji_16.h: evt_emergency from
+aji_17; gor_04.h: luigi_gor_first_talk from gor.c; las_20.h: move_dai; unit_boss_gesso_right_arm.h; jin_10.h uses
+dtk-generated names) and REL headers live in two layouts (include/rel/<mod>/ and rels/<mod>/include/), with
+evt_iwamove in both, disagreeing; (2) the generator's stand-in `extern s32 X[];` lines (534 lines, 261 names; 44 are
+functions such as hei_test_water_tev, 54 are dtk-made names that will break once their units are decompiled): a
+declaration sweep for REL-local symbols like the dol one; (3) las_08.c exports a named global for a 0.7f literal
+(float_0p7_las_00012688), a workaround to redo with the literal-order rule; (4) about 30 functions return bare 0/2
+instead of EVT_RETURN_*; (5) BeroEntry.animeArg3/4 hold event pointers but are s32; (6) rel_gen.py overwrites a
+unit's header on rerun.

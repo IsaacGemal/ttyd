@@ -90,31 +90,13 @@ EVT_BEGIN(w3_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_entry_data[90] = {
-    (u32)"n_bero", 0x00010002, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"jin_01", (u32)"s_bero_2",
-    0x00050005, (u32)&n_close, (u32)&n_open, (u32)"s_bero",
-    0x00010002, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"jin_02", (u32)"n_bero_2", 0x00050005,
-    (u32)&s_close, (u32)&s_open, (u32)"w_bero3", 0x00010002,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"jin_00", (u32)"e_bero_3", 0x00050005, (u32)&w1_close,
-    (u32)&w1_open, (u32)"w_bero1", 0x00010002, 0x00004E20,
-    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
-    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"jin_00",
-    (u32)"e_bero_1", 0x00050005, (u32)&w3_close, (u32)&w3_open,
-    (u32)"w_bero2", 0x00010002, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"jin_00", (u32)"e_bero_2",
-    0x00050005, (u32)&w2_close, (u32)&w2_open, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000,
+static BeroEntry bero_entry_data[] = {
+    {"n_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_01", "s_bero_2", 5, 5, (s32)&n_close, (s32)&n_open},
+    {"s_bero", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_02", "n_bero_2", 5, 5, (s32)&s_close, (s32)&s_open},
+    {"w_bero3", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_3", 5, 5, (s32)&w1_close, (s32)&w1_open},
+    {"w_bero1", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_1", 5, 5, (s32)&w3_close, (s32)&w3_open},
+    {"w_bero2", 1, 2, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "jin_00", "e_bero_2", 5, 5, (s32)&w2_close, (s32)&w2_open},
+    {NULL},
 };
 
 EVT_BEGIN(jin_03_kaidan_temae_kesu)

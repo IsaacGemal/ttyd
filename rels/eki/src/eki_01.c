@@ -69,23 +69,11 @@ static EVT_BEGIN(n_open)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 bero_data[60] = {
-    (u32)"e_bero", 0x00010003, 0x00004E20, 0x000186A0,
-    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    0xFFFFFFFF, 0x00000000, (u32)"eki_03", (u32)"w_bero_1",
-    0x00050005, (u32)&e_close, (u32)&e_open, (u32)"w_dero",
-    0x00010003, 0x00004E20, 0x000186A0, 0x00000000,
-    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
-    0x00000000, (u32)"eki_00", (u32)"e_bero", 0x00050005,
-    (u32)&w_close, (u32)&w_open, (u32)"n_bero", 0x00010003,
-    0x00004E20, 0x000186A0, 0x00000000, 0x00000000,
-    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
-    (u32)"eki_02", (u32)"s_bero", 0x00050005, (u32)&n_close,
-    (u32)&n_open, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+static BeroEntry bero_data[] = {
+    {"e_bero", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_03", "w_bero_1", 5, 5, (s32)e_close, (s32)e_open},
+    {"w_dero", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_00", "e_bero", 5, 5, (s32)w_close, (s32)w_open},
+    {"n_bero", 1, 3, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "eki_02", "s_bero", 5, 5, (s32)n_close, (s32)n_open},
+    {NULL},
 };
 
 static EVT_BEGIN(evt_origami)
@@ -122,9 +110,8 @@ static EVT_BEGIN(evt_origami)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 key_tbl[2] = {
-    0x00000019, 0xFFFFFFFF,
+static ItemType key_tbl[] = {
+    ITEM_STEEPLE_KEY_0x19, -1,
 };
 
 static EVT_BEGIN(evt_chk)

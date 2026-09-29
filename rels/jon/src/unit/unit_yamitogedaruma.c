@@ -2,6 +2,7 @@
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "battle/battle_event_subset.h"
+#include "battle/battle_disp.h"
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
@@ -11,8 +12,8 @@
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
 static u32 regist[6];
-static u32 data_table[12];
-static u32 parts[19];
+static BattleDataEntry data_table[6];
+static BattleUnitKindPart parts;
 static s32 init_event[21];
 static s32 dmg_avoid_counter_thorn_head_event[63];
 static s32 dmg_avoid_counter_thorn_front_event[121];
@@ -57,19 +58,16 @@ u32 unit_yamitogedaruma[49] = {
     (u32)&data_table,
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x04040404, 0x04000000,
+static BattleUnitDefense defence[1] = {
+    { 4, 4, 4, 4, 4 },
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefenseAttr defence_attr[1] = {
+    { 0, 0, 0, 0, 0 },
 };
 
-// TODO: type
-static u32 defence_turn[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence_turn[1] = {
+    { 0, 0, 0, 0, 0 },
 };
 
 // TODO: type
@@ -78,62 +76,89 @@ static u32 regist[6] = {
     0x14642864, 0x641E0000,
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"TGD_N_1", 0x00000002, (u32)"TGD_I_1",
-    0x00000009, (u32)"TGD_I_1", 0x00000005, (u32)"TGD_K_1",
-    0x00000004, (u32)"TGD_X_1", 0x00000003, (u32)"TGD_X_1",
-    0x0000001C, (u32)"TGD_S_4", 0x0000001D, (u32)"TGD_Q_1",
-    0x0000001E, (u32)"TGD_Q_1", 0x0000001F, (u32)"TGD_S_2",
-    0x00000027, (u32)"TGD_D_1", 0x00000032, (u32)"TGD_A_1",
-    0x00000028, (u32)"TGD_S_4", 0x0000002A, (u32)"TGD_S_4",
-    0x00000038, (u32)"TGD_X_1", 0x00000039, (u32)"TGD_X_1",
-    0x00000041, (u32)"TGD_T_1", 0x00000045, (u32)"TGD_S_4",
+static BattleDispPose pose_table[18] = {
+    { 0x00000001, "TGD_N_1" },
+    { 0x00000002, "TGD_I_1" },
+    { 0x00000009, "TGD_I_1" },
+    { 0x00000005, "TGD_K_1" },
+    { 0x00000004, "TGD_X_1" },
+    { 0x00000003, "TGD_X_1" },
+    { 0x0000001C, "TGD_S_4" },
+    { 0x0000001D, "TGD_Q_1" },
+    { 0x0000001E, "TGD_Q_1" },
+    { 0x0000001F, "TGD_S_2" },
+    { 0x00000027, "TGD_D_1" },
+    { 0x00000032, "TGD_A_1" },
+    { 0x00000028, "TGD_S_4" },
+    { 0x0000002A, "TGD_S_4" },
+    { 0x00000038, "TGD_X_1" },
+    { 0x00000039, "TGD_X_1" },
+    { 0x00000041, "TGD_T_1" },
+    { 0x00000045, "TGD_S_4" },
 };
 
-// TODO: type
-static u32 pose_table_turn[30] = {
-    0x00000001, (u32)"TGD_N_2", 0x00000002, (u32)"TGD_I_2",
-    0x00000009, (u32)"TGD_Z_4", 0x00000005, (u32)"TGD_K_2",
-    0x00000004, (u32)"TGD_X_2", 0x00000003, (u32)"TGD_X_2",
-    0x0000001C, (u32)"TGD_S_5", 0x0000001D, (u32)"TGD_Q_2",
-    0x0000001E, (u32)"TGD_Q_2", 0x0000001F, (u32)"TGD_S_3",
-    0x00000027, (u32)"TGD_D_2", 0x00000038, (u32)"TGD_X_2",
-    0x00000039, (u32)"TGD_X_2", 0x00000041, (u32)"TGD_S_5",
-    0x00000045, (u32)"TGD_S_5",
+static BattleDispPose pose_table_turn[15] = {
+    { 0x00000001, "TGD_N_2" },
+    { 0x00000002, "TGD_I_2" },
+    { 0x00000009, "TGD_Z_4" },
+    { 0x00000005, "TGD_K_2" },
+    { 0x00000004, "TGD_X_2" },
+    { 0x00000003, "TGD_X_2" },
+    { 0x0000001C, "TGD_S_5" },
+    { 0x0000001D, "TGD_Q_2" },
+    { 0x0000001E, "TGD_Q_2" },
+    { 0x0000001F, "TGD_S_3" },
+    { 0x00000027, "TGD_D_2" },
+    { 0x00000038, "TGD_X_2" },
+    { 0x00000039, "TGD_X_2" },
+    { 0x00000041, "TGD_S_5" },
+    { 0x00000045, "TGD_S_5" },
 };
 
-// TODO: type
-static u32 data_table[12] = {
-    0x0000000D, (u32)&dmg_turn_event, 0x00000025, (u32)&dmg_avoid_counter_thorn_head_event,
-    0x00000027, (u32)&dmg_avoid_counter_thorn_front_event, 0x00000026, (u32)&dmg_avoid_counter_thorn_front_event,
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[6] = {
+    { 0x0000000D, dmg_turn_event },
+    { 0x00000025, dmg_avoid_counter_thorn_head_event },
+    { 0x00000027, dmg_avoid_counter_thorn_front_event },
+    { 0x00000026, dmg_avoid_counter_thorn_front_event },
+    { 0x00000030, btldefaultevt_Dummy },
+    { 0x00000000, NULL },
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_yamitogedaruma", (u32)"c_togedaruma_b", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x420C0000,
-    0x00000000, 0x00000000, 0x42340000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00002009, 0x00000007, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    0x00000001,
+    "btl_un_yamitogedaruma",
+    "c_togedaruma_b",
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 35.0f, 0.0f },
+    { 0x00, 0x00, 0x00, 0x00, 0x42, 0x34, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, 0x00, 0xFF, 0x00, 0x00 },
+    (BattleUnitDefense*)defence,
+    (BattleUnitDefenseAttr*)defence_attr,
+    kMainPart | kUnknown_0x8 | kIsBombFlippable,
+    kCounterTopSpiky | kCounterPreemptiveFrontSpiky | kCounterFrontSpiky,
+    pose_table,
 };
 
-// TODO: type
-static u32 weapon_togedaruma_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000008, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x0000001E, 0x00002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
+static BattleWeapon weapon_togedaruma_attack[1] = {{
+    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x64, 0x00, 0x00, 0x01, 0x3F, 0x80, 0x00, 0x00 },
+    1,
+    1,
+    1,
+    1,
+    (void*)weaponGetPowerDefault,
+    { 0x00000008, 0, 0, 0, 0, 0, 0, 0 },
+    NULL,
+    { 0 },
+    { 0x01, 0x10, 0x12, 0x60, 0x21, 0x00, 0x20, 0x00,
+      0x00, 0x00, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00 },
+    0x00000087,
+    { 0x00, 0x00, 0x00, 0x1E, 0x00, 0x00, 0x20, 0x04 },
+    NULL,
+    { 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00 },
+}};
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))

@@ -1,3 +1,4 @@
+#include "battle/battle_disp.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
 #include "evt/evt_cmd.h"
@@ -5,8 +6,8 @@
 
 #pragma force_active on
 static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts;
 static s32 init_event[21];
 static s32 damage_event[10];
 s32 honeduka_damage_sub_event[14];
@@ -64,24 +65,37 @@ static u32 regist[6] = {
     0x00643200, 0x00000000,
 };
 
-// TODO: type
-static u32 pose_table[8] = {
-    0x0000001C, (u32)"KRT_Z_1", 0x0000001F, (u32)"KRT_Z_1",
-    0x00000027, (u32)"KRT_Z_1", 0x00000045, (u32)"KRT_Z_1",
+static BattleDispPose pose_table[4] = {
+    {0x1C, "KRT_Z_1"},
+    {0x1F, "KRT_Z_1"},
+    {0x27, "KRT_Z_1"},
+    {0x45, "KRT_Z_1"},
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000009, (u32)&honeduka_damage_sub_event, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[2] = {
+    {0x09, &honeduka_damage_sub_event},
+    {0x00, NULL},
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_honeduka", (u32)"c_honezuka", 0x00000000,
-    0x00000000, 0x00000000, 0x41700000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x02090009, 0x00000000, (u32)&pose_table,
+static BattleUnitKindPart parts = {
+    1,
+    "btl_un_honeduka",
+    "c_honezuka",
+    {0.0f, 0.0f, 0.0f},
+    {15.0f, 25.0f, 0.0f},
+    // struct has this region opaque (0x24..0x37); bytes kept verbatim
+    {
+        0x00, 0x00, 0x00, 0x00,
+        0x41, 0xF0, 0x00, 0x00, // 30.0f
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x14, 0x00, 0x1E,
+        0x00, 0xFF, 0x00, 0x00,
+    },
+    (BattleUnitDefense*)&defence,
+    (BattleUnitDefenseAttr*)&defence_attr,
+    0x02090009,
+    0x00000000,
+    &pose_table,
 };
 
 static EVT_BEGIN(init_event)
