@@ -141,10 +141,11 @@ impl<'a> EventScript<'a> {
             let bytes = section
                 .data_range(symbol.address(), symbol.size())?
                 .context("symbol range out of section bounds")?;
-            let (cow, _, had_errors) = encoding_rs::SHIFT_JIS.decode(bytes);
+            let text = &bytes[..bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len())];
+            let (cow, _, had_errors) = encoding_rs::SHIFT_JIS.decode(text);
             match had_errors {
                 true => Ok(Arg::Symbol { name: name.to_string() }),
-                false => Ok(Arg::Symbol { name: format!("STRING(\"{cow}\")") }),
+                false => Ok(Arg::Symbol { name: format!("STRING({cow:?})") }),
             }
         } else {
             match category {
