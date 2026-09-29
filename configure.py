@@ -1753,6 +1753,8 @@ config.libs = [
             Object(Matching, "unit/unit_togezo.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_togezo_28_data_35BD0"]),
             Object(Matching, "unit/unit_twinkling_pansy.c", modules=["jon"], source="v1/unit/unit_twinkling_pansy.c", extra_cflags=["-DUNIT_DATA_SYM=unit_twinkling_pansy_15_data_40EC8"]),
             Object(Matching, "unit/unit_twinkling_pansy.c", modules=["gra"], source="v2/unit/unit_twinkling_pansy.c", extra_cflags=["-DUNIT_DATA_SYM=unit_twinkling_pansy_11_data_F890"]),
+            Object(Matching, "unit/unit_barriern_satellite.c", modules=["aji"], extra_cflags=["-DUNIT_DATA_SYM=unit_barriern_satellite_2_data_3D950"]),
+            Object(Matching, "unit/unit_barriern_satellite.c", modules=["mri"], extra_cflags=["-DUNIT_DATA_SYM=unit_barriern_satellite_19_data_30B08"]),
         ],
     ),
 ]

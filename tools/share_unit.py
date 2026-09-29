@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Move a rel_gen'd unit source into the shared `common` REL and register one Object per REL.
+
+    python3 tools/share_unit.py unit/unit_x MOD [MOD ...] [-- MOD ...]     (groups after `--` are variants: v2, v3)
+
+The source must be at rels/<first MOD>/src/<unit>.c. Its per-REL data table name becomes UNIT_DATA_SYM (each Object
+passes -DUNIT_DATA_SYM=<that REL's name>), and its extend_data indices become unique across the common sources (>=1001),
+because extend_data(N) is an inline function forcedataN that the linker merges by name within a REL.
+New Objects are NonMatching; flip them with tools/rel_link.py MOD/unit/unit_x."""
+import re, sys, os, shutil, glob
+
+args = sys.argv[1:]
+unit = args.pop(0)
+groups, cur = [], []
+for a in args:
+    if a == "--":
+        groups.append(cur)
+        cur = []
+    else:
+        cur.append(a)
+groups.append(cur)
+name = os.path.basename(unit)
+cfg = open("configure.py").read()
+head, tail = cfg.split('        "common",', 1)
+end = tail.index("        ],\n")  # end of the common object list
+for gi, mods in enumerate(groups):
+    src = f"rels/{mods[0]}/src/{unit}.c"
+    dst_rel = unit if len(groups) == 1 else f"v{gi + 1}/{unit}"
+    dst = f"rels/common/src/{dst_rel}.c"
+    s = open(src).read()
+    m = re.search(rf"\b({name}_\d+_data_[0-9A-F]+)\b", s)
+    if m:
+        s = s.replace(m.group(1), "UNIT_DATA_SYM")
+    else:
+        s2 = re.sub(rf"static u32 {name}\[49\]", "u32 UNIT_DATA_SYM[49]", s)
+        if s2 == s:
+            sys.exit(f"{src}: no per-REL data table name found")
+        s = re.sub(rf"&{name}\b", "&UNIT_DATA_SYM", s2)
+    used = [int(x) for p in glob.glob("rels/common/src/**/*.c", recursive=True) for x in re.findall(r"extend_data\((\d+),", open(p).read())]
+    n = max(used + [1000])
+
+    def bump(_):
+        global n
+        n += 1
+        return f"extend_data({n},"
+
+    s = re.sub(r"extend_data\(\d+,", bump, s)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    open(dst, "w").write(s)
+    os.remove(src)
+    hsrc = f"rels/{mods[0]}/include/{name}.h"
+    if os.path.exists(hsrc):
+        hdst = f"rels/common/include/{name}.h"
+        if os.path.exists(hdst):
+            os.remove(hsrc)
+        else:
+            shutil.move(hsrc, hdst)
+    lines = []
+    for mod in mods:
+        asm = open(f"build/G8MJ01/{mod}/asm/{unit}.s").read()
+        g = re.search(rf"\.obj ({name}_\d+_data_[0-9A-F]+), global", asm)
+        sym = g.group(1) if g else f"{name}_local_data"
+        srcopt = f', source="{dst_rel}.c"' if dst_rel != unit else ""
+        lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=["-DUNIT_DATA_SYM={sym}"]),\n')
+    tail = tail[:end] + "".join(lines) + tail[end:]
+    end += sum(len(l) for l in lines)
+open("configure.py", "w").write(head + '        "common",' + tail)
+print("shared", unit, groups)
