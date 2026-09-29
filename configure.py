@@ -1018,7 +1018,7 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/notify.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/flush_cache.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mem_TRK.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/targimpl.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN.a/targimpl.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/targsupp.s"),
             Object(Matching, "TRK_MINNOW_DOLPHIN.a/mpc_7xx_603e.c"),
             Object(NonMatching, "TRK_MINNOW_DOLPHIN.a/__exception.s"),
