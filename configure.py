@@ -1887,6 +1887,8 @@ config.libs = [
             Object(NonMatching, "unit/unit_burst_wanwan.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_burst_wanwan_28_data_4AED8"]),
             Object(Matching, "unit/unit_bubble.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_bubble_15_data_35518"]),
             Object(Matching, "unit/unit_bubble.c", modules=["dou"], extra_cflags=["-DUNIT_DATA_SYM=unit_bubble_6_data_11C80"]),
+            Object(Matching, "unit/unit_hermos.c", modules=["muj"], extra_cflags=["-DUNIT_DATA_SYM=unit_hermos_20_data_39998"]),
+            Object(Matching, "unit/unit_hermos.c", modules=["dou"], extra_cflags=["-DUNIT_DATA_SYM=unit_hermos_6_data_17118"]),
         ],
     ),
 ]
