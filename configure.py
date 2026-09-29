@@ -1387,6 +1387,12 @@ config.libs = [
         ],
     ),
     Rel(
+        "end",
+        [
+            Object(Matching, "end.c"),
+        ],
+    ),
+    Rel(
         "aaa",
         [
             Object(Matching, "aaa.c"),
