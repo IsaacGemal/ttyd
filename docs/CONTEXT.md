@@ -1671,3 +1671,28 @@ compile yet), and auto_* rodata units.
 where each function goes, declarations so it builds), writes the functions, types the raw tables, and runs
 `check.py --final` until LINKED. 32 agents at a time over the list, 30 minutes each, from ~/ttyd-w17base on the
 tower (this branch plus the units' configure entries).
+
+## Sep 29: the data units as readable source, and tools/dol_gen.py (Claude Sonnet 5.5)
+
+The first version of the data-only units (PR #26) was raw: scripts as hex words, engine functions as `extern u8 name[]`,
+strings as named byte arrays. Redone; every file still links (checksum, "32 files OK"):
+- **`tools/dol_gen.py UNIT`** (modeled on `tools/rel_gen.py`, dol version) writes a unit's data from its disassembly:
+  event scripts through `tools/ttydasm` as `EVT_BEGIN` macros (`PTR()` where the macros don't cast), other objects as
+  `u32` arrays marked `// TODO: type`, strings inline as literals, headers found by searching `include/` for the
+  names used (`extern s32 name[]` only where none declares it), `--force-active` for data nothing in the DOL references,
+  and `--append FILE` to add a unit's data to a source that already has its functions. Strings are pooled by MWCC in
+  order of first use, so the generator interleaves the `.data` and `.sdata` objects so each new string lands where the
+  original pool has it, and an empty string is a pool entry like any other (`STRING("")` came first, the original had it
+  last). It needs a linked build (ttydasm reads `MarioSt.elf`), so regenerate from a good tree, then swap the file in.
+- **Written this way:** `unit_bomzou`, `unit_koura`, `unit_system` (scripts as EVT macros, tables as `u32`),
+  `battle_database_common` and `battle_audience_kind_data` (tables), and `battle_event_subset`: 29 scripts (17 KB) as EVT
+  macros appended to its six functions, which are now in reverse order like every deferred-codegen file. ttydasm can't read
+  some `battle_item_*` tables that look like scripts; they are written as tables.
+- **Typed by hand:** `party_data` is `PartyData partyDataTbl[20]` and three `char*[N][15]` pose tables (types from
+  `party.c`'s externs; `PartyData` moved into `party.h`, and the 17 party functions the table names now have prototypes in
+  their `party/*.h`); `seqdef` is `SequenceCallback seq_data_80302E40[8][3]` with the sequence headers' declarations
+  (`seq_gameExit`, `seq_gameover.h` added); `mail_data` is a `MailEntry` table with literals.
+- **Kept raw on purpose:** `battle_evt_cmd` is the jump table of a switch in `btlevtcmd_ACSuccessEffect`, which belongs with that
+  function's unit; `DEMOFont`, MSL `locale` and `unk_0x8025de70` (its strings are used only from RELs).
+- Objects the original keeps in `.data` though they are under 48 bytes need `__declspec(section ".data")`
+  (`unit_bomzou`'s 8-byte `lbl_80398960`, which is padding).

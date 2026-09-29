@@ -29,18 +29,6 @@
 
 
 //.data
-typedef struct PartyData {
-    char* name;       // 0, TODO: modelname? animname?
-    void* init_func;  // 1
-    void* move_func;  // 2
-    void* use_func;   // 3
-    void* post_func;  // 4
-    void* bye_func;   // 5
-    void* unk_6_func; // 6
-    void* unk_7_func; // 7
-    void* unk_8_func; // 8
-    void* exit_func;  // 9
-} PartyData;
 
 extern char* partyPoseTbl[20][15];
 extern char* partyDotPoseTbl[8][15];

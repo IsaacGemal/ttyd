@@ -5,3 +5,4 @@
 
 void seq_gameInit(SequenceWork* work);
 void seq_gameMain(SequenceWork* work);
+void seq_gameExit(SequenceWork* work);
