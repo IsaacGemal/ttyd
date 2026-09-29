@@ -56,23 +56,23 @@ void CircleBufferInitialize(CircleBuffer* cb, u8* buf, s32 size);
 int CircleBufferWriteBytes(CircleBuffer* cb, u8* buf, u32 size);
 int CircleBufferReadBytes(CircleBuffer* cb, u8* buf, u32 size);
 
-const char str_803022E0[20] = "cc not initialized\n";
-const char str_803022F4[44] = "cc_write : Output data 0x%08x %ld bytes\n";
-const char str_80302320[28] = "cc_write sending %ld bytes\n";
-const char str_8030233C[40] = "Expected packet size : 0x%08x (%ld)\n";
-const char str_80302364[48] = "cc_read : error reading bytes from EXI2 %ld\n";
-const char str_80302394[20] = "CALLING EXI2_Init\n";
-const char str_803023A8[24] = "DONE CALLING EXI2_Init\n";
+static const char str_803022E0[20] = "cc not initialized\n";
+static const char str_803022F4[44] = "cc_write : Output data 0x%08x %ld bytes\n";
+static const char str_80302320[28] = "cc_write sending %ld bytes\n";
+static const char str_8030233C[40] = "Expected packet size : 0x%08x (%ld)\n";
+static const char str_80302364[48] = "cc_read : error reading bytes from EXI2 %ld\n";
+static const char str_80302394[20] = "CALLING EXI2_Init\n";
+static const char str_803023A8[24] = "DONE CALLING EXI2_Init\n";
 
-GdevRecvCB gRecvCB_803E4760 ATTRIBUTE_ALIGN(8);
-u8 gRecvBuf_803E4260[GDEV_BUF_SIZE];
-__declspec(section ".sdata") GdevInitFlag gIsInitialized_80418C30;
+static GdevRecvCB gRecvCB ATTRIBUTE_ALIGN(8);
+static u8 gRecvBuf[GDEV_BUF_SIZE];
+__declspec(section ".sdata") static GdevInitFlag gIsInitialized;
 
 int gdev_cc_initialize(void* inputPendingPtrRef, __OSInterruptHandler monitorCallback) {
 	MWTRACE(1, (char*)str_80302394);
 	DBInitComm(inputPendingPtrRef, monitorCallback);
 	MWTRACE(1, (char*)str_803023A8);
-	CircleBufferInitialize(&gRecvCB_803E4760.cb, gRecvBuf_803E4260, GDEV_BUF_SIZE);
+	CircleBufferInitialize(&gRecvCB.cb, gRecvBuf, GDEV_BUF_SIZE);
 	return 0;
 }
 
@@ -81,11 +81,11 @@ int gdev_cc_shutdown() {
 }
 
 int gdev_cc_open() {
-	if (gIsInitialized_80418C30.value != 0) {
+	if (gIsInitialized.value != 0) {
 		return GDEV_ERR_ALREADY_INITIALIZED;
 	}
 
-	gIsInitialized_80418C30.value = TRUE;
+	gIsInitialized.value = TRUE;
 	return 0;
 }
 
@@ -101,27 +101,27 @@ int gdev_cc_read(u8* data, int size) {
 	int poll;
 
 	result = 0;
-	if (!gIsInitialized_80418C30.value) {
+	if (!gIsInitialized.value) {
 		return GDEV_ERR_NOT_INITIALIZED;
 	}
 
 	MWTRACE(1, (char*)str_8030233C, size, size);
 	originalDataSize = expectedDataSize = size;
 
-	while ((u32)CBGetBytesAvailableForRead(&gRecvCB_803E4760.cb) < expectedDataSize) {
+	while ((u32)CBGetBytesAvailableForRead(&gRecvCB.cb) < expectedDataSize) {
 		result = 0;
 		poll = DBQueryData();
 
 		if (poll != 0) {
 			result = DBRead(buff, expectedDataSize);
 			if (result == 0) {
-				CircleBufferWriteBytes(&gRecvCB_803E4760.cb, buff, poll);
+				CircleBufferWriteBytes(&gRecvCB.cb, buff, poll);
 			}
 		}
 	}
 
 	if (result == 0) {
-		CircleBufferReadBytes(&gRecvCB_803E4760.cb, data, originalDataSize);
+		CircleBufferReadBytes(&gRecvCB.cb, data, originalDataSize);
 	} else {
 		MWTRACE(8, (char*)str_80302364, result);
 	}
@@ -137,7 +137,7 @@ int gdev_cc_write(const u8* bytes, int length) {
 	bytesAddr = (u32)bytes;
 	nCopy = length;
 
-	if (gIsInitialized_80418C30.value == FALSE) {
+	if (gIsInitialized.value == FALSE) {
 		MWTRACE(8, (char*)str_803022E0);
 		return GDEV_ERR_NOT_INITIALIZED;
 	}
@@ -178,7 +178,7 @@ int gdev_cc_peek() {
 	}
 
 	if (DBRead(buff, poll) == 0) {
-		CircleBufferWriteBytes(&gRecvCB_803E4760.cb, buff, poll);
+		CircleBufferWriteBytes(&gRecvCB.cb, buff, poll);
 	} else {
 		return GDEV_ERR_READ_ERROR;
 	}

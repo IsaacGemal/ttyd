@@ -806,7 +806,6 @@ config.libs = [
             Object(NonMatching, "sequence/seq_load.c"),
             Object(Matching, "sequence/seq_demo.c"),
             Object(Matching, "sequence/seq_e3.c"),
-            Object(NonMatching, "sequence/seqdef.c"),
         ],
     },
     {

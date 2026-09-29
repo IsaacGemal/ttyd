@@ -1,3 +1,4 @@
+#include "battle/battle_mario.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -11,9 +12,7 @@
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
-extern s32 marioWeapon_KaitenHammerInvolved[];
 extern s32 marioWeapon_UltraHammerFinish[];
-extern s32 marioWeapon_UltraHammerInvolved[];
 static u32 regist[6];
 static u32 data_table[16];
 static u32 parts[95];

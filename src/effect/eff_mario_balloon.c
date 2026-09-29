@@ -9,38 +9,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sdata2 constants (defined by the original object, resolved through symbols.txt).
-#ifdef MUST_MATCH
-// MUST_MATCH: retail reloads every .sdata2 constant right before each use instead of caching it
-// in a register (the original repeats lfs/lwz for the same symbol); volatile reproduces that.
-#define BALLOON_CONST const volatile
-#else
-#define BALLOON_CONST const
-#endif
-extern BALLOON_CONST GXColor dat_8041ca18;
-extern BALLOON_CONST GXColor dat_8041ca1c;
-extern BALLOON_CONST GXColor dat_8041ca20;
-extern BALLOON_CONST GXColor dat_8041ca24;
-extern BALLOON_CONST f32 float_deg2rad_8041ca28;
-extern BALLOON_CONST f32 float_0p7_8041ca2c;
-extern BALLOON_CONST f32 float_1_8041ca30;
-extern BALLOON_CONST f32 float_neg1_8041ca34;
-extern BALLOON_CONST f32 float_0_8041ca38;
-extern BALLOON_CONST f32 float_neg16_8041ca3c;
-extern BALLOON_CONST f32 float_64_8041ca40;
-extern BALLOON_CONST f32 float_16_8041ca44;
-extern BALLOON_CONST f32 float_2_8041ca48;
-extern BALLOON_CONST f32 float_neg20_8041ca4c;
-extern BALLOON_CONST f32 float_32_8041ca50;
-extern BALLOON_CONST f32 float_20_8041ca54;
-extern BALLOON_CONST f32 float_10_8041ca58;
-extern BALLOON_CONST f32 float_4_8041ca5c;
-extern BALLOON_CONST f32 float_0p4_8041ca60;
-extern BALLOON_CONST f32 float_0p8_8041ca64;
-
-// .rodata (defined at the bottom of this file).
-extern BALLOON_CONST Vec vec3_802f3478;
 extern const char str_802F3484[];
+
 EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc) {
 	EffectEntry* entry;
 	EffMarioBalloonData* data;
@@ -52,15 +22,15 @@ EffectEntry* effMarioBalloonEntry(s32 type, NpcEntry* npc) {
 	entry->userdata = data;
 	entry->callback = effMarioBalloonMain;
 	data->type = type;
-	data->angle = float_0_8041ca38;
+	data->angle = 0.0f;
 	data->npc = npc;
 	data->cameraId = 4;
 	switch (type) {
 		case 0:
-			data->scale = float_0p4_8041ca60;
+			data->scale = 0.4f;
 			break;
 		case 1:
-			data->scale = float_0p8_8041ca64;
+			data->scale = 0.8f;
 			break;
 	}
 	return entry;
@@ -75,17 +45,17 @@ void effMarioBalloonMain(EffectEntry* effect) {
 	if (npc == NULL) {
 		mario = marioGetPtr();
 		data->x = mario->position.x;
-		data->y = mario->position.y + mario->wPlayerCollisionBox.y + float_10_8041ca58;
+		data->y = mario->position.y + mario->wPlayerCollisionBox.y + 10.0f;
 		data->z = mario->position.z;
 	} else {
 		data->x = npc->position.x;
-		data->y = npc->position.y + npc->height + float_10_8041ca58;
+		data->y = npc->position.y + npc->height + 10.0f;
 		data->z = npc->position.z;
 	}
 
-	data->angle += float_4_8041ca5c;
+	data->angle += 4.0f;
 	{
-		Vec pos = vec3_802f3478;
+		Vec pos = { 0.0f, 0.0f, 0.0f };
 
 		pos.x = data->x;
 		pos.y = data->y;
@@ -125,8 +95,8 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041ca28 * (data->angle - camGetPtr(camId)->viewYaw));
-	s = float_0p7_8041ca2c * data->scale;
+	PSMTXRotRad(rot, 'y', 0.017453292f * (data->angle - camGetPtr(camId)->viewYaw));
+	s = 0.7f * data->scale;
 	PSMTXScale(scale, s, s, s);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, mtx);
@@ -139,7 +109,7 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 			GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-			PSMTXTransApply(mtx, mtx2, float_1_8041ca30, float_neg1_8041ca34, float_0_8041ca38);
+			PSMTXTransApply(mtx, mtx2, 1.0f, -1.0f, 0.0f);
 			GXLoadPosMtxImm(mtx2, 0);
 			GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 			GXSetZCompLoc(GX_TRUE);
@@ -147,22 +117,25 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 			GXSetCullMode(GX_CULL_NONE);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg16_8041ca3c, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_1_8041ca30);
-			GXPosition3f32(float_neg16_8041ca3c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 0.0f);
+			GXPosition3f32(16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 1.0f);
+			GXPosition3f32(-16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 
 			effGetTexObj(0xE, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-			GXSetTevColor(GX_TEVREG0, dat_8041ca18);
+			{
+				GXColor c = { 0xFF, 0xFF, 0xFF, 0xFF };
+				GXSetTevColor(GX_TEVREG0, c);
+			}
 			GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
 			GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 			GXLoadPosMtxImm(mtx, 0);
@@ -175,34 +148,37 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 			GXSetCullMode(GX_CULL_BACK);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg16_8041ca3c, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_1_8041ca30);
-			GXPosition3f32(float_neg16_8041ca3c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 0.0f);
+			GXPosition3f32(16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 1.0f);
+			GXPosition3f32(-16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 
-			GXSetTevColor(GX_TEVREG0, dat_8041ca1c);
+			{
+				GXColor c = { 0xA0, 0xA0, 0xA0, 0xFF };
+				GXSetTevColor(GX_TEVREG0, c);
+			}
 			GXSetCullMode(GX_CULL_FRONT);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg16_8041ca3c, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_64_8041ca40, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_0_8041ca38);
-			GXPosition3f32(float_16_8041ca44, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_2_8041ca48, float_1_8041ca30);
-			GXPosition3f32(float_neg16_8041ca3c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(16.0f, 64.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 0.0f);
+			GXPosition3f32(16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(2.0f, 1.0f);
+			GXPosition3f32(-16.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 			break;
 
 		case 1:
@@ -210,7 +186,7 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 			GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-			PSMTXTransApply(mtx, mtx2, float_1_8041ca30, float_neg1_8041ca34, float_0_8041ca38);
+			PSMTXTransApply(mtx, mtx2, 1.0f, -1.0f, 0.0f);
 			GXLoadPosMtxImm(mtx2, 0);
 			GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 			GXSetZCompLoc(GX_TRUE);
@@ -218,22 +194,25 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
 			GXSetCullMode(GX_CULL_NONE);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg20_8041ca4c, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_1_8041ca30);
-			GXPosition3f32(float_neg20_8041ca4c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 
 			effGetTexObj(0x10, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-			GXSetTevColor(GX_TEVREG0, dat_8041ca20);
+			{
+				GXColor c = { 0xFF, 0xFF, 0xFF, 0xFF };
+				GXSetTevColor(GX_TEVREG0, c);
+			}
 			GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
 			GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 			GXLoadPosMtxImm(mtx, 0);
@@ -242,60 +221,40 @@ void effMarioBalloonDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			GXSetCullMode(GX_CULL_BACK);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg20_8041ca4c, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_1_8041ca30);
-			GXPosition3f32(float_neg20_8041ca4c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 
-			GXSetTevColor(GX_TEVREG0, dat_8041ca24);
+			{
+				GXColor c = { 0xA0, 0xA0, 0xA0, 0xFF };
+				GXSetTevColor(GX_TEVREG0, c);
+			}
 			GXSetCullMode(GX_CULL_FRONT);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			GXPosition3f32(float_neg20_8041ca4c, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_32_8041ca50, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_0_8041ca38);
-			GXPosition3f32(float_20_8041ca54, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_1_8041ca30, float_1_8041ca30);
-			GXPosition3f32(float_neg20_8041ca4c, float_0_8041ca38, float_0_8041ca38);
-			GXNormal3f32(float_0_8041ca38, float_0_8041ca38, float_1_8041ca30);
-			GXTexCoord2f32(float_0_8041ca38, float_1_8041ca30);
+			GXPosition3f32(-20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(20.0f, 32.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-20.0f, 0.0f, 0.0f);
+			GXNormal3f32(0.0f, 0.0f, 1.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 			break;
 	}
 }
 
 // .rodata
-BALLOON_CONST Vec vec3_802f3478 = { 0.0f, 0.0f, 0.0f };
 const char str_802F3484[] = "MarioBalloon";
-
-// .sdata2
-BALLOON_CONST GXColor dat_8041ca18 = { 0xFF, 0xFF, 0xFF, 0xFF };
-BALLOON_CONST GXColor dat_8041ca1c = { 0xA0, 0xA0, 0xA0, 0xFF };
-BALLOON_CONST GXColor dat_8041ca20 = { 0xFF, 0xFF, 0xFF, 0xFF };
-BALLOON_CONST GXColor dat_8041ca24 = { 0xA0, 0xA0, 0xA0, 0xFF };
-BALLOON_CONST f32 float_deg2rad_8041ca28 = 0.017453292f;
-BALLOON_CONST f32 float_0p7_8041ca2c = 0.7f;
-BALLOON_CONST f32 float_1_8041ca30 = 1.0f;
-BALLOON_CONST f32 float_neg1_8041ca34 = -1.0f;
-BALLOON_CONST f32 float_0_8041ca38 = 0.0f;
-BALLOON_CONST f32 float_neg16_8041ca3c = -16.0f;
-BALLOON_CONST f32 float_64_8041ca40 = 64.0f;
-BALLOON_CONST f32 float_16_8041ca44 = 16.0f;
-BALLOON_CONST f32 float_2_8041ca48 = 2.0f;
-BALLOON_CONST f32 float_neg20_8041ca4c = -20.0f;
-BALLOON_CONST f32 float_32_8041ca50 = 32.0f;
-BALLOON_CONST f32 float_20_8041ca54 = 20.0f;
-BALLOON_CONST f32 float_10_8041ca58 = 10.0f;
-BALLOON_CONST f32 float_4_8041ca5c = 4.0f;
-BALLOON_CONST f32 float_0p4_8041ca60 = 0.4f;
-BALLOON_CONST f32 float_0p8_8041ca64 = 0.8f;

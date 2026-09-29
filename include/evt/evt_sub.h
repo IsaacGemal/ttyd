@@ -77,3 +77,4 @@ USER_FUNC(set_stop);
 USER_FUNC(get_stop);
 USER_FUNC(irai_mail_check);
 USER_FUNC(mail_evt_gor_04_keyoff_check);
+USER_FUNC(evt_sub_get_areaname);

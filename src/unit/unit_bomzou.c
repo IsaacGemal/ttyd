@@ -7,7 +7,6 @@
 #include "evt/evt_sub.h"
 #include "party/party_motion.h"
 
-extern s32 btldefaultevt_Confuse[];
 static u32 parts[19];
 static u32 defence[2];
 static u32 defence_attr[2];

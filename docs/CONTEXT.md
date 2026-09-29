@@ -1556,7 +1556,7 @@ The list from `python3 tools/autolink.py --list` (30 units at the start) was alm
 `-inline auto,deferred` MWCC emits a file's functions in reverse source order, so a unit whose functions are written in
 the original's order comes out backwards, every function scores 100%, and the checksum fails. **16 units linked (15
 from that list, `eff_irekaeru` from the constants problem below); code linked 11.80% -> 12.43%, linked data 5.79% ->
-5.81%, functions 4,994 -> 4,995 (`effIrekaeruDisp`); `tools/ci.py` PASS, "32 files OK".** The list is down to 15.
+5.81%, functions 4,994 -> 4,995 (`effIrekaeruDisp`); `tools/ci.py` PASS, "32 files OK".** The list is down to 18.
 
 **Diagnosing a unit that will not link** (throwaway scripts, not committed): compare the unit's compiled object with
 `build/G8MJ01/obj/<unit>.o` with pyelftools: the order of its function symbols, and each section's size and bytes.
@@ -1594,7 +1594,7 @@ alive at the cost of a compare), `_hammer_star_effect` (the `lwz` of `userdata[0
 arguments; reading it inline or in a block did not move it), `effUranokoMain` (f0/f1 swapped around `1.0 - scale`),
 plus the earlier round's `mot_hip`, `evt_cloud_main`, `battleAcMain_CraneTiming`.
 
-**Still unlinked (15):** `battle_event_subset` (no data written at all), `sac_common`, `unit_mario` and `eff_uranoko`
+**Still unlinked (18):** `battle_event_subset` (no data written at all), `sac_common`, `unit_mario` and `eff_uranoko`
 (link errors on constants their sources only declare), `evt_kinopio` (checksum), the four MusyX files, TRK
 `serpoll`/`targimpl`/`mslsupp`/`main`/`CircleBuffer`, `alloc`, `printf`, `float`, `uart_console_io_gcn`. `eff_uranoko`
 and `unit_mario` need the `eff_irekaeru` treatment.
@@ -1605,7 +1605,8 @@ and `unit_mario` need the `eff_irekaeru` treatment.
 linked data 5.81% -> 6.46%, matched data 7.64% -> 7.73%, functions 4,995 -> 4,996 (`mailGetPtr`).** The "fully matched but not
 linked" list is down to 6 (`battle_event_subset` was linked afterwards, see the next chapter). Every dol unit now has a source file (`configure.py` prints no "Missing source file").
 
-**Data-only units, and `tools/asm2c_data.py`.** Twelve dol units had no source at all: their data was linked from the
+**Data-only units, and `tools/asm2c_data.py` (superseded by `tools/dol_gen.py`, which writes scripts as EVT macros and puts
+declarations in the owning headers; asm2c_data.py is only still needed for units with only .rodata/.sdata2).** Twelve dol units had no source at all: their data was linked from the
 original object, which counts for nothing in matched data. `python3 tools/asm2c_data.py <unit> > src/<unit>.c` turns a unit's
 disassembly (`build/G8MJ01/asm/<unit>.s`) into C: strings as `char` arrays sized as the original, words as `u32` arrays with
 symbol addresses as `(u32)(void*)sym`, `.rel sym, .L_x` as `sym + offset`, numeric mixed-width objects as `u8` arrays,
@@ -1626,7 +1627,8 @@ game's; they are a byte-exact starting point to name later. Lessons:
 
 **Other links**
 - `sac_common`: function order (the previous round's recipe).
-- TRK `main`/`CircleBuffer`: splits.txt gave `main.c` the rodata, bss and sbss of `CircleBuffer.c`, which is why they
+- TRK `main`/`CircleBuffer` (the "CircleBuffer" unit is really CircleBuffer.c plus the gdev_cc functions of EXI2_GDEV_GCN
+  main.c, to be split later; its data belongs to the gdev part): splits.txt gave `main.c` the rodata, bss and sbss of `CircleBuffer.c`, which is why they
   "failed the checksum" for a day; `CircleBuffer.c` now owns its ranges (`.rodata 0x803022E0-0x803023C0`, `.bss
   0x803E4260-0x803E4780`, `.sbss 0x80418C30-0x80418C38`), defines its own buffers (they were externs nothing defined),
   and its two structs lose their padding fields (objects are 0x1C and 4 bytes). Its ratchet score first read 14.51%
@@ -1718,7 +1720,7 @@ forward-declared from their own signature.
   enter at codegen, in text order. So a file's functions and data have to be interleaved: functions in reverse text order
   (deferred codegen), data in address order, each function placed where its `vec3`s land in the original pool. The
   generator merges the two sequences greedily against the original's `.rodata` order.
-- Function order follows definition order, not prototype order (swapping prototypes changed nothing).
+- Text order is the reverse of definition order under `-inline deferred`, and prototype order changes nothing (swapping prototypes changed nothing).
 - Weak `sqrt`/`sqrtf` statics (`_half$localstatic...`) in a unit's object are merged by the linker; they are not a difference.
 - An object a `.c` defines by name (`const Vec vec3_802eeff0 = ...`) goes into the pool where it is defined; the original has
   it as a literal at its use. `evt_movefloor` and `battle_mario` had such named objects; they are literals now.
@@ -1749,3 +1751,18 @@ pool-base hacks.
 - `extend_data(id)` is an inline function `forcedata<id>`; two files in one REL with the same id are merged by the
   linker and the second one's constants vanish (this cost gor 0x50 bytes of .data). Shared sources name their ids
   `<unit>_<n>`, which is unique by construction.
+
+## 2026-09-29: review fixes for #25-#28 (Claude #3), landed on the #28 branch
+
+- `sac_common` scripts are EVT macros with inline strings (its matched_data drops 100 -> 90.85 because inline literals get
+  `@N` names, not the dtk `str_` names: allowed). `eff_mario_balloon` writes its constants as literals; the `const volatile`
+  externs are gone and the unit still links.
+- Engine functions and weapon tables the units used are declared in the header of the file that defines them
+  (`battle_event_cmd.h`, `battle_event_default.h`, `battle_mario.h`, `battle_party.h`, `evt_sub.h`).
+  `tools/dol_gen.py` now looks the owner up itself and only falls back to a stand-in `extern` (with a warning) when no
+  header-owning source defines the name.
+- `evt_sub_mail_event` is a macro script that ends in a bare `RETURN`; its END word is the separate `lbl_803080CC`.
+  `tree_data` and `kusa_data` are `FLOAT(...)` rows. The `opt_propagation` pairs are back to the original scope: `off` from
+  `evt_sub_get_coin` through `evt_sub_check_intersect`, and around `evt_sub_spline_get_value_manual`.
+- The old `sequence/seqdef.c` stub is gone; the table is `seq_data`. `CircleBuffer.c` keeps its objects `static` under their
+  real names.

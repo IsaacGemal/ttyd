@@ -8,7 +8,7 @@
 #include "system.h"
 #include <string.h> //memset prototype
 
-extern SequenceCallback seq_data_80302E40[8][3];
+extern SequenceCallback seq_data[8][3];
 
 //.sdata
 SequenceType now_seq = SEQ_UNDEFINED;
@@ -31,7 +31,7 @@ void seqMain(void) {
 	if (next_seq != now_seq) {
 		if (now_seq != SEQ_UNDEFINED) {
 			sysWaitDrawSync();
-			seq_data_80302E40[now_seq][2](&seqWork); //call Exit function
+			seq_data[now_seq][2](&seqWork); //call Exit function
 		}
 		prev_seq = now_seq; //store previous
 		memset(&seqWork, 0, sizeof(SequenceWork));
@@ -40,9 +40,9 @@ void seqMain(void) {
 		seqWork.state = 0;
 		seqWork.mapName = next_p0;
 		seqWork.beroName = next_p1;
-		seq_data_80302E40[next_seq][0](&seqWork); //call Init function
+		seq_data[next_seq][0](&seqWork); //call Init function
 	}
-	seq_data_80302E40[now_seq][1](&seqWork); //call Main function
+	seq_data[now_seq][1](&seqWork); //call Main function
 }
 
 void seqSetSeq(SequenceType seq, const char* map, const char* bero) {

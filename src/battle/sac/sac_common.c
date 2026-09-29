@@ -11,11 +11,6 @@
 #include "evt/evt_eff.h"
 #include "battle/battle_ac_help.h"
 
-// ---- local prototypes (no header declares these yet) ----
-
-// Event command functions referenced by the script tables below. The ones not
-// already in battle_event_cmd.h have no header yet.
-
 // ---- sbss globals ----
 static s32 count;
 s32 count2;
@@ -23,105 +18,95 @@ s32 handBeatEnable;
 s32 cheerEnable;
 u8 volPer;
 
-// ---- .rodata strings ----
-const char str_803004A0[0x18] = "SFX_VOICE_MARIO_HAPPY1";
-const char str_803004B8[0x10] = "sac_treasure";
-const char str_803004C8[0x10] = "treasure_map";
-const char str_803004D8[0x0C] = "sac_itemget";
-const char str_803004E4[0x08] = "itemget";
-const char str_803004EC[0x0C] = "stardust";
-
-// ---- .sdata2 constants ----
-const char str_80421E30[] = "M_P_2";
-const u32 zero_80421e38 = 0;
-
 // ---- .data script tables ----
-s32 sac_start_camera_evt[] = {
-    0x0003005B, (s32)evt_btl_camera_set_mode, 0x00000000, 0x00000007,
-    0x0004005B, (s32)evt_btl_camera_set_homing_unit, 0x00000000, 0xFFFFFFFE, 0xFFFFFFFF,
-    0x0004005B, (s32)btlevtcmd_CheckStatus, 0xFFFFFFFE, 0x0000000A, 0xFE363C80,
-    0x00020018, 0xFE363C80, 0x00000001,
-    0x0003005B, (s32)evt_btl_camera_set_zoom, 0x00000000, 0x00000064, 0x00000020,
-    0x0003005B, (s32)evt_btl_camera_set_zoom, 0x00000000, 0x0000012C, 0x00000021,
-    0x0003005B, (s32)evt_btl_camera_set_moveSpeedLv, 0x00000000, 0x00000002,
-    0x0003005B, (s32)evt_btl_camera_set_zoomSpeedLv, 0x00000000, 0x00000002,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(sac_start_camera_evt)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+    CALL(btlevtcmd_CheckStatus, -2, 10, LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        CALL(evt_btl_camera_set_zoom, 0, 100)
+    ELSE
+        CALL(evt_btl_camera_set_zoom, 0, 300)
+    END_IF
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(evt_btl_camera_set_zoomSpeedLv, 0, 2)
+    RETURN
+EVT_END()
+// clang-format on
 
-s32 sac_mario_item_on_evt[] = {
-    0x0004005B, (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x00000028,
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0004005B, (s32)btlevtcmd_FaceDirectionAdd, 0xFFFFFFFE, 0xFE363C80, 0x0000000F,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000005, 0xFFFFFFFF, 0x00000000,
-    0x0006005B, (s32)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(char*)str_803004A0,
-        0xF1194D80, 0x00000000, 0xF1194D80,
-    0x0003005B, (s32)evt_audience_sound_cheer, 0x000000B4, 0x0000003C,
-    0x0004005B, (s32)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001, (s32)(char*)str_80421E30,
-    0x0006005B, (s32)btlevtcmd_GetPartsPos, 0xFFFFFFFE, 0x00000001,
-        0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)btlevtcmd_GetHeight, 0xFFFFFFFE, 0xFE363C85,
-    0x0003005B, (s32)btlevtcmd_GetStatusMg, 0xFFFFFFFE, 0xFE363C86,
-    0x0002003C, 0xFE363C85, 0xFE363C86,
-    0x00020035, 0xFE363C81, 0xFE363C85,
-    0x00020035, 0xFE363C81, 0x00000023,
-    0x00020035, 0xFE363C82, 0xFFFFFFFB,
-    0x000F005B, (s32)evt_eff, (s32)(char*)str_803004B8, (s32)(char*)str_803004C8,
-        0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00020035, 0xFE363C81, 0x00000002,
-    0x00020035, 0xFE363C82, 0xFFFFFFF9,
-    0x000F005B, (s32)evt_eff, (s32)(char*)str_803004D8, (s32)(char*)str_803004E4,
-        0x00000009, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(sac_mario_item_on_evt)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_FaceDirectionAdd, -2, LW(0), 15)
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 5, -1, 0)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_VOICE_MARIO_HAPPY1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_audience_sound_cheer, 180, 60)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("M_P_2"))
+    CALL(btlevtcmd_GetPartsPos, -2, 1, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_GetHeight, -2, LW(5))
+    CALL(btlevtcmd_GetStatusMg, -2, LW(6))
+    MULTIPLY_FLOAT(LW(5), LW(6))
+    ADD(LW(1), LW(5))
+    ADD(LW(1), 35)
+    ADD(LW(2), -5)
+    CALL(evt_eff, STRING("sac_treasure"), STRING("treasure_map"), 0, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    ADD(LW(1), 2)
+    ADD(LW(2), -7)
+    CALL(evt_eff, STRING("sac_itemget"), STRING("itemget"), 9, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    RETURN
+EVT_END()
+// clang-format on
 
-s32 sac_start_stardust[] = {
-    0x00010005, 0x00000006,
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020035, 0xFE363C81, 0x00000032,
-    0x000F005B, (s32)evt_eff, (s32)(char*)&zero_80421e38, (s32)(char*)str_803004EC,
-        0x00000005, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x0000001E, 0x0000001E, 0x0000000A, 0x0000001E,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00010009, 0x0000000A, 0x00000006,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(sac_start_stardust)
+    LOOP(6)
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        ADD(LW(1), 50)
+        CALL(evt_eff, STRING(""), STRING("stardust"), 5, LW(0), LW(1), LW(2), 30, 30, 10, 30, 0, 0, 0, 0)
+        WAIT_FRAMES(10)
+    END_LOOP
+    RETURN
+EVT_END()
+// clang-format on
 
-s32 sac_mario_back_home[] = {
-    0x0004005B, (s32)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x00000028,
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000005, 0xFFFFFFFF, 0x00000000,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(sac_mario_back_home)
+    CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 5, -1, 0)
+    RETURN
+EVT_END()
+// clang-format on
 
-s32 enemy_slide_go_evt[] = {
-    0x0005005B, (s32)btlevtcmd_GetPos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x00020035, 0xFE363C80, 0x000001E0,
-    0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8E80,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000000, 0x00000000, 0x00000001,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(enemy_slide_go_evt)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    ADD(LW(0), 480)
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(5.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, 0, 1)
+    RETURN
+EVT_END()
+// clang-format on
 
-s32 enemy_slide_return_evt[] = {
-    0x0005005B, (s32)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-    0x0003005B, (s32)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A9680,
-    0x0008005B, (s32)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
-        0x00000000, 0x00000000, 0x00000001,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(enemy_slide_return_evt)
+    CALL(btlevtcmd_GetHomePos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(7.0f))
+    CALL(btlevtcmd_MovePosition, -2, LW(0), LW(1), LW(2), 0, 0, 1)
+    RETURN
+EVT_END()
+// clang-format on
 
 // ---- .sdata script table ----
-s32 sac_mario_item_on_end_evt[] = {
-    0x0002005B, (s32)evt_eff_delete, (s32)(char*)str_803004D8,
-    0x0002005B, (s32)evt_eff_delete, (s32)(char*)str_803004B8,
-    0x00000002, 0x00000001,
-};
+// clang-format off
+EVT_BEGIN(sac_mario_item_on_end_evt)
+    CALL(evt_eff_delete, STRING("sac_itemget"))
+    CALL(evt_eff_delete, STRING("sac_treasure"))
+    RETURN
+EVT_END()
+// clang-format on
 
 // .text:0x3F8 | 0x80242F7C | size: 0x7C
 USER_FUNC(sac_wao) {
