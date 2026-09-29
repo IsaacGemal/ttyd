@@ -141,3 +141,8 @@ USER_FUNC(evt_eff64) {
 	}
 	return EVT_RETURN_DONE;
 }
+
+USER_FUNC(evt_eff_softdelete_ptr) {
+	effSoftDelete((EffectEntry*)evtGetValue(event, event->args[0]));
+	return EVT_RETURN_DONE;
+}

@@ -76,7 +76,7 @@ typedef struct SukiTevParam {
 } SukiTevParam;
 
 extern Vec dat_8030096c[6];
-extern Vec vec3_803009f4;
+extern const Vec vec3_803009f4;
 extern Vec vec3_803009b4;
 extern Vec vec3_80300a00;
 extern Vec vec3_80300a0c;
@@ -351,6 +351,28 @@ static void disp_2D(CameraId camera, void* param) {
         N__disp_2D(1, i);
     }
     GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
+}
+
+// .text:0xFE0 | 0x8024A900 | size: 0x114
+void main_button(s32 index) {
+    SukiWork* work = get_ptr();
+    SukiButton* button = &work->buttons[index];
+    s32 tbl[4] = {0x100, 0x200, 0x400, 0x800};
+    Vec pos;
+
+    switch (button->state) {
+    case 0:
+        break;
+    case 1:
+        button->state = 2;
+        pos = vec3_803009f4;
+        pos.x = 60.0f * (f32)index - 30.0f * (f32)(work->max - 1);
+        button->pos = pos;
+        button->button = tbl[irand(4)];
+        break;
+    case 2:
+        break;
+    }
 }
 
 // .text:0x9DC | 0x8024A2FC | size: 0x48

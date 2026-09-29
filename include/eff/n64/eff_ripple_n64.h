@@ -1,0 +1,10 @@
+#pragma once
+
+typedef struct EffectEntry EffectEntry;
+#include <dolphin/types.h>
+typedef struct effRippleN64Data {
+	u8 pad_0x00[0x2C];
+	f32 field_0x2C; //0x2C
+	f32 field_0x30; //0x30
+} effRippleN64Data;
+void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz);

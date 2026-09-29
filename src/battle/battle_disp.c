@@ -693,6 +693,51 @@ void BattleStockExpDisp(void) {
 	}
 }
 
+// .rodata
+static volatile const Vec vec3_802ede0c = { 0.0f, 0.0f, -100.0f };
+static volatile const Vec vec3_802ede18 = { 0.0f, 0.0f, -100.0f };
+
+// .sbss
+static f32 y_1185;
+static f32 x_1184;
+
+double double_to_int_802ede28 = 4503601774854144.0;
+
+// NONMATCHING (91.05%): instructions differ; see check.py
+void _btlStockExpDisp(CameraId cameraId, void* param) {
+	BattleWork* wp = _battleWorkPointer;
+	s32 exp;
+	s32 value;
+	s32 tens;
+	s32 ones;
+	s32 i;
+	Vec pos1;
+	Vec pos2;
+
+	exp = *(s32*)((char*)wp + 0xf04);
+	if (exp <= 0) {
+		return;
+	}
+	value = exp;
+	if (value > 100) {
+		value = 100;
+	}
+	tens = value / 10;
+	ones = value - tens * 10;
+	for (i = 0; i < ones; i++) {
+		pos1 = vec3_802ede0c;
+		pos1.x = (308.0f + x_1184) - 3.5f - 13.0f * (f32)i;
+		pos1.y = y_1185 - 220.0f;
+		iconDispGx(&pos1, 0x10, 0x18c, 0.35f);
+	}
+	for (i = 0; i < tens; i++) {
+		pos2 = vec3_802ede18;
+		pos2.x = (308.0f + x_1184) - 10.0f - 20.0f * (f32)i + 4.0f;
+		pos2.y = (y_1185 - 220.0f) + 16.0f;
+		iconDispGx(&pos2, 0x10, 0x18c, 0.5f);
+	}
+}
+
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 

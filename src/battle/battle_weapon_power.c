@@ -100,3 +100,7 @@ u32 weaponGetACOutputParam(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     }
     return result;
 }
+
+u32 weaponGetPowerHPHalf2(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
+    return unit2->currentHp / 2;
+}

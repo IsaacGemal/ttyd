@@ -910,3 +910,125 @@ void main_star0(s32 idx) {
     }
 }
 
+// Two things differ. (1) The int->float magic double is pooled as an anonymous
+// local `@589@` instead of the shared double_to_int_80300468 reached as
+// vec3_803002b0+0x1b8; the file's .rodata pool is incomplete in this unit, so
+// MWCC cannot fold it into the vec3 base. (2) MWCC schedules differently: it
+// hoists the field_3C/48 Vec loads into r7-r0 and loads float_50/float_neg1 at
+// their use, where the original loads the Vec fields late (reusing r3/r0) and
+// hoists the two float constants. Logic and constants match the assembly.
+// NONMATCHING (71.95%): the pooled magic double and MWCC's schedule, per above.
+void main_star1(void) {
+    const f32* vec = vec3_803002b0;
+    GenkiWork* genki = get_ptr();
+    GenkiStar* star = &genki->stars[0];
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 f;
+
+    switch (star->field_0) {
+    case 0:
+        break;
+    case 1:
+        star->field_0 = 2;
+        star->field_4 = 0;
+        star->field_60 = effStarStoneEntry(4, float_0_80421d84, float_neg1000_80421d88,
+                                           float_0_80421d84, float_1_80421d74);
+        BtlUnit_GetPos(mario, &star->field_C, &star->field_10, &star->field_14);
+        star->field_10 = star->field_10 +
+            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421d8c);
+        *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+        *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
+        star->field_28 += float_50_80421d90;
+        star->field_2C += float_neg1_80421d94;
+        *(Vec*)&star->field_3C = *(const Vec*)&vec[0x60 / 4];
+        *(Vec*)&star->field_48 = *(const Vec*)&vec[0x6C / 4];
+        /* fallthrough */
+    case 2:
+        star->field_4++;
+        if (star->field_4 <= 0x64) {
+            star->field_C = intplGetValue(0, star->field_4, 0x64, star->field_18, star->field_24);
+            star->field_10 = intplGetValue(0, star->field_4, 0x64, star->field_1C, star->field_28);
+            star->field_14 = intplGetValue(0, star->field_4, 0x64, star->field_20, star->field_2C);
+            f = intplGetValue(0, star->field_4, 0x64, float_0_80421d84, float_2_80421d70);
+            star->field_44 = f;
+            star->field_40 = f;
+            star->field_3C = f;
+        } else {
+            star->field_C = star->field_24;
+            star->field_10 = star->field_28;
+            star->field_14 = star->field_2C;
+            star->field_44 = float_2_80421d70;
+            star->field_40 = float_2_80421d70;
+            star->field_3C = float_2_80421d70;
+        }
+        star->field_4C = intplGetValue(4, star->field_4, 0x78, float_0_80421d84,
+                                       float_2160_80421d98);
+        if (star->field_4 >= 0x78) {
+            Vec v;
+
+            star->field_0 = 3;
+            star->field_4 = 0;
+            *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
+            v = *(const Vec*)&vec[0x78 / 4];
+            v.x = float_200_80421d9c * (f32)rand() / float_32767_80421da0;
+            v.z = star->field_20;
+            *(Vec*)&star->field_24 = v;
+            *(Vec*)&star->field_30 = *(const Vec*)&vec[0x84 / 4];
+            star->field_34 = (float_2_80421d70 * (star->field_28 - star->field_1C) -
+                              float_720_80421da4) / float_120_80421da8;
+        }
+        break;
+    case 3:
+        star->field_4++;
+        star->field_C = intplGetValue(4, star->field_4, 0x3C, star->field_18, star->field_24);
+        star->field_10 += star->field_34;
+        star->field_34 += float_0p2_80421dac;
+        star->field_4C = float_0_80421d84;
+        star->field_44 = float_2_80421d70;
+        star->field_40 = float_2_80421d70;
+        star->field_3C = float_2_80421d70;
+        if (star->field_4 >= 0x3C) {
+            star->field_0 = 4;
+            star->field_4 = 0;
+            if (irand(2) == 0) {
+                star->field_30 = float_neg2_80421db0;
+            }
+            star->field_30 = float_2_80421d70;
+            star->field_34 = float_0_80421d84;
+        }
+        break;
+    case 4:
+        star->field_C += star->field_30;
+        if (star->field_C < float_0_80421d84) {
+            star->field_30 = float_3_80421db4;
+        }
+        if (star->field_C > float_200_80421d9c) {
+            star->field_30 = float_neg3_80421db8;
+        }
+        star->field_34 += float_0p1_80421dbc;
+        if (star->field_34 >= float_6p2832_80421dc0) {
+            star->field_34 -= float_6p2832_80421dc0;
+        }
+        star->field_10 = float_10_80421d54 * (f32)sin(star->field_34) + float_180_80421d4c;
+        if (genki->field_40 <= 0) {
+            star->field_0 = 5;
+            star->field_4 = 0;
+            *(Vec*)&star->field_C = *(const Vec*)&vec[0x90 / 4];
+        }
+        break;
+    case 5:
+        break;
+    }
+
+    if (star->field_60 != NULL) {
+        f32* p = (f32*)star->field_60->userdata;
+        p[0x8 / 4] = star->field_C;
+        p[0xC / 4] = star->field_10;
+        p[0x10 / 4] = star->field_14;
+        p[0x18 / 4] = star->field_48;
+        p[0x1C / 4] = star->field_4C;
+        p[0x20 / 4] = star->field_50;
+        p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
+    }
+}
+

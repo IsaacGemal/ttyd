@@ -46,6 +46,10 @@ s32 getDebugMode(void) {
 	return wp2->debug;
 }
 
+s32 N_getDebugMode(void) {
+	return wp2->debug;
+}
+
 void titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
 	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());

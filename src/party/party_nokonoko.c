@@ -2,6 +2,7 @@
 #include "party/party_nokonoko.h"
 #include "party/party_move.h"
 #include "mario/mario.h"
+#include "mario/mario_sbr.h"
 #include "mario/mario_party.h"
 #include "driver/hitdrv.h"
 #include "driver/itemdrv.h"
@@ -26,6 +27,8 @@ const Vec vec3_802ce138 = {0.0f, 0.0f, 0.0f};
 
 static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;
+static const f32 float_90 = 90.0f;
+static const f32 float_0p5 = 0.5f;
 
 void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     Vec sp;
@@ -104,6 +107,161 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
             *out = *pos;
         }
     }
+}
+
+// The four probes and the selection logic match structurally; what differs is
+// only register allocation: block 1's rad lands in f28 instead of f31, the mask
+// lands in r5 instead of r4 (so the copy branches use a different scratch), and
+// blocks 2-4 schedule the float_0 load after pos->z.
+// NONMATCHING (96.81%)
+s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
+    s32 result;
+    Vec v1;
+    Vec v2;
+    Vec v3;
+    Vec v4;
+    f32 distance;
+    f32 hitX, hitY, hitZ;
+    f32 hitNX, hitNY, hitNZ;
+    MarioWork* mario;
+    f32 radius;
+    f32 angle;
+    f32 rad;
+    f32 s;
+    f32 c;
+    f32 x;
+    f32 y;
+    f32 z;
+    HitEntry* hit0;
+    HitEntry* hit1;
+    HitEntry* hit2;
+    HitEntry* hit3;
+
+    mario = marioGetPtr();
+    radius = mario->wPlayerCollisionBox.x;
+
+    angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_180);
+    rad = float_3p1416 * angle / float_180;
+    s = sin(rad);
+    x = radius * s + pos->x;
+    v1.x = x;
+    c = cos(rad);
+    y = pos->y + height;
+    z = pos->z + radius * -c;
+    v1.y = pos->y;
+    v1.z = z;
+    distance = float_0p1 + height;
+    hit0 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
+                          float_0);
+
+    angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_90);
+    rad = float_3p1416 * angle / float_180;
+    s = sin(rad);
+    x = radius * s + pos->x;
+    v2.x = x;
+    c = cos(rad);
+    y = pos->y + height;
+    z = pos->z + radius * -c;
+    v2.y = pos->y;
+    v2.z = z;
+    distance = float_0p1 + height;
+    hit1 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
+                          float_0);
+
+    angle = revise360(toMovedir(*(f32*)mario->unk1AC) + float_90);
+    rad = float_3p1416 * angle / float_180;
+    s = sin(rad);
+    x = radius * s + pos->x;
+    v3.x = x;
+    c = cos(rad);
+    y = pos->y + height;
+    z = pos->z + radius * -c;
+    v3.y = pos->y;
+    v3.z = z;
+    distance = float_0p1 + height;
+    hit2 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
+                          float_0);
+
+    angle = revise360(toMovedir(*(f32*)mario->unk1AC));
+    rad = float_3p1416 * angle / float_180;
+    s = sin(rad);
+    x = radius * s + pos->x;
+    v4.x = x;
+    c = cos(rad);
+    y = pos->y + height;
+    z = pos->z + radius * -c;
+    v4.y = pos->y;
+    v4.z = z;
+    distance = float_0p1 + height;
+    hit3 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
+                          float_0);
+
+    result = 0;
+    if (hit2) {
+        result |= 4;
+    }
+    if (hit3) {
+        result |= 8;
+    }
+    if (hit0) {
+        result |= 1;
+    }
+    if (hit1) {
+        result |= 2;
+    }
+
+    if (hit0) {
+        if (hit1 && hit2 && hit3) {
+            out->x = (v1.x + v3.x) * float_0p5;
+            out->z = (v1.z + v3.z) * float_0p5;
+            out->y = v1.y;
+            return result;
+        } else if (hit1) {
+            out->x = (v1.x + v2.x) * float_0p5;
+            out->z = (v1.z + v2.z) * float_0p5;
+            out->y = pos->y;
+            return result;
+        } else if (hit2) {
+            out->x = (v1.x + v3.x) * float_0p5;
+            out->z = (v1.z + v3.z) * float_0p5;
+            out->y = v1.y;
+            return result;
+        } else if (hit3) {
+            out->x = (v1.x + v4.x) * float_0p5;
+            out->z = (v1.z + v4.z) * float_0p5;
+            out->y = v1.y;
+            return result;
+        } else {
+            *out = v1;
+            return result;
+        }
+    } else {
+        if (hit3) {
+            if (hit1) {
+                out->x = (v4.x + v2.x) * float_0p5;
+                out->z = (v4.z + v2.z) * float_0p5;
+                out->y = v4.y;
+                return result;
+            } else if (hit2) {
+                out->x = (v3.x + v2.x) * float_0p5;
+                out->z = (v3.z + v2.z) * float_0p5;
+                out->y = v3.y;
+                return result;
+            } else {
+                *out = v4;
+            }
+        }
+        if (hit1) {
+            *out = v2;
+            return result;
+        }
+        if (hit2) {
+            *out = v3;
+            return result;
+        }
+        *out = *pos;
+    }
+    return result;
 }
 
 // NONMATCHING (76%): the pi branch in the original makes dead sin/cos calls

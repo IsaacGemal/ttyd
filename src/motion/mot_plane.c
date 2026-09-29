@@ -17,6 +17,18 @@ CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_AIRPLANE1"), LW(0), LW(1), LW(2), 0)
 RETURN
 EVT_END()
 
+s32 marioPlaneGetFlyingDir(void) {
+	MarioWork* mario = marioGetPtr();
+
+	if (mario->currMotionId != MARIO_MOTION_PLANE) {
+		return 0;
+	}
+	if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
+		return 1;
+	}
+	return -1;
+}
+
 // NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
 void mot_plane(void) {
 	MarioWork* mario;

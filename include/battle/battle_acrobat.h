@@ -7,3 +7,4 @@ s32 BattleAcrobatStart(BattleWork* work, s32 unitId, s32 windowStartFrame,
 s32 BattleAcrobatMain(BattleWork* work);
 s32 BattleAcrobatGetResult(BattleWork* work, s32* result, s32* curFrame);
 void accrobat_timing_icon_disp(CameraId camId, void* param);
+void _accrobat_timing_icon_disp(CameraId camId, void* param);

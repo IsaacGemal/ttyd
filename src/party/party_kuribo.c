@@ -38,3 +38,8 @@ USER_FUNC(pre_kurio_use) {
 
     
 }
+
+void kuribo_use_post(PartyEntry* party) {
+    party->flags &= ~0x04000000;
+    party->flags &= ~0x02000000;
+}

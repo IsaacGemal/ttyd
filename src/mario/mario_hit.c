@@ -20,6 +20,7 @@
 #include <dolphin/mtx.h>
 #include "motion/mot_slit.h"
 #include "mario/mariost.h"
+#include "matching.h"
 
 // locals for symbols with no home header
 
@@ -960,6 +961,171 @@ void marioSearchFrontWall_staying(f32 a) {
 
     v = wp->position;
     marioChkWallAround(&v, 0, float_0_8041a7a4, a, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
+    wp->position.x = v.x;
+    wp->position.z = v.z;
+}
+
+extern const f32 float_30_8041a82c;
+extern const f32 float_16p8_8041a830;
+extern const Vec vec3_802c582c;
+
+// NONMATCHING (98.68%): the targetDistance round keeps float_1000 in f3 and out1.x in f1
+// where the original uses f2 and f4 (round-1 FPR scheduling), and the four int->float
+// conversions reference the anonymous @752 pool literal instead of double_to_int_802c5920.
+void marioCheckWall_roll(f32 a, f32 b) {
+    MarioWork* wp = marioGetPtr();
+    Vec v;
+    f32 f8;
+    f32 f31;
+    HitEntry* hit;
+    HitCheckQuery query;
+    s32 r;
+
+    *(f32*)&wp->field_0x1F0[0x20] = float_1000_8041a7a0;
+    if (a != float_0_8041a7a4 && wp->airTimer == 0) {
+        if (*(f32*)&wp->field_0x1C0[0x8] < a) {
+            *(f32*)&wp->field_0x1C0[0x8] = a;
+            *(f32*)&wp->field_0x1C0[0xC] = b;
+            *(s32*)&wp->field_0x1C0[0x10] = 0xE;
+        } else {
+            s32 t = *(s32*)&wp->field_0x1C0[0x10] - 1;
+
+            *(s32*)&wp->field_0x1C0[0x10] = t;
+            if (t <= 0) {
+                *(s32*)&wp->field_0x1C0[0x10] = 0;
+                *(f32*)&wp->field_0x1C0[0x8] = a;
+                *(f32*)&wp->field_0x1C0[0xC] = b;
+            }
+        }
+    } else {
+        *(f32*)&wp->field_0x1C0[0x8] = MATCH_F32(float_0_8041a7a4);
+    }
+
+    if (a != float_0_8041a7a4 && wp->airTimer == 0) {
+        *(f32*)&wp->unk19C[0] = *(f32*)&wp->field_0x1C0[0xC];
+    }
+
+    if (wp->flags & 0x10000) {
+        Vec v2;
+        Vec dir;
+        Vec out1;
+        Vec out2;
+        HitEntry* headHit;
+
+        v2 = wp->position;
+        dir = vec3_802c582c;
+        f31 = float_30_8041a82c;
+        query.targetPos = v2;
+        query.targetDir = dir;
+        query.targetDistance = f31;
+        if (marioGetPtr()->currMotionId == 0x1C) {
+            headHit = hitCheckVecFilter(&query, chkfilterVecVivian);
+        } else if (marioGetPtr()->flags & 0x1000000) {
+            headHit = hitCheckVecFilter(&query, chkfilterVecRoll);
+        } else {
+            headHit = hitCheckVecFilter(&query, chkfilterVec);
+        }
+        if (headHit == NULL) {
+            headHit = NULL;
+        } else {
+            f31 = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
+                             (query.targetDistance >= MATCH_F32(float_0_8041a7a4) ? float_0p5_8041a7c4
+                                                                       : float_neg0p5_8041a7c8)) /
+                  float_1000_8041a7a0;
+            {
+                Vec* pOut = &out1;
+                out1 = query.hitPos;
+                pOut->x = (f32)(s32)(float_1000_8041a7a0 * pOut->x +
+                                     (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                           float_1000_8041a7a0;
+                pOut->y = (f32)(s32)(float_1000_8041a7a0 * pOut->y +
+                                     (pOut->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                           float_1000_8041a7a0;
+                pOut->z = (f32)(s32)(float_1000_8041a7a0 * pOut->z +
+                                     (pOut->z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+                           float_1000_8041a7a0;
+            }
+#ifdef MUST_MATCH
+            if (&out2 != NULL) {
+                out2 = query.hitNormal;
+            }
+#else
+            out2 = query.hitNormal;
+#endif
+        }
+        if (headHit != NULL && f31 > float_16p8_8041a830) {
+            headHit = NULL;
+        }
+        *(void**)((u8*)wp + 0x1F4) = headHit;
+        if (headHit != NULL) {
+            wp->position.y = out1.y - wp->wPlayerCollisionBox.y;
+        }
+    }
+
+    if (a == float_0_8041a7a4) {
+        marioSearchFrontWall_staying(b);
+        return;
+    }
+
+    if (*(void**)((u8*)wp + 0x1F4) != NULL) {
+        wp->baseSpeed = float_0_8041a7a4;
+        a = float_0_8041a7a4;
+        *(f32*)&wp->field_0x7C[0] = float_0_8041a7a4;
+        *(f32*)&wp->field_0x7C[4] = float_0_8041a7a4;
+        *(f32*)&wp->field_0x7C[8] = float_0_8041a7a4;
+        *(f32*)&wp->field_0x7C[0xC] = float_0_8041a7a4;
+    }
+
+    v = wp->position;
+    hit = searchFrontWall(&v, &f8, a, b, wp->wPlayerCollisionBox.z);
+    if (hit != NULL) {
+        *(void**)((u8*)wp + 0x1E0) = hit;
+        r = hitGetAttr(hit);
+        {
+            MarioWork* wp2 = marioGetPtr();
+
+            if ((r & 0x80000) && !(wp2->flags & 0x1000000)) {
+                r = 0;
+            } else if ((r & 0x80) == 0) {
+                r = (r & 0x800000) >> 23;
+            } else {
+                r = (wp2->currMotionId == 0x19);
+            }
+        }
+        if (r != 0) {
+            if (a != float_0_8041a7a4) {
+                wp->hitobjPush = hit;
+                *(void**)((u8*)wp + 0x1F0) = hit;
+            }
+            movePos(&wp->position.x, &wp->position.z, a, b);
+        } else {
+            s32 t;
+
+            *(f32*)&wp->field_0x1F0[0x20] = f8;
+            *(void**)((u8*)wp + 0x1F0) = hit;
+            t = wp->field_0x3E[1] + 1;
+            wp->field_0x3E[1] = t;
+            if ((s8)t >= 0x14) {
+                wp->field_0x3E[1] = 0x14;
+                if ((hitGetAttr(hit) & 0x80) == 0) {
+                    r = 1;
+                } else {
+                    MarioWork* wp3 = marioGetPtr();
+
+                    r = (wp3->currMotionId == 0x19);
+                }
+                if (r != 0) {
+                    wp->hitobjPush = hit;
+                }
+            }
+            wp->position = v;
+        }
+    } else {
+        wp->position = v;
+    }
+
+    v = wp->position;
+    marioChkWallAround(&v, 0, a, b, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
     wp->position.x = v.x;
     wp->position.z = v.z;
 }

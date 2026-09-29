@@ -1,6 +1,13 @@
 #include "evt/evt_snd.h"
 #include "pmario_sound.h"
 #include "manager/evtmgr_cmd.h"
+#include "mario/mariost.h"
+#include "seq/seq_gameover.h"
+
+void seq_gameOverExit(SequenceWork* work) {
+    psndStopAllFadeOut();
+    marioStSystemLevel(0);
+}
 
 USER_FUNC(evt_snd_bgmon) {
     //psndBGMOn((u32)evt->args[0], (const char*)evt->args[1]);

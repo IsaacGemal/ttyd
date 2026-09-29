@@ -44,6 +44,8 @@ extern f32 float_30_8041c828;
 extern f32 float_neg640_8041c840;
 extern f32 float_640_8041c844;
 extern f32 float_105_8041c848;
+extern f32 float_2_8041c838;
+extern f32 float_0p34907_8041c83c;
 
 typedef struct BattleStageDark {
 	u32 field_0;  //0x0
@@ -797,4 +799,93 @@ void BattleStageDispDark(CameraId camId, void* param) {
 	}
 	GXSetZMode(1, 1, 0);
 	DarkBySquare(stage->stgDark.field_4, float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848);
+}
+
+void BattleStageDispLight(CameraId camId, void* param) {
+	s32 i;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	CameraEntry* cam = camGetPtr(4);
+
+	GXSetCullMode(2);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetBlendMode(1, 2, 1, 5);
+	GXSetZMode(1, 3, 0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xB, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(2, 0, 1, 1, 0, 2, 2);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaIn(0, 7, 7, 7, 7);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXLoadPosMtxImm(cam->view, 0);
+
+	for (i = 0; i < 12; i++) {
+		if (stage->lights[i].flags & 1) {
+			Mtx mtx;
+			Vec up;
+			Vec axis;
+			Vec dir;
+			Vec base;
+			Vec p1;
+			Vec p2;
+			f32 width;
+			f32 two;
+			s32 j;
+			u8 r, g, b;
+
+			dir = vec3_802f31a8[0];
+			dir.x = stage->lights[i].targetCur.x - stage->lights[i].posCur.x;
+			dir.y = stage->lights[i].targetCur.y - stage->lights[i].posCur.y;
+			dir.z = stage->lights[i].targetCur.z - stage->lights[i].posCur.z;
+			axis = dir;
+			width = stage->lights[i].widthCur;
+			up = stage->lights[i].upCur;
+			two = float_2_8041c838;
+
+			for (j = 0; j < 18; j++) {
+				f32 px = stage->lights[i].posCur.x;
+				f32 py = stage->lights[i].posCur.y;
+				f32 pz = stage->lights[i].posCur.z;
+				f32 tx = stage->lights[i].targetCur.x;
+				f32 ty = stage->lights[i].targetCur.y;
+				f32 tz = stage->lights[i].targetCur.z;
+
+				base.x = px + two * (tx - px);
+				base.y = py + two * (ty - py);
+				base.z = pz + two * (tz - pz);
+
+				p1.x = base.x + up.x * width;
+				p1.y = base.y + up.y * width;
+				p1.z = base.z + up.z * width;
+
+				PSMTXRotAxisRad(mtx, &axis, float_0p34907_8041c83c);
+				PSMTXMultVec(mtx, &up, &up);
+				PSVECNormalize(&up, &up);
+
+				p2.x = base.x + up.x * width;
+				p2.y = base.y + up.y * width;
+				p2.z = base.z + up.z * width;
+
+				r = stage->lights[i].colorCur.r;
+				g = stage->lights[i].colorCur.g;
+				b = stage->lights[i].colorCur.b;
+
+				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
+				GXPosition3f32(px, py, pz);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p1.x, p1.y, p1.z);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p2.x, p2.y, p2.z);
+				GXColor4u8(r, g, b, 0);
+			}
+		}
+	}
 }

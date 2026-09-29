@@ -20,6 +20,10 @@ void arcInit(void) {
 	}
 }
 
+void arcDelete(s32 id) {
+	memset(&work[id], 0, sizeof(ArchiveEntry));
+}
+
 // NONMATCHING (87.13%): 3 instructions differ, 3 missing, 1 extra, plus register differences.
 void* arcOpen(const char* filename, void** addr, u32* length) {
 	ARCFileInfo info;

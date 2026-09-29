@@ -2017,3 +2017,40 @@ of other games are there for agents to learn from. One concern to watch: agents 
 Claude #1 checks each workspace's provenance.txt at collection and surfaces anything outside the repo.
 Size estimate asked for tonight: the finished decomp is roughly 0.8-1.2 million lines (about 450k today: src 157k,
 rels 183k, libs 99k, include 12k), about half of it event scripts and data tables.
+
+## Wave 21: one untouched function per agent (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Isaac's idea: skip the scaffolding, give each agent one function nobody had touched, and see. The queue was the
+smallest 0% function of each dol game file up to 1.5 KB (200 files, median 342 bytes; 136 files had no source, so
+the agent created the file with just that function). 24 agents at a time, 30 minutes each, 17:44-19:32, from a
+fresh base on the tower (with its own copy of build/tools: rebuilding a base re-downloads the tools, and
+overwriting the shared ones fails while other agents run them). **158 of 200 functions at 100%, 32 at 90-99%, 9 at
+50-89%, 1 dropped** (eff_syuryou: its data struct clashed with the one wave 19 put in eff_syuryou.h). **Functions
+5,465 -> 5,623.** Small functions took 2-5 minutes.
+
+Collected in one batch (all files, header additions unioned, one build, scores from the report) rather than
+merge_agent.sh per unit, which runs CI 200 times. Fixed at collection: two agents declared effHokoriN64Entry with
+different argument orders (ABI-identical; kept the order its caller uses); one agent's mobjdrv.c edit dropped three
+other functions from 99.9% to 84-88% (the file keeps main's version; its mobjCalcMtx attempt was 83.6%).
+Web access: 33 agents fetched other TTYD decomps (doldecomp/ttyd, MIT; one also cloned Rainchus/ttyd-decomp-us,
+whose license we haven't checked) to see whether a function already existed upstream; their reports say nothing
+was copied. Several also listed or read paths outside their workspace (~/ttyd, other agents' workspaces), which the
+brief forbids; the per-agent provenance.txt files in scratch/wave21 have the details. Worth tightening in the
+prompt: say what's allowed to fetch.
+Near-misses (90-99%) for Claude #3: scratch/wave21/scores.json.
+
+**Review of PR #37** (one fresh Claude): no wrong code in the 17 partial functions checked against the asm; no
+function scores lower than on main; all 239 new declarations in the defining file's header; nothing copied. Fixed:
+8 missing or stale NONMATCHING labels (all from the 12 agents that wrote no REPORT.md); a duplicate new header
+include/driver/himo.h (vivihimo is in himo.h) and include/sequence/seq_gameover.h (folded into seq/seq_gameover.h).
+Follow-ups: data reached as offsets past another symbol (brief rule 13) in battle_seq.c:284 (_rule_disp),
+sac_genki.c:49, sac_deka.c:132, battle_status_icon.c:112-117; item_data.h's ItemDataView shadow of ItemData; two
+different effKemuri2Data structs (eff_kemuri.h, eff_kemuri2_n64.c); unmarked match tricks (static volatile const
+Vec in battle_disp.c, const volatile data in eff_blow_n64.c, a base+0x34 pointer in eff_rothammer_fail_n64.c, an
+unreset opt_propagation off there); dont_inline pragmas agents wrapped around neighbouring existing functions in 7
+battle files. Six battle files now carry optimize_for_size pragmas (battle_information, battle_message,
+battle_pad, battle_unit_event, battle_seq, battle_damage): candidates for -O4,s in configure.py instead.
+What agents fetched, fully: doldecomp/ttyd and several MIT forks, AxioDL/musyx (MIT), SeekyCt/spm-decomp (CC0),
+jdaster64/ttyd-tot (GPL-3.0, one header read), Rainchus/ttyd-decomp-us (no license: off-limits), sourcegraph and
+decomp.me; nothing borrowed. 48 agents also used /tmp, which the brief forbids; wave 23's prompt says to stay
+inside the workspace.

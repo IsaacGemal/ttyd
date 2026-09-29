@@ -65,3 +65,12 @@ void caseDelete(s32 caseId) {
 void caseMain(void) {
 
 }
+
+CaseEntry* caseIdToPtr(s32 caseId) {
+	CaseEntry* entry = &wp->entries[caseId];
+
+	if (entry->flags & 1) {
+		return entry;
+	}
+	return NULL;
+}

@@ -2042,3 +2042,109 @@ void partyMoveFlyInit(PartyEntry* party, s32 mode) {
         work->field_8 |= 2;
     }
 }
+
+static void flyMain(PartyEntry* party);
+
+// Inlined footmark writer for partyFlyMain (same ring logic as partyWalkFootmarkSub).
+static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot) {
+    Footmark* f;
+    s32 id;
+
+    marioGetPtr();
+    id = writeId[slot];
+    f = (Footmark*)(footmarkBuf + slot * 0x500 + id * 0x10);
+    if ((f->field_0 & 1) == 0 || (flags & 1) == 0) {
+        if (f->x != pos->x || f->y != pos->y || f->z != pos->z) {
+#ifdef MUST_MATCH
+            /* the named temp makes the compiler keep readId in r3 and id + 1 in r0 */
+            s32 readIdx = readId[slot];
+            if (readIdx != id + 1) {
+#else
+            if (readId[slot] != id + 1) {
+#endif
+                writeId[slot]++;
+                if (writeId[slot] >= 0x50) {
+                    writeId[slot] = 0;
+                }
+                f = (Footmark*)(footmarkBuf + slot * 0x500 + writeId[slot] * 0x10);
+#ifdef MUST_MATCH
+                /* the original copies the position a word at a time; float assignments give stfs */
+                {
+                    u32* src = (u32*)pos;
+
+                    ((u32*)&f->x)[0] = src[0];
+                    ((u32*)&f->x)[1] = src[1];
+                    ((u32*)&f->x)[2] = src[2];
+                }
+#else
+                f->x = pos->x;
+                f->y = pos->y;
+                f->z = pos->z;
+#endif
+                if (flags & 1) {
+                    f->field_0 |= 1;
+                } else {
+                    f->field_0 &= ~1;
+                }
+                if (flags & 4) {
+                    f->field_0 |= 4;
+                } else {
+                    f->field_0 &= ~4;
+                }
+            }
+        }
+    }
+}
+
+void partyFlyMain(PartyEntry* party) {
+    PartyEntry* target;
+    s32 flags;
+
+    if (party->currentSlotId == 0) {
+        Vec pos;
+#ifdef MUST_MATCH
+        /* the named temp makes the compiler load mario's flags before clearing flags */
+        s32 marioFlags = marioGetPtr()->flags;
+
+        flags = 0;
+        if (marioFlags & 0x10000) {
+            flags = 1;
+        }
+#else
+        flags = (marioGetPtr()->flags & 0x10000) != 0;
+#endif
+        pos = marioGetPtr()->position;
+        partyFlyFootmarkSub(&pos, flags, 0);
+    } else {
+#ifdef MUST_MATCH
+        /* the original calls anotherPartyGetPtr and discards its result */
+        target = anotherPartyGetPtr(party->currentSlotId);
+#endif
+        target = partyGetPtr(0);
+        if (target != NULL) {
+            Vec pos;
+
+            flags = 0;
+            if (target->flags & PARTY_FLAG_IS_JUMPING) {
+                flags = 1;
+            }
+            pos = target->position;
+            partyFlyFootmarkSub(&pos, flags, 1);
+        } else {
+            Vec pos;
+#ifdef MUST_MATCH
+            s32 marioFlags = marioGetPtr()->flags;
+
+            flags = 0;
+            if (marioFlags & 0x10000) {
+                flags = 1;
+            }
+#else
+            flags = (marioGetPtr()->flags & 0x10000) != 0;
+#endif
+            pos = marioGetPtr()->position;
+            partyFlyFootmarkSub(&pos, flags, 0);
+        }
+    }
+    flyMain(party);
+}

@@ -1,8 +1,11 @@
 #include "window/win_item.h"
 #include "window/win_root.h"
+#include "window/win_main.h"
 #include "win/win_main.h"
 #include "manager/winmgr.h"
 #include "manager/filemgr.h"
+#include "manager/fontmgr.h"
+#include "driver/msgdrv.h"
 #include "mario/mario_pouch.h"
 #include "system.h"
 
@@ -23,6 +26,11 @@ extern const f32 float_0_8041d4ac;
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
+extern const char str_802F55C4[];
+extern const f32 float_0p5_8041d4a8;
+extern const Vec vec3_802f55ac;
+extern const Vec vec3_802f55b8;
+extern const GXColor dat_8041d4a4;
 
 typedef struct ItemWorkTail {
     u8 pad[0x2E8];
@@ -182,6 +190,44 @@ void winMakeSkipList(WindowWork* work) {
             w->skipList[w->count] = item;
             w->count++;
         }
+    }
+}
+
+// The original reaches vec3_802f55ac/b8, str_802F4CE8 and the two int->float doubles through one base
+// register (r31 = str_802F4CE8) plus displacements (0x8c4, 0x8d0, ...). MWCC only does that when the
+// symbols are defined in this unit (known section offsets); declared extern it emits lis/addi per symbol,
+// so entry lands in r31 instead of r29 and the frame is 0x60 instead of 0x70. Resolves once win_item's
+// .rodata is decompiled.
+// NONMATCHING (68.23%): only the .rodata addressing and the register/frame shift it causes differ.
+void itemUseDisp2(WinMgrEntry* entry) {
+    WindowWork* work = winGetPtr();
+    s32 id = WW_S32(work, 0x120C);
+    const char* msg;
+    f32 width;
+    Vec scale;
+#ifdef MUST_MATCH
+    Vec tmp;
+#endif
+    Vec pos;
+    GXColor color;
+
+    color = dat_8041d4a4;
+    if (!winMgrAction(id)) {
+        msg = msgSearch(str_802F55C4);
+        width = (f32)FontGetMessageWidth(msg);
+        winFontInit();
+        scale = vec3_802f55b8;
+#ifdef MUST_MATCH
+        // A separate temp plus the struct copy is what reproduces the original's 0x1c scratch and
+        // the lwz/stw (not lfs/stfs) copy of pos into its final slot.
+        tmp = vec3_802f55ac;
+        tmp.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
+        pos = tmp;
+#else
+        pos = vec3_802f55ac;
+        pos.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
+#endif
+        winFontSet(&pos, &scale, &color, msg);
     }
 }
 

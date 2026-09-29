@@ -758,6 +758,122 @@ s32 scissor_tess(void) {
     return 2;
 }
 
+// Matches the original byte-for-byte.
+s32 scissor_cross(f32* a, f32* b, f32* c, s32 n) {
+    f32 xs[0x200];
+    f32 ys[0x200];
+    f32 ox;
+    f32 oy;
+    f32 tx;
+    f32 ty;
+    f32 one;
+    f32* p;
+    f32* q;
+    s32 count;
+    s32 i;
+    s32 j;
+    s32 m;
+
+    for (i = 0; i < n; i++) {
+        s32 k = (i + 1) % n;
+        if (scissor_intersection2(a[0], a[1], b[0], b[1],
+                                  c[i * 2], c[i * 2 + 1],
+                                  c[k * 2], c[k * 2 + 1],
+                                  &ox, &oy) != 0) {
+            return 0;
+        }
+    }
+    xs[0] = float_neg1000_8042179c;
+    count = 1;
+    ys[0] = float_neg1000_8042179c;
+    one = float_1_80421754;
+    for (i = 0; i < n; i++) {
+        s32 k = (i + 1) % n;
+        p = &c[i * 2];
+        q = &c[k * 2];
+        if (scissor_intersection4(one + a[0], a[1],
+                                  one + b[0], b[1],
+                                  p[0], p[1],
+                                  q[0], q[1],
+                                  &ox, &oy) != 0) {
+            s32 flag = 0;
+            if (p[0] == ox && p[1] == oy) {
+                f32* prev = (i == 0) ? &c[(n - 1) * 2] : &c[(i - 1) * 2];
+                if (scissor_intersection3(a[0], a[1], b[0], b[1],
+                                          prev[0], prev[1],
+                                          q[0], q[1],
+                                          &tx, &ty) != 0) {
+                    flag = 1;
+                }
+            }
+            if (flag == 1) {
+                for (m = 0; m < n; m++) {
+                    if (xs[m] == ox && ys[m] == oy) {
+                        break;
+                    }
+                }
+                if (m == n) {
+                    xs[count] = ox;
+                    ys[count] = oy;
+                    count++;
+                }
+            } else {
+                xs[count] = ox;
+                ys[count] = oy;
+                count++;
+            }
+        }
+    }
+    xs[count] = float_1000_804217b0;
+    ys[count] = float_1000_804217b0;
+    if (a[0] != b[0]) {
+        for (i = 0; i < count; i++) {
+            for (j = i + 1; j < count + 1; j++) {
+                if (xs[i] > xs[j]) {
+                    f32 t;
+                    t = xs[i];
+                    xs[i] = xs[j];
+                    xs[j] = t;
+                    t = ys[i];
+                    ys[i] = ys[j];
+                    ys[j] = t;
+                }
+            }
+        }
+        {
+            f32 mid = (a[0] + b[0]) * float_0p5_80421748;
+            for (i = 0; i < count; i++) {
+                if (mid >= xs[i] && mid < xs[i + 1]) {
+                    return i & 1;
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < count; i++) {
+            for (j = i + 1; j < count + 1; j++) {
+                if (ys[i] > ys[j]) {
+                    f32 t;
+                    t = xs[i];
+                    xs[i] = xs[j];
+                    xs[j] = t;
+                    t = ys[i];
+                    ys[i] = ys[j];
+                    ys[j] = t;
+                }
+            }
+        }
+        {
+            f32 mid = (a[1] + b[1]) * float_0p5_80421748;
+            for (i = 0; i < count; i++) {
+                if (mid >= ys[i] && mid < ys[i + 1]) {
+                    return i & 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 // Keep scissor_intersection3 out of line: the original issues a call (bl) to it
 // from scissor_intersection4 rather than inlining the body.
 #pragma dont_inline on
@@ -816,6 +932,9 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
 }
 #pragma dont_inline reset
 
+// Keep scissor_intersection2 out of line: scissor_cross calls (bl) it in the
+// original rather than inlining its body.
+#pragma dont_inline on
 s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     if (ax == cx && ay == cy) {
         return 0;
@@ -831,6 +950,7 @@ s32 scissor_intersection2(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     }
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
+#pragma dont_inline reset
 
 // Keep GetScissorPtr out of line: the original issues a call (bl) to it.
 #pragma dont_inline on
