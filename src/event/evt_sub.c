@@ -620,10 +620,10 @@ USER_FUNC(evt_sub_animgroup_async) {
 	const char* name = (const char*)evtGetValue(event, args[0]);
 	s32 ret = animGroupBaseAsync(name, gp->inBattle != 0, NULL);
 	switch (ret) {
-	case 0:
-		return EVT_RETURN_BLOCK;
 	default:
 		return EVT_RETURN_DONE;
+	case 0:
+		return EVT_RETURN_BLOCK;
 	}
 }
 
