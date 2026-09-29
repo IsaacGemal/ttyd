@@ -1480,6 +1480,31 @@ what differed was data, and fixing it linked the whole unit (linked code +0.19 p
 - intplGetValue used PI (0x40490FDB) where the original loads 3.141592f (0x40490FD8). It scored 100% because
   objdiff doesn't compare literal values; only linking showed it. Worth remembering for any unit that scores
   complete but won't link.
+## Every REL script, extracted and compiled back (2026-09-28, Claude Opus 5.5)
+
+To size REL work, ttydasm was run on every script in the RELs, and each unit's scripts were compiled with MWCC
+and compared with the original word for word, pointer targets included. **7,275 scripts (3 MB) in 564 units;
+all extract, and 7,262 compile to the original (99.8%).** The scripts (scratch/rel-scan/: objs.py lists every
+REL data object and picks out scripts, one.sh extracts one, roundtrip.py compiles and compares) are the check to
+run before any REL wave.
+
+Fixed on the way (ttydasm, evt_cmd.h): a word in the address range with no relocation is a value, mostly
+EVTDAT_POINTER_MAX (-250000000), the "no value" argument battle commands take (5,454 uses; 971 scripts used to
+abort); `-a ADDRESS` picks one of several same-named symbols (3,113 scripts share a name within their REL, e.g.
+every enemy's attack_event); pointer targets resolved by symbol index, since in a REL built from our source the
+anonymous string symbols repeat across objects and it printed the wrong strings; READ_INT2-4 and READ_FLOAT2-4
+took one destination; DEBUG_PUT_MSG and DEBUG_PUT_REG were missing (designer debug prints, e.g. 「アニメ開始」).
+
+Left: two scripts point into the middle of a table (las firebardesc, nok entry_unit_data; ttydasm prints the
+table's name without the offset), and muj_05's command_seikai has three RETURNs and four END_SCRIPTs, which the
+empty END macro can't write. Five scripts' strings have global dtk names (dat_*); they compare fine.
+
+**Scope beyond the scripts.** The scripts use 1,010 dol names; 669 have no declaration (612 functions, 57 data).
+REL tables outside scripts are 756 KB: battle about 400 KB (weapons 106 KB, battle groups and btlparty setups
+~145 KB, unit/parts/defence/status 90 KB, pose tables 62 KB), NPC setups 61 KB, doors/entrances/trees/bushes
+66 KB, MSL floats 43 KB (extend_data), the rest assorted (minigames, recipes, credits, splines). Strings are
+452 KB and come with the scripts. Code is 910 KB, 1,859 distinct bodies. Next: a data wave, prepared by the
+declarations sweep, the battle table types, ttydasm writing a whole unit, and REL object paths and tools.
 
 ## Sep 29: finishing the last function of nearly-linked units (Claude Sonnet 5.5, for the "Ambitious work session" orchestrator)
 
@@ -1618,3 +1643,31 @@ literals instead of externs (`Main` drops from 100% to 99.81%, which the ratchet
 **Still unlinked (7):** `battle_event_subset` (17 KB of event scripts, which should be `EVT_BEGIN` macros, not hex),
 `unit_mario`, `eff_uranoko`, `evt_kinopio`, `targimpl` (extra functions the original inlines; source order mixes asm
 and C), the four MusyX files `synthmacros`, `synth_dbtab`, `snd_service`, `dsp_import`, and MSL `float`.
+
+## RELs: 165 units linked from a generator, and wave 17 set up (2026-09-29, Claude Opus 5.5)
+
+Isaac asked for an overnight REL wave. Prep showed most of it doesn't need agents: **245 REL units have no functions**,
+only data, and a generator (scratch/rel-scan/gen.py) writes a unit's whole source from the original: the MSL floats
+as extend_data (indices unique per REL), each script from ttydasm (`PTR()` where the macros don't cast), every other
+object as a `u32` array marked `// TODO: type` (strings inline, interior pointers as base plus offset), in the
+original order, all in one force_active block. Every generated unit was compiled, compared with the original object
+(section bytes and relocation targets, strings by content; tools/rel_cmp.py) and linked. **164 linked with no
+changes by hand; with hei_09 below, 165. Linked data 4.94% -> 13.94%.** Units left out: object names another unit
+shares (enemy units in several RELs: the object path collision is still open), the 9 battle databases (don't
+compile yet), and auto_* rodata units.
+
+- A section a few bytes shorter than the original's is its trailing alignment padding; the linker adds it back.
+- Scripts can end in padding after END_SCRIPT (ttydasm now stops there).
+- The 660 declarations the scripts need were generated into the defining files' headers first
+  (scratch/rel-scan/declsweep.py); three were dropped where the source defines the function with one argument.
+- BeroEntry.nextareaArg1 is the destination map's name, not a number: linking hei_09 showed it.
+- tools/agent_check.py takes REL units as MOD/UNIT; `--final` runs tools/rel_link.py, which compares the object
+  and then tries the link, printing LINKED or NOT LINKED with what differs.
+- 256 tables in 105 of the linked files are still raw u32 arrays: typing them is agent work (the link keeps it
+  honest).
+
+**Wave 17** (scratch/wave17): the 104 unique-name REL units with 1-3 functions, none over 1.2 KB (34 KB of code,
+732 KB of data). Each agent gets its unit's generated source (data done, verified; a `// TODO: write NAME here`
+where each function goes, declarations so it builds), writes the functions, types the raw tables, and runs
+`check.py --final` until LINKED. 32 agents at a time over the list, 30 minutes each, from ~/ttyd-w17base on the
+tower (this branch plus the units' configure entries).

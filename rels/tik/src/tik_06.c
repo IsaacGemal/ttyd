@@ -1,0 +1,226 @@
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_item.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_mobj.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+#include "party/party_motion.h"
+
+#pragma force_active on
+
+// clang-format off
+extend_data(28,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(29,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+static EVT_BEGIN(oshimodo_event)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam_ctrl_onoff, 4, 0)
+        CALL(evt_mario_key_onoff, 0)
+        CALL(evt_bero_exec_wait, 65536)
+        WAIT_MS(750)
+        CALL(evt_msg_print, 0, STRING("tik_06_01"), 0, 0)
+        CALL(evt_mario_key_onoff, 1)
+        CALL(evt_cam_ctrl_onoff, 4, 1)
+    END_INLINE_EVENT
+    SET_VALUE(LW(0), 0)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 bero_entry_data[75] = {
+    (u32)"dokan_1", 0x00020000, 0x00000009, 0x000186A0,
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    0x00000006, 0x00000000, (u32)"jon_00", (u32)"dokan_2",
+    0x00010001, 0x00000000, 0x00000000, (u32)"dokan_2",
+    0x00020000, 0x00000008, 0x000186A0, 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, 0x00000006,
+    0x00000000, (u32)"tik_18", (u32)"dokan_1", 0x00010001,
+    0x00000000, 0x00000000, (u32)"dokan_3", 0x00020000,
+    0x00000009, 0x000186A0, 0x00000000, 0x00000000,
+    0xFFFFFFFF, 0x00000000, 0x00000006, (u32)&oshimodo_event,
+    0x00000000, (u32)"dokan_3", 0x00010001, 0x00000000,
+    0x00000000, (u32)"e_bero", 0x00000000, 0x00004E20,
+    0x000186A0, 0x00000000, 0x00000000, 0xFFFFFFFF,
+    0x00000000, 0xFFFFFFFF, 0x00000000, (u32)"tik_05",
+    (u32)"w_bero", 0x00010001, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000,
+};
+
+EVT_BEGIN(iri_12_kino_makkino_talk)
+    CALL(evt_set_dir_to_target, STRING("キーノ"), STRING("mario"))
+    CALL(evt_set_dir_to_target, STRING("マッキノ"), STRING("mario"))
+    WAIT_FRAMES(1)
+    CALL(evt_npc_wait_pera, STRING("キーノ"))
+    CALL(evt_npc_wait_pera, STRING("マッキノ"))
+    CALL(evt_msg_print, 0, STRING("irai_12_001_3"), 0, STRING("キーノ"))
+    CALL(evt_msg_print, 0, STRING("irai_12_001_4"), 0, STRING("マッキノ"))
+    CALL(evt_msg_print, 0, STRING("irai_12_001_5"), 0, STRING("キーノ"))
+    IF_INT_EQUAL(LW(0), 1)
+        BEGIN_INLINE_EVENT
+            CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+            CALL(evt_npc_get_position, STRING("マッキノ"), LW(3), LW(4), LW(5))
+            CALL(evt_sub_get_dir, LW(0), LW(2), LW(3), LW(5), LW(6))
+            DIVIDE(LW(6), 90)
+            MULTIPLY(LW(6), 90)
+            ADD(LW(6), 45)
+            CALL(evt_npc_add_dirdist, LW(3), LW(5), LW(6), 20)
+            CALL(evt_npc_status_onoff, 0, STRING("マッキノ"), 2)
+            CALL(evt_npc_flag_onoff, 1, STRING("マッキノ"), 32)
+            CALL(evt_npc_move_position, STRING("マッキノ"), LW(3), LW(5), 0, 70, 0)
+            WAIT_FRAMES(1)
+            CALL(evt_npc_status_onoff, 1, STRING("マッキノ"), 2)
+            CALL(evt_set_dir_to_target, STRING("マッキノ"), STRING("mario"))
+        END_INLINE_EVENT
+    END_IF
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_position, STRING("キーノ"), LW(3), LW(4), LW(5))
+    CALL(evt_sub_get_dir, LW(0), LW(2), LW(3), LW(5), LW(6))
+    CALL(evt_npc_add_dirdist, LW(0), LW(2), LW(6), 20)
+    CALL(evt_npc_flag_onoff, 1, STRING("キーノ"), 32)
+    CALL(evt_npc_move_position, STRING("キーノ"), LW(0), LW(2), 0, 60, 0)
+    CALL(evt_mario_set_dir_npc, STRING("キーノ"))
+    WAIT_MS(500)
+    CALL(evt_item_entry, STRING("tf"), 94, 0, -1000, 0, 17, -1, 0)
+    CALL(evt_item_get_item, STRING("tf"))
+    CALL(evt_item_get_item_end_wait, STRING("tf"))
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("irai_12_001_6"), 0, STRING("マッキノ"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_flag_onoff, 1, STRING("マッキノ"), 1073750048)
+        CALL(evt_npc_move_position, STRING("マッキノ"), 220, 0, 0, 60, 4)
+        CALL(evt_npc_jump_position_nohit, STRING("マッキノ"), 254, 15, 0, 400, 15)
+        CALL(evt_npc_jump_position_nohit, STRING("マッキノ"), 285, 30, 0, 400, 15)
+        CALL(evt_npc_set_position, STRING("マッキノ"), 0, -1000, 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_get_position, STRING("キーノ"), LW(0), LW(1), LW(2))
+    ADD(LW(0), 25)
+    LOOP(0)
+        CALL(evt_npc_get_position, STRING("マッキノ"), LW(3), LW(4), LW(5))
+        IF_INT_GREATER_OR_EQUAL(LW(3), LW(0))
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_flag_onoff, 1, STRING("キーノ"), 1073750048)
+    CALL(evt_npc_move_position, STRING("キーノ"), 220, 0, 0, 60, 4)
+    CALL(evt_npc_jump_position_nohit, STRING("キーノ"), 254, 15, 0, 400, 15)
+    CALL(evt_npc_jump_position_nohit, STRING("キーノ"), 285, 30, 0, 400, 15)
+    CALL(evt_npc_set_position, STRING("キーノ"), 0, -1000, 0)
+    CALL(evt_sub_save_playtime, GSW(1429))
+    SET_VALUE(GSW(1420), 0)
+    SET_VALUE(GSWF(5386), 1)
+    CALL(evt_msg_print, 0, STRING("sys_request_finish"), 0, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(iri_12_kino_talk)
+    IF_INT_EQUAL(GSW(1420), 12)
+        IF_INT_EQUAL(GSWF(5407), 0)
+            IF_INT_EQUAL(GSWF(5405), 0)
+                CALL(evt_msg_print, 0, STRING("irai_12_001_1"), 0, 0)
+                SET_VALUE(GSWF(5405), 1)
+            ELSE
+                CALL(evt_msg_print, 0, STRING("irai_12_001_2"), 0, 0)
+            END_IF
+        ELSE
+            SET_VALUE(LW(0), 0)
+            CALL_CHILD(iri_12_kino_makkino_talk)
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(iri_12_makkino_talk)
+    SET_VALUE(LW(0), 1)
+    CALL_CHILD(iri_12_kino_makkino_talk)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(iri_12_init)
+    IF_INT_EQUAL(GSW(1420), 12)
+        CALL(evt_npc_entry, STRING("キーノ"), STRING("c_kokinopio"))
+        CALL(evt_npc_set_tribe, STRING("キーノ"), STRING("キノピオ子"))
+        CALL(evt_npc_set_position, STRING("キーノ"), 60, 0, -70)
+        IF_INT_EQUAL(GSWF(5407), 0)
+            CALL(evt_npc_set_ry, STRING("キーノ"), 270)
+        ELSE
+            CALL(evt_npc_set_ry, STRING("キーノ"), 90)
+        END_IF
+        CALL(evt_npc_flag_onoff, 1, STRING("キーノ"), 1536)
+        CALL(evt_npc_status_onoff, 1, STRING("キーノ"), 2)
+        CALL(evt_npc_change_interrupt, STRING("キーノ"), 6, PTR(iri_12_kino_talk))
+        IF_INT_EQUAL(GSWF(5407), 1)
+            CALL(evt_npc_entry, STRING("マッキノ"), STRING("c_suifu_k"))
+            CALL(evt_npc_set_tribe, STRING("マッキノ"), STRING("水夫"))
+            CALL(evt_npc_set_position, STRING("マッキノ"), 90, 0, -70)
+            CALL(evt_npc_set_ry, STRING("マッキノ"), 90)
+            CALL(evt_npc_flag_onoff, 1, STRING("マッキノ"), 1536)
+            CALL(evt_npc_status_onoff, 1, STRING("マッキノ"), 2)
+            CALL(evt_npc_change_interrupt, STRING("マッキノ"), 6, PTR(iri_12_makkino_talk))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_kanban)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_normalize)
+    CALL(evt_msg_print, 0, STRING("tik_06_02"), 0, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_kanban2)
+    CALL(evt_npc_stop_for_event)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_normalize)
+    SET_VALUE(LW(0), GSW(33))
+    SET_VALUE(LW(1), GSW(32))
+    SET_VALUE(LW(4), GSW(35))
+    MULTIPLY(LW(4), 256)
+    ADD(LW(1), LW(4))
+    SET_VALUE(LW(2), GSW(34))
+    SET_VALUE(LW(3), 100)
+    CALL(evt_msg_print_insert, 0, STRING("msg_jon_kanban_3"), 0, 0, LW(0), LW(1), LW(2), LW(3))
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_npc_start_for_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(tik_06_init_evt)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_snd_envon, 272, STRING("ENV_STG0_TIK1"))
+    CALL(evt_snd_set_rev_mode, 2)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL_CHILD(iri_12_init)
+    CALL(evt_mobj_signboard, STRING("board"), -50, 0, 50, PTR(evt_kanban), LSWF(0))
+    CALL(evt_mobj_signboard, STRING("board2"), 50, 0, -250, PTR(evt_kanban2), LSWF(0))
+    CALL(evt_item_entry, STRING("item_00"), 125, 290, 0, -50, 16, GSWF(5593), 0)
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off

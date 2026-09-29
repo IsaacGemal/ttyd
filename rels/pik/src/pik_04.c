@@ -1,0 +1,868 @@
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_damage.h"
+#include "evt/evt_door.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_img.h"
+#include "evt/evt_item.h"
+#include "evt/evt_kinopio.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_offscreen.h"
+#include "evt/evt_paper.h"
+#include "evt/evt_party.h"
+#include "evt/evt_pouch.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_win.h"
+#include "forcedata.h"
+#include "party/party_motion.h"
+
+#pragma force_active on
+extern s32 evt_pik_yajirushi[];
+extern s32 kinopio_house_talk_evt[];
+
+// clang-format off
+extend_data(20,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(21,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+// TODO: type
+static u32 bero_data[45] = {
+    (u32)"nw_bero", 0x00000000, 0x00000007, 0x000186A0,
+    0x00000000, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    0xFFFFFFFF, 0x00000000, (u32)"pik_00", (u32)"se_bero",
+    0x00010001, 0x00000000, 0x00000000, (u32)"se_bero",
+    0x00000000, 0x00000003, 0x000186A0, 0x00000000,
+    0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+    0x00000000, (u32)"pik_01", (u32)"nw_bero", 0x00010001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000,
+};
+
+// TODO: type
+static u32 dmgReturnPt[36] = {
+    (u32)"mod_1", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_2", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_3", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_4", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_5", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_6", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_7", 0x00000000, 0xC47A0000, 0x00000000,
+    (u32)"mod_8", 0x00000000, 0xC47A0000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+static u32 name_tbl[6] = {
+    (u32)"yajirusi_1", (u32)"yajirusi_2", (u32)"yajirusi_3", (u32)"yajirusi_4",
+    (u32)"yajirusi_5", (u32)"yajirusi_6",
+};
+
+static EVT_BEGIN(evt_door)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.555f))
+    CALL(evt_mapobj_rotate, 1, STRING("door_1"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_door2)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.5f))
+    CALL(evt_mapobj_rotate, 1, STRING("door_1"), LW(0), 0, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_wall)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-0.75f))
+    CALL(evt_mapobj_rotate, 1, STRING("ie_3_kabe_1"), 0, LW(0), 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_rotate, 1, STRING("ie_3_kabe_2"), 0, LW(0), 0)
+    CALL(evt_mapobj_rotate, 1, STRING("ie_3_kabe_3"), 0, 0, LW(0))
+    RETURN
+EVT_END()
+
+// TODO: type
+u32 ie_3_npc[3] = {
+    (u32)"ターくん１", (u32)"ターくん２", 0x00000000,
+};
+
+static EVT_BEGIN(door_1_open)
+    CALL(evt_snd_bgmoff, 18432)
+    CALL(evt_snd_envoff, 18432)
+    CALL(evt_snd_env_lpf, 0, 800)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(door_1_close)
+    CALL(evt_snd_bgmon, 160, 0)
+    CALL(evt_snd_envon, 160, 0)
+    CALL(evt_snd_env_lpf, 0, 0)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 door_1[18] = {
+    0x00000000, 0x00000001, 0x00000001, (u32)"door_1",
+    (u32)"a_door_1_2", (u32)"a_door_1_1", (u32)"ie_3_soto", (u32)"a_ie_3_soto",
+    (u32)"ie_3_naka", (u32)"a_ie_3_naka", (u32)&evt_door, 0x00000000,
+    (u32)&evt_wall, (u32)&ie_3_npc, 0x00000000, 0x00000000,
+    (u32)&door_1_open, (u32)&door_1_close,
+};
+
+EVT_BEGIN(evt_door_h)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-0.555f))
+    CALL(evt_mapobj_rotate, 1, STRING("door_h_a"), 0, LW(0), 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_rotate, 1, STRING("door_h_b"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_door2_h)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.5f))
+    CALL(evt_mapobj_rotate, 1, STRING("door_h_a"), LW(0), 0, 0)
+    CALL(evt_mapobj_rotate, 1, STRING("door_h_b"), LW(0), 0, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_wall_h)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-0.75f))
+    CALL(evt_mapobj_rotate, 1, STRING("hotel_kabe_1"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+// TODO: type
+u32 hotel_npc[3] = {
+    (u32)"店員女", (u32)"キザ野郎", 0x00000000,
+};
+
+static EVT_BEGIN(door_2_open)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("ERE"), 1)
+    CALL(evt_snd_bgmoff, 18432)
+    CALL(evt_snd_envoff, 18432)
+    CALL(evt_snd_env_lpf, 0, 800)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(door_2_close)
+    CALL(evt_snd_bgmon, 160, 0)
+    CALL(evt_snd_envon, 160, 0)
+    CALL(evt_snd_env_lpf, 0, 0)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 door_2[18] = {
+    0x00000000, 0x00000003, 0x00000001, (u32)"door_h",
+    (u32)"a_door_h_2", (u32)"a_door_h_1", (u32)"hotel_soto", (u32)"a_hotel_soto",
+    (u32)"hotel_naka", (u32)"a_hotel_naka", (u32)&evt_door_h, 0x00000000,
+    (u32)&evt_wall_h, (u32)&hotel_npc, 0x00000000, 0x00000000,
+    (u32)&door_2_open, (u32)&door_2_close,
+};
+
+EVT_BEGIN(imginit)
+    CALL(evt_paper_entry, STRING("OFF_hei_07"))
+    CALL(evt_img_entry, STRING("capture_img"))
+    CALL(evt_img_set_paper, STRING("capture_img"), STRING("OFF_hei_07"))
+    CALL(evt_offscreen_entry, STRING("offscreen"))
+    CALL(evt_img_set_paper_anim, STRING("capture_img"), STRING("Z_1"))
+    CALL(evt_img_alloc_capture, STRING("capture_img"), 0, STRING("offscreen"), 0, 0, 0, 608, 480)
+    CALL(evt_img_alloc_capture, STRING("capture_img"), 2, STRING("offscreen"), 0, 0, 0, 608, 480)
+    CALL(evt_img_clear_virtual_point, STRING("capture_img"))
+    CALL(evt_img_onoff, STRING("capture_img"), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(imgstart)
+    CALL(evt_mapobj_set_offscreen, 1, STRING("hotel_naka"), STRING("offscreen"))
+    CALL(evt_mapobj_set_offscreen, 1, STRING("door_h"), STRING("offscreen"))
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("ERE"))
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hotel_naka"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door_h"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ERE"), 1)
+    CALL(evt_npc_set_offscreen, STRING("店員女"), STRING("offscreen"))
+    CALL(evt_npc_set_offscreen, STRING("キザ野郎"), STRING("offscreen"))
+    CALL(evt_npc_flag_onoff, 1, STRING("店員女"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("キザ野郎"), 128)
+    CALL(evt_img_onoff, STRING("capture_img"), 1)
+    WAIT_FRAMES(1)
+    CALL(evt_sub_intpl_msec_init, 11, 255, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_img_set_color, STRING("capture_img"), 255, 255, 255, LW(0))
+        CALL(evt_item_set_alpha, STRING("breakfast"), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_img_onoff, STRING("capture_img"), 0)
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("hotel_naka"))
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("door_h"))
+    CALL(evt_npc_set_offscreen, STRING("店員女"), 0)
+    CALL(evt_npc_set_offscreen, STRING("キザ野郎"), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(imgend)
+    CALL(evt_mapobj_set_offscreen, 1, STRING("hotel_naka"), STRING("offscreen"))
+    CALL(evt_mapobj_set_offscreen, 1, STRING("door_h"), STRING("offscreen"))
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("ERE"))
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hotel_naka"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("door_h"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ERE"), 1)
+    CALL(evt_npc_set_offscreen, STRING("店員女"), STRING("offscreen"))
+    CALL(evt_npc_set_offscreen, STRING("キザ野郎"), STRING("offscreen"))
+    CALL(evt_npc_flag_onoff, 1, STRING("店員女"), 128)
+    CALL(evt_npc_flag_onoff, 1, STRING("キザ野郎"), 128)
+    CALL(evt_img_onoff, STRING("capture_img"), 1)
+    WAIT_FRAMES(1)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 255, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_img_set_color, STRING("capture_img"), 255, 255, 255, LW(0))
+        CALL(evt_item_set_alpha, STRING("breakfast"), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_img_onoff, STRING("capture_img"), 0)
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("hotel_naka"))
+    CALL(evt_mapobj_clear_offscreen, 1, STRING("door_h"))
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("hotel_naka"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("door_h"), 1)
+    CALL(evt_npc_set_offscreen, STRING("店員女"), 0)
+    CALL(evt_npc_set_offscreen, STRING("キザ野郎"), 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("店員女"), 128)
+    CALL(evt_npc_flag_onoff, 0, STRING("キザ野郎"), 128)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_up)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ERE"), 1)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 40, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_trans, 1, STRING("door_2_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_hitobj_onoff, STRING("a_door_2"), 1, 0)
+    CALL(evt_cam3d_evt_set, FLOAT(-78.0f), FLOAT(133.0f), FLOAT(-450.0f), FLOAT(307.0f), FLOAT(56.5f), FLOAT(-65.0f), 800, 11)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos2, 435, 45, FLOAT(80.0f))
+        CALL(evt_mario_set_dir, 90, 200, 0)
+    END_INLINE_EVENT
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_move_pos2, 0, 410, 67, FLOAT(80.0f))
+    CALL(evt_party_set_dir, 0, 270, 200)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_party_set_pos, 0, 410, LW(1), 67)
+    CALL(evt_party_set_dir, 0, 270, 200)
+    CALL(evt_party_stop, 0)
+    SPAWN_EVENT(imgstart)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(10))
+    CALL(evt_sub_intpl_msec_init, 11, 40, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_trans, 1, STRING("door_2_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL(evt_hitobj_onoff, STRING("a_door_2"), 1, 1)
+    CALL(evt_cam3d_evt_set, FLOAT(-78.0f), FLOAT(1463.0f), FLOAT(-450.0f), FLOAT(307.0f), FLOAT(1386.5f), FLOAT(-65.0f), 10000, 11)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_hit_bind_mapobj, STRING("a_hako"), STRING("hako"))
+    CALL(evt_snd_sfxon, STRING("SFX_STG6_PIK_ELEVATOR_MOVE1"), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 13250, 10000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(10.0f))
+        CALL(evt_mapobj_trans, 1, STRING("hako"), 0, LW(0), 0)
+        CALL(evt_hit_bind_update, STRING("a_hako"))
+        ADD_FLOAT(LW(0), FLOAT(4.0f))
+        CALL(evt_mario_get_pos, 0, LW(2), LW(3), LW(4))
+        CALL(evt_mario_set_pos, LW(2), LW(0), LW(4))
+        CALL(evt_party_get_pos, 0, LW(2), LW(3), LW(4))
+        CALL(evt_party_set_pos, 0, LW(2), LW(0), LW(4))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_mario_cont_onoff, 1)
+    CALL(evt_party_cont_onoff, 0, 1)
+    SPAWN_EVENT(imgend)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 40, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_trans, 1, STRING("door_3_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    BEGIN_INLINE_EVENT
+        WAIT_MS(300)
+        CALL(evt_cam3d_evt_off, 800, 11)
+    END_INLINE_EVENT
+    CALL(evt_mario_mov_pos2, 383, -10, FLOAT(80.0f))
+    CALL(evt_party_move_pos2, 0, 360, 10, FLOAT(80.0f))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 40, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_trans, 1, STRING("door_3_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_down)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 4000, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_hitobj_onoff, STRING("a_door_3"), 1, 0)
+    CALL(evt_cam3d_evt_set, FLOAT(-78.0f), FLOAT(1463.0f), FLOAT(-450.0f), FLOAT(307.0f), FLOAT(1386.5f), FLOAT(-65.0f), 800, 11)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos2, 435, 45, FLOAT(80.0f))
+        CALL(evt_mario_set_dir, 90, 200, 0)
+    END_INLINE_EVENT
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_move_pos2, 0, 410, 67, FLOAT(80.0f))
+    CALL(evt_party_set_dir, 0, 270, 200)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_party_set_pos, 0, 410, LW(1), 67)
+    CALL(evt_party_set_dir, 0, 270, 200)
+    CALL(evt_party_stop, 0)
+    SPAWN_EVENT(imgstart)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 4000, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_3_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_hitobj_onoff, STRING("a_door_3"), 1, 1)
+    CALL(evt_cam3d_evt_set, FLOAT(-78.0f), FLOAT(133.0f), FLOAT(-450.0f), FLOAT(307.0f), FLOAT(56.5f), FLOAT(-65.0f), 10000, 11)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_hit_bind_mapobj, STRING("a_hako"), STRING("hako"))
+    CALL(evt_snd_sfxon, STRING("SFX_STG6_PIK_ELEVATOR_MOVE1"), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 13250, 0, 10000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(10.0f))
+        CALL(evt_mapobj_trans, 1, STRING("hako"), 0, LW(0), 0)
+        CALL(evt_hit_bind_update, STRING("a_hako"))
+        ADD_FLOAT(LW(0), FLOAT(4.0f))
+        CALL(evt_mario_get_pos, 0, LW(2), LW(3), LW(4))
+        CALL(evt_mario_set_pos, LW(2), LW(0), LW(4))
+        CALL(evt_party_get_pos, 0, LW(2), LW(3), LW(4))
+        CALL(evt_party_set_pos, 0, LW(2), LW(0), LW(4))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_mario_cont_onoff, 1)
+    CALL(evt_party_cont_onoff, 0, 1)
+    SPAWN_EVENT(imgend)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 4000, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_cam3d_evt_off, 800, 11)
+    CALL(evt_mario_mov_pos2, 383, -10, FLOAT(80.0f))
+    CALL(evt_party_move_pos2, 0, 360, 10, FLOAT(80.0f))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG6_PIK_ELEVATOR_DOOR1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_sub_intpl_msec_init, 11, 4000, 0, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(100.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_b"), 0, 0, LW(0))
+        MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+        CALL(evt_mapobj_trans, 1, STRING("door_2_a"), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_miyage)
+    CALL(evt_npc_set_position, STRING("me"), -363, 15, 142)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_miyage)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_musume)
+    CALL(evt_msg_print, 0, STRING("stg7_pik_clear_10"), 0, STRING("３人娘１"))
+    CALL(evt_msg_print, 0, STRING("stg7_pik_clear_11"), 0, STRING("３人娘２"))
+    CALL(evt_msg_print, 0, STRING("stg7_pik_clear_12"), 0, STRING("３人娘３"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_musume1)
+    SWITCH(GSW(0))
+        CASE_GREATER(347)
+        CALL(evt_npc_set_position, STRING("３人娘１"), 0, -1000, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_musume1)
+    CALL_CHILD(talk_musume)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_musume2)
+    SWITCH(GSW(0))
+        CASE_GREATER(347)
+        CALL(evt_npc_set_position, STRING("３人娘２"), 0, -1000, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_musume2)
+    CALL_CHILD(talk_musume)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_musume3)
+    SWITCH(GSW(0))
+        CASE_GREATER(347)
+        CALL(evt_npc_set_position, STRING("３人娘３"), 0, -1000, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_musume3)
+    CALL_CHILD(talk_musume)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_takun1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_takun1)
+    SWITCH(GSW(0))
+        CASE_LESS(347)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_13"), 0, STRING("me"))
+        CASE_LESS_OR_EQUAL(402)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_14"), 0, STRING("me"))
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_14_1"), 0, STRING("me"))
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_takun2)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_takun2)
+    SWITCH(GSW(0))
+        CASE_LESS(347)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_15"), 0, STRING("me"))
+        CASE_LESS_OR_EQUAL(402)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_16"), 0, STRING("me"))
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_16_1"), 0, STRING("me"))
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(init_takun3)
+    CALL(evt_npc_flag_onoff, 1, STRING("ターくん３"), 132624)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(talk_takun3)
+    SWITCH(GSW(0))
+        CASE_LESS(347)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_17"), 0, STRING("me"))
+        CASE_LESS_OR_EQUAL(402)
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_18"), 0, STRING("me"))
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg7_pik_clear_18_1"), 0, STRING("me"))
+    END_SWITCH
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(init_kiza)
+    SWITCH(GSW(0))
+        CASE_GREATER_OR_EQUAL(347)
+        CALL(evt_npc_set_position, STRING("me"), 0, -1000, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(talk_kiza)
+    CALL(evt_msg_print, 0, STRING("stg7_pik_clear_19"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 npc_data[207] = {
+    (u32)"土産屋", 0x40000600, 0x00000000, (u32)&init_miyage,
+    0x00000000, (u32)&talk_miyage, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"３人娘１",
+    0x00000600, 0x00000000, (u32)&init_musume1, 0x00000000,
+    (u32)&talk_musume1, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"３人娘２", 0x00000600,
+    0x00000000, (u32)&init_musume2, 0x00000000, (u32)&talk_musume2,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"３人娘３", 0x00000600, 0x00000000,
+    (u32)&init_musume3, 0x00000000, (u32)&talk_musume3, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)"ターくん１", 0x00000600, 0x00000000, (u32)&init_takun1,
+    0x00000000, (u32)&talk_takun1, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"ターくん２",
+    0x00000600, 0x00000000, (u32)&init_takun2, 0x00000000,
+    (u32)&talk_takun2, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"店員女", 0x00000600,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"キザ野郎", 0x00000600, 0x00000000,
+    (u32)&init_kiza, 0x00000000, (u32)&talk_kiza, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000,
+};
+
+EVT_BEGIN(evt_roten)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_unitwin_alloc, 0)
+    CALL(evt_msg_print, 0, STRING("stg7_pik_shop_00"), 0, STRING("土産屋"))
+    CALL(unitwincoin_disp_onoff, 1)
+    CALL(evt_msg_select, 0, STRING("stg7_pik_shop_01"))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_pouch_get_haveitemcnt, LW(0))
+        CALL(evt_pouch_check_item, 1, LW(1))
+        IF_INT_EQUAL(LW(1), 0)
+            SET_VALUE(LW(1), 10)
+        ELSE
+            SET_VALUE(LW(1), 20)
+        END_IF
+        IF_INT_LESS(LW(0), LW(1))
+            CALL(evt_pouch_get_coin, LW(0))
+            IF_INT_GREATER_OR_EQUAL(LW(0), 50)
+                CALL(evt_pouch_add_coin, -50)
+                CALL(unitwincoin_wait)
+                WAIT_MS(200)
+                CALL(unitwincoin_disp_onoff, 0)
+                CALL(evt_msg_print_add, 0, STRING("stg7_pik_shop_02"))
+                CALL(evt_item_entry, STRING("rp"), 171, 0, -1000, 0, 17, -1, 0)
+                CALL(evt_item_get_item, STRING("rp"))
+                CALL(evt_item_get_item_end_wait, STRING("rp"))
+            ELSE
+                CALL(unitwincoin_disp_onoff, 0)
+                CALL(evt_msg_print_add, 0, STRING("stg7_pik_shop_03"))
+            END_IF
+        ELSE
+            CALL(unitwincoin_disp_onoff, 0)
+            CALL(evt_msg_print_add, 0, STRING("stg7_pik_shop_04"))
+        END_IF
+    ELSE
+        CALL(unitwincoin_disp_onoff, 0)
+        CALL(evt_msg_print_add, 0, STRING("stg7_pik_shop_05"))
+    END_IF
+    CALL(evt_unitwin_free)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_kinopio_to_bed)
+    CALL(evt_mario_mov_pos2, 340, -25, FLOAT(70.0f))
+    CALL(evt_mario_mov_pos2, 370, 5, FLOAT(70.0f))
+    CALL_CHILD(evt_up)
+    CALL(evt_mario_mov_pos2, 285, -65, FLOAT(70.0f))
+    CALL(evt_mario_mov_pos2, 245, -20, FLOAT(70.0f))
+    CALL(evt_mario_mov_pos2, 270, 60, FLOAT(70.0f))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_kinopio_from_bed)
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_mov_pos2, 220, -15, FLOAT(70.0f))
+    CALL(evt_mario_mov_pos2, 285, -80, FLOAT(70.0f))
+    CALL(evt_mario_mov_pos2, 360, -10, FLOAT(70.0f))
+    CALL_CHILD(evt_down)
+    CALL(evt_mario_mov_pos2, 300, -20, FLOAT(70.0f))
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 kino_dt[38] = {
+    0x000000DD, 0x43B40000, 0x42040000, 0xC36B0000,
+    0x0000001E, 0x43910000, 0x44A82000, 0x42A00000,
+    0x43870000, 0x44A64000, 0x42700000, 0x43390000,
+    0x44B44000, 0xC38E8000, 0x43938000, 0x44AD4000,
+    0xC1C00000, 0xC2700000, 0x43820000, 0x40A00000,
+    0x41F00000, (u32)"店員女", (u32)"stg7_pik_clear_20", (u32)"stg7_pik_clear_21",
+    (u32)"stg7_pik_clear_22", (u32)"stg7_pik_clear_23", (u32)"stg7_pik_clear_24", (u32)"stg7_pik_clear_25",
+    (u32)"stg7_pik_clear_26", (u32)"stg7_pik_clear_27", (u32)"stg7_pik_clear_28", (u32)"stg7_pik_clear_29",
+    (u32)"stg7_pik_clear_30", (u32)"stg7_pik_clear_31", (u32)"stg7_pik_clear_32", (u32)"stg7_pik_clear_33",
+    (u32)&evt_kinopio_to_bed, (u32)&evt_kinopio_from_bed,
+};
+
+static EVT_BEGIN(epilogue_npc_entry)
+    CALL(evt_npc_entry, STRING("シュリョー"), STRING("c_shuryo"))
+    CALL(evt_npc_set_tribe, STRING("シュリョー"), STRING("第三勢力総統"))
+    CALL(evt_npc_set_position, STRING("シュリョー"), 10, 0, 250)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 90)
+    CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("S_4"))
+    CALL(evt_npc_set_width, STRING("シュリョー"), 40)
+    CALL(evt_npc_entry, STRING("カンブー"), STRING("c_kanbu_ibt"))
+    CALL(evt_npc_set_tribe, STRING("カンブー"), STRING("第三勢力幹部"))
+    CALL(evt_npc_set_position, STRING("カンブー"), 90, 0, 250)
+    CALL(evt_npc_set_ry, STRING("カンブー"), 270)
+    CALL(evt_npc_entry, STRING("軍団Ａ"), STRING("c_zako_n"))
+    CALL(evt_npc_set_tribe, STRING("軍団Ａ"), STRING("第三勢力部下"))
+    CALL(evt_npc_set_position, STRING("軍団Ａ"), 35, 5, 1240)
+    CALL(evt_npc_set_ry, STRING("軍団Ａ"), 270)
+    CALL(evt_npc_entry, STRING("軍団Ｂ"), STRING("c_zako_m"))
+    CALL(evt_npc_set_tribe, STRING("軍団Ｂ"), STRING("第三勢力研究員"))
+    CALL(evt_npc_set_position, STRING("軍団Ｂ"), 7, 5, 151)
+    CALL(evt_npc_set_ry, STRING("軍団Ｂ"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("軍団Ｂ"), 32768)
+    CALL(evt_npc_entry, STRING("軍団Ｃ"), STRING("c_zako_e"))
+    CALL(evt_npc_set_tribe, STRING("軍団Ｃ"), STRING("第三勢力エリート"))
+    CALL(evt_npc_set_position, STRING("軍団Ｃ"), -48, 0, 193)
+    CALL(evt_npc_set_ry, STRING("軍団Ｃ"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("軍団Ｃ"), 32768)
+    CALL(evt_npc_entry, STRING("軍団Ｄ"), STRING("c_zako_n"))
+    CALL(evt_npc_set_tribe, STRING("軍団Ｄ"), STRING("第三勢力部下"))
+    CALL(evt_npc_set_position, STRING("軍団Ｄ"), 142, 5, 233)
+    CALL(evt_npc_set_ry, STRING("軍団Ｄ"), 270)
+    CALL(evt_npc_entry, STRING("軍団Ｅ"), STRING("c_zako_e"))
+    CALL(evt_npc_set_tribe, STRING("軍団Ｅ"), STRING("第三勢力エリート"))
+    CALL(evt_npc_set_position, STRING("軍団Ｅ"), 138, 5, 316)
+    CALL(evt_npc_set_ry, STRING("軍団Ｅ"), 270)
+    CALL(evt_npc_entry, STRING("ポワン"), STRING("c_powan"))
+    CALL(evt_npc_set_tribe, STRING("ポワン"), STRING("ポワン探偵"))
+    CALL(evt_npc_set_position, STRING("ポワン"), -29, 0, 455)
+    CALL(evt_npc_set_ry, STRING("ポワン"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("ポワン"), 32768)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(epilogue_evt_sub)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    LOOP(3)
+        CALL(evt_npc_jump_position_nohit, STRING("シュリョー"), LW(0), LW(1), LW(2), 150, 10)
+        WAIT_MS(50)
+    END_LOOP
+    CALL(evt_npc_set_anim, STRING("カンブー"), STRING("T_1"))
+    WAIT_MS(1500)
+    CALL(evt_npc_set_anim, STRING("カンブー"), STRING("S_1"))
+    CALL(evt_snd_sfxon, STRING("SFX_EVT_EPILOGUE_3RD_BATTEN1"), 0)
+    CALL(evt_npc_set_anim, STRING("軍団Ａ"), STRING("P_1"))
+    CALL(evt_npc_set_anim, STRING("軍団Ｂ"), STRING("P_1"))
+    CALL(evt_npc_set_anim, STRING("軍団Ｃ"), STRING("P_1"))
+    CALL(evt_npc_set_anim, STRING("軍団Ｄ"), STRING("P_1"))
+    CALL(evt_npc_set_anim, STRING("軍団Ｅ"), STRING("P_1"))
+    WAIT_MS(500)
+    LOOP(0)
+        CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+        LOOP(3)
+            CALL(evt_npc_jump_position_nohit, STRING("シュリョー"), LW(0), LW(1), LW(2), 150, 10)
+            WAIT_MS(50)
+        END_LOOP
+        CALL(evt_npc_set_anim, STRING("カンブー"), STRING("T_1"))
+        WAIT_MS(1500)
+        CALL(evt_npc_set_anim, STRING("カンブー"), STRING("S_1"))
+    END_LOOP
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(epilogue_evt)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_PIK1"))
+    CALL(evt_snd_bgm_scope, 0, 1)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_dispflag_onoff, 1, 1)
+    CALL(evt_cam3d_evt_set, 50, 150, 842, 50, 50, 250, 0, 11)
+    CALL(evt_seq_wait, 2)
+    SPAWN_EVENT(epilogue_evt_sub)
+    CALL(evt_fade_end_wait)
+    WAIT_MS(2000)
+    CALL(evt_msg_print, 0, STRING("ep_44"), 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_snd_bgmoff_f, 512, 3000)
+    CALL(evt_snd_envoff_f, 512, 3000)
+    CALL(evt_fade_set_mapchange_type, 1, 10, 900, 9, 900)
+    CALL(evt_bero_mapchange, STRING("tik_00"), STRING(""))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(pik_04_init_evt)
+    SET_VALUE(LW(0), PTR(bero_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG6_PIK1"))
+    IF_INT_EQUAL(GSW(0), 402)
+        CALL(evt_snd_bgm_scope, 0, 1)
+    END_IF
+    CALL(evt_snd_envon, 272, STRING("ENV_STG6_PIK1_2"))
+    CALL(evt_map_playanim, STRING("anm_taki"), 1, 0)
+    CALL(evt_map_playanim, STRING("anm_mizu_1"), 1, 0)
+    CALL(evt_map_playanim, STRING("anm_mizu_2"), 1, 0)
+    SET_INT_READ_ADDR(PTR(name_tbl))
+    LOOP(6)
+        READ_INT(LW(9))
+        SPAWN_EVENT(evt_pik_yajirushi)
+    END_LOOP
+    CALL(evt_hit_damage_return_set, PTR(dmgReturnPt))
+    CALL_CHILD(evt_gazigazi_entry)
+    CALL(evt_npc_setup, PTR(npc_data))
+    CALL_CHILD(init_takun3)
+    CALL(evt_npc_change_interrupt, STRING("ターくん３"), 6, PTR(talk_takun3))
+    SET_VALUE(LW(0), PTR(door_1))
+    CALL_CHILD(evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_2))
+    CALL_CHILD(evt_door_entry)
+    CALL(evt_run_case_evt, 9, 1, STRING("a_door_2"), 0, PTR(evt_up), 0)
+    CALL(evt_run_case_evt, 9, 1, STRING("a_door_3"), 0, PTR(evt_down), 0)
+    CALL(evt_hitobj_attr_onoff, 1, 1, STRING("nw_bero"), 4)
+    CALL(evt_hitobj_attr_onoff, 1, 1, STRING("se_bero"), 4)
+    CALL(evt_run_case_evt, 9, 1, STRING("a_roten"), 0, PTR(evt_roten), 0)
+    CALL(evt_item_entry, STRING("item_00"), 125, -250, 5, -425, 16, GSWF(5657), 0)
+    CALL(evt_item_entry, STRING("item_01"), 164, -305, 0, 105, 16, GSWF(3279), 0)
+    CALL_CHILD(imginit)
+    CALL(evt_run_case_evt, 9, 1, STRING("front_"), 0, PTR(kinopio_house_talk_evt), 0)
+    CALL(evt_kinopio_setup, PTR(kino_dt))
+    IF_INT_EQUAL(GSW(0), 402)
+        CALL(evt_mario_kill_party, 0)
+        CALL_CHILD(epilogue_npc_entry)
+        SPAWN_EVENT(epilogue_evt)
+    END_IF
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("s_bero"), 2)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("group92"), 2)
+    RETURN
+EVT_END()
+// clang-format on
+#pragma force_active off

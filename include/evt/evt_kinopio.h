@@ -18,3 +18,5 @@ USER_FUNC(offset);
 USER_FUNC(power_chk);
 USER_FUNC(snd_off);
 USER_FUNC(snd_on);
+
+USER_FUNC(evt_kinopio_setup);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 typedef struct EventEntry EventEntry;
 
 #include "driver/dispdrv.h"
@@ -85,3 +87,4 @@ s32 winMgrSelectOther(WinMgrSelect* select, EventEntry* event);
 s32 unk_80237448(WinMgrSelect* select);
 void winMgrDisp(CameraId camId, void* param);
 void winMgrSeq(WinMgrEntry* entry);
+

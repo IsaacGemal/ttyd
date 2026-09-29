@@ -17,12 +17,12 @@ const MODULES: [&str; 31] = [
 ];
 
 struct EventReader {
-    lookup: HashMap<u64, String>,
+    lookup: HashMap<u64, (String, object::SymbolIndex)>,
     bytes: Vec<u8>,
 }
 
 impl EventReader {
-    fn initialize(module: &str, symbol: &str, relative_path: PathBuf) -> anyhow::Result<Self> {
+    fn initialize(module: &str, symbol: &str, address: Option<u64>, relative_path: PathBuf) -> anyhow::Result<Self> {
         const BUILD_PATH: &str = "build/G8MJ01/";
 
         // First, let's resolve the current module and symbol, so we can grab all relocations from that
@@ -38,7 +38,7 @@ impl EventReader {
         let bytes = std::fs::read(&path).context(format!("Unable to open file: {path:?}"))?;
         let file = object::File::parse(&*bytes)?;
 
-        let symbol = file.symbol_by_name(symbol).context("symbol not found")?;
+        let symbol = find_symbol(&file, symbol, address).context("symbol not found")?;
         let section_index = symbol.section_index().context("symbol has no section")?;
         let section = file.section_by_index(section_index)?;
 
@@ -47,17 +47,17 @@ impl EventReader {
         for (offset, reloc) in section.relocations() {
             if let RelocationTarget::Symbol(index) = reloc.target() {
                 let name = file.symbol_by_index(index)?.name().unwrap_or("?").to_string();
-                lookup.insert(offset, name);
+                lookup.insert(offset, (name, index));
             }
         }
 
         Ok(Self { lookup, bytes })
     }
 
-    fn get_script<'a>(&'a self, symbol: &str) -> Option<EventScript<'a>> {
+    fn get_script<'a>(&'a self, symbol: &str, address: Option<u64>) -> Option<EventScript<'a>> {
         let file = object::File::parse(&*self.bytes).ok()?;
 
-        let symbol = file.symbol_by_name(symbol)?;
+        let symbol = find_symbol(&file, symbol, address)?;
         let section_index = symbol.section_index()?;
         let section = file.section_by_index(section_index).ok()?;
 
@@ -68,14 +68,32 @@ impl EventReader {
     }
 }
 
+/// The symbol with this name, or with this name at this section address when several share the name.
+fn find_symbol<'data, 'file>(
+    file: &'file object::File<'data>,
+    name: &str,
+    address: Option<u64>,
+) -> Option<object::Symbol<'data, 'file>> {
+    match address {
+        Some(address) => file.symbols().find(|s| s.name() == Ok(name) && s.address() == address),
+        None => file.symbol_by_name(name),
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     let cli: cli::TopLevel = argp::parse_args_or_exit(argp::DEFAULT);
 
     match cli.nested {
         cli::NestedCommands::Extract(cmd) => {
-            let reader = EventReader::initialize(&cmd.module, &cmd.symbol, cmd.relative_path.into())?;
+            let address = cmd
+                .address
+                .as_deref()
+                .map(|a| u64::from_str_radix(a.trim_start_matches("0x"), 16))
+                .transpose()
+                .context("address must be hex")?;
+            let reader = EventReader::initialize(&cmd.module, &cmd.symbol, address, cmd.relative_path.into())?;
             let mut script = reader
-                .get_script(&cmd.symbol)
+                .get_script(&cmd.symbol, address)
                 .context(format!("Symbol wasn't found in module: {} -> {}", cmd.module, cmd.symbol))?;
             script.extract(&cmd.symbol)?;
         }
