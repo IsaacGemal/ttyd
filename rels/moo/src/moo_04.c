@@ -76,14 +76,25 @@ EVT_END()
 // NONMATCHING (99.11%): the target loads the 0.5f/10.0f constant addresses (lis/addi) before the fmuls; the operand order
 // of the multiplications did not change it.
 static USER_FUNC(mario_kirimomi) {
-    MarioWork* mario = marioGetPtr();
-    PartyEntry* party = partyGetPtr(0);
+    s32* args;
+    MarioWork* mario;
+    PartyEntry* party;
+    f32 scale;
 
-    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
+    args = event->args;
+    scale = evtGetFloat(event, args[0]);
+    mario = marioGetPtr();
+    party = partyGetPtr(0);
+    *(f32*)((u8*)mario + 0xCC) = scale;
+    *(f32*)((u8*)mario + 0xC8) = scale;
+    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y * 0.5f;
+    *(f32*)((u8*)mario + 0xB4) = *(f32*)((u8*)mario + 0xB4) * *(f32*)((u8*)mario + 0xCC);
     *(f32*)((u8*)mario + 0xC4) -= 10.0f;
     *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
 
     if (party != NULL) {
+        *(f32*)((u8*)party + 0x74) = scale;
+        *(f32*)((u8*)party + 0x70) = scale;
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
             *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)party + 0xF0) * 0.5f;
         } else {
@@ -93,7 +104,7 @@ static USER_FUNC(mario_kirimomi) {
         *(f32*)((u8*)party + 0x6C) -= 10.0f;
         *(f32*)((u8*)party + 0x6C) = (f32)fmod(*(f32*)((u8*)party + 0x6C), 360.0);
     }
-    return 0;
+    return EVT_RETURN_DONE;
 }
 
 static EVT_BEGIN(mario_fly)
