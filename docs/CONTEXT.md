@@ -1464,3 +1464,5 @@ is the proof. The splits put evt_snd_* in party/party_motion.c (its .text runs t
 0x80077EC4-0x80077F88), so sound declarations are split across party_motion.h and evt_snd.h; probably a splits fix.
 evt_door.c keeps a local DoorParam (0x4C) for the same data as DoorEntry, and door_position_sub's parameters are
 still hitIn/hitOut where DoorEntry says closeHit/openHit.
+The three ttydasm fixes (strings, ELSE's indentation, floats) could go upstream to doldecomp/ttyd as a PR; not
+done yet.
