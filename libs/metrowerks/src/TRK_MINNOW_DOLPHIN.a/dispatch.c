@@ -2,6 +2,16 @@
 
 /*
  * --INFO--
+ * Address:	80259738
+ * Size:	000008
+ */
+DSError TRKInitializeDispatcher()
+{
+	return DS_NoError;
+}
+
+/*
+ * --INFO--
  * Address:	802595C8
  * Size:	000170
  */
@@ -58,14 +68,4 @@ DSError TRKDispatchMessage(TRKBuffer* buffer)
 	}
 	MWTRACE(1, "Dispatch complete err = %ld\n", error);
 	return error;
-}
-
-/*
- * --INFO--
- * Address:	80259738
- * Size:	000008
- */
-DSError TRKInitializeDispatcher()
-{
-	return DS_NoError;
 }
