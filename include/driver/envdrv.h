@@ -91,3 +91,4 @@ void envCapture2(CameraId camId, void* param);
 void envDisp(CameraId camId, void* param);
 void envDisp2(CameraId camId, void* param);
 void envDisp_Blur(void);
+void envSetWater(s32 arg0, void* arg1);

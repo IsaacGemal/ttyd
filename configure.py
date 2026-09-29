@@ -1517,6 +1517,7 @@ config.libs = [
             Object(Matching, "hei_13.c"),
             Object(Matching, "hei_bt00.c"),
             Object(Matching, "unit/unit_sinnosuke.c"),
+            Object(Matching, "hei_09.c"),
         ],
     ),
     Rel(

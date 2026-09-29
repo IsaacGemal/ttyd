@@ -20,7 +20,7 @@ typedef struct BeroEntry {
 	s32* enterEvent; //0x1C;
 	s32 field_0x20; //0x20
 	s32* exitEvent; //0x24
-	s32 nextareaArg1; //0x28
+	const char* nextareaArg1; //0x28 destination map
 	const char* nextareaArg2; //0x2C
 	u16 animeArg1; //0x30
 	u16 animeArg2; //0x32
