@@ -1573,3 +1573,48 @@ plus the earlier round's `mot_hip`, `evt_cloud_main`, `battleAcMain_CraneTiming`
 (link errors on constants their sources only declare), `evt_kinopio` (checksum), the four MusyX files, TRK
 `serpoll`/`targimpl`/`mslsupp`/`main`/`CircleBuffer`, `alloc`, `printf`, `float`, `uart_console_io_gcn`. `eff_uranoko`
 and `unit_mario` need the `eff_irekaeru` treatment.
+
+## Sep 29: data-only units written from their disassembly, and the last library units (Claude Sonnet 5.5, third near-miss round)
+
+**20 units linked; `tools/ci.py` PASS, "32 files OK". Relative to main after PR #25: code linked 12.43% -> 12.81%,
+linked data 5.81% -> 6.46%, matched data 7.64% -> 7.73%, functions 4,995 -> 4,996 (`mailGetPtr`).** The "fully matched but not
+linked" list is down to 8. Every dol unit now has a source file (`configure.py` prints no "Missing source file").
+
+**Data-only units, and `tools/asm2c_data.py`.** Twelve dol units had no source at all: their data was linked from the
+original object, which counts for nothing in matched data. `python3 tools/asm2c_data.py <unit> > src/<unit>.c` turns a unit's
+disassembly (`build/G8MJ01/asm/<unit>.s`) into C: strings as `char` arrays sized as the original, words as `u32` arrays with
+symbol addresses as `(u32)(void*)sym`, `.rel sym, .L_x` as `sym + offset`, numeric mixed-width objects as `u8` arrays,
+loose padding as a static, and `__declspec(section)` for objects too small for their section (.data <= 48 bytes, .rodata
+<= 8, .sdata2 strings > 6). Written and linked this way: `party_data`, `battle_audience_kind_data`,
+`battle_database_common`, `seqdef`, `battle_evt_cmd`, `unit_bomzou`, `unit_koura`, `unit_system`, `unk_0x8025de70`,
+`DEMOFont`, MSL `locale`, and (with a hand-written `mailGetPtr`) `mail_data`. The types are raw (`u32` arrays), not the
+game's; they are a byte-exact starting point to name later. Lessons:
+- A unit whose configure.py name doesn't match its split is invisible: `party/party_data.c` was the split `data/party_data.c`
+  and three data units (`battle_audience_kind_data`, `battle_database_common`, `seqdef`) were not in configure.py at all.
+  Add an entry at the unit's place in splits.txt order (link order follows the list).
+- Data referenced only from RELs is dead-stripped from the DOL link unless it is under `#pragma force_active on`
+  (`unk_0x8025de70`, `unit_system`). The same pragma on `unit_bomzou` and `unit_koura` breaks the link (the original
+  had stripped some of their symbols), so it is per unit; a missing symbol shows in `MarioSt.elf` (pyelftools) and the
+  DOL diff starts at the first shifted address.
+- Definitions of `const` data referenced from code must not appear before the code in a file that reads them through
+  named externs (see `eff_mario_balloon`).
+
+**Other links**
+- `sac_common`: function order (the previous round's recipe).
+- TRK `main`/`CircleBuffer`: splits.txt gave `main.c` the rodata, bss and sbss of `CircleBuffer.c`, which is why they
+  "failed the checksum" for a day; `CircleBuffer.c` now owns its ranges (`.rodata 0x803022E0-0x803023C0`, `.bss
+  0x803E4260-0x803E4780`, `.sbss 0x80418C30-0x80418C38`), defines its own buffers (they were externs nothing defined),
+  and its two structs lose their padding fields (objects are 0x1C and 4 bytes). Its ratchet score first read 14.51%
+  because the strings were literals and the objects oversized.
+- `serpoll`: `gTRKInputPendingPtr` is in .sbss (`__declspec(section ".sdata")`, as in `main.c`).
+- `mslsupp`, `alloc`: helpers the original inlines and never emits (`__read_file`..., `SubBlock_merge_next`) were emitted
+  as functions; `static inline` fixes it, and MWCC keeps unused `static` (non-inline) functions.
+- `uart_console_io_gcn`: `__close_console` belongs to `mslsupp`. `printf`: only its four public functions needed reversing.
+
+**Tried without result:** `effUranokoMain` (f0/f1 swapped around `1.0 - scale`; matching it needs the unit's `.sdata2`
+order 1.0 then 0.125, which no source shape gave); `npc_hide_onoff`; `_hammer_star_effect`. Reverted: `eff_uranoko` with
+literals instead of externs (`Main` drops from 100% to 99.81%, which the ratchet rejects).
+
+**Still unlinked (8):** `battle_event_subset` (17 KB of event scripts, which should be `EVT_BEGIN` macros, not hex),
+`unit_mario`, `eff_uranoko`, `evt_kinopio`, `targimpl` (extra functions the original inlines; source order mixes asm
+and C), the four MusyX files `synthmacros`, `synth_dbtab`, `snd_service`, `dsp_import`, and MSL `float`.
