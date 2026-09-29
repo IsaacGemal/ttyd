@@ -551,8 +551,6 @@ EVT_BEGIN(majyorin_evt_npc_entry)
     RETURN
 EVT_END()
 
-// TODO: write eff_guruguru (static, 0xe4 bytes) here:
-// its asm is in build/G8MJ01/las/asm/las_09.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(eff_guruguru) {
     s32* args = event->args;
     s32 name;

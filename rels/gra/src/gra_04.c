@@ -44,8 +44,6 @@ static EVT_BEGIN(in_evt)
     RETURN
 EVT_END()
 
-// TODO: write unk_gra_00000530 (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/gra/asm/gra_04.s; this is where the original has it, just before the first script that uses it
 USER_FUNC(unk_gra_00000530) {
     s32* args = event->args;
 

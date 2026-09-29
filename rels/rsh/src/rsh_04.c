@@ -947,8 +947,6 @@ static EVT_BEGIN(evt_door_msg)
     RETURN
 EVT_END()
 
-// TODO: write mario_flag (static, 0x74 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_04.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(mario_flag) {
     s32* args = event->args;
 

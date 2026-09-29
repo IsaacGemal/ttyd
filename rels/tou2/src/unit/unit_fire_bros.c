@@ -609,8 +609,6 @@ static EVT_BEGIN(renzoku_attack_event)
     RETURN
 EVT_END()
 
-// TODO: write fire_bros_nagemakuri_set_target (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/tou2/asm/unit/unit_fire_bros.s; this is where the original has it, just before the first script that uses it
 USER_FUNC(fire_bros_nagemakuri_set_target) {
     BattleWork* wp = _battleWorkPointer;
     EventEntry* evt = event;

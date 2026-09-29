@@ -1,18 +1,20 @@
 #pragma once
 
+#include "evt/evt_cmd.h"
+
 #include <dolphin/types.h>
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_get_flag[];
-extern s32 evt_puni_get_position[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_set_anim[];
-extern s32 evt_puni_set_dir[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_puni_wait_systemmode[];
-extern s32 evt_target_flag_onoff[];
-extern s32 evt_target_set_position[];
+USER_FUNC(evt_puni_flag_onoff);
+USER_FUNC(evt_puni_get_flag);
+USER_FUNC(evt_puni_get_position);
+USER_FUNC(evt_puni_mem_init);
+USER_FUNC(evt_puni_set_anim);
+USER_FUNC(evt_puni_set_dir);
+USER_FUNC(evt_puni_set_hamari);
+USER_FUNC(evt_puni_set_mode);
+USER_FUNC(evt_puni_set_yuka);
+USER_FUNC(evt_puni_wait_systemmode);
+USER_FUNC(evt_target_flag_onoff);
+USER_FUNC(evt_target_set_position);
 extern s32 mri_countdown[];
 extern s32 mri_hikari_color[];
 extern s32 mri_puni_init[];

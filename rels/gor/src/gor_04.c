@@ -581,8 +581,6 @@ static EVT_BEGIN(hom_10_evt_resha_stop)
     RETURN
 EVT_END()
 
-// TODO: write ramp_r (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_04.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(ramp_r) {
     f32 value = __fabsf(evtGetFloat(event, GW(0)));
     f32 wave = (f32)sin((f32)gp->retraceCount / 15.0f);
@@ -619,8 +617,6 @@ static char* pika_tbl_rsh_06[10] = {
     "pika_6", NULL,
 };
 
-// TODO: write resha_tev (static, 0x28 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_04.s; this is where the original has it, just before the first script that uses it
 static void resha_tev(void* param) {
     envAddTev(7, param);
 }
@@ -1489,8 +1485,6 @@ EVT_BEGIN(evt_hikousen_return)
     RETURN
 EVT_END()
 
-// TODO: write kpa_hikousen_yure (static, 0x48 bytes) here:
-// its asm is in build/G8MJ01/gor/asm/gor_04.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(kpa_hikousen_yure) {
     f32 value = evtGetFloat(event, event->args[0]);
     npcNameToPtr("飛クッパ")->moveOffset.y = value;

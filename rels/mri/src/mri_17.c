@@ -293,8 +293,6 @@ EVT_BEGIN(wana_kemuri)
     RETURN
 EVT_END()
 
-// TODO: write set_depthPlaneOffset (static, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_17.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(set_depthPlaneOffset) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);

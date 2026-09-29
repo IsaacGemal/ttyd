@@ -566,8 +566,6 @@ EVT_BEGIN(hom_10_evt_resha_stop_13_data_3548)
     RETURN
 EVT_END()
 
-// TODO: write ramp_r (static, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/hom/asm/hom_10.s; this is where the original has it, just before the first script that uses it
 static USER_FUNC(ramp_r) {
     f32 val = evtGetFloat(event, GW(0));
     f32 absVal = __fabsf(val);
@@ -609,8 +607,6 @@ static u32 pika_tbl_rsh_06[10] = {
     (u32)"pika_6", 0x00000000,
 };
 
-// TODO: write resha_tev (static, 0x28 bytes) here:
-// its asm is in build/G8MJ01/hom/asm/hom_10.s; this is where the original has it, just before the first script that uses it
 static void resha_tev(void* param) {
     envAddTev(7, param);
 }
