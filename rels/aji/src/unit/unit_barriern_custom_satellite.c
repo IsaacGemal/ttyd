@@ -180,56 +180,49 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static const Vec VecData[] = {
-    { 25.0f, 0.0f, 0.0f },
-    { 25.0f, 0.0f, 0.0f },
-    { -25.0f, 0.0f, 0.0f },
-    { 0.0f, 25.0f, 0.0f },
-    { 25.0f, -25.0f, 0.0f },
-    { -25.0f, -25.0f, 0.0f },
-    { 25.0f, 25.0f, 0.0f },
-    { -25.0f, 25.0f, 0.0f },
-    { 25.0f, -25.0f, 0.0f },
-    { -25.0f, -25.0f, 0.0f },
-};
 
-const f64 double_to_int_aji_00017f30 = 4503601774854144.0;
-
-static USER_FUNC(battleGetBarriernSatelliteInitPos) {
-    s32* args = event->args;
-    BattleUnit* unit;
-    s32 count1;
-    s32 count2;
-    s32 out1;
-    s32 out2;
-    s32 out3;
-    const Vec* vec;
-    BattleWork* wp;
-    s32 id;
-    s32 i;
-    s32 j;
-
-    wp = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
-    count1 = evtGetValue(event, args[1]);
-    count2 = evtGetValue(event, args[2]);
-    out1 = args[3];
-    out2 = args[4];
-    out3 = args[5];
-    vec = VecData;
-    for (i = 0; i < count1; i++) {
-        for (j = 0; j < i; j++) {
-            vec++;
-        }
-    }
-    for (i = 0; i < count2; i++) {
-        vec++;
-    }
-    evtSetValue(event, out1, vec->x * unit->faceDirection);
-    evtSetValue(event, out2, vec->y);
-    evtSetValue(event, out3, vec->z);
-    return 2;
-}
 
 // clang-format on
+
+static USER_FUNC(battleGetBarriernSatelliteInitPos) {
+    s32* args;
+    BattleUnit* unit;
+    s32 id;
+    s32 n;
+    s32 m;
+    s32 i;
+    s32 j;
+    s32 indexX;
+    s32 indexY;
+    s32 indexZ;
+    const Vec* p;
+    BattleWork* wp;
+    static const Vec VecData[] = {
+        {25.f, 0.f, 0.f},   {25.f, 0.f, 0.f},   {-25.f, 0.f, 0.f}, {0.f, 25.f, 0.f}, {25.f, -25.f, 0.f},
+        {-25.f, -25.f, 0.f}, {25.f, 25.f, 0.f}, {-25.f, 25.f, 0.f}, {25.f, -25.f, 0.f}, {-25.f, -25.f, 0.f},
+    };
+
+    args = event->args;
+    wp = _battleWorkPointer;
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    n = evtGetValue(event, args[1]);
+    m = evtGetValue(event, args[2]);
+    indexX = args[3];
+    indexY = args[4];
+    indexZ = args[5];
+    p = VecData;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < i; j++) {
+            p++;
+        }
+    }
+    for (j = 0; j < m; j++) {
+        p++;
+    }
+    evtSetValue(event, indexX, (s32)(p->x * unit->faceDirection));
+    evtSetValue(event, indexY, (s32)p->y);
+    evtSetValue(event, indexZ, (s32)p->z);
+    return EVT_RETURN_DONE;
+}

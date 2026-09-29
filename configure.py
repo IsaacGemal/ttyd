@@ -1479,7 +1479,7 @@ config.libs = [
             Object(Matching, "aji_14.c"),
             Object(Matching, "aji_12.c"),
             Object(Matching, "aji_18.c"),
-            Object(NonMatching, "unit/unit_barriern_custom_satellite.c"),
+            Object(Matching, "unit/unit_barriern_custom_satellite.c"),
         ],
     ),
     Rel(
