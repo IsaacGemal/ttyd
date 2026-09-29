@@ -220,6 +220,27 @@ static EVT_BEGIN(entry_event)
     RETURN
 EVT_END()
 
+USER_FUNC(check_exist_group) {
+    s32 i;
+    s32* args = event->args;
+    BattleWork* work = _battleWorkPointer;
+    s32 unitId = -1;
+    BattleUnit* unit;
+
+    for (i = 0; i < 64; i++) {
+        unit = BattleGetUnitPtr(work, i);
+        if (unit != NULL) {
+            if (unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION1 ||
+                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION2 ||
+                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION3) {
+                unitId = i;
+            }
+        }
+    }
+    evtSetValue(event, args[0], unitId);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(check_exist_kenkyu) {
     s32 i;
     s32* args = event->args;
@@ -813,24 +834,4 @@ static EVT_BEGIN(normal_attack_event)
         RETURN
 EVT_END()
 
-USER_FUNC(check_exist_group) {
-    s32 i;
-    s32* args = event->args;
-    BattleWork* work = _battleWorkPointer;
-    s32 unitId = -1;
-    BattleUnit* unit;
-
-    for (i = 0; i < 64; i++) {
-        unit = BattleGetUnitPtr(work, i);
-        if (unit != NULL) {
-            if (unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION1 ||
-                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION2 ||
-                unit->initialKind == UNIT_X_NAUTS_CRUMP_FORMATION3) {
-                unitId = i;
-            }
-        }
-    }
-    evtSetValue(event, args[0], unitId);
-    return EVT_RETURN_DONE;
-}
 // clang-format on

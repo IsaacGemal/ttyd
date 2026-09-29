@@ -1704,7 +1704,7 @@ config.libs = [
             Object(Matching, "data/battle/battle_database_muj.c"),
             Object(Matching, "muj_21.c"),
             Object(Matching, "muj_12.c"),
-            Object(NonMatching, "unit/unit_boss_kanbu3.c"),
+            Object(Matching, "unit/unit_boss_kanbu3.c"),
         ],
     ),
     Rel(
