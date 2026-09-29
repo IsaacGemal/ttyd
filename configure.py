@@ -1544,6 +1544,7 @@ config.libs = [
             Object(Matching, "unit/unit_hyper_patakuri.c"),
             Object(Matching, "unit/unit_hyper_togekuri.c"),
             Object(Matching, "event/evt_iwamove.c"),
+            Object(Matching, "unit/unit_faker_mario_gra.c"),
         ],
     ),
     Rel(
@@ -1592,6 +1593,7 @@ config.libs = [
             Object(Matching, "jin_04.c"),
             Object(Matching, "unit/unit_gullible_christine.c"),
             Object(Matching, "jin_10.c"),
+            Object(Matching, "unit/unit_boss_rampell.c"),
         ],
     ),
     Rel(
@@ -1612,6 +1614,7 @@ config.libs = [
             Object(Matching, "unit/unit_yami_kuriboo.c"),
             Object(Matching, "unit/unit_yami_patakuri.c"),
             Object(Matching, "unit/unit_giant_bomb.c"),
+            Object(Matching, "unit/unit_yami_togekuri.c"),
         ],
     ),
     Rel(
@@ -1657,6 +1660,7 @@ config.libs = [
             Object(Matching, "las_06.c"),
             Object(Matching, "las_27.c"),
             Object(Matching, "las_30.c"),
+            Object(Matching, "las_21.c"),
         ],
     ),
     Rel(
@@ -1771,6 +1775,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_marilyn.c"),
             Object(Matching, "unit/unit_boss_majolyne.c"),
             Object(Matching, "window/win_03.c"),
+            Object(Matching, "window/win_00.c"),
         ],
     ),
     Rel(

@@ -30,7 +30,7 @@ if os.path.exists(f"{src}/final.h"):
     open(hdr, "w").write(open(f"{src}/final.h").read())
 patch = f"{src}/include.patch"
 if os.path.exists(patch) and os.path.getsize(patch):
-    subprocess.run(["patch", "-p0", "-N", "-s", "-i", os.path.abspath(patch)], check=False)
+    subprocess.run(["patch", "-p1", "-N", "-s", "-i", os.path.abspath(patch)], check=False)
 cfg = open("configure.py").read()
 line = f'            Object(NonMatching, "{unit}.c"),\n'
 if f'"{unit}.c"' not in cfg:

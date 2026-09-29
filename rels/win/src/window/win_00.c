@@ -1,0 +1,1008 @@
+#include "win_00.h"
+#include "driver/itemdrv.h"
+#include "manager/evtmgr_cmd.h"
+#include "mario/mario.h"
+#include "mario/mariost.h"
+#include "system.h"
+#include <dolphin/os.h>
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_item.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_urouro.h"
+#include "forcedata.h"
+#include "npc_event.h"
+#include "party/party_motion.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+s32 witchtrio_lose[563];
+
+// clang-format off
+
+BOOL mariowalk_wait(void) {
+    return !(marioGetPtr()->flags & MARIO_FLAG_FORCED_MOVEMENT);
+}
+
+USER_FUNC(win_item_move_3d_position) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 targetX = (f32)evtGetValue(event, args[1]);
+    f32 targetY = (f32)evtGetValue(event, args[2]);
+    f32 targetZ = (f32)evtGetValue(event, args[3]);
+    s32 steps = evtGetValue(event, args[4]);
+    s32 mode = evtGetValue(event, args[5]);
+    f32 yOffset = evtGetFloat(event, args[6]);
+    ItemEntry* item = itemNameToPtr((char*)name);
+    s32 curStep;
+
+    if (isFirstCall) {
+        if (item == NULL) {
+            return EVT_RETURN_DONE;
+        }
+        event->userdata[0] = (s32)gp->renderTime;
+        event->userdataf[1] = item->position.x;
+        event->userdataf[2] = item->position.y;
+        *(f32*)&event->field_84 = item->position.z;
+    }
+    curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
+    if (curStep < steps) {
+#ifdef MUST_MATCH
+        // MWCC global-colours the elapsed value to r27; copying it through a u32 temporary keeps the division
+        // result in r4 and spills it to r27 at the first intplGetValue call, as the original does.
+        u32 usaved = (u32)curStep;
+        item->position.x = intplGetValue(mode, (s32)usaved, steps, event->userdataf[1], targetX);
+        item->position.y = intplGetValue(mode, (s32)usaved, steps, event->userdataf[2], targetY) + yOffset;
+        item->position.z = intplGetValue(mode, (s32)usaved, steps, *(f32*)&event->field_84, targetZ);
+#else
+        item->position.x = intplGetValue(mode, curStep, steps, event->userdataf[1], targetX);
+        item->position.y = intplGetValue(mode, curStep, steps, event->userdataf[2], targetY) + yOffset;
+        item->position.z = intplGetValue(mode, curStep, steps, *(f32*)&event->field_84, targetZ);
+#endif
+        return EVT_RETURN_BLOCK;
+    }
+    item->position.x = targetX;
+    item->position.y = targetY + yOffset;
+    item->position.z = targetZ;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(item_check_necklace_exist) {
+    ItemEntry* item = itemNameToPtr("necklace");
+
+    if (item != NULL && itemFlag(item, 1) != 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+
+
+
+
+extend_data(0,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(1,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(2,
+     f64, _three, 3,
+     f64, _half, 0.5)
+
+static EVT_BEGIN(vivian_init)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 268435456)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(72, 83)
+        CALL(evt_npc_set_position, STRING("me"), -535, 0, -30)
+        CALL(evt_npc_set_force_regl_anim, STRING("me"), STRING("PTR_S_3"))
+        CALL(evt_npc_set_autotalkpose, STRING("me"), STRING("PTR_S_3"), STRING("PTR_T_3"))
+        CASE_BETWEEN(84, 85)
+        CALL(evt_npc_set_position, STRING("me"), -535, 0, -30)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(vivian_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_18"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(maririn_init)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 268435456)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(72, 85)
+        CALL(evt_npc_set_position, STRING("me"), -495, 0, -60)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(maririn_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_17"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(majorin_init)
+    CALL(evt_npc_flag_onoff, 0, STRING("me"), 268435456)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(72, 85)
+        CALL(evt_npc_set_position, STRING("me"), -455, 0, -30)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(majorin_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_16"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(fabio_init)
+    IF_INT_EQUAL(GSW(1420), 28)
+        CALL(evt_npc_set_position, STRING("me"), -455, 0, -30)
+        CALL(evt_npc_set_ry, STRING("me"), 270)
+        CALL(evt_npc_status_onoff, 1, STRING("me"), 2)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(fabio_talk)
+    IF_INT_EQUAL(GSW(1420), 28)
+        IF_INT_EQUAL(GSWF(5405), 0)
+            CALL(evt_msg_print, 0, STRING("irai_28_001"), 0, STRING("me"))
+            SET_VALUE(GSWF(5405), 1)
+        ELSE
+            CALL(evt_msg_print, 0, STRING("irai_28_002"), 0, STRING("me"))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(kizayarou_regl)
+    CALL(evt_npc_get_position, STRING("me"), LW(0), LW(1), LW(2))
+    CALL(urouro_init_func, STRING("me"), LW(0), LW(2), FLOAT(100.0f), FLOAT(30.0f), 0)
+    CALL(urouro_main_func, STRING("me"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(kizayarou_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_win_00_01"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(kizayarou_init)
+    SET_VALUE(LW(0), STRING("キザ野郎"))
+    CALL(evt_npc_entry, LW(0), STRING("c_kiza"))
+    CALL(evt_npc_set_tribe, LW(0), STRING("キザ野郎"))
+    CALL(evt_npc_change_interrupt, LW(0), 6, PTR(kizayarou_talk))
+    CALL(evt_npc_change_interrupt, LW(0), 1, PTR(kizayarou_regl))
+    CALL(evt_npc_set_position, LW(0), -450, 0, -25)
+    CALL(evt_npc_set_ry, LW(0), 270)
+    CALL(evt_npc_flag_onoff, 1, LW(0), 1536)
+    RETURN
+EVT_END()
+
+static NpcSetupInfo npcEnt[] = {
+    {"ビビアン", 0x00000200, 0, vivian_init, 0, vivian_talk},
+    {"マリリン", 0x00000600, 0, maririn_init, 0, maririn_talk},
+    {"マジョリン", 0x00000600, 0, majorin_init, 0, majorin_talk},
+    {"ファビオ", 0x00000600, 0, fabio_init, 0, fabio_talk},
+    {NULL},
+};
+
+static BeroEntry bero_entry_data[] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "win_06", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "win_01", "w_bero", 1, 1},
+    {NULL},
+};
+
+
+EVT_BEGIN(witchtrio_momeru)
+    CALL(evt_npc_set_position, STRING("ビビアン"), -535, 0, -30)
+    CALL(evt_npc_set_position, STRING("マリリン"), -495, 0, -60)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -455, 0, -30)
+    CALL(evt_npc_set_ry, STRING("ビビアン"), 90)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 270)
+    CALL(evt_npc_flag_onoff, 1, STRING("ビビアン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 1073741856)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_bero_exec_wait, 65536)
+    CALL(evt_mario_normalize)
+    CALL(evt_npc_change_fbat_mode, 7)
+    CALL(evt_npc_stop_for_event)
+    SET_VALUE(GF(0), 1)
+    SET_VALUE(GF(1), 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -761, -35, FLOAT(120.0f))
+        SET_VALUE(GF(0), 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 1, -785, 18, FLOAT(120.0f))
+        SET_VALUE(GF(1), 0)
+    END_INLINE_EVENT
+    CALL(evt_mario_mov_pos2, -733, 0, FLOAT(120.0f))
+    WAIT_WHILE(GF(0))
+    WAIT_WHILE(GF(1))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FIND1"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_eff_fukidashi, 0, STRING(""), 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 3, STRING(""), 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 4, STRING(""), 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(500)
+    CALL(evt_cam3d_evt_set, FLOAT(-497.5f), 115, FLOAT(325.8f), FLOAT(-497.5f), 45, -68, 500, 11)
+    CALL(evt_snd_bgmoff, 1024)
+    WAIT_MS(1000)
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_WITCH1"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_00"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_01"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_02"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -465, 85, 227, -465, 37, -68, 500, 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_02_01"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -520, 85, 227, -520, 37, -68, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_U_1"))
+    WAIT_MS(150)
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_VIVI_NECKLACE1"), LW(0), LW(1), LW(2), 0)
+    ADD(LW(0), 17)
+    ADD(LW(1), 11)
+    ADD(LW(2), 5)
+    CALL(evt_item_entry, STRING("necklace"), 63, LW(0), LW(1), LW(2), 16, -1, 0)
+    CALL(evt_item_flag_on, STRING("necklace"), 2)
+    WAIT_MS(300)
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_5"), STRING("PTR_T_6"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_03"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, FLOAT(-497.5f), 115, FLOAT(325.8f), FLOAT(-497.5f), 45, -68, 500, 11)
+    WAIT_MS(500)
+    CALL(evt_item_set_position, STRING("necklace"), 0, -1000, 0)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_S_1"))
+    WAIT_MS(300)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_04"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_H_1"))
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_H_1"), STRING("PTR_T_2"))
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_06"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("マジョリン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_jump_position_nohit, STRING("マジョリン"), LW(0), LW(1), LW(2), 225, 30)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_07"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_08"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("マリリン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set_rel, 0, 70, 393, 0, 45, FLOAT(-20.8f), 500, 11)
+    WAIT_MS(1000)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_QUESTION1"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    CALL(evt_eff_fukidashi, 0, STRING(""), 0, 1, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set, FLOAT(-497.5f), 100, FLOAT(227.4f), FLOAT(-497.5f), FLOAT(47.6f), -68, 0, 11)
+    WAIT_MS(300)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+    WAIT_MS(100)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_09"), 0, STRING("マリリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -465, 85, 227, -465, 37, -68, 500, 11)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_10"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, FLOAT(-497.5f), 115, FLOAT(325.8f), FLOAT(-497.5f), 45, -68, 500, 11)
+    WAIT_MS(800)
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    SUBTRACT(LW(0), 25)
+    CALL(evt_npc_move_position, STRING("マジョリン"), LW(0), LW(2), 0, FLOAT(80.0f), 0)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_11"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_12"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_13"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_anim, STRING("マジョリン"), STRING("MJR_I_1"))
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(3), LW(4), LW(5))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_MAJO_NECKLACE_STEAL2"), LW(3), LW(4), LW(5), 0)
+    WAIT_MS(300)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_H_1"))
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(3), LW(4), LW(5))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_MAJO_NECKLACE_STEAL1"), LW(0), LW(1), LW(2), LW(10))
+    ADD(LW(0), 5)
+    ADD(LW(3), -5)
+    ADD(LW(1), 12)
+    ADD(LW(4), 8)
+    CALL(evt_item_set_position, STRING("necklace"), LW(0), LW(1), LW(2))
+    CALL(evt_eff64, STRING(""), STRING("stardust_n64"), 1, LW(0), LW(1), LW(2), FLOAT(20.0f), 0, 0, 0, 0, 0, 0, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 4, 0, 30, 375)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value_para, GW(10), LW(1))
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+        CALL(evt_sub_intpl_msec_init, 1, 30, 10, 375)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value_para, GW(10), LW(1))
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(win_item_move_3d_position, STRING("necklace"), LW(3), LW(4), LW(5), 750, 0, GW(10))
+    CALL(evt_snd_sfxoff, LW(10))
+    CALL(evt_npc_set_anim, STRING("マジョリン"), STRING("MJR_S_1"))
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_S_4"))
+    CALL(evt_item_set_position, STRING("necklace"), 0, -1000, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    ADD(LW(0), 25)
+    CALL(evt_npc_move_position, STRING("マジョリン"), LW(0), LW(2), 500, 0, 0)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_13_01"), 0, STRING("マジョリン"))
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_S_3"))
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_3"), STRING("PTR_T_3"))
+    CALL(evt_npc_set_force_regl_anim, STRING("ビビアン"), STRING("PTR_S_3"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    WAIT_MS(400)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e01_14"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_snd_bgmoff, 513)
+    CALL(evt_snd_bgmon, 288, 0)
+    CALL(evt_npc_flag_onoff, 0, STRING("ビビアン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 1073741856)
+    CALL(evt_cam3d_evt_off, 500, 11)
+    SET_VALUE(GSW(0), 72)
+    CALL(evt_party_run, 0)
+    CALL(evt_party_run, 1)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_npc_change_fbat_mode, 1)
+    CALL(evt_npc_start_for_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(majorin_have_picture)
+    LOOP(0)
+        CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 20)
+        ADD(LW(2), 5)
+        CALL(evt_item_set_position, STRING("picture"), LW(0), LW(1), LW(2))
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(witchtrio_picture)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_cam3d_evt_set, -495, 165, 582, -495, 45, -108, 0, 11)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_party_cont_onoff, 1, 0)
+    CALL(evt_mario_set_pos, 0, -1000, 0)
+    CALL(evt_party_set_pos, 0, 0, -1000, 0)
+    CALL(evt_party_set_pos, 1, 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("ビビアン"), -535, 0, -30)
+    CALL(evt_npc_set_position, STRING("マリリン"), -495, 0, -60)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -455, 0, -30)
+    CALL(evt_npc_set_ry, STRING("ビビアン"), 90)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 270)
+    CALL(evt_npc_flag_onoff, 1, STRING("ビビアン"), 1140850720)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 1140850720)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 1140850720)
+    CALL(evt_seq_wait, 2)
+    WAIT_MS(1000)
+    CALL(evt_npc_change_fbat_mode, 7)
+    CALL(evt_npc_stop_for_event)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_WITCH1"))
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_4"), STRING("PTR_T_5"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_00"), 0, STRING("ビビアン"))
+    CALL(evt_cam3d_evt_set, -460, 90, 237, -460, 30, -108, 500, 11)
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("マジョリン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_01"), 0, STRING("マジョリン"))
+    CALL(evt_cam3d_evt_set, -495, 90, 237, -495, 30, -108, 500, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_02"), 0, STRING("マリリン"))
+    CALL(evt_item_entry, STRING("picture"), 90, 0, -1000, 0, 16, -1, 0)
+    CALL(evt_item_flag_on, STRING("picture"), 2)
+    SPAWN_EVENT_GET_ID(PTR(majorin_have_picture), LW(10))
+    CALL(evt_npc_set_anim, STRING("マジョリン"), STRING("MJR_I_1"))
+    WAIT_MS(500)
+    DELETE_EVENT(LW(10))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("マジョリン"), STRING("MJR_S_1"))
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    ADD(LW(0), -20)
+    CALL(evt_item_set_position, STRING("picture"), LW(0), LW(1), LW(2))
+    WAIT_MS(500)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+    END_INLINE_EVENT
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("マジョリン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("マリリン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("ビビアン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("マジョリン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_03"), 0, STRING("マジョリン"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+        CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+    END_INLINE_EVENT
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_04"), 0, STRING("マリリン"))
+    CALL(evt_item_set_position, STRING("picture"), 0, -1000, 0)
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_05"), 0, STRING("マジョリン"))
+    CALL(evt_cam3d_evt_set, -525, 90, 237, -525, 30, -108, 500, 11)
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_06"), 0, STRING("ビビアン"))
+    CALL(evt_cam3d_evt_set, -460, 90, 237, -460, 30, -108, 500, 11)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_07"), 0, STRING("マジョリン"))
+    CALL(evt_cam3d_evt_set, -495, 90, 237, -495, 30, -108, 500, 11)
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_08"), 0, STRING("ビビアン"))
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_09"), 0, STRING("マジョリン"))
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_3"), STRING("PTR_T_3"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_10"), 0, STRING("ビビアン"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_11"), 0, STRING("マジョリン"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e06_12"), 0, STRING("マリリン"))
+    CALL(evt_cam3d_evt_set, -495, 165, 582, -495, 45, -108, 1500, 11)
+    WAIT_MS(1200)
+    SET_VALUE(GSW(0), 84)
+    CALL(evt_snd_bgmoff_f, 512, 1000)
+    CALL(evt_fade_set_mapchange_type, 0, 2, 500, 1, 500)
+    CALL(evt_bero_mapchange, STRING("win_03"), STRING("n_bero"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(mario_vs_witchtrio)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 270)
+    CALL(evt_npc_flag_onoff, 1, STRING("ビビアン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 1073741920)
+    LOOP(0)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        IF_INT_LESS_OR_EQUAL(LW(0), -325)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_change_fbat_mode, 7)
+    CALL(evt_npc_stop_for_event)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_normalize)
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_stop, 1)
+    CALL(evt_mario_dispflag_onoff, 1, 4)
+    CALL(evt_mario_set_dir, 270, 200, 0)
+    CALL(evt_mario_dispflag_onoff, 0, 4)
+    CALL(evt_mario_adjust_dir)
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_set_dir, 0, 270, 200)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_set_dir, 1, 270, 200)
+    END_INLINE_EVENT
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("マジョリン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("マリリン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("ビビアン"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    WAIT_MS(500)
+    CALL(evt_cam3d_evt_set, -495, 93, 252, -495, 45, -19, 500, 11)
+    WAIT_MS(600)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_WITCH1"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_00"), 0, STRING("マジョリン"))
+    CALL(evt_mario_set_pos, -325, 0, -10)
+    CALL(evt_party_set_pos, 0, -277, 0, -10)
+    CALL(evt_party_set_pos, 1, -300, 0, 0)
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -307, FLOAT(86.4f), FLOAT(226.2f), -307, FLOAT(42.0f), FLOAT(-19.0f), 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg2_win_e07_01"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -400, 155, 572, -400, 50, -19, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_1"), STRING("PTR_T_1"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print_party, STRING("stg2_win_e07_02_01"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -451, FLOAT(88.6f), FLOAT(274.0f), -451, FLOAT(35.5f), FLOAT(-19.0f), 0, 0)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_02"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -495, FLOAT(105.1f), FLOAT(274.9f), -495, FLOAT(52.7f), FLOAT(-19.3f), 200, 11)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_03"), 0, STRING("マリリン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -528, FLOAT(95.5f), FLOAT(274.9f), -528, FLOAT(42.5f), FLOAT(-19.3f), 200, 11)
+    WAIT_MS(300)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_04"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -307, FLOAT(86.4f), FLOAT(226.2f), -307, FLOAT(42.0f), FLOAT(-19.0f), 0, 0)
+    WAIT_MS(300)
+    CALL(evt_msg_print_party, STRING("stg2_win_e07_02_05"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 270)
+    WAIT_MS(300)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_FIND1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_I_N"))
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_06"), 0, STRING("マジョリン"))
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_H_1"))
+    WAIT_MS(200)
+    CALL(evt_cam3d_evt_set, -495, 103, 276, -495, 50, -19, 500, 11)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_07"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_3"), STRING("PTR_T_3"))
+    WAIT_FRAMES(1)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_08"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_09"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_B_1"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_B_2"))
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_B_2"), STRING("PTR_T_4"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_02_10"), 0, STRING("ビビアン"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_06"), 0, STRING("マジョリン"))
+    WAIT_MS(200)
+    WAIT_FRAMES(1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_msg_print, 0, STRING("stg2_win_e07_08"), 0, STRING("ビビアン"))
+    END_INLINE_EVENT
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e07_07"), 0, STRING("マリリン"))
+    WAIT_MS(200)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    BEGIN_INLINE_EVENT_GET_ID(LW(10))
+        WAIT_MS(400)
+        CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+        ADD(LW(0), 160)
+        CALL(evt_npc_move_position, STRING("マジョリン"), LW(0), LW(2), 0, 200, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT_GET_ID(LW(11))
+        WAIT_MS(200)
+        CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+        ADD(LW(0), 160)
+        CALL(evt_npc_move_position, STRING("マリリン"), LW(0), LW(2), 0, 200, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT_GET_ID(LW(12))
+        CALL(evt_npc_flag_onoff, 0, STRING("ビビアン"), 1024)
+        WAIT_FRAMES(1)
+        CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_R_3"))
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        ADD(LW(0), 160)
+        CALL(evt_npc_move_position, STRING("ビビアン"), LW(0), LW(2), 0, 200, 0)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -375, 144, 533, -375, 40, -58, 750, 11)
+    WAIT_MS(600)
+    CALL(evt_npc_set_battle_info, STRING("マジョリン"), 4)
+    CALL(evt_npc_battle_start, STRING("マジョリン"))
+    CALL(evt_npc_wait_battle_end)
+    DELETE_EVENT(LW(10))
+    DELETE_EVENT(LW(11))
+    DELETE_EVENT(LW(12))
+    CALL(evt_mario_cont_onoff, 1)
+    CALL(evt_mario_key_onoff, 1)
+    SET_VALUE(GSW(0), 85)
+    SPAWN_EVENT(witchtrio_lose)
+    RETURN
+EVT_END()
+
+
+EVT_BEGIN(get_necklace)
+    CALL(item_check_necklace_exist)
+    CALL(evt_npc_change_fbat_mode, 7)
+    CALL(evt_npc_stop_for_event)
+    CALL(evt_mario_key_onoff, 0)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(300)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_party_get_pos, 1, LW(10), LW(11), LW(12))
+        IF_INT_GREATER_OR_EQUAL(LW(10), LW(0))
+            CALL(evt_mario_set_dir, 90, 200, 0)
+        ELSE
+            CALL(evt_mario_set_dir, 270, 200, 0)
+        END_IF
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(300)
+        CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_party_get_pos, 1, LW(10), LW(11), LW(12))
+        IF_INT_GREATER_OR_EQUAL(LW(10), LW(0))
+            CALL(evt_party_set_dir, 0, 90, 200)
+        ELSE
+            CALL(evt_party_set_dir, 0, 270, 200)
+        END_IF
+    END_INLINE_EVENT
+    CALL(evt_party_get_pos, 1, LW(0), LW(1), LW(2))
+    CALL(evt_mario_get_pos, 0, LW(10), LW(11), LW(12))
+    IF_INT_GREATER_OR_EQUAL(LW(10), LW(0))
+        CALL(evt_party_set_dir, 1, 90, 200)
+    ELSE
+        CALL(evt_party_set_dir, 1, 270, 200)
+    END_IF
+    CALL(evt_msg_print, 0, STRING("stg2_win_e08_03"), 0, STRING("extparty"))
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_npc_change_fbat_mode, 1)
+    CALL(evt_npc_start_for_event)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(witchtrio_lose_item)
+    LOOP(0)
+        CALL(evt_npc_get_position, STRING("ダミー"), LW(0), LW(1), LW(2))
+        CALL(evt_item_set_position, STRING("necklace"), LW(0), LW(1), LW(2))
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(witchtrio_mess_vivi)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e08_02"), 0, STRING("ビビアン"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(witchtrio_mess_mari)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e08_01"), 0, STRING("マリリン"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(witchtrio_lose)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_npc_set_position, STRING("ビビアン"), -438, 0, -10)
+    CALL(evt_npc_set_position, STRING("マリリン"), -425, 0, -60)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -387, 0, -30)
+    CALL(evt_npc_set_ry, STRING("ビビアン"), 90)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("ビビアン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 1073741856)
+    CALL(evt_mario_set_pos, -335, 0, -50)
+    CALL(evt_party_set_pos, 0, -287, 0, -50)
+    CALL(evt_party_set_pos, 1, -310, 0, -40)
+    CALL(evt_mario_set_dir, 270, 0, 0)
+    CALL(evt_party_set_dir, 0, 270, -1)
+    CALL(evt_party_set_dir, 1, 270, -1)
+    CALL(evt_npc_entry, STRING("ダミー"), STRING("c_majyorin"))
+    CALL(evt_npc_set_position, STRING("ダミー"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("ダミー"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("ダミー"), 128)
+    CALL(evt_npc_set_autotalkpose, STRING("ビビアン"), STRING("PTR_S_4"), STRING("PTR_T_4"))
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_WITCH1"))
+    CALL(evt_cam3d_evt_set, -375, 144, 533, -375, 40, -58, 0, 11)
+    CALL(evt_item_entry, STRING("necklace"), 63, 0, -1000, 0, 16, GSWF(2675), PTR(get_necklace))
+    CALL(evt_item_flag_on, STRING("necklace"), 2)
+    CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_GURUGURU_MARK1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_eff_fukidashi, 1, STRING("effmaririn"), STRING("マリリン"), 2, 0, 0, 0, 0, 0, 0, -1)
+    CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_GURUGURU_MARK1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_eff_fukidashi, 1, STRING("effvivian"), STRING("ビビアン"), 2, 0, 0, 0, 0, 0, 0, -1)
+    CALL(evt_seq_wait, 2)
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_jump_position_nohit, STRING("マジョリン"), LW(0), LW(1), LW(2), 225, 30)
+    CALL(evt_msg_print, 0, STRING("stg2_win_e08_00"), 0, STRING("マジョリン"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_set_ry, STRING("マジョリン"), 270)
+        CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SISTERS_ESCAPE1"), LW(0), LW(1), LW(2), 0)
+        ADD(LW(0), -100)
+        CALL(evt_npc_move_position, STRING("マジョリン"), LW(0), LW(2), 0, FLOAT(240.0f), 0)
+        CALL(evt_npc_set_position, STRING("マジョリン"), 0, -1000, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("マジョリン"), LW(0), LW(1), LW(2))
+        SET_VALUE(LW(10), -361)
+        SUBTRACT(LW(10), LW(0))
+        DIVIDE(LW(10), 10)
+        SET_VALUE(LW(11), LW(10))
+        MULTIPLY(LW(11), 5)
+        ADD(LW(11), LW(0))
+        SET_VALUE(LW(12), LW(10))
+        MULTIPLY(LW(12), 7)
+        ADD(LW(12), LW(0))
+        SET_VALUE(LW(13), LW(10))
+        MULTIPLY(LW(13), 9)
+        ADD(LW(13), LW(0))
+        CALL(evt_npc_set_position, STRING("ダミー"), LW(0), LW(1), LW(2))
+        SPAWN_EVENT_GET_ID(PTR(witchtrio_lose_item), LW(15))
+        CALL(evt_npc_jump_position_nohit, STRING("ダミー"), LW(11), 0, LW(2), 625, FLOAT(30.0f))
+        CALL(evt_npc_jump_position_nohit, STRING("ダミー"), LW(12), 0, LW(2), 250, FLOAT(15.0f))
+        CALL(evt_npc_jump_position_nohit, STRING("ダミー"), LW(13), 0, LW(2), 250, FLOAT(7.5f))
+        DELETE_EVENT(LW(15))
+        CALL(evt_npc_set_position, STRING("ダミー"), 0, -1000, 0)
+        CALL(evt_item_flag_off, STRING("necklace"), 2)
+        CALL(evt_item_set_position, STRING("necklace"), LW(13), 0, LW(2))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_eff_softdelete, STRING("effmaririn"))
+        CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("マリリン"), LW(0), LW(1), LW(2), 225, 30)
+        SPAWN_EVENT(witchtrio_mess_mari)
+        CALL(evt_npc_set_ry, STRING("マリリン"), 270)
+        CALL(evt_npc_get_position, STRING("マリリン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SISTERS_ESCAPE1"), LW(0), LW(1), LW(2), 0)
+        ADD(LW(0), -100)
+        CALL(evt_npc_move_position, STRING("マリリン"), LW(0), LW(2), 0, FLOAT(240.0f), 0)
+        CALL(evt_npc_set_position, STRING("マリリン"), 0, -1000, 0)
+    END_INLINE_EVENT
+    WAIT_MS(425)
+    SET_VALUE(GF(0), 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_eff_softdelete, STRING("effvivian"))
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+        SPAWN_EVENT(witchtrio_mess_vivi)
+        WAIT_MS(500)
+        CALL(evt_npc_set_ry, STRING("ビビアン"), 270)
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SISTERS_ESCAPE1"), LW(0), LW(1), LW(2), 0)
+        ADD(LW(0), -25)
+        CALL(evt_npc_move_position, STRING("ビビアン"), LW(0), LW(2), 0, FLOAT(240.0f), 0)
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SISTERS_ESCAPE2"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_F_1"))
+        WAIT_MS(500)
+        CALL(evt_npc_set_anim, STRING("ビビアン"), STRING("PTR_S_4"))
+        CALL(evt_npc_set_ry, STRING("ビビアン"), 90)
+        WAIT_MS(200)
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_jump_position_nohit, STRING("ビビアン"), LW(0), LW(1), LW(2), 225, 30)
+        CALL(evt_npc_set_ry, STRING("ビビアン"), 270)
+        WAIT_MS(500)
+        CALL(evt_npc_get_position, STRING("ビビアン"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_SISTERS_ESCAPE1"), LW(0), LW(1), LW(2), 0)
+        ADD(LW(0), -100)
+        CALL(evt_npc_move_position, STRING("ビビアン"), LW(0), LW(2), 0, FLOAT(240.0f), 0)
+        CALL(evt_npc_set_position, STRING("ビビアン"), 0, -1000, 0)
+        SET_VALUE(GF(0), 0)
+    END_INLINE_EVENT
+    WAIT_WHILE(GF(0))
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG2_WIN1"))
+    SET_VALUE(GSW(0), 86)
+    CALL(evt_cam3d_evt_off, 500, 11)
+    CALL(evt_party_run, 0)
+    CALL(evt_party_run, 1)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_npc_change_fbat_mode, 1)
+    CALL(evt_npc_start_for_event)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(ki_data_evt_01)
+    CALL(evt_item_delete_check, STRING("item_ki01"), LW(0))
+    IF_INT_EQUAL(LW(0), 1)
+        CALL(evt_item_entry, STRING("item_ki01"), 138, -694, 111, -130, 14, GSWF(2685), 0)
+    END_IF
+    RETURN
+EVT_END()
+
+static TreeAccessEntry tree_access_data[] = {
+    {4, "A_tree_01", "S_tree_mki_01", "S_tree_ha01", NULL, ki_data_evt_01},
+    {4, "A_tree_02", "S_tree_mki_02", "S_tree_ha02", NULL, NULL},
+    {4, "A_tree_03", "S_tree_mki_03", "S_tree_ha03", NULL, NULL},
+    {4, "A_tree_04", "S_tree_mki_04", "S_tree_ha04", NULL, NULL},
+    {4, "A_tree_05", "S_tree_mki_05", "S_tree_ha05", NULL, NULL},
+    {4, "A_tree_06", "S_tree_mki_06", "S_tree_ha06", NULL, NULL},
+    {4, "A_tree_07", "S_tree_mki_07", "S_tree_ha07", NULL, NULL},
+    {4, "A_tree_08", "S_tree_mki_08", "S_tree_ha08", NULL, NULL},
+    {4, "A_tree_09", "S_tree_mki_09", "S_tree_ha09", NULL, NULL},
+    {7},
+};
+
+EVT_BEGIN(iri_28_enemy_all_dead)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_mario_wait_landon)
+    WAIT_MS(1000)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    SET_VALUE(LW(3), LW(0))
+    SUBTRACT(LW(3), 300)
+    IF_INT_LESS(LW(2), -70)
+        SET_VALUE(LW(2), -70)
+    END_IF
+    CALL(evt_npc_set_position, STRING("ファビオ"), LW(3), LW(1), LW(2))
+    SUBTRACT(LW(0), 30)
+    CALL(evt_npc_move_position, STRING("ファビオ"), LW(0), LW(2), 0, 120, 0)
+    CALL(evt_mario_set_dir_npc, STRING("ファビオ"))
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("irai_28_003"), 0, STRING("ファビオ"))
+    CALL(evt_sub_get_coin, 20)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("irai_28_005"), 0, STRING("ファビオ"))
+    WAIT_MS(200)
+    CALL(evt_npc_flag_onoff, 1, STRING("ファビオ"), 1073741856)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(400)
+        CALL(evt_mario_set_dir, 90, 300, 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_get_position, STRING("ファビオ"), LW(0), LW(1), LW(2))
+    IF_INT_GREATER(LW(0), 500)
+        CALL(evt_npc_move_position, STRING("ファビオ"), 780, 0, 0, 150, 0)
+        CALL(evt_npc_move_position, STRING("ファビオ"), 950, 0, 0, 150, 0)
+        CALL(evt_npc_set_position, STRING("ファビオ"), 0, -1000, 0)
+    ELSE
+        ADD(LW(0), 300)
+        CALL(evt_npc_move_position, STRING("ファビオ"), LW(0), LW(2), 0, 150, 0)
+        CALL(evt_npc_set_position, STRING("ファビオ"), 0, -1000, 0)
+    END_IF
+    SET_VALUE(GSW(1420), 0)
+    SET_VALUE(GSWF(5402), 1)
+    CALL(evt_msg_print, 0, STRING("sys_request_finish"), 0, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(iri_28_enemy_dead)
+    CALL_CHILD(enemy_common_dead_event)
+    ADD(GSW(1469), 1)
+    IF_INT_EQUAL(GSW(1469), 3)
+        SPAWN_EVENT(iri_28_enemy_all_dead)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(iri_28_init)
+    IF_INT_EQUAL(GSW(1420), 28)
+        SET_VALUE(GSW(1469), 0)
+        CALL(evt_npc_check, STRING("パックン１"), LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            CALL(evt_npc_change_interrupt, STRING("パックン１"), 8, PTR(iri_28_enemy_dead))
+        ELSE
+            ADD(GSW(1469), 1)
+        END_IF
+        CALL(evt_npc_check, STRING("シンエモン"), LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            CALL(evt_npc_change_interrupt, STRING("シンエモン"), 8, PTR(iri_28_enemy_dead))
+        ELSE
+            ADD(GSW(1469), 1)
+        END_IF
+        CALL(evt_npc_check, STRING("パックン２"), LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            CALL(evt_npc_change_interrupt, STRING("パックン２"), 8, PTR(iri_28_enemy_dead))
+        ELSE
+            ADD(GSW(1469), 1)
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(win_00_init_evt)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG2_WIN1"))
+    CALL(evt_snd_envon, 272, STRING("ENV_STG2_WIN1"))
+    CALL(evt_npc_setup, PTR(npcEnt))
+    IF_INT_EQUAL(GSWF(2675), 1)
+        IF_INT_LESS_OR_EQUAL(GSW(0), 112)
+            CALL_CHILD(kizayarou_init)
+        END_IF
+    END_IF
+    SET_VALUE(LW(0), PTR(tree_access_data))
+    CALL_CHILD(evt_sub_tree_access_entry)
+    IF_INT_LESS_OR_EQUAL(GSW(0), 71)
+        SPAWN_EVENT(witchtrio_momeru)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 83)
+        SPAWN_EVENT(witchtrio_picture)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 84)
+        SPAWN_EVENT(mario_vs_witchtrio)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 85)
+        SPAWN_EVENT(witchtrio_lose)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 86)
+        CALL(evt_item_entry, STRING("necklace"), 63, -361, 0, -22, 16, GSWF(2675), PTR(get_necklace))
+    END_IF
+    CALL(evt_item_entry, STRING("i"), 154, 385, 0, -115, 0, GSWF(2676), 0)
+    CALL_CHILD(iri_28_init)
+    RETURN
+EVT_END()
+
+// clang-format on
