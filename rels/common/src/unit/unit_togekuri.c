@@ -140,92 +140,12 @@ static EVT_BEGIN(init_event)
     RETURN
 EVT_END()
 
-static USER_FUNC(krb_get_dir) {
-    s32* args;
-    f32 x1;
-    f32 z1;
-    f32 x2;
-    f32 z2;
-    f32 dx;
-    f32 dz;
-    s32 value;
 
-    args = event->args;
-    x1 = evtGetFloat(event, args[0]);
-    z1 = evtGetFloat(event, args[1]);
-    x2 = evtGetFloat(event, args[2]);
-    z2 = evtGetFloat(event, args[3]);
-    value = evtGetValue(event, args[4]);
-    dx = x2 - x1;
-    dz = z2 - z1;
-    if (dx == 0.0f && dz == 0.0f) {
-        evtSetValue(event, args[4], value);
-        return EVT_RETURN_DONE;
-    }
-    evtSetValue(event, args[4], (s32)angleABf(dx, dz, 0.0f, 0.0f));
-    return EVT_RETURN_DONE;
-}
 
-#pragma dont_inline on
-f32 hypotf(f32 x, f32 y) {
-    return (f32)hypot(x, y);
-}
-#pragma dont_inline reset
 
-// NONMATCHING (98.13%): angle lives in r3 instead of r4 (the original copies it to r3 with a clrlwi at the end).
-static u16 krb_comp_dir(f32 dx, f32 dz) {
-    u16 i;
-    f32 ratio;
-    u16 low;
-    u16 high;
-    u16 mid;
-    u16 angle;
 
-    ratio = __fabs(dz) / hypotf(dx, dz);
-    low = 0;
-    high = 90;
-    for (i = 0; i < 7; i++) {
-        if (SinTable[mid = low + (high - low) / 2] < ratio) {
-            low = mid;
-        }
-        if (!(SinTable[mid] < ratio)) {
-            high = mid;
-        }
-    }
-    if (__fabs(SinTable[low] - ratio) < __fabs(SinTable[high] - ratio)) {
-        angle = low;
-    } else {
-        angle = high;
-    }
-    if (dx < 0.0f && dz >= 0.0f) {
-        angle = 180 - angle;
-    }
-    if (dx < 0.0f && dz < 0.0f) {
-        angle += 180;
-    }
-    if (dx >= 0.0f && dz < 0.0f) {
-        angle = 360 - angle;
-    }
-    return angle;
-}
 
-static USER_FUNC(get_attacker) {
-    s32* args;
-    BattleWork* wp;
-    BattleUnit* unit;
 
-    wp = _battleWorkPointer;
-    args = event->args;
-    unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-    if (unit->initialKind == UNIT_MARIO) {
-        evtSetValue(event, args[0], 0);
-    } else if (unit->initialKind == UNIT_GOOMBELLA) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 2);
-    }
-    return EVT_RETURN_DONE;
-}
 
 
 static EVT_BEGIN(dmg_avoid_counter_thorn_head_event)
@@ -269,6 +189,89 @@ static EVT_BEGIN(dmg_avoid_counter_thorn_head_event)
     END_IF
     RETURN
 EVT_END()
+
+static USER_FUNC(get_attacker) {
+    s32* args;
+    BattleWork* wp;
+    BattleUnit* unit;
+
+    wp = _battleWorkPointer;
+    args = event->args;
+    unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+    if (unit->initialKind == UNIT_MARIO) {
+        evtSetValue(event, args[0], 0);
+    } else if (unit->initialKind == UNIT_GOOMBELLA) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 2);
+    }
+    return EVT_RETURN_DONE;
+}
+
+static u16 krb_comp_dir(f32 dx, f32 dz) {
+    u16 i;
+    f32 ratio;
+    u16 low;
+    u16 high;
+    u16 mid;
+
+    ratio = __fabs(dz) / hypotf(dx, dz);
+    low = 0;
+    high = 90;
+    for (i = 0; i < 7; i++) {
+        if (SinTable[mid = low + (high - low) / 2] < ratio) {
+            low = mid;
+        }
+        if (!(SinTable[mid] < ratio)) {
+            high = mid;
+        }
+    }
+    if (__fabs(SinTable[low] - ratio) < __fabs(SinTable[high] - ratio)) {
+        mid = low;
+    } else {
+        mid = high;
+    }
+    if (dx < 0.0f && dz >= 0.0f) {
+        mid = 180 - mid;
+    }
+    if (dx < 0.0f && dz < 0.0f) {
+        mid += 180;
+    }
+    if (dx >= 0.0f && dz < 0.0f) {
+        mid = 360 - mid;
+    }
+    return (u16)mid;
+}
+
+f32 hypotf(f32 x, f32 y) {
+    return (f32)hypot(x, y);
+}
+
+static USER_FUNC(krb_get_dir) {
+    s32* args;
+    f32 x1;
+    f32 z1;
+    f32 x2;
+    f32 z2;
+    f32 dx;
+    f32 dz;
+    s32 value;
+
+    args = event->args;
+    x1 = evtGetFloat(event, args[0]);
+    z1 = evtGetFloat(event, args[1]);
+    x2 = evtGetFloat(event, args[2]);
+    z2 = evtGetFloat(event, args[3]);
+    value = evtGetValue(event, args[4]);
+    dx = x2 - x1;
+    dz = z2 - z1;
+    if (dx == 0.0f && dz == 0.0f) {
+        evtSetValue(event, args[4], value);
+        return EVT_RETURN_DONE;
+    }
+    evtSetValue(event, args[4], (s32)angleABf(dx, dz, 0.0f, 0.0f));
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(damage_event)
     SET_VALUE(LW(10), -2)

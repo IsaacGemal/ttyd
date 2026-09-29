@@ -289,6 +289,9 @@ cflags_rel = [
     "-sdata2 0",
 ]
 
+# REL flags without deferred inlining (a few unit copies were compiled that way: functions in source order)
+cflags_rel_nodefer = [f if f != "-inline auto,deferred" else "-inline auto" for f in cflags_rel]
+
 config.linker_version = "GC/2.6"
 
 
@@ -1895,9 +1898,9 @@ config.libs = [
             Object(Matching, "unit/unit_teresa.c", modules=["jin"], extra_cflags=["-DUNIT_DATA_SYM=unit_teresa_14_data_1EF28"]),
             Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["bom"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_3_data_CDB0"]),
             Object(NonMatching, "unit/unit_ice_pakkun.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_ice_pakkun_15_data_577D8"]),
-            Object(NonMatching, "unit/unit_togekuri.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_9_data_1DA88"]),
-            Object(NonMatching, "unit/unit_togekuri.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_26_data_23050"]),
-            Object(NonMatching, "unit/unit_togekuri.c", modules=["hei"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
+            Object(Matching, "unit/unit_togekuri.c", modules=["gon"], cflags=[*cflags_rel_nodefer, "-i rels/common/include"], extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_9_data_1DA88"]),
+            Object(Matching, "unit/unit_togekuri.c", modules=["tik"], source="v2/unit/unit_togekuri.c", extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_26_data_23050"]),
+            Object(Matching, "unit/unit_togekuri.c", modules=["hei"], source="v2/unit/unit_togekuri.c", extra_cflags=["-DUNIT_DATA_SYM=unit_togekuri_12_data_17668"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_28_data_24A10"]),
             Object(NonMatching, "unit/unit_hammer_bros.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_hammer_bros_26_data_240F0"]),
         ],
