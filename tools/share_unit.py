@@ -34,7 +34,7 @@ for gi, mods in enumerate(groups):
     else:
         s2 = re.sub(rf"static u32 {name}\[49\]", "u32 UNIT_DATA_SYM[49]", s)
         if s2 == s:
-            sys.exit(f"{src}: no per-REL data table name found")
+            sys.exit(f"{src}: no `{name}_<id>_data_<offset>` table name and no `static u32 {name}[49]` table to make global")
         s = re.sub(rf"&{name}\b", "&UNIT_DATA_SYM", s2)
     refs = sorted(set(re.findall(rf"\b(unit_(?!{name}_)\w+?)_\d+_data_[0-9A-F]+\b", s)))
     for r in refs:

@@ -1,11 +1,15 @@
-import re,sys
-# usage: ins.py FILE FUNC BODYFILE  -- replace rel_gen's TODO hint for FUNC with BODYFILE's text, fix forward decl
-p,fn,bf=sys.argv[1:4]
-s=open(p).read(); body=open(bf).read()
-s,n=re.subn(r'// TODO: write '+re.escape(fn)+r' [^\n]*\n(?://[^\n]*\n)*',lambda m: body.rstrip('\n')+'\n\n',s)
-assert n==1,'hint not found'
-s=re.sub(r'static void '+re.escape(fn)+r'\(void\);[^\n]*','static USER_FUNC('+fn+');',s)
-s=s.replace('\n#pragma force_active off\n','\n')
-inc=[l for l in re.findall(r'^#include [^\n]*',body,re.M)]
-body_no=''
-open(p,'w').write(s)
+#!/usr/bin/env python3
+"""Put a written function where rel_gen left its TODO hint.
+    python3 tools/fn_hint.py SOURCE.c FUNC BODY.c
+Replaces the hint comment for FUNC with BODY's text, turns the forward declaration into USER_FUNC, and drops the
+trailing `#pragma force_active off` (with -inline deferred it must stay on at the end of the file)."""
+import re, sys
+
+path, fn, body_path = sys.argv[1:4]
+text, body = open(path).read(), open(body_path).read()
+text, n = re.subn(rf"// TODO: write {re.escape(fn)} [^\n]*\n(?://[^\n]*\n)*", lambda m: body.rstrip("\n") + "\n\n", text)
+if n != 1:
+    sys.exit(f"{path}: no rel_gen hint for {fn}")
+text = re.sub(rf"static void {re.escape(fn)}\(void\);[^\n]*", f"static USER_FUNC({fn});", text)
+text = text.replace("\n#pragma force_active off\n", "\n")
+open(path, "w").write(text)
