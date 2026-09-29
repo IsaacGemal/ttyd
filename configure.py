@@ -1876,7 +1876,7 @@ config.libs = [
             Object(Matching, "unit/unit_kuriboo.c", modules=["muj"], extra_cflags=["-DUNIT_DATA_SYM=unit_kuriboo_20_data_2C5C8"]),
             Object(Matching, "unit/unit_kuriboo.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_kuriboo_26_data_1CBF8"]),
             Object(Matching, "unit/unit_kuriboo.c", modules=["win"], extra_cflags=["-DUNIT_DATA_SYM=unit_kuriboo_local_data"]),
-            Object(NonMatching, "unit/unit_patakuri.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_9_data_1A0F0"]),
+            Object(Matching, "unit/unit_patakuri.c", modules=["gon"], source="v2/unit/unit_patakuri.c", cflags=[*cflags_rel_nodefer, "-i rels/common/include"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_9_data_1A0F0"]),
             Object(Matching, "unit/unit_patakuri.c", modules=["tik"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_26_data_21998"]),
             Object(Matching, "unit/unit_patakuri.c", modules=["hei"], extra_cflags=["-DUNIT_DATA_SYM=unit_patakuri_12_data_13CD0"]),
             Object(Matching, "unit/unit_heavy_bom.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_heavy_bom_15_data_33E08"]),
