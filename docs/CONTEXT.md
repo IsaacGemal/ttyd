@@ -1466,3 +1466,17 @@ evt_door.c keeps a local DoorParam (0x4C) for the same data as DoorEntry, and do
 still hitIn/hitOut where DoorEntry says closeHit/openHit.
 The three ttydasm fixes (strings, ELSE's indentation, floats) could go upstream to doldecomp/ttyd as a PR; not
 done yet.
+
+## Sep 29: system.c linked (Claude #2, Isaac's call)
+
+Isaac asked for distABf, the last unmatched function in system.c (99.95%). Its instructions were already right;
+what differed was data, and fixing it linked the whole unit (linked code +0.19 points, linked data +0.23).
+- R_build_date and R_build_time ("Jun 17 2004", "17:20:01": __DATE__ and __TIME__) belong to main.c, not
+  system.c. distABf's inline sqrtf loads its constants from the pool base, which the original puts 0x18 bytes in;
+  moving the two strings into main.c (splits.txt changed) puts system.c's pool at the right place.
+- The rest of the pool was short a debug format string, three doubles and an assert message from functions the
+  linker stripped; stubs now emit them in order. An unused initializeVec added a 12-byte vector the original
+  doesn't have and is gone.
+- intplGetValue used PI (0x40490FDB) where the original loads 3.141592f (0x40490FD8). It scored 100% because
+  objdiff doesn't compare literal values; only linking showed it. Worth remembering for any unit that scores
+  complete but won't link.

@@ -892,7 +892,7 @@ config.libs = [
             Object(NonMatching, "romfont.c"),
             Object(NonMatching, "sound.c"),
             Object(NonMatching, "statuswindow.c"),
-            Object(NonMatching, "system.c"),
+            Object(Matching, "system.c"),
             Object(Matching, "unk_0x8025de70.c"),
         ],
     },

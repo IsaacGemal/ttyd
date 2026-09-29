@@ -14,6 +14,7 @@
 #include <stdlib.h>
 // #include <string.h>
 #include <demo/DEMOPad.h>
+#include "main.h"
 #include "mario/mariost.h"
 
 #pragma pool_data on
@@ -97,8 +98,12 @@ static f32 angleABTBL[] = { 1.0f,       1.273187f,  1.27303f,   1.272768f,  1.27
                             1.053216f,  1.049087f,  1.04496f,   1.040838f,  1.036721f,  1.0326101f, 1.028504f,
                             1.024406f,  1.020316f,  1.016234f,  1.0121599f, 1.0080971f, 1.004043f,  1.0f };
 
-char* dat_ptr_8040f260 = "Jun 17 2004";
-char* dat_ptr_8040f264 = "17:20:01";
+const char* dat_ptr_8040f260 = R_build_date;
+const char* dat_ptr_8040f264 = R_build_time;
+
+const char* forceRodata15(void) {
+    return "assertion \"%s\" failed.\n \"%s\"\n";
+}
 
 const char* getMarioStDvdRoot(void) {
     return ".";
@@ -123,7 +128,6 @@ f32 reviseAngle(f32 angle) {
     return result;
 }
 
-// NONMATCHING (99.95%): same instructions; only register numbers or operands differ.
 f32 distABf(f32 x1, f32 y1, f32 x2, f32 y2) {
     f32 xdiff, ydiff;
 
@@ -229,17 +233,17 @@ f32 intplGetValue(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
         case 3:
             return start + (((step * step * step * step) * (end - start)) / (total * (total * (total * total))));
         case 7:
-            f2 = (f32)cos(4.0f * (PI * (step / total)));
+            f2 = (f32)cos(4.0f * (3.141592f * (step / total)));
             f1 = (end - start);
             f3 = (total - step);
             return end - ((f3 * (f3 * (f1 * f2))) / (total * total));
         case 8:
-            f2 = (f32)cos((4.0f * (PI * ((step * step) / total))) / ((15.0f * total) / 100.0f));
+            f2 = (f32)cos((4.0f * (3.141592f * ((step * step) / total))) / ((15.0f * total) / 100.0f));
             f1 = (end - start);
             f3 = (total - step);
             return end - ((f3 * (f3 * (f1 * f2))) / (total * total));
         case 9:
-            return end - ((step * (step * ((end - start) * (f32)cos((4.0f * (PI * ((step * step) / total))) /
+            return end - ((step * (step * ((end - start) * (f32)cos((4.0f * (3.141592f * ((step * step) / total))) /
                                                                     ((15.0f * total) / 100.0f))))) /
                           (total * total));
         case 4:
@@ -252,7 +256,7 @@ f32 intplGetValue(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
             f4 = (total - step);
             return (start + (end - start)) - (((f4 * f4 * f4 * f4) * (end - start)) / (total * total * total * total));
         case 10:
-            f2 = (f32)cos((4.0f * (PI * ((step * step) / total))) / ((40.0f * total) / 100.0f));
+            f2 = (f32)cos((4.0f * (3.141592f * ((step * step) / total))) / ((40.0f * total) / 100.0f));
             f3 = (total - step);
             f1 = (f3 * (f3 * f2)) / (total * total);
             if (f1 < 0.0f) {
@@ -260,7 +264,7 @@ f32 intplGetValue(s32 mode, s32 currStep, s32 steps, f32 start, f32 end) {
             }
             return -((f1 * (end - start)) - end);
         case 11:
-            f3 = (f32)cos((PI * step) / total);
+            f3 = (f32)cos((3.141592f * step) / total);
             f2 = (end - start);
             f0 = 0.5f;
             f1 = (f2 * (1.0f - f3));
@@ -960,24 +964,21 @@ asm void* memcpy_as4(void* dest, const void* src, u32 count) {
 #endif
 // clang-format on
 
-// unknown function, is used for many functions to "initialize"/copy some value into the local stack, with an extra vec
-Vec initializeVec(Vec* input) {
-    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-    temp.x = input->x;
-    temp.y = input->y;
-    temp.z = input->z;
-    return temp;
+f64 forceRodata14(void) {
+    return 1.7;
 }
-
-/*char* unk_formatting2 = "assertion \"%s\" failed.\n \"%s\"\n";
-f64 forceRodata6(void) { return 360.0; }
-f64 forceRodata5(void) { return 1.7; }
-f64 forceRodata4(void) { return 2.5; }
-f64 forceRodata3(void) { return 1.5; }
-char* unk_formatting = "[%8s:% 4d] %s";
-f64 forceRodata2(void) { return 0.0; }
-f64 forceRodata1(void) { return 3.0; }
-f64 forceRodata(void) { return 0.5; }*/
+f64 forceRodata13(void) {
+    return 2.5;
+}
+f64 forceRodata12(void) {
+    return 1.5;
+}
+const char* forceRodata11(void) {
+    return "[%8s:% 4d] %s";
+}
+f32 forceRodata10(f32 x) {
+    return sqrtf(x);
+}
 char* forceRodata9(void) {
     return "SIN_DECEL";
 }
