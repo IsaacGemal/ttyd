@@ -520,7 +520,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
 
 // NONMATCHING (97.54%): `data` lands in r7 in ours vs r4 in retail (the loop temps shift by
 // three registers); the `dummy$651` shown as `dummy_tex` is a local 1-byte .sdata object.
-void iconGetTexObj(GXTexObj* texObj, s16 iconId) {
+void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
     u16 tplId;
     IconBinaryEntry* data;
 
