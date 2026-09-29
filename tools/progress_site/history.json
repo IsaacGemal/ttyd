@@ -1,0 +1,18 @@
+[
+  {"label": "Fork", "date": "2026-09-24T00:00", "functions": 2065, "code": 12.16},
+  {"label": "Wave 1", "date": "2026-09-25T02:04", "functions": 2407, "code": 13.09},
+  {"label": "Wave 2", "date": "2026-09-25T11:47", "functions": 2722},
+  {"label": "Wave 3", "date": "2026-09-25T18:00", "functions": 3114, "code": 15.50},
+  {"label": "Wave 4", "date": "2026-09-25T23:02", "functions": 3503, "code": 16.82},
+  {"label": "Wave 5", "date": "2026-09-26T00:05", "functions": 3780, "code": 17.96},
+  {"label": "Wave 6", "date": "2026-09-26T16:58", "functions": 3844, "code": 18.38},
+  {"label": "Wave 7", "date": "2026-09-26T18:49", "functions": 4024, "code": 19.74},
+  {"label": "Wave 8", "date": "2026-09-26T20:01", "functions": 4151},
+  {"label": "Wave 9", "date": "2026-09-27T16:45", "functions": 4217},
+  {"label": "Wave 10", "date": "2026-09-27T16:58", "functions": 4298},
+  {"label": "Wave 11", "date": "2026-09-27T19:23", "functions": 4481},
+  {"label": "Wave 12", "date": "2026-09-27T19:26", "functions": 4713},
+  {"label": "Wave 14", "date": "2026-09-27T21:58", "functions": 4840},
+  {"label": "Wave 13", "date": "2026-09-27T21:59", "functions": 4872},
+  {"label": "Wave 16", "date": "2026-09-28T20:36", "functions": 4902, "code": 25.64, "commit": "29e6a5d"}
+]

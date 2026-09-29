@@ -1,0 +1,426 @@
+<title>TTYD Decomp Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f4f8;
+  --surface: #ffffff;
+  --ink: #1b1f2e;
+  --muted: #5b6277;
+  --line: #dcdfe9;
+  --accent: #b8263a;
+  --linked: #1f6f46;
+  --matched: #3fa46d;
+  --fuzzy: #d9a21b;
+  --empty: #e3e5ee;
+  --tile-ink: #10131c;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #11131b; --surface: #191c27; --ink: #e8eaf2; --muted: #9aa1b6; --line: #2a2f3f;
+    --accent: #ec5a6c; --linked: #2f9c63; --matched: #5cc78a; --fuzzy: #e3ad2c; --empty: #262a38; --tile-ink: #0d0f16;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #11131b; --surface: #191c27; --ink: #e8eaf2; --muted: #9aa1b6; --line: #2a2f3f;
+  --accent: #ec5a6c; --linked: #2f9c63; --matched: #5cc78a; --fuzzy: #e3ad2c; --empty: #262a38; --tile-ink: #0d0f16;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 40px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 20px; font-weight: 700; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+header .meta { font-family: var(--mono); font-size: 12.5px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+.dirty { color: var(--accent); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.big { font-family: var(--display); font-size: clamp(56px, 10vw, 104px); font-weight: 700; line-height: 0.95; letter-spacing: -0.03em; }
+.big small { font-size: 0.4em; letter-spacing: 0; }
+.hero p { margin: 8px 0 0; color: var(--muted); max-width: 46ch; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; }
+.stat .v { font-family: var(--mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat .s { font-size: 13px; color: var(--muted); }
+
+.bar { position: relative; height: 14px; border-radius: 3px; background: var(--empty); overflow: hidden; }
+.bar > span { position: absolute; inset-block: 0; left: 0; }
+.bar .f { background: color-mix(in oklab, var(--fuzzy) 55%, var(--empty)); }
+.bar .m { background: var(--matched); }
+.bar .l { background: var(--linked); }
+.bar.lg { height: 22px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+.cats { display: grid; gap: 14px; }
+.cat { display: grid; grid-template-columns: 190px minmax(0, 1fr) 170px; gap: 16px; align-items: center; }
+.cat .name { font-weight: 600; }
+.cat .name span { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.cat .pct { font-family: var(--mono); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.cat .pct b { font-size: 15px; }
+
+section > .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+#chart { padding: 12px 8px 4px; overflow-x: auto; }
+#chart svg { display: block; width: 100%; min-width: 560px; height: auto; }
+#chart text { fill: var(--muted); font: 11px var(--mono); }
+#chart .grid { stroke: var(--line); }
+#chart .area { fill: color-mix(in oklab, var(--matched) 18%, transparent); }
+#chart .line { stroke: var(--matched); fill: none; stroke-width: 2.25; }
+#chart .dot { fill: var(--surface); stroke: var(--matched); stroke-width: 2; }
+#chart .dot.last { fill: var(--matched); }
+#chart .goal { stroke: var(--accent); stroke-dasharray: 4 4; }
+#chart text.goal-t { fill: var(--accent); }
+#chart text.end { fill: var(--ink); font-weight: 600; }
+#chart .hit { fill: transparent; cursor: default; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip:focus-visible, input:focus-visible, .tile:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+input[type="search"] { font: 13px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; width: 220px; max-width: 100%; }
+
+#map { position: relative; height: 620px; overflow: hidden; }
+.grp { position: absolute; border: 1px solid var(--bg); }
+.grp > b { position: absolute; left: 4px; top: 1px; font: 600 10.5px var(--body); color: var(--tile-ink); opacity: 0.75; pointer-events: none; white-space: nowrap; overflow: hidden; max-width: calc(100% - 8px); z-index: 1; text-transform: uppercase; letter-spacing: 0.05em; }
+.tile { position: absolute; border: 1px solid var(--surface); cursor: pointer; overflow: hidden; }
+.tile span { position: absolute; left: 3px; bottom: 1px; right: 3px; font: 10px var(--mono); color: var(--tile-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.tile.dk span { color: #f2f5f0; }
+.tile:hover { filter: brightness(1.12); z-index: 2; }
+.tile.dim { opacity: 0.18; }
+.tile.sel { outline: 2px solid var(--ink); outline-offset: -2px; z-index: 3; }
+#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--bg); font-size: 12.5px; padding: 8px 10px; border-radius: 5px; max-width: 320px; line-height: 1.4; }
+#tip .num { font-size: 12px; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.list { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+td { padding: 6px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+td .mini { width: 90px; height: 6px; }
+tbody tr[data-u] { cursor: pointer; }
+tbody tr[data-u]:hover { background: color-mix(in oklab, var(--line) 45%, transparent); }
+.fnname { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+.pill { display: inline-block; font: 600 11px var(--body); padding: 1px 7px; border-radius: 999px; }
+.pill.ok { background: color-mix(in oklab, var(--matched) 22%, transparent); color: var(--linked); }
+.pill.part { background: color-mix(in oklab, var(--fuzzy) 25%, transparent); color: color-mix(in oklab, var(--fuzzy) 55%, var(--ink)); }
+.pill.none { background: var(--empty); color: var(--muted); }
+#detail .top { padding: 14px 14px 10px; display: grid; gap: 6px; border-bottom: 1px solid var(--line); }
+#detail .top .fnname { font-size: 14px; font-weight: 600; }
+#detail .scroll { max-height: 440px; overflow: auto; }
+.empty-note { padding: 24px 14px; color: var(--muted); }
+footer { font-size: 12.5px; color: var(--muted); }
+
+@media (max-width: 820px) {
+  .hero, .split { grid-template-columns: minmax(0, 1fr); }
+  .cat { grid-template-columns: minmax(0, 1fr) auto; }
+  .cat .bar { grid-column: 1 / -1; grid-row: 2; }
+  #map { height: 480px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bar > span { transition: width 0.6s ease; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Paper Mario: The Thousand-Year Door · G8MJ01</div>
+      <h1>TTYD decomp progress</h1>
+    </div>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="label">Code matched</div>
+      <div class="big" id="bigpct"></div>
+      <p id="bigsub"></p>
+    </div>
+    <div style="display:grid;gap:20px">
+      <div style="display:grid;gap:8px">
+        <div class="bar lg" id="mainbar"></div>
+        <div class="legend">
+          <span><i style="background:var(--linked)"></i>Linked</span>
+          <span><i style="background:var(--matched)"></i>Matched</span>
+          <span><i style="background:color-mix(in oklab,var(--fuzzy) 55%,var(--empty))"></i>Fuzzy match</span>
+          <span><i style="background:var(--empty)"></i>Not started</span>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><h2>By category</h2><span class="label">matched / fuzzy code</span></div>
+    <div class="cats" id="cats"></div>
+  </section>
+
+  <section>
+    <div class="head"><h2>Functions matched over time</h2><span class="muted" style="font-size:13px">One point per merged wave, from the ledger</span></div>
+    <div class="panel" id="chart"></div>
+  </section>
+
+  <section>
+    <div class="head">
+      <h2>Every file, sized by code</h2>
+      <div class="tools">
+        <div class="chips" id="filters"></div>
+        <input type="search" id="q" placeholder="Find a file or function" aria-label="Find a file or function">
+      </div>
+    </div>
+    <div class="panel" id="map" role="list"></div>
+    <div class="legend" style="margin-top:10px">
+      <span><i style="background:var(--linked)"></i>Linked</span>
+      <span><i style="background:var(--matched)"></i>100% matched, not linked</span>
+      <span><i style="background:linear-gradient(90deg,var(--empty),var(--fuzzy))"></i>Fuzzy match 0 → 99%</span>
+    </div>
+  </section>
+
+  <section class="split">
+    <div>
+      <div class="head"><h2>Closest to fully matched</h2><span class="label">by fuzzy match</span></div>
+      <div class="panel list"><table><thead><tr><th>File</th><th class="r">Functions</th><th class="r">Fuzzy</th></tr></thead><tbody id="near"></tbody></table></div>
+    </div>
+    <div>
+      <div class="head"><h2>File detail</h2><span class="label" id="detailhint">click a tile</span></div>
+      <div class="panel" id="detail"></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const D = /*DATA*/null;
+const $ = (s) => document.querySelector(s);
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+const pct = (n, d = 2) => n.toFixed(d) + "%";
+const kb = (b) => b >= 1048576 ? (b / 1048576).toFixed(2) + " MB" : (b / 1024).toFixed(1) + " KB";
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const T = D.total;
+
+function bar(el, m, cls = "") {
+  el.className = "bar " + cls;
+  el.innerHTML = `<span class="f" style="width:${m.fuzzy_match_percent}%"></span>` +
+    `<span class="m" style="width:${m.matched_code_percent}%"></span>` +
+    `<span class="l" style="width:${m.complete_code_percent || 0}%"></span>`;
+  return el;
+}
+
+// header + hero
+$("#meta").innerHTML = `<span>commit ${esc(D.commit)}${D.dirty ? ' <span class="dirty">+ local changes</span>' : ""}</span><span>report ${esc(D.built)}</span>`;
+const [ip, fp] = T.matched_code_percent.toFixed(2).split(".");
+$("#bigpct").innerHTML = `${ip}<small>.${fp}%</small>`;
+$("#bigsub").textContent = `${kb(T.matched_code)} of ${kb(T.total_code)} of PowerPC code compiles byte for byte from C. With near-misses counted by similarity, the fuzzy total is ${pct(T.fuzzy_match_percent)}.`;
+bar($("#mainbar"), T, "lg");
+const stats = [
+  ["Functions", `${fmt(T.matched_functions)}<span class="muted" style="font-size:15px"> / ${fmt(T.total_functions)}</span>`, pct(T.matched_functions_percent, 1) + " matched"],
+  ["Linked code", pct(T.complete_code_percent), `${kb(T.complete_code)} in files that link`],
+  ["Data matched", pct(T.matched_data_percent), `linked ${pct(T.complete_data_percent)}`],
+  ["Files complete", `${fmt(T.complete_units)}<span class="muted" style="font-size:15px"> / ${fmt(T.total_units)}</span>`, "linked into the build"],
+];
+$("#stats").innerHTML = stats.map(([l, v, s]) => `<div class="stat"><div class="label">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join("");
+
+// categories
+const CATDESC = { dol: "main executable", game: "MarioSt game code", sdk: "Dolphin SDK + runtime", musyx: "audio library", modules: "per-area RELs" };
+const catOrder = ["game", "sdk", "musyx", "modules", "dol"];
+$("#cats").innerHTML = "";
+catOrder.map((id) => D.categories.find((c) => c.id === id)).filter(Boolean).forEach((c) => {
+  const row = document.createElement("div");
+  row.className = "cat";
+  row.innerHTML = `<div class="name">${esc(c.name)}<span>${CATDESC[c.id] || ""} · ${kb(c.m.total_code)}</span></div><div></div>` +
+    `<div class="pct"><b>${pct(c.m.matched_code_percent)}</b> <span class="muted">/ ${pct(c.m.fuzzy_match_percent, 1)}</span></div>`;
+  bar(row.children[1], c.m);
+  $("#cats").appendChild(row);
+});
+
+// history chart
+(function chart() {
+  const H = D.history.map((h) => ({ ...h, t: new Date(h.date).getTime() }));
+  const last = H[H.length - 1];
+  if (last.functions !== T.matched_functions) H.push({ label: "Now", t: Date.now(), functions: T.matched_functions, code: +T.matched_code_percent.toFixed(2) });
+  const W = 1000, Ht = 300, L = 52, R = 70, Tp = 16, B = 30;
+  const t0 = H[0].t, t1 = H[H.length - 1].t;
+  const goal = T.total_functions;
+  const x = (t) => L + (t - t0) / (t1 - t0 || 1) * (W - L - R);
+  const y = (v) => Tp + (1 - v / goal) * (Ht - Tp - B);
+  let s = `<svg viewBox="0 0 ${W} ${Ht}" role="img" aria-label="Functions matched per wave">`;
+  for (let v = 0; v < goal; v += 2000) s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
+  s += `<line class="goal" x1="${L}" x2="${W - R}" y1="${y(goal)}" y2="${y(goal)}"/><text class="goal-t" x="${L - 8}" y="${y(goal) + 4}" text-anchor="end">${fmt(goal)}</text>`;
+  s += `<text class="goal-t" x="${W - R}" y="${y(goal) - 6}" text-anchor="end">all functions</text>`;
+  const days = new Set();
+  for (let d = new Date(t0); d.getTime() <= t1; d.setHours(24, 0, 0, 0)) {
+    const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+    const tt = Math.max(dd.getTime(), t0);
+    const key = dd.toDateString();
+    if (days.has(key)) continue; days.add(key);
+    s += `<text x="${x(tt)}" y="${Ht - 8}" text-anchor="${tt === t0 ? "start" : "middle"}">${dd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</text>`;
+  }
+  const pts = H.map((h) => `${x(h.t).toFixed(1)},${y(h.functions).toFixed(1)}`);
+  s += `<path class="area" d="M${x(t0)},${y(0)} L${pts.join(" L")} L${x(t1)},${y(0)} Z"/>`;
+  s += `<path class="line" d="M${pts.join(" L")}"/>`;
+  H.forEach((h, i) => {
+    s += `<circle class="dot${i === H.length - 1 ? " last" : ""}" cx="${x(h.t)}" cy="${y(h.functions)}" r="${i === H.length - 1 ? 4.5 : 3.2}"/>`;
+    s += `<circle class="hit" data-i="${i}" cx="${x(h.t)}" cy="${y(h.functions)}" r="11"/>`;
+  });
+  s += `<text class="end" x="${x(t1) + 8}" y="${y(last.functions) + 4}">${fmt(H[H.length - 1].functions)}</text>`;
+  s += `</svg>`;
+  $("#chart").innerHTML = s;
+  $("#chart").querySelectorAll(".hit").forEach((c) => {
+    const h = H[+c.dataset.i];
+    const prev = H[+c.dataset.i - 1];
+    const when = new Date(h.t).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    const html = `<b>${esc(h.label)}</b> · ${when}<br><span class="num">${fmt(h.functions)} functions${prev ? ` (+${fmt(h.functions - prev.functions)})` : ""}</span>` +
+      (h.code != null ? `<br><span class="num">${h.code.toFixed(2)}% code</span>` : "");
+    c.addEventListener("mousemove", (e) => tip(e, html));
+    c.addEventListener("mouseleave", hideTip);
+  });
+})();
+
+// tooltip
+const tipEl = $("#tip");
+function tip(e, html) {
+  tipEl.innerHTML = html; tipEl.hidden = false;
+  const r = tipEl.getBoundingClientRect();
+  let lx = e.clientX + 14, ly = e.clientY + 14;
+  if (lx + r.width > innerWidth - 8) lx = e.clientX - r.width - 14;
+  if (ly + r.height > innerHeight - 8) ly = e.clientY - r.height - 14;
+  tipEl.style.left = Math.max(8, lx) + "px"; tipEl.style.top = Math.max(8, ly) + "px";
+}
+function hideTip() { tipEl.hidden = true; }
+
+// treemap
+function squarify(items, x, y, w, h) {
+  const out = [];
+  const total = items.reduce((a, b) => a + b.v, 0);
+  if (!total || w <= 0 || h <= 0) return out;
+  const scale = (w * h) / total;
+  const rest = items.map((it) => ({ it, a: it.v * scale }));
+  let row = [];
+  const worst = (row, side) => {
+    const s = row.reduce((a, b) => a + b.a, 0);
+    let mx = 0, mn = Infinity;
+    for (const r of row) { mx = Math.max(mx, r.a); mn = Math.min(mn, r.a); }
+    return Math.max((side * side * mx) / (s * s), (s * s) / (side * side * mn));
+  };
+  const layRow = (row) => {
+    const s = row.reduce((a, b) => a + b.a, 0);
+    if (w >= h) {
+      const rw = s / h; let yy = y;
+      for (const r of row) { const rh = r.a / rw; out.push({ it: r.it, x, y: yy, w: rw, h: rh }); yy += rh; }
+      x += rw; w -= rw;
+    } else {
+      const rh = s / w; let xx = x;
+      for (const r of row) { const rw = r.a / rh; out.push({ it: r.it, x: xx, y, w: rw, h: rh }); xx += rw; }
+      y += rh; h -= rh;
+    }
+  };
+  while (rest.length) {
+    const side = Math.min(w, h);
+    const next = rest[0];
+    if (!row.length || worst([...row, next], side) <= worst(row, side)) { row.push(rest.shift()); }
+    else { layRow(row); row = []; }
+  }
+  if (row.length) layRow(row);
+  return out;
+}
+
+function tileColor(u) {
+  if (u.done) return "var(--linked)";
+  if (u.mc >= 100) return "var(--matched)";
+  if (u.fz <= 0) return "var(--empty)";
+  return `color-mix(in oklab, var(--fuzzy) ${Math.round(20 + u.fz * 0.8)}%, var(--empty))`;
+}
+
+let filter = "all", query = "", selected = null;
+const byName = new Map(D.units.map((u) => [u.n, u]));
+const FILTERS = [["all", "All"], ["game", "Game"], ["sdk", "SDK"], ["musyx", "MusyX"], ["modules", "RELs"]];
+$("#filters").innerHTML = FILTERS.map(([id, l]) => `<button class="chip" data-f="${id}" aria-pressed="${id === filter}">${l}</button>`).join("");
+$("#filters").addEventListener("click", (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  filter = b.dataset.f;
+  $("#filters").querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", c.dataset.f === filter));
+  drawMap();
+});
+$("#q").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); applyQuery(); });
+
+function matches(u) {
+  if (!query) return true;
+  return u.n.toLowerCase().includes(query) || u.fn.some((f) => f[0].toLowerCase().includes(query));
+}
+function applyQuery() {
+  $("#map").querySelectorAll(".tile").forEach((t) => t.classList.toggle("dim", !matches(byName.get(t.dataset.u))));
+}
+
+function drawMap() {
+  const map = $("#map");
+  const W = map.clientWidth, H = map.clientHeight;
+  const units = D.units.filter((u) => filter === "all" || u.c === filter);
+  const groups = new Map();
+  units.forEach((u) => { if (!groups.has(u.g)) groups.set(u.g, []); groups.get(u.g).push(u); });
+  const gl = [...groups].map(([g, us]) => ({ g, us: us.sort((a, b) => b.code - a.code), v: us.reduce((a, b) => a + b.code, 0) })).sort((a, b) => b.v - a.v);
+  let html = "";
+  for (const r of squarify(gl, 0, 0, W, H)) {
+    html += `<div class="grp" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px">${r.w > 50 && r.h > 16 ? `<b>${esc(r.it.g)}</b>` : ""}</div>`;
+    const pad = r.w > 50 && r.h > 40 ? 14 : 0;
+    for (const t of squarify(r.it.us.map((u) => ({ u, v: u.code })), r.x, r.y + pad, r.w, r.h - pad)) {
+      const u = t.it.u, short = u.n.split("/").pop();
+      html += `<div class="tile${u.done ? " dk" : ""}${selected === u.n ? " sel" : ""}" role="listitem" tabindex="0" data-u="${esc(u.n)}" aria-label="${esc(u.n)} ${u.fz}% fuzzy" style="left:${t.x}px;top:${t.y}px;width:${t.w}px;height:${t.h}px;background:${tileColor(u)}">${t.w > 44 && t.h > 14 ? `<span>${esc(short)}</span>` : ""}</div>`;
+    }
+  }
+  map.innerHTML = html;
+  applyQuery();
+}
+$("#map").addEventListener("mousemove", (e) => {
+  const t = e.target.closest(".tile"); if (!t) return hideTip();
+  const u = byName.get(t.dataset.u);
+  tip(e, `<b class="num">${esc(u.n)}</b><br><span class="num">${kb(u.code)} · ${u.mf}/${u.tf} functions</span><br><span class="num">matched ${pct(u.mc, 1)} · fuzzy ${pct(u.fz, 1)}</span>${u.done ? "<br>linked" : ""}`);
+});
+$("#map").addEventListener("mouseleave", hideTip);
+$("#map").addEventListener("click", (e) => { const t = e.target.closest(".tile"); if (t) select(t.dataset.u); });
+$("#map").addEventListener("keydown", (e) => { const t = e.target.closest(".tile"); if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); select(t.dataset.u); } });
+
+function status(fz) {
+  return fz >= 100 ? `<span class="pill ok">match</span>` : fz > 0 ? `<span class="pill part">${fz.toFixed(1)}%</span>` : `<span class="pill none">none</span>`;
+}
+function select(name) {
+  selected = name;
+  $("#map").querySelectorAll(".tile").forEach((t) => t.classList.toggle("sel", t.dataset.u === name));
+  const u = byName.get(name);
+  const fns = [...u.fn].sort((a, b) => a[2] - b[2] || b[1] - a[1]);
+  $("#detailhint").textContent = u.done ? "linked" : u.mc >= 100 ? "matched, not linked" : "in progress";
+  $("#detail").innerHTML = `<div class="top"><div class="fnname">${esc(u.n)}</div>` +
+    `<div class="muted" style="font-size:12.5px">${u.src ? `<span class="num">${esc(u.src)}</span> · ` : "no source file yet · "}${kb(u.code)} · ${u.mf}/${u.tf} functions</div>` +
+    `<div class="bar"></div></div>` +
+    `<div class="scroll"><table><thead><tr><th>Function</th><th class="r">Size</th><th class="r">Status</th></tr></thead><tbody>` +
+    fns.map((f) => `<tr><td class="fnname">${esc(f[0])}</td><td class="r num">${fmt(f[1])}</td><td class="r">${status(f[2])}</td></tr>`).join("") +
+    `</tbody></table></div>`;
+  bar($("#detail .bar"), { fuzzy_match_percent: u.fz, matched_code_percent: u.mc, complete_code_percent: u.done ? 100 : 0 });
+}
+
+// closest to done
+const near = D.units.filter((u) => u.mc < 100 && u.fz > 0 && u.code >= 256).sort((a, b) => b.fz - a.fz || b.code - a.code).slice(0, 14);
+$("#near").innerHTML = near.map((u) => `<tr data-u="${esc(u.n)}" tabindex="0"><td class="fnname">${esc(u.n.replace(/^MarioSt\//, ""))}</td><td class="r num">${u.mf}/${u.tf}</td><td class="r num">${pct(u.fz, 1)}</td></tr>`).join("");
+$("#near").addEventListener("click", (e) => { const r = e.target.closest("tr[data-u]"); if (r) select(r.dataset.u); });
+$("#near").addEventListener("keydown", (e) => { const r = e.target.closest("tr[data-u]"); if (r && e.key === "Enter") select(r.dataset.u); });
+
+$("#foot").innerHTML = `Built from <span class="num">build/G8MJ01/report.json</span> by <span class="num">tools/progress_site/build.py</span>. Matched means the compiled C is byte-identical to the original function; linked means the whole file links into a build that hashes to the retail disc.`;
+
+select(near[0] ? near[0].n : D.units[0].n);
+drawMap();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawMap, 120); });
+</script>
