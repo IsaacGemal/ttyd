@@ -1762,6 +1762,10 @@ config.libs = [
             Object(Matching, "unit/unit_green_chorobon.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_green_chorobon_28_data_22E58"]),
             Object(Matching, "unit/unit_gundan_zako_magician.c", modules=["muj"], extra_cflags=["-DUNIT_DATA_SYM=unit_gundan_zako_magician_20_data_32438"]),
             Object(Matching, "unit/unit_gundan_zako_magician.c", modules=["aji"], extra_cflags=["-DUNIT_DATA_SYM=unit_gundan_zako_magician_2_data_34AD8"]),
+            Object(Matching, "unit/unit_honenoko.c", modules=["gon"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_9_data_14C90"]),
+            Object(Matching, "unit/unit_honenoko.c", modules=["jon"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_15_data_15568"]),
+            Object(Matching, "unit/unit_honenoko.c", modules=["las"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_17_data_57250"]),
+            Object(Matching, "unit/unit_honenoko.c", modules=["tou2"], extra_cflags=["-DUNIT_DATA_SYM=unit_honenoko_28_data_27C08"]),
         ],
     ),
 ]
