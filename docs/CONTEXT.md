@@ -1524,3 +1524,52 @@ matched, linked code 11.19% -> 11.80%, linked data 4.94% -> 5.79%.** Each link w
 - `switch` shape is a hint about the source: extra `case` labels that share the default change MWCC's dispatch tree.
 - Registers assigned per variable: splitting one variable into one per block changes allocation without changing the
   code, and is worth trying on any "same instructions, different registers" near-miss.
+
+## Sep 29: fully matched but not linked was mostly function order (Claude Sonnet 5.5, second near-miss round)
+
+The list from `python3 tools/autolink.py --list` (30 units at the start) was almost all one problem: under
+`-inline auto,deferred` MWCC emits a file's functions in reverse source order, so a unit whose functions are written in
+the original's order comes out backwards, every function scores 100%, and the checksum fails. **16 units linked (15
+from that list, `eff_irekaeru` from the constants problem below); code linked 11.80% -> 12.43%, linked data 5.79% ->
+5.81%, functions 4,994 -> 4,995 (`effIrekaeruDisp`); `tools/ci.py` PASS, "32 files OK".** The list is down to 15.
+
+**Diagnosing a unit that will not link** (throwaway scripts, not committed): compare the unit's compiled object with
+`build/G8MJ01/obj/<unit>.o` with pyelftools: the order of its function symbols, and each section's size and bytes.
+"Ours is exactly the reverse" means write the file's functions in reverse. A size gap of a few bytes at the end of
+`.rodata`/`.sdata`/`.sdata2` is the original object's tail padding, not a difference.
+
+**Linked by reversing function order:** `evt_case`, `evt_offscreen`, `evt_light`, `evt_fade`, `evt_lecture`,
+`offscreendrv`, `battle_actrecord`; libraries `critical_regions.gamecube`, `math_ppc`, `UDP_Stubs`, TRK `dispatch` and
+`support`, `scanf`. Notes:
+- A function defined after its callers needs a prototype in a header (the CI check rejects local ones): four `_check_*`
+  helpers in `battle_actrecord.h`, `balloon_0/1` in `eff_puniballoon.h`, `effMarioBalloonMain/Disp` in
+  `eff_mario_balloon.h`. `static inline` helpers stay above their users; only definitions that are emitted move.
+- `battle_actrecord`'s `dont_inline` pragma region moves with its functions, which `tools/ci.py` reports as new pragmas
+  (`--allow-pragma`).
+
+**Linked by fixing the unit's own constants:**
+- `eff_irekaeru`: the source declared its .sdata2 floats as externs and defined its strings and zero vector as globals,
+  so nothing defined the floats and the strings sat in the wrong place. The floats and strings are now the literals the
+  code uses (MWCC pools them in first-use order of the emitted functions, which reproduced the original layout), the
+  colour word is a `const u32`, and the alpha-patched colour is a local in an inlined helper, which puts its stack slot
+  where the original has it (99.93% -> 100%, as in `effThunderDisp`).
+- `eff_puniballoon`: `10.0` came before `0.1` in the original's .sdata2; writing balloon_0's `sin` result to a temporary
+  (`f32 s = sin(...); scale += s * 0.1f;`) gives that order and every function stays 100%.
+- `eff_mario_balloon`: its constants are deliberately read through `const volatile` externs (each use reloads). The
+  definitions have to be *after* the functions (as its .rodata ones already were): defined above them, MWCC folds the
+  reads into pooled literals and .sdata2 doubles.
+- Zero-initialised data the original keeps in .data needs an explicit initializer (`InformantWork _jdt = { 0 };` in
+  `evt_johoya`), otherwise it lands in .bss.
+
+**Improved, still `NonMatching`:** `johoya_set` 99.43% -> 99.81% (only `extsh r0, r5` vs `extsh r5, r5`; the masked byte
+goes first in the sum, `value` is cast to `s32` for the shift).
+
+**Tried without result:** `npc_hide_onoff` (needs three saved registers; the `event ? X : X` return keeps the third
+alive at the cost of a compare), `_hammer_star_effect` (the `lwz` of `userdata[0]` is scheduled before the float
+arguments; reading it inline or in a block did not move it), `effUranokoMain` (f0/f1 swapped around `1.0 - scale`),
+plus the earlier round's `mot_hip`, `evt_cloud_main`, `battleAcMain_CraneTiming`.
+
+**Still unlinked (15):** `battle_event_subset` (no data written at all), `sac_common`, `unit_mario` and `eff_uranoko`
+(link errors on constants their sources only declare), `evt_kinopio` (checksum), the four MusyX files, TRK
+`serpoll`/`targimpl`/`mslsupp`/`main`/`CircleBuffer`, `alloc`, `printf`, `float`, `uart_console_io_gcn`. `eff_uranoko`
+and `unit_mario` need the `eff_irekaeru` treatment.
