@@ -699,6 +699,7 @@ def check_layouts():
     cmd = subprocess.run(['ninja', '-t', 'commands', 'build/G8MJ01/src/battle/battle_unit.o'], capture_output=True,
                          text=True).stdout.strip().split('\n')[-1]
     cmd = re.sub(r' -c \S+ -o \S+', f' -c {path} -o build/G8MJ01/layout_check.o', cmd.split(' && ')[0])
+    cmd = cmd.replace(' -MMD', '')
     r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     print('layouts match the headers' if r.returncode == 0 else r.stdout + r.stderr)
     return r.returncode == 0
