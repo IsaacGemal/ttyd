@@ -228,7 +228,7 @@ EVT_END()
 
 s32 cam_displacement(EventEntry* event, BOOL isFirstCall) {
     void* work = camRoadGetWorkPtr();
-    *(f32*)((u8*)work + 0x1C4) = float_1p7_dou_00004750;
+    *(f32*)((u8*)work + 0x1C4) = 1.7f;
     return EVT_RETURN_DONE;
 }
 
@@ -267,6 +267,5 @@ EVT_BEGIN(dou_05_init_evt)
 EVT_END()
 
 // The original places this .rodata float last; the only user is cam_displacement.
-const f32 float_1p7_dou_00004750 = 1.7f;
 
 // clang-format on

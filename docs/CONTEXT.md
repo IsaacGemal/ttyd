@@ -1989,3 +1989,17 @@ The base predated #33 and #34, which cost 9 units at collection:
 plus tou2 unit_wanawana (its own tanf) weren't queued.
 Lesson: a wave's base should be rebuilt from main right before launch when other PRs are landing the same day;
 struct and flag changes in between cost units at collection.
+
+**Review of PR #35** (one fresh Claude): one high, fixed where it still links. The agents had brought back dtk-named
+globals standing in for literals (`const f32 float_1p7_dou_00004750 = 1.7f;` and the like): written as plain
+literals in dou_05, dou_11 and nok_01's floats, all still linking. Named `Vec` objects remain in nok_01, pik_01,
+las_28 and tou_00 (6 of them): as compound literals the units don't link, because where such a constant lands
+depends on where its function sits (see aaa_00's draw); moving the functions is the fix, not done. Also fixed:
+nanNPCOption and nannpc_ext_main_sub_fast declared in evt_nannpc.h instead of `extern s32 x[]`;
+mario->riderDelta instead of +0x174/+0x178 in aji_19 and dou_11; dou_10.h declares evt_dou_normal_puka as the
+function it is (USER_FUNC); header lines left from the dropped units removed; the rel_gen.py fix this chapter
+describes is now in the PR (it had stayed on another branch). Follow-ups: rsh_02.h declares fbatHitCheckAll as
+returning a pointer (the original's callers read r3) while src/driver/npcdrv.c defines it void; muj_10.h keeps a
+copy of evt_nannpc.c's NanNpcEntry/NanNpcWork (breaks once evt_nannpc.c links); ~83 bare `return 0/1/2` in event
+functions; several tables tools/struct_render.py could now type (unit_mahorn, gundan_zako_group3, unit_kamec_*,
+battle_database_las's 180 arrays).

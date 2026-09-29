@@ -17,7 +17,7 @@ typedef struct NamiyokeEntryMgr {
     NamiyokeEntry* entries; // 0x4
 } NamiyokeEntryMgr;
 
-EVT_DEF(evt_dou_normal_puka);
+USER_FUNC(evt_dou_normal_puka);
 USER_FUNC(namiyoke_se_check);
 USER_FUNC(namiyoke_fail_stop);
 USER_FUNC(dou_namiatari_check);

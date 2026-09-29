@@ -138,9 +138,9 @@ static USER_FUNC(mario_chk) {
 
     if (mario != NULL && mario->hitobjStandOn != NULL) {
         if (hitIsGroup(mario->hitobjStandOn, hitNameToPtr("A_b_ue"))) {
-            *(f32*)((u8*)mario + 0x174) = 1.0f;
+            mario->riderDelta.x = 1.0f;
         } else if (hitIsGroup(mario->hitobjStandOn, hitNameToPtr("A_b_shita"))) {
-            *(f32*)((u8*)mario + 0x174) = -1.0f;
+            mario->riderDelta.x = -1.0f;
         }
     }
 

@@ -40,8 +40,6 @@ static USER_FUNC(anim_tevcallback);
 static USER_FUNC(yami_view);
 
 extern u8 zero_nok_00002010[];
-extern const f32 float_1_nok_00002274;
-extern const f32 float_neg100_nok_00002278;
 
 // clang-format off
 extend_data(8,
@@ -885,7 +883,7 @@ static USER_FUNC(yami_view) {
     target.x = value;
     up = vec3_nok_00001ff8;
     camPos = vec3_nok_00001fec;
-    camPos.x = float_neg100_nok_00002278 + value;
+    camPos.x = -100.0f + value;
     C_MTXLookAt(mtx, &camPos, &up, &target);
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
@@ -984,7 +982,7 @@ static USER_FUNC(starstone_entry) {
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
 
-    effSetName(effStarStoneEntry(0, x, y, z, float_1_nok_00002274), (const char*)name);
+    effSetName(effStarStoneEntry(0, x, y, z, 1.0f), (const char*)name);
     return EVT_RETURN_DONE;
 }
 
@@ -1392,5 +1390,3 @@ EVT_BEGIN(nok_01_init_evt)
 EVT_END()
 // clang-format on
 
-const f32 float_1_nok_00002274 = 1.0f;
-const f32 float_neg100_nok_00002278 = -100.0f;

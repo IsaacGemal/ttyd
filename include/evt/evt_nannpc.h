@@ -33,3 +33,4 @@ USER_FUNC(evt_nannpc_set_subfunc);
 USER_FUNC(evt_nannpc_set_work);
 USER_FUNC(evt_nannpcwork_flag_onoff);
 void nannpc_ext_main_sub_fast(void);
+void nanNPCOption(void);

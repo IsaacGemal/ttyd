@@ -2,7 +2,6 @@
 
 #include "evt/evt_cmd.h"
 
-extern const f32 float_1p7_dou_00004750;
 
 USER_FUNC(cam_displacement);
 EVT_DEF(bigdoor_event_init);

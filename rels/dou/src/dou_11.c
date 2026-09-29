@@ -35,7 +35,6 @@
 extern s32 dou_normal_puka[];
 extern s32 dou_puka_event[];
 extern s32 evt_dou_normal_puka[];
-extern s32 nanNPCOption[];
 static BOOL hitIsGroup(HitEntry* hit, HitEntry* group);
 static BOOL _hitIsGroupSub(HitEntry* hit, HitEntry* group, BOOL rec);
 s32 suifu_orei[339];
@@ -1543,11 +1542,7 @@ static EVT_BEGIN(dai3_shurai_after)
     RETURN
 EVT_END()
 
-extern const f32 zero_dou_0000577c;
-extern const f32 float_6p2832_dou_00005780;
-extern const f32 float_360_dou_00005784;
 
-const Vec vec3_dou_000055a4 = { 0.0f, 1.0f, 0.0f };
 
 static BOOL _hitIsGroupSub(HitEntry* hit, HitEntry* group, BOOL rec) {
     if (strcmp(hit->joint->name, group->joint->name) == 0) {
@@ -1585,19 +1580,19 @@ USER_FUNC(dou_mario_kaiten_hosei) {
     mario = marioGetPtr();
 
     if (isFirstCall) {
-        event->userdataf[1] = zero_dou_0000577c;
+        event->userdataf[1] = 0.0f;
         event->userdata[2] = 0;
     }
     if (mario->hitobjStandOn == NULL) {
-        event->userdataf[1] = zero_dou_0000577c;
+        event->userdataf[1] = 0.0f;
         event->userdata[2] = 0;
         return 0;
     }
     if (hitIsGroup(mario->hitobjStandOn, hit)) {
-        vec = vec3_dou_000055a4;
+        vec = (Vec){ 0.0f, 1.0f, 0.0f };
         mtxGetRotationElement(hit->mapObj->unkAC, mtx, 'x', 'y');
         PSMTXMultVec(mtx, &vec, &vec);
-        angle = angleABf(zero_dou_0000577c, zero_dou_0000577c, vec.x, vec.y);
+        angle = angleABf(0.0f, 0.0f, vec.x, vec.y);
         diff = angle - event->userdataf[1];
 
         hitObjGetPos(name, &vec);
@@ -1606,9 +1601,9 @@ USER_FUNC(dou_mario_kaiten_hosei) {
 
         hit2 = (HitEntry*)event->userdata[2];
         if (hit2 != NULL && strcmp(hit->joint->name, hit2->joint->name) == 0) {
-            diff = float_6p2832_dou_00005780 * (tmp + diff) / float_360_dou_00005784;
-            *(f32*)((u8*)mario + 0x174) = (dist * (f32)sin(diff) + vec.x) - mario->position.x;
-            *(f32*)((u8*)mario + 0x178) = (vec.y - dist * (f32)cos(diff)) - mario->position.y;
+            diff = 6.2831855f * (tmp + diff) / 360.0f;
+            mario->riderDelta.x = (dist * (f32)sin(diff) + vec.x) - mario->position.x;
+            mario->riderDelta.y = (vec.y - dist * (f32)cos(diff)) - mario->position.y;
         }
         event->userdataf[1] = angle;
         event->userdata[2] = (s32)hit;
@@ -2324,7 +2319,4 @@ EVT_BEGIN(dou_11_init_evt)
     RETURN
 EVT_END()
 
-const f32 zero_dou_0000577c = 0.0f;
-const f32 float_6p2832_dou_00005780 = 6.2831855f;
-const f32 float_360_dou_00005784 = 360.0f;
 // clang-format on
