@@ -22,8 +22,9 @@
 const char str_802F2FD0[] = "MOBJ_TreasureBox";
 const char str_802F2FE4[] = "MOBJ_BigTreasureBox";
 
-// NONMATCHING (65.75%): the original materialises the 0 into r31 before the marioGetPtr call
-// (`li r31,0; bl ...; stw r31,...`); mwcc here rematerialises it after the call (`li r0,0`).
+// opt_propagation off: keeps the 0 in r31 across the marioGetPtr call, as the original does,
+// instead of rematerialising it after the call.
+#pragma opt_propagation off
 void marioBaloonInit(void) {
     MarioWork* mario;
     u32 zero = 0;
@@ -31,6 +32,7 @@ void marioBaloonInit(void) {
     mario = marioGetPtr();
     MW_U32(mario, 0x260) = zero;
 }
+#pragma opt_propagation reset
 
 void marioBalloonOn(s32 type) {
     MarioWork* mario = marioGetPtr();
@@ -52,13 +54,14 @@ void marioBalloonOff(void) {
     }
 }
 
-// NONMATCHING (98.83%): only register allocation differs. marioBalloonMain keeps `hit` in r30 across the three
-// hit-object blocks and `valid` in r27; mwcc reallocates them (hit=r27, valid=r30) from the second block on, so
-// the arg_mismatch instructions in those blocks and the coalesced `ret = valid` move differ.
 void marioBalloonMain(void) {
     MarioWork* mario = marioGetPtr();
     s32 valid;
     void* hit;
+    void* hit1;
+    void* hit2;
+    void* hit3;
+    void* hit4;
     // Not set on the item-box path, yet read after it: the original does the same (it compares r29, which
     // only the hit and NPC paths assign). Initializing it changes the code, so only the matching build
     // leaves it unset.
@@ -86,18 +89,18 @@ void marioBalloonMain(void) {
         }
     }
 
-    hit = (void*)MW_U32(mario, 0x1DC);
+    hit1 = (void*)MW_U32(mario, 0x1DC);
     valid = 0;
-    if (hit != NULL) {
-        attr = hitGetAttr((HitEntry*)hit);
+    if (hit1 != NULL) {
+        attr = hitGetAttr((HitEntry*)hit1);
         if (attr & 0x00800000) {
             valid = 0;
         } else if ((u32)attr & 0x80000000) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit)) == 1) {
+            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit1)) == 1) {
                 valid = 1;
             }
         } else {
-            ce = caseCheckHitObj(hit);
+            ce = caseCheckHitObj(hit1);
             if (ce != NULL) {
                 if (ce->flags & 4) {
                     if (ce->activeConditionId == 9) {
@@ -112,16 +115,16 @@ void marioBalloonMain(void) {
         ret = TRUE;
     }
 
-    hit = (void*)MW_U32(mario, 0x1E0);
+    hit2 = (void*)MW_U32(mario, 0x1E0);
     valid = 0;
-    if (hit != NULL) {
-        attr = hitGetAttr((HitEntry*)hit);
+    if (hit2 != NULL) {
+        attr = hitGetAttr((HitEntry*)hit2);
         if ((u32)attr & 0x80000000) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit)) == 1) {
+            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit2)) == 1) {
                 valid = 1;
             }
         } else {
-            ce = caseCheckHitObj(hit);
+            ce = caseCheckHitObj(hit2);
             if (ce != NULL) {
                 if (ce->flags & 4) {
                     if (ce->activeConditionId == 9 || ce->activeConditionId == 0xC) {
@@ -132,7 +135,7 @@ void marioBalloonMain(void) {
                 valid = 0;
             }
         }
-        if (marioChkBero((HitEntry*)hit)) {
+        if (marioChkBero((HitEntry*)hit2)) {
             valid = 0;
         }
     }
@@ -141,48 +144,50 @@ void marioBalloonMain(void) {
         ret = TRUE;
     }
 
-    hit = mario->hitobjStandOn;
+    hit3 = mario->hitobjStandOn;
     valid = 0;
-    if (hit != NULL) {
-        attr = hitGetAttr((HitEntry*)hit);
+    if (hit3 != NULL) {
+        attr = hitGetAttr((HitEntry*)hit3);
         if (attr & 0x00800000) {
             valid = 0;
-        } else if ((u32)attr & 0x80000000) {
-            if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit)) == 1) {
-                valid = 1;
-            }
         } else {
-            ce = caseCheckHitObj(hit);
-            if (ce != NULL) {
-                if (ce->flags & 4) {
-                    if (ce->activeConditionId == 0xC || ce->activeConditionId == 5) {
-                        valid = 1;
-                    }
+            if ((u32)attr & 0x80000000) {
+                if (mobjGetHint(mobjHitObjPtrToPtr((HitEntry*)hit3)) == 1) {
+                    valid = 1;
                 }
             } else {
+                ce = caseCheckHitObj(hit3);
+                if (ce != NULL) {
+                    if (ce->flags & 4) {
+                        if (ce->activeConditionId == 0xC || ce->activeConditionId == 5) {
+                            valid = 1;
+                        }
+                    }
+                } else {
+                    valid = 0;
+                }
+            }
+            if (marioChkBero((HitEntry*)hit3)) {
                 valid = 0;
             }
         }
-        if (marioChkBero((HitEntry*)hit)) {
-            valid = 0;
-        }
     }
     if (valid != 0) {
         balloonType = 0;
         ret = TRUE;
     }
 
-    hit = (void*)MW_U32(mario, 0x1E0);
-    if (hit != NULL) {
+    hit4 = (void*)MW_U32(mario, 0x1E0);
+    if (hit4 != NULL) {
         valid = -1;
 #ifdef MUST_MATCH
         // The original calls marioGetPtr() and discards the result here (the pointer already lives in r31).
         marioGetPtr();
 #endif
-        if (!((u32)hitGetAttr((HitEntry*)hit) & 0x80000000)) {
+        if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
             valid = -1;
         } else {
-            obj = mobjHitObjPtrToPtr((HitEntry*)hit);
+            obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
             if (strcmp(obj->animName, str_802F2FD0) == 0 || strcmp(obj->animName, str_802F2FE4) == 0) {
                 valid = 1;
                 if (mobjCheckItemboxOpen(obj) != 1) {
@@ -191,16 +196,16 @@ void marioBalloonMain(void) {
             }
         }
         if (valid >= 0) {
-            hit = (void*)MW_U32(mario, 0x1E0);
+            hit4 = (void*)MW_U32(mario, 0x1E0);
             valid = -1;
 #ifdef MUST_MATCH
             // Second copy: the original again calls marioGetPtr() and discards the result.
             marioGetPtr();
 #endif
-            if (!((u32)hitGetAttr((HitEntry*)hit) & 0x80000000)) {
+            if (!((u32)hitGetAttr((HitEntry*)hit4) & 0x80000000)) {
                 valid = -1;
             } else {
-                obj = mobjHitObjPtrToPtr((HitEntry*)hit);
+                obj = mobjHitObjPtrToPtr((HitEntry*)hit4);
                 if (strcmp(obj->animName, str_802F2FD0) == 0 || strcmp(obj->animName, str_802F2FE4) == 0) {
                     valid = 1;
                     if (mobjCheckItemboxOpen(obj) != 1) {
