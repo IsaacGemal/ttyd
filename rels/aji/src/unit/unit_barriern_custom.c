@@ -1,0 +1,1509 @@
+#include "battle/battle_camera.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_event_default.h"
+#include "battle/battle_event_subset.h"
+#include "battle/battle_weapon_power.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+#include "party/party_motion.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern BattleUnitKind unit_barriern_custom_satellite;
+static USER_FUNC(battleGetBarriernSatelliteInitPos);
+static USER_FUNC(_check_satellite);
+static void barriern_wawawa_get_next_target(void);  // TODO: real signature
+static void barriern_wawawa_get_target(void);  // TODO: real signature
+static USER_FUNC(barriern_wawawa_set_target);
+static void outSplineTableSet_Sub(void);  // TODO: real signature
+static USER_FUNC(outSplineTableSet);
+static USER_FUNC(barriernSatelliteToOutside);
+static USER_FUNC(barriernSatelliteToInside);
+static void barriernSatelliteTo_Main(void);  // TODO: real signature
+static void barriernSatelliteTo_Init(void);  // TODO: real signature
+static void barriern_satellite_zanzou_sub(void);  // TODO: real signature
+static USER_FUNC(barriern_satellite_zanzou2);
+static USER_FUNC(barriern_satellite_zanzou);
+static void barriern_zanzou_sub(void);  // TODO: real signature
+static USER_FUNC(barriern_zanzou3);
+static USER_FUNC(barriern_zanzou2);
+static USER_FUNC(barriern_zanzou);
+static BattleUnitKindPart parts[11];
+static BattleVulnerableStatus regist;
+static BattleDispPose pose_table[18];
+static BattleDataEntry data_table[2];
+static s32 init_event[143];
+static s32 damage_event[17];
+static s32 barriern_dmg_first_attack_pos[19];
+static s32 unison_phase_event[190];
+static s32 attack_event[106];
+static s32 recovery_event[69];
+static s32 wakka_attack_event[255];
+static s32 wawawa_attack_event[548];
+static s32 wawawa_attack_event_sub[87];
+static s32 wawawa_attack_event_sub_no_last[10];
+static s32 wawawa_attack_event_sub_last[93];
+static s32 wait_event[116];
+
+// clang-format off
+extend_data(116,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(117,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+BattleUnitKind unit_barriern_custom = {
+    UNIT_X_YUX,                 // mUnitType
+    "btl_un_barriern_custom",   // name
+    10,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    32,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    70,                         // bonusCoinRate
+    5,                          // baseCoin
+    50,                         // field_0x13
+    9999,                       // field_0x14
+    50,                         // width
+    50,                         // height
+    { 0, 25 },                  // statusIconOffset
+    { 0.0f, 0.0f, 0.0f },       // centerOffset
+    { 0, -40 },                 // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },       // talkTogeBaseOffset
+    { 25.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 25.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 10.0f, 10.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 0.0f, 0.0f },       // cutBaseOffset
+    50.0f,                      // cutWidth
+    50.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_ENM_BARRI_DAMAGED1",   // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0x00000004,                 // attributeFlags
+    &regist,                    // vulnStatus
+    11,                         // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
+};
+
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitKindPart parts[11] = {
+    {
+        1,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 12.0f, 0.0f },    // hitBaseOffset
+        { 0.0f, 22.0f, 0.0f },    // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x00600009,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        2,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        3,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        4,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        5,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        6,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        20,                       // field_0x30
+        30,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        7,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        10,                       // field_0x30
+        10,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        8,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        10,                       // field_0x30
+        10,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        9,                        // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        10,                       // field_0x30
+        10,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        10,                       // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        10,                       // field_0x30
+        10,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+    {
+        11,                       // partNum
+        "btl_un_barriern_custom", // partName
+        "c_baria_c",              // modelName
+        { 0.0f, 0.0f, 0.0f },     // positionOffset
+        { 0.0f, 0.0f, 0.0f },     // hitBaseOffset
+        { 0.0f, 0.0f, 0.0f },     // hitCursorBaseOffset
+        10,                       // field_0x30
+        10,                       // field_0x32
+        255,                      // baseAlpha
+        &defence,                 // defense
+        &defence_attr,            // defenseAttr
+        0x13010000,               // attributes
+        0,                        // counterAttributes
+        pose_table,               // poseTable
+    },
+};
+
+static BattleVulnerableStatus regist = {
+    0,   // sleepRate
+    0,   // stopRate
+    0,   // dizzyRate
+    0,   // poisonRate
+    0,   // confuseRate
+    0,   // electricRate
+    0,   // burnRate
+    0,   // freezeRate
+    100, // hugeRate
+    0,   // tinyRate
+    100, // attackUpRate
+    0,   // attackDownRate
+    100, // defenseUpRate
+    0,   // defenseDownRate
+    0,   // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    0,   // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    10,  // instaKillRate
+};
+
+static BattleWeapon weapon_wakka_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x000000C7,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x00002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    80,                                       // stopChance
+    3,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+
+static BattleWeapon weapon_wawawa_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    2,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x000000C7,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    80,                                       // stopChance
+    3,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
+
+static BattleUnitSetup entry_barriern_satellite[1] = {
+    { &unit_barriern_custom_satellite, 1, 0x04000004, { 1000.0f, 0.0f, 1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
+};
+
+static BattleDispPose pose_table[18] = {
+    { 0x01, "N_1" },
+    { 0x02, "Y_1" },
+    { 0x09, "Y_1" },
+    { 0x05, "K_1" },
+    { 0x04, "X_1" },
+    { 0x03, "X_1" },
+    { 0x1C, "S_1" },
+    { 0x1D, "Q_1" },
+    { 0x1E, "Q_1" },
+    { 0x1F, "S_1" },
+    { 0x27, "D_1" },
+    { 0x2A, "R_1" },
+    { 0x29, "R_1" },
+    { 0x28, "W_1" },
+    { 0x38, "X_1" },
+    { 0x39, "X_1" },
+    { 0x41, "T_1" },
+    { 0x45, "S_1" },
+};
+
+static BattleDataEntry data_table[2] = {
+    { 0x30, barriern_dmg_first_attack_pos },
+    { 0x00, NULL },
+};
+
+// TODO: type
+static u32 splineTableIn1_1[15] = {
+    0x41C80000, 0x00000000, 0x00000000, 0x41A00000,
+    0xC1F00000, 0xBF800000, 0x41480000, 0xC2200000,
+    0xBF800000, 0x40A00000, 0xC1F00000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn2_1[15] = {
+    0x41C80000, 0x00000000, 0x00000000, 0x41A00000,
+    0xC1F00000, 0xBF800000, 0x41480000, 0xC2200000,
+    0xBF800000, 0x40A00000, 0xC1F00000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn2_2[15] = {
+    0xC1C80000, 0x00000000, 0x00000000, 0xC1A00000,
+    0x41F00000, 0xBF800000, 0xC1480000, 0x41F00000,
+    0xBF800000, 0xC0A00000, 0x41F00000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn3_1[15] = {
+    0x00000000, 0x41C80000, 0x00000000, 0x00000000,
+    0x42340000, 0xBF800000, 0x00000000, 0x42480000,
+    0xBF800000, 0x00000000, 0x41C80000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn3_2[15] = {
+    0x41C80000, 0xC1C80000, 0x00000000, 0x42200000,
+    0xC2200000, 0xBF800000, 0x41F00000, 0xC20C0000,
+    0xBF800000, 0x41A00000, 0xC1C80000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn3_3[15] = {
+    0xC1C80000, 0xC1C80000, 0x00000000, 0xC2200000,
+    0xC2200000, 0xBF800000, 0xC1F00000, 0xC20C0000,
+    0xBF800000, 0xC1A00000, 0xC1C80000, 0xBF800000,
+    0x80000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn4_1[15] = {
+    0x41C80000, 0x41C80000, 0x00000000, 0x41F00000,
+    0x420C0000, 0xBF800000, 0x42200000, 0x42340000,
+    0xBF800000, 0x41A00000, 0x41C80000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn4_2[15] = {
+    0xC1C80000, 0x41C80000, 0x00000000, 0xC1F00000,
+    0x420C0000, 0xBF800000, 0xC2200000, 0x42340000,
+    0xBF800000, 0xC1A00000, 0x41C80000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn4_3[15] = {
+    0x41C80000, 0xC1C80000, 0x00000000, 0x41F00000,
+    0xC20C0000, 0xBF800000, 0x42200000, 0xC2340000,
+    0xBF800000, 0x41A00000, 0xC1C80000, 0xBF800000,
+    0x00000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableIn4_4[15] = {
+    0xC1C80000, 0xC1C80000, 0x00000000, 0xC1F00000,
+    0xC20C0000, 0xBF800000, 0xC2200000, 0xC2340000,
+    0xBF800000, 0xC1A00000, 0xC1C80000, 0xBF800000,
+    0x80000000, 0x00000000, 0xBF800000,
+};
+
+// TODO: type
+static u32 splineTableOut1_1[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0xC20C0000,
+    0xC20C0000, 0xBF800000, 0xC2200000, 0x00000000,
+    0xBF800000, 0x41F00000, 0x42200000, 0xBF800000,
+    0x41C80000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut2_1[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0x40A00000,
+    0x41F00000, 0xBF800000, 0x41480000, 0x42200000,
+    0xBF800000, 0x41A00000, 0x41F00000, 0xBF800000,
+    0x41C80000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut2_2[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0xC0A00000,
+    0xC1F00000, 0xBF800000, 0xC1480000, 0xC2200000,
+    0xBF800000, 0xC1A00000, 0xC1F00000, 0xBF800000,
+    0xC1C80000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut3_1[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0x00000000,
+    0x41C80000, 0xBF800000, 0x00000000, 0x42480000,
+    0xBF800000, 0x00000000, 0x42340000, 0xBF800000,
+    0x00000000, 0x41C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut3_2[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0x41C80000,
+    0xC1A00000, 0xBF800000, 0x42340000, 0xC1F00000,
+    0xBF800000, 0x41F00000, 0xC1C80000, 0xBF800000,
+    0x41C80000, 0xC1C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut3_3[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0xC1C80000,
+    0xC1A00000, 0xBF800000, 0xC2340000, 0xC1F00000,
+    0xBF800000, 0xC1F00000, 0xC1C80000, 0xBF800000,
+    0xC1C80000, 0xC1C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut4_1[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0x41C80000,
+    0x41A00000, 0xBF800000, 0x42340000, 0x41F00000,
+    0xBF800000, 0x41F00000, 0x41C80000, 0xBF800000,
+    0x41C80000, 0x41C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut4_2[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0xC1C80000,
+    0x41A00000, 0xBF800000, 0xC2340000, 0x41F00000,
+    0xBF800000, 0xC1F00000, 0x41C80000, 0xBF800000,
+    0xC1C80000, 0x41C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut4_3[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0x41C80000,
+    0xC1A00000, 0xBF800000, 0x42340000, 0xC1F00000,
+    0xBF800000, 0x41F00000, 0xC1C80000, 0xBF800000,
+    0x41C80000, 0xC1C80000, 0x00000000,
+};
+
+// TODO: type
+static u32 splineTableOut4_4[15] = {
+    0x00000000, 0x00000000, 0xBF800000, 0xC1C80000,
+    0xC1A00000, 0xBF800000, 0xC2340000, 0xC1F00000,
+    0xBF800000, 0xC1F00000, 0xC1C80000, 0xBF800000,
+    0xC1C80000, 0xC1C80000, 0x00000000,
+};
+
+// TODO: write battleGetBarriernSatelliteInitPos (static, 0x150 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write outSplineTableSet (static, 0x22c bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(init_event)
+    CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
+    CALL(btlevtcmd_SetEventUnisonPhase, -2, PTR(unison_phase_event))
+    CALL(btlevtcmd_SetEventAttack, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetEventDamage, -2, PTR(damage_event))
+    CALL(btlevtcmd_SetEventConfusion, -2, PTR(attack_event))
+    CALL(btlevtcmd_SetPartsScale, -2, 1, FLOAT(1.0f), FLOAT(1.0f), FLOAT(1.0f))
+    CALL(btlevtcmd_OnUnitFlag, -2, 3145728)
+    SET_VALUE(LW(0), 4)
+    LOOP(4)
+        CALL(btlevtcmd_SetUnitWork, -2, LW(0), -1)
+        ADD(LW(0), 1)
+    END_LOOP
+    SET_VALUE(LW(6), 0)
+    CALL(btlevtcmd_GetUnitWork, -2, 0, LW(7))
+    LABEL(0)
+    IF_INT_LESS(LW(6), LW(7))
+        CALL(btlevtcmd_GetUnitId, -2, LW(5))
+        SET_VALUE(LW(8), LW(6))
+        ADD(LW(8), 4)
+        CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entry_barriern_satellite), 0)
+        CALL(btlevtcmd_SetUnitWork, -2, LW(8), LW(3))
+        CALL(btlevtcmd_SetUnitWork, LW(3), 0, LW(5))
+        CALL(btlevtcmd_SetUnitWork, LW(3), 1, 1)
+        CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+        CALL(battleGetBarriernSatelliteInitPos, -2, LW(7), LW(6), LW(10), LW(11), LW(12))
+        ADD(LW(0), LW(10))
+        ADD(LW(1), LW(11))
+        ADD(LW(2), LW(12))
+        CALL(btlevtcmd_SetPos, LW(3), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_SetHomePos, LW(3), LW(0), LW(1), LW(2))
+        CALL(btlevtcmd_SetScale, LW(3), FLOAT(1.0f), FLOAT(1.0f), FLOAT(1.0f))
+        ADD(LW(6), 1)
+        GOTO(0)
+    END_IF
+    LABEL(10)
+    CALL(outSplineTableSet, -2, LW(7))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(damage_event)
+    CALL(btlevtcmd_SetRGB, -2, 1, 255, 255, 255)
+    SET_VALUE(LW(10), -2)
+    SET_VALUE(LW(11), 1)
+    CALL_CHILD(btldefaultevt_Damage)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(barriern_dmg_first_attack_pos)
+    CALL(btlevtcmd_GetPos, -2, LW(0), LW(1), LW(2))
+    SET_VALUE(LW(1), 20)
+    CALL(btlevtcmd_SetPos, -2, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_WaitAttackEnd)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(satellite_blur_on)
+    SET_VALUE(LW(2), 4)
+    LOOP(4)
+        CALL(btlevtcmd_GetUnitWork, -2, LW(2), LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_SetPartsBlur, LW(3), LW(4), 255, 255, 255, 255, 255, 255, 255, 100, 0)
+            CALL(btlevtcmd_OnPartsAttribute, LW(3), LW(4), 67108864)
+        END_IF
+        ADD(LW(2), 1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(satellite_blur_off)
+    SET_VALUE(LW(2), 4)
+    LOOP(4)
+        CALL(btlevtcmd_GetUnitWork, -2, LW(2), LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_OffPartsAttribute, LW(3), LW(4), 67108864)
+        END_IF
+        ADD(LW(2), 1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+// TODO: write barriernSatelliteToOutside (static, 0x8f4 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriernSatelliteToInside (static, 0x810 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_zanzou3 (static, 0xa0 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(unison_phase_event)
+    CALL(btlevtcmd_StopWaitEvent, -2)
+    CALL(btlevtcmd_CheckPhase, LW(0), 67108865)
+    IF_INT_EQUAL(LW(0), 0)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_get_turn, LW(0))
+    IF_INT_LESS_OR_EQUAL(LW(0), 1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_CheckActStatus, -2, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        GOTO(99)
+    END_IF
+    CALL(evt_sub_random, 10, LW(0))
+    WAIT_FRAMES(LW(0))
+    SET_VALUE(LW(0), 0)
+    SET_VALUE(LW(1), 4)
+    LOOP(4)
+        CALL(btlevtcmd_GetUnitWork, -2, LW(1), LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            ADD(LW(0), 1)
+        END_IF
+        ADD(LW(1), 1)
+    END_LOOP
+    IF_INT_GREATER_OR_EQUAL(LW(0), 4)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK9"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(barriern_zanzou3, -2)
+    CALL_CHILD(satellite_blur_on)
+    CALL(btlevtcmd_GetUnitWork, -2, 0, LW(1))
+    IF_INT_GREATER_OR_EQUAL(LW(1), 1)
+        CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_SPLIT1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    END_IF
+    CALL(barriernSatelliteToInside, -2, LW(1))
+    CALL_CHILD(satellite_blur_off)
+    CALL(btlevtcmd_GetUnitId, -2, LW(4))
+    SET_VALUE(LW(1), 4)
+    SET_VALUE(LW(5), 0)
+    LOOP(4)
+        CALL(btlevtcmd_GetUnitWork, -2, LW(1), LW(2))
+        IF_INT_EQUAL(LW(2), -1)
+            CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entry_barriern_satellite), 0)
+            CALL(btlevtcmd_AddPos, LW(3), 0, 0, -1)
+            CALL(btlevtcmd_SetUnitWork, -2, LW(1), LW(3))
+            CALL(btlevtcmd_SetUnitWork, LW(3), 0, LW(4))
+            ADD(LW(0), 1)
+            ADD(LW(5), 1)
+            IF_INT_GREATER_OR_EQUAL(LW(5), 2)
+                BREAK_LOOP
+            END_IF
+        END_IF
+        ADD(LW(1), 1)
+    END_LOOP
+    WAIT_FRAMES(5)
+    CALL_CHILD(satellite_blur_on)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_SPLIT2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(barriernSatelliteToOutside, -2, LW(0))
+    WAIT_FRAMES(60)
+    CALL_CHILD(satellite_blur_off)
+    CALL(btlevtcmd_SetUnitWork, -2, 0, LW(0))
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+// TODO: write _check_satellite (static, 0x308 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(attack_event)
+    CALL(btlevtcmd_SetRGB, -2, 1, 255, 255, 255)
+    CALL(btlevtcmd_check_battleflag, LW(0), 2)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL_CHILD(wakka_attack_event)
+        RETURN
+    END_IF
+    CALL(btlevtcmd_EnemyItemUseCheck, -2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL_CHILD(LW(0))
+        CALL(btlevtcmd_StartWaitEvent, -2)
+        RETURN
+    END_IF
+    CALL(_check_satellite)
+    SET_VALUE(LW(0), 0)
+    SET_VALUE(LW(1), 4)
+    LOOP(4)
+        CALL(btlevtcmd_GetUnitWork, -2, LW(1), LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(btlevtcmd_CheckActStatus, LW(3), LW(2))
+            IF_INT_NOT_EQUAL(LW(2), 0)
+                CALL(btlevtcmd_CheckStatus, LW(3), 5, LW(2))
+                IF_INT_EQUAL(LW(2), 0)
+                    ADD(LW(0), 1)
+                END_IF
+            END_IF
+        END_IF
+        ADD(LW(1), 1)
+    END_LOOP
+    IF_INT_EQUAL(LW(0), 4)
+        CALL_CHILD(wawawa_attack_event)
+    ELSE
+        SET_VALUE(LW(0), 100)
+        ADD(LW(0), 0)
+        SUBTRACT(LW(0), 1)
+        CALL(evt_sub_random, LW(0), LW(1))
+        IF_INT_LESS(LW(1), 100)
+            CALL_CHILD(wakka_attack_event)
+        ELSE
+            CALL_CHILD(recovery_event)
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(recovery_event)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+    CALL(evt_btl_camera_set_zoom, 0, 300)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("S_3"))
+    WAIT_FRAMES(120)
+    CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(btlevtcmd_RecoverHp, -2, 1, 0)
+    CALL(btlevtcmd_GetPos, -2, LW(5), LW(6), LW(7))
+    ADD(LW(6), 30)
+    ADD(LW(7), 10)
+    CALL(evt_eff, STRING(""), STRING("recovery"), 0, LW(5), LW(6), LW(7), 0, 0, 0, 0, 0, 0, 0, 0)
+    WAIT_FRAMES(30)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(start_avoid)
+    IF_INT_EQUAL(LW(5), 3)
+        CALL(btlevtcmd_StartAvoid, LW(3), 38)
+    END_IF
+    IF_INT_EQUAL(LW(5), 6)
+        CALL(btlevtcmd_StartAvoid, LW(3), 39)
+    END_IF
+    IF_INT_EQUAL(LW(5), 2)
+        CALL(btlevtcmd_StartAvoid, LW(3), 40)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wakka_attack_common_event_no_hit)
+    CALL(btlevtcmd_GetUnitWork, -2, 1, LW(6))
+    IF_INT_EQUAL(LW(6), 0)
+        CALL(btlevtcmd_OffPartsAttribute, -2, LW(15), 67108864)
+    ELSE
+        CALL(btlevtcmd_SetPartsBlur, -2, LW(15), 255, 255, 255, 255, 255, 255, 255, 100, 0)
+        CALL(btlevtcmd_OnPartsAttribute, -2, LW(15), 67108864)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, LW(15), STRING("Z_3"))
+    CALL(btlevtcmd_GetPos, LW(12), LW(6), LW(7), LW(8))
+    ADD(LW(8), 1)
+    CALL(btlevtcmd_SetPartsPos, -2, LW(15), LW(6), LW(7), LW(8))
+    CALL(btlevtcmd_CheckPartsAttribute, -2, LW(15), 16777216, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OffPartsAttribute, -2, LW(15), 16777216)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_5"))
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(btlevtcmd_GetFaceDirection, -2, LW(0))
+            IF_INT_EQUAL(LW(0), -1)
+                CALL(btlevtcmd_GetPartsPos, -2, LW(15), LW(0), LW(1), LW(2))
+                CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+                IF_INT_LESS_OR_EQUAL(LW(0), LW(6))
+                    CALL_CHILD(start_avoid)
+                    BREAK_LOOP
+                END_IF
+            ELSE
+                CALL(btlevtcmd_GetPartsPos, -2, LW(15), LW(0), LW(1), LW(2))
+                CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+                IF_INT_GREATER_OR_EQUAL(LW(0), LW(6))
+                    CALL_CHILD(start_avoid)
+                    BREAK_LOOP
+                END_IF
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_GetUnitWork, -2, 1, LW(6))
+    IF_INT_EQUAL(LW(6), 0)
+        CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+        CALL(btlevtcmd_GetStageSize, LW(6), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+        MULTIPLY(LW(6), 1)
+        CALL(btlevtcmd_GetFaceDirection, -2, LW(0))
+        MULTIPLY(LW(6), LW(0))
+        SUBTRACT(LW(7), 5)
+        CALL(btlevtcmd_SetPartsScale, -2, LW(15), 1, 0, 1)
+        BEGIN_SIBLING_EVENT
+            LOOP(0)
+                LOOP(10)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(0.125f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+                LOOP(10)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(-0.125f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_LOOP
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_JumpPartsSetting, -2, LW(15), 0, 4, 0)
+        CALL(btlevtcmd_JumpPartsPosition, -2, LW(15), LW(6), LW(7), LW(8), 0, -1)
+    ELSE
+        CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+        CALL(btlevtcmd_GetStageSize, LW(6), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX)
+        MULTIPLY(LW(6), 1)
+        CALL(btlevtcmd_GetFaceDirection, -2, LW(0))
+        MULTIPLY(LW(6), LW(0))
+        SUBTRACT(LW(7), 5)
+        CALL(btlevtcmd_SetPartsScale, -2, LW(15), 1, 0, 1)
+        BEGIN_SIBLING_EVENT
+            LOOP(0)
+                LOOP(5)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(0.25f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+                LOOP(5)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(-0.25f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_LOOP
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_JumpPartsSetting, -2, LW(15), 0, 7, 0)
+        CALL(btlevtcmd_JumpPartsPosition, -2, LW(15), LW(6), LW(7), LW(8), 0, -1)
+        CALL(btlevtcmd_SetPartsPos, -2, LW(15), 0, -1000, 0)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wakka_attack_common_event_hit)
+    CALL(btlevtcmd_GetUnitWork, -2, 1, LW(6))
+    IF_INT_EQUAL(LW(6), 0)
+        CALL(btlevtcmd_OffPartsAttribute, -2, LW(15), 67108864)
+    ELSE
+        CALL(btlevtcmd_SetPartsBlur, -2, LW(15), 255, 255, 255, 255, 255, 255, 255, 100, 0)
+        CALL(btlevtcmd_OnPartsAttribute, -2, LW(15), 67108864)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, LW(15), STRING("Z_3"))
+    CALL(btlevtcmd_GetPos, LW(12), LW(6), LW(7), LW(8))
+    ADD(LW(8), 1)
+    CALL(btlevtcmd_SetPartsPos, -2, LW(15), LW(6), LW(7), LW(8))
+    CALL(btlevtcmd_CheckPartsAttribute, -2, LW(15), 16777216, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_OffPartsAttribute, -2, LW(15), 16777216)
+    END_IF
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_5"))
+    CALL(btlevtcmd_GetUnitWork, -2, 1, LW(6))
+    IF_INT_EQUAL(LW(6), 0)
+        CALL(btlevtcmd_SetPartsScale, -2, LW(15), 1, 0, 1)
+        BEGIN_SIBLING_EVENT
+            LOOP(0)
+                LOOP(10)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(0.125f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+                LOOP(10)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(-0.125f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_LOOP
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+        CALL(btlevtcmd_JumpPartsSetting, -2, LW(15), 0, 4, 0)
+        CALL(btlevtcmd_JumpPartsPosition, -2, LW(15), LW(6), LW(7), LW(8), 0, -1)
+    ELSE
+        CALL(btlevtcmd_SetPartsScale, -2, LW(15), 1, 0, 1)
+        BEGIN_SIBLING_EVENT
+            LOOP(0)
+                LOOP(5)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(0.25f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+                LOOP(5)
+                    CALL(btlevtcmd_AddPartsScale, -2, LW(15), 0, FLOAT(-0.25f), 0)
+                    WAIT_FRAMES(1)
+                END_LOOP
+            END_LOOP
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(6), LW(7), LW(8))
+        CALL(btlevtcmd_JumpPartsSetting, -2, LW(15), 0, 7, 0)
+        CALL(btlevtcmd_JumpPartsPosition, -2, LW(15), LW(6), LW(7), LW(8), 0, -1)
+        CALL(btlevtcmd_SetPartsPos, -2, LW(15), 0, -1000, 0)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(damage_check_event_sub)
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), LW(9), 0, LW(5))
+    SWITCH(LW(5))
+        CASE_OR_EQUAL(4)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(3)
+        GOTO(90)
+        CASE_END
+        CASE_EQUAL(6)
+        GOTO(90)
+        CASE_EQUAL(2)
+        GOTO(90)
+        CASE_EQUAL(1)
+        GOTO(91)
+        CASE_END
+        CASE_DEFAULT
+        GOTO(98)
+        CASE_END
+    END_SWITCH
+    LABEL(90)
+    CALL_CHILD(wakka_attack_common_event_no_hit)
+    GOTO(98)
+    LABEL(91)
+    SET_VALUE(LW(13), 0)
+    SET_VALUE(LW(14), 5)
+    LOOP(0)
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(13), LW(5))
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(14), LW(6))
+        IF_INT_EQUAL(LW(3), LW(5))
+            IF_INT_EQUAL(LW(4), LW(6))
+                ADD(LW(13), 10)
+                CALL(btlevtcmd_SetPartsWork, -2, 1, LW(13), 1)
+                BREAK_LOOP
+            END_IF
+        END_IF
+        ADD(LW(13), 1)
+        ADD(LW(14), 1)
+    END_LOOP
+    CALL_CHILD(wakka_attack_common_event_hit)
+    CALL(btlevtcmd_ResultACDefence, LW(3), LW(9))
+    IF_INT_EQUAL(LW(10), 1)
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 256, LW(5))
+    ELSE
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), LW(9), 0, LW(5))
+    END_IF
+    GOTO(98)
+    LABEL(98)
+    CALL(btlevtcmd_SetPartsPos, -2, LW(15), 0, -1000, 0)
+    RETURN
+EVT_END()
+
+// TODO: write barriern_zanzou2 (static, 0xa0 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_zanzou (static, 0xa0 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(wakka_attack_event)
+    CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_wakka_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_wakka_attack), LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL_CHILD(subsetevt_confuse_flustered)
+            RETURN
+        END_IF
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_SetUnitWork, -2, 1, 0)
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 0, LW(3))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 5, LW(4))
+    SET_VALUE(LW(9), PTR(&weapon_wakka_attack))
+    SET_VALUE(LW(10), 1)
+    SET_VALUE(LW(12), -2)
+    SET_VALUE(LW(15), 7)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+    CALL(evt_btl_camera_set_zoom, 0, 250)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_wakka_attack))
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_wakka_attack))
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(14))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(14))
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("S_1"))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(barriern_zanzou, -2)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK9"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(barriern_zanzou2, -2)
+    CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
+    SET_VALUE(LW(0), 6)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(14))
+    MULTIPLY(LW(0), LW(14))
+    LOOP(10)
+        WAIT_FRAMES(1)
+        CALL(btlevtcmd_AddRotate, -2, 0, LW(0), 0)
+    END_LOOP
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_1"))
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_2"))
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_3"))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(10)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_4"))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK3"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK7"), EVTDAT_POINTER_MAX, 0, LW(0))
+    CALL(btlevtcmd_SetPartsWork, -2, 7, 15, LW(0))
+    CALL_CHILD(damage_check_event_sub)
+    CALL(btlevtcmd_GetPartsWork, -2, 7, 15, LW(0))
+    CALL(evt_snd_sfxoff, LW(0))
+    SET_VALUE(LW(0), -6)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(14))
+    MULTIPLY(LW(0), LW(14))
+    LOOP(10)
+        WAIT_FRAMES(1)
+        CALL(btlevtcmd_AddRotate, -2, 0, LW(0), 0)
+    END_LOOP
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+// TODO: write barriern_satellite_zanzou2 (static, 0xd8 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_satellite_zanzou (static, 0xd8 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(wawawa_attack_event_satellite_blur)
+    CALL(barriern_satellite_zanzou, -2, LW(0))
+    CALL(barriern_satellite_zanzou2, -2, LW(0))
+    RETURN
+EVT_END()
+
+// TODO: write barriern_wawawa_set_target (static, 0x15c bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+static EVT_BEGIN(wawawa_attack_event)
+    CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_wawawa_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_wawawa_attack), LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL_CHILD(subsetevt_confuse_flustered)
+            RETURN
+        END_IF
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_SetUnitWork, -2, 1, 1)
+    CALL(btlevtcmd_SetUnitWork, -2, 2, 0)
+    CALL(barriern_wawawa_set_target, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 0, LW(0))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 1, LW(2))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 2, LW(4))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 3, LW(6))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 4, LW(8))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 5, LW(1))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 6, LW(3))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 7, LW(5))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 8, LW(7))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 9, LW(9))
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 10, 0)
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 11, 0)
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 12, 0)
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 13, 0)
+    CALL(btlevtcmd_SetPartsWork, -2, 1, 14, 0)
+    CALL(evt_btl_camera_set_mode, 0, 7)
+    CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+    CALL(evt_btl_camera_set_zoom, 0, 250)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_wawawa_attack))
+    CALL(btlevtcmd_AttackDeclareAll, -2)
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_wawawa_attack))
+    CALL(btlevtcmd_GetPartsWork, -2, 1, 0, LW(3))
+    CALL(btlevtcmd_GetPartsWork, -2, 1, 5, LW(4))
+    CALL(btlevtcmd_CalculateFaceDirection, -2, -1, LW(3), LW(4), 16, LW(15))
+    CALL(btlevtcmd_ChangeFaceDirection, -2, LW(15))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK5"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    SET_VALUE(LW(0), 0)
+    LOOP(4)
+        SPAWN_EVENT(wawawa_attack_event_satellite_blur)
+        ADD(LW(0), 1)
+        WAIT_FRAMES(10)
+    END_LOOP
+    CALL(barriern_zanzou, -2)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK10"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(barriern_zanzou2, -2)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK6"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("F_1"))
+    WAIT_FRAMES(20)
+    SET_VALUE(LW(11), 4)
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+            BREAK_LOOP
+        END_IF
+        CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+        CALL(btlevtcmd_GetBodyId, LW(12), LW(13))
+        CALL(btlevtcmd_AnimeChangePose, LW(12), LW(13), STRING("F_2"))
+        ADD(LW(11), 1)
+    END_LOOP
+    WAIT_FRAMES(20)
+    CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
+    SET_VALUE(LW(11), 4)
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+            BREAK_LOOP
+        END_IF
+        CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+        CALL(btlevtcmd_SetRotate, LW(12), 0, 0, 0)
+        ADD(LW(11), 1)
+    END_LOOP
+    SET_VALUE(LW(0), 6)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(14))
+    MULTIPLY(LW(0), LW(14))
+    LOOP(10)
+        WAIT_FRAMES(1)
+        CALL(btlevtcmd_AddRotate, -2, 0, LW(0), 0)
+        SET_VALUE(LW(11), 4)
+        LOOP(0)
+            IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+                BREAK_LOOP
+            END_IF
+            CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+            CALL(btlevtcmd_AddRotate, LW(12), 0, LW(0), 0)
+            ADD(LW(11), 1)
+        END_LOOP
+    END_LOOP
+    SET_VALUE(LW(11), 4)
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+            BREAK_LOOP
+        END_IF
+        CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+        CALL(btlevtcmd_GetBodyId, LW(12), LW(13))
+        CALL(btlevtcmd_AnimeChangePose, LW(12), LW(13), STRING("S_2"))
+        ADD(LW(11), 1)
+    END_LOOP
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_1"))
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_2"))
+    WAIT_FRAMES(30)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_3"))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(10)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("A_4"))
+    SET_VALUE(LW(12), -2)
+    SET_VALUE(LW(13), 0)
+    SET_VALUE(LW(14), 5)
+    SET_VALUE(LW(15), 7)
+    SPAWN_EVENT(wawawa_attack_event_sub)
+    WAIT_FRAMES(30)
+    SET_VALUE(LW(11), 4)
+    ADD(LW(13), 1)
+    ADD(LW(14), 1)
+    ADD(LW(15), 1)
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+            BREAK_LOOP
+        END_IF
+        CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+        SPAWN_EVENT(wawawa_attack_event_sub)
+        WAIT_FRAMES(20)
+        ADD(LW(11), 1)
+        ADD(LW(13), 1)
+        ADD(LW(14), 1)
+        ADD(LW(15), 1)
+    END_LOOP
+    LOOP(0)
+        CALL(btlevtcmd_GetUnitWork, -2, 2, LW(0))
+        IF_INT_GREATER_OR_EQUAL(LW(0), 5)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_FRAMES(10)
+    CALL(_check_satellite)
+    SET_VALUE(LW(0), -6)
+    CALL(btlevtcmd_GetFaceDirection, -2, LW(14))
+    MULTIPLY(LW(0), LW(14))
+    LOOP(10)
+        WAIT_FRAMES(1)
+        CALL(btlevtcmd_AddRotate, -2, 0, LW(0), 0)
+        SET_VALUE(LW(11), 4)
+        LOOP(0)
+            IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+                BREAK_LOOP
+            END_IF
+            CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+            CALL(btlevtcmd_AddRotate, LW(12), 0, LW(0), 0)
+            ADD(LW(11), 1)
+        END_LOOP
+    END_LOOP
+    LABEL(99)
+    CALL(btlevtcmd_ResetFaceDirection, -2)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wawawa_attack_event_sub)
+    CALL(btlevtcmd_GetPartsWork, -2, 1, LW(13), LW(3))
+    CALL(btlevtcmd_GetPartsWork, -2, 1, LW(14), LW(4))
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK4"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_BARRI_ATTACK8"), EVTDAT_POINTER_MAX, 0, LW(0))
+    CALL(btlevtcmd_SetPartsWork, -2, LW(15), 15, LW(0))
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(13), 3)
+            CALL_CHILD(wawawa_attack_event_sub_last)
+            BREAK_LOOP
+        END_IF
+        ADD(LW(13), 1)
+        ADD(LW(14), 1)
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(13), LW(5))
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(14), LW(6))
+        IF_INT_EQUAL(LW(3), LW(5))
+            IF_INT_EQUAL(LW(4), LW(6))
+                CALL_CHILD(wawawa_attack_event_sub_no_last)
+                BREAK_LOOP
+            END_IF
+        END_IF
+    END_LOOP
+    CALL(btlevtcmd_AddUnitWork, -2, 2, 1)
+    CALL(btlevtcmd_GetPartsWork, -2, LW(15), 15, LW(0))
+    CALL(evt_snd_sfxoff, LW(0))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wawawa_attack_event_sub_no_last)
+    SET_VALUE(LW(9), PTR(&weapon_wawawa_attack))
+    SET_VALUE(LW(10), 0)
+    CALL_CHILD(damage_check_event_sub)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wawawa_attack_event_sub_last)
+    SET_VALUE(LW(13), 0)
+    SET_VALUE(LW(14), 5)
+    LOOP(0)
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(13), LW(5))
+        CALL(btlevtcmd_GetPartsWork, -2, 1, LW(14), LW(6))
+        IF_INT_EQUAL(LW(3), LW(5))
+            IF_INT_EQUAL(LW(4), LW(6))
+                ADD(LW(13), 10)
+                CALL(btlevtcmd_GetPartsWork, -2, 1, LW(13), LW(0))
+                BREAK_LOOP
+            END_IF
+        END_IF
+        ADD(LW(13), 1)
+        ADD(LW(14), 1)
+    END_LOOP
+    IF_INT_EQUAL(LW(0), 1)
+        CALL_CHILD(wakka_attack_common_event_hit)
+        CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_wawawa_attack))
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_wawawa_attack), 256, LW(5))
+        CALL(btlevtcmd_SetPartsPos, -2, LW(15), 0, -1000, 0)
+        WAIT_FRAMES(20)
+        CALL(btlevtcmd_OffPartsAttribute, -2, LW(15), 67108864)
+        CALL(btlevtcmd_OnPartsAttribute, -2, LW(15), 16777216)
+    ELSE
+        SET_VALUE(LW(9), PTR(&weapon_wawawa_attack))
+        SET_VALUE(LW(10), 1)
+        CALL_CHILD(damage_check_event_sub)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(wait_event)
+    CALL(_check_satellite)
+    CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+    SET_VALUE(LW(11), 4)
+    LOOP(0)
+        IF_INT_GREATER_OR_EQUAL(LW(11), 8)
+            BREAK_LOOP
+        END_IF
+        CALL(btlevtcmd_GetUnitWork, -2, LW(11), LW(12))
+        IF_INT_NOT_EQUAL(LW(12), -1)
+            CALL(btlevtcmd_SetUnitWork, LW(12), 1, 1)
+        END_IF
+        ADD(LW(11), 1)
+    END_LOOP
+    BEGIN_SIBLING_EVENT
+        SET_VALUE(LW(1), 255)
+        SET_VALUE(LW(2), 255)
+        SET_VALUE(LW(3), 255)
+        SET_VALUE(LW(4), -8)
+        LABEL(0)
+        CALL(_check_satellite, LW(0))
+        WAIT_FRAMES(1)
+        GOTO(0)
+    END_SIBLING_EVENT
+    LABEL(1)
+    CALL(evt_sub_random, 120, LW(0))
+    ADD(LW(0), 30)
+    WAIT_FRAMES(LW(0))
+    CALL(btlevtcmd_CheckActStatus, -2, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_CheckStatus, -2, 5, LW(0))
+        CALL(btlevtcmd_CheckStatus, -2, 3, LW(1))
+        CALL(btlevtcmd_CheckStatus, -2, 4, LW(2))
+        OR(LW(0), LW(1))
+        OR(LW(0), LW(2))
+        IF_INT_EQUAL(LW(0), 0)
+            CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("S_3"))
+            WAIT_FRAMES(180)
+            CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
+        END_IF
+    END_IF
+    GOTO(1)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 zanzou_count[5] = {
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000,
+};
+
+// TODO: write barriern_wawawa_get_next_target (static, 0x74 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_wawawa_get_target (static, 0x44 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write outSplineTableSet_Sub (static, 0x4c bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriernSatelliteTo_Main (static, 0x1b4 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriernSatelliteTo_Init (static, 0xa8 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_satellite_zanzou_sub (static, 0x3a4 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write barriern_zanzou_sub (static, 0x370 bytes) here:
+// its asm is in build/G8MJ01/aji/asm/unit/unit_barriern_custom.s; this is where the original has it, just before the first script that uses it
+// clang-format on

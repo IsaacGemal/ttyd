@@ -1,0 +1,1298 @@
+#include "mri_03.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_item.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_mobj.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_pouch.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_window.h"
+#include "forcedata.h"
+#include "party/party_motion.h"
+#include "rel/mri/mri.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 evt_mri_get16bitdata[];
+extern s32 evt_puni_get_lsw_index[];
+extern s32 evt_puni_init_puni[];
+extern s32 evt_puni_move_position[];
+extern s32 evt_puni_pera_onoff[];
+extern s32 evt_puni_puninum_onoff[];
+extern s32 evt_puni_set_lsw_index[];
+extern s32 evt_puni_set_position[];
+extern s32 evt_puni_set_trap_index[];
+extern s32 mri_guide_goryu[];
+extern s32 mri_guide_hagure_check[];
+extern s32 mri_puni_walk_se[];
+static void alpha_tev(void);  // TODO: real signature
+static void alpha_init_func(void);  // TODO: real signature
+static void alpha_set_func(void);  // TODO: real signature
+s32 guide_sister[775];
+
+// clang-format off
+extend_data(16,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(17,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+EVT_BEGIN(jail_alpha_mario_check)
+    LOOP(0)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        IF_INT_LESS_OR_EQUAL(LW(2), -81)
+            SET_VALUE(GW(2), 80)
+        ELSE
+            SET_VALUE(GW(2), 255)
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(jail_alpha)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_saku"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_doa"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_01"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_saku"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_doa"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_01"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("mario"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("party"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("プニ族長老"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド妹"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("プニ族"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("プニ族３"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイドsp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド妹sp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ちびトゲsp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ライバルsp"), 2048)
+    IF_INT_EQUAL(GSWF(2832), 0)
+        CALL(evt_map_blend_set_mobj_flag, 1, STRING("mobj_lock00"), 2048)
+    END_IF
+    IF_INT_EQUAL(GSWF(2834), 0)
+        CALL(evt_map_blend_set_mobj_flag, 1, STRING("mobj_lock01"), 2048)
+    END_IF
+    IF_INT_EQUAL(GSWF(5613), 0)
+        CALL(evt_map_blend_set_mobj_flag, 1, STRING("kururin1"), 2048)
+    END_IF
+    SPAWN_EVENT(jail_alpha_mario_check)
+    SET_VALUE(LW(10), 255)
+    SET_VALUE(GW(2), 255)
+    SET_VALUE(GW(3), 255)
+    SET_VALUE(GF(2), 0)
+    LOOP(0)
+        IF_INT_EQUAL(GF(2), 0)
+            IF_INT_LESS(GW(2), LW(10))
+                ADD(LW(10), -5)
+                IF_INT_GREATER(GW(2), LW(10))
+                    SET_VALUE(LW(10), GW(2))
+                END_IF
+            END_IF
+            IF_INT_GREATER(GW(2), LW(10))
+                ADD(LW(10), 5)
+                IF_INT_LESS(GW(2), LW(10))
+                    SET_VALUE(LW(10), GW(2))
+                END_IF
+            END_IF
+            CALL(evt_map_set_blend, 0, 255, 255, 255, LW(10))
+        ELSE
+            IF_INT_LESS(GW(3), LW(10))
+                ADD(LW(10), -5)
+                IF_INT_GREATER(GW(3), LW(10))
+                    SET_VALUE(LW(10), GW(3))
+                END_IF
+            END_IF
+            IF_INT_GREATER(GW(3), LW(10))
+                ADD(LW(10), 5)
+                IF_INT_LESS(GW(3), LW(10))
+                    SET_VALUE(LW(10), GW(3))
+                END_IF
+            END_IF
+            CALL(evt_map_set_blend, 0, 255, 255, 255, LW(10))
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(after_2hours)
+    CALL(evt_map_blend_off, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("mario"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("party"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("プニ族長老"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ガイド妹"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ガイド"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("プニ族"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("プニ族３"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ガイドsp"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ガイド妹sp"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ちびトゲsp"), 2048)
+    CALL(evt_map_blend_set_flag, 0, STRING("ライバルsp"), 2048)
+    CALL(evt_map_set_blend, 0, 0, 0, 0, 255)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 spline_dt[24] = {
+    0x43040000, 0x00000000, 0xC3190000, 0x42BE88CF,
+    0x00000000, 0xC2D82E45, 0x42A29D06, 0x00000000,
+    0xC2C9655A, 0x429F74A3, 0x00000000, 0xC292A75A,
+    0x42EAAB4E, 0x00000000, 0xC26CB60F, 0x43220B78,
+    0x00000000, 0xC2544E42, 0x4364A6AD, 0x00000000,
+    0x42114D20, 0x43757472, 0x00000000, 0x41B28E3B,
+};
+
+// TODO: type
+u32 spline_dt1[15] = {
+    0x42C40000, 0x00000000, 0xC31C0000, 0x4282388C,
+    0x00000000, 0xC2A078F9, 0x42628B17, 0x00000000,
+    0xC2658E55, 0xC08ABA41, 0x00000000, 0xC22371F6,
+    0xC3110000, 0x00000000, 0xC2700000,
+};
+
+EVT_BEGIN(elder_rescue)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_cam3d_evt_set, 105, 82, 92, 105, 30, -203, 1000, 11)
+    CALL(evt_npc_flag_onoff, 1, STRING("プニ族長老"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド"), 1536)
+    CALL_CHILD(mri_guide_goryu)
+    CALL(evt_puni_set_mode, 1, 30)
+    CALL(evt_puni_get_position, 1, LW(0), LW(1), LW(2))
+    CALL(evt_puni_set_position, 1, 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("ガイド"), LW(0), LW(1), LW(2))
+    SET_VALUE(GW(3), 80)
+    SET_VALUE(GF(2), 1)
+    SET_VALUE(LW(0), STRING("ガイド"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイド"), 98, -156, 0, FLOAT(120.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_npc_set_ry, STRING("ガイド"), 90)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_00"), 0, STRING("ガイド"))
+    CALL(evt_npc_set_ry, STRING("プニ族長老"), 270)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(300)
+        CALL(evt_mario_mov_pos2, 69, -144, FLOAT(100.0f))
+        CALL(evt_mario_set_dir, 90, 200, 0)
+    END_INLINE_EVENT
+    CALL(evt_party_move_pos2, 0, 63, -170, FLOAT(150.0f))
+    CALL(evt_party_set_dir, 0, 90, -1)
+    WAIT_MS(300)
+    SET_VALUE(GF(0), 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam3d_evt_set, FLOAT(105.0f), FLOAT(73.6f), FLOAT(44.3f), FLOAT(105.0f), FLOAT(30.0f), FLOAT(-203.0f), 1000, 8)
+        WAIT_MS(900)
+        CALL(evt_cam3d_evt_set, 105, 82, 92, 105, 30, -203, 400, 11)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_CHOUROU_BIG1"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_sub_intpl_msec_init, 8, FLOAT(1.0f), FLOAT(2.5f), 700)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+            CALL(evt_npc_set_scale, STRING("プニ族長老"), LW(0), LW(0), LW(0))
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+        SET_VALUE(GF(0), 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(200)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED1"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_mario_set_pose, STRING("M_N_7"))
+        WAIT_MS(1000)
+        CALL(evt_mario_set_pose, STRING("M_S_1"))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(200)
+        CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+        ADD(LW(0), 2)
+        CALL(evt_party_jump_pos, 0, LW(0), LW(1), LW(2), 400, 1, -1000)
+    END_INLINE_EVENT
+    CALL(evt_snd_bgmoff, 1024)
+    CALL(evt_snd_bgmon, 1, STRING("BGM_EVT_STG2_PUNI1"))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_01"), 0, STRING("プニ族長老"))
+    WAIT_WHILE(GF(0))
+    CALL(evt_sub_intpl_msec_init, 5, FLOAT(2.5f), FLOAT(1.0f), 200)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        CALL(evt_npc_set_scale, STRING("プニ族長老"), LW(0), LW(0), LW(0))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_msg_continue)
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_02"), 0, STRING("ガイド"))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_03"), 0, STRING("プニ族長老"))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_04"), 0, STRING("ガイド"))
+    CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, STRING("プニ族長老"), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, STRING("プニ族長老"), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_05"), 0, STRING("プニ族長老"))
+    CALL(evt_snd_bgmoff, 26625)
+    CALL(evt_fade_out, 1000)
+    WAIT_MS(100)
+    CALL(evt_fade_entry, 12, 0, 0, 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_06"), 0, 0)
+    BEGIN_INLINE_EVENT_GET_ID(GW(1))
+        LOOP(0)
+            CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SLEEP1"), LW(0), LW(1), LW(2), 0)
+            WAIT_MS(3000)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_mario_sleep_on)
+    CALL(evt_party_sleep_on, 0)
+    WAIT_MS(1000)
+    CALL(evt_fade_entry, 11, 0, 0, 0, 0)
+    CALL(evt_snd_bgmon, 161, 0)
+    CALL(evt_fade_in, 1000)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_07"), 0, STRING("プニ族長老"))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_08"), 0, STRING("ガイド"))
+    CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, STRING("プニ族長老"), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, STRING("プニ族長老"), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_09"), 0, STRING("プニ族長老"))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_10"), 0, STRING("ガイド"))
+    CALL(evt_npc_get_position, STRING("プニ族長老"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("プニ族長老"), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, STRING("プニ族長老"), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_11"), 0, STRING("プニ族長老"))
+    CALL(evt_snd_bgmoff_f, 513, 1000)
+    CALL(evt_cam3d_evt_off, 1000, 11)
+    CALL(evt_npc_status_onoff, 1, STRING("プニ族長老"), 2)
+    CALL(evt_sub_spline_init, 0, 0, PTR(spline_dt), 8, 30, 0)
+    LABEL(0)
+    CALL(evt_sub_spline_get_value, LW(3), LW(4), LW(5), LW(6))
+    SET_VALUE(LW(0), STRING("プニ族長老"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("プニ族長老"), LW(3), LW(5), 160, 0, 0)
+    DELETE_EVENT(LW(9))
+    IF_INT_EQUAL(LW(6), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_npc_set_position, STRING("プニ族長老"), 0, -1000, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_12"), 0, STRING("ガイド"))
+    WAIT_MS(300)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(500)
+        CALL(evt_cam3d_evt_set, -155, 85, 204, -155, 50, 7, 1500, 11)
+    END_INLINE_EVENT
+    CALL(evt_npc_status_onoff, 1, STRING("ガイド"), 2)
+    CALL(evt_sub_spline_init, 0, 0, PTR(spline_dt1), 5, 15, 0)
+    LABEL(1)
+    CALL(evt_sub_spline_get_value, LW(3), LW(4), LW(5), LW(6))
+    SET_VALUE(LW(0), STRING("ガイド"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイド"), LW(3), LW(5), 160, 0, 0)
+    DELETE_EVENT(LW(9))
+    IF_INT_EQUAL(LW(6), 1)
+        GOTO(1)
+    END_IF
+    WAIT_MS(100)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_12_01"), 0, STRING("ガイド"))
+    DELETE_EVENT(GW(1))
+    CALL(evt_mario_sleep_off)
+    CALL(evt_party_sleep_off, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_set_pos, -10, 0, -52)
+        CALL(evt_mario_mov_pos2, -110, -52, FLOAT(120.0f))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_set_pos, 0, 32, 0, -52)
+        CALL(evt_party_move_pos2, 0, -68, -52, FLOAT(120.0f))
+    END_INLINE_EVENT
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_12_02"), 0, STRING("ガイド妹"))
+    CALL(evt_snd_bgmoff, 513)
+    CALL(evt_snd_bgmon, 288, 0)
+    CALL(evt_npc_get_position, STRING("ガイド"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("ガイド"), 0, -1000, 0)
+    CALL(evt_puni_set_position, 1, LW(0), LW(1), LW(2))
+    CALL(evt_puni_set_mode, 1, 1)
+    SET_VALUE(GF(2), 0)
+    CALL(evt_cam3d_evt_off, 500, 11)
+    WAIT_MS(500)
+    SET_VALUE(GSW(0), 94)
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(elder_init)
+    SWITCH(GSW(0))
+        CASE_LESS(94)
+        CALL(evt_npc_set_position, STRING("me"), 132, 0, -153)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(elder_talk)
+    IF_INT_EQUAL(GSWF(2832), 0)
+        CALL(evt_msg_print, 0, STRING("stg2_mri_e14_13"), 0, STRING("me"))
+    ELSE
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(sister_init)
+    SWITCH(GSW(0))
+        CASE_LESS(101)
+        CALL(evt_npc_set_position, STRING("me"), -192, 0, -142)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(sister_regl)
+    IF_INT_EQUAL(GSW(0), 91)
+        RETURN
+    END_IF
+    IF_INT_EQUAL(GSW(0), 98)
+        RETURN
+    END_IF
+    LOOP(0)
+        CALL(evt_set_dir_to_target, STRING("me"), STRING("ガイドsp"))
+        WAIT_FRAMES(1)
+    END_LOOP
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(sister_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e14_14"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(guide_init)
+    IF_INT_EQUAL(GSWF(2836), 1)
+        CALL(evt_npc_set_position, STRING("me"), -145, 0, -60)
+        CALL(evt_npc_set_ry, STRING("me"), 270)
+    END_IF
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(guide_talk)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_04_02"), 0, STRING("me"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(puni_3_init)
+    SWITCH(GSW(0))
+        CASE_GREATER_OR_EQUAL(118)
+        IF_INT_EQUAL(GSWF(2884), 1)
+            CALL(evt_npc_set_position, STRING("me"), 50, 0, 30)
+        END_IF
+    END_SWITCH
+    RETURN
+EVT_END()
+
+EVT_BEGIN(puni_3_talk)
+    SWITCH(GSW(0))
+        CASE_LESS_OR_EQUAL(402)
+        CALL(evt_msg_print, 0, STRING("stg2_mri_re_018"), 0, STRING("me"))
+        CASE_DEFAULT
+        CALL(evt_msg_print, 0, STRING("stg2_mri_re_018_1"), 0, STRING("me"))
+    END_SWITCH
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 npcEnt[115] = {
+    (u32)"プニ族長老", 0x00000600, 0x00000000, (u32)&elder_init,
+    0x00000000, (u32)&elder_talk, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"ガイド妹",
+    0x00000600, 0x00000000, (u32)&sister_init, (u32)&sister_regl,
+    (u32)&sister_talk, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"ガイド", 0x00000600,
+    0x00000000, (u32)&guide_init, 0x00000000, (u32)&guide_talk,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"プニ族３", 0x00000600, 0x00000000,
+    (u32)&puni_3_init, 0x00000000, (u32)&puni_3_talk, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000,
+};
+
+EVT_BEGIN(bero_custom_00)
+    SET_VALUE(GF(0), 1)
+    IF_INT_EQUAL(GSW(0), 91)
+        CALL(evt_bero_exec_onoff, 0, 4)
+        BEGIN_INLINE_EVENT
+            WAIT_MS(2000)
+            CALL(evt_bero_exec_onoff, 0, 2)
+            WAIT_MS(1000)
+            SET_VALUE(GF(0), 0)
+            CALL(evt_bero_exec_onoff, 1, 2)
+            CALL(evt_bero_exec_onoff, 1, 4)
+        END_INLINE_EVENT
+    END_IF
+    SET_VALUE(LW(0), 0)
+    RETURN
+EVT_END()
+
+static BeroEntry bero_entry_data[3] = {
+    {"dokan", 2, 0, 0x09, 100000, 0, 0, -1, bero_custom_00, 6, NULL, "mri_20", "dokan1", 1, 1},
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "mri_04", "e_bero", 1, 1},
+    {NULL},
+};
+
+// TODO: type
+static u32 puni_rand_position[89] = {
+    0xFFBCFF71, 0xFF6EFF39, 0xFF9BFEE2, 0xFF82FF03,
+    0xFF70FF6B, 0xFF1BFF1E, 0xFF49FF41, 0xFFD8FF38,
+    0xFF5AFF36, 0xFF26FF67, 0xFFB2FF60, 0xFF3BFEF1,
+    0xFF0CFF2C, 0xFF6FFF4D, 0xFFC5FF17, 0xFFC0FF2A,
+    0xFF4FFF10, 0xFFD4FF4C, 0xFF1AFF09, 0xFF6DFED6,
+    0xFF8DFF68, 0xFEFCFF37, 0xFF2DFF28, 0xFF92FEF4,
+    0xFF74FF11, 0xFF51FEE6, 0xFF9EFF5E, 0xFF27FF52,
+    0xFFD8FF10, 0xFFB2FF39, 0xFF5FFF04, 0xFF5BFF70,
+    0xFF50FF25, 0xFF7DFF5C, 0xFF07FF03, 0xFFA9FF0A,
+    0xFFCEFEE6, 0xFF2CFF13, 0xFF15FEDD, 0xFF5BFF4A,
+    0xFFB7FF4C, 0xFF73FF26, 0xFFA3FF4A, 0xFFA0FF2E,
+    0xFF21FEED, 0xFF3BFF64, 0xFEF5FEF9, 0xFF95FF08,
+    0xFFA7FF70, 0xFF1EFF36, 0xFFB0FF1D, 0xFF30FEE0,
+    0xFFA6FEF5, 0xFF0CFEEF, 0xFF70FEF9, 0xFF85FF2F,
+    0xFF4DFF59, 0xFF80FF43, 0xFF14FF4D, 0xFF08FF17,
+    0xFF13FF62, 0xFFD0FF6C, 0xFF88FEDA, 0xFFBDFEF1,
+    0xFFC5FF3D, 0xFFD4FF24, 0xFF87FF1A, 0xFF7FFEEC,
+    0xFFD0FEFE, 0xFF4DFEFA, 0xFF00FF69, 0xFF65FEE8,
+    0xFFC6FF5A, 0xFF00FF4B, 0xFF7FFF78, 0xFF3EFF06,
+    0xFF8EFF51, 0xFF3FFF2F, 0xFF2BFEFE, 0xFF61FF5D,
+    0xFFBDFF05, 0xFF93FF3E, 0xFF30FF3D, 0xFF95FF7A,
+    0xFF61FF19, 0xFF3EFF1B, 0xFF9CFF1B, 0xFFAFFEE2,
+    0xFF3BFF50,
+};
+
+EVT_BEGIN(jail_init_00)
+    SET_VALUE(LW(10), 14)
+    SET_VALUE(LW(11), 0)
+    LOOP(0)
+        CALL(evt_mri_get16bitdata, PTR(puni_rand_position), LW(11), LW(0))
+        ADD(LW(11), 1)
+        CALL(evt_mri_get16bitdata, PTR(puni_rand_position), LW(11), LW(2))
+        ADD(LW(11), 1)
+        CALL(evt_puni_init_puni, LW(10), 14, LW(0), 0, LW(2), 0)
+        CALL(evt_puni_flag_onoff, LW(10), 0, 8388608)
+        CALL(evt_puni_pera_onoff, LW(10), 1)
+        ADD(LW(10), 1)
+        IF_INT_EQUAL(LW(10), 103)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(red_jail_open)
+    SET_VALUE(GSWF(2833), 1)
+    CALL(evt_mario_key_onoff, 0)
+    WAIT_MS(1000)
+    CALL(evt_mapobj_get_position, STRING("S_hako_r_doa"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_DOOR_GRID_OPEN1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 85, 500)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_rotate, 1, STRING("S_hako_r_doa"), 0, LW(0), 0)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_hitobj_onoff, STRING("A_hako_r1"), 1, 0)
+    CALL(evt_hitobj_onoff, STRING("A_hako_r_01"), 1, 0)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_exit_case_evt)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_opendoor00)
+    CALL(evt_mapobj_rotate, 1, STRING("S_hako_r_doa"), 0, 85, 0)
+    CALL(evt_hitobj_onoff, STRING("A_hako_r1"), 1, 0)
+    CALL(evt_hitobj_onoff, STRING("A_hako_r_01"), 1, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_unlock00)
+    CALL_CHILD(red_jail_open)
+    SPAWN_EVENT(elder_rescue)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_unlock00_01)
+    SPAWN_EVENT(red_jail_open)
+    RETURN
+EVT_END()
+
+// TODO: type
+u32 key_table00[2] = {
+    0x00000010, 0xFFFFFFFF,
+};
+
+EVT_BEGIN(evt_check00)
+    CALL(evt_pouch_check_item, 16, LW(0))
+    IF_INT_GREATER(LW(0), 0)
+        CALL(evt_win_item_select, 0, PTR(key_table00), LW(0), 0)
+        IF_INT_EQUAL(LW(0), -1)
+            CALL(evt_mobj_exec_cancel, STRING("me"))
+        END_IF
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(blue_jail_open)
+    SET_VALUE(GSWF(2835), 1)
+    CALL(evt_mario_key_onoff, 0)
+    WAIT_MS(1000)
+    CALL(evt_mapobj_get_position, STRING("S_hako_l_doa"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_DOOR_GRID_OPEN1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_sub_intpl_msec_init, 11, 0, 85, 500)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mapobj_rotate, 1, STRING("S_hako_l_doa"), 0, LW(0), 0)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_hitobj_onoff, STRING("A_hako_l_01"), 1, 0)
+    CALL(evt_hitobj_onoff, STRING("S_hako_l1"), 1, 0)
+    CALL(evt_mario_key_onoff, 1)
+    SPAWN_EVENT(guide_sister)
+    CALL(evt_exit_case_evt)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_opendoor01)
+    CALL(evt_mapobj_rotate, 1, STRING("S_hako_l_doa"), 0, 85, 0)
+    CALL(evt_hitobj_onoff, STRING("A_hako_l_01"), 1, 0)
+    CALL(evt_hitobj_onoff, STRING("S_hako_l1"), 1, 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(evt_unlock01)
+    CALL(evt_pouch_remove_item, 17, LW(0))
+    SPAWN_EVENT(blue_jail_open)
+    RETURN
+EVT_END()
+
+// TODO: type
+u32 key_table01[3] = {
+    0x00000010, 0x00000011, 0xFFFFFFFF,
+};
+
+EVT_BEGIN(evt_check01)
+    CALL(evt_win_item_maketable, PTR(key_table01), LW(10))
+    IF_INT_NOT_EQUAL(LW(10), 0)
+        CALL(evt_win_item_select, 0, LW(10), LW(0), 0)
+        SWITCH(LW(0))
+            CASE_EQUAL(17)
+            CASE_EQUAL(16)
+            CALL(evt_mobj_exec_cancel, STRING("me"))
+            CALL(evt_mario_key_onoff, 0)
+            CALL(evt_msg_toge, 1, 0, 0, 0)
+            CALL(evt_msg_print, 0, STRING("stg2_mri_e14_15"), 0, 0)
+            CALL(evt_puni_get_lsw_index, LSW(0), 0, LW(0), LW(1), LW(2), LW(3))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(evt_puni_flag_onoff, 1, 0, 262144)
+                CALL(evt_npc_flag_onoff, 1, STRING("ガイドsp"), 1536)
+                CALL(evt_msg_print, 0, STRING("stg2_mri_e14_16"), 0, STRING("ガイドsp"))
+                CALL(evt_puni_flag_onoff, 1, 1, 262144)
+                CALL(evt_msg_print, 0, STRING("stg2_mri_e14_17"), 0, STRING("ガイド妹"))
+            END_IF
+            CALL(evt_mario_key_onoff, 1)
+            CASE_DEFAULT
+            CALL(evt_mobj_exec_cancel, STRING("me"))
+        END_SWITCH
+    END_IF
+    CALL(evt_win_item_desttable, LW(10), 2)
+EVT_END()
+
+EVT_BEGIN(bluejail_alpha)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_saku"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_doa"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_l_01"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_saku"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_doa"), 2048)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_01"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("mario"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("party"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("プニ族長老"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド妹"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("プニ族"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイドsp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ガイド妹sp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ちびトゲsp"), 2048)
+    CALL(evt_map_blend_set_flag, 1, STRING("ライバルsp"), 2048)
+    CALL(evt_map_set_blend, 0, 255, 255, 255, 255)
+    IF_INT_EQUAL(GSWF(2832), 0)
+        CALL(evt_map_blend_set_mobj_flag, 1, STRING("mobj_lock00"), 2048)
+    END_IF
+    IF_INT_EQUAL(GSWF(2834), 0)
+        CALL(evt_map_blend_set_mobj_flag, 1, STRING("mobj_lock01"), 2048)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(bluejail_event)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_puni_puninum_onoff, 0)
+    CALL(evt_mario_cont_onoff, 0)
+    CALL(evt_party_cont_onoff, 0, 0)
+    CALL(evt_mario_set_pos, 0, -1000, 0)
+    CALL(evt_party_set_pos, 0, 0, -1000, 0)
+    DELETE_EVENT(GW(0))
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_snd_envoff, 512)
+    CALL_CHILD(bluejail_alpha)
+    CALL(evt_npc_set_position, STRING("ガイド妹"), -192, 0, -120)
+    CALL(evt_npc_set_ry_lr, STRING("ガイド妹"), 1)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド妹"), 1073741856)
+    CALL(evt_puni_set_position, 14, 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("プニ族"), -114, 0, -120)
+    CALL(evt_npc_set_ry_lr, STRING("プニ族"), 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("プニ族"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("プニ族"), 1536)
+    CALL(evt_cam3d_evt_set, -160, 160, 540, -160, 60, 0, 0, 11)
+    CALL(evt_seq_wait, 2)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(1500)
+        CALL(evt_sub_intpl_msec_init, 11, 255, 80, 1500)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_map_set_blend, 0, 255, 255, 255, LW(0))
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -160, 90, 147, -160, 60, 0, 3000, 11)
+    WAIT_MS(3000)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_00"), 0, STRING("プニ族"))
+    CALL(evt_npc_get_position, STRING("ガイド妹"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNIKO_KINOKO1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_item_entry, STRING("item00"), 152, LW(0), LW(1), LW(2), 16, -1, 0)
+    CALL(evt_item_flag_on, STRING("item00"), 2)
+    ADD(LW(0), 20)
+    CALL(evt_item_move_3d_position, STRING("item00"), LW(0), LW(1), LW(2), 300, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_01"), 0, STRING("ガイド妹"))
+    CALL(evt_cam3d_evt_set, -159, 197, 270, -159, 81, -32, 0, 11)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_02"), 0, STRING("プニ族"))
+    CALL(evt_npc_get_position, STRING("ガイド妹"), LW(0), LW(1), LW(2))
+    CALL(evt_item_move_3d_position, STRING("item00"), LW(0), LW(1), LW(2), 300, 0)
+    CALL(evt_item_set_position, STRING("item00"), 0, -1000, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_03"), 0, STRING("ガイド妹"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_04"), 0, STRING("プニ族"))
+    WAIT_MS(1500)
+    SET_VALUE(GSW(0), 99)
+    CALL(evt_fade_set_mapchange_type, 0, 2, 500, 1, 500)
+    CALL(evt_bero_mapchange, STRING("mri_08"), STRING("e_bero"))
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(mario_kirimomi_event)
+    WAIT_MS(300)
+    CALL(evt_mario_dispflag_onoff, 1, 256)
+    CALL(evt_mario_get_dispdir, LW(8))
+    SET_VALUE(LW(9), 1980)
+    ADD(LW(9), LW(8))
+    CALL(evt_sub_intpl_msec_init, 11, LW(8), LW(9), 2000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mario_set_dispdir, LW(0))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_mario_dispflag_onoff, 0, 256)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_run, 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(party_kirimomi_event)
+    WAIT_MS(500)
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_dispflg_onoff, 0, 16, 1)
+    CALL(evt_party_get_dispdir, 0, LW(8))
+    SET_VALUE(LW(9), 1980)
+    ADD(LW(9), LW(8))
+    CALL(evt_sub_intpl_msec_init, 11, LW(8), LW(9), 2000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_party_set_dispdir, 0, LW(0))
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_party_dispflg_onoff, 0, 16, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_party_run, 0)
+    RETURN
+EVT_END()
+
+// TODO: type
+u32 JailAwayTable_New[15] = {
+    0xFFFFFFAD, 0xFFFFFF28, 0xFFFFFF67, 0xFFFFFF3D,
+    0xFFFFFF33, 0xFFFFFF66, 0xFFFFFF0F, 0xFFFFFFA1,
+    0xFFFFFF24, 0xFFFFFFE7, 0xFFFFFF42, 0x00000000,
+    0xFFFFFF60, 0x00000028, 0x00002710,
+};
+
+// TODO: write puniModeEventparent (global, 0x45c bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+
+// TODO: type
+static u32 jumptable_00012AC0[13] = {
+    (u32)((u8*)&puniModeEventparent + 0x58), (u32)((u8*)&puniModeEventparent + 0x100), (u32)((u8*)&puniModeEventparent + 0x25c), (u32)((u8*)&puniModeEventparent + 0x430),
+    (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430),
+    (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x430), (u32)((u8*)&puniModeEventparent + 0x270), (u32)((u8*)&puniModeEventparent + 0x3d8),
+    (u32)((u8*)&puniModeEventparent + 0x430),
+};
+
+EVT_BEGIN(kinoko_small)
+    CALL(evt_item_get_position, LW(10), LW(0), LW(1), LW(2))
+    SET_VALUE(LW(10), STRING("item00"))
+    SET_FLOAT_VALUE(LW(11), FLOAT(0.7f))
+    CALL(evt_item_set_scale, LW(10), LW(11))
+    WAIT_MS(750)
+    SET_FLOAT_VALUE(LW(11), FLOAT(0.35f))
+    CALL(evt_item_set_scale, LW(10), LW(11))
+    WAIT_MS(750)
+    CALL(evt_item_set_position, STRING("item00"), 0, -1000, 0)
+    RETURN
+EVT_END()
+
+// TODO: write puni_parent (global, 0xec bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write puni_away (global, 0x48 bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(guide_sister)
+    CALL(evt_mario_key_onoff, 0)
+    SET_VALUE(LW(10), 14)
+    SET_VALUE(LW(11), 0)
+    SET_VALUE(LW(12), 0)
+    LOOP(0)
+        CALL(puni_parent, LW(10))
+        ADD(LW(10), 1)
+        IF_INT_EQUAL(LW(10), 103)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_puni_set_mode, 4, 14)
+    CALL(evt_puni_set_anim, 4, 0)
+    CALL(evt_puni_flag_onoff, 4, 0, 1048576)
+    CALL(evt_puni_set_mode, 3, 14)
+    CALL(evt_puni_set_anim, 3, 0)
+    CALL(evt_puni_flag_onoff, 3, 0, 1048576)
+    SET_VALUE(LW(10), 5)
+    LOOP(9)
+        CALL(evt_puni_set_mode, LW(10), 14)
+        CALL(evt_puni_set_anim, LW(10), 0)
+        CALL(evt_puni_flag_onoff, LW(10), 0, 1048576)
+        ADD(LW(10), 1)
+    END_LOOP
+    SPAWN_EVENT(mario_kirimomi_event)
+    SPAWN_EVENT(party_kirimomi_event)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_NOKO_SAIKAI1"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド"), 1073741856)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド妹"), 1073741856)
+    WAIT_MS(2000)
+    CALL(evt_npc_get_reglid, STRING("ガイド妹"), LW(0))
+    DELETE_EVENT(LW(0))
+    CALL(evt_npc_set_ry, STRING("ガイド妹"), 270)
+    SET_VALUE(LW(0), STRING("ガイド妹"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイド妹"), -245, -108, 0, FLOAT(180.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_npc_set_ry, STRING("ガイド妹"), 90)
+    SET_VALUE(LW(0), STRING("ガイド妹"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイド妹"), -180, 40, 0, FLOAT(180.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_00"), 0, STRING("ガイド妹"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos2, -230, -45, FLOAT(120.0f))
+        WAIT_FRAMES(1)
+        CALL(evt_mario_set_dir, 90, 200, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -250, -40, FLOAT(120.0f))
+        WAIT_FRAMES(1)
+        CALL(evt_party_set_dir, 0, 90, -1)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_eff_fukidashi, 1, STRING(""), STRING("ガイド"), 0, 0, 0, 0, 0, 0, 0, 60)
+        WAIT_MS(1000)
+        SET_VALUE(LW(0), STRING("ガイド"))
+        SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+        CALL(evt_npc_move_position, STRING("ガイド"), -140, 40, 0, FLOAT(180.0f), 0)
+        DELETE_EVENT(LW(9))
+        CALL(evt_npc_set_ry, STRING("ガイド"), 270)
+    END_INLINE_EVENT
+    WAIT_MS(1000)
+    SET_VALUE(LW(10), 14)
+    LOOP(0)
+        CALL(puni_away, LW(10))
+        ADD(LW(10), 1)
+        IF_INT_EQUAL(LW(10), 103)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_cam3d_evt_set, -160, 90, 352, -160, 30, 7, 500, 11)
+    WAIT_MS(1500)
+    SET_VALUE(LW(10), STRING("ガイド"))
+    SET_VALUE(LW(11), STRING("ガイド妹"))
+    CALL(evt_npc_get_position, LW(10), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, LW(10), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, LW(10), LW(0), LW(1), LW(2), 200, 18)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, LW(10), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, LW(10), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_01"), 0, LW(10))
+    CALL(evt_npc_get_position, LW(11), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, LW(11), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, LW(11), LW(0), LW(1), LW(2), 200, 18)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, LW(11), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, LW(11), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_02"), 0, LW(11))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_03"), 0, LW(10))
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_04"), 0, LW(11))
+    CALL(evt_npc_set_ry, LW(11), 270)
+    WAIT_MS(200)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_05"), 0, LW(11))
+    CALL(evt_npc_set_ry, LW(11), 90)
+    WAIT_MS(200)
+    CALL(evt_npc_get_position, LW(11), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNIKO_KINOKO1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_item_entry, STRING("item00"), 152, LW(0), LW(1), LW(2), 16, -1, 0)
+    CALL(evt_item_flag_on, STRING("item00"), 2)
+    ADD(LW(0), 20)
+    CALL(evt_item_move_3d_position, STRING("item00"), LW(0), LW(1), LW(2), 500, 0)
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_06"), 0, LW(11))
+    CALL(evt_cam3d_evt_set, -150, 73, 278, -150, 25, 7, 500, 11)
+    SET_VALUE(LW(0), LW(10))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, LW(10), -150, 40, 0, FLOAT(60.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_npc_set_autotalkpose, LW(10), STRING("T_1"), STRING("T_1"))
+    WAIT_FRAMES(1)
+    BEGIN_INLINE_EVENT_GET_ID(LW(9))
+        LOOP(0)
+            CALL(evt_npc_get_position, LW(10), LW(0), LW(1), LW(2))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_EAT1"), LW(0), LW(1), LW(2), 0)
+            WAIT_FRAMES(30)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_npc_set_anim, LW(10), STRING("T_1"))
+    WAIT_MS(2000)
+    SPAWN_EVENT(kinoko_small)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_07"), 0, LW(10))
+    WAIT_FRAMES(1)
+    DELETE_EVENT(LW(9))
+    CALL(evt_npc_set_anim, LW(10), STRING("S_1"))
+    CALL(evt_npc_set_autotalkpose, LW(10), STRING("S_1"), STRING("T_1"))
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_08"), 0, LW(11))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_09"), 0, LW(10))
+    CALL(evt_eff_fukidashi, 1, STRING(""), LW(11), 1, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_10"), 0, LW(11))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_11"), 0, LW(10))
+    CALL(evt_npc_get_position, LW(10), LW(0), LW(1), LW(2))
+    ADD(LW(0), -20)
+    CALL(evt_cam3d_evt_set, -175, 73, 278, -175, 25, 7, 500, 11)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, LW(10), LW(10), LW(11), LW(12))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG2_PUNI_JUMP1"), LW(10), LW(11), LW(12), 0)
+    END_INLINE_EVENT
+    CALL(evt_npc_jump_position_nohit, LW(10), LW(0), LW(1), LW(2), 200, 18)
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_12"), 0, LW(11))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_13"), 0, LW(10))
+    WAIT_MS(2000)
+    CALL(evt_msg_togelr, 0)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e20_14"), 0, LW(11))
+    CALL(evt_cam3d_evt_off, 500, 11)
+    WAIT_MS(500)
+    SET_VALUE(GSWF(2836), 0)
+    SET_VALUE(GSWF(2877), 1)
+    SET_VALUE(GSW(651), 98)
+    CALL(evt_npc_get_position, STRING("ガイド"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("ガイド"), 0, -1000, 0)
+    CALL(evt_puni_init_puni, 1, 1, LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_get_position, STRING("ガイド妹"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("ガイド妹"), 0, -1000, 0)
+    CALL(evt_puni_init_puni, 2, 1, LW(0), LW(1), LW(2), 0)
+    SET_VALUE(LW(10), 1)
+    LOOP(0)
+        CALL(evt_puni_set_mode, LW(10), 1)
+        CALL(evt_puni_flag_onoff, LW(10), 1, 8388608)
+        ADD(LW(10), 1)
+        IF_INT_EQUAL(LW(10), 103)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    WAIT_MS(2000)
+    BEGIN_INLINE_EVENT
+        CALL(evt_snd_bgmoff, 1024)
+        CALL(evt_snd_bgmon, 1, STRING("BGM_FF_GET_PARTY1"))
+        WAIT_MS(2000)
+        CALL(evt_snd_bgmoff, 513)
+        CALL(evt_snd_bgmon, 288, 0)
+    END_INLINE_EVENT
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    IF_INT_EQUAL(GSWF(2878), 0)
+        CALL(evt_msg_print, 0, STRING("stg2_mri_e20_16"), 0, 0)
+    ELSE
+        CALL(evt_msg_print, 0, STRING("stg2_mri_e20_16_1"), 0, 0)
+    END_IF
+    SET_VALUE(GSW(0), 101)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_STG2_MRI1"))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(elder_shaberi)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_06"), 0, LW(10))
+    LOOP(0)
+        CALL(evt_msg_repeat)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(toraware_elder)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_puni_wait_systemmode, 2)
+    CALL(evt_bero_exec_wait, 65536)
+    WAIT_WHILE(GF(0))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_set_dir, 270, 200, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_set_dir, 0, 270, 200)
+    END_INLINE_EVENT
+    CALL_CHILD(mri_guide_hagure_check)
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_puni_set_lsw_index, LSW(0), 0, 0, 0, 0, 0)
+        CALL(evt_puni_set_trap_index, 1, 0)
+        CALL(evt_puni_init_puni, 1, 30, 0, -1000, 0, 0)
+        CALL(evt_puni_flag_onoff, 1, 1, 65536)
+        CALL(evt_puni_set_position, 1, 240, 0, 0)
+        CALL(evt_puni_move_position, 1, 240, 40, FLOAT(120.0f))
+        CALL(evt_puni_set_mode, 1, 1)
+    END_IF
+    CALL(evt_puni_flag_onoff, 1, 0, 262144)
+    CALL(evt_puni_set_anim, 1, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイドsp"), 1073743392)
+    CALL(evt_npc_set_ry, STRING("ガイドsp"), 270)
+    SET_VALUE(LW(0), STRING("ガイドsp"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイドsp"), 195, 40, 0, FLOAT(120.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("ガイドsp"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_01"), 0, STRING("ガイドsp"))
+    CALL(evt_cam3d_evt_set, 135, 85, 204, 135, 50, 7, 500, 11)
+    SET_VALUE(GF(0), 1)
+    BEGIN_INLINE_EVENT
+        SET_VALUE(LW(0), STRING("ガイドsp"))
+        SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+        CALL(evt_npc_move_position, STRING("ガイドsp"), 145, -60, 0, FLOAT(120.0f), 0)
+        DELETE_EVENT(LW(9))
+        SET_VALUE(GF(0), 0)
+    END_INLINE_EVENT
+    SET_VALUE(LW(10), STRING("プニ族長老"))
+    CALL(evt_npc_flag_onoff, 1, LW(10), 1073741856)
+    CALL(evt_npc_set_ry, LW(10), 90)
+    SET_VALUE(LW(0), LW(10))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, LW(10), 115, -100, 0, FLOAT(60.0f), 0)
+    DELETE_EVENT(LW(9))
+    WAIT_WHILE(GF(0))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_02"), 0, LW(10))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos2, 175, -30, FLOAT(120.0f))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_stop, 0)
+        CALL(evt_party_move_pos2, 0, 210, -30, FLOAT(120.0f))
+    END_INLINE_EVENT
+    WAIT_MS(333)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_03"), 0, STRING("ガイドsp"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_04"), 0, LW(10))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_05"), 0, STRING("ガイドsp"))
+    SPAWN_EVENT_GET_ID(PTR(elder_shaberi), LW(15))
+    SET_VALUE(LW(10), STRING("ガイド妹"))
+    CALL(evt_npc_set_ry, LW(10), 90)
+    CALL(evt_npc_set_position, LW(10), -165, 0, -100)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_07"), 0, LW(10))
+    CALL(evt_eff_fukidashi, 1, STRING(""), STRING("ガイドsp"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set, -155, 85, 240, -155, 50, 7, 3000, 11)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(2000)
+        DELETE_EVENT(LW(15))
+        CALL(evt_msg_close, STRING("stg2_mri_e12_26_06"))
+    END_INLINE_EVENT
+    SET_VALUE(LW(0), STRING("ガイドsp"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイドsp"), -140, -40, 0, FLOAT(120.0f), 0)
+    DELETE_EVENT(LW(9))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_08"), 0, STRING("ガイドsp"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos2, -110, -30, FLOAT(120.0f))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -75, -30, FLOAT(120.0f))
+    END_INLINE_EVENT
+    WAIT_MS(250)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_09"), 0, LW(10))
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_10"), 0, STRING("ガイドsp"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_11"), 0, LW(10))
+    WAIT_MS(500)
+    CALL(evt_npc_set_ry, STRING("ガイドsp"), 90)
+    WAIT_MS(833)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e12_26_12"), 0, STRING("ガイドsp"))
+    SET_VALUE(LW(0), STRING("ガイドsp"))
+    SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+    CALL(evt_npc_move_position, STRING("ガイドsp"), -125, -10, 0, FLOAT(120.0f), 0)
+    DELETE_EVENT(LW(9))
+    CALL(evt_puni_flag_onoff, 1, 1, 262144)
+    CALL(evt_npc_get_position, STRING("ガイドsp"), LW(0), LW(1), LW(2))
+    CALL(evt_puni_set_position, 1, LW(0), LW(1), LW(2))
+    CALL(evt_cam3d_evt_off, 500, 11)
+    WAIT_MS(500)
+    SET_VALUE(GSW(0), 92)
+    CALL(evt_npc_restart_regular_event, STRING("ガイド妹"))
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(guide_sister_before)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_puni_wait_systemmode, 2)
+    CALL(evt_mario_set_dir, 270, 0, 0)
+    CALL(evt_party_set_dir, 0, 270, 0)
+    CALL(evt_bero_exec_wait, 65536)
+    WAIT_MS(500)
+    CALL_CHILD(mri_guide_hagure_check)
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_puni_set_position, 1, 240, 0, 0)
+        CALL(evt_puni_move_position, 1, 240, 40, FLOAT(120.0f))
+    END_IF
+    CALL(evt_puni_get_position, 1, LW(0), LW(1), LW(2))
+    CALL(evt_puni_set_position, 1, 0, -1000, 0)
+    CALL(evt_puni_set_mode, 1, 30)
+    CALL(evt_puni_flag_onoff, 1, 0, 8388608)
+    SET_VALUE(GSWF(2836), 1)
+    CALL(evt_npc_set_position, STRING("ガイド"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_ry, STRING("ガイド"), 270)
+    CALL(evt_npc_flag_onoff, 1, STRING("ガイド"), 1073743392)
+    CALL(evt_msg_print, 0, STRING("stg2_mri_e19_04_01"), 0, STRING("ガイド"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_change_interrupt, STRING("ガイド"), 6, 0)
+        SET_VALUE(LW(0), STRING("ガイド"))
+        SPAWN_EVENT_GET_ID(PTR(mri_puni_walk_se), LW(9))
+        CALL(evt_npc_move_position, STRING("ガイド"), -145, -60, 0, FLOAT(120.0f), 0)
+        DELETE_EVENT(LW(9))
+        CALL(evt_npc_flag_onoff, 0, STRING("ガイド"), 1073741856)
+        CALL(evt_npc_change_interrupt, STRING("ガイド"), 6, PTR(guide_talk))
+    END_INLINE_EVENT
+    SET_VALUE(GSW(0), 100)
+    CALL(evt_party_run, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 ueki_access_data[20] = {
+    0x00000001, (u32)"A_ueki01", (u32)"S_ueki01", 0x00000000,
+    0x00000001, (u32)"A_ueki03", (u32)"S_ueki03", 0x00000000,
+    0x00000001, (u32)"A_ueki04", (u32)"S_ueki04", 0x00000000,
+    0x00000001, (u32)"A_ueki05", (u32)"S_ueki05", 0x00000000,
+    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+};
+
+EVT_BEGIN(mri_03_init_evt)
+    CALL(evt_puni_mem_init)
+    CALL(evt_puni_set_yuka, 3, 0, -310, -1000, -1000, 0, 0)
+    CALL(evt_puni_set_hamari, 0, 0, 0, 2, -2, -1000, -1000)
+    SET_VALUE(LW(6), 0)
+    SET_VALUE(LW(7), 0)
+    SET_VALUE(LW(8), 0)
+    SET_VALUE(LW(9), 0)
+    CALL_CHILD(mri_puni_init)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    SPAWN_EVENT(puni_disp_info)
+    SPAWN_EVENT(mri_countdown)
+    SET_VALUE(LW(0), PTR(ueki_access_data))
+    CALL_CHILD(evt_sub_kusa_access_entry)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(109, 110)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_DANGER4"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG2_MRI9"))
+        CASE_EQUAL(98)
+        CASE_GREATER_OR_EQUAL(101)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG2_PUNI2"))
+        CALL(evt_snd_envoff, 512)
+        CASE_DEFAULT
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG2_MRI1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG2_MRI4"))
+    END_SWITCH
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_hako_r_saku"), 2)
+    CALL(evt_mobj_kururing_floor, STRING("kururin1"), -150, 0, -200, STRING("S_yuka_oku"), 125, GSWF(5613))
+    CALL(evt_npc_setup, PTR(npcEnt))
+    CALL(evt_map_playanim, STRING("mizu_01"), 1, 0)
+    CALL(evt_map_playanim, STRING("mizu_02"), 1, 0)
+    CALL(evt_map_playanim, STRING("awa_01"), 1, 0)
+    CALL(evt_map_playanim, STRING("awa_02"), 1, 0)
+    CALL(evt_map_playanim, STRING("hikari_01"), 1, 0)
+    SWITCH(GSW(0))
+        CASE_BETWEEN(90, 100)
+        SPAWN_EVENT(jail_init_00)
+    END_SWITCH
+    CALL(evt_mobj_lock, STRING("mobj_lock00"), 16, 65, 10, -70, 0, PTR(evt_check00), PTR(evt_unlock00), GSWF(2832))
+    IF_INT_EQUAL(GSWF(2832), 1)
+        IF_INT_EQUAL(GSWF(2833), 1)
+            SPAWN_EVENT(evt_opendoor00)
+        ELSE
+            SPAWN_EVENT(evt_unlock00_01)
+        END_IF
+    END_IF
+    CALL(evt_mobj_lock, STRING("mobj_lock01"), PTR(key_table01), -245, 10, -70, 0, PTR(evt_check01), PTR(evt_unlock01), GSWF(2834))
+    IF_INT_EQUAL(GSWF(2834), 1)
+        IF_INT_EQUAL(GSWF(2835), 1)
+            SPAWN_EVENT(evt_opendoor01)
+        ELSE
+            SPAWN_EVENT(evt_unlock01)
+        END_IF
+    END_IF
+    SPAWN_EVENT_GET_ID(PTR(jail_alpha), GW(0))
+    IF_INT_EQUAL(GSW(0), 98)
+        SPAWN_EVENT(bluejail_event)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 91)
+        SPAWN_EVENT(toraware_elder)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 99)
+        SPAWN_EVENT(guide_sister_before)
+    END_IF
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 _ap[1] = {
+    0x00000000,
+};
+
+// TODO: write alpha_tev (static, 0xe4 bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write alpha_init_func (static, 0x38 bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write alpha_set_func (static, 0x3c bytes) here:
+// its asm is in build/G8MJ01/mri/asm/mri_03.s; this is where the original has it, just before the first script that uses it
+// clang-format on

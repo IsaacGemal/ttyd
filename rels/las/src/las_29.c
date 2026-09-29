@@ -1,0 +1,2326 @@
+#include "las_29.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_env.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_img.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_mobj.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_paper.h"
+#include "evt/evt_party.h"
+#include "evt/evt_pouch.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+#include "forcedata.h"
+#include "party/party_motion.h"
+
+#pragma pool_data off
+
+#pragma force_active on
+extern s32 evt_shuryolight_delete_17_text_10588[];
+extern s32 evt_shuryolight_init_17_text_10B60[];
+extern s32 evt_shuryolight_run_evt_17_text_10828[];
+extern s32 shuryolight_head_off_17_data_53FA4[];
+extern s32 shuryolight_pow_tenmetu_17_data_53E60[];
+extern s32 shuryolight_tue_normal_17_data_53FDC[];
+static USER_FUNC(starstone_set_ry);
+static USER_FUNC(starstone_set_pos);
+static USER_FUNC(starstone_entry);
+static USER_FUNC(rousoku_init);
+s32 last_evt_3_1[540];
+s32 last_evt_4[1836];
+s32 shuryolight_delete[20];
+
+// clang-format off
+extend_data(120,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+extend_data(121,
+     u64, negone_one, 0xBF8000003F800000,
+     u32, neg_one, 0xBF800000,
+     f32, __local_PI, 3.1415926535897932384626433832795f,
+     f32, __local_3PIO2, 3.0f * 1.57079632679489661923132169163975f,
+     u64, one_negone, 0x3F800000BF800000,
+     f32, __local_PIO2, 1.57079632679489661923132169163975f,
+     f32, one, 1.0f)
+
+static EVT_BEGIN(w_door_close)
+    MULTIPLY_FLOAT(LW(0), FLOAT(0.389f))
+    CALL(evt_mapobj_rotate, 0, STRING("door_1_1"), 0, LW(0), 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_rotate, 0, STRING("door_1_2"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(w_door_open)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-0.389f))
+    CALL(evt_mapobj_rotate, 0, STRING("door_1_1"), 0, LW(0), 0)
+    MULTIPLY_FLOAT(LW(0), FLOAT(-1.0f))
+    CALL(evt_mapobj_rotate, 0, STRING("door_1_2"), 0, LW(0), 0)
+    RETURN
+EVT_END()
+
+static BeroEntry bero_entry_data[2] = {
+    {"w_bero", 1, 6, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "las_30", "e_bero", 5, 5, w_door_close, w_door_open},
+    {NULL},
+};
+
+static EVT_BEGIN(syuryo_init)
+    CALL(evt_npc_set_autotalkpose, STRING("me"), STRING("S_3"), STRING("T_4"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_seq_wait, 2)
+        CALL(evt_npc_set_anim, STRING("me"), STRING("S_3"))
+    END_INLINE_EVENT
+    RETURN
+EVT_END()
+
+EVT_BEGIN(q_kage_init)
+    CALL(evt_npc_pera_onoff, STRING("me"), 0)
+    CALL(evt_npc_set_ry, STRING("me"), 90)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 npcEnt[184] = {
+    (u32)"シュリョー", 0x00000600, 0x00000000, (u32)&syuryo_init,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"ピーチ姫",
+    0x00000200, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"ブラックピーチ", 0x00000000,
+    0x00000000, (u32)npc_init_evt, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, (u32)"マジョリン", 0x00000000, 0x00000000,
+    (u32)npc_init_evt, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)"マリリン", 0x00000000, 0x00000000, (u32)npc_init_evt,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, (u32)"ランペル",
+    0x00000000, 0x00000000, (u32)npc_init_evt, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, (u32)"影の女王", 0x00000200,
+    0x00000000, (u32)&q_kage_init, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// TODO: type
+u32 hikari_data[81] = {
+    0x00000144, 0x00000026, 0x00000126, 0x00000014,
+    0x00000110, 0x00000013, 0x0000010F, 0x00000025,
+    0x000000F6, 0x00000024, 0x000000F5, 0x00000040,
+    0x000000D7, 0x00000012, 0x000000D2, 0x00000023,
+    0x000000D0, 0x00000022, 0x000000C3, 0x00000011,
+    0x000000BC, 0x00000021, 0x000000AE, 0x00000020,
+    0x000000A1, 0x00000010, 0x00000094, 0x00000042,
+    0x00000092, 0x0000000F, 0x0000008F, 0x0000001F,
+    0x0000006E, 0x0000000E, 0x0000005E, 0x0000001E,
+    0x00000035, 0x0000001D, 0x00000030, 0x0000000D,
+    0x0000002C, 0x0000001C, 0x00000012, 0x0000000C,
+    0xFFFFFFF7, 0x0000001B, 0xFFFFFFE6, 0x0000000B,
+    0xFFFFFFD8, 0x0000001A, 0xFFFFFFCD, 0x0000000A,
+    0xFFFFFFCD, 0x00000009, 0xFFFFFFAB, 0x00000008,
+    0xFFFFFFA9, 0x00000007, 0xFFFFFF9C, 0x00000019,
+    0xFFFFFF86, 0x00000018, 0xFFFFFF71, 0x00000006,
+    0xFFFFFF66, 0x00000005, 0xFFFFFF63, 0x00000004,
+    0xFFFFFF3B, 0x00000017, 0xFFFFFF34, 0x00000003,
+    0xFFFFFF11, 0x00000016, 0xFFFFFF08, 0x00000002,
+    0xFFFFFEE7, 0x00000015, 0xFFFFFEDA, 0x00000001,
+    0xFFFFFC19,
+};
+
+// TODO: type
+u32 hikari_data_2[55] = {
+    0x00000145, 0x00000031, 0x00000127, 0x00000029,
+    0x00000111, 0x00000028, 0x000000F7, 0x00000030,
+    0x000000F5, 0x0000003F, 0x000000D7, 0x00000027,
+    0x000000C3, 0x0000003C, 0x000000BC, 0x0000002F,
+    0x000000A2, 0x0000003B, 0x00000096, 0x00000041,
+    0x00000096, 0x00000042, 0x0000006F, 0x0000003A,
+    0x0000005F, 0x0000002E, 0x00000030, 0x00000039,
+    0x0000002D, 0x0000002D, 0x00000012, 0x00000038,
+    0xFFFFFFE6, 0x00000037, 0xFFFFFFD8, 0x0000002C,
+    0xFFFFFFCD, 0x00000036, 0xFFFFFFA9, 0x00000035,
+    0xFFFFFF9C, 0x0000002B, 0xFFFFFF71, 0x00000034,
+    0xFFFFFF65, 0x00000033, 0xFFFFFF33, 0x00000032,
+    0xFFFFFF11, 0x0000002A, 0xFFFFFF08, 0x0000003E,
+    0xFFFFFED9, 0x0000003D, 0xFFFFFC19,
+};
+
+// TODO: write hikari_se (global, 0xe4 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write hikari_change (global, 0xdc bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write hikari_set_scale (global, 0x84 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(hikari_off_evt)
+    SET_VALUE(LW(10), LW(0))
+    SET_VALUE(LW(9), LW(1))
+    CALL(hikari_se, LW(10), 1, LW(9))
+    CALL(evt_sub_intpl_msec_init, 0, 500, 0, 100)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+        CALL(hikari_set_scale, LW(10), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(hikari_change, LW(10), LW(9))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(hikari_on_evt)
+    SET_VALUE(LW(10), LW(0))
+    SET_VALUE(LW(9), LW(1))
+    CALL(hikari_se, LW(10), 1, LW(9))
+    CALL(evt_sub_intpl_msec_init, 0, 0, 650, 150)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+        CALL(hikari_set_scale, LW(10), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_sub_intpl_msec_init, 4, 650, 500, 100)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+        CALL(hikari_set_scale, LW(10), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    RETURN
+EVT_END()
+
+// TODO: write all_hikari_onoff (global, 0xa4 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(flush_on)
+    CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 128)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("S_hakahuta"), 16777216)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabe"), 16777216)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kuro"), 16777216)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_ten"), 16777216)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S11_archi1"), 16777216)
+    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("S_hakahuta"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kabe"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kuro"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_ten"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S11_archi1"), 256)
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("S_hakahuta"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabe"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kuro"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_ten"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S11_archi1"), 524288)
+    CALL(all_hikari_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(flush_off)
+    CALL(evt_npc_flag_onoff, 0, STRING("シュリョー"), 128)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_rou"), 1)
+    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("S_hakahuta"), 251658240)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kabe"), 251658240)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kuro"), 251658240)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_ten"), 251658240)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S11_archi1"), 251658240)
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("S_hakahuta"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabe"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kuro"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_ten"), 256)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S11_archi1"), 256)
+    CALL(evt_mapobj_flag_onoff, 0, 0, STRING("S_hakahuta"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kabe"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kuro"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_ten"), 524288)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S11_archi1"), 524288)
+    CALL(all_hikari_onoff, 0)
+    RETURN
+EVT_END()
+
+// TODO: write all_hikari_change_kuro (global, 0x1b0 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write hikari_onoff (global, 0x108 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write rou_hikari_front_onoff (global, 0x100 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(last_evt_1)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), 135, 15, 0)
+    CALL(evt_npc_set_ry, STRING("ピーチ姫"), 270)
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_6F"))
+    CALL(evt_npc_set_position, STRING("シュリョー"), 35, 0, 0)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 270)
+    CALL(evt_mario_set_pos, -420, 0, 0)
+    CALL(evt_party_set_pos, 0, -460, 0, 20)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_seq_wait, 2)
+    WAIT_MS(300)
+    SET_VALUE(LW(1), 0)
+    SPAWN_EVENT(bero_open_door_play_se)
+    CALL(evt_sub_intpl_msec_init, 11, 0, -180, 500)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL_CHILD(w_door_open)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -350, 20, FLOAT(150.0f))
+    END_INLINE_EVENT
+    CALL(evt_mario_mov_pos2, -310, 0, FLOAT(150.0f))
+    SET_VALUE(LW(1), 0)
+    SPAWN_EVENT(bero_close_door_play_se)
+    CALL(evt_sub_intpl_msec_init, 11, 180, 0, 500)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL_CHILD(w_door_close)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_snd_bgmoff_f, 512, 3000)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2_3"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_eff_fukidashi, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_6F"), STRING("P_T_6F"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_108"), 0, STRING("ピーチ姫"))
+    CALL(evt_cam3d_evt_set, -205, 145, 350, 82, 65, 14, 1000, 11)
+    WAIT_MS(1000)
+    CALL(rou_hikari_front_onoff, 0, 0)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_109"), 0, STRING("シュリョー"))
+    CALL(evt_cam3d_evt_set, -330, 100, 332, -330, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_110"))
+    CALL(evt_npc_pera_onoff, STRING("シュリョー"), 0)
+    CALL(evt_npc_pera_onoff, STRING("ピーチ姫"), 0)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 90)
+    CALL(evt_npc_set_ry, STRING("ピーチ姫"), 90)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kabekesu"), 1)
+    CALL(evt_cam3d_evt_set, -372, 200, 0, 15, 100, 0, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_111"), 0, STRING("シュリョー"))
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_cam3d_evt_set, -330, 80, 332, -330, 37, -13, 0, 11)
+    CALL(evt_npc_pera_onoff, STRING("シュリョー"), 1)
+    CALL(evt_npc_pera_onoff, STRING("ピーチ姫"), 1)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 270)
+    CALL(evt_npc_set_ry, STRING("ピーチ姫"), 270)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_112"))
+    CALL(evt_cam3d_evt_set, 20, 100, 300, 115, 60, 20, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_113"), 0, STRING("ピーチ姫"))
+    CALL(evt_cam3d_evt_set, -63, 100, 273, 32, 60, -7, 800, 11)
+    WAIT_MS(800)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_114"), 0, STRING("シュリョー"))
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 90)
+    WAIT_MS(300)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_FF_ENV_WITCH_APPEAR1"))
+    CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("A_3A"))
+    WAIT_MS(170)
+    CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("A_3B"))
+    WAIT_MS(250)
+    CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_SHURYO_STUFF_PISECE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("A_3C"))
+    WAIT_MS(400)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(3000)
+        CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("S_3"))
+    END_INLINE_EVENT
+    LOOP(2)
+        CALL(evt_snd_sfxon, STRING("SFX_STG8_LIGHT1"), 0)
+        CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+        WAIT_MS(100)
+        CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+        WAIT_MS(100)
+    END_LOOP
+    SET_VALUE(LW(0), 0)
+    SET_FLOAT_VALUE(LW(1), FLOAT(350.0f))
+    SET_FLOAT_VALUE(LW(2), FLOAT(255.0f))
+    LOOP(0)
+        IF_INT_EQUAL(LW(0), -1)
+            BREAK_LOOP
+        END_IF
+        CALL(hikari_onoff, PTR(hikari_data), 0, 1, LW(0), LW(1), LW(0))
+        SUBTRACT_FLOAT(LW(1), FLOAT(3.3f))
+        CALL(evt_mapobj_color, 1, STRING("S_yukahikari02"), 255, 255, 255, LW(2))
+        SUBTRACT_FLOAT(LW(2), FLOAT(2.4033203f))
+        IF_INT_LESS_OR_EQUAL(LW(2), 0)
+            SET_FLOAT_VALUE(LW(2), 0)
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(all_hikari_change_kuro, LW(0))
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hikari"), 1)
+    WAIT_MS(2000)
+    SET_VALUE(LW(0), 0)
+    SET_FLOAT_VALUE(LW(1), FLOAT(350.0f))
+    SET_VALUE(LW(2), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(0), -1)
+            BREAK_LOOP
+        END_IF
+        CALL(hikari_onoff, PTR(hikari_data), 1, 0, LW(0), LW(1), LW(0))
+        SUBTRACT(LW(1), FLOAT(3.3f))
+        ADD(LW(2), 1)
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_cam3d_evt_set, 52, 143, 432, 183, 87, 44, 800, 11)
+    WAIT_MS(1600)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG8_WITCH"))
+    CALL(evt_mapobj_get_position, STRING("S_o_hikari1"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_GRAVE_LIGHT1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_sub_intpl_msec_init, 0, 1000, 10000, 250)
+    LABEL(3)
+    CALL(evt_sub_intpl_msec_get_value)
+    DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+    CALL(evt_mapobj_scale, 0, STRING("S_o_hikari1"), LW(0), 1, LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(3)
+    END_IF
+    CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+    WAIT_MS(100)
+    CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+    CALL(evt_sub_intpl_msec_init, 0, 255, 0, 200)
+    LABEL(4)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_mapobj_color, 1, STRING("S_o_hikari1"), 255, 255, 255, LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(4)
+    END_IF
+    CALL(evt_mapobj_flag_onoff, 0, 1, STRING("S_o_hikari1"), 1)
+    CALL(evt_mapobj_get_position, STRING("S_hakahuta"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_GRAVE_SHAKE1"), LW(0), LW(1), LW(2), LW(3))
+    LOOP(90)
+        CALL(evt_sub_random, 2, LW(0))
+        CALL(evt_sub_random, 2, LW(1))
+        SUBTRACT(LW(0), 1)
+        SUBTRACT(LW(1), 1)
+        CALL(evt_mapobj_trans, 0, STRING("S_hakahuta"), LW(0), 0, LW(1))
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_snd_sfxoff, LW(3))
+    SET_VALUE(GW(0), 0)
+    SET_VALUE(GW(1), 0)
+    SET_VALUE(GW(2), 0)
+    SET_VALUE(GF(0), 0)
+    SET_VALUE(GF(1), 0)
+    SET_VALUE(GF(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 1, 0, 30, 1650)
+        LABEL(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(0), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(0)
+        END_IF
+        CALL(evt_sub_intpl_msec_init, 0, 30, 55, 550)
+        LABEL(1)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(0), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(1)
+        END_IF
+        CALL(evt_sub_intpl_msec_init, 0, 55, 60, 100)
+        LABEL(3)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(0), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(3)
+        END_IF
+        SET_VALUE(GF(0), 1)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(1550)
+        CALL(evt_sub_intpl_msec_init, 1, 0, -20, 600)
+        LABEL(9)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(1), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(9)
+        END_IF
+        CALL(evt_sub_intpl_msec_init, 0, -20, -40, 150)
+        LABEL(10)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(1), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(10)
+        END_IF
+        SET_VALUE(GF(1), 1)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(1450)
+        CALL(evt_sub_intpl_msec_init, 1, 0, -45, 600)
+        LABEL(20)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(2), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(20)
+        END_IF
+        WAIT_MS(150)
+        CALL(evt_sub_intpl_msec_init, 0, -45, 0, 150)
+        LABEL(21)
+        CALL(evt_sub_intpl_msec_get_value)
+        SET_VALUE(GW(2), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(21)
+        END_IF
+        SET_VALUE(GF(2), 1)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_mapobj_get_position, STRING("S_hakahuta"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_GRAVE_MOVE1"), LW(0), LW(1), LW(2), LW(3))
+        WAIT_MS(1500)
+        CALL(evt_snd_sfxoff, LW(3))
+        WAIT_MS(800)
+        CALL(evt_mapobj_get_position, STRING("S_hakahuta"), LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_GRAVE_DOWN1"), LW(0), LW(1), LW(2), 0)
+    END_INLINE_EVENT
+    LOOP(0)
+        CALL(evt_mapobj_trans, 0, STRING("S_hakahuta"), GW(0), GW(1), 0)
+        CALL(evt_mapobj_rotate, 0, STRING("S_hakahuta"), 0, 0, GW(2))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(GF(0), 1)
+            IF_INT_EQUAL(GF(1), 1)
+                IF_INT_EQUAL(GF(2), 1)
+                    BREAK_LOOP
+                END_IF
+            END_IF
+        END_IF
+    END_LOOP
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam_shake, 4, FLOAT(0.0f), FLOAT(0.01f), 300)
+    END_INLINE_EVENT
+    CALL(evt_mapobj_get_position, STRING("S_hakahuta"), LW(0), LW(1), LW(2))
+    ADD(LW(2), 50)
+    CALL(evt_eff64, 0, STRING("kemuri1_n64"), 4, LW(0), LW(1), LW(2), 0, 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_mapobj_get_position, STRING("S_haka"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_GRAVE_LIGHT2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_map_playanim, STRING("hihi"), 0, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_map_checkanim, STRING("hihi"), LW(0), LW(1))
+        SUBTRACT(LW(1), 1000)
+        WAIT_MS(LW(1))
+        CALL(evt_sub_intpl_msec_init, 11, 255, 0, 1000)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_mapobj_color, 0, STRING("S_o_hika"), 255, 255, 255, LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    WAIT_MS(800)
+    CALL(evt_mapobj_get_position, STRING("S_haka"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, STRING("uzu"), STRING("queen"), 0, LW(0), 0, LW(2), 1, 1000, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_set_position, STRING("影の女王"), 200, 15, 0)
+    CALL(evt_npc_set_ry, STRING("影の女王"), 90)
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_O_1"))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_wait_anim, STRING("影の女王"), FLOAT(0.266f))
+        CALL(evt_cam3d_evt_set, -39, 225, 701, 183, 130, 44, 8000, 11)
+    END_INLINE_EVENT
+    CALL(evt_npc_wait_anim, STRING("影の女王"), FLOAT(1.0f))
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_S_1"))
+    CALL(evt_eff_softdelete, STRING("uzu"))
+    WAIT_MS(2000)
+    CALL(evt_mario_dispflag_onoff, 0, 2)
+    CALL(evt_fade_set_mapchange_type, 1, 10, 300, 9, 300)
+    CALL(evt_bero_mapchange, STRING("gor_01"), STRING("sekai_yami1"))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+// TODO: write map_color_tev (global, 0x10c bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(last_evt_2)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_mario_set_pos, -310, 0, 0)
+    CALL(evt_party_set_pos, 0, -350, 0, 20)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), 135, 15, 0)
+    CALL(evt_npc_set_ry, STRING("ピーチ姫"), 270)
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_6F"))
+    CALL(evt_npc_set_position, STRING("シュリョー"), 35, 0, 0)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 32768)
+    CALL(evt_npc_set_position, STRING("影の女王"), 200, 15, 0)
+    CALL(evt_npc_set_ry, STRING("影の女王"), 90)
+    CALL(evt_mapobj_trans, 0, STRING("S_hakahuta"), 60, -40, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hikari"), 1)
+    CALL(evt_cam3d_evt_set, -283, 0, 472, 200, 150, -12, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_seq_wait, 2)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("シュリョー"), 32768)
+    CALL(evt_msg_print, 0, STRING("stg8_las_115"), 0, STRING("影の女王"))
+    CALL(evt_cam3d_evt_set, -220, 20, 269, 130, 90, -82, 1000, 11)
+    WAIT_MS(1000)
+    CALL(evt_msg_print, 0, STRING("stg8_las_116"), 0, STRING("シュリョー"))
+    CALL(evt_cam3d_evt_set, -80, 125, 268, 200, 180, -12, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_117"), 0, STRING("影の女王"))
+    CALL(evt_npc_flag_onoff, 1, STRING("影の女王"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 32768)
+    CALL(evt_cam3d_evt_set, 410, 375, 366, 125, 100, -15, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_118"), 0, STRING("シュリョー"))
+    CALL(evt_npc_flag_onoff, 0, STRING("影の女王"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("シュリョー"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("ピーチ姫"), 32768)
+    CALL(evt_cam3d_evt_set, 30, 90, 305, 125, 50, 24, 2000, 11)
+    WAIT_MS(3500)
+    CALL(evt_npc_flag_onoff, 1, STRING("影の女王"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 32768)
+    CALL(evt_cam3d_evt_set, -80, 125, 268, 200, 180, -12, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_119"), 0, STRING("影の女王"))
+    CALL(evt_cam3d_evt_set, -140, 100, 284, 178, 75, -34, 4000, 11)
+    CALL(evt_npc_get_position, STRING("影の女王"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_MOVE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_A_1"))
+    CALL(evt_npc_wait_anim, STRING("影の女王"), FLOAT(1.0f))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_D_1F"))
+    CALL(evt_npc_get_position, STRING("影の女王"), LW(0), LW(1), LW(2))
+    CALL(evt_eff, STRING("uzu"), STRING("queen"), 0, LW(0), 0, LW(2), 1, 1000, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_MOVE2"), LW(0), LW(1), LW(2), 0)
+    WAIT_MS(2000)
+    CALL(evt_eff_delete, STRING("uzu"))
+    CALL(evt_snd_sfxon, STRING("SFX_STG8_LIGHT1"), 0)
+    SET_VALUE(LSWF(10), 1)
+    CALL(evt_map_set_blend, 0, 0, 0, 0, 255)
+    CALL(evt_map_set_tevcallback, 1, PTR(map_color_tev))
+    CALL_CHILD(flush_on)
+    WAIT_MS(500)
+    LOOP(2)
+        CALL(evt_map_blend_off, 0)
+        CALL_CHILD(flush_off)
+        WAIT_MS(100)
+        CALL(evt_snd_sfxon, STRING("SFX_STG8_LIGHT1"), 0)
+        CALL(evt_map_set_blend, 0, 0, 0, 0, 255)
+        CALL_CHILD(flush_on)
+        WAIT_MS(100)
+    END_LOOP
+    CALL(evt_fade_set_mapchange_type, 1, 17, 300, 9, 300)
+    CALL(evt_bero_mapchange, STRING("usu_00"), STRING("sekai_yami2"))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(unk_evt_las_00034ca0)
+    CALL(evt_npc_entry, STRING("にせマリオ"), STRING("c_mario"))
+    CALL(evt_npc_set_tribe, STRING("にせマリオ"), STRING("にせマリオ"))
+    CALL(evt_npc_set_position, STRING("にせマリオ"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("にせマリオ"), 32768)
+    CALL(evt_npc_set_ry, STRING("にせマリオ"), 90)
+    CALL(evt_npc_set_anim, STRING("にせマリオ"), STRING("EM_S_1"))
+    RETURN
+EVT_END()
+
+// TODO: write b_peach_thunder (global, 0xf4 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(last_evt_3)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_mario_set_pos, -310, 0, 0)
+    CALL(evt_party_set_pos, 0, -350, 0, 20)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_npc_set_position, STRING("シュリョー"), 35, 0, 0)
+    CALL(evt_npc_set_ry, STRING("シュリョー"), 90)
+    CALL(evt_npc_set_position, STRING("ブラックピーチ"), 135, 15, 0)
+    CALL(evt_npc_set_ry, STRING("ブラックピーチ"), 270)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_ry, STRING("ランペル"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 64)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 64)
+    CALL(evt_mapobj_trans, 0, STRING("S_hakahuta"), 60, -40, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+    CALL(evt_cam3d_evt_set, 33, 47, 226, 133, 57, -2, 0, 11)
+    SET_VALUE(LSWF(10), 1)
+    CALL(evt_map_set_tevcallback, 1, PTR(map_color_tev))
+    CALL(evt_map_set_blend, 0, 0, 0, 0, 255)
+    CALL_CHILD(flush_on)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_seq_wait, 2)
+    WAIT_MS(1000)
+    SET_VALUE(LSWF(10), 0)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon, STRING("SFX_STG8_LIGHT1"), 0)
+    SET_VALUE(LSWF(10), 1)
+    WAIT_MS(100)
+    SET_VALUE(LSWF(10), 0)
+    WAIT_MS(100)
+    CALL(evt_snd_sfxon, STRING("SFX_STG8_LIGHT1"), 0)
+    CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+    CALL(evt_map_blend_off, 0)
+    CALL_CHILD(flush_off)
+    WAIT_MS(100)
+    CALL(evt_fade_entry, 16, 2000, 255, 255, 255)
+    CALL(evt_fade_end_wait)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_L_2"))
+    WAIT_MS(200)
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_L_3"), STRING("KRT_T_3"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_120"), 0, STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, -330, 100, 332, -330, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_120"))
+    CALL(evt_cam3d_evt_set, -16, 60, 400, 70, 60, 9, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_121"), 0, STRING("シュリョー"))
+    CALL(evt_cam3d_evt_set, -73, 60, 284, 160, 60, -107, 800, 11)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_S_1"))
+    WAIT_MS(1300)
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_S_1"), STRING("KRT_T_1"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_122"), 0, STRING("ブラックピーチ"))
+    CALL(rou_hikari_front_onoff, 1, 1)
+    CALL(evt_npc_flag_onoff, 1, STRING("シュリョー"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, 80, 155, 480, 80, 65, -11, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("シュリョー"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("ブラックピーチ"), 32768)
+    CALL(evt_msg_print, 0, STRING("stg8_las_123"), 0, STRING("シュリョー"))
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_A_1"))
+    WAIT_MS(550)
+    CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    CALL(b_peach_thunder, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_THUNDER1"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam3d_evt_zoom_in, 15, 100, 0, 11)
+        WAIT_MS(100)
+        CALL(evt_cam3d_evt_set, 80, 155, 480, 80, 65, -11, 100, 11)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        ADD(LW(2), 5)
+        SET_VALUE(LW(3), LW(0))
+        ADD(LW(3), 30)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 50)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(100)
+        SET_VALUE(LW(3), LW(0))
+        ADD(LW(3), 10)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 25)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(100)
+        SET_VALUE(LW(3), LW(0))
+        SUBTRACT(LW(3), 20)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 10)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    WAIT_MS(130)
+    CALL(evt_npc_set_anim, STRING("シュリョー"), STRING("Q_2"))
+    CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    ADD_FLOAT(LW(0), FLOAT(0.0f))
+    ADD_FLOAT(LW(1), FLOAT(50.0f))
+    CALL(evt_npc_set_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    SET_FLOAT_VALUE(LW(3), FLOAT(-0.4f))
+    SET_FLOAT_VALUE(LW(4), FLOAT(6.5f))
+    SET_FLOAT_VALUE(LW(5), FLOAT(0.0f))
+    SET_FLOAT_VALUE(LW(6), FLOAT(0.0f))
+    SET_FLOAT_VALUE(LW(7), FLOAT(-0.3f))
+    SET_FLOAT_VALUE(LW(8), FLOAT(0.0f))
+    LOOP(0)
+        CALL(evt_npc_set_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+        CALL(evt_npc_add_rotate, STRING("シュリョー"), 0, 0, FLOAT(2.0f))
+        ADD_FLOAT(LW(0), LW(3))
+        ADD_FLOAT(LW(1), LW(4))
+        ADD_FLOAT(LW(2), LW(5))
+        ADD_FLOAT(LW(3), LW(6))
+        ADD_FLOAT(LW(4), LW(7))
+        ADD_FLOAT(LW(5), LW(8))
+        IF_INT_LESS_OR_EQUAL(LW(1), 16)
+            SET_FLOAT_VALUE(LW(1), 16)
+            MULTIPLY_FLOAT(LW(4), FLOAT(-0.5f))
+            CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_SHURYO_HEAD_LEAPED1"), LW(0), LW(1), LW(2), 0)
+            IF_INT_LESS(LW(4), 2)
+                BREAK_LOOP
+            END_IF
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 10)
+        ADD(LW(2), 10)
+        LOOP(3)
+            CALL(evt_sub_random, 20, LW(3))
+            SUBTRACT(LW(3), 10)
+            ADD(LW(3), LW(0))
+            CALL(evt_eff64, 0, STRING("kemuri12_n64"), 0, LW(3), LW(1), LW(2), FLOAT(1.0f), 30, 0, 0, 0, 0, 0, 0)
+            WAIT_MS(300)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_S_1"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_125"), 0, STRING("ブラックピーチ"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_A_1"))
+    WAIT_MS(550)
+    CALL(evt_npc_get_position, STRING("シュリョー"), LW(0), LW(1), LW(2))
+    CALL(b_peach_thunder, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_THUNDER1"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_cam3d_evt_zoom_in, 15, 100, 0, 11)
+        WAIT_MS(100)
+        CALL(evt_cam3d_evt_set, 80, 155, 480, 80, 65, -11, 100, 11)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        ADD(LW(2), 5)
+        SET_VALUE(LW(3), LW(0))
+        ADD(LW(3), 30)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 15)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(100)
+        SET_VALUE(LW(3), LW(0))
+        ADD(LW(3), 5)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 30)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(100)
+        SET_VALUE(LW(3), LW(0))
+        SUBTRACT(LW(3), 25)
+        SET_VALUE(LW(4), LW(1))
+        ADD(LW(4), 10)
+        CALL(evt_eff, 0, STRING("hit"), 2, LW(3), LW(4), LW(2), 1, 5, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    WAIT_MS(150)
+    CALL(evt_npc_set_position, STRING("シュリョー"), 0, -1000, 0)
+    WAIT_MS(500)
+    CALL_CHILD(shuryolight_delete)
+    CALL(evt_cam3d_evt_set, 130, 100, 235, 130, 57, -11, 800, 11)
+    WAIT_MS(800)
+    CALL(rou_hikari_front_onoff, 0, 1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_126"), 0, STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, -330, 84, 258, -330, 37, -13, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_127"))
+    WAIT_MS(1000)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -50, 0, 150)
+    CALL(evt_msg_print, 0, STRING("stg8_las_128"), 0, STRING("マジョリン"))
+    CALL(evt_npc_set_position, STRING("マジョリン"), 0, -1000, 0)
+    CALL(rou_hikari_front_onoff, 1, 1)
+    CALL(evt_cam3d_evt_set, -70, 96, 130, -70, 45, -165, 800, 11)
+    WAIT_MS(1800)
+    CALL(rou_hikari_front_onoff, 0, 1)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_majo_disp_on, STRING("マジョリン"), -50, 0, -150, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(500)
+        CALL(evt_npc_majo_disp_on, STRING("マリリン"), -110, 0, -170, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(500)
+        CALL(evt_npc_set_position, STRING("ランペル"), -250, 0, -200)
+        CALL(evt_npc_jump_position_nohit, STRING("ランペル"), -75, 0, -200, 1300, 100)
+    END_INLINE_EVENT
+    WAIT_MS(2800)
+    CALL(evt_msg_print, 0, STRING("stg8_las_129"), 0, STRING("マジョリン"))
+    CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 64)
+    CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 64)
+    CALL(evt_cam3d_evt_set, -70, 169, 499, 44, 60, -80, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_130"), 0, STRING("ブラックピーチ"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_131"), 0, STRING("マジョリン"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, 125, 100, 235, 125, 57, -11, 0, 11)
+    WAIT_MS(50)
+    CALL(evt_npc_flag_onoff, 0, STRING("ブラックピーチ"), 32768)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_L_2"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_L_3"), STRING("KRT_T_3"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_132"), 0, STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, -70, 96, 130, -70, 45, -165, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_133"), 0, STRING("マジョリン"))
+    CALL(evt_cam3d_evt_set, 125, 100, 235, 125, 57, -11, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_S_1"))
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_S_1"), STRING("KRT_T_1"))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    SUBTRACT(LW(0), 10)
+    CALL(evt_npc_move_position, STRING("ブラックピーチ"), LW(0), LW(2), 0, FLOAT(60.0f), 0)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_134"), 0, STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, -330, 78, 235, -330, 35, -11, 800, 11)
+    WAIT_MS(800)
+    CALL(evt_party_get_pos, 0, LW(0), LW(1), LW(2))
+    SUBTRACT(LW(0), 10)
+    CALL(evt_party_stop, 0)
+    CALL(evt_party_dispflg_onoff, 0, 16, 1)
+    CALL(evt_party_move_pos2, 0, LW(0), LW(2), FLOAT(60.0f))
+    WAIT_FRAMES(1)
+    CALL(evt_party_dispflg_onoff, 0, 16, 0)
+    WAIT_MS(1000)
+    CALL(evt_npc_flag_onoff, 1, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, -50, 115, 260, 135, 55, -30, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_L_2"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_L_3"), STRING("KRT_T_3"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_135"), 0, STRING("ブラックピーチ"))
+    CALL(evt_npc_flag_onoff, 0, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, -223, 84, 250, -375, 15, -113, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_136"))
+    CALL(evt_msg_select, 0, STRING("stg8_las_136_yesno1"))
+    CALL(evt_msg_continue)
+    CALL(evt_cam3d_evt_set, -50, 115, 260, 135, 55, -13, 0, 11)
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(0), 1)
+        WAIT_MS(500)
+        CALL(evt_msg_print, 0, STRING("stg8_las_137"), 0, STRING("ブラックピーチ"))
+        CALL(evt_cam3d_evt_set, -330, 100, 332, -330, 40, -12, 800, 11)
+        WAIT_MS(800)
+        CALL(evt_fade_entry, 10, 0, 255, 255, 255)
+        WAIT_MS(100)
+        CALL(evt_mario_cont_onoff, 0)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_mario_set_pos, 0, -1000, 0)
+        CALL(evt_npc_set_position, STRING("にせマリオ"), LW(0), LW(1), LW(2))
+        CALL(evt_fade_entry, 10, 0, 0, 0, 0)
+        WAIT_MS(100)
+        CALL(evt_fade_entry, 9, 0, 0, 0, 0)
+        WAIT_MS(100)
+        WAIT_MS(500)
+        CALL(evt_msg_print, 0, STRING("stg8_las_138"), 0, STRING("ブラックピーチ"))
+        CALL(evt_sub_intpl_msec_init, 4, 255, 0, 1000)
+        LABEL(1)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_blend, 0, LW(0), LW(0), LW(0), 255)
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 1)
+            GOTO(1)
+        END_IF
+        CALL(evt_msg_print, 0, STRING("stg8_las_139"), 0, 0)
+        CALL(evt_seq_set_seq, 5, 0, 0)
+    END_IF
+    WAIT_MS(500)
+    CALL(evt_npc_delete, STRING("にせマリオ"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_140"), 0, STRING("ブラックピーチ"))
+    CALL(rou_hikari_front_onoff, 1, 1)
+    CALL(evt_cam3d_evt_set, 125, 77, 237, 125, 57, -13, 800, 11)
+    WAIT_MS(800)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_S_1"))
+    CALL(evt_npc_set_autotalkpose, STRING("ブラックピーチ"), STRING("KRT_S_1"), STRING("KRT_T_1"))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_140_01"), 0, STRING("ブラックピーチ"))
+    CALL(evt_mario_set_pos, -180, 0, 0)
+    CALL(evt_party_set_pos, 0, -220, 0, 20)
+    CALL(evt_cam3d_evt_set, 60, 150, 684, 60, 75, -11, 1500, 11)
+    BEGIN_INLINE_EVENT
+        CALL(evt_env_blur_on, 0, 1500)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_party_move_pos2, 0, -40, 20, FLOAT(120.0f))
+    END_INLINE_EVENT
+    CALL(evt_mario_dispflag_onoff, 0, 2)
+    CALL(evt_mario_mov_pos2, 0, 0, FLOAT(120.0f))
+    CALL(evt_npc_release_fieldnpc, 1)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_npc_set_battle_info, STRING("ブラックピーチ"), 16)
+    CALL(evt_npc_battle_start, STRING("ブラックピーチ"))
+    CALL(evt_npc_wait_battle_end)
+    CALL(rou_hikari_front_onoff, 0, 1)
+    CALL(evt_npc_get_battle_result, LW(0))
+    IF_INT_EQUAL(LW(0), 5)
+        SPAWN_EVENT(last_evt_3_1)
+    ELSE
+        SET_VALUE(GSW(0), 401)
+        SPAWN_EVENT(last_evt_4)
+    END_IF
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+// TODO: write add_vy (global, 0xe0 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(b_peach_fuwafuwa)
+    LOOP(0)
+        SET_VALUE(LW(0), 0)
+        LOOP(60)
+            WAIT_WHILE(GF(2))
+            CALL(add_vy, 0, LW(0))
+            ADD(LW(0), 1)
+            WAIT_FRAMES(1)
+        END_LOOP
+        SET_VALUE(LW(0), 0)
+        LOOP(60)
+            WAIT_WHILE(GF(2))
+            CALL(add_vy, 1, LW(0))
+            ADD(LW(0), 1)
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_LOOP
+    RETURN
+EVT_END()
+
+// TODO: write starstone_set_ry (static, 0x7c bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write starstone_set_pos (static, 0x1e8 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write starstone_entry (static, 0x1c0 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write pcharge_set_pos (global, 0x9c bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write pcharge_entry (global, 0xb4 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write radiation_entry (global, 0xac bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write b_peach_msgcb (global, 0x54 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(last_evt_3_1)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_mario_set_pos, 0, 0, 0)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_mario_set_pose, STRING("M_I_Y"))
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_party_set_pos, 0, -45, 0, 25)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_npc_set_position, STRING("影の女王"), 230, 15, 0)
+    CALL(evt_npc_set_ry, STRING("影の女王"), 90)
+    CALL(evt_npc_set_position, STRING("ブラックピーチ"), 200, 85, 0)
+    CALL(evt_npc_set_ry, STRING("ブラックピーチ"), 270)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -50, 0, -150)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    CALL(evt_npc_set_position, STRING("マリリン"), -110, 0, -170)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_position, STRING("ランペル"), -75, 0, -200)
+    CALL(evt_npc_set_ry, STRING("ランペル"), 90)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_cam3d_evt_set, -381, 10, 450, 140, 130, -1, 0, 11)
+    CALL(evt_mapobj_trans, 1, STRING("S_hakahuta"), 60, -40, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hikari"), 1)
+    CALL(rou_hikari_front_onoff, 1, 1)
+    CALL(evt_seq_wait, 2)
+    SET_VALUE(GF(2), 0)
+    SPAWN_EVENT(b_peach_fuwafuwa)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_146"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -22, 89, 282, -22, 35, -13, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    CALL(evt_msg_print_party, STRING("stg8_las_147"))
+    CALL(evt_cam3d_evt_set, -80, -40, 210, 204, 140, -7, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    WAIT_MS(1000)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    ADD(LW(1), 25)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_STARSTONE_SHINE1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(radiation_entry, STRING("rad"), LW(0), LW(1), LW(2), FLOAT(1.0f))
+    CALL(evt_snd_bgmoff_f, 512, 2000)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_01"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_mario_set_pose, STRING("M_I_N"))
+    CALL(evt_cam3d_evt_set, 0, 74, 236, 0, 30, -10, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_eff_delete, STRING("rad"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_STARSTONE_ROUND1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_mario_get_pos, 0, GW(0), GW(1), GW(2))
+    ADD(GW(1), 25)
+    SET_VALUE(GW(5), 25)
+    CALL(starstone_entry, GW(0), GW(1), GW(2), GW(5))
+    CALL(pcharge_entry, STRING("pcharge"), GW(0), GW(1), GW(2))
+    SET_FLOAT_VALUE(GW(3), FLOAT(0.0f))
+    SET_FLOAT_VALUE(GW(4), FLOAT(0.017f))
+    BEGIN_INLINE_EVENT
+        LOOP(0)
+            ADD_FLOAT(GW(3), GW(4))
+            WAIT_FRAMES(1)
+            IF_INT_GREATER_OR_EQUAL(GW(3), FLOAT(6.28223f))
+                SUBTRACT_FLOAT(GW(3), FLOAT(6.28223f))
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        LOOP(0)
+            CALL(starstone_set_pos, GW(0), GW(1), GW(2), GW(3), GW(5))
+            CALL(pcharge_set_pos, STRING("pcharge"), GW(0), GW(1), GW(2))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        SET_FLOAT_VALUE(LW(0), FLOAT(0.0f))
+        LOOP(0)
+            CALL(starstone_set_ry, LW(0))
+            SUBTRACT_FLOAT(LW(0), FLOAT(3.0f))
+            IF_INT_LESS_OR_EQUAL(LW(0), FLOAT(0.0f))
+                ADD_FLOAT(LW(0), FLOAT(360.0f))
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 0, 25, 40, 500)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            SET_VALUE(GW(5), LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, 0, 100, 414, 0, 75, -10, 2000, 0)
+    CALL(evt_sub_intpl_msec_init, 4, GW(1), 70, 2000)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    SET_VALUE(GW(1), LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_msg_print_party, STRING("stg8_las_148_02"))
+    CALL(evt_snd_sfxoff, LW(9))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_STARSTONE_ROUND2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_sub_intpl_msec_init, 0, 34, 102, 1500)
+    LABEL(1)
+    CALL(evt_sub_intpl_msec_get_value)
+    DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+    SET_FLOAT_VALUE(GW(4), LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(1)
+    END_IF
+    BEGIN_INLINE_EVENT
+        WAIT_MS(200)
+        CALL(evt_cam3d_evt_set, 0, 150, 460, 0, 430, 0, 800, 0)
+    END_INLINE_EVENT
+    CALL(evt_sub_intpl_msec_init, 0, 70, 380, 1000)
+    LABEL(2)
+    CALL(evt_sub_intpl_msec_get_value)
+    SET_VALUE(GW(1), LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(2)
+    END_IF
+    CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+    WAIT_MS(50)
+    CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+    WAIT_MS(50)
+    CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+    CALL(evt_fade_set_mapchange_type, 1, 17, 1, 9, 300)
+    CALL(evt_bero_mapchange, STRING("gor_01"), STRING("minnnanokoe"))
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+// TODO: write make_koe_pos (global, 0x118 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write make_koe_label (global, 0x98 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(koe_evt)
+    SET_VALUE(LW(0), 1)
+    LOOP(0)
+        CALL(make_koe_label, LW(0), LW(1))
+        CALL(make_koe_pos, LW(2), LW(3), LW(4))
+        BEGIN_INLINE_EVENT
+            ADD(GW(1), 1)
+            CALL(evt_msg_toge, 16777219, LW(2), LW(3), LW(4))
+            CALL(evt_msg_print, 0, LW(1), 0, 0)
+            SUBTRACT(GW(1), 1)
+        END_INLINE_EVENT
+        WAIT_MS(300)
+        LOOP(0)
+            SET_VALUE(LF(0), 0)
+            IF_INT_GREATER_OR_EQUAL(GW(1), 6)
+                SET_VALUE(LF(0), 1)
+            END_IF
+            IF_INT_EQUAL(LF(0), 0)
+                BREAK_LOOP
+            END_IF
+            WAIT_FRAMES(1)
+        END_LOOP
+        ADD(LW(0), 3)
+        MODULO(LW(0), 20)
+    END_LOOP
+    RETURN
+EVT_END()
+
+// TODO: write slowturnoff_check (global, 0x40 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(majo_kyorokyoro)
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_sub_random, 5, LW(0))
+            MULTIPLY(LW(0), 200)
+            ADD(LW(0), 2000)
+            WAIT_MS(LW(0))
+            CALL(slowturnoff_check, STRING("マジョリン"))
+            CALL(evt_npc_reverse_ry, STRING("マジョリン"))
+            WAIT_FRAMES(1)
+            CALL(evt_npc_wait_pera, STRING("マジョリン"))
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        LOOP(0)
+            CALL(evt_sub_random, 5, LW(0))
+            MULTIPLY(LW(0), 200)
+            ADD(LW(0), 2000)
+            WAIT_MS(LW(0))
+            CALL(slowturnoff_check, STRING("マリリン"))
+            CALL(evt_npc_reverse_ry, STRING("マリリン"))
+            WAIT_FRAMES(1)
+            CALL(evt_npc_wait_pera, STRING("マリリン"))
+        END_LOOP
+    END_SIBLING_EVENT
+    LOOP(0)
+        CALL(evt_sub_random, 5, LW(0))
+        MULTIPLY(LW(0), 200)
+        ADD(LW(0), 2000)
+        WAIT_MS(LW(0))
+        CALL(slowturnoff_check, STRING("ランペル"))
+        CALL(evt_npc_reverse_ry, STRING("ランペル"))
+        WAIT_FRAMES(1)
+        CALL(evt_npc_wait_pera, STRING("ランペル"))
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(last_evt_3_2)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_mario_set_pos, 0, 0, 0)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_pos, 0, -45, 0, 25)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_npc_set_position, STRING("影の女王"), 230, 15, 0)
+    CALL(evt_npc_set_ry, STRING("影の女王"), 90)
+    CALL(evt_npc_set_position, STRING("ブラックピーチ"), 200, 85, 0)
+    CALL(evt_npc_set_ry, STRING("ブラックピーチ"), 270)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -50, 0, -150)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    CALL(evt_npc_set_position, STRING("マリリン"), -110, 0, -170)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_position, STRING("ランペル"), -75, 0, -200)
+    CALL(evt_npc_set_ry, STRING("ランペル"), 90)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_cam3d_evt_set, -384, 20, 345, 100, 100, 0, 0, 11)
+    CALL(evt_mapobj_trans, 1, STRING("S_hakahuta"), 60, -40, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hikari"), 1)
+    CALL(rou_hikari_front_onoff, 1, 1)
+    CALL(evt_seq_wait, 2)
+    SET_VALUE(GF(2), 0)
+    SPAWN_EVENT(b_peach_fuwafuwa)
+    SET_VALUE(LW(0), 0)
+    SET_VALUE(GW(1), 0)
+    SET_VALUE(GF(1), 0)
+    LOOP(10)
+        CALL(make_koe_label, LW(0), LW(1))
+        CALL(make_koe_pos, LW(2), LW(3), LW(4))
+        BEGIN_INLINE_EVENT
+            ADD(GW(1), 1)
+            CALL(evt_msg_toge, 16777219, LW(2), LW(3), LW(4))
+            CALL(evt_msg_print, 0, LW(1), 0, 0)
+            SUBTRACT(GW(1), 1)
+        END_INLINE_EVENT
+        WAIT_MS(200)
+        ADD(LW(0), 3)
+        MODULO(LW(0), 20)
+    END_LOOP
+    SPAWN_EVENT_GET_ID(PTR(koe_evt), GW(0))
+    SPAWN_EVENT_GET_ID(PTR(majo_kyorokyoro), GW(2))
+    WAIT_MS(1000)
+    CALL(evt_party_set_dir, 0, 270, 400)
+    WAIT_MS(500)
+    CALL(evt_party_set_dir, 0, 90, 400)
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_148_72"))
+    CALL(evt_mario_set_pose, STRING("M_I_N"))
+    CALL(evt_mario_dispflag_onoff, 1, 2)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -25, 90, 284, -25, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_mario_set_dir, 270, 300, 0)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_148_73"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1_4"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(500)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_mario_dispflag_onoff, 0, 2)
+    CALL(evt_cam3d_evt_set, -650, 87, 643, 100, 156, -13, 0, 11)
+    WAIT_FRAMES(1)
+    SET_VALUE(GF(0), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_dispflag_onoff, 1, 4)
+        LOOP(0)
+            IF_INT_NOT_EQUAL(GF(0), 0)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_mario_set_dir, 90, 300, 0)
+            WAIT_MS(1000)
+            CALL(evt_mario_set_dir, 270, 300, 0)
+            WAIT_MS(1000)
+        END_LOOP
+        CALL(evt_mario_dispflag_onoff, 0, 4)
+    END_INLINE_EVENT
+    WAIT_MS(5000)
+    SET_VALUE(GF(0), 1)
+    WAIT_MS(1000)
+    CALL(evt_mario_set_dir, 270, 0, 0)
+    CALL(evt_mario_adjust_dir)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -25, 90, 284, -25, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    BEGIN_INLINE_EVENT
+        WAIT_FRAMES(1)
+        CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    END_INLINE_EVENT
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_148_75"))
+    CALL(evt_cam3d_evt_set, -100, 150, 520, 200, 150, 0, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_76"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_eff64, 0, STRING("stardust_n64"), 1, LW(0), LW(1), LW(2), 30, 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_SHINE1"), LW(0), LW(1), LW(2), LW(9))
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -22, 90, 284, -22, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    BEGIN_INLINE_EVENT
+        WAIT_FRAMES(1)
+        CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    END_INLINE_EVENT
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_148_77"))
+    CALL(evt_mario_set_dir, 90, 300, 0)
+    WAIT_MS(500)
+    CALL(evt_cam3d_evt_set, -100, 150, 520, 200, 150, 0, 0, 11)
+    WAIT_FRAMES(1)
+    SET_VALUE(GF(0), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 30)
+        LOOP(0)
+            IF_INT_NOT_EQUAL(GF(0), 0)
+                BREAK_LOOP
+            END_IF
+            LOOP(8)
+                CALL(evt_sub_random, 160, LW(3))
+                SUBTRACT(LW(3), 80)
+                ADD(LW(3), LW(0))
+                CALL(evt_sub_random, 100, LW(4))
+                ADD(LW(4), LW(1))
+                CALL(evt_eff64, 0, STRING("stardust_n64"), 2, LW(3), LW(4), LW(2), 42, 0, 0, 0, 0, 0, 0, 0)
+                WAIT_MS(100)
+            END_LOOP
+        END_LOOP
+    END_INLINE_EVENT
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_78"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_SHINE2"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 20)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(200)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -150, 1, 433, 200, 150, 0, 800, 11)
+    CALL(evt_env_blur_on, 0, 800)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_79"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_SHINE2_2"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 20)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(200)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -200, 1, 356, 200, 150, 0, 800, 11)
+    CALL(evt_env_blur_on, 0, 800)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_80"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_SHINE2_3"), LW(0), LW(1), LW(2), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+        ADD(LW(1), 20)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+        WAIT_MS(200)
+        CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+        SUBTRACT(LW(0), 15)
+        ADD(LW(1), 20)
+        ADD(LW(2), 10)
+        CALL(evt_eff64, 0, STRING("snow_dust_n64"), 4, LW(0), LW(1), LW(2), 15, 15, FLOAT(1.0f), 6, 60, 0, 0, 0)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, -150, 1, 260, 200, 150, 0, 800, 11)
+    WAIT_MS(800)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_148_81"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    SET_VALUE(GF(0), 1)
+    CALL(evt_snd_sfxoff, LW(9))
+    WAIT_MS(500)
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_SHINE3"), LW(0), LW(1), LW(2), 0)
+    ADD(LW(1), 20)
+    CALL(evt_eff64, 0, STRING("release_n64"), 3, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(1200)
+    CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+    WAIT_MS(100)
+    CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+    WAIT_FRAMES(1)
+    CALL(evt_paper_entry, STRING("OFF_d_bom"))
+    CALL(evt_img_entry, STRING("img"))
+    CALL(evt_img_onoff, STRING("img"), 0)
+    CALL(evt_img_set_paper, STRING("img"), STRING("OFF_d_bom"))
+    CALL(evt_img_alloc_capture, STRING("img"), 0, 0, 1, 0, 0, 608, 480)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_D_1"))
+    CALL(evt_snd_sfxon, STRING("SFX_STG8_QUEEN_SHINE4"), 0)
+    CALL(evt_img_onoff, STRING("img"), 1)
+    CALL(evt_img_set_paper_anim, STRING("img"), STRING("A_1"))
+    CALL(evt_img_wait_animend, STRING("img"))
+    CALL(evt_img_onoff, STRING("img"), 0)
+    CALL(evt_img_release, STRING("img"))
+    CALL(evt_paper_delete, STRING("OFF_d_bom"))
+    WAIT_MS(1000)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -22, 90, 284, -22, 40, -13, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_S_1"))
+    BEGIN_INLINE_EVENT
+        WAIT_FRAMES(1)
+        CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+        CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    END_INLINE_EVENT
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg8_las_149"), 0, STRING("ピーチ姫"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2_3"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_eff_fukidashi, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    CALL(evt_eff_fukidashi, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1200)
+    SET_VALUE(GF(2), 1)
+    CALL(evt_npc_flag_onoff, 1, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, 100, 200, 692, 100, 100, 0, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("ブラックピーチ"), 32768)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_150"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ブラックピーチ"), 32768)
+    CALL(evt_cam3d_evt_set, -150, 178, 288, 195, 150, 0, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_2F"))
+    CALL(evt_paper_entry, STRING("p_b_st"))
+    CALL(evt_npc_set_paper, STRING("ピーチ姫"), STRING("p_b_st"))
+    CALL(evt_npc_set_paper_anim, STRING("ピーチ姫"), STRING("PM_Y_1A"))
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    SUBTRACT(LW(0), 10)
+    ADD(LW(2), 10)
+    CALL(evt_npc_set_color, STRING("ピーチ姫"), 255, 255, 255, 0)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    CALL(evt_sub_intpl_msec_init, 11, 0, 153, 1000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_npc_set_color, STRING("ピーチ姫"), 255, 255, 255, LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_2F"), STRING("P_T_2F"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_151"), 0, STRING("ピーチ姫"))
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_152"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, 3, 146, 160, 195, 130, 0, 800, 11)
+    WAIT_MS(800)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_7F"), STRING("P_T_7F"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_153"), 0, STRING("ピーチ姫"))
+    CALL(evt_sub_intpl_msec_init, 11, 153, 51, 1000)
+    LABEL(0)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_npc_set_color, STRING("ピーチ姫"), 255, 255, 255, LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(0)
+    END_IF
+    CALL(evt_eff_fukidashi, 1, 0, STRING("ブラックピーチ"), 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_npc_set_anim, STRING("ブラックピーチ"), STRING("KRT_A_3"))
+    WAIT_MS(200)
+    CALL(evt_npc_get_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_PEACH_SHINE1"), LW(0), LW(1), LW(2), 0)
+    ADD(LW(1), 30)
+    CALL(evt_eff64, 0, STRING("lensflare_n64"), 0, LW(0), LW(1), LW(2), 0, 96, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(400)
+    CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 48, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(200)
+    CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 48, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_eff, 0, STRING("stardust"), 6, LW(0), LW(1), LW(2), 20, 20, 8, 78, 0, 0, 0, 0)
+    CALL(evt_eff64, 0, STRING("broken_barrier_n64"), 1, LW(0), LW(1), LW(2), 1, 78, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(400)
+    CALL(evt_eff64, 0, STRING("crystal_n64"), 4, LW(0), LW(1), LW(2), 1, 72, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(1000)
+    CALL(evt_cam3d_evt_set, -22, 82, 258, -22, 35, -13, 800, 11)
+    WAIT_MS(1000)
+    CALL(evt_sub_status_gauge_force_open)
+    WAIT_MS(300)
+    CALL(evt_snd_bgmoff_f, 512, 3000)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_MARIO_SHINE1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_party_get_pos, 0, LW(3), LW(4), LW(5))
+    CALL(evt_eff64, 0, STRING("broken_barrier_n64"), 2, LW(0), LW(1), LW(2), 1, 60, 0, 0, 0, 0, 0, 0)
+    CALL(evt_eff64, 0, STRING("broken_barrier_n64"), 2, LW(3), LW(4), LW(5), 1, 60, 0, 0, 0, 0, 0, 0)
+    WAIT_MS(900)
+    CALL(evt_eff, 0, STRING("stardust"), 4, LW(0), LW(1), LW(2), 30, 40, 12, 120, 0, 0, 0, 0)
+    CALL(evt_eff, 0, STRING("stardust"), 4, LW(3), LW(4), LW(5), 30, 40, 12, 120, 0, 0, 0, 0)
+    WAIT_MS(200)
+    CALL(evt_eff, 0, STRING("stardust"), 4, LW(0), LW(1), LW(2), 30, 40, 12, 120, 0, 0, 0, 0)
+    CALL(evt_eff, 0, STRING("stardust"), 4, LW(3), LW(4), LW(5), 30, 40, 12, 120, 0, 0, 0, 0)
+    CALL(evt_pouch_mario_recovery)
+    CALL(evt_pouch_all_party_recovery)
+    LOOP(0)
+        CALL(evt_sub_status_gauge_check_update, LW(0))
+        IF_INT_EQUAL(LW(0), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_MS(500)
+    CALL(evt_sub_status_gauge_force_close)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_154"))
+    CALL(evt_cam3d_evt_set, -125, 155, 240, 195, 130, 0, 0, 11)
+    WAIT_FRAMES(1)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_155"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_toge, 1, 0, 0, 0)
+    CALL(evt_msg_print, 0, STRING("stg8_las_156"), 0, STRING("ピーチ姫"))
+    CALL(evt_npc_flag_onoff, 0, STRING("ブラックピーチ"), 32768)
+    CALL(evt_sub_intpl_msec_init, 11, 51, 0, 1000)
+    LABEL(1)
+    CALL(evt_sub_intpl_msec_get_value)
+    CALL(evt_npc_set_color, STRING("ピーチ姫"), 255, 255, 255, LW(0))
+    WAIT_FRAMES(1)
+    IF_INT_EQUAL(LW(1), 1)
+        GOTO(1)
+    END_IF
+    CALL(evt_npc_clear_paper, STRING("ピーチ姫"))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_2F"))
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_2F"), STRING("P_T_2F"))
+    CALL(evt_cam3d_evt_set, 100, 200, 692, 100, 100, 0, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print_party, STRING("stg8_las_157"))
+    CALL(evt_cam3d_evt_set, 0, 150, 347, 200, 150, 0, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_158"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, 195, 146, 274, 195, 130, 0, 800, 11)
+    WAIT_MS(800)
+    CALL(evt_msg_pri, 20)
+    CALL(evt_msg_print, 0, STRING("stg8_las_159"), PTR(b_peach_msgcb), STRING("ブラックピーチ"))
+    CALL(evt_cam3d_evt_set, 60, 150, 684, 60, 75, -11, 1000, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_env_blur_on, 0, 1000)
+    END_INLINE_EVENT
+    WAIT_MS(500)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_adjust_dir)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_mario_jump_pos, LW(0), LW(1), LW(2), 1000, 1, -1000)
+    END_INLINE_EVENT
+    WAIT_MS(300)
+    DELETE_EVENT(GW(0))
+    DELETE_EVENT(GW(2))
+    CALL(evt_npc_release_fieldnpc, 1)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_npc_set_battle_info, STRING("ブラックピーチ"), 17)
+    CALL(evt_npc_battle_start, STRING("ブラックピーチ"))
+    CALL(evt_npc_wait_battle_end)
+    SET_VALUE(GSW(0), 401)
+    WAIT_FRAMES(1)
+    CALL(rou_hikari_front_onoff, 0, 1)
+    SPAWN_EVENT(last_evt_4)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+// TODO: write mist_add_vy (global, 0x8c bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write make_mist_name (global, 0x68 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write eff_b_peach_mist (global, 0xf8 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write eff_b_peach_ripple (global, 0x64 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(last_evt_4)
+    CALL(evt_snd_bgmoff, 512)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_party_stop, 0)
+    CALL(evt_cam3d_evt_set, -560, 100, 283, 19, 150, 0, 0, 11)
+    CALL(evt_mario_set_pos, -150, 0, 0)
+    CALL(evt_party_set_pos, 0, -190, 0, 15)
+    CALL(evt_npc_set_position, STRING("影の女王"), 55, 0, 0)
+    CALL(evt_npc_set_position, STRING("ブラックピーチ"), 25, 70, 0)
+    CALL(evt_npc_set_position, STRING("マジョリン"), -50, 0, -150)
+    CALL(evt_npc_set_position, STRING("マリリン"), -90, 0, -170)
+    CALL(evt_npc_set_position, STRING("ランペル"), -70, 0, -200)
+    CALL(evt_mario_set_dir, 90, 0, 0)
+    CALL(evt_party_set_dir, 0, 90, 0)
+    CALL(evt_npc_set_ry, STRING("影の女王"), 90)
+    CALL(evt_npc_set_ry, STRING("ブラックピーチ"), 270)
+    CALL(evt_npc_set_ry, STRING("マジョリン"), 90)
+    CALL(evt_npc_set_ry, STRING("マリリン"), 90)
+    CALL(evt_npc_set_ry, STRING("ランペル"), 90)
+    CALL(evt_npc_flag_onoff, 1, STRING("影の女王"), 32)
+    CALL(evt_mapobj_trans, 0, STRING("S_hakahuta"), 60, -40, 0)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kuro"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+    CALL(evt_npc_entry, STRING("クリハカセ"), STRING("c_kuri_h"))
+    CALL(evt_npc_set_tribe, STRING("クリハカセ"), STRING("クリハカセ"))
+    CALL(evt_npc_flag_onoff, 1, STRING("クリハカセ"), 1536)
+    CALL(evt_npc_set_position, STRING("クリハカセ"), 0, -1000, 0)
+    CALL(evt_seq_wait, 2)
+    SET_VALUE(GF(0), 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_snd_sfxon, STRING("SFX_STG8_QUAKE1"), LW(9))
+        SPAWN_EVENT_GET_ID(PTR(evt_sub_stopwatch), LW(15))
+        LOOP(0)
+            IF_INT_NOT_EQUAL(GF(0), 0)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_sub_get_stopwatch, LW(15), LW(0))
+            IF_INT_GREATER_OR_EQUAL(LW(0), 30000)
+                BREAK_LOOP
+            END_IF
+            CALL(evt_cam_shake, 4, FLOAT(0.005f), FLOAT(0.0f), 1000)
+        END_LOOP
+        CALL(evt_snd_sfxoff, LW(9))
+    END_INLINE_EVENT
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_H_1"))
+    WAIT_MS(500)
+    CALL(evt_npc_set_autotalkpose, STRING("影の女王"), STRING("KRT_S_3"), STRING("KRT_T_2"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_169"), 0, STRING("影の女王"))
+    CALL(evt_cam3d_evt_set, -530, 31, 530, 19, 120, 0, 800, 11)
+    WAIT_MS(800)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(150)
+        CALL(evt_snd_sfxon, STRING("SFX_STG8_QUEEN_DIE2"), 0)
+        CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+        WAIT_MS(300)
+        CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+    END_INLINE_EVENT
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_DIE1"), LW(0), LW(1), LW(2), LW(15))
+    SET_VALUE(LW(3), 0)
+    SET_FLOAT_VALUE(LW(5), FLOAT(30.0f))
+    LOOP(10)
+        CALL(make_mist_name, LW(3), LW(4))
+        ADD(LW(1), 5)
+        CALL(evt_eff, LW(4), STRING("mist2"), 0, LW(0), LW(1), LW(2), LW(5), 0, 1000, 0, 0, 0, 0, 0)
+        WAIT_MS(350)
+        ADD(LW(3), 1)
+        IF_INT_GREATER_OR_EQUAL(LW(3), 5)
+            SUBTRACT_FLOAT(LW(5), FLOAT(5.7f))
+        ELSE
+            ADD_FLOAT(LW(5), FLOAT(5.7f))
+        END_IF
+    END_LOOP
+    CALL(evt_npc_set_color, STRING("ブラックピーチ"), 96, 96, 96, 255)
+    WAIT_MS(1000)
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_C_1"))
+    WAIT_MS(350)
+    CALL(evt_npc_flag_onoff, 0, STRING("影の女王"), 512)
+    CALL(evt_npc_set_anim, STRING("影の女王"), STRING("KRT_C_2"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_170"), 0, STRING("影の女王"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_171"), 0, STRING("マジョリン"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_172"), 0, STRING("マリリン"))
+    SET_VALUE(GF(0), 1)
+    CALL(evt_snd_sfxoff, LW(15))
+    LOOP(2)
+        WAIT_MS(150)
+        CALL(evt_snd_sfxon, STRING("SFX_STG8_QUEEN_DIE2"), 0)
+        CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+        WAIT_MS(150)
+        CALL(evt_fade_entry, 16, 1, 255, 255, 255)
+    END_LOOP
+    CALL(evt_npc_set_position, STRING("影の女王"), 0, -1000, 0)
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_QUEEN_DIE3"), LW(0), LW(1), LW(2), 0)
+    CALL(eff_b_peach_ripple)
+    WAIT_MS(800)
+    CALL(eff_b_peach_ripple)
+    WAIT_MS(1500)
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_1F"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 128)
+    CALL(evt_npc_get_position, STRING("ブラックピーチ"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_set_position, STRING("ブラックピーチ"), 0, -1000, 0)
+    ADD(LW(1), 20)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 32768)
+    CALL(evt_npc_get_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    SET_FLOAT_VALUE(LW(3), FLOAT(-0.5f))
+    LOOP(0)
+        ADD_FLOAT(LW(3), FLOAT(0.001f))
+        IF_FLOAT_GREATER_OR_EQUAL(LW(3), FLOAT(-0.1f))
+            SET_FLOAT_VALUE(LW(3), FLOAT(-0.1f))
+        END_IF
+        ADD_FLOAT(LW(1), LW(3))
+        CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+        CALL(mist_add_vy, LW(3))
+        WAIT_FRAMES(1)
+        IF_INT_LESS_OR_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_npc_flag_onoff, 0, STRING("ピーチ姫"), 128)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(1500)
+        CALL(evt_npc_set_color, STRING("ピーチ姫"), 96, 96, 96, 255)
+        CALL(evt_sub_intpl_msec_init, 11, 96, 255, 1000)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_npc_set_color, STRING("ピーチ姫"), LW(0), LW(0), LW(0), 255)
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(eff_b_peach_mist)
+    WAIT_MS(300)
+    SET_VALUE(LW(0), 1)
+    LOOP(5)
+        CALL(make_mist_name, LW(0), LW(1))
+        CALL(evt_eff_softdelete, LW(1))
+        ADD(LW(0), 2)
+    END_LOOP
+    WAIT_MS(200)
+    SET_VALUE(LW(0), 0)
+    LOOP(5)
+        CALL(make_mist_name, LW(0), LW(1))
+        CALL(evt_eff_softdelete, LW(1))
+        ADD(LW(0), 2)
+    END_LOOP
+    WAIT_MS(4400)
+    CALL(evt_npc_flag_onoff, 0, STRING("ピーチ姫"), 32768)
+    WAIT_MS(500)
+    SET_VALUE(LW(0), 0)
+    SET_FLOAT_VALUE(LW(1), FLOAT(350.0f))
+    SET_FLOAT_VALUE(LW(2), FLOAT(255.0f))
+    SET_VALUE(LW(3), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(0), -1)
+            IF_INT_EQUAL(LW(3), -1)
+                BREAK_LOOP
+            END_IF
+        END_IF
+        IF_INT_NOT_EQUAL(LW(0), -1)
+            CALL(hikari_onoff, PTR(hikari_data), 1, 1, LW(0), LW(1), LW(0))
+        END_IF
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(hikari_onoff, PTR(hikari_data_2), 1, 1, LW(3), LW(1), LW(3))
+        END_IF
+        SUBTRACT_FLOAT(LW(1), FLOAT(3.3f))
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_MS(1000)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_yukahikari01"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_yukahikari02"), 1)
+    SET_VALUE(LW(0), 0)
+    SET_FLOAT_VALUE(LW(1), FLOAT(350.0f))
+    SET_FLOAT_VALUE(LW(2), FLOAT(0.0f))
+    SET_VALUE(LW(3), 0)
+    LOOP(0)
+        IF_INT_EQUAL(LW(0), -1)
+            IF_INT_EQUAL(LW(3), -1)
+                BREAK_LOOP
+            END_IF
+        END_IF
+        IF_INT_NOT_EQUAL(LW(0), -1)
+            CALL(hikari_onoff, PTR(hikari_data), 0, 0, LW(0), LW(1), LW(0))
+        END_IF
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(hikari_onoff, PTR(hikari_data_2), 0, 0, LW(3), LW(1), LW(3))
+        END_IF
+        SUBTRACT(LW(1), FLOAT(3.3f))
+        CALL(evt_mapobj_color, 1, STRING("S_yukahikari01"), 255, 255, 255, LW(2))
+        CALL(evt_mapobj_color, 1, STRING("S_yukahikari02"), 255, 255, 255, LW(2))
+        ADD_FLOAT(LW(2), FLOAT(1.53f))
+        IF_INT_GREATER(LW(2), FLOAT(255.0f))
+            SET_FLOAT_VALUE(LW(2), FLOAT(255.0f))
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("hikari"), 1)
+    WAIT_MS(1000)
+    CALL(evt_map_get_fog, LW(2), LW(3), LW(4), LW(5), LW(6), LW(7))
+    SET_VALUE(LW(8), LW(4))
+    MULTIPLY(LW(8), 2)
+    CALL(evt_sub_intpl_msec_init, 1, LW(4), LW(8), 2000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_fog, LW(2), LW(3), LW(0), LW(5), LW(6), LW(7))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    SET_VALUE(LW(9), LW(3))
+    MULTIPLY(LW(9), 2)
+    CALL(evt_sub_intpl_msec_init, 0, LW(3), LW(9), 2000)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_map_set_fog, LW(2), LW(0), LW(8), LW(5), LW(6), LW(7))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_map_fog_onoff, 0)
+    WAIT_MS(1000)
+    CALL(evt_npc_flag_onoff, 1, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 32768)
+    CALL(evt_cam3d_evt_set, -70, 105, 180, -70, 45, -165, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 0, STRING("マジョリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("マリリン"), 32768)
+    CALL(evt_npc_flag_onoff, 0, STRING("ランペル"), 32768)
+    CALL(evt_msg_print, 0, STRING("stg8_las_173"), 0, STRING("マジョリン"))
+    CALL(evt_npc_majo_disp_off, STRING("マジョリン"))
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg8_las_174"), 0, STRING("マリリン"))
+    CALL(evt_npc_majo_disp_off, STRING("マリリン"))
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg8_las_175"), 0, STRING("ランペル"))
+    CALL(evt_npc_reverse_ry, STRING("ランペル"))
+    WAIT_MS(300)
+    CALL(evt_npc_reverse_ry, STRING("ランペル"))
+    WAIT_MS(300)
+    CALL(evt_npc_set_ry, STRING("ランペル"), 270)
+    WAIT_MS(300)
+    CALL(evt_npc_sound_data_set, STRING("ランペル"), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, 0)
+    CALL(evt_npc_get_position, STRING("ランペル"), LW(0), LW(1), LW(2))
+    SUBTRACT(LW(0), 230)
+    CALL(evt_npc_jump_position_nohit, STRING("ランペル"), LW(0), LW(1), LW(2), 800, 105)
+    CALL(evt_npc_flag_onoff, 1, STRING("ランペル"), 128)
+    CALL(rou_hikari_front_onoff, 1, 0)
+    CALL(evt_cam3d_evt_set, -170, 100, 332, -170, 40, -13, 0, 11)
+    CALL(evt_mario_set_pose, STRING("M_I_N"))
+    WAIT_FRAMES(1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_176"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 33587200)
+    CALL(evt_cam3d_evt_set, 15, 85, 258, 15, 38, -13, 1500, 11)
+    CALL(evt_party_move_pos, 0, 0, 10, 1500)
+    WAIT_MS(1700)
+    CALL(evt_snd_bgmon, 512, STRING("BGM_ENDING1"))
+    WAIT_MS(300)
+    CALL(rou_hikari_front_onoff, 0, 0)
+    CALL(evt_eff_fukidashi, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60)
+    WAIT_MS(1000)
+    CALL(evt_party_set_dir, 0, 270, -1)
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_177"))
+    CALL(evt_cam3d_evt_set, 130, 20, 114, -145, 40, -5, 0, 11)
+    WAIT_FRAMES(1)
+    WAIT_MS(300)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_mov_pos, -35, 0, 2800)
+    END_INLINE_EVENT
+    WAIT_MS(250)
+    CALL(evt_cam3d_evt_set, 0, 87, 258, 0, 40, -13, 750, 11)
+    CALL(evt_party_move_pos, 0, -10, -40, 800)
+    WAIT_MS(700)
+    CALL(evt_msg_print_party, STRING("stg8_las_178"))
+    CALL(evt_mario_wait_move_end)
+    WAIT_MS(100)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_N_5B"))
+    WAIT_MS(1000)
+    CALL(evt_npc_flag_onoff, 0, STRING("ピーチ姫"), 33587200)
+    CALL(evt_npc_get_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    SUBTRACT(LW(2), 1)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    WAIT_MS(50)
+    ADD(LW(2), 2)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    WAIT_MS(50)
+    SUBTRACT(LW(2), 1)
+    CALL(evt_npc_set_position, STRING("ピーチ姫"), LW(0), LW(1), LW(2))
+    WAIT_MS(300)
+    CALL(evt_npc_flag_onoff, 0, STRING("ピーチ姫"), 512)
+    CALL(evt_msg_print, 0, STRING("stg8_las_179"), 0, STRING("ピーチ姫"))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_A_1F"))
+    CALL(evt_npc_wait_anim, STRING("ピーチ姫"), FLOAT(1.0f))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_A_3F"))
+    CALL(evt_npc_wait_anim, STRING("ピーチ姫"), FLOAT(1.0f))
+    WAIT_MS(500)
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 512)
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_8F"), STRING("P_T_6F"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_180"), 0, STRING("ピーチ姫"))
+    WAIT_MS(500)
+    CALL(evt_mario_mov_pos2, -25, 0, FLOAT(30.0f))
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_181"), 0, STRING("ピーチ姫"))
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(500)
+    WAIT_MS(500)
+    CALL(evt_msg_print, 0, STRING("stg8_las_182"), 0, STRING("ピーチ姫"))
+    CALL(evt_mario_set_pose, STRING("M_N_B"))
+    CALL(evt_party_move_pos2, 0, 0, -30, FLOAT(30.0f))
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    WAIT_MS(300)
+    CALL(evt_msg_print_party, STRING("stg8_las_183"))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_A_4F"))
+    CALL(evt_npc_wait_anim, STRING("ピーチ姫"), FLOAT(1.0f))
+    CALL(evt_npc_set_anim, STRING("ピーチ姫"), STRING("P_S_9F"))
+    WAIT_MS(500)
+    CALL(evt_mario_mov_pos2, -15, 0, FLOAT(30.0f))
+    WAIT_MS(500)
+    CALL(evt_npc_set_autotalkpose, STRING("ピーチ姫"), STRING("P_S_9F"), STRING("P_T_9F"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_184"), 0, STRING("ピーチ姫"))
+    CALL(evt_npc_set_position, STRING("クリハカセ"), -150, 0, 50)
+    CALL(evt_npc_set_ry, STRING("クリハカセ"), 90)
+    WAIT_MS(2000)
+    BEGIN_INLINE_EVENT
+        WAIT_MS(600)
+        CALL(evt_mario_set_dir, 270, 300, 0)
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        WAIT_MS(800)
+        CALL(evt_party_set_dir, 0, 270, 300)
+    END_INLINE_EVENT
+    CALL(evt_msg_print, 0, STRING("stg8_las_185"), 0, STRING("クリハカセ"))
+    CALL(rou_hikari_front_onoff, 1, 0)
+    CALL(evt_cam3d_evt_set, 0, 104, 383, 0, 40, -12, 1000, 11)
+    WAIT_MS(1000)
+    CALL(evt_npc_move_position, STRING("クリハカセ"), -50, 50, 0, FLOAT(60.0f), 0)
+    CALL(evt_msg_print, 0, STRING("stg8_las_186"), 0, STRING("クリハカセ"))
+    CALL(evt_npc_reverse_ry, STRING("クリハカセ"))
+    WAIT_FRAMES(1)
+    CALL(evt_npc_wait_pera, STRING("クリハカセ"))
+    WAIT_MS(100)
+    CALL(evt_npc_reverse_ry, STRING("クリハカセ"))
+    WAIT_FRAMES(1)
+    CALL(evt_npc_wait_pera, STRING("クリハカセ"))
+    WAIT_MS(100)
+    CALL(evt_msg_print, 0, STRING("stg8_las_187"), 0, STRING("クリハカセ"))
+    WAIT_MS(250)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_HAND_UP1_1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_I_2"))
+    WAIT_MS(1200)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_188"), 0, STRING("クリハカセ"))
+    CALL(evt_cam3d_evt_set, -50, 87, 307, -50, 35, 12, 1000, 11)
+    WAIT_MS(1000)
+    CALL(rou_hikari_front_onoff, 0, 0)
+    CALL(evt_npc_get_position, STRING("クリハカセ"), LW(0), LW(1), LW(2))
+    ADD(LW(0), 5)
+    ADD(LW(1), 20)
+    CALL(evt_mobj_itembox, STRING("box"), LW(0), LW(1), LW(2), 4, 0, 0, 0)
+    CALL(evt_mobj_set_scale, STRING("box"), FLOAT(0.3f), FLOAT(0.3f), FLOAT(0.3f))
+    CALL(evt_mobj_flag_onoff, 0, STRING("box"), 64)
+    BEGIN_INLINE_EVENT
+        CALL(evt_sub_intpl_msec_init, 1, 300, 500, 300)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            DIVIDE_FLOAT(LW(0), FLOAT(1000.0f))
+            CALL(evt_mobj_set_scale, STRING("box"), LW(0), LW(0), LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_npc_get_position, STRING("クリハカセ"), LW(0), LW(2), LW(1))
+        CALL(evt_sub_intpl_msec_init, 0, 20, 30, 300)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+            ADD_FLOAT(LW(0), LW(2))
+            CALL(evt_mobj_set_y_position, STRING("box"), LW(0))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_npc_set_anim, STRING("クリハカセ"), STRING("A_2"))
+    WAIT_MS(800)
+    CALL(evt_npc_set_ry, STRING("クリハカセ"), 270)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mobj_get_y_position, STRING("box"), LW(2))
+        CALL(evt_sub_intpl_msec_init, 0, 0, 180, 400)
+        LOOP(0)
+            CALL(evt_sub_intpl_msec_get_value)
+            CALL(evt_sub_get_sincos, LW(0), LW(3), LW(4))
+            MULTIPLY_FLOAT(LW(3), FLOAT(10.0f))
+            ADD_FLOAT(LW(3), LW(2))
+            CALL(evt_mobj_set_y_position, STRING("box"), LW(3))
+            WAIT_FRAMES(1)
+            IF_INT_EQUAL(LW(1), 0)
+                BREAK_LOOP
+            END_IF
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(evt_mobj_get_x_position, STRING("box"), LW(0))
+    SET_VALUE(LW(1), LW(0))
+    SUBTRACT(LW(1), 30)
+    CALL(evt_sub_intpl_msec_init, 0, LW(0), LW(1), 400)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value_para, LW(0), LW(1))
+        CALL(evt_mobj_set_x_position, STRING("box"), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_mobj_get_y_position, STRING("box"), LW(0))
+    CALL(evt_sub_intpl_msec_init, 1, LW(0), 0, 200)
+    LOOP(0)
+        CALL(evt_sub_intpl_msec_get_value)
+        CALL(evt_mobj_set_y_position, STRING("box"), LW(0))
+        WAIT_FRAMES(1)
+        IF_INT_EQUAL(LW(1), 0)
+            BREAK_LOOP
+        END_IF
+    END_LOOP
+    CALL(evt_mobj_get_position, STRING("box"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_STG8_KURI_TBOX_LANDING1"), LW(0), LW(1), LW(2), 0)
+    ADD(LW(2), 25)
+    SET_VALUE(LW(3), LW(0))
+    ADD(LW(3), 15)
+    SET_VALUE(LW(4), LW(1))
+    ADD(LW(4), 10)
+    CALL(evt_eff, 0, STRING("kemuri_test"), 0, LW(3), LW(4), LW(2), 1, 0, 0, 0, 0, 0, 0, 0)
+    SET_VALUE(LW(3), LW(0))
+    ADD(LW(3), 5)
+    SET_VALUE(LW(4), LW(1))
+    ADD(LW(4), 5)
+    CALL(evt_eff, 0, STRING("kemuri_test"), 0, LW(3), LW(4), LW(2), 1, 0, 0, 0, 0, 0, 0, 0)
+    SET_VALUE(LW(3), LW(0))
+    SUBTRACT(LW(3), 20)
+    SET_VALUE(LW(4), LW(1))
+    ADD(LW(4), 7)
+    CALL(evt_eff, 0, STRING("kemuri_test"), 0, LW(3), LW(4), LW(2), 1, 0, 0, 0, 0, 0, 0, 0)
+    CALL(evt_npc_set_ry, STRING("クリハカセ"), 90)
+    WAIT_FRAMES(1)
+    CALL(evt_npc_wait_pera, STRING("クリハカセ"))
+    WAIT_MS(300)
+    CALL(evt_msg_print, 0, STRING("stg8_las_189"), 0, STRING("クリハカセ"))
+    WAIT_MS(500)
+    CALL(evt_msg_print_party, STRING("stg8_las_190"))
+    CALL(evt_msg_print, 0, STRING("stg8_las_191"), 0, STRING("クリハカセ"))
+    CALL(rou_hikari_front_onoff, 1, 0)
+    CALL(evt_cam3d_evt_set, 0, 100, 333, 0, 40, -13, 1000, 11)
+    WAIT_MS(1000)
+    CALL(evt_mario_set_dir, 90, 300, 0)
+    WAIT_MS(300)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_NOD1_6"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_mario_set_pose, STRING("M_N_2"))
+    WAIT_MS(500)
+    CALL(evt_mario_set_pose, STRING("M_S_1"))
+    CALL(evt_npc_flag_onoff, 1, STRING("ピーチ姫"), 1024)
+    CALL(evt_npc_move_position, STRING("ピーチ姫"), 15, 0, 0, FLOAT(60.0f), 0)
+    CALL(evt_msg_print, 0, STRING("stg8_las_192"), 0, STRING("ピーチ姫"))
+    CALL(rou_hikari_front_onoff, 0, 0)
+    BEGIN_INLINE_EVENT
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_PAUSE3"), LW(0), LW(1), LW(2), 0)
+        CALL(evt_mario_jump_pos, LW(0), LW(1), LW(2), 500, 1, 30)
+    END_INLINE_EVENT
+    CALL(evt_cam3d_evt_set, 0, 300, 840, 0, -20, 0, 4000, 11)
+    WAIT_MS(2000)
+    CALL(evt_snd_bgmoff_f, 512, 3000)
+    CALL(evt_fade_out, 1800)
+    SET_VALUE(GSW(0), 402)
+    CALL(evt_fade_set_mapchange_type, 1, 10, 1, 9, 300)
+    CALL(evt_bero_mapchange, STRING("gor_11"), 0)
+    RETURN
+EVT_END()
+
+static EVT_BEGIN(shuryolight_init)
+    IF_INT_EQUAL(GSW(0), 400)
+        CALL(evt_shuryolight_init_17_text_10B60, STRING("シュリョー"))
+        CALL(evt_shuryolight_run_evt_17_text_10828, PTR(shuryolight_pow_tenmetu_17_data_53E60), PTR(shuryolight_head_off_17_data_53FA4), PTR(shuryolight_tue_normal_17_data_53FDC))
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(shuryolight_delete)
+    CALL(evt_npc_check, STRING("シュリョー"), LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_seq_wait, 2)
+        WAIT_MS(500)
+        CALL(evt_npc_delete, STRING("シュリョー"))
+        CALL(evt_shuryolight_delete_17_text_10588)
+    END_IF
+    RETURN
+EVT_END()
+
+// TODO: write rousoku_init (static, 0xfc bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+EVT_BEGIN(las_29_init_evt)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL(evt_npc_setup, PTR(npcEnt))
+    CALL_CHILD(shuryolight_init)
+    SWITCH(GSW(0))
+        CASE_EQUAL(400)
+        CALL(evt_bero_get_entername, LW(15))
+        IF_STR_EQUAL(LW(15), STRING("minnnanokoe"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG8_VOICE1"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+            CALL(evt_snd_bgmoff, 26624)
+            CALL(evt_snd_set_rev_mode, 2)
+            CALL(rousoku_init, 1)
+            SPAWN_EVENT(shuryolight_delete)
+            SPAWN_EVENT(last_evt_3_2)
+        END_IF
+        IF_STR_EQUAL(LW(15), STRING("starstone"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG8_WITCH"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+            CALL(evt_snd_set_rev_mode, 2)
+            CALL(rousoku_init, 1)
+            SPAWN_EVENT(shuryolight_delete)
+            SPAWN_EVENT(last_evt_3_1)
+        END_IF
+        IF_STR_EQUAL(LW(15), STRING("sekai_yami2"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG8_WITCH"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+            CALL(evt_snd_set_rev_mode, 2)
+            CALL(rousoku_init, 1)
+            CALL_CHILD(unk_evt_las_00034ca0)
+            SPAWN_EVENT(last_evt_3)
+        END_IF
+        IF_STR_EQUAL(LW(15), STRING("sekai_yami1"))
+            CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG8_WITCH"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+            CALL(evt_snd_set_rev_mode, 2)
+            CALL(rousoku_init, 1)
+            SPAWN_EVENT(last_evt_2)
+        END_IF
+        IF_STR_EQUAL(LW(15), STRING("w_bero"))
+            CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+            CALL(evt_snd_set_rev_mode, 2)
+            CALL(rousoku_init, 0)
+            SPAWN_EVENT(last_evt_1)
+        END_IF
+        CASE_EQUAL(401)
+        CALL(evt_snd_bgmoff, 512)
+        CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+        CALL(evt_snd_set_rev_mode, 2)
+        CALL(evt_party_stop, 0)
+        CALL(rousoku_init, 1)
+        SPAWN_EVENT(last_evt_4)
+        CASE_DEFAULT
+        CALL(evt_snd_bgmoff, 512)
+        CALL(evt_snd_envon, 272, STRING("ENV_STG8_LAS8"))
+        CALL(evt_snd_set_rev_mode, 2)
+        CALL_CHILD(evt_bero_info_run)
+        CALL(rousoku_init, 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kabekesu"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_o_hikari"), 1)
+        CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_hakahuta"), 1)
+        CALL(evt_map_fog_onoff, 0)
+    END_SWITCH
+    RETURN
+EVT_END()
+
+// TODO: name$877 is a static local of a function: move it inside that function as
+// `static` with this data (it's here at its place in .data)
+// u32 name$877[2] = {
+//     0x00000000, 0x00000000,
+// };
+
+// TODO: name$801 is a static local of a function: move it inside that function as
+// `static` with this data (it's here at its place in .data)
+// u32 name$801[8] = {
+//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
+//     0x00000000, 0x00000000, 0x00000000, 0x00000000,
+// };
+
+// TODO: write radiation_set_pos (global, 0x9c bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+
+// TODO: write _hikariEntry (global, 0x90 bytes) here:
+// its asm is in build/G8MJ01/las/asm/las_29.s; this is where the original has it, just before the first script that uses it
+// clang-format on

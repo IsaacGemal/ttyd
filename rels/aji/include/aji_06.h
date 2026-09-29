@@ -1,0 +1,66 @@
+#pragma once
+
+#include "evt/evt_cmd.h"
+
+USER_FUNC(yuka_anim_reverse_end);
+void yuka_anim_reverse_pause(void);  // TODO: real signature
+void yuka_anim_reverse_replay(void);  // TODO: real signature
+USER_FUNC(yuka_anim_reverse_play);
+USER_FUNC(peach_chg_pose);
+USER_FUNC(peach_evt_toumei_onoff);
+USER_FUNC(peach_set_scale);
+USER_FUNC(peach_evt_seikai_check);
+USER_FUNC(kusuri_list_get_no);
+USER_FUNC(kusuri_list_add);
+USER_FUNC(kusuri_list_init);
+void kusuri_4_color_tev(void);  // TODO: real signature
+void kusuri_3_color_tev(void);  // TODO: real signature
+void kusuri_2_color_tev(void);  // TODO: real signature
+void kusuri_1_color_tev(void);  // TODO: real signature
+void kusuri_naka_color_tev(void);  // TODO: real signature
+USER_FUNC(kusuri_color_get);
+USER_FUNC(kusuri_color_set_rgb);
+USER_FUNC(kusuri_color_set);
+USER_FUNC(kusuri_color_init);
+EVT_DEF(g_Kusuri2_No);
+EVT_DEF(peach_evt_kaihei_open);
+EVT_DEF(peach_evt_kaihei_open_all);
+EVT_DEF(peach_evt_kaihei_close);
+EVT_DEF(peach_evt_kaihei_close_all);
+EVT_DEF(peach_evt_kusuri_select);
+EVT_DEF(peach_evt_pick_kusuri);
+EVT_DEF(peach_evt_check_all_kusuri_set);
+EVT_DEF(peach_evt_kusuri_dasu);
+EVT_DEF(peach_evt_seikai_evt);
+EVT_DEF(peach_evt_kaihei1);
+EVT_DEF(peach_evt_kaihei2);
+EVT_DEF(peach_evt_kaihei3);
+EVT_DEF(peach_evt_kaihei4);
+EVT_DEF(peach_evt_stop_renji);
+EVT_DEF(peach_evt_pato_on);
+EVT_DEF(peach_evt_pato_off);
+EVT_DEF(peach_evt_hari_on);
+EVT_DEF(peach_evt_hari_off);
+EVT_DEF(peach_evt_sugata_modoru);
+EVT_DEF(peach_evt_kusuri_nomu);
+EVT_DEF(kusuri_color_seiko);
+EVT_DEF(kusuri_color_sippai);
+EVT_DEF(peach_evt_tyogo_sub);
+EVT_DEF(peach_evt_tyogo);
+EVT_DEF(peach_evt_tyogo_entry);
+EVT_DEF(peach_evt_kusuri_aka);
+EVT_DEF(peach_evt_kusuri_ao);
+EVT_DEF(peach_evt_kusuri_ki);
+EVT_DEF(peach_evt_kusuri_mid);
+EVT_DEF(peach_evt_wait_memo);
+EVT_DEF(peach_evt_memo1);
+EVT_DEF(peach_evt_memo2);
+EVT_DEF(peach_evt_memo3);
+EVT_DEF(peach_evt_memo4);
+EVT_DEF(peach_evt_matigai_kusuri);
+EVT_DEF(peach_evt_tadashii_kusuri);
+EVT_DEF(peach_evt_door);
+EVT_DEF(kikai_init);
+EVT_DEF(evt_memo3);
+EVT_DEF(evt_memo4);
+EVT_DEF(aji_06_init_evt);
