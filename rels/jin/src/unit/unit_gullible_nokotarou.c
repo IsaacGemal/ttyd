@@ -7,11 +7,12 @@
 #include "party/party_motion.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_unit.h"
+#include "battle/battle_disp.h"
 
 #pragma force_active on
 extern s32 btldefaultevt_Confuse[];
-extern s32 pose_table_nokotarou_stay[];
-extern s32 pose_table_nokotarou_turn[];
+extern BattleDispPose pose_table_nokotarou_stay[26];
+extern BattleDispPose pose_table_nokotarou_turn[12];
 extern s32 weaponGetPowerFromGulliblePartyAttackLv[];
 static BattleVulnerableStatus regist_nokotarou;
 static BattleDataEntry data_table_nokotarou[3];
