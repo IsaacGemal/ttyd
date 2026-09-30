@@ -156,9 +156,18 @@ def ratchet(allowed=()):
             cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
     # Data sections of units that aren't linked yet: `changes` leaves them out, and a function can reach 100% while
     # the unit's .rodata/.sdata2 gets worse (e.g. a named constant left behind next to the literal that replaced it).
-    sections = lambda report: {(u["name"], s["name"]): s["fuzzy_match_percent"]
-                               for u in json.loads(report.read_text())["units"] for s in u.get("sections", [])
-                               if s["name"] != ".text" and s.get("fuzzy_match_percent") is not None}
+    def sections(report):
+        scores = {}
+        for u in json.loads(report.read_text()).get("units") or []:
+            if (u.get("metadata") or {}).get("complete"):
+                continue  # linked: the checksum is the check, and some linked units have imperfect data scores
+            seen = {}
+            for s in u.get("sections") or []:
+                n = seen[s["name"]] = seen.get(s["name"], 0) + 1
+                if s["name"] != ".text" and s.get("fuzzy_match_percent") is not None:
+                    scores[(u["name"], s["name"] + (f"#{n}" if n > 1 else ""))] = s["fuzzy_match_percent"]
+        return scores
+
     before = sections(ACCEPTED)
     for (u, sec), b in sections(current).items():
         if (u, sec) in before:
