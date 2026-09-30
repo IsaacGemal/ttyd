@@ -702,7 +702,7 @@ config.libs = [
             Object(Matching, "event/evt_audience.c"),
             Object(NonMatching, "event/evt_batstage.c"),
             Object(Matching, "event/evt_seq.c"),
-            Object(NonMatching, "event/evt_twoddisp.c"),
+            Object(Matching, "event/evt_twoddisp.c"),
             Object(Matching, "event/evt_snd.c"),
             Object(NonMatching, "event/evt_win.c"),
             Object(NonMatching, "event/evt_cloud.c"),
