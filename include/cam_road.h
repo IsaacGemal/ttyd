@@ -13,5 +13,6 @@ void calcHokanCamRoad(s32 flag, struct CamRoadState* a, struct CamRoadState* b, 
 void calcCurrentCamState(f32* dst);
 void camRoadCurveOn(const char* name);
 void camRoadCurveOff(const char* name);
+f32 camRoadGetCurrentShiftXRate(void);
 struct CamRoadWork;
 struct CamRoadWork* camRoadGetWorkPtr(void);

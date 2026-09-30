@@ -23,6 +23,22 @@ s32 _yoshi_slide_move_sound(BattleUnit* unit, PoseSoundEntry* entry) {
     return BtlUnit_snd_se(unit, entry->soundName, 0xF1194D80, (s16)(unit->work[4] * unit->work[5] / 100));
 }
 
+USER_FUNC(_get_swallow_param) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 val;
+    s32 id;
+    s32 index;
+
+    val = evtGetValue(event, args[0]);
+    id = BattleTransID(event, val);
+    index = args[1];
+    unit = BattleGetUnitPtr(work, id);
+    evtSetValue(event, index, unit->swallowRate);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(_wait_yoshig_complete) {
     BattleUnit* unit;
     s32 val;

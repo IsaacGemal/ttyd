@@ -7,6 +7,8 @@
 #include "driver/mobjdrv.h"
 #include "driver/animdrv.h"
 #include "driver/hitdrv.h"
+#include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/itemdrv.h"
 #include "evt/evt_cmd.h"
@@ -70,6 +72,13 @@ extern f32 float_40_8041a1ec;
 extern f32 float_32767_8041a1e4;
 extern s32 kpa_powerup_evt[];
 
+extern const char str_802C44EC[];
+extern const char str_8041A12C[4];
+extern s32 evt_lock_sound[];
+extern f32 float_1024_8041a1a0;
+extern const f32 float_neg0p8_8041a220;
+extern const f32 float_4_8041a224;
+
 // Prototypes missing from manager/fontmgr.h
 
 
@@ -96,6 +105,147 @@ PoleWork* psw;
 #ifdef MUST_MATCH
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 #endif
+
+s32 mobj_lock(MapObjectEntry* obj) {
+    switch (obj->unk1DC) {
+        case 0:
+            if (obj->flags & 8) {
+                marioKeyOff();
+                partyKeyOff();
+                marioStSystemLevel(1);
+                mobjRunEvent(obj, obj->unk1D4);
+                obj->unk1DC++;
+            }
+            break;
+        case 1:
+            if (evtCheckID(obj->eventId) == 1) {
+                break;
+            }
+            if (obj->flags & 0x1000) {
+                obj->flags &= ~0x1000;
+                obj->flags &= ~0x8;
+                marioKeyOn();
+                partyKeyOn();
+                marioStSystemLevel(0);
+                obj->eventId = 0;
+                obj->unk1DC = 0;
+            } else {
+                obj->eventId = 0;
+                obj->unk1DC++;
+            }
+            break;
+        case 2: {
+            s32 item;
+
+            if (*(s32*)obj->unk1A0 & 0x80000000) {
+                s32 i;
+                s32 check;
+
+                item = 0;
+                i = 0;
+                while (1) {
+                    check = ((s32*)*(s32*)obj->unk1A0)[i];
+                    if (check == -1) {
+                        break;
+                    }
+                    check = pouchCheckItem(check);
+                    if (check != 0) {
+                        item = check;
+                        break;
+                    }
+                    i++;
+                }
+            } else {
+                s32 check = pouchCheckItem(*(s32*)obj->unk1A0);
+
+                item = (check != 0) ? *(s32*)obj->unk1A0 : 0;
+            }
+            if (item != 0) {
+                pouchRemoveItem(item);
+                obj->unk1DC++;
+            } else {
+                *(s32*)&obj->unk1A0[8] = msgWindow_Entry(msgSearch(str_802C44EC), 0, 0);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        }
+        case 3: {
+            EventEntry* event = evtEntryType(evt_lock_sound, 0, 0, 0);
+            f32 scale = float_1024_8041a1a0;
+
+            event->lwData[0] = (s32)(scale * obj->position.x) + 0xF24A7A80;
+            event->lwData[1] = (s32)(scale * obj->position.y) + 0xF24A7A80;
+            event->lwData[2] = (s32)(scale * obj->position.z) + 0xF24A7A80;
+            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            obj->unk1DC++;
+            break;
+        }
+        case 4:
+            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+                break;
+            }
+            obj->unk5C.y = 0.0f;
+            obj->unk68 = 0.5f;
+            obj->unk6C = 0.0f;
+            evtSetValue(NULL, obj->unk1E4, 1);
+            mobjRunEvent(obj, obj->unk1D8);
+            obj->unk1DC++;
+            break;
+        case 5: {
+            f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+
+            distance = float_1_8041a160 + (f32)__fabs(obj->unk5C.y);
+            if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                               obj->position.x, float_1_8041a160 + obj->position.y, obj->position.z,
+                               float_0_8041a150, obj->unk5C.y, float_0_8041a150) != NULL) {
+                obj->position.y = hitY;
+                obj->unk5C.y *= float_neg0p8_8041a220;
+                obj->unk6C += 1.0f;
+                if (obj->unk6C < float_4_8041a224) {
+                    psndSFXOn_3D((const char*)0x1e6, &obj->position);
+                }
+            } else {
+                obj->position.y += obj->unk5C.y;
+                obj->unk5C.y -= obj->unk68;
+            }
+            if (obj->unk6C < float_4_8041a224) {
+                break;
+            }
+            if (evtCheckID(obj->eventId) != 1) {
+                obj->unk1DC++;
+                *(s32*)&obj->unk1A0[0x10] = 0x14;
+            }
+            break;
+        }
+        case 6:
+            (*(s32*)&obj->unk1A0[0x10])--;
+            if (*(s32*)&obj->unk1A0[0x10] & 2) {
+                obj->flags |= 0x4000;
+            } else {
+                obj->flags &= ~0x4000;
+            }
+            if (*(s32*)&obj->unk1A0[0x10] == 0) {
+                obj->unk1DC = 0x63;
+            }
+            break;
+        case 10:
+            if (windowCheckID(*(s32*)&obj->unk1A0[8]) == 0) {
+                obj->flags &= ~0x8;
+                marioKeyOn();
+                partyKeyOn();
+                marioStSystemLevel(0);
+                obj->unk1DC = 0;
+            }
+            break;
+        case 0x63:
+            marioKeyOn();
+            partyKeyOn();
+            marioStSystemLevel(0);
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
 
 s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
 #ifdef MUST_MATCH

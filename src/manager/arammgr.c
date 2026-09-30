@@ -38,3 +38,20 @@ void* aramMgrToAram(void* data, u32 size) {
 	}
 	return work;
 }
+
+void arqCallbackToMram(u32 request) {
+	// Offsets 0x24 (size) and 0x30 (mram address) live in ARAMWorkNode's
+	// unnamed field_0x24 tail, which the header does not name individually.
+	ARAMWorkNode* work = wp->nodes;
+
+	while (work != NULL) {
+		if (request == (u32)work + 4) {
+			break;
+		}
+		work = work->next;
+	}
+	work->flags |= 0x10;
+	work->flags |= 0x20;
+	DCInvalidateRange(*(void**)&work->field_0x24[0x30 - 0x24], *(u32*)&work->field_0x24[0x24 - 0x24]);
+	ICInvalidateRange(*(void**)&work->field_0x24[0x30 - 0x24], *(u32*)&work->field_0x24[0x24 - 0x24]);
+}

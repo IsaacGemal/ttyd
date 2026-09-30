@@ -1,7 +1,9 @@
 #include "eff/eff_syuryou.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "mario/mariost.h"
 #include "memory.h"
 
 #include <dolphin/gx.h>
@@ -9,6 +11,20 @@
 
 // Full white with a zero alpha, replaced by the effect's colour below.
 const u32 dat_804222f8 = 0xFFFFFF00;
+
+// .rodata anchor used to build the effect's world position.
+const Vec vec3_80301358 = { 0.0f, 0.0f, 0.0f };
+const char str_80301364[16] = "EFF_batug_tue";
+const char str_80301374[16] = "MOBJ_EFF_baria";
+
+/* The original resolves the two .rodata group names as offsets from
+   vec3_80301358, so mwcc pools them under that base instead of a
+   compiler-generated pool symbol. */
+#ifdef MUST_MATCH
+#define SYU_STR(base, off, sym) ((base) + (off))
+#else
+#define SYU_STR(base, off, sym) ((const char*)&(sym))
+#endif
 
 /* Full work data for the syuryou effect. Its first fields (type/position/scale)
    line up with EffSyuryouData in the header, which las_28.c reads. */
@@ -48,6 +64,71 @@ EffectEntry* effSyuryouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	data->color = 0xFF;
 	data->poseId = -1;
 	return effect;
+}
+
+void effSyuryouMain(EffectEntry* effect) {
+	SyuryouData* data = effect->userdata;
+	Vec pos2;
+	Vec pos;
+	s32 type;
+	s32 inBattle;
+	const char* base = (const char*)&vec3_80301358;
+
+	pos = vec3_80301358;
+	pos.x = data->position.x;
+	pos.y = data->position.y;
+	pos.z = data->position.z;
+	pos2 = pos;
+	type = data->type;
+	inBattle = gp->inBattle ? 1 : 0;
+
+	switch (type) {
+		case 0:
+			if (!animGroupBaseAsync(SYU_STR(base, 0xC, str_80301364), inBattle, NULL)) {
+				return;
+			}
+			if (data->poseId == -1) {
+				data->poseId = animPoseEntry(SYU_STR(base, 0xC, str_80301364), inBattle);
+				animPoseSetAnim(data->poseId, "A_1", TRUE);
+			}
+			if (animPoseGetLoopTimes(data->poseId) >= 1.0f) {
+				animPoseRelease(data->poseId);
+				effDelete(effect);
+				return;
+			}
+			break;
+		case 1:
+			if (!animGroupBaseAsync(SYU_STR(base, 0x1C, str_80301374), inBattle, NULL)) {
+				return;
+			}
+			if (data->poseId == -1) {
+				data->poseId = animPoseEntry(SYU_STR(base, 0x1C, str_80301374), inBattle);
+				animPoseSetAnim(data->poseId, "A_1", TRUE);
+			}
+			if (animPoseGetLoopTimes(data->poseId) >= 1.0f) {
+				animPoseSetAnim(data->poseId, "S_1", FALSE);
+			}
+			break;
+	}
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->timer = 0x20;
+	}
+	if (data->timer < 1000) {
+		data->timer--;
+	}
+	if (data->timer < 0x20) {
+		data->color = data->timer * 8;
+	}
+	if (data->timer < 0) {
+		if (data->poseId != -1) {
+			animPoseRelease(data->poseId);
+		}
+		effDelete(effect);
+		return;
+	}
+	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effSyuryouDisp, effect);
 }
 
 static inline void syuryouSetColor(SyuryouData* data) {

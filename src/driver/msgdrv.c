@@ -18,6 +18,8 @@
 extern GlobalWork* gp;
 extern GXColor unk_80422fe4;
 extern f32 float_0p36_8041a6a0;
+extern f32 float_0p6_8041a570;
+extern s32 msgWindowOpen_SE_Data[12][2];
 
 typedef struct MsgLookupEntry {
 	u32 startaddr; //0x0
@@ -717,6 +719,219 @@ void selectWindow_Main(WindowEntry* window) {
 		return;
 	}
 	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
+}
+
+// NONMATCHING (99.28%): full body written; all control flow matches. r29/r30 are swapped (the
+// original keeps window->userdata in r30 and the MessageData pointer in r29), plus one and. operand
+// order and the jumptable/400.0f symbol names.
+void msgWindow_Main(WindowEntry* window) {
+	smartEntry* smart = window->userdata;
+	MessageData* data = smart->address;
+
+	if (data->field_0x7A50 != 0) {
+		if (data->field_0x7A54 == 0) {
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeTalkAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetTalkPose(data->text);
+			}
+			data->field_0x7A54 = 1;
+		}
+		data->field_0x7A50--;
+		if (data->field_0x7A50 == 0) {
+			if (((MessageData*)smart->address)->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(((MessageData*)smart->address)->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(((MessageData*)smart->address)->text);
+			}
+			data->field_0x7A54 = 0;
+		}
+	}
+
+	switch (*(u16*)window->field_0x0) {
+	case 5:
+		if (!(window->flags & 8)) {
+			s32 se = msgWindowOpen_SE_Data[window->type][0];
+			if (se >= 0) {
+				psndSFXOn((const char*)(se | 0x20000));
+			}
+		}
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		*(u16*)window->field_0x0 = 6;
+		/* fallthrough */
+	case 6:
+		window->flags |= 2;
+		window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
+		if (window->alpha > 0xff) {
+			window->alpha = 0xff;
+			*(u16*)window->field_0x0 = 1;
+			data->field_0x18 = gp->renderTime;
+			data->field_0x30 = gp->renderTime;
+		}
+		break;
+	case 7:
+		if (!(window->flags & 8)) {
+			s32 se = msgWindowOpen_SE_Data[window->type][1];
+			if (se >= 0) {
+				psndSFXOn((const char*)(se | 0x20000));
+			}
+		}
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		*(u16*)window->field_0x0 = 8;
+		/* fallthrough */
+	case 8:
+		if (window->alpha == 0) {
+			windowDelete(window);
+			return;
+		}
+		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
+		if (window->alpha <= 0) {
+			window->alpha = 0;
+		}
+		break;
+	case 1:
+		switch (msgMain(window->userdata)) {
+		case 0:
+			*(u16*)window->field_0x0 = 7;
+			data = window->userdata->address;
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(data->text);
+			}
+			break;
+		case 1:
+			*(u16*)window->field_0x0 = 2;
+			window->flags &= ~2;
+			data = window->userdata->address;
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(data->text);
+			}
+			break;
+		case 2:
+			*(u16*)window->field_0x0 = 3;
+			break;
+		case 3:
+			break;
+		}
+		break;
+	case 3: {
+		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		if (keyGetButtonTrg(0) & (mask | 0x200)) {
+			*(u16*)window->field_0x0 = 1;
+			*(u16*)((u8*)data + 0xa) = 2;
+			if (keyGetButtonTrg(0) & 0x200) {
+				if (!(data->field_0x4 & 0x80)) {
+					data->field_0x4 |= 4;
+				}
+			}
+		}
+		if (keyGetButtonTrg(0) & 0x10) {
+			u32 ok;
+			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))--;
+				if (*(s32*)((u8*)d + 0x783C) < 0) {
+					*(s32*)((u8*)d + 0x783C) = (ok = 0);
+				}
+				else {
+					ok = 1;
+				}
+			}
+			if (ok) {
+				*(u16*)window->field_0x0 = 9;
+				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+				psndSFXOn((const char*)0x20041);
+				data->field_0x4 |= 0x40;
+			}
+		}
+		break;
+	}
+	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing field_0x28 across the
+	// OSTicksToMilliseconds call; the original reloads it.
+	case 9: {
+		s32 value = ((s32*)((u8*)data + 0x7844))[*(s32*)((u8*)data + 0x783C)];
+		if (data->field_0x28 < value) {
+			break;
+		}
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 - float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		if (data->field_0x28 > value) {
+			break;
+		}
+		data->field_0x28 = value;
+		*(u16*)window->field_0x0 = 0xb;
+		break;
+	}
+	// Same no-op cast as case 9, on the field_0x28 update below.
+	case 10: {
+		s32 value = ((s32*)((u8*)data + 0x7844))[*(s32*)((u8*)data + 0x783C)];
+		if (data->field_0x28 > value) {
+			break;
+		}
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 + float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		if (data->field_0x28 < value) {
+			break;
+		}
+		data->field_0x28 = value;
+		if (data->field_0x7840 - 1 == *(s32*)((u8*)data + 0x783C)) {
+			*(u16*)window->field_0x0 = 3;
+			data->field_0x4 &= ~0x40;
+		}
+		else {
+			*(u16*)window->field_0x0 = 0xb;
+		}
+		break;
+	}
+	case 11: {
+		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		if (keyGetButtonTrg(0) & mask) {
+			*(u16*)window->field_0x0 = 0xa;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			data = window->userdata->address;
+			(*(s32*)((u8*)data + 0x783C))++;
+			if (*(s32*)((u8*)data + 0x783C) > data->field_0x7840 - 1) {
+				*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			}
+			psndSFXOn((const char*)0x20041);
+		}
+		if (keyGetButtonTrg(0) & 0x200) {
+			*(u16*)window->field_0x0 = 0xa;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			psndSFXOn((const char*)0x20041);
+		}
+		if (keyGetButtonTrg(0) & 0x10) {
+			u32 ok;
+			*(u16*)window->field_0x0 = 9;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))--;
+				if (*(s32*)((u8*)d + 0x783C) < 0) {
+					*(s32*)((u8*)d + 0x783C) = (ok = 0);
+				}
+				else {
+					ok = 1;
+				}
+			}
+			if (ok) {
+				psndSFXOn((const char*)0x20041);
+			}
+		}
+		break;
+	}
+	}
+
+	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
 }
 
 // NONMATCHING (98.23%): only the msgMain switch compare tree differs (original pivots on 2, this on 1).

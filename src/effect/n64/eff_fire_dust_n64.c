@@ -8,6 +8,14 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+#include <stdlib.h>
+#include <math.h>
+
+// .rodata: zero Vec copied into the local position before the particle fields are set.
+const Vec vec3_802fa560 = { 0.0f, 0.0f, 0.0f };
+
+const f64 double_to_int_802fa570 = 4503601774854144.0;
+
 // .rodata string used as the EffectEntry type name.
 const char str_802FA578[12] = "FireDustN64";
 
@@ -21,6 +29,19 @@ extern const f32 float_2p0944_8041ee24;
 extern const f32 float_neg2p0944_8041ee28;
 extern const f32 float_255_8041ee10;
 extern const f32 float_deg2rad_8041ee14;
+extern const f32 float_0p5_8041ee2c;
+extern const f32 float_6p2832_8041ee30;
+extern const f32 float_360_8041ee34;
+extern const f32 float_15_8041ee38;
+extern const f32 float_0p4_8041ee3c;
+extern const f32 float_2_8041ee40;
+extern const f32 float_4_8041ee44;
+extern const f32 float_0p2_8041ee48;
+extern const f32 float_0p6_8041ee4c;
+extern const f32 float_0p04_8041ee50;
+
+// .data particle scale table indexed by the per-particle frame counter (defined below).
+static f32 scale_data[20];
 
 // .sbss2 zero GXColor scratch the original builds the TEV color from.
 extern GXColor unk_804230f8;
@@ -136,6 +157,97 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, 
     return effect;
 }
 
+void effFireDustMain(EffectEntry* effect) {
+    s32 ival;
+    effFireDustData* data;
+    s32 i;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+       local before dispCalcZ; a single local folds the copy away. */
+    Vec position;
+#endif
+    Vec disp = vec3_802fa560;
+    f32 half;
+    f32 radius;
+    f32 angle;
+
+    data = effect->userdata;
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+#ifdef MUST_MATCH
+    position = disp;
+#endif
+
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->field_0x38 = 16;
+    }
+    if (data->field_0x38 < 1000) {
+        data->field_0x38--;
+    }
+    data->field_0x3C++;
+    if (data->field_0x38 < 0) {
+        effDelete(effect);
+        return;
+    }
+    if (data->field_0x38 < 8) {
+        data->field_0x4C = data->field_0x38 << 5;
+    }
+
+    i = 1;
+    radius = data->field_0x10;
+    ival = (s32)data->field_0x14;
+    half = float_0p5_8041ee2c * data->field_0x14;
+    data++;
+    for (; i < effect->count; i++, data++) {
+        data->field_0x30++;
+        if (data->field_0x30 >= 20) {
+            data->field_0x30 = 0;
+        }
+        if (data->field_0x30 < 0) {
+            continue;
+        }
+        if (data->field_0x30 == 0) {
+            angle = (f32)(rand() % 360);
+#ifdef MUST_MATCH
+            /* MUST_MATCH: the original discards a rand() result here before scaling the
+               angle; the RNG state feeds later particles, so it is not removable. */
+            (void)rand();
+#endif
+            angle = float_6p2832_8041ee30 * angle / float_360_8041ee34;
+            data->x = radius * (f32)sin(angle);
+            data->y = (f32)(rand() % ival) - half;
+            data->z = radius * (f32)cos(angle);
+            data->field_0x18 = float_15_8041ee38 * (f32)sin(angle);
+            data->field_0x1C = float_0p4_8041ee3c * data->y;
+            data->field_0x20 = float_15_8041ee38 * (f32)cos(angle);
+            data->field_0x24 = float_0p5_8041ee2c * data->field_0x18;
+            data->field_0x28 = float_0p5_8041ee2c * data->field_0x1C;
+            data->field_0x2C = float_0p5_8041ee2c * data->field_0x20;
+            data->field_0x64 = (f32)(rand() % 15);
+            data->field_0x68 = (f32)(rand() % 15);
+            data->field_0x34 = float_0_8041ee20;
+            data->field_0x4C = 0xff;
+        }
+        data->field_0x60 = float_2_8041ee40 * scale_data[data->field_0x30];
+        data->field_0x34 += float_4_8041ee44;
+        data->x += data->field_0x18;
+        data->y += data->field_0x1C;
+        data->z += data->field_0x20;
+        data->field_0x64 += float_0p2_8041ee48;
+        data->field_0x68 += float_0p6_8041ee4c;
+        data->field_0x18 += float_0p04_8041ee50 * (data->field_0x24 - data->field_0x18);
+        data->field_0x1C += float_0p04_8041ee50 * (data->field_0x28 - data->field_0x1C);
+        data->field_0x20 += float_0p04_8041ee50 * (data->field_0x2C - data->field_0x20);
+    }
+#ifdef MUST_MATCH
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireDustDisp, effect);
+#else
+    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireDustDisp, effect);
+#endif
+}
+
 void effFireDustDisp(CameraId camId, void* param) {
     effFireDustData* data;
     EffectEntry* effect;
@@ -185,6 +297,12 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, dispMtx, dispMtx);
     main_dl(effect, dispMtx);
 }
+
+// .data particle scale table indexed by the per-particle frame counter.
+static f32 scale_data[20] = {
+    0.2f, 0.4f, 0.8f, 1.3f, 1.5f, 1.3f, 0.9f, 0.6f, 0.4f, 0.3f,
+    0.2f, 0.4f, 0.8f, 1.3f, 1.5f, 1.3f, 0.9f, 0.6f, 0.4f, 0.3f,
+};
 
 // .data vertex strip; the original is a raw 0x1C0-byte object and main_dl
 // passes 0x38-byte slices of it to effSetVtxDescN64.

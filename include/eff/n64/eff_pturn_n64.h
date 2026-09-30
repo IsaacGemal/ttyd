@@ -33,6 +33,29 @@ typedef struct effPturnN64Data {
     f32 field_0x88; // 0x88
     u8 pad_8C[4];  // 0x8C
 } effPturnN64Data;
+
+// One pturn particle; effPturnN64Entry allocates two of these (0x48 bytes each).
+// effPturnN64Data above is a flat view of the same 0x90-byte block.
+typedef struct PturnN64Elem {
+    s32 field_0x0;   // 0x00
+    s32 field_0x4;   // 0x04
+    f32 x;           // 0x08
+    f32 y;           // 0x0C
+    f32 z;           // 0x10
+    f32 field_0x14;  // 0x14
+    f32 field_0x18;  // 0x18
+    f32 field_0x1C;  // 0x1C
+    f32 field_0x20;  // 0x20
+    s32 field_0x24;  // 0x24
+    s32 life;        // 0x28
+    s32 field_0x2C;  // 0x2C
+    f32 field_0x30;  // 0x30
+    f32 field_0x34;  // 0x34
+    s32 field_0x38;  // 0x38
+    s32 field_0x3C;  // 0x3C
+    f32 field_0x40;  // 0x40
+    s32 field_0x44;  // 0x44
+} PturnN64Elem;
 void effPturnDisp(CameraId camId, void* param);
 void effPturnMain(EffectEntry* effect);
 void pturn_main_dispp(CameraId camId, void* param);

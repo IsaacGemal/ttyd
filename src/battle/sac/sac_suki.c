@@ -130,8 +130,14 @@ extern const f32 float_1_804220d8;
 extern const f32 float_0_804220e8;
 extern const f32 float_60_804220ec;
 extern const f32 float_80_804220e4;
+extern const f32 float_neg1000_804220f8;
+extern const f32 float_neg80_8042212c;
+extern const f32 float_neg60_80422130;
 extern u8 weapon[];
-extern s32 nice_event[];
+static u32 nice_event[8] = {
+    0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
+    0x00000078, 0,                     2,          1,
+};
 extern const GXColor dat_804220a0;
 
 static SukiWork* get_ptr(void);
@@ -187,6 +193,150 @@ s32 main_suki(EventEntry* event, BOOL isFirstCall) {
     dispEntry(4, 0.0f, 1, disp_3D, NULL);
     dispEntry(4, 0.0f, 2, disp_3D_alpha, NULL);
     return 0;
+}
+
+// .text:0x1230 | 0x8024AA14 | size: 0x470
+// The three intplGetValue argument setups differ in instruction scheduling: the original keeps the
+// `lwz r4, work->counter` load as the last instruction before the call (after the two lfs of the float
+// bounds), and the case-2 Vec copy uses r6/r4/r0 instead of r4/r6/r0. Everything else is verified.
+// NONMATCHING (97.62%): intplGetValue arg scheduling (counter load position) and case-2 Vec registers.
+static void main_base(void) {
+    SukiWork* work = get_ptr();
+    s32 audienceNum = BattleAudience_GetAudienceNum();
+    s32 i;
+
+    switch (work->state) {
+    case 1:
+        work->state = 2;
+        work->counter = 0;
+        // fall through
+    case 2:
+        if (work->count == 0) {
+            Vec pos = vec3_803009c0;
+
+            pos.x = intplGetValue(4, work->counter, 15, float_neg1000_804220f8, float_0_804220e8);
+            work->pos = pos;
+        }
+        if (work->counter == 0) {
+            if (work->starState != 4) {
+                return;
+            }
+            memcpy(work->buttons2, work->buttons, 0xA8);
+            work->prevSelected = work->selected;
+            if (work->count < 5) {
+                work->selected = 0;
+                work->max = work->count + 3;
+                work->timer = work->count * 10 + 0xB4;
+                for (i = 0; i < 7; i++) {
+                    SukiButton* button = &work->buttons[i];
+
+                    if (i < work->max) {
+                        button->state = 1;
+                    }
+                    else {
+                        button->state = 0;
+                    }
+                }
+            }
+            else {
+                for (i = 0; i < 7; i++) {
+                    work->buttons[i].state = 0;
+                }
+            }
+        }
+        work->alpha = intplGetValue(0, work->counter, 15, float_neg80_8042212c, float_0_804220e8);
+        work->counter++;
+        if (work->counter >= 15) {
+            if (work->count >= 5) {
+                work->state = 5;
+                work->counter = 0;
+                work->starState = 8;
+            }
+            else {
+                work->state = 4;
+            }
+            work->pos = vec3_803009cc;
+        }
+        break;
+    case 3:
+        if (work->counter == 0) {
+            if (work->starState != 4) {
+                return;
+            }
+            psndSFXOn(str_80300B60);
+            memcpy(work->buttons2, work->buttons, 0xA8);
+            work->prevSelected = work->selected;
+            for (i = 0; i < 7; i++) {
+                work->buttons[i].state = 0;
+            }
+        }
+        work->alpha = intplGetValue(0, work->counter, 15, float_neg60_80422130, float_0_804220e8);
+        work->counter++;
+        if (work->counter >= 15) {
+            work->state = 5;
+            work->counter = 0;
+            work->starState = 8;
+        }
+        break;
+    case 4:
+        work->timer--;
+        if (work->timer <= 0) {
+            work->state = 3;
+            work->counter = 0;
+            break;
+        }
+        if (keyGetButtonTrg(0) & 0xF00) {
+            if (keyGetButtonTrg(0) & work->buttons[work->selected].button) {
+                EventEntry* entry;
+
+                work->selected++;
+                psndSFXOn(str_80300B78);
+                if (work->selected >= work->max) {
+                    work->state = 2;
+                    work->counter = 0;
+                    work->count++;
+                    work->starState = 5;
+                    entry = evtEntry(nice_event, 0, 0x20);
+                    {
+                        s32 n = work->count + 1;
+
+                        entry->lwData[0] = (n < 6) ? n : 6;
+                    }
+                    if (audienceNum >= 1 && audienceNum <= 0x31) {
+                        BattleAudienceSoundCallKind(1);
+                    }
+                    if (audienceNum >= 0x32 && audienceNum <= 0x63) {
+                        BattleAudienceSoundCallKind(1);
+                        BattleAudienceSoundWhistleKind(1);
+                    }
+                    if (audienceNum >= 0x64 && audienceNum <= 0x95) {
+                        BattleAudienceSoundCallKind(2);
+                        BattleAudienceSoundWhistleKind(2);
+                    }
+                    if (audienceNum >= 0x96) {
+                        BattleAudienceSoundCallKind(2);
+                        BattleAudienceSoundWhistleKind(3);
+                    }
+                }
+            }
+            else {
+                work->state = 3;
+                work->counter = 0;
+            }
+        }
+        break;
+    case 5:
+        work->counter++;
+        if (work->counter <= 30) {
+            Vec pos = vec3_803009d8;
+
+            pos.x = intplGetValue(4, work->counter, 30, float_0_804220e8, float_neg1000_804220f8);
+            work->pos = pos;
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 // .text:0x0 | 0x80249920 | size: 0xE8

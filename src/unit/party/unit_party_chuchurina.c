@@ -31,6 +31,17 @@ USER_FUNC(mono_main) {
     return EVT_RETURN_BLOCK;
 }
 
+USER_FUNC(mono_capture_event) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    BtlUnit_GetPartsPtr(unit, 1);
+    dispEntry(CAMERA_2D, float_910_8041ddbc, 0, mono_capture, unit);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(mono_on) {
     if (isFirstCall) {
         mono_alpha = 0;

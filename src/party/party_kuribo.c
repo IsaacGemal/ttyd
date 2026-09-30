@@ -1,6 +1,7 @@
 #include "party/party_kuribo.h"
 #include "evt/evt_cmd.h"
 #include "mario/mario_party.h"
+#include "mario/mariost.h"
 #include "party.h"
 #include "pmario_sound.h"
 
@@ -37,6 +38,21 @@ USER_FUNC(pre_kurio_use) {
     }
 
     
+}
+
+USER_FUNC(post_kurio_use) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (!party) {
+        return EVT_RETURN_DONE;
+    }
+
+    party->useMotionId = 0x14;
+    marioStSystemLevel(0);
+    psndClearFlag(0x80);
+    party->flags &= ~0x04000000;
+    party->flags &= ~0x02000000;
+    return EVT_RETURN_DONE;
 }
 
 // .sdata2 constants

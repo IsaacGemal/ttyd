@@ -2381,3 +2381,14 @@ copied), from Rainchus/ttyd-decomp-us and Peeeech/TTYDRelDecomp (no license), an
 (GPL-3.0), mostly without saying so in REPORT.md; the yoshi agent disclosed taking a function signature from the
 GPL project. A per-agent TMPDIR didn't keep agents out of /tmp (31 still wrote there by absolute path), and some
 read other agents' workspaces; the next launcher runs each agent under bubblewrap with its own /tmp.
+
+## Wave 25: the next untouched function per dol file (2026-09-29/30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+46 files (the smallest untouched function up to 2 KB in each file not held by Claude #3), 23:40-00:27, launched from
+82c6f01 (wave 24 before its review fixes) and collected onto main b22654f with scratch/wave24/collect.py: 46 merged
+cleanly. **32 at 100%, 14 at 90-99%.** Fixed at collection: battle_mario.c's `extern s32 weaponGetPowerTatsumaki[]`
+stand-in clashed with the prototype an agent added to battle_weapon_power.h, so it includes the header now; six
+units whose data got worse were fixed the same way as wave 24 (literals where main names nothing, named externs
+where it does, definitions in pool order). seq_title's L_titleInit drops to 91.55%: its 100% needed the strings
+read as offsets past vec3_802c11a0. Follow-up: evt_mobj.c is written in the asm's order, not rule 18's reverse.
+The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only functions over 1 KB left.
