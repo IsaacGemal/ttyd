@@ -77,7 +77,7 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 // Building `position` from a named zero vector schedules its loads before the callee-save stores and
 // leaves `effect`/`timer` in swapped callee-saved registers. Copying from the anonymous zero literal
 // (which pools to the same .rodata slot) reproduces the retail schedule.
-inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
+static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
 	temp.y = y;

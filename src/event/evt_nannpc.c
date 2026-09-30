@@ -11,14 +11,12 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 #include "evt/evt_nannpc.h"
-#include "matching.h"
 
 // Local declarations for this translation unit. Nothing below is in a header yet:
 //   NanNpcWork / NanNpcEntry  - the nameless-NPC work and per-entry state
 //   makestring                - scratch buffer used to format numeric names
 //   ext* / qqsort             - driver/extdrv.c internals used by the ext_ callbacks
 //   nannpc_ext_*              - this unit's draw callbacks
-
 typedef struct NanNpcEntry NanNpcEntry;
 
 struct NanNpcWork {

@@ -182,7 +182,7 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
 
 // NONMATCHING (99.98%): every instruction but the base address matches. The target keeps the +0x330 in the
 // symbol addend (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`, then
-// +0x650/+0x710/+0x7d0/+0x890); MWCC 2.6 folds it into the later immedates instead (+0x980/+0xa40/+0xb00/
+// +0x650/+0x710/+0x7d0/+0x890); MWCC 2.6 folds it into the later immediates instead (+0x980/+0xa40/+0xb00/
 // +0xbc0). Same final addresses. Tried: opt_propagation/opt_common_subs/global_optimizer/peephole/
 // opt_dead_assignments off, optimization_level 1-4, pointer/struct/u8*/u32/array/union/const-pointer base
 // forms, and the same trick with an existing symbol (lbl_803848DC-4, which folds the -4 the same way).

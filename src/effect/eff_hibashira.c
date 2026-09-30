@@ -13,7 +13,7 @@
 // Builds the zero vector from an anonymous literal so the scheduler keeps the
 // userdata load ahead of the copy (see docs/CONTEXT.md, Grind 19). The literal
 // lands in .rodata at the position the named zero vector used to occupy.
-inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
+static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
 	temp.y = y;

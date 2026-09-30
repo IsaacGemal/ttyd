@@ -160,7 +160,11 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 
 	idx = data->field_0x14 * 3;
+#ifdef MUST_MATCH
 	idx %= 24;
+#else
+	idx = idx % 24;
+#endif
 	hagetakaFlushSetColor(idx, alpha);
 
 	GXSetCullMode(0);

@@ -226,4 +226,3 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXPosition3f32(half, half, IND_VERT_ZERO);
 	GXTexCoord2f32(IND_VERT_ZERO, v);
 }
-

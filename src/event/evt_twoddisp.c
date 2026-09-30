@@ -174,10 +174,6 @@ USER_FUNC(twoddisp_main) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.39%): the icon id is meant to be u16, but include/driver/icondrv.h and the definition in
-// src/driver/icondrv.c declare iconDispGx's third parameter as s16. The original caller emits
-// `clrlwi r5, r0, 16` (zero-extend), which only an unsigned parameter produces; ours emits `extsh r5, r0`.
-// Reported, not worked around.
 #ifdef MUST_MATCH
 // Match-only stack shape: passing the font colour by value makes the compiler place all four GXColor
 // argument copies in the outgoing-argument area, matching the original's 0x14/0x10/0xc/0x8 slots; the
@@ -187,8 +183,9 @@ static inline void twoddisp_fontColor(GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.39%): only `clrlwi r5, r0, 16` (original) vs `extsh r5, r0` (ours) differs; the icon
-// id is u16 in the original, s16 in the icondrv header. See the note above.
+// NONMATCHING (99.39%): only `clrlwi r5, r0, 16` (original) vs `extsh r5, r0` (ours) differs. The icon id
+// is u16 in the original, but include/driver/icondrv.h and src/driver/icondrv.c declare iconDispGx's third
+// parameter as s16. Reported, not worked around.
 void twoddisp_disp(CameraId cameraId, void* param) {
 	s32 offset;
 	s32 i;

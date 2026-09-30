@@ -149,9 +149,9 @@ void effSunlightMain(EffectEntry* effect) {
 // inlined local and the by-value copy in the wrong two stack slots when two colours are passed, while
 // inlining the whole GXSetTevColor call (helper builds the colour, then calls) reproduces the target
 // slots. `alpha` is declared before `type` to put them in r29/r28.
-static const Vec effSunlightTarget = { 0.0f, 0.0f, 0.0f };
-static const Vec effSunlightEye = { 0.0f, 0.0f, 100.0f };
-static const Vec effSunlightUp = { 0.0f, 1.0f, 0.0f };
+const Vec vec3_802fb7d4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fb7e0 = { 0.0f, 0.0f, 100.0f };
+const Vec vec3_802fb7ec = { 0.0f, 1.0f, 0.0f };
 
 #ifdef MUST_MATCH
 /* MUST_MATCH: inlining the whole call keeps the colour and its by-value copy in the target's two
@@ -199,9 +199,9 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	type = data->type;
 	alpha = data->field_0x38;
 
-	target = effSunlightTarget;
-	eye = effSunlightEye;
-	up = effSunlightUp;
+	target = vec3_802fb7d4;
+	eye = vec3_802fb7e0;
+	up = vec3_802fb7ec;
 
 	if (alpha == 0) {
 		return;

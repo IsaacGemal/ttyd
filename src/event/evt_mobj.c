@@ -2156,7 +2156,9 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
+#ifdef MUST_MATCH
     u8* base = (u8*)vec3_802c3dc8;
+#endif
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -2171,14 +2173,26 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
+#ifdef MUST_MATCH
             asyncName = (const char*)(base + 0x9d8);
+#else
+            asyncName = "MOBJ_BlueSwitch";
+#endif
             break;
         case 1:
+#ifdef MUST_MATCH
             asyncName = (const char*)(base + 0x9e8);
+#else
+            asyncName = "MOBJ_BlackSwitch";
+#endif
             break;
         case 2:
         default:
+#ifdef MUST_MATCH
             asyncName = (const char*)(base + 0x9fc);
+#else
+            asyncName = "HOBJ_BlueSwitch";
+#endif
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {

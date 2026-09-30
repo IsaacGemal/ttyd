@@ -16,7 +16,11 @@ BOOL ARCInitHandle(void* arcStart, ARCHandle* handle) {
 
 	header = (ARCHeader*)arcStart;
 	if (header->magic != 0x55AA382D) {
+#ifdef MUST_MATCH
 		OSPanic(__FILE__, 0x46, "ARCInitHandle: bad archive format");
+#else
+		OSPanic(__FILE__, __LINE__, "ARCInitHandle: bad archive format");
+#endif
 	}
 	handle->archiveStartAddr = arcStart;
 	entry = (FSTEntry*)((u32)arcStart + header->fstStart);

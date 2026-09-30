@@ -28,13 +28,18 @@
 // .rodata / .sdata2 data referenced by this file's functions.
 const Vec vec3_802ccf48 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ccf54 = {0.0f, -1.0f, 0.0f};
+#ifdef MUST_MATCH
+// Layout padding only, nothing references it: fills the original's slot between the two Vecs.
 const s32 dat_802ccf60[8] = {0, 45, -45, 90, -90, 135, -135, 180};
+#endif
 const Vec vec3_802ccf80 = {0.0f, -1.0f, 0.0f};
 const char str_802CCF8C[] = "MOBJ_BombRock";
-// int->float conversion pool used by check_front/partyGetReturnPos; declared so the
-// .rodata offsets of the strings below match the original object.
+#ifdef MUST_MATCH
+// Layout padding only, nothing references these: they fill the int->float slots the original has here,
+// so the strings below and the later functions' .rodata offsets line up.
 const f64 double_to_int_802ccfa0 = 4503601774854144.0;
 const f64 double_to_int_mask_802ccfa8 = 4503599627370496.0;
+#endif
 const char str_802CCFB0[] = "muj_05";
 const char str_802CCFB8[] = "A_dokuro_bero";
 const char str_802CCFC8[] = "MOBJ_RedJumpStand";
@@ -50,7 +55,7 @@ const char str_8041B2B0[] = "M_R_1";
 const char str_8041B2B8[] = "M_S_1";
 
 // .text:0x0 | 0x800BCE50 | size: 0x3FC
-// NONMATCHING (97.09%): each of the three `check hit` blocks emits its own
+// NONMATCHING (97.12%): each of the three `check hit` blocks emits its own
 // `li r0,0; b` for the strcmp else where the original branches to the shared
 // false block shared with the caseCheck else. Logic and all other instructions match.
 HitEntry* check_front(PartyEntry* party) {

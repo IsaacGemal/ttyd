@@ -163,7 +163,7 @@ EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX,
 		return NULL;
 	}
 
-	mag = dirZ * dirZ + (dirX * dirX + dirY * dirY);
+	mag = dirX * dirX + dirY * dirY + dirZ * dirZ;
 	if (mag == float_0_8041e988) {
 		return NULL;
 	}

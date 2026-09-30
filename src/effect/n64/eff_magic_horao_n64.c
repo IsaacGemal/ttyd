@@ -298,6 +298,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 
 			a = (s32)(float_500_8041f774 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760) * alpha);
 			b = (s32)(float_200_8041f778 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760) * alpha);
+#ifdef MUST_MATCH
 			vp->x = a - 0xC80;
 			vp->y = b + y;
 			vp->z = 0;
@@ -308,6 +309,18 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 			vp->z2 = 0;
 			vp->unk14 = 0x800;
 			vp->unk16 = v;
+#else
+			vp->x = a - 0xC80;
+			vp->x2 = a + 0xC80;
+			vp->y = b + y;
+			vp->y2 = b + y;
+			vp->z = 0;
+			vp->z2 = 0;
+			vp->unk06 = 0;
+			vp->unk08 = v;
+			vp->unk14 = 0x800;
+			vp->unk16 = v;
+#endif
 			vp++;
 			off1 += 60;
 			off2 += 6;
