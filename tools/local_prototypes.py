@@ -107,7 +107,7 @@ def shared_asm_path(rel, root=ROOT):
     for m in re.finditer(r'Object\(\w+, "([^"]+)", modules=\["(\w+)"\](?:, source="([^"]+)")?', (root / "configure.py").read_text()):
         if (m.group(3) or m.group(1)) == rel:
             return root / "build" / "G8MJ01" / m.group(2) / "asm" / Path(m.group(1)).with_suffix(".s")
-    return root / "build" / "G8MJ01" / "common" / "asm" / Path(rel).with_suffix(".s")
+    raise ValueError(f"rels/common/src/{rel}: no Object in configure.py builds it")
 
 
 def asm_scopes(path, root=ROOT):

@@ -456,7 +456,7 @@ def fix_index(src, sym, old_size, stride):
     num = r'(0[xX][0-9A-Fa-f]+|\d+)'
     code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|(&\s*)?\b' + re.escape(sym) + r'\b(\s*\[\s*' + num +
                       r'\s*\]|\s*([-+])\s*' + num + r'\b)?', re.S)
-    decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b)[A-Za-z_]\w*\s*\*?\s*' +
+    decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b|else\b|do\b|goto\b)[A-Za-z_]\w*\s*\*?\s*' +
                       re.escape(sym) + r'\s*(?:\[|=|;)')
     out, pos = [], 0
     for m in code.finditer(src):
