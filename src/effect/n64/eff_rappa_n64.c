@@ -8,6 +8,11 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+#ifndef MUST_MATCH
+// .rodata: zero vector the natural position helper starts from (MUST_MATCH builds it as an anonymous literal).
+const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
+#endif
+
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor gap_10_80423234_sbss2;
