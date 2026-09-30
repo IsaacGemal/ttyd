@@ -37,9 +37,6 @@ u32 twodID;
 // .sdata2 constants owned by this translation unit (see config/G8MJ01/symbols.txt).
 extern const GXColor dat_8041cca8;
 extern const GXColor dat_8041ccac;
-extern const f32 float_0_8041ccb0;
-extern const f32 float_1_8041ccb4;
-extern const f32 float_1000_8041ccb8;
 
 // .sbss2 fog colors.
 extern GXColor unk_80423048;
@@ -118,12 +115,12 @@ USER_FUNC(evt_twoddisp_entry) {
 			strcpy(entry->name, name);
 			entry->flags = 1;
 			entry->field_0x12 = 0;
-			entry->x = float_0_8041ccb0;
-			entry->baseX = float_0_8041ccb0;
-			entry->y = float_0_8041ccb0;
-			entry->baseY = float_0_8041ccb0;
+			entry->x = 0.0f;
+			entry->baseX = 0.0f;
+			entry->y = 0.0f;
+			entry->baseY = 0.0f;
 			entry->field_0x24 = data;
-			entry->scale = float_1_8041ccb4;
+			entry->scale = 1.0f;
 			break;
 		}
 	}
@@ -154,12 +151,12 @@ USER_FUNC(evt_twoddisp_init) {
 		entry->name[0] = 0;
 		entry->flags = 0;
 		entry->field_0x12 = 0;
-		entry->x = float_0_8041ccb0;
-		entry->baseX = float_0_8041ccb0;
-		entry->y = float_0_8041ccb0;
-		entry->baseY = float_0_8041ccb0;
+		entry->x = 0.0f;
+		entry->baseX = 0.0f;
+		entry->y = 0.0f;
+		entry->baseY = 0.0f;
 		entry->field_0x24 = 0;
-		entry->scale = float_1_8041ccb4;
+		entry->scale = 1.0f;
 	}
 	return EVT_RETURN_DONE;
 }
@@ -170,7 +167,7 @@ USER_FUNC(twoddisp_main) {
 
 	for (i = 0; (s32)i < 100; i++) {
 	}
-	dispEntry(8, float_1000_8041ccb8, 0, twoddisp_disp, NULL);
+	dispEntry(8, 1000.f, 0, twoddisp_disp, NULL);
 	return EVT_RETURN_DONE;
 }
 
@@ -214,8 +211,8 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			color = unk_80423048;
 			pos.x = entry->baseX + entry->x;
 			pos.y = entry->baseY + entry->y;
-			pos.z = float_0_8041ccb0;
-			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, color);
+			pos.z = 0.0f;
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, color);
 #ifdef MUST_MATCH
 			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
 			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->field_0x24, entry->scale);
@@ -226,7 +223,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			FontDrawStart();
 			FontDrawScale(entry->scale);
 			textColor = unk_8042304c;
-			GXSetFog(GX_FOG_NONE, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, float_0_8041ccb0, textColor);
+			GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, textColor);
 			sprintf(text, (char*)entry->field_0x24);
 #ifdef MUST_MATCH
 			twoddisp_fontColor(dat_8041cca8);
@@ -241,7 +238,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			color2 = dat_8041ccac;
 			FontDrawColor(&color2);
 #endif
-			FontDrawString(text, entry->baseX + entry->x + float_1_8041ccb4, entry->baseY + entry->y - float_1_8041ccb4);
+			FontDrawString(text, entry->baseX + entry->x + 1.0f, entry->baseY + entry->y - 1.0f);
 		}
 	}
 }
@@ -253,3 +250,7 @@ WAIT_FRAMES(1)
 END_LOOP
 RETURN
 EVT_END()
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041cca8 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_8041ccac = { 0xFF, 0xFF, 0xFF, 0xFF };
