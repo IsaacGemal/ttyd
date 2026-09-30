@@ -143,6 +143,8 @@ new = []
 last = 0
 for f, wname in zip(present, want):
     new.append(text[last:f[0]])
+    if "".join(new[-2:]) and not "".join(new[-2:]).endswith("\n"):
+        new.append("\n")
     new.append(bodies[wname])
     last = f[1]
 new.append(text[last:])
