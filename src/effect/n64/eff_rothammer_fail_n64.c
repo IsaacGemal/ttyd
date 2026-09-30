@@ -7,21 +7,21 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+u32 size24x24_tex32x32_vtx[14] = {
+    0xFFF4FFF4, 0x00000000, 0x00000000, 0x00FF000C,
+    0xFFF40000, 0xFC000000, 0x000000FF, 0x000C000C,
+    0x0000FC00, 0x04000000, 0x00FFFFF4, 0x000C0000,
+    0x00000400, 0x000000FF,
+};
+
 // .sdata2/.rodata/.data objects defined by the original unit's split map.
 
-extern const f32 float_256_8041fbcc;
-extern const f32 float_deg2rad_8041fbd0;
-extern const f32 float_0p0044643_8041fbd4;
-extern const f32 float_0p03125_8041fbd8;
-extern const f32 float_0_8041fbdc;
-extern const f32 float_32_8041fbe0;
 extern GXColor dat_8041fbc8;
-extern GXColor unk_80423250;
-extern u32 size24x24_tex32x32_vtx[];
+GXColor unk_80423250;
 
 typedef struct effRotHammerFailParticle {
 	u8 field_0x00[4];    // 0x00
@@ -124,7 +124,7 @@ void effRotHammerFailMain(EffectEntry* effect) {
 	position = disp;
 #endif
 
-	data->field_0x30 = float_7_8041fbe4 * data->field_0x28 / data->field_0x2C;
+	data->field_0x30 = 7.0f * data->field_0x28 / data->field_0x2C;
 	data->field_0x28 += 1;
 	data->field_0x24 -= 1;
 	if (data->field_0x24 < 0) {
@@ -132,11 +132,11 @@ void effRotHammerFailMain(EffectEntry* effect) {
 		return;
 	}
 
-	data->field_0x1C += float_0p1_8041fbe8 * (data->field_0x20 - data->field_0x1C);
+	data->field_0x1C += 0.1f * (data->field_0x20 - data->field_0x1C);
 	scale = data->field_0x1C;
 	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->field_0x14 += float_0p04_8041fbec;
-		data->field_0x14 *= float_0p9_8041fbf0;
+		data->field_0x14 += 0.04f;
+		data->field_0x14 *= 0.9f;
 		data->x = scale * data->field_0x10;
 		data->y += data->field_0x14;
 		data->z = scale * data->field_0x18;
@@ -177,7 +177,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	data = effect->userdata;
 
 	whole = (s32)data->field_0x30;
-	frac = (s32)(float_256_8041fbcc * (data->field_0x30 - (f32)whole));
+	frac = (s32)(256.0f * (data->field_0x30 - (f32)whole));
 	flag = (whole == 6);
 
 	GXSetNumChans(0);
@@ -207,7 +207,7 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_vtx);
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041fbd0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(cam->view, trans, work);
 
@@ -215,19 +215,19 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	hammerSetColor(frac);
 
 	offset = whole * 32;
-	PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-	PSMTXTrans(trans, (f32)offset, float_0_8041fbdc, float_0_8041fbdc);
+	PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+	PSMTXTrans(trans, (f32)offset, 0.0f, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
 
 	if (flag != 0) {
-		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-		PSMTXTrans(trans, (f32)(offset + 32), float_32_8041fbe0, float_0_8041fbdc);
+		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+		PSMTXTrans(trans, (f32)(offset + 32), 32.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	} else {
-		PSMTXScale(scale, float_0p0044643_8041fbd4, float_0p03125_8041fbd8, float_0_8041fbdc);
-		PSMTXTrans(trans, (f32)(offset + 32), float_0_8041fbdc, float_0_8041fbdc);
+		PSMTXScale(scale, 0.004464286f, 0.03125f, 0.0f);
+		PSMTXTrans(trans, (f32)(offset + 32), 0.0f, 0.0f);
 		PSMTXConcat(scale, trans, trans);
 		GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 	}
@@ -243,3 +243,5 @@ void effRotHammerFailDisp(CameraId cameraId, void* param) {
 	}
 }
 #pragma opt_common_subs reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
