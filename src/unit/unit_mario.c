@@ -14,10 +14,13 @@ static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local 
 //local prototypes inherited from headers that do not declare these yet
 
 //strings and constants are defined with the rest of the file's .rodata/.sdata2
+extern const char str_802F3780[];
+extern const char str_802F3A60[];
+extern const char str_802F3A78[];
 extern GXColor dat_8041cc98;
 
 // The original compiler emitted all of this file's string literals into one pool and referenced
-// the b_mario_* anim names relative to the pool base ("M_Z_10"). We are not defining the rest
+// the b_mario_* anim names relative to the pool base (str_802F3780). We are not defining the rest
 // of the pool yet, so reproduce the pool-relative addressing; the natural form is the named string.
 #ifdef MUST_MATCH
 #define ANIM_L (base + 0x2BC)
@@ -53,7 +56,7 @@ USER_FUNC(_get_mario_hammer_lv) {
 // the original has the pool base in r5 and event->args in r6.
 #pragma opt_propagation off
 s32 _mario_super_emblem_anim_set(EventEntry* event, s32 mode) {
-    const char* base = "M_Z_10";
+    const char* base = str_802F3780;
     s32* args = event->args;
     const char* anim;
     BattleWork* work;
@@ -169,10 +172,10 @@ static void callback(TevCallbackParam* param) {
 s32 mario_pinch_pose_sound_callback(BattleUnit* unit) {
     s32 result;
     if (unit->work[8] & 1) {
-        result = BtlUnit_snd_se(unit, "SFX_VOICE_MARIO_RELIEF2", 0xF1194D80, 0);
+        result = BtlUnit_snd_se(unit, str_802F3A60, 0xF1194D80, 0);
     }
     else {
-        result = BtlUnit_snd_se(unit, "SFX_VOICE_MARIO_RELIEF1", 0xF1194D80, 0);
+        result = BtlUnit_snd_se(unit, str_802F3A78, 0xF1194D80, 0);
     }
     unit->work[8] = unit->work[8] + 1;
     return result;
