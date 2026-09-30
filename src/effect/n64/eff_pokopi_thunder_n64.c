@@ -152,7 +152,6 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	*(s32*)((u8*)data + 0x110) = rand() % 360;
 	return effect;
 }
-
 void effPokopiThunderMain(EffectEntry* effect) {
 	EffPokopiThunderData* data;
 	Vec pos2;

@@ -52,7 +52,6 @@ extern const f32 float_0p2_8041f224;
 extern const f32 float_2_8041f228;
 extern const char str_802FA870[];
 const f64 double_to_int_802fa868 = 4503601774854144.0;
-
 EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effKamekiTornadeData* data;

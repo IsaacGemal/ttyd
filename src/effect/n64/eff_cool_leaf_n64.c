@@ -1,7 +1,9 @@
 #include "eff/n64/eff_cool_leaf_n64.h"
 #include "eff/eff_n64.h"
 #include "driver/effdrv.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
+#include <math.h>
 #include <stdlib.h>
 
 extern const f32 float_0_8041ec60;
@@ -16,6 +18,23 @@ extern const f32 float_0p05_8041ec88;
 extern const f32 float_deg2rad_8041ec54;
 extern const f32 float_4_8041ec58;
 extern const f32 float_1_8041ec5c;
+extern const f32 float_0p3_8041ec64;
+extern const f32 float_0p8_8041ec68;
+extern const f32 float_6p2832_8041ec6c;
+extern const f32 float_360_8041ec74;
+extern const f32 float_neg0p05_8041ec78;
+extern const f32 float_0p2_8041ec7c;
+extern const f32 float_0p94_8041ec80;
+extern const f32 float_0p95_8041ec84;
+extern const f32 float_0p92_8041ec8c;
+extern const f32 float_10_8041ec90;
+extern const f32 float_0p5_8041ec94;
+extern const f32 float_30_8041ec98;
+extern const f32 float_neg200_8041ec9c;
+extern const f32 float_0p4_8041eca0;
+extern const f32 float_0p98_8041eca4;
+extern const f32 float_0p8464_8041eca8;
+extern const f32 float_0p9604_8041ecac;
 extern const u32 dat_8041ec50;
 extern u8 size12x12_tex64x64_brown_vtx[];
 extern u8 size12x12_tex64x64_red_vtx[];
@@ -46,7 +65,6 @@ typedef struct effCoolLeafData {
     f32 field_0x34;  // 0x34
     f32 field_0x38;  // 0x38
 } effCoolLeafData;
-
 EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effCoolLeafData* data;
@@ -110,6 +128,183 @@ EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
     return effect;
 }
 
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
+// Every instruction is byte-identical except the callee-saved FPRs holding the
+// loop-invariant constants of the type-1 and type-2 loops. The type-1 target uses
+// f28=double, f29=10.0, f30=30.0, f31=0.5; this compiler hands them f31=double,
+// f30=10.0, f29=0.5, f28=30.0. The type-2 target uses f22=0.5, f23=10.0, f24=360.0,
+// f30=double, f31=6.2832; this compiler uses f22=0.5, f28=double, f29=6.2832,
+// f30=360.0, f31=10.0. The type-0 loop (and the rest of the function) matches exactly.
+// Adding a local to pin a constant (as effFallLeafMain does with `half`) shifts the
+// type-0 loop too; opt_common_subs/opt_lifetimes/opt_propagation off make it worse.
+// NONMATCHING (99.81%): the type-1/type-2 loop-constant FPRs are permuted.
+void effCoolLeafMain(EffectEntry* effect) {
+    effCoolLeafData* data = effect->userdata;
+    Vec position;
+    s32 type;
+    s32 counter;
+    s32 life;
+    s32 idx;
+    s32 i;
+    f32 s;
+    f32 t;
+    f32 u;
+    f32 sn;
+
+    position = makeVec(data->x, data->y, data->z);
+
+    data->field_0x28--;
+    data->field_0x2C++;
+    if (data->field_0x28 < 0) {
+        effDelete(effect);
+        return;
+    }
+    counter = data->field_0x2C;
+    type = data->type;
+    life = data->field_0x28;
+    if (counter < 10) {
+        data->field_0x24 = (s32)(float_0p3_8041ec64 * (f32)(255 - data->field_0x24) + (f32)data->field_0x24);
+    }
+    if (life < 10) {
+        data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041ec68);
+    }
+    data++;
+    switch (type) {
+    case 0:
+        i = 1;
+        idx = counter + 20;
+        for (; i < effect->count; idx += 20, i++, data++) {
+            s = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->field_0x18) / float_360_8041ec74);
+            data->field_0x14 += float_neg0p05_8041ec78;
+            t = float_0p2_8041ec7c * s;
+            data->field_0x10 += t;
+            if (type == 0) {
+                data->field_0x10 *= float_0p94_8041ec80;
+                sn = (f32)sin(float_6p2832_8041ec6c * data->field_0x18 / float_360_8041ec74);
+                data->field_0x14 *= float_0p05_8041ec88 * sn + float_0p95_8041ec84;
+            }
+            else {
+                data->field_0x14 += float_neg0p05_8041ec78;
+                data->field_0x10 *= float_0p92_8041ec8c;
+            }
+            data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+            data->field_0x18 += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->field_0x1C / float_360_8041ec74);
+            data->field_0x20 += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->field_0x1C) / float_360_8041ec74);
+            data->x += data->field_0x10;
+            data->y += data->field_0x14;
+            if (data->y < float_30_8041ec98) {
+                if (data->x > float_neg200_8041ec9c) {
+                    data->field_0x30 -= float_0p4_8041eca0;
+                }
+                else {
+                    data->field_0x30 += float_0p4_8041eca0;
+                }
+                if (data->z > float_0_8041ec60) {
+                    data->field_0x38 -= float_0p4_8041eca0;
+                }
+                else {
+                    data->field_0x38 += float_0p4_8041eca0;
+                }
+                data->field_0x30 *= float_0p98_8041eca4;
+                data->field_0x38 *= float_0p98_8041eca4;
+                data->field_0x14 *= float_0p98_8041eca4;
+            }
+            else {
+                if (data->x > float_0_8041ec60) {
+                    data->field_0x30 -= float_0p4_8041eca0;
+                }
+                else {
+                    data->field_0x30 += float_0p4_8041eca0;
+                }
+                if (data->z > float_0_8041ec60) {
+                    data->field_0x38 -= float_0p4_8041eca0;
+                }
+                else {
+                    data->field_0x38 += float_0p4_8041eca0;
+                }
+                data->field_0x30 *= float_0p98_8041eca4;
+                data->field_0x38 *= float_0p98_8041eca4;
+            }
+            data->x += data->field_0x30;
+            data->y += data->field_0x34;
+            data->z += data->field_0x38;
+        }
+        break;
+    case 1:
+        i = 1;
+        idx = counter + 20;
+        for (; i < effect->count; idx += 20, i++, data++) {
+            s = (f32)sin(float_6p2832_8041ec6c * (float_2_8041ec70 * data->field_0x18) / float_360_8041ec74);
+            data->field_0x14 += float_neg0p05_8041ec78;
+            t = float_0p2_8041ec7c * s;
+            u = float_2_8041ec70 * t;
+            data->field_0x10 += u;
+            data->field_0x14 += float_neg0p05_8041ec78;
+            data->field_0x10 *= float_0p8464_8041eca8;
+            data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+            data->field_0x18 += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->field_0x1C / float_360_8041ec74);
+            data->field_0x20 += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->field_0x1C) / float_360_8041ec74);
+            data->x += data->field_0x10;
+            data->y += data->field_0x14;
+            if (data->y < float_30_8041ec98) {
+                if (data->x > float_neg200_8041ec9c) {
+                    data->field_0x30 -= float_0p8_8041ec68;
+                }
+                else {
+                    data->field_0x30 += float_0p8_8041ec68;
+                }
+                if (data->z > float_0_8041ec60) {
+                    data->field_0x38 -= float_0p8_8041ec68;
+                }
+                else {
+                    data->field_0x38 += float_0p8_8041ec68;
+                }
+                data->field_0x30 *= float_0p9604_8041ecac;
+                data->field_0x38 *= float_0p9604_8041ecac;
+                data->field_0x14 *= float_0p9604_8041ecac;
+            }
+            else {
+                if (data->x > float_0_8041ec60) {
+                    data->field_0x30 -= float_0p8_8041ec68;
+                }
+                else {
+                    data->field_0x30 += float_0p8_8041ec68;
+                }
+                if (data->z > float_0_8041ec60) {
+                    data->field_0x38 -= float_0p8_8041ec68;
+                }
+                else {
+                    data->field_0x38 += float_0p8_8041ec68;
+                }
+                data->field_0x30 *= float_0p9604_8041ecac;
+                data->field_0x38 *= float_0p9604_8041ecac;
+            }
+            data->x += data->field_0x30;
+            data->y += data->field_0x34;
+            data->z += data->field_0x38;
+        }
+        break;
+    case 2:
+        i = 1;
+        idx = counter + 20;
+        for (; i < effect->count; idx += 20, i++, data++) {
+            data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+            data->field_0x18 += float_10_8041ec90 * (f32)sin(float_6p2832_8041ec6c * data->field_0x1C / float_360_8041ec74);
+            data->field_0x20 += float_10_8041ec90 * (f32)cos(float_6p2832_8041ec6c * (float_0p5_8041ec94 * data->field_0x1C) / float_360_8041ec74);
+            data->x += data->field_0x10;
+            data->y += data->field_0x14;
+        }
+        break;
+    }
+    dispEntry(4, dispCalcZ(&position), 2, effCoolLeafDisp, effect);
+}
 void effCoolLeafDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam = camGetPtr(cameraId);
@@ -181,3 +376,35 @@ void effCoolLeafDisp(CameraId cameraId, void* param) {
         tri2(6, 5, 4, 4, 7, 6, 4, 4);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041ec50 = 0x14641400;
+const f32 float_deg2rad_8041ec54 = 0.017453292f;
+const f32 float_4_8041ec58 = 4.0f;
+const f32 float_1_8041ec5c = 1.0f;
+const f32 float_0_8041ec60 = 0.0f;
+const f32 float_0p3_8041ec64 = 0.3f;
+const f32 float_0p8_8041ec68 = 0.8f;
+const f32 float_6p2832_8041ec6c = 6.2831855f;
+const f32 float_2_8041ec70 = 2.0f;
+const f32 float_360_8041ec74 = 360.0f;
+const f32 float_neg0p05_8041ec78 = -0.05f;
+const f32 float_0p2_8041ec7c = 0.2f;
+const f32 float_0p94_8041ec80 = 0.94f;
+const f32 float_0p95_8041ec84 = 0.95f;
+const f32 float_0p05_8041ec88 = 0.05f;
+const f32 float_0p92_8041ec8c = 0.92f;
+const f32 float_10_8041ec90 = 10.0f;
+const f32 float_0p5_8041ec94 = 0.5f;
+const f32 float_30_8041ec98 = 30.0f;
+const f32 float_neg200_8041ec9c = -200.0f;
+const f32 float_0p4_8041eca0 = 0.4f;
+const f32 float_0p98_8041eca4 = 0.98f;
+const f32 float_0p8464_8041eca8 = 0.8464f;
+const f32 float_0p9604_8041ecac = 0.96040004f;
+const f32 float_0p1_8041ecb0 = 0.1f;
+const f32 float_neg3_8041ecb4 = -3.0f;
+const f32 float_3_8041ecb8 = 3.0f;
+const f32 float_neg6_8041ecbc = -6.0f;
+const f32 float_6_8041ecc0 = 6.0f;
+const f32 float_0p008_8041ecc4 = 0.008f;

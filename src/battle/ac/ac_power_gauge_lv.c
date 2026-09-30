@@ -11,22 +11,15 @@
 // --- Declarations that belong in a header (no ac_power_gauge_lv.h exists yet) ---
 
 // --- .rodata literals of this unit (offsets in REPORT.md) ---
-// The seven Vec3 literals are one contiguous array; the original object names them individually at
-// 0xC strides. Referencing them as an array is what makes mwcc keep a single base register.
-const Vec vec3_802fea38[7] = {
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-
-// The original's 2^52 double at 0x802fea90 is the int->float conversion magic MWCC generates for the
-// `(f32)*(s32*)...` compares below. Defining it as a named object here makes MWCC emit a second
-// anonymous pool entry (an extra 8 bytes that shifts the rest of .rodata), so it is left to the
-// compiler; the anonymous entry lands at the same offset with the same bytes.
+// The original object names the seven Vec3 literals individually at 0xC strides (0x802fea38..0x802fea80),
+// followed by the int->float magic double at 0x802fea90.
+const Vec vec3_802fea38 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea44 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea50 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea5c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea68 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea74 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802fea80 = {0.0f, 0.0f, 0.0f};
 
 // --- .sdata2 literals of this unit (offsets in REPORT.md) ---
 // The float constants are declared here and defined at the bottom so the compiler emits a reference to
@@ -64,19 +57,32 @@ typedef struct PowerGaugeLvDecWork {
 static void actionCommandDisp(f32, f32);
 
 // don't_inline: the original keeps actionCommandDisp as its own local function.
+#pragma optimize_for_size on
 #pragma dont_inline on
-// NONMATCHING (73.11%): 15 instructions differ, 14 missing, 25 extra, plus register differences.
+// NONMATCHING (98.94%): only the fdivs destination differs (original `fdivs f1, f2, f1` overwrites the divisor, MWCC emits `fdivs f2, f2, f1` overwriting the numerator); the following fctiwz/stfs and argument schedule shift with it.
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
+#ifdef MUST_MATCH
+    // Deriving disp/dec through the BattleActions intermediate makes MWCC materialise them in their
+    // own registers (work=r30, disp=r29, dec=r28) instead of folding them into the BattleWork base.
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    PowerGaugeLvDecWork* dec;
+#else
     BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
-    Vec pos;
+    PowerGaugeLvDecWork* dec;
+#endif
     f32 ratio;
 
     camGetPtr(CAMERA_2D);
+#ifdef MUST_MATCH
+    dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
+#else
+    dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
+#endif
 
     {
-        pos = vec3_802fea38[0];
+        Vec pos = vec3_802fea38;
         pos.x = float_neg200_804215d4 + f1;
         pos.y = float_25_804215d8 + f2;
         iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
@@ -100,13 +106,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         f1 = float_neg220_804215e4 + f1;
         f2 = float_70_804215e8 + f2;
         {
-            pos = vec3_802fea38[1];
+            Vec pos = vec3_802fea44;
             pos.x = f1;
             pos.y = f2;
             iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
         }
         {
-            pos = vec3_802fea38[2];
+            Vec pos = vec3_802fea50;
             pos.x = float_56_804215ec + f1;
             pos.y = f2;
             iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
@@ -118,13 +124,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             f1 = float_neg220_804215e4 + f1;
             f2 = float_70_804215e8 + f2;
             {
-                pos = vec3_802fea38[3];
+                Vec pos = vec3_802fea5c;
                 pos.x = f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
             }
             {
-                pos = vec3_802fea38[4];
+                Vec pos = vec3_802fea68;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
@@ -134,13 +140,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             f1 = float_neg220_804215e4 + f1;
             f2 = float_70_804215e8 + f2;
             {
-                pos = vec3_802fea38[5];
+                Vec pos = vec3_802fea74;
                 pos.x = f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
             }
             {
-                pos = vec3_802fea38[6];
+                Vec pos = vec3_802fea80;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
                 iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
@@ -150,7 +156,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
     }
 }
 #pragma dont_inline reset
-
+#pragma optimize_for_size reset
 void battleAcDelete_PowerGaugeLv(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
         work->actionCommands.mAcState = 0x3eb;
@@ -192,7 +198,6 @@ void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
         break;
     }
 }
-
 s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -332,6 +337,8 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
 #pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_neg200_804215d4 = -200.0f;
 const f32 float_25_804215d8 = 25.0f;
 const f32 float_1_804215dc = 1.0f;

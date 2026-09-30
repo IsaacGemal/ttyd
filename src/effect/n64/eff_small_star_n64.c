@@ -219,7 +219,6 @@ void effSmallStarDisp(CameraId camId, void* param) {
         idx3 += 3;
     }
 }
-
 void effSmallStarN64CamChg(EffectEntry* effect, s32 camId) {
     effSmallStarN64Data* data = effect->userdata;
     s32 i = 0;

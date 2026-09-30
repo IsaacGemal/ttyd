@@ -3031,3 +3031,35 @@ The next 48 closest dol near-misses outside the permuter's queues, 18:06-19:34, 
 100%, 11 improved, 14 unchanged, 0 worse.** Fixed at collection: eff_mahorn2's externs for constants it pools itself;
 party_cloud's `pf ? -90 : 90` pooled -90 ahead of 90/270 (`pf != 0 ?` restores the order); mot_jump's new zero-Vec
 literal added a duplicate pool entry, so the file is back to main's version.
+
+## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+At Claude #1's suggestion, the DOL files its near-miss waves leave behind: every open function either untouched and
+over 1 KB or partial below 80% (41 files, 67 functions; library units are out of scope, ported as libs). One agent
+per file on all its open functions, 60-120 minutes by size, sharing the tower with wave 38 through a slot check.
+data/database and data/battle/battle_item_data had no source (src/database.c and src/battle/battle_item_data.c are
+other units): their skeletons come from dol_gen with global declarations in include/data/*.h.
+
+**Collection.** Agents again declared retail constants as externs; replacing them with literals moved FP loads in
+functions that were at 100%, so they are defined after the code in the original order with tools/pool_define.py
+(Claude #3's), which leaves the code unchanged. Left out: mot_ship, evt_item, battle_item_data, eff_small_star,
+eff_sleep, eff_opuku_wcurtain (a section score drops), eff_pokopi_thunder (a 100% function slips), ac_stick_keep_left and
+eff_kameki_tornade (pragmas without a match). Kept pragmas state retail facts: dont_inline where retail calls the
+helper with bl, optimize_for_size where retail saves registers with stmw.
+
+**Result:** mot_yoshi, mario_cam and battle_ac_help link; 8,181 -> 8,196 functions. Seven more units are code-complete
+but reference data their split owns through undefined stand-ins (tools/finish_unit.py is the next step for them).
+
+**Review** (fresh Claude) found seven wrong behaviours, all fixed: fadeEntry mapped fade types 41-48 to the wrong
+animations (the pipe fades were shifted by two); disp_texture loaded a 3x4 texture matrix for retail's 2x4; seq_load's
+copy screens read the wrong window table; eff_stardust2's sin argument had its sign flipped; ac_gauge_timing checked
+the wrong field for success, computed the gauge ratio from the unclamped value (100x too large) and drew the wrong
+button; ac_signal_timing's u8 states never compared equal to -1, so the NG mark never drew. Also retail-exact floats
+(0.59999996f, 0.16000001f, 0.080000006f) and eff_sstar's first rotation angle. Stubs carried over from main remain:
+fadeMain (4.3 KB) and BattleBreakSlot_Main (5.6 KB).
+Codex's review of #106: seq_load reached win_dt/win_dt2/win_dt3 through npc_event's lbl_80349DE8 plus fixed offsets;
+that stays only under MUST_MATCH, with the named tables in #else; evt_shake and evt_continue are EVT macros (the latter
+passing the file's named strings, which keeps .sdata at 100%). Every changed file compiles without MUST_MATCH. Normal
+for NonMatching units and noted here: eight of this wave's units still reference data their split owns through
+undefined stand-ins (they link only after tools/finish_unit.py), and seq_load's loadDraw is registered but still a
+TODO.

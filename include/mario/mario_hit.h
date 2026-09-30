@@ -18,6 +18,7 @@ BOOL marioChkBero(struct HitEntry* hit);
 struct HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b);
 void* marioChkLandon(f32* pos, f32 spd);
 void marioCheckWall(f32 a, f32 b);
+void marioCheckWallShip(f32 a, f32 b);
 void marioChkGnd2(void);
 f32 marioChkOverhead(void);
 void marioSearchFrontWall_staying(f32 a);

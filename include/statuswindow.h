@@ -62,3 +62,7 @@ BOOL statusWinCheckUpdate(void);
 typedef struct StatusWindowValue StatusWindowValue;
 void statusGetValue(StatusWindowValue* values);
 void statusAPBlink(s32 value);
+void statusMarioHPBlink(s32 value);
+void statusFPBlink(s32 value);
+void statusPartyHPBlink(s32 value);
+void N_statusClearBlink(void);

@@ -11,7 +11,7 @@
 #include "eff/eff_funemizu.h"
 #include "math_ext.h"
 
-// Local declarations for symbols that have no home header yet (see REPORT.md).
+// Local declarations for symbols that have no home header yet
 
 // Motion data allocated as mario->motStruct (size 0x48).
 typedef struct MotionShipData {
@@ -59,7 +59,6 @@ static inline s32 checkHarborType(HitEntry* hit) {
     }
     return type;
 }
-
 s32 checkHarbor(Vec* out) {
     MarioWork* mario = marioGetPtr();
     HitEntry* hit;
@@ -311,7 +310,6 @@ void shipMove(void) {
     }
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
-
 s32 marioChkShipMoveMode(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -323,7 +321,6 @@ s32 marioChkShipMoveMode(void) {
     }
     return 0;
 }
-
 void marioShipChgFall(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -335,7 +332,6 @@ void marioShipChgFall(void) {
         *(f32*)((u8*)mario + 0x88) = -0.004f;
     }
 }
-
 void mot_ship_post(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -361,7 +357,6 @@ void mot_ship_post(void) {
         marioGetPtr()->motStruct = NULL;
     }
 }
-
 void marioReInit_ship(void) {
     MarioWork* mario = marioGetPtr();
     MotionShipData* data;
@@ -381,7 +376,7 @@ void marioReInit_ship(void) {
     mario->dispFlags |= 0x8;
     *(s32*)((u8*)mario + 0x2A4) = 0x58;
     // Header declares marioSetPaperAnimeLocalTime(s16); the original caller passes the full word
-    // without sign-extending, so call through an s32 prototype to reproduce the codegen (see REPORT.md).
+    // without sign-extending, so call through an s32 prototype to reproduce the codegen
     ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
     ((MotionShipData*)marioGetPtr()->motStruct)->sfxId = 0xFFFFFFFFu;
     ((MotionShipData*)marioGetPtr()->motStruct)->flags = 0;
@@ -397,7 +392,6 @@ void marioReInit_ship(void) {
     *(u32*)((u8*)((MotionShipData*)marioGetPtr()->motStruct)->eff->userdata + 0x48) = mario->camId;
     allPartyForceRideOn();
 }
-
 void marioForceShipAnime(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -408,35 +402,29 @@ void marioForceShipAnime(void) {
     marioChgPose("M_Z_1");
     mario->dispFlags |= 0x8;
 }
-
 s32 marioChkShipPlace(HitEntry* hit) {
     return (hitGetAttr(hit) & 0x3C000) != 0;
 }
-
 void marioShipSetDispDir(void) {
     marioGetPtr();
     ((MotionShipData*)marioGetPtr()->motStruct)->velX = 0.0f;
     ((MotionShipData*)marioGetPtr()->motStruct)->velY = 0.0f;
 }
-
 void marioShipForceStop(void) {
     marioGetPtr();
     ((MotionShipData*)marioGetPtr()->motStruct)->velX = 0.0f;
     ((MotionShipData*)marioGetPtr()->motStruct)->velY = 0.0f;
 }
-
 s32 marioChkSwirlPower(void) {
     marioGetPtr();
     return ((MotionShipData*)marioGetPtr()->motStruct)->swirlTimer != 0;
 }
-
 void marioSetSwirlPower(s32 msec, f32 a, f32 b) {
     marioGetPtr();
     ((MotionShipData*)marioGetPtr()->motStruct)->swirlTimer = sysMsec2Frame(msec);
     ((MotionShipData*)marioGetPtr()->motStruct)->unk2C = a;
     ((MotionShipData*)marioGetPtr()->motStruct)->unk28 = b;
 }
-
 s32 marioShipChanging(void) {
     MarioWork* mario = marioGetPtr();
     s32 id;
@@ -456,7 +444,6 @@ s32 marioShipChanging(void) {
     }
     return 0;
 }
-
 s32 N_marioShipGetDir(void) {
     marioGetPtr();
     if (marioGetPtr()->motStruct != NULL) {

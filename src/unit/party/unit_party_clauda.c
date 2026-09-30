@@ -52,7 +52,6 @@ extern u8 lbl_80376320[]; // this unit's .data weapon tables
     cmd->mWeaponTable[*count].mName =                                                 \
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
     (*count)++;
-
 USER_FUNC(_clauda_make_extra_work_area) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -97,7 +96,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     }
 #endif
 }
-
 USER_FUNC(_check_blow_rate) {
     s32* args = event->args;
     BattleWork* work = _battleWorkPointer;
@@ -111,7 +109,6 @@ USER_FUNC(_check_blow_rate) {
     evtSetValue(event, arg1, unit->vulnStatus->galeForceRate);
     return EVT_RETURN_DONE;
 }
-
 static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -141,7 +138,6 @@ static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x30 = 0xF5;
     return EVT_RETURN_DONE;
 }
-
 static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -176,7 +172,6 @@ static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, arg0, (s32)effect);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_breath_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -198,7 +193,6 @@ USER_FUNC(_make_breath_weapon) {
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_kiss_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -218,47 +212,45 @@ USER_FUNC(_make_kiss_weapon) {
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }
-
-// NONMATCHING (75.23%): the callee-saved register allocation and the 0x40 vs 0x50 frame differ, and the
-// target rounds one position value with an `frsp` that ours omits.
-// Target: event=r27, work=r31, args=r25, id=r26/r24, out=r30/r29/r28, position spills at 0x14/0x18/0x1C.
-// Ours: event=r30, work=r31, args=r25, id=r28/r29, out=r27/r26/r25, position at 0x8/0xC/0x10.
 USER_FUNC(_get_clauda_kiss_hit_position) {
-    BattleWork* work = _battleWorkPointer;
-    s32 out[3];
-    s32 id[2];
     s32* args = event->args;
+    BattleWork* work = _battleWorkPointer;
+    s32 id0;
+    s32 id1;
+    s32 out0;
+    s32 out1;
+    s32 out2;
     BattleUnit* unit1;
     BattleUnit* unit2;
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 floor;
+    s32 dir;
+    Vec pos;
+    Vec hit;
 
-    id[0] = evtGetValue(event, args[0]);
-    id[1] = evtGetValue(event, args[1]);
+    id0 = evtGetValue(event, args[0]);
+    id1 = evtGetValue(event, args[1]);
     evtGetValue(event, args[2]);
-    out[0] = args[3];
-    out[1] = args[4];
-    out[2] = args[5];
-    unit1 = BattleGetUnitPtr(work, BattleTransID(event, id[0]));
-    unit2 = BattleGetUnitPtr(work, BattleTransID(event, id[1]));
+    out0 = args[3];
+    out1 = args[4];
+    out2 = args[5];
+    unit1 = BattleGetUnitPtr(work, BattleTransID(event, id0));
+    unit2 = BattleGetUnitPtr(work, BattleTransID(event, id1));
 
-    BtlUnit_GetPos(unit2, &x, &y, &z);
-    x += (f32)unit2->faceDirection * (unit2->kissHitOffset.x * unit2->mSizeMultiplier);
-    y += unit2->kissHitOffset.y * unit2->mSizeMultiplier;
-    z += unit2->kissHitOffset.z * unit2->mSizeMultiplier;
-    y -= float_30_8041dcfc * unit1->mSizeMultiplier;
-    floor = BattleGetFloorHeight(work, x, y, z);
-    if (floor > y) {
-        y = floor;
+    dir = unit2->faceDirection;
+    BtlUnit_GetPos(unit2, &pos.x, &pos.y, &pos.z);
+    pos.x += (f32)dir * (unit2->kissHitOffset.x * unit2->mSizeMultiplier);
+    pos.y += unit2->kissHitOffset.y * unit2->mSizeMultiplier;
+    pos.z += unit2->kissHitOffset.z * unit2->mSizeMultiplier;
+    pos.y -= float_30_8041dcfc * unit1->mSizeMultiplier;
+    hit = pos;
+    hit.y = BattleGetFloorHeight(work, hit.x, hit.y, hit.z);
+    if (hit.y > pos.y) {
+        pos.y = hit.y;
     }
-    evtSetFloat(event, out[0], x);
-    evtSetFloat(event, out[1], y);
-    evtSetFloat(event, out[2], z);
+    evtSetFloat(event, out0, pos.x);
+    evtSetFloat(event, out1, pos.y);
+    evtSetFloat(event, out2, pos.z);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_kumoguard_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -280,3 +272,14 @@ USER_FUNC(_make_kumoguard_weapon) {
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_30_8041dcfc = 30.0f;
+const f32 float_15_8041dd00 = 15.0f;
+const f32 float_0_8041dd04 = 0.0f;
+const f32 float_neg2_8041dd08 = -2.0f;
+const f32 float_1_8041dd0c = 1.0f;
+const f32 float_180_8041dd10 = 180.0f;
+const f32 float_neg10_8041dd14 = -10.0f;
+const f32 float_25_8041dd18 = 25.0f;
+const f32 float_2_8041dd1c = 2.0f;

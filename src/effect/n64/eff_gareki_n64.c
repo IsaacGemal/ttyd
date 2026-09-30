@@ -16,6 +16,12 @@ extern const f32 float_10_8041f064;
 extern const f32 float_20_8041f068;
 extern const f32 float_neg2_8041f06c;
 extern const f32 float_0_8041f048;
+extern const f32 float_1p5_8041f04c;
+extern const f32 float_deg2rad_8041f050;
+extern const f32 float_0p03125_8041f040;
+extern const f32 float_0p010417_8041f044;
+extern GXColor dat_8041f038;
+extern GXColor dat_8041f03c;
 extern const f32 float_0p25_8041f070;
 extern const f32 float_2_8041f074;
 extern const f32 float_1_8041f078;
@@ -163,7 +169,6 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     }
     return effect;
 }
-
 void effGarekiMain(EffectEntry* effect) {
     GarekiData* data = effect->userdata;
     Vec position;
@@ -202,6 +207,110 @@ void effGarekiMain(EffectEntry* effect) {
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effGarekiDisp, effect);
+}
+
+#ifdef MUST_MATCH
+/* MUST_MATCH: setting each colour inside a void inline reproduces the original's by-value colour
+   slots (var/copy pairs 0x10/0x14 and 0x08/0x0c) instead of assigning a local then passing it. */
+static inline void effGarekiSetColor1(s32 a) {
+    GXColor color = dat_8041f038;
+    color.a = a;
+    GXSetTevColor(1, color);
+}
+static inline void effGarekiSetColor2(s32 a) {
+    GXColor color = dat_8041f03c;
+    color.a = a;
+    GXSetTevColor(1, color);
+}
+#endif
+void effGarekiDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    GarekiData* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    GXColor color1;
+    GXColor color2;
+    Mtx trans;
+    Mtx scale;
+    Mtx rot;
+    Mtx rotX;
+    Mtx base;
+    Mtx childMtx;
+    s32 i;
+    s32 alpha;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    PSMTXScale(scale, float_0p03125_8041f040, float_0p010417_8041f044, float_0_8041f048);
+    GXLoadTexMtxImm(scale, 0x1e, 1);
+    effGetTexObjN64(0x17, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xff);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 8, 2, 0xf);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+
+    if (data->state == 0) {
+        PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+        PSMTXScale(scale, float_1p5_8041f04c, float_1p5_8041f04c, float_1p5_8041f04c);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * -camGetPtr(CAMERA_3D)->viewYaw);
+        PSMTXConcat(trans, scale, base);
+        PSMTXConcat(base, rot, base);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * data->field_34);
+        PSMTXConcat(base, rot, base);
+        PSMTXRotRad(rot, 'x', float_deg2rad_8041f050 * data->angleX);
+        PSMTXConcat(base, rot, base);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * data->angleZ);
+        PSMTXConcat(base, rot, base);
+        PSMTXConcat(cam->view, base, base);
+        GXLoadPosMtxImm(base, 0);
+        GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+        effGarekiSetColor1(data->alpha);
+#else
+        color1 = dat_8041f038;
+        color1.a = data->alpha;
+        GXSetTevColor(1, color1);
+#endif
+        gareki_dl(0);
+    } else {
+        alpha = data->alpha;
+        PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+        PSMTXScale(scale, float_1p5_8041f04c, float_1p5_8041f04c, float_1p5_8041f04c);
+        PSMTXRotRad(rot, 'y', float_deg2rad_8041f050 * -camGetPtr(CAMERA_3D)->viewYaw);
+        PSMTXConcat(trans, scale, base);
+        PSMTXConcat(base, rot, base);
+        PSMTXRotRad(rotX, 'x', float_deg2rad_8041f050 * data->angleX);
+        data++;
+        for (i = 1; i < effect->count; i++, data++) {
+            PSMTXTrans(trans, ((GarekiChild*)data)->x, ((GarekiChild*)data)->y, ((GarekiChild*)data)->z);
+            PSMTXConcat(trans, rotX, childMtx);
+            PSMTXTrans(trans, ((GarekiChild*)data)->offsetX, ((GarekiChild*)data)->offsetY, float_0_8041f048);
+            PSMTXConcat(childMtx, trans, childMtx);
+            PSMTXRotRad(rot, 'x', float_deg2rad_8041f050 * ((GarekiChild*)data)->angleX);
+            PSMTXConcat(childMtx, rot, childMtx);
+            PSMTXRotRad(rot, 'z', float_deg2rad_8041f050 * ((GarekiChild*)data)->angleZ);
+            PSMTXConcat(childMtx, rot, childMtx);
+            PSMTXConcat(base, childMtx, childMtx);
+            PSMTXConcat(cam->view, childMtx, childMtx);
+            GXLoadPosMtxImm(childMtx, 0);
+            GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+            effGarekiSetColor2(alpha);
+#else
+            color2 = dat_8041f03c;
+            color2.a = alpha;
+            GXSetTevColor(1, color2);
+#endif
+            gareki_dl(i);
+        }
+    }
 }
 
 // NOTE: the original's switch jump table is the local symbol jumptable_8039D3A0; mwcc emits it as an
@@ -252,3 +361,20 @@ void gareki_dl(s32 type) {
     }
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p03125_8041f040 = 0.03125f;
+const f32 float_0p010417_8041f044 = 0.010416667f;
+const f32 float_0_8041f048 = 0.0f;
+const f32 float_1p5_8041f04c = 1.5f;
+const f32 float_deg2rad_8041f050 = 0.017453292f;
+const f32 float_neg0p1_8041f054 = -0.1f;
+const f32 float_0p8_8041f058 = 0.8f;
+const f32 float_neg0p2_8041f05c = -0.2f;
+const f32 float_0p9_8041f060 = 0.9f;
+const f32 float_10_8041f064 = 10.0f;
+const f32 float_20_8041f068 = 20.0f;
+const f32 float_neg2_8041f06c = -2.0f;
+const f32 float_0p25_8041f070 = 0.25f;
+const f32 float_2_8041f074 = 2.0f;
+const f32 float_1_8041f078 = 1.0f;
+const f32 float_0p1_8041f07c = 0.1f;
