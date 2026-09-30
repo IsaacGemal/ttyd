@@ -97,21 +97,26 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
 // double through the named double_to_int_802fa9a8 (r4) and keeps data in r3; ours emits an
 // anonymous @193 literal and puts data in r8 (the vec3 copy's temps and the 0x4330 constant swap
 // r4/r5 for r3/r5). Same project-wide folded-pool issue as the other NONMATCHING int->float casts.
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effKemuri9Main(EffectEntry* effect) {
-    effKemuri9Data* data;
     effKemuri9Particle* p;
     Vec position2;
     Vec position;
     s32 scale;
     s32 field30;
+    effKemuri9Data* data;
     s32 field34;
     s32 i;
 
     data = effect->userdata;
-    position = vec3_802fa998;
-    position.x = data->x;
-    position.y = data->y;
-    position.z = data->z;
+    position = makeVec(data->x, data->y, data->z);
     position2 = position;
 
     field30 = (s32)(float_16_8041f48c * (f32)data->field_0x38 / (f32)data->field_0x3C);
