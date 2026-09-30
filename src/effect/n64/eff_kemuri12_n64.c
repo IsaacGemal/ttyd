@@ -4,27 +4,21 @@
 #include "memory.h"
 #include "system.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423194;
+__declspec(section ".sdata") GXColor unk_80423190;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 // .sdata2 float constants (named after their original addresses).
-const f32 float_256_8041f548 = 256.0f;
-const f32 float_deg2rad_8041f54c = 0.017453292f;
-const f32 float_0p34907_8041f550 = 0.34906584f;
-const f32 float_0p0039062_8041f554 = 0.00390625f;
-const f32 float_0p03125_8041f558 = 0.03125f;
-extern const f32 float_0_8041f55c;
-const f32 float_32_8041f560 = 32.0f;
-const f32 float_8_8041f564 = 8.0f;
 
 // .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
-GXColor unk_80423190;
-GXColor unk_80423194;
 
 // .rodata constants (named after their original addresses).
-const Vec vec3_802faa28 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802faa38 = 4503601774854144.0;
-const char str_802FAA40[] = "Kemuri12N64";
+extern const Vec vec3_802faa28;
 
 typedef struct effKemuri12Data {
     u16 type;        // 0x0
@@ -68,7 +62,7 @@ EffectEntry* effKemuri12N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
     effKemuri12Data* data;
 
     effect = effEntry();
-    effect->type = str_802FAA40;
+    effect->type = "Kemuri12N64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri12Data));
     effect->userdata = data;
@@ -76,7 +70,7 @@ EffectEntry* effKemuri12N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
     data->field_0x14 = life;
     data->field_0x18 = 0;
     data->field_0x1c = life;
-    data->field_0x20 = float_0_8041f55c;
+    data->field_0x20 = 0.0f;
     data->type = type;
     data->position.x = x;
     data->position.y = y;
@@ -115,7 +109,7 @@ void effKemuri12Main(EffectEntry* effect) {
     e = effect;
     data = e->userdata;
     position = initializeVec(&data->position);
-    data->field_0x20 = float_8_8041f564 * (f32)data->field_0x18 / (f32)data->field_0x1c;
+    data->field_0x20 = 8.0f * (f32)data->field_0x18 / (f32)data->field_0x1c;
     data->field_0x18++;
     data->field_0x14--;
     if (data->field_0x14 < 0) {
@@ -164,7 +158,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
     data = effect->userdata;
     type = data->type;
     ia = (s32)data->field_0x20;
-    frac256 = (s32)(float_256_8041f548 * (data->field_0x20 - (f32)ia));
+    frac256 = (s32)(256.0f * (data->field_0x20 - (f32)ia));
     isLast = (ia == 7) ? 1 : 0;
 
     GXSetNumChans(0);
@@ -189,11 +183,11 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXLoadTexObj(&texobj, GX_TEXMAP1);
 
     PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041f54c);
+    PSMTXRotRad(m2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXScale(m1, data->field_0x10, data->field_0x10, data->field_0x10);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(m0, m1, m0);
-    PSMTXRotRad(m2, 'z', float_0p34907_8041f550);
+    PSMTXRotRad(m2, 'z', 0.34906584f);
     PSMTXConcat(m0, m2, m0);
     PSMTXConcat(cam->view, m0, m0);
     GXLoadPosMtxImm(m0, GX_PNMTX0);
@@ -223,25 +217,19 @@ void effKemuri12Disp(CameraId camId, void* param) {
     GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
 
     scaled = ia * 32;
-    PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-    PSMTXTrans(m0, (f32)scaled, float_0_8041f55c, float_0_8041f55c);
+    PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
+    PSMTXTrans(m0, (f32)scaled, 0.0f, 0.0f);
     PSMTXConcat(m1, m0, m1);
     GXLoadTexMtxImm(m1, GX_TEXMTX0, GX_MTX2x4);
     if (isLast) {
-        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-        PSMTXTrans(m0, (f32)(scaled + 32), float_32_8041f560, float_0_8041f55c);
+        PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
+        PSMTXTrans(m0, (f32)(scaled + 32), 32.0f, 0.0f);
         PSMTXConcat(m1, m0, m1);
         GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
     }
     else {
-        PSMTXScale(m1, float_0p0039062_8041f554, float_0p03125_8041f558, float_0_8041f55c);
-#ifdef MUST_MATCH
-        // The literal makes MWCC keep the int->float conversion's `scaled + 32` in r3
-        // (the named float_0 constant lands it in r0 and schedules the loads differently).
+        PSMTXScale(m1, 0.00390625f, 0.03125f, 0.0f);
         PSMTXTrans(m0, (f32)(scaled + 32), 0.0f, 0.0f);
-#else
-        PSMTXTrans(m0, (f32)(scaled + 32), float_0_8041f55c, float_0_8041f55c);
-#endif
         PSMTXConcat(m1, m0, m1);
         GXLoadTexMtxImm(m1, GX_TEXMTX1, GX_MTX2x4);
     }
@@ -272,3 +260,7 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

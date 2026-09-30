@@ -4,12 +4,18 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
-#include <math.h>
+#include "math_ext.h"
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232c4;
+__declspec(section ".sdata") GXColor unk_804232c0;
+
 
 extern const f32 float_deg2rad_80420114;
 extern const f32 float_0p03125_80420118;
 extern const f32 float_0_8042011c;
-extern GXColor dat_80420110;
+extern const GXColor dat_80420110;
 extern const f32 float_0p5_80420120;
 extern const f32 float_0p78_80420124;
 extern const f32 float_0p29_80420128;
@@ -51,16 +57,16 @@ EffectEntry* effWangFlushN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	data->duration = duration;
 	data->frame = 0;
 	data->alpha = 0;
-	data->rot = 0.0f;
+	data->rot = float_0_8042011c;
 	if (type == 0) {
 		data->rotSpeed = 30.0f;
 	} else {
-		data->rotSpeed = 0.0f;
+		data->rotSpeed = float_0_8042011c;
 	}
-	data->scale = 0.0f;
+	data->scale = float_0_8042011c;
 	data->scaleSpeed = 0.8f;
 	data->field_0x28 = 0;
-	data->alphaScale = 0.0f;
+	data->alphaScale = float_0_8042011c;
 	return effect;
 }
 
@@ -113,16 +119,16 @@ void effWangFlushMain(EffectEntry* effect) {
 #endif
 }
 
-GXColor unk_804232c0;
 
 static u8 color_rotation_data[24] = {
 	0xFF, 0xFF, 0x52, 0xFF, 0xFF, 0x52, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
 	0xFF, 0xFF, 0xD6, 0xFF, 0xFF, 0xD6, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
 };
 
-static u32 size16x16_tex64x64_vtx[14] = {
+static u32 size16x16_tex64x64_vtx[16] = {
 	0xFFF8FFF8, 0x00000000, 0x04000000, 0x00FF0008, 0xFFF80000, 0x08000400, 0x000000FF,
 	0x00080008, 0x00000800, 0x0C000000, 0x00FFFFF8, 0x00080000, 0x00000C00, 0x000000FF,
+	0x00000000, 0x00000000,
 };
 
 // Inlined in the original; the helper scope reproduces the stack slots the compiler
@@ -212,3 +218,18 @@ void effWangFlushDisp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_80420110 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_deg2rad_80420114 = 0.017453292f;
+const f32 float_0p03125_80420118 = 0.03125f;
+const f32 float_0_8042011c = 0.0f;
+const f32 float_0p5_80420120 = 0.5f;
+const f32 float_0p78_80420124 = 0.78f;
+const f32 float_0p29_80420128 = 0.29f;
+const f32 float_0p93_8042012c = 0.93f;
+const f32 float_6p2832_80420130 = 6.2831855f;
+const f32 float_360_80420134 = 360.0f;
+const f32 float_0p9_80420138 = 0.9f;
+const f32 float_144_8042013c = 144.0f;
+const f32 float_64_80420140 = 64.0f;

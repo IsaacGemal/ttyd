@@ -11,6 +11,7 @@ section score falls:
   3. tools/pool_define.py   named .sdata2/.rodata pool constants, defined after the code
   4. named string objects -> literals (`const char str_XXXX[] = "..."` and its uses)
   5. the .sbss2 idiom       for uninitialised `GXColor unk_804...;` scratch objects
+  6. (after a failed link with every section at 100) tools/pool_floats.py: named f32 constants -> literals
 then runs tools/autolink.py on it. It prints each step's result and, when the link still fails, which sections differ from
 the original object. What it cannot do (event scripts and other typed tables: tools/dol_gen.py --append; base-reached data:
 `#pragma force_active`; scheduling differences) is listed at the end. Run from the repo root; edits src/UNIT.c in place."""
@@ -79,8 +80,8 @@ def step(name, fn):
         print(f"  {name}: nothing to do")
         return
     f2, s2, ok2 = measure()
-    fn_ok = all(f2.get(k, 0) >= v - 1e-9 for k, v in base_fns.items()) if DATA_ONLY else min(f2.values()) >= 100
-    good = ok2 and fn_ok and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
+    fn_ok = ok2 and (all(f2.get(k, 0) >= v - 1e-9 for k, v in base_fns.items()) if DATA_ONLY else min(f2.values()) >= 100)
+    good = fn_ok and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
     if good:
         fns, secs = f2, s2
         print(f"  {name}: kept; sections {summary(secs)}")
@@ -106,26 +107,46 @@ def math_ext():
 
 
 def literal_strings():
+    """Named string objects (`const char str_X[] = "..."`) and extern declarations of strings this unit defines (its
+    disassembly has the text) become literals at their uses: the compiler pools them itself, in first-use order."""
     t = open(src).read()
-    defs = re.findall(r'^const char (str_\w+)\[\d*\] = ("(?:[^"\\]|\\.)*");\n', t, re.M)
-    if not defs:
-        return False
-    for name, lit in defs:
+    asm = open(f"build/G8MJ01/asm/{unit}.s", errors="replace").read()
+    text_of = {n: v.split("\\000")[0] for n, v in re.findall(r'^\.obj (str_\w+), \w+\n\s*\.string "((?:[^"\\]|\\.)*)"', asm, re.M)}
+    changed = False
+    for name, lit in re.findall(r'^const char (str_\w+)\[\d*\] = ("(?:[^"\\]|\\.)*");\n', t, re.M):
         t = re.sub(rf'^const char {name}\[\d*\] = {re.escape(lit)};\n', "", t, flags=re.M)
         t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
         t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
+        changed = True
+    for name in re.findall(r'^extern const char (str_\w+)\[\];\n', t, re.M):
+        if name in text_of:
+            lit = '"' + text_of[name] + '"'
+            t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
+            t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
+            changed = True
+    if not changed:
+        return False
     open(src, "w").write(t)
+
+
+def drop_int_double():
+    """`double_to_int_XXXX` is the compiler's own pool entry for int->float: a definition here is a second copy."""
+    t = open(src).read()
+    n = re.sub(r"^(?:extern )?const f64 double_to_int_\w+(?: = [^;]+)?;\n", "", t, flags=re.M)
+    if n == t:
+        return False
+    open(src, "w").write(n)
 
 
 def sbss2():
     t = open(src).read()
-    m = re.findall(r"^(?:GXColor|u32) (unk_8042\w+);\n", t, re.M)
-    if not m or "sbss2" in t:
+    m = re.findall(r"^(?:extern )?(?:GXColor|u32) (unk_8042\w+);\n", t, re.M)
+    if not m or '#pragma section ".sdata" ".sbss2"' in t:
         return False
     names = sorted(m, reverse=True)  # declared in reverse: they are placed in the reverse of their declaration order
     decl = "".join(f'__declspec(section ".sdata") GXColor {n};\n' for n in names)
     for n in m:
-        t = re.sub(rf"^(?:GXColor|u32) {n};\n", "", t, flags=re.M)
+        t = re.sub(rf"^(?:extern )?(?:GXColor|u32) {n};\n", "", t, flags=re.M)
     first = t.index("\n\n") if "\n\n" in t else 0
     t = t[:first] + '\n\n// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.\n#pragma section ".sdata" ".sbss2"\n' + decl + t[first:]
     open(src, "w").write(t)
@@ -147,6 +168,7 @@ try:
         step("pool_define", run_tool("pool_define"))
     if secs.get(".rodata", 100) < 100:
         step("literal strings", literal_strings)
+    step("double_to_int", drop_int_double)
     if secs.get(".sbss2", 100) < 100:
         step("sbss2 idiom", sbss2)
     if DATA_ONLY:
@@ -156,6 +178,30 @@ try:
     r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
     tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
     print("  autolink:", " / ".join(tail))
+    if "LINKED" not in "".join(tail):
+        # every section scores 100 but the dol differs: named pool constants sit before the pooled literals, so the
+        # order can be off; let the compiler pool the floats itself
+        # the section scores no longer say anything (an object that the compiler pools itself scores lower until the link):
+        # keep the change when every function is still at 100% and the build works
+        saved = open(src).read()
+        try:
+            for f in (drop_int_double, literal_strings, run_tool("pool_floats")):
+                try:
+                    f()
+                except Exception:
+                    pass
+            f2, s2, ok2 = measure()
+            if ok2 and min(f2.values()) >= 100:
+                print("  all-literal pool: functions still 100%")
+            else:
+                open(src, "w").write(saved)
+                print("  all-literal pool: reverted")
+        except BaseException:
+            open(src, "w").write(saved)
+            raise
+        r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
+        tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
+        print("  autolink:", " / ".join(tail))
     bad = {k: v for k, v in secs.items() if v < 100}
     if "LINKED" in "".join(tail):
         print("linked")

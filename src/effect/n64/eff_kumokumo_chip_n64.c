@@ -7,26 +7,31 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
-// This unit's .sdata2 literals. float_0_8041f56c stays an extern (like eff_kumokumo_n64.c)
-// and is only ever read through the named symbol. float_1_8041f570 is *defined* here:
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042319c;
+__declspec(section ".sdata") GXColor unk_80423198;
+
+
+// This unit's .sdata2 literals. 0.0f stays an extern (like eff_kumokumo_n64.c)
+// and is only ever read through the named symbol. 1.0f is *defined* here:
 // with no definition MWCC pools the `1.0f` as an anonymous .sdata2 entry instead of
 // referencing the named symbol, which costs one instruction of fuzzy match. Defining it
 // makes every `1.0f` in this TU reference the symbol.
-extern const f32 float_0p03125_8041f568;
-extern const f32 float_0_8041f56c;
-const f32 float_1_8041f570 = 1.0f;
 
 // Local vertex data (0x38 bytes); the original symbol is local to this unit's asm.
-static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
+static u32 size32x32_tex32x32_vtx[0x48 / 4] = {
 	0xFFF00000, 0x00000000, 0x00000000, 0x00FF0010,
 	0x00000000, 0x04000000, 0x000000FF, 0x00100020,
 	0x00000400, 0x04000000, 0x00FFFFF0, 0x00200000,
 	0x00000400, 0x000000FF,
 };
 
+__declspec(section ".data") u32 lbl_803A2280[2] = {
+    0xBF800000, 0x3F800000,
+};
+
 // .sbss2 colour scratch, global to this unit's asm
-GXColor unk_80423198;
-GXColor unk_8042319c;
 
 const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
 const char str_802FAA5C[] = "KumokumoChipN64";
@@ -121,9 +126,9 @@ EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 
 		dist = chip_sqrtf(dist);
 	}
 
-	count = (spacing > float_0_8041f56c) ? (s32)(dist / spacing) : 0;
+	count = (spacing > 0.0f) ? (s32)(dist / spacing) : 0;
 	if (count != 0) {
-		f32 inv = float_1_8041f570 / (f32)count;
+		f32 inv = 1.0f / (f32)count;
 		data->xVel = dx * inv;
 		data->yVel = dy * inv;
 		data->zVel = dz * inv;
@@ -275,7 +280,7 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	PSMTXScale(scale, float_0p03125_8041f568, float_0p03125_8041f568, float_0_8041f56c);
+	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(scale, 0x1e, 1);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(0, 0, 0, 0xff);
@@ -288,3 +293,5 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

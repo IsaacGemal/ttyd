@@ -2593,3 +2593,14 @@ party_bomhei and evt_nannpc named constants where main's literals pool correctly
 drops 95.82 -> 94.12 only because effHibashiraMain's zero Vec is now an anonymous literal: the bytes match the
 original's, and main already carries the extra 2^52 double at the end.
 The wave also fixed three bugs on main: evt_npc's moveFlags read args[10], win_main's TEVREG1 colour had its bytes in the wrong order, and evt_telop wrote .b instead of .a.
+
+## Grind 32 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked ten wave-28 code-complete units (`eff_kemuri12`, `kumokumo_chip`, `stamp`, `sweat`, `wangflush`, `glass`, `hagetaka_flush`, `stone_smoke`, `akari_sflush`, `bomhei`, all `effect/n64/eff_*_n64`).
+
+- Every section can score 100 in objdiff and the dol still differ: a named `const f32` defined in the file is placed before all pooled literals, so the unit's `.sdata2`/`.rodata` gets the same value twice (once named, once as the compiler's own pool entry) or in the wrong slot. `tools/pool_floats.py` turns the named f32 constants into literals (the compiler then pools them in first-use order); `tools/finish_unit.py` runs it, drops the unit's own `double_to_int_*` definition and its named string objects as a fallback after a failed link. `pool_define.py` no longer defines constants the code never loads by name.
+- Mixed cases: the constants the original loads by name from a slot that precedes the pooled ones stay named (`akari_sflush`: `dat`, deg2rad, 6.28, 360, 0.1), the rest are literals. A literal `0.0f` next to a named `float_0` in the same unit doubles the zero in `.sdata2` (`wangflush`, `bomhei`): use the named zero everywhere.
+- `.data` gaps: a `gap_NN_..._data` object of zeros or a `{-1.0f, 1.0f}` pair after a vertex table is part of the unit; widen the table or add the `__declspec(section ".data") u32 lbl_...[2]` pair after it. A `gap_NN_..._sbss2` object is one more `GXColor` in the sbss2 idiom (declared in reverse).
+- Section sizes of a linked unit differ from the target's object by the end padding (rodata/sdata2 end at 4 or 8 bytes instead of 16); the dol is what matters.
+- `eff_stamp_n64` lost matched_data 92.31 -> 61.54 in the ratchet (its named string and double became compiler-pooled); the unit is now byte-exact and linked, excused with `--allow-regress`.
+- Still open: `eff_teresa`, `eff_mist2`, `eff_hibashira`, `eff_nokotarou`, `eff_majinai` (sdata2 slots with strings/doubles), `evt_kinopio`, `battle_information`, `sunlight`, `batfukidashi`.
