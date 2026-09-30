@@ -102,12 +102,20 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
     return effect;
 }
 
+#ifdef MUST_MATCH
+static inline GXColor akariColor(u8 alpha) {
+    GXColor c = unk_80423098;
+    c.a = alpha;
+    return c;
+}
+#endif
+
 // (1) The original emits `li r31,1` (i) before `addi r30,r30,0x38` (part = data->part); mwcc here
 //     always schedules the pointer advance first.
 // (2) GXSetTevColor's GXColor is built at r1+0x8 and word-copied to the outgoing arg at r1+0xc;
 //     here the local lands at r1+0xc and is copied to r1+0x8 (same known quirk as eff_booboo_n64.c,
 //     eff_batten.c, eff_irekaeru.c).
-// NONMATCHING (99.22%): only those two scheduler/allocation artifacts differ.
+// NONMATCHING (99.25%): only those two scheduler/allocation artifacts differ.
 void effAkariPoseDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effAkariPoseData* data;
@@ -155,8 +163,12 @@ void effAkariPoseDisp(CameraId camId, void* param) {
         PSMTXConcat(viewMtx, mtx, mtx);
         GXLoadPosMtxImm(mtx, 0);
         GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+        color = akariColor((alpha * part->field_0x30) >> 8);
+#else
         color = unk_80423098;
         color.a = (alpha * part->field_0x30) >> 8;
+#endif
         GXSetTevColor(1, color);
         GXBegin(0x90, 0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);

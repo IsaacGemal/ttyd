@@ -30,8 +30,14 @@ extern const f32 float_0p125_804219ac;
 extern const f32 float_10_804219b0;
 extern const f32 float_3_804219b4;
 
-// NONMATCHING (99.94%): only the GXColor temp/pass stack slots are swapped (0xc/0x8 here vs 0x8/0xc);
-// the same build-copy-pass difference effIrekaeruDisp has.
+#ifdef MUST_MATCH
+static inline GXColor battenColor(u8 alpha) {
+	GXColor c = *(GXColor*)&dat_80421984;
+	c.a = alpha;
+	return c;
+}
+#endif
+
 void effBattenDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	BattenData* data = effect->userdata;
@@ -48,8 +54,12 @@ void effBattenDisp2(CameraId camId, void* param) {
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		PSMTXConcat(mtx, data->matrix, mtx);
 		animPoseSetMaterialFlagOn(data->animPoseId, 0x40);
+#ifdef MUST_MATCH
+		color = battenColor(data->alpha);
+#else
 		color = *(GXColor*)&dat_80421984;
 		color.a = data->alpha;
+#endif
 		animPoseSetMaterialEvtColor(data->animPoseId, color);
 		animPoseMain(data->animPoseId);
 		animPoseDrawMtx(data->animPoseId, mtx, 1, float_0_8042198c, float_2_80421990);
@@ -58,7 +68,15 @@ void effBattenDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (98.44%): the vertex float literals become anonymous @248/@327 sdata2 symbols instead of
+#ifdef MUST_MATCH
+static inline GXColor battenHeaderColor(u8 alpha) {
+	GXColor c = *(GXColor*)&str_80421980;
+	c.a = alpha;
+	return c;
+}
+#endif
+
+// NONMATCHING (98.47%): the vertex float literals become anonymous @248/@327 sdata2 symbols instead of
 // float_0_8042198c/float_2_80421990 (declaring them volatile matches but breaks Disp2), the color temp slot is
 // swapped as in Disp2, and a few integer registers differ (data in r29 not r27, element-ptr setup order).
 void effBattenDisp(CameraId camId, void* param) {
@@ -114,8 +132,12 @@ void effBattenDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtxScale, 0);
 		GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+		color = battenHeaderColor((headerAlpha * elem->alpha) / 255);
+#else
 		color = *(GXColor*)&str_80421980;
 		color.a = (headerAlpha * elem->alpha) / 255;
+#endif
 		GXSetChanMatColor(4, color);
 
 		GXBegin(0x80, 0, 4);

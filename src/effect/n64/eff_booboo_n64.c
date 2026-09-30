@@ -637,7 +637,15 @@ u32 boo_dl_2_31[8] ATTRIBUTE_ALIGN(32) = {
 };
 
 u8 anime_data_walk[8] = { 0x01, 0x01, 0x02, 0x02, 0x01, 0x01, 0x00, 0x00 };
-// NONMATCHING (99.26%): identical instructions, but mwcc allocates the tail's callee-saved registers
+#ifdef MUST_MATCH
+static inline GXColor boobooColor(u8 v) {
+	GXColor c = unk_804230a8;
+	c.r = c.g = c.b = v;
+	return c;
+}
+#endif
+
+// NONMATCHING (99.30%): identical instructions, but mwcc allocates the tail's callee-saved registers
 // differently (target: effect r29, camera r28, flags-base r26; ours: effect r26, camera r29, flags-base r28)
 // and builds the GXSetTevColor GXColor at r1+0xc instead of r1+0x8 (same known quirk as eff_irekaeru.c).
 void effBoobooDisp(CameraId camId, void* param) {
@@ -668,8 +676,12 @@ void effBoobooDisp(CameraId camId, void* param) {
 			if (!texture_dl(effect, i, data->tex[i])) {
 				if (data->tex[i] == 8 || data->tex[i] == 9) {
 					u8 bright = (u8)(63.0f + 63.0f * (f32)sin(6.2831855f * phase / 360.0f));
+#ifdef MUST_MATCH
+					color = boobooColor(bright);
+#else
 					color = unk_804230a8;
 					color.r = color.g = color.b = bright;
+#endif
 					GXSetTevColor(GX_TEVREG0, color);
 				}
 				poly = data->poly[i];

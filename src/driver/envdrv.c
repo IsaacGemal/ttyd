@@ -834,6 +834,14 @@ void envDisp_DepthOfField(void) {
     }
 }
 
+#ifdef MUST_MATCH
+static inline GXColor envBlurColor(u8 alpha) {
+    GXColor c = dat_8041e514;
+    c.a = alpha;
+    return c;
+}
+#endif
+
 // NONMATCHING (99.98%): only the if-branch GXColor temporary differs: the original builds the local at
 // sp+0xC and copies it to the by-value argument at sp+0x10; MWCC puts the local at sp+0x10 and the argument
 // at sp+0xC. Everything else (alpha math, all GX calls, the vertex math) is byte-identical.
@@ -878,8 +886,12 @@ void envDisp_Blur(void) {
             } else {
                 alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
             }
+#ifdef MUST_MATCH
+            color = envBlurColor(alpha);
+#else
             color = dat_8041e514;
             color.a = alpha;
+#endif
             GXSetTevKColor(GX_KCOLOR0, color);
         } else {
             GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
