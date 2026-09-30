@@ -78,7 +78,7 @@ USER_FUNC(camera_yure) {
     diff = event->userdata[1] - event->userdata[0];
     scale = (f32)diff * (0.1f * s) / (f32)event->userdata[1];
 #else
-    scale = (f32)(event->userdata[1] - event->userdata[0]) * s * 0.1f / (f32)event->userdata[1];
+    scale = (f32)(event->userdata[1] - event->userdata[0]) * (0.1f * s) / (f32)event->userdata[1];
 #endif
     PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &vec);
     PSVECScale(&vec, &vec, scale);

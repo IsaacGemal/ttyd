@@ -1028,8 +1028,8 @@ static void senkaron_ext_main(void) {
                 f32 len = sqrtf(f26 * f26 + f25 * f25);
 
                 p->field_8 = f28 + 3.0f * f27 / len;
-                p->field_C = randf(-5.0f, 15.0f);
-                p->field_10 = randf(-5.0f, 15.0f);
+                p->field_C = randf(5.0f, 10.0f);
+                p->field_10 = randf(-5.0f, 10.0f);
                 p->type = 0x61;
                 if (hit == 1) {
                     Vec v = {0.0f, 0.0f, 0.0f};

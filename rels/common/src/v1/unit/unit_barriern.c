@@ -1045,7 +1045,7 @@ static USER_FUNC(barriernSatelliteToInside) {
             found = 1;
         }
     }
-    return found ? 2 : 0;
+    return found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
 // NONMATCHING (92.25%): same inlined barriernSatelliteTo_Init rematerialization as
@@ -1131,7 +1131,7 @@ static USER_FUNC(barriernSatelliteToOutside) {
             }
             break;
         default:
-            return 2;
+            return EVT_RETURN_DONE;
         }
     }
     found = 0;
@@ -1140,7 +1140,7 @@ static USER_FUNC(barriernSatelliteToOutside) {
             found = 1;
         }
     }
-    return found ? 2 : 0;
+    return found ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
 static USER_FUNC(outSplineTableSet) {
@@ -2111,9 +2111,7 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static s32 zanzou_count[3] = {
-    0x00000000, 0x00000000, 0x00000000,
-};
+static s32 zanzou_count[3];
 
 static USER_FUNC(battleGetBarriernSatelliteInitPos) {
     s32* args;

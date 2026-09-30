@@ -702,83 +702,6 @@ static u32 splineTableOut4_4[15] = {
     0xC1C80000, 0xC1C80000, 0x00000000,
 };
 
-static USER_FUNC(outSplineTableSet) {
-    s32* args;
-    BattleUnit* unit;
-    s32 id;
-    s32 type;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    type = evtGetValue(event, args[1]);
-    switch (type) {
-    case 1:
-        outSplineTableSet_Sub(unit, 0, splineTableOut1_1);
-        break;
-    case 2:
-        outSplineTableSet_Sub(unit, 0, splineTableOut2_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut2_2);
-        break;
-    case 3:
-        outSplineTableSet_Sub(unit, 0, splineTableOut3_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut3_2);
-        outSplineTableSet_Sub(unit, 2, splineTableOut3_3);
-        break;
-    case 4:
-        outSplineTableSet_Sub(unit, 0, splineTableOut4_1);
-        outSplineTableSet_Sub(unit, 1, splineTableOut4_2);
-        outSplineTableSet_Sub(unit, 2, splineTableOut4_3);
-        outSplineTableSet_Sub(unit, 3, splineTableOut4_4);
-        break;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(battleGetBarriernSatelliteInitPos) {
-    s32* args;
-    BattleUnit* unit;
-    s32 id;
-    s32 n;
-    s32 m;
-    s32 i;
-    s32 j;
-    s32 indexX;
-    s32 indexY;
-    s32 indexZ;
-    const Vec* p;
-    BattleWork* wp;
-    static const Vec VecData[] = {
-        { 25.f, 0.f, 0.f },   { 25.f, 0.f, 0.f },   { -25.f, 0.f, 0.f },  { 0.f, 25.f, 0.f },
-        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f }, { 25.f, 25.f, 0.f }, { -25.f, 25.f, 0.f },
-        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f },
-    };
-
-    args = event->args;
-    wp = _battleWorkPointer;
-    id = evtGetValue(event, args[0]);
-    id = BattleTransID(event, id);
-    unit = BattleGetUnitPtr(wp, id);
-    n = evtGetValue(event, args[1]);
-    m = evtGetValue(event, args[2]);
-    indexX = args[3];
-    indexY = args[4];
-    indexZ = args[5];
-    p = VecData;
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < i; j++) {
-            p++;
-        }
-    }
-    for (j = 0; j < m; j++) {
-        p++;
-    }
-    evtSetValue(event, indexX, (s32)(p->x * unit->faceDirection));
-    evtSetValue(event, indexY, (s32)p->y);
-    evtSetValue(event, indexZ, (s32)p->z);
-    return EVT_RETURN_DONE;
-}
-
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventUnisonPhase, -2, PTR(unison_phase_event))
@@ -862,442 +785,7 @@ static EVT_BEGIN(satellite_blur_off)
     RETURN
 EVT_END()
 
-static USER_FUNC(barriern_zanzou3) {
-    BattleUnit* unit;
-    s32 id;
 
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 2);
-}
-
-// NONMATCHING (86.72%): the table-dispatch code shape matches; MWCC register allocation / literal pooling differs.
-static USER_FUNC(barriernSatelliteToInside) {
-    s32* args;
-    s32 id;
-    BattleUnit* unit;
-    BarriernSatelliteTo* work;
-    BattleUnit* satellite;
-    f32 pos[3];
-    f32 out[3];
-    f32 t;
-    s32 spline;
-    s32 i;
-    u8 result;
-    u8 updated;
-
-    args = event->args;
-    id = evtGetValue(event, args[0]);
-    evtGetValue(event, args[1]);
-    id = BattleTransID(event, id);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (isFirstCall) {
-        for (i = 0; i < 4; i++) {
-            if (unit->work[4 + i] == -1) {
-                continue;
-            }
-            spline = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2];
-            if (spline == (s32)splineTableOut1_1) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn1_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn1_1;
-                }
-            }
-            if (spline == (s32)splineTableOut2_1) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn2_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_1;
-                }
-            }
-            if (spline == (s32)splineTableOut2_2) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn2_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_2;
-                }
-            }
-            if (spline == (s32)splineTableOut3_1) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn3_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_1;
-                }
-            }
-            if (spline == (s32)splineTableOut3_2) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn3_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_2;
-                }
-            }
-            if (spline == (s32)splineTableOut3_3) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn3_3;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_3;
-                }
-            }
-            if (spline == (s32)splineTableOut4_1) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn4_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_1;
-                }
-            }
-            if (spline == (s32)splineTableOut4_2) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn4_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_2;
-                }
-            }
-            if (spline == (s32)splineTableOut4_3) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn4_3;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_3;
-                }
-            }
-            if (spline == (s32)splineTableOut4_4) {
-                if (unit->work[4 + i] != -1) {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableIn4_4;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_4;
-                }
-            }
-        }
-    }
-    updated = 0;
-    for (i = 0; i < 4; i++) {
-        result = 0;
-        if (unit->work[4 + i] != -1) {
-            work = (BarriernSatelliteTo*)unit->work[10 + i];
-            if (work != NULL) {
-                if (work->field_58 >= 0x3c) {
-                    if (work != NULL) {
-                        __memFree(4, work);
-                        unit->work[10 + i] = 0;
-                    }
-                } else {
-                    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
-                    spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
-                    satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]);
-                    if (satellite != NULL) {
-                        BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
-                        BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                        BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                        work->field_58++;
-                        result = 1;
-                    }
-                }
-            }
-        }
-        if (result == 1) {
-            updated = 1;
-        }
-    }
-    return (updated == 1) ? 0 : 2;
-}
-
-
-
-// NONMATCHING (89.38%): the search loop now matches the target's flag form; only register allocation differs.
-static USER_FUNC(barriernSatelliteToOutside) {
-    s32* args;
-    s32 id;
-    s32 n;
-    BattleUnit* unit;
-    BarriernSatelliteTo* work;
-    BattleUnit* satellite;
-    f32 pos[3];
-    f32 out[3];
-    f32 t;
-    s32 i;
-    u8 result;
-    u8 updated;
-
-    args = event->args;
-    id = evtGetValue(event, args[0]);
-    n = evtGetValue(event, args[1]);
-    id = BattleTransID(event, id);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    if (isFirstCall) {
-        switch (n) {
-        case 1:
-            i = 0;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut1_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut1_1;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            break;
-        case 2:
-            i = 0;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut2_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut2_1;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut2_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut2_2;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            break;
-        case 3:
-            i = 0;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut3_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_1;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut3_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_2;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut3_3;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_3;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            break;
-        case 4:
-            i = 0;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut4_1;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_1;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut4_2;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_2;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut4_3;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_3;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            i++;
-            while (1) {
-                if (unit->work[4 + i] == -1) {
-                    result = 0;
-                } else {
-                    work = __memAlloc(4, 0x5c);
-                    unit->work[10 + i] = (s32)work;
-                    work->type = 5;
-                    work->unitId = (s32)splineTableOut4_4;
-                    work->field_58 = 0;
-                    spline_maketable(5, work->unitId, work->points, work->field_1C);
-                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_4;
-                    result = 1;
-                }
-                if (result == 1) {
-                    break;
-                }
-                i++;
-            }
-            break;
-        default:
-            return 2;
-        }
-    }
-    updated = 0;
-    for (i = 0; i < 4; i++) {
-        result = 0;
-        if (unit->work[4 + i] != -1) {
-            work = (BarriernSatelliteTo*)unit->work[10 + i];
-            if (work != NULL) {
-                if (work->field_58 >= 0x3c) {
-                    if (work != NULL) {
-                        __memFree(4, work);
-                        unit->work[10 + i] = 0;
-                    }
-                } else {
-                    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
-                    spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
-                    satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]);
-                    if (satellite != NULL) {
-                        BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
-                        BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                        BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
-                        work->field_58++;
-                        result = 1;
-                    }
-                }
-            }
-        }
-        if (result == 1) {
-            updated = 1;
-        }
-    }
-    return (updated == 1) ? 0 : 2;
-}
 
 static EVT_BEGIN(unison_phase_event)
     CALL(btlevtcmd_StopWaitEvent, -2)
@@ -1365,80 +853,6 @@ static EVT_BEGIN(unison_phase_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
-
-// NONMATCHING (98.44%): declaring i before hasSat fixed the r23/r24 swap; the first BattleGetUnitPtr still uses r3 (not r5) for the global address, and the second loop's i/w/h land rotated.
-static USER_FUNC(_check_satellite) {
-    BattleUnit* unit;
-    s32* args;
-    BattleUnit* satellite;
-    BattleUnitPart* part;
-    BarriernSatelliteToData* data;
-    f32 x;
-    f32 y;
-    f32 z;
-    s32 dx;
-    s32 dy;
-    s32 i;
-    s32 hasSat;
-    s32 w;
-    s32 h;
-
-    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
-    args = event->args;
-    hasSat = 0;
-    if (unit == NULL) {
-        return EVT_RETURN_DONE;
-    }
-    for (i = 4; i < 6; i++) {
-        if (unit->work[i] != -1) {
-            satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[i]);
-            if (satellite != NULL) {
-                hasSat = 1;
-            } else {
-                unit->work[i] = -1;
-            }
-        }
-    }
-    if (hasSat == 0) {
-        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-        if (part->attributes & 0x20000000) {
-            effDelete((EffectEntry*)unit->work[3]);
-            unit->work[3] = 0;
-            BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER_BREAK1", -250000000, 0);
-            BtlUnit_GetPos(unit, &x, &y, &z);
-            for (i = 0; i < 20; i++) {
-                w = BtlUnit_GetWidth(unit) + 0xf;
-                h = BtlUnit_GetHeight(unit) + 0xf;
-                dx = irand(w) - w / 2;
-                dy = irand(h) - h / 2;
-                effGlassN64Entry(2, 0x3c, x + dx, y + dy, z, 1.0f);
-            }
-        }
-        part->attributes &= ~0x20000000;
-        evtSetValue(event, args[0], 0);
-    } else {
-        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
-        if (!(part->attributes & 0x20000000)) {
-            f32 x;
-            f32 y;
-            f32 z;
-            BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER1", -250000000, 0);
-            BtlUnit_GetPos(unit, &x, &y, &z);
-            unit->work[3] = (s32)effSyuryouEntry(1, 0x3e8, 0.0f, -1000.0f, 0.0f);
-        }
-        part->attributes |= 0x20000000;
-        evtSetValue(event, args[0], 1);
-        if (unit->work[3] != 0) {
-            data = (BarriernSatelliteToData*)((EffectEntry*)unit->work[3])->userdata;
-            BtlUnit_GetPos(unit, &x, &y, &z);
-            data->x = x;
-            data->y = y - 32.0f * unit->mSizeMultiplier * 0.8f;
-            data->z = z + 10.0f;
-            data->scale = 1.8f * (0.8f * unit->mSizeMultiplier);
-        }
-    }
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_SetRGB, -2, 1, 255, 255, 255)
@@ -1713,24 +1127,6 @@ static EVT_BEGIN(damage_check_event_sub)
     RETURN
 EVT_END()
 
-static USER_FUNC(barriern_zanzou) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 0);
-}
-
-static USER_FUNC(barriern_zanzou2) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 1);
-}
-
 static EVT_BEGIN(wakka_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
     CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_wakka_attack))
@@ -1801,69 +1197,11 @@ static EVT_BEGIN(wakka_attack_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
-static USER_FUNC(barriern_satellite_zanzou) {
-    s32 index;
-    BattleUnit* unit;
-    s32* args;
-    s32 id;
-    BattleWork* wp;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    index = evtGetValue(event, args[1]);
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, id);
-    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 0);
-}
-
-// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
-static USER_FUNC(barriern_satellite_zanzou2) {
-    s32 index;
-    BattleUnit* unit;
-    s32* args;
-    s32 id;
-    BattleWork* wp;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    index = evtGetValue(event, args[1]);
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, id);
-    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
-}
-
 static EVT_BEGIN(wawawa_attack_event_satellite_blur)
     CALL(barriern_satellite_zanzou, -2, LW(0))
     CALL(barriern_satellite_zanzou2, -2, LW(0))
     RETURN
 EVT_END()
-
-// NONMATCHING (66.67%): retail keeps a base pointer plus a running byte offset and a result flag; our indexed loop recomputes the offset each iteration.
-static USER_FUNC(barriern_wawawa_set_target) {
-    s32* args;
-    s32 xs[13];
-    s32 ys[10];
-    s32 count;
-    s32 i;
-    s32 n;
-
-    args = event->args;
-    _battleWorkPointer->field_428[0xab7] = 0;
-    barriern_wawawa_get_target(&xs[0], &ys[0]);
-    for (count = 0; xs[count] != -1; count++) {
-        barriern_wawawa_get_next_target(&xs[count + 1], &ys[count + 1]);
-    }
-    for (i = 0; i < 5; i++) {
-        n = irand(count);
-        evtSetValue(event, args[0], xs[n]);
-        evtSetValue(event, args[1], ys[n]);
-        args += 2;
-    }
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(wawawa_attack_event)
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
@@ -2143,6 +1481,39 @@ EVT_END()
 
 static s32 zanzou_count[3];
 
+// dont_inline keeps outSplineTableSet_Sub a real `bl` from outSplineTableSet, as in retail.
+#pragma dont_inline on
+#pragma dont_inline reset
+
+// dont_inline keeps the get_target/get_next_target helpers a real `bl` from barriern_wawawa_set_target.
+#pragma dont_inline on
+static USER_FUNC(barriern_zanzou) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 0);
+}
+
+static USER_FUNC(barriern_zanzou2) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 1);
+}
+
+static USER_FUNC(barriern_zanzou3) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 2);
+}
+
 // NONMATCHING (95.68%): typing zanzou_count s32 and declaring end before step fixed both compare and float register assignment; a (r30 vs r28) and the temp1/temp2 stack slots differ.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
@@ -2222,6 +1593,40 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
     }
     zanzou_count[0]++;
     return 0;
+}
+
+// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
+static USER_FUNC(barriern_satellite_zanzou) {
+    s32 index;
+    BattleUnit* unit;
+    s32* args;
+    s32 id;
+    BattleWork* wp;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    index = evtGetValue(event, args[1]);
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, id);
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 0);
+}
+
+// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
+static USER_FUNC(barriern_satellite_zanzou2) {
+    s32 index;
+    BattleUnit* unit;
+    s32* args;
+    s32 id;
+    BattleWork* wp;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    index = evtGetValue(event, args[1]);
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, id);
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
 }
 
 // NONMATCHING (89.62%): removing initAlpha and typing zanzou_count as s32 fixed the frame and signed compares; zanzou_count index arithmetic and remaining register allocation differ.
@@ -2354,17 +1759,495 @@ static s32 barriernSatelliteTo_Main(BattleUnit* unit, s32 index) {
     return 1;
 }
 
-// dont_inline keeps outSplineTableSet_Sub a real `bl` from outSplineTableSet, as in retail.
-#pragma dont_inline on
+// NONMATCHING (86.72%): the table-dispatch code shape matches; MWCC register allocation / literal pooling differs.
+static USER_FUNC(barriernSatelliteToInside) {
+    s32* args;
+    s32 id;
+    BattleUnit* unit;
+    BarriernSatelliteTo* work;
+    BattleUnit* satellite;
+    f32 pos[3];
+    f32 out[3];
+    f32 t;
+    s32 spline;
+    s32 i;
+    u8 result;
+    u8 updated;
+
+    args = event->args;
+    id = evtGetValue(event, args[0]);
+    evtGetValue(event, args[1]);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (isFirstCall) {
+        for (i = 0; i < 4; i++) {
+            if (unit->work[4 + i] == -1) {
+                continue;
+            }
+            spline = BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2];
+            if (spline == (s32)splineTableOut1_1) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn1_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn1_1;
+                }
+            }
+            if (spline == (s32)splineTableOut2_1) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn2_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_1;
+                }
+            }
+            if (spline == (s32)splineTableOut2_2) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn2_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn2_2;
+                }
+            }
+            if (spline == (s32)splineTableOut3_1) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn3_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_1;
+                }
+            }
+            if (spline == (s32)splineTableOut3_2) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn3_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_2;
+                }
+            }
+            if (spline == (s32)splineTableOut3_3) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn3_3;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn3_3;
+                }
+            }
+            if (spline == (s32)splineTableOut4_1) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn4_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_1;
+                }
+            }
+            if (spline == (s32)splineTableOut4_2) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn4_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_2;
+                }
+            }
+            if (spline == (s32)splineTableOut4_3) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn4_3;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_3;
+                }
+            }
+            if (spline == (s32)splineTableOut4_4) {
+                if (unit->work[4 + i] != -1) {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableIn4_4;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableIn4_4;
+                }
+            }
+        }
+    }
+    updated = 0;
+    for (i = 0; i < 4; i++) {
+        result = 0;
+        if (unit->work[4 + i] != -1) {
+            work = (BarriernSatelliteTo*)unit->work[10 + i];
+            if (work != NULL) {
+                if (work->field_58 >= 0x3c) {
+                    if (work != NULL) {
+                        __memFree(4, work);
+                        unit->work[10 + i] = 0;
+                    }
+                } else {
+                    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+                    spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
+                    satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]);
+                    if (satellite != NULL) {
+                        BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
+                        BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+                        BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+                        work->field_58++;
+                        result = 1;
+                    }
+                }
+            }
+        }
+        if (result == 1) {
+            updated = 1;
+        }
+    }
+    return (updated == 1) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+// NONMATCHING (89.38%): the search loop now matches the target's flag form; only register allocation differs.
+static USER_FUNC(barriernSatelliteToOutside) {
+    s32* args;
+    s32 id;
+    s32 n;
+    BattleUnit* unit;
+    BarriernSatelliteTo* work;
+    BattleUnit* satellite;
+    f32 pos[3];
+    f32 out[3];
+    f32 t;
+    s32 i;
+    u8 result;
+    u8 updated;
+
+    args = event->args;
+    id = evtGetValue(event, args[0]);
+    n = evtGetValue(event, args[1]);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    if (isFirstCall) {
+        switch (n) {
+        case 1:
+            i = 0;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut1_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut1_1;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            break;
+        case 2:
+            i = 0;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut2_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut2_1;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut2_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut2_2;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            break;
+        case 3:
+            i = 0;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut3_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_1;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut3_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_2;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut3_3;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut3_3;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            break;
+        case 4:
+            i = 0;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut4_1;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_1;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut4_2;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_2;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut4_3;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_3;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            i++;
+            while (1) {
+                if (unit->work[4 + i] == -1) {
+                    result = 0;
+                } else {
+                    work = __memAlloc(4, 0x5c);
+                    unit->work[10 + i] = (s32)work;
+                    work->type = 5;
+                    work->unitId = (s32)splineTableOut4_4;
+                    work->field_58 = 0;
+                    spline_maketable(5, work->unitId, work->points, work->field_1C);
+                    BtlUnit_GetPartsPtr(BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]), 1)->work[2] = (s32)splineTableOut4_4;
+                    result = 1;
+                }
+                if (result == 1) {
+                    break;
+                }
+                i++;
+            }
+            break;
+        default:
+            return EVT_RETURN_DONE;
+        }
+    }
+    updated = 0;
+    for (i = 0; i < 4; i++) {
+        result = 0;
+        if (unit->work[4 + i] != -1) {
+            work = (BarriernSatelliteTo*)unit->work[10 + i];
+            if (work != NULL) {
+                if (work->field_58 >= 0x3c) {
+                    if (work != NULL) {
+                        __memFree(4, work);
+                        unit->work[10 + i] = 0;
+                    }
+                } else {
+                    t = intplGetValue(4, work->field_58, 0x3c, 0.0f, 1.0f);
+                    spline_getvalue(out, work->type, work->unitId, (s32)work->points, (s32)work->field_1C, t);
+                    satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + i]);
+                    if (satellite != NULL) {
+                        BtlUnit_GetPos(unit, &pos[0], &pos[1], &pos[2]);
+                        BtlUnit_SetPos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+                        BtlUnit_SetHomePos(satellite, pos[0] + out[0] * unit->faceDirection, pos[1] + out[1], pos[2] + out[2]);
+                        work->field_58++;
+                        result = 1;
+                    }
+                }
+            }
+        }
+        if (result == 1) {
+            updated = 1;
+        }
+    }
+    return (updated == 1) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+static USER_FUNC(outSplineTableSet) {
+    s32* args;
+    BattleUnit* unit;
+    s32 id;
+    s32 type;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    type = evtGetValue(event, args[1]);
+    switch (type) {
+    case 1:
+        outSplineTableSet_Sub(unit, 0, splineTableOut1_1);
+        break;
+    case 2:
+        outSplineTableSet_Sub(unit, 0, splineTableOut2_1);
+        outSplineTableSet_Sub(unit, 1, splineTableOut2_2);
+        break;
+    case 3:
+        outSplineTableSet_Sub(unit, 0, splineTableOut3_1);
+        outSplineTableSet_Sub(unit, 1, splineTableOut3_2);
+        outSplineTableSet_Sub(unit, 2, splineTableOut3_3);
+        break;
+    case 4:
+        outSplineTableSet_Sub(unit, 0, splineTableOut4_1);
+        outSplineTableSet_Sub(unit, 1, splineTableOut4_2);
+        outSplineTableSet_Sub(unit, 2, splineTableOut4_3);
+        outSplineTableSet_Sub(unit, 3, splineTableOut4_4);
+        break;
+    }
+    return EVT_RETURN_DONE;
+}
+
 static void outSplineTableSet_Sub(BattleUnit* unit, s32 index, void* spline) {
     BattleUnit* satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[4 + index]);
 
     BtlUnit_GetPartsPtr(satellite, 1)->work[2] = (s32)spline;
 }
-#pragma dont_inline reset
 
-// dont_inline keeps the get_target/get_next_target helpers a real `bl` from barriern_wawawa_set_target.
-#pragma dont_inline on
+// NONMATCHING (66.67%): retail keeps a base pointer plus a running byte offset and a result flag; our indexed loop recomputes the offset each iteration.
+static USER_FUNC(barriern_wawawa_set_target) {
+    s32* args;
+    s32 xs[13];
+    s32 ys[10];
+    s32 count;
+    s32 i;
+    s32 n;
+
+    args = event->args;
+    _battleWorkPointer->field_428[0xab7] = 0;
+    barriern_wawawa_get_target(&xs[0], &ys[0]);
+    for (count = 0; xs[count] != -1; count++) {
+        barriern_wawawa_get_next_target(&xs[count + 1], &ys[count + 1]);
+    }
+    for (i = 0; i < 5; i++) {
+        n = irand(count);
+        evtSetValue(event, args[0], xs[n]);
+        evtSetValue(event, args[1], ys[n]);
+        args += 2;
+    }
+    return EVT_RETURN_DONE;
+}
+
 static void barriern_wawawa_get_target(s32* out1, s32* out2) {
     u8* sampling = _battleWorkPointer->field_428;
     u8* entry = sampling + (s8)sampling[0xa6d + (s8)sampling[0xab7]] * 0x24 + 4;
@@ -2387,6 +2270,124 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
         *out1 = -1;
         *out2 = 0;
     }
+}
+
+// NONMATCHING (98.44%): declaring i before hasSat fixed the r23/r24 swap; the first BattleGetUnitPtr still uses r3 (not r5) for the global address, and the second loop's i/w/h land rotated.
+static USER_FUNC(_check_satellite) {
+    BattleUnit* unit;
+    s32* args;
+    BattleUnit* satellite;
+    BattleUnitPart* part;
+    BarriernSatelliteToData* data;
+    f32 x;
+    f32 y;
+    f32 z;
+    s32 dx;
+    s32 dy;
+    s32 i;
+    s32 hasSat;
+    s32 w;
+    s32 h;
+
+    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, -2));
+    args = event->args;
+    hasSat = 0;
+    if (unit == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    for (i = 4; i < 6; i++) {
+        if (unit->work[i] != -1) {
+            satellite = BattleGetUnitPtr(_battleWorkPointer, unit->work[i]);
+            if (satellite != NULL) {
+                hasSat = 1;
+            } else {
+                unit->work[i] = -1;
+            }
+        }
+    }
+    if (hasSat == 0) {
+        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        if (part->attributes & 0x20000000) {
+            effDelete((EffectEntry*)unit->work[3]);
+            unit->work[3] = 0;
+            BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER_BREAK1", -250000000, 0);
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            for (i = 0; i < 20; i++) {
+                w = BtlUnit_GetWidth(unit) + 0xf;
+                h = BtlUnit_GetHeight(unit) + 0xf;
+                dx = irand(w) - w / 2;
+                dy = irand(h) - h / 2;
+                effGlassN64Entry(2, 0x3c, x + dx, y + dy, z, 1.0f);
+            }
+        }
+        part->attributes &= ~0x20000000;
+        evtSetValue(event, args[0], 0);
+    } else {
+        part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        if (!(part->attributes & 0x20000000)) {
+            f32 x;
+            f32 y;
+            f32 z;
+            BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER1", -250000000, 0);
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            unit->work[3] = (s32)effSyuryouEntry(1, 0x3e8, 0.0f, -1000.0f, 0.0f);
+        }
+        part->attributes |= 0x20000000;
+        evtSetValue(event, args[0], 1);
+        if (unit->work[3] != 0) {
+            data = (BarriernSatelliteToData*)((EffectEntry*)unit->work[3])->userdata;
+            BtlUnit_GetPos(unit, &x, &y, &z);
+            data->x = x;
+            data->y = y - 32.0f * unit->mSizeMultiplier * 0.8f;
+            data->z = z + 10.0f;
+            data->scale = 1.8f * (0.8f * unit->mSizeMultiplier);
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(battleGetBarriernSatelliteInitPos) {
+    s32* args;
+    BattleUnit* unit;
+    s32 id;
+    s32 n;
+    s32 m;
+    s32 i;
+    s32 j;
+    s32 indexX;
+    s32 indexY;
+    s32 indexZ;
+    const Vec* p;
+    BattleWork* wp;
+    static const Vec VecData[] = {
+        { 25.f, 0.f, 0.f },   { 25.f, 0.f, 0.f },   { -25.f, 0.f, 0.f },  { 0.f, 25.f, 0.f },
+        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f }, { 25.f, 25.f, 0.f }, { -25.f, 25.f, 0.f },
+        { 25.f, -25.f, 0.f }, { -25.f, -25.f, 0.f },
+    };
+
+    args = event->args;
+    wp = _battleWorkPointer;
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    n = evtGetValue(event, args[1]);
+    m = evtGetValue(event, args[2]);
+    indexX = args[3];
+    indexY = args[4];
+    indexZ = args[5];
+    p = VecData;
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < i; j++) {
+            p++;
+        }
+    }
+    for (j = 0; j < m; j++) {
+        p++;
+    }
+    evtSetValue(event, indexX, (s32)(p->x * unit->faceDirection));
+    evtSetValue(event, indexY, (s32)p->y);
+    evtSetValue(event, indexZ, (s32)p->z);
+    return EVT_RETURN_DONE;
 }
 #pragma dont_inline reset
 // clang-format on
