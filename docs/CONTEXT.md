@@ -3044,3 +3044,12 @@ the wrong field for success, computed the gauge ratio from the unclamped value (
 button; ac_signal_timing's u8 states never compared equal to -1, so the NG mark never drew. Also retail-exact floats
 (0.59999996f, 0.16000001f, 0.080000006f) and eff_sstar's first rotation angle. Stubs carried over from main remain:
 fadeMain (4.3 KB) and BattleBreakSlot_Main (5.6 KB).
+
+Wave 40 follow-ups (Sep 30, Claude #2): arcdrv links once its functions are in rule 18's reverse order (every
+function had moved by 0x54 with each at 100%); eff_thunderflare_n64 links once effThunderflareN64Entry loads the
+named float_0_80420088 instead of a pooled 0.0f (tools/dol_diff.py showed the one word). tools/finish_unit.py took
+eff_shock's .data/.sbss2 and eff_star_power's .sbss2 to 100%; their remaining pool order keeps them unlinked.
+battle_item_data's 61 item weapons are typed BattleWeapon. The two stubs are gone, written by Claude subagents from
+the asm: fadeMain at 100% (and <math.h> -> math_ext.h lifted fadeEntry to 94%), BattleBreakSlot_Main at 98.46%
+(its event scripts are the unit's undecompiled .data). Header types flagged along the way: FadeEntry 0xA4 is
+signed, 0x10/0x14 is one s64 duration, ImageEntry 0x108 is a const char*; mariost.h's language compares unsigned.
