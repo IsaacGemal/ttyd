@@ -456,14 +456,15 @@ def fix_index(src, sym, old_size, stride):
     num = r'(0[xX][0-9A-Fa-f]+|\d+)'
     code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|(&\s*)?\b' + re.escape(sym) + r'\b(\s*\[\s*' + num +
                       r'\s*\]|\s*([-+])\s*' + num + r'\b)?', re.S)
-    decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b)[A-Za-z_]\w*\s*\*?\s*' +
-                      re.escape(sym) + r'\s*\[')
+    decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b|else\b|do\b|goto\b)[A-Za-z_]\w*\s*\*?\s*' +
+                      re.escape(sym) + r'\s*(?:\[|=|;)')
     out, pos = [], 0
     for m in code.finditer(src):
         if not m.group(0).lstrip('&').lstrip().startswith(sym):
             continue  # a comment or string
         line_start = src.rfind('\n', 0, m.start()) + 1
-        if decl.match(src[line_start:m.end()]):
+        line_end = src.find('\n', m.end())
+        if decl.match(src[line_start:line_end if line_end >= 0 else len(src)]):
             continue  # its declaration or definition
         before = src[line_start:m.start()].rstrip()
         near = src[max(line_start, m.start() - 20):m.end() + 12]

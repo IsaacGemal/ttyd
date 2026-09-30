@@ -79,7 +79,9 @@ for gi, mods in enumerate(groups):
                 sys.exit(f"{apath}: no {r}_<id>_data_<offset> symbol for UNIT_REF_{r[5:].upper()}")
             flags.append(f"-DUNIT_REF_{r[5:].upper()}=" + rm.group(0))
         flag_text = ", ".join(f'"{f}"' for f in flags)
-        lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=[{flag_text}]),\n')
+        # gon and mri are built without deferred inlining; a shared object in them needs the same
+        nodefer = ', cflags=[*cflags_rel_nodefer, "-i rels/common/include"]' if mod in ("gon", "mri") else ""
+        lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}{nodefer}, extra_cflags=[{flag_text}]),\n')
     plan.append((src, dst, s, hmove, lines))
 
 def write_atomic(path, text):

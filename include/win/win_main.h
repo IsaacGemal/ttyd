@@ -45,4 +45,5 @@ void winTexSet(u32 textureId, Vec translate, Vec scale, GXColor color);
 void winIconInit(void);
 void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color);
 void winTexInit_x2(TEXPalette* texture);
+void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color);
 void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXColor color);

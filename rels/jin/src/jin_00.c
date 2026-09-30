@@ -50,7 +50,7 @@ static TeresaEntry* pTeresa;
 Vec g_vecRotCenter;
 u32 g_bMove[1];
 u32 g_nMarioMoveCnt[1];
-u32 g_nNumHuttobasu[1];
+s32 g_nNumHuttobasu[1];
 u32 g_nNumHarituku[1];
 static s32 g_nNumEndProc[1];
 f32 g_fSpeed[1];
@@ -1404,8 +1404,431 @@ static void senteresa_ext_init(void) {
     g_vecRotCenter.z = mario->position.z;
 }
 
-// TODO: write senteresa_ext_main (static, 0x278c bytes) here:
-// its asm is in build/G8MJ01/jin/asm/jin_00.s; this is where the original has it, just before the first script that uses it
+// NONMATCHING (94.72%): the float literals are pooled anonymously instead of retail's named jin constants (most
+// of the operand differences); the rest is scheduling and register allocation (64 missing, 57 extra instructions)
+static void senteresa_ext_main(void) {
+    ExtPose* pose = extGetPosePtr();
+    MarioWork* mario = marioGetPtr();
+    s32 count = extGetPoseNum();
+    s32 i;
+    s32 hammer = 0;
+    s32 bero;
+    s32 party;
+    Vec pos;
+    Vec v;
+
+    if (marioGetAngleKaitenHammer() > 0.0f) {
+        hammer = 1;
+    }
+    PSVECSubtract(&mario->position, &g_vecRotCenter, &v);
+    if (mario->baseSpeed > 0.0f) {
+        g_bMove[0] = 1;
+    }
+    if ((s32)g_bMove[0] != 0) {
+        g_nMarioMoveCnt[0]++;
+    }
+    if ((s32)g_nMarioMoveCnt[0] > 12) {
+        f32 f1;
+
+        g_fSpeed[0] += 0.01f;
+        if (g_fSpeed[0] > 2.6f) {
+            g_fSpeed[0] = 2.6f;
+        }
+        if (v.x == 0.0f && v.y == 0.0f && v.z == 0.0f) {
+            g_vecRotCenter = mario->position;
+            if (mario->baseSpeed == 0.0f) {
+                g_fSpeed[0] = 0.0f;
+                g_bMove[0] = 0;
+                g_nMarioMoveCnt[0] = 0;
+            }
+        } else {
+            f32 mag = PSVECMag(&v);
+
+            if (mag > 50.0f) {
+                f1 = 2.6f;
+            } else {
+                f1 = 2.6f * mag / 50.0f;
+            }
+            if (g_fSpeed[0] > f1) {
+                g_fSpeed[0] = f1;
+            }
+            PSVECNormalize(&v, &v);
+            PSVECScale(&v, &v, g_fSpeed[0]);
+            PSVECAdd(&g_vecRotCenter, &v, &g_vecRotCenter);
+            PSVECSubtract(&g_vecRotCenter, &mario->position, &pos);
+            if (PSVECMag(&pos) < 0.3f) {
+                g_vecRotCenter = mario->position;
+                if (mario->baseSpeed == 0.0f) {
+                    g_fSpeed[0] = 0.0f;
+                    g_bMove[0] = 0;
+                    g_nMarioMoveCnt[0] = 0;
+                }
+            }
+        }
+    }
+    bero = (bero_get_BeroEXEC() & 3) != 0;
+    party = 0;
+    if (partyGetPtr(0) != NULL) {
+        if (partyGetPtr(0)->flags & 0x100) {
+            party = 1;
+        }
+    }
+    for (i = 0; i < count; i++, pose++) {
+        switch (pTeresa[i].field_0x41) {
+            case 0:
+                pose->field_0x10 = 0;
+                pTeresa[i].field_0x3C--;
+                if (pTeresa[i].field_0x3C == 0) {
+                    if (i == 0) {
+                        Vec pos = {0.0f, 200.0f, 0.0f};
+
+                        psndSFXOn_3D((const char*)0x5D3, &pos);
+                    }
+                    pTeresa[i].field_0x41++;
+                }
+                break;
+            case 1: {
+                u8 old;
+                f32 angle;
+
+                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                if (mario->position.x < (*pose->matrix)[0][3]) {
+                    pose->field_0x4 = 90.0f;
+                } else {
+                    pose->field_0x4 = 270.0f;
+                }
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                pTeresa[i].field_0x40 += 3;
+                old = pTeresa[i].field_0x40;
+                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                if (pTeresa[i].field_0x40 < old) {
+                    pTeresa[i].field_0x41++;
+                    g_nNumEndProc[0]++;
+                    if (i == 0) {
+                        Vec pos = {0.0f, 200.0f, 0.0f};
+
+                        psndSFXOn_3D((const char*)0x5D3, &pos);
+                    }
+                } else {
+                    pTeresa[i].field_0x40 = old;
+                    if (pTeresa[i].field_0x40 >= 0xFA) {
+                        pTeresa[i].field_0x40 = 0xFF;
+                        pTeresa[i].field_0x41++;
+                        g_nNumEndProc[0]++;
+                        if (i == 0) {
+                            Vec pos = {0.0f, 200.0f, 0.0f};
+
+                            psndSFXOn_3D((const char*)0x5D3, &pos);
+                        }
+                    }
+                }
+                break;
+            }
+            case 2: {
+                f32 angle;
+
+                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                if (mario->position.x < (*pose->matrix)[0][3]) {
+                    pose->field_0x4 = 90.0f;
+                } else {
+                    pose->field_0x4 = 270.0f;
+                }
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                if (g_nNumEndProc[0] == 200) {
+                    pTeresa[i].field_0x3C = i + 1;
+                    pTeresa[i].field_0x41++;
+                }
+                break;
+            }
+            case 3:
+                pose->field_0x10 = (gp->retraceCount / 5 + i * i) & 0xF;
+                if (mario->position.x < (*pose->matrix)[0][3]) {
+                    pose->field_0x4 = 90.0f;
+                } else {
+                    pose->field_0x4 = 270.0f;
+                }
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                pTeresa[i].field_0x3C--;
+                if (pTeresa[i].field_0x3C == 0) {
+                    pose->flags &= ~2;
+                    pTeresa[i].field_0x3C = i * 0x1E + 0x127 + rand() % 10;
+                    pTeresa[i].field_0x41++;
+                }
+                break;
+            case 4: {
+                f32 angle;
+                s32 ret;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = v.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                pTeresa[i].field_0x20 += 0.01f;
+                if (pTeresa[i].field_0x20 > 1.2f) {
+                    pTeresa[i].field_0x20 = 1.2f;
+                }
+                pTeresa[i].field_0x0C += pTeresa[i].field_0x20;
+                if (pTeresa[i].field_0x0C > 360.0f) {
+                    pTeresa[i].field_0x0C -= 360.0f;
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                computeMtx(pose, angle);
+                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                if (g_nNumHuttobasu[0] >= 20) {
+                    break;
+                }
+                if (ret != 0) {
+                    if (rand() % 1000 == 0x138) {
+                        pTeresa[i].field_0x3C = 100;
+                        pTeresa[i].field_0x41 = 9;
+                    }
+                }
+                if (party) {
+                    break;
+                }
+                if (g_nNumHuttobasu[0] >= 20) {
+                    break;
+                }
+                pTeresa[i].field_0x3C--;
+                if (pTeresa[i].field_0x3C == 0) {
+                    pTeresa[i].field_0x1C = 0.0f;
+                    pTeresa[i].field_0x41++;
+                }
+                break;
+            }
+            case 5: {
+                f32 angle;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                pos.x = (*pose->matrix)[0][3];
+                pos.y = (*pose->matrix)[1][3];
+                pos.z = (*pose->matrix)[2][3];
+                PSVECSubtract(&mario->position, &pos, &v);
+                PSVECNormalize(&v, &v);
+                PSVECScale(&v, &v, 1.8f);
+                PSVECAdd(&pos, &v, &pos);
+                (*pose->matrix)[0][3] = pos.x;
+                (*pose->matrix)[2][3] = pos.z;
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                if (!party) {
+                    PSVECSubtract(&pos, &mario->position, &pos);
+                    if (PSVECMag(&pos) <= 25.0f) {
+                        f32 y = (*pose->matrix)[1][3] - mario->position.y;
+
+                        if (y > -2.0f && y < 10.0f) {
+                            pTeresa[i].field_0x10 = (*pose->matrix)[0][3] - mario->position.x;
+                            pTeresa[i].field_0x14 = (*pose->matrix)[1][3] - mario->position.y;
+                            pTeresa[i].field_0x18 = (*pose->matrix)[2][3] - mario->position.z;
+                            pTeresa[i].field_0x41++;
+                            if (!bero) {
+                                g_nNumHarituku[0]++;
+                            }
+                        }
+                    }
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                computeMtx(pose, angle);
+                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                break;
+            }
+            case 6: {
+                f32 angle;
+                s32 ret;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                (*pose->matrix)[0][3] = mario->position.x + pTeresa[i].field_0x10;
+                (*pose->matrix)[1][3] = mario->position.y + pTeresa[i].field_0x14;
+                (*pose->matrix)[2][3] = mario->position.z + pTeresa[i].field_0x18;
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                if (!hammer) {
+                    break;
+                }
+                pos.x = (*pose->matrix)[0][3];
+                pos.y = (*pose->matrix)[1][3];
+                pos.z = (*pose->matrix)[2][3];
+                PSVECSubtract(&pos, &mario->position, &v);
+                PSVECNormalize(&v, &v);
+                pTeresa[i].field_0x00 = 4.2f * v.x;
+                if (v.z > 0.0f) {
+                    pTeresa[i].field_0x08 = randf(5.2f, 12.7f) * v.z;
+                } else {
+                    pTeresa[i].field_0x08 = randf(-5.0f, -2.0f) * v.z;
+                }
+                pTeresa[i].field_0x04 = randf(6.0f, 10.0f);
+                pTeresa[i].field_0x41 = 10;
+                computeMtx(pose, 0.0f);
+                g_nNumHarituku[0]--;
+                g_nNumHuttobasu[0]++;
+                {
+                    Vec sfx = {0.0f, 0.0f, 0.0f};
+
+                    sfx.x = (*pose->matrix)[0][3];
+                    sfx.y = (*pose->matrix)[1][3];
+                    sfx.z = (*pose->matrix)[2][3];
+                    psndSFXOn_3D((const char*)0x5D7, &sfx);
+                }
+                break;
+            }
+            case 9: {
+                f32 angle;
+                s32 ret;
+
+                pTeresa[i].field_0x10 = (s32)((100.0f - (f32)pTeresa[i].field_0x3C) / 100.0f * 12.0f) + 0x22;
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                computeMtx(pose, angle);
+                ret = computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                pTeresa[i].field_0x3C--;
+                if (ret == 0 || pTeresa[i].field_0x3C == 0) {
+                    pTeresa[i].field_0x3C = rand() % 300 + 200;
+                    pTeresa[i].field_0x41 = 4;
+                }
+                break;
+            }
+            case 0xA:
+                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
+                (*pose->matrix)[0][3] += pTeresa[i].field_0x00;
+                (*pose->matrix)[1][3] += pTeresa[i].field_0x04;
+                (*pose->matrix)[2][3] += pTeresa[i].field_0x08;
+                pTeresa[i].field_0x04 -= 0.3f;
+                if ((*pose->matrix)[1][3] < -20.0f) {
+                    pose->flags = 0;
+                    pTeresa[i].field_0x41 = 0x63;
+                }
+                break;
+            case 0x14: {
+                f32 angle;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                computePos(&pTeresa[i], &pos);
+                (*pose->matrix)[0][3] = g_vecRotCenter.x + pos.x;
+                (*pose->matrix)[2][3] = g_vecRotCenter.z + pos.z;
+                pos.y = (*pose->matrix)[1][3];
+                (*pose->matrix)[1][3] = 0.4f * (f32)sin(1.2f * pTeresa[i].field_0x1C) + pos.y;
+                pTeresa[i].field_0x1C += 0.08f;
+                if (pTeresa[i].field_0x1C > 3.1415927f) {
+                    pTeresa[i].field_0x1C -= 3.1415927f;
+                }
+                angle = computeAngle(pose, (NpcEntry*)mario);
+                computeMtx(pose, angle);
+                computeAlpha(&pTeresa[i], (NpcEntry*)mario, angle);
+                pTeresa[i].field_0x3C--;
+                if (pTeresa[i].field_0x3C == 0) {
+                    pose->flags = 3;
+                    pTeresa[i].field_0x24 = (*pose->matrix)[0][3];
+                    pTeresa[i].field_0x28 = (*pose->matrix)[1][3];
+                    pTeresa[i].field_0x2C = (*pose->matrix)[2][3];
+                    pTeresa[i].field_0x1C = 0.0f;
+                    pTeresa[i].field_0x41++;
+                }
+                break;
+            }
+            case 0x15: {
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                if (pTeresa[i].field_0x1C >= 1.0f) {
+                    Vec pos = {0.0f, 0.0f, 0.0f};
+
+                    pTeresa[i].field_0x41 = 0x16;
+                    pos.x = (*pose->matrix)[0][3];
+                    pos.y = (*pose->matrix)[1][3];
+                    pos.z = (*pose->matrix)[2][3];
+                    psndSFXOn_3D((const char*)0x5D4, &pos);
+                    g_nNumEndProc[0]++;
+                } else {
+                    f32 t = pTeresa[i].field_0x1C;
+
+                    pos.x = (1.0f - t) * pTeresa[i].field_0x24 + t * pTeresa[i].field_0x30;
+                    pos.y = (1.0f - t) * pTeresa[i].field_0x28 + t * pTeresa[i].field_0x34;
+                    pos.z = (1.0f - t) * pTeresa[i].field_0x2C + t * pTeresa[i].field_0x38;
+                    (*pose->matrix)[0][3] = pos.x;
+                    (*pose->matrix)[1][3] = 20.0f * (f32)sin(6.28f * pTeresa[i].field_0x1C) + pos.y;
+                    (*pose->matrix)[2][3] = pos.z;
+                    pTeresa[i].field_0x1C += 0.01f;
+                }
+                break;
+            }
+            case 0x16: {
+                s32 m;
+
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                m = pTeresa[i].field_0x3C & 7;
+                if (m == 0) {
+                    (*pose->matrix)[0][3] += 2.0f;
+                } else if (m == 3) {
+                    (*pose->matrix)[0][3] -= 2.0f;
+                }
+                pTeresa[i].field_0x3C++;
+                break;
+            }
+            case 0x1E:
+                pose->field_0x10 = (gp->retraceCount + i * i) % 8 + 0x1A;
+                (*pose->matrix)[0][3] += pTeresa[i].field_0x00;
+                (*pose->matrix)[1][3] += pTeresa[i].field_0x04;
+                (*pose->matrix)[2][3] += pTeresa[i].field_0x08;
+                pTeresa[i].field_0x04 -= 0.3f;
+                if ((*pose->matrix)[1][3] < -10.0f) {
+                    pose->flags = 0;
+                    pTeresa[i].field_0x41 = 0x63;
+                    g_nNumEndProc[0]++;
+                }
+                break;
+            case 0x50:
+                pose->field_0x10 = (gp->retraceCount + i * i) % 10 + 0x10;
+                (*pose->matrix)[1][3] = mario->position.y + pTeresa[i].field_0x14;
+                break;
+            case 0x63:
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 static void senteresa_ext_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)senteresa_ext_disp, NULL);
