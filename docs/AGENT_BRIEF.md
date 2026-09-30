@@ -16,9 +16,9 @@ tricks. A match produced by a trick is thrown away, and the review looks for tri
   review finding.
 - **Read the original assembly for the whole function** (`build/G8MJ01/asm/<path>.s`) before writing C. Note
   every argument passed in `r3`-`r10` and `f1`-`f8`, and every value used after a call returns in `r3`/`f1`.
-- **Write functions in the order the assembly has them.** A file can only be linked (counted as finished) when
-  its functions, data and strings come out in exactly the original order. An out-of-order file matches every
-  function and still can't link.
+- **Write functions in the original's order: usually the REVERSE of the assembly's (rule 18).** A file can only be
+  linked (counted as finished) when its functions, data and strings come out in exactly the original order. An
+  out-of-order file matches every function and still can't link.
 - **Say when your file wants different compiler flags.** If nearly every function in your file only matches
   with `#pragma optimize_for_size` (or differs only in `stmw`/`lmw` prologues and `divw`), the file is probably
   built with `-O4,s`. Say so in your report; the orchestrator sets it in `configure.py`. Never add a file-wide
@@ -120,7 +120,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    Written in the asm's order, every function can reach 100% and the file still won't link. It applies to every
    file built with `-inline auto,deferred`: game code, the RELs, and in libs/ at least MetroTRK, MSL and the
    runtime. Check your unit's cflags in configure.py; battle.c and dispdrv.c are built without it, as are the
-   Dolphin SDK libraries.
+   Dolphin SDK libraries and gon's and mri's own sources (rels/gon, rels/mri, built with cflags_rel_nodefer; the
+   shared units in rels/common compiled into gon or mri stay deferred unless their Object says otherwise): in
+   those, write functions in the asm's order.
 
 ## Signedness hints from the assembly
 
