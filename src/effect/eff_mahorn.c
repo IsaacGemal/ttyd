@@ -62,6 +62,23 @@ EffectEntry* effMahornEntry(BOOL unused, s32 count, f32 posX, f32 posY, f32 posZ
     data->scale = scale;
     data->alpha = 0xff;
     data++;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the retail loop loads the pool's 0.0f through its name once (a literal would pool a second 0.0f, and
+    // the volatile reads of the FIFO code would reload it for every store).
+    {
+        f32 zero = float_0_80422258;
+        for (i = 1; i < effect->count; i++, data++) {
+            data->position.x = zero;
+            data->position.y = zero;
+            data->position.z = zero;
+            data->scale = zero;
+            data->field_0x14 = zero;
+            data->alpha = 0xff;
+            data->field_0x24 = i * 4;
+        }
+        return effect;
+    }
+#endif
     for (i = 1; i < effect->count; i++, data++) {
         data->position.x = 0.0f;
         data->position.y = 0.0f;
@@ -246,3 +263,21 @@ void effMahornDisp(CameraId camId, void* param) {
         GXTexCoord2f32(float_0_80422258, float_1_8042225c);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422240 = 0xFDE83C00;
+const u32 dat_80422244 = 0xFFFCE700;
+const f32 float_deg2rad_80422248 = 0.017453292f;
+const f32 float_8_8042224c = 8.0f;
+const f32 float_0p5_80422250 = 0.5f;
+const f32 float_4_80422254 = 4.0f;
+#ifdef MUST_MATCH
+const volatile f32 float_0_80422258 = 0.0f;
+const volatile f32 float_1_8042225c = 1.0f;
+#else
+const f32 float_0_80422258 = 0.0f;
+const f32 float_1_8042225c = 1.0f;
+#endif
+const f32 float_100_80422260 = 100.0f;
+const f32 float_20_80422264 = 20.0f;
+const f32 float_0p125_80422268 = 0.125f;

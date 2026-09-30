@@ -6,8 +6,22 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
+
+u32 ice_vtx[14] = {
+    0xFFF0FFF0, 0x00000000, 0x00000000, 0x00FF0010,
+    0xFFF00000, 0x08000000, 0x000000FF, 0x00100010,
+    0x00000800, 0x08000000, 0x00FFFFF0, 0x00100000,
+    0x00000800, 0x000000FF,
+};
+
+u32 ice_s_vtx[14] = {
+    0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004,
+    0xFFFC0000, 0x08000000, 0x000000FF, 0x00040004,
+    0x00000800, 0x08000000, 0x00FFFFFC, 0x00040000,
+    0x00000800, 0x000000FF,
+};
 
 // .sdata2 colour the original copies and then overwrites the alpha byte of (volatile: per-element reload).
 extern const volatile u32 dat_8041f198;
@@ -19,7 +33,6 @@ extern const f32 float_0p03125_8041f1a8;
 
 // effIceMain's .rodata origin vector and int->float conversion constant.
 extern const Vec vec3_802fa820;
-extern const f64 double_to_int_802fa830;
 // effIceMain's .sdata2 particle-motion constants (named after their original addresses).
 extern const f32 float_0p3_8041f1ac;
 extern const f32 float_0p8_8041f1b0;
@@ -33,8 +46,6 @@ extern const f32 float_10_8041f1cc;
 extern const f32 float_0p5_8041f1d0;
 
 // .data vertex arrays passed to effSetVtxDescN64.
-extern effVtxArray ice_vtx;
-extern effVtxArray ice_s_vtx;
 
 typedef struct effIceData {
     s32 type;       // 0x00
@@ -76,12 +87,12 @@ EffectEntry* effIceN64Entry(s32 type, f32 x, f32 y, f32 z) {
     for (i = 1; i < 9; i++, ptr++) {
         ptr->x = (f32)(rand() % 10 - 5);
         ptr->y = (f32)(rand() % 10 + 5);
-        ptr->z = 10.0f;
+        ptr->z = float_10_8041f1cc;
         ptr->field_0x18 = (f32)(rand() % 360);
         ptr->field_0x20 = (f32)(rand() % 360);
         ptr->field_0x1C = (f32)(rand() % 100 / 10);
-        ptr->field_0x10 = 0.0f;
-        ptr->field_0x14 = 2.0f;
+        ptr->field_0x10 = float_0_8041f1a4;
+        ptr->field_0x14 = float_2_8041f1b8;
     }
     return effect;
 }
@@ -177,13 +188,13 @@ static void effIceDisp(CameraId camId, void* param) {
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         if (i & 1) {
-            vtx = &ice_s_vtx;
+            vtx = (effVtxArray*)ice_s_vtx;
             effGetTexObjN64(8, &texobj);
             GXLoadTexObj(&texobj, GX_TEXMAP0);
             PSMTXScale(mScale, float_0p015625_8041f1a0, float_0p015625_8041f1a0, float_0_8041f1a4);
             GXLoadTexMtxImm(mScale, GX_TEXMTX0, GX_MTX2x4);
         } else {
-            vtx = &ice_vtx;
+            vtx = (effVtxArray*)ice_vtx;
             effGetTexObjN64(7, &texobj);
             GXLoadTexObj(&texobj, GX_TEXMAP0);
             PSMTXScale(mScale, float_0p03125_8041f1a8, float_0p03125_8041f1a8, float_0_8041f1a4);
@@ -208,3 +219,21 @@ static void effIceDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fa820 = { 0.0f, 0.0f, 0.0f };
+const volatile u32 dat_8041f198 = 0x14641400;
+const f32 float_deg2rad_8041f19c = 0.017453292f;
+const f32 float_0p015625_8041f1a0 = 0.015625f;
+const f32 float_0_8041f1a4 = 0.0f;
+const f32 float_0p03125_8041f1a8 = 0.03125f;
+const f32 float_0p3_8041f1ac = 0.3f;
+const f32 float_0p8_8041f1b0 = 0.8f;
+const f32 float_6p2832_8041f1b4 = 6.2831855f;
+const f32 float_2_8041f1b8 = 2.0f;
+const f32 float_360_8041f1bc = 360.0f;
+const f32 float_neg0p05_8041f1c0 = -0.05f;
+const f32 float_0p2_8041f1c4 = 0.2f;
+const f32 float_0p92_8041f1c8 = 0.92f;
+const f32 float_10_8041f1cc = 10.0f;
+const f32 float_0p5_8041f1d0 = 0.5f;
