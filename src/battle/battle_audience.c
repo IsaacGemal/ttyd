@@ -186,7 +186,7 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (98.58%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
+// NONMATCHING (99.12%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
 // dropped); the resulting liveness difference also shifts the loop registers.
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
@@ -846,13 +846,13 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 #pragma dont_inline reset
 //breaks -inline auto,deferred
 /*
-BOOL BattleAudience_GetExist(s32 id) {
+BOOL BattleAudience_GetExist(u32 id) {
 	return FALSE;
 }
 */
 
 #pragma dont_inline on
-BOOL BattleAudience_GetExist(s32 id) {
+BOOL BattleAudience_GetExist(u32 id) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(id);

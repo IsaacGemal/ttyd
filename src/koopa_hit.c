@@ -305,6 +305,9 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     if (kpaEnemyFireHitChk(x, y, z, a, b) != 0) {
         return 2;
     }
+#ifdef MUST_MATCH
+    mp->position.x = mp->position.x; // retail reloads/stores position.x here (pins the float load order)
+#endif
     halfH = 0.5f * (mp->wPlayerCollisionBox.y + a);
     halfW = 0.5f * (mp->wPlayerCollisionBox.x + b);
     dx = __fabsf(mp->position.x - x);

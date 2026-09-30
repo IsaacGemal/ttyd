@@ -199,7 +199,7 @@ void BattleAudience_GetItemOn2(s32* memberId, f32* x, f32* y, f32* z, ItemType* 
 void BattleAudience_SetTarget(s32 index);
 void BattleAudience_Attack(s32 index);
 void BattleAudience_ChangeStatus(s32 index, s32 status);
-BOOL BattleAudience_GetExist(s32 id);
+BOOL BattleAudience_GetExist(u32 id);
 BOOL BattleAudience_GetSysCtrl(s32 index);
 BOOL BattleAudience_GetWaiting(s32 index);
 s32 BattleAudience_HaitiRandForFallObject(void);
