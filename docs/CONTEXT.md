@@ -2921,3 +2921,38 @@ Linked `eff_kemuri3_n64`, `eff_energy`, `eff_rothammer_fail_n64`, `ac_timing_wid
 - `.sbss2` pairs with `#pragma section ".sdata" ".sbss2"`, which captures every zero-initialised global after it: place the block after the file's own `.sbss` globals (`evt_twoddisp`'s `twodPtr`/`twodID`). A `gap_NN_..._sbss2` is one more object of the same type, declared first. A `gap_NN_..._data` after a script table is `#pragma explicit_zero_data on` + `__declspec(section ".data") u32 gap = 0;` at the end of the file; a GXColor constant (`dat_xxx`) is `const GXColor` defined after the code.
 - **Named constant vs schedule.** Units where the original loads `0.0f` (and other constants) by name from the pool: a literal in the code gives the original's schedule but adds an anonymous pool entry; the named constant gives the right pool but the compiler hoists it into a callee-saved FPR (frame +0x10) or reorders the loads: `eff_break` Disp 93-94%, `eff_mist2` Disp 91%, `eff_magic3` Entry 99.84%, `eff_peach_dust` Disp 99.73%, `eff_snowfall` `cam_clip_chk` 99.90% (`/ 2.0f` becomes a `*0.5` literal; named `float_0p5` leaves a 3-instruction register swap). `MATCH_F32` around the named zero is 94.58 for `eff_break`. These are queued for the permuter on the tower with the named-constant variant as the base.
 - `eff_toge_flush`: `0.9f` pools before 6.28/360 whatever the expression order (the target has it after); parked. `unit_mario`: reordering the functions drops one to 99.85% and the unit has 5 KB of tables; parked.
+
+## Wave 35: mri_puni in 22 groups, and the event units (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+mri_puni's 182 open functions went to 22 agents at once (tools/mripuni/groups.json, contiguous asm-order groups
+of ~4 KB), each in its own copy of the file, writing only its group, on #90's first struct version; plus one agent
+per event skeleton from #89. 29 agents, 14:47-16:24 (scratch/wave35).
+
+**Collection.** A 3-way merge of 22 copies conflicts on every shared line (includes, declarations), so each
+group's functions were spliced in by name (scratch/wave35/splice.py) with the static helpers, macros and typedefs
+they needed; the declarations groups gave their own functions in mri_puni.h merged by name, the owning group's
+signature winning. Then the agents' code was rebuilt on the corrected structs: word copies of the old int fields
+became Vec copies; PuniData 0x210/0x214 are HitEntry* (hitCheckFilter results), 0x560 a Vec, PuniWork 0x364-0x370
+PuniData* (overrides in tools/mripuni/structs.py); PuniMap and PuniTarget are shared types. The agents had declared
+183 retail constants as externs (the stand-in pattern): each became a literal of its exact value from the asm
+(scratch/wave35/literalize.py). Three pragmas left unreset changed every later function of the merged file: removed,
+103 -> 117 functions at 100%. 464 raw offset accesses became struct members with unchanged code.
+
+**Result:** mri_puni 6 -> 119 of 188 functions at 100% (.text 2% -> 88%); evt_shuryolight (aji, las) and
+evt_kagemario (gra, jin) link; gor's evt_yuuranking and usu's evt_kagemario improve; yuu's evt_yuuranking is left out
+(.data drops). 7,934 -> 8,095 functions.
+
+**Review** (fresh Claude) found nine wrong behaviours, four in 100% functions, all fixed: puniAnimationInit2 copied
+"D_1" for "D_2"; puniModeTrap looked up NPCs "カイド"/"カイド離" where retail has "ガイド"/"ガイド妹"; _ymode_mri_16_01
+and puniOption used rounded constants (60.0f for 60.00006f, 0.045f for 0.044999994f: the dtk names round them);
+puniParaAttack lacked a win condition; puniMoveLimitedNormal reflected where retail slides; unk_mri_0000980c set a
+flag retail doesn't; puniModeChangeFallCheck set its hit distance once instead of per call; evt_puni_setup skipped
+Punidat[109]; a MUST_MATCH `while` in puni_rnd looped forever on INT_MIN (retail uses `if`; its removal costs
+puniSearchRandom 12 points). fabs/fabsf now use __fabs/__fabsf (math_ext.h declares the out-of-line ones), which took
+puni_init_posy 20% -> 99% and puniTargetSearch to 100%. 687 TODO blocks the splice had duplicated are gone.
+
+**Follow-ups:** puniMoveAtari is auto-inlined into its callers where retail calls it (puniModeWind_sub 2%,
+puniModeFall/Updraft ~56%); PuniData 0x1D0-0x1DC and PuniWork 0x360 are PuniData* and PuniWork 0x374-0x43C is
+PuniTarget[10], still raw in places; duplicated RNG/randf helpers; 9 mri_puni functions unwritten (puniModeAway*,
+Attack, Damage, Piyori, fn_19_A820/A8DC, evt_puni_get_position); yuu evt_yuuranking and gundan_zako_group2 (wave 34)
+have agent files in scratch to finish from.

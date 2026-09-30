@@ -63,11 +63,7 @@ extend_data(53,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
-
-// TODO: write evt_yuuranking_main_func (static, 0x668 bytes) here:
-// NONMATCHING (99.83%): the state machine, all cases, the inlined yuu_kesan and the switch table
-// are reconstructed; only the registers holding the inlined yuu_kesan bonus/mult/max arguments
-// differ (the original keeps max in r5/r6 and bonus in r4, this build swaps them).
+// NONMATCHING (99.83%): register allocation and scheduling differ.
 USER_FUNC(evt_yuuranking_main_func) {
     static s32 snd_id;
     YuRankWork* wp = (YuRankWork*)event->lwData[0];
@@ -264,16 +260,12 @@ static YuRankWork* _wp;
 // static u32 snd_id$716[1] = {
 //     0x00000000,
 // };
-
-// TODO: write yuuranking_get_monte (static, 0x38 bytes) here:
 static USER_FUNC(yuuranking_get_monte) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
     evtSetValue(event, event->args[0], wp->field_34);
     return 2;
 }
-
-// TODO: write yuuranking_wait_button_10_text_A37C (global, 0x7c bytes) here:
 USER_FUNC(yuuranking_wait_button_10_text_A37C) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
@@ -289,8 +281,6 @@ USER_FUNC(yuuranking_wait_button_10_text_A37C) {
     }
     return 0;
 }
-
-// TODO: write evt_yuuranking_free_10_text_A3F8 (global, 0x84 bytes) here:
 USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
     YuRankWork* wp = (YuRankWork*)_wp;
 
@@ -310,8 +300,6 @@ USER_FUNC(evt_yuuranking_free_10_text_A3F8) {
 
 // TODO: write evt_yuuranking_alloc_10_text_A47C (global, 0xddc bytes) here:
 // its asm is in build/G8MJ01/gor/asm/event/evt_yuuranking.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write yuu_kesan (static, 0xb8 bytes) here:
 static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
     s32 total;
 
@@ -354,8 +342,6 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
 
 // TODO: write evt_yuuranking_disp_func (static, 0x2580 bytes) here:
 // its asm is in build/G8MJ01/gor/asm/event/evt_yuuranking.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_gor_0000dfc4 (global, 0xe4 bytes) here:
 void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     Mtx trans;
     Mtx scale;

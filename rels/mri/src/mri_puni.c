@@ -106,15 +106,9 @@ static inline s32 puni_rnd(s32 range) {
     Punigp->field_0x454 =
         Punigp->field_0x450 + 0x21270000 + Punigp->field_0x454 + 0x3f9c;
     seed = Punigp->field_0x454;
-#ifdef MUST_MATCH
-    while (seed < 0) {
-        seed = -seed;
-    }
-#else
     if (seed < 0) {
         seed = -seed;
     }
-#endif
     return seed % range;
 }
 
@@ -992,7 +986,7 @@ void puniAnimationInit2(void) {
     strcpy(p + 0x0, "S_1");
     strcpy(p + 0x10, "W_1");
     strcpy(p + 0x20, "R_1");
-    strcpy(p + 0x30, "D_1");
+    strcpy(p + 0x30, "D_2");
     strcpy(p + 0x40, "D_2");
     strcpy(p + 0x50, "F_1");
     strcpy(p + 0x60, "Z_1");
@@ -1286,7 +1280,7 @@ void _ymode_mri_16_01(PuniData* puni) {
             puni->field_0x12C.y = 0.0f;
         }
         x = puni->field_0x12C.x;
-        if (x <= 40.0f && x >= -210.0f && (z = puni->field_0x12C.z) <= 60.0f && z >= -10.0f) {
+        if (x <= 40.0f && x >= -210.0f && (z = puni->field_0x12C.z) <= 60.00006f && z >= -10.00012f) {
             if (x <= -190.0f) {
                 puni->field_0x12C.y = 80.0f;
             } else if (x <= -170.0f) {
@@ -1326,11 +1320,11 @@ void _ymode_mri_16_01(PuniData* puni) {
         return;
     }
 
-    if (puni->field_0x12C.z > 60.0f && puni->field_0x138.z <= 60.0f) {
+    if (puni->field_0x12C.z > 60.00006f && puni->field_0x138.z <= 60.00006f) {
         *(Vec*)&puni->field_0x12C = puni->field_0x138;
         puni->field_0x12C.z -= 0.0002f;
     }
-    if (puni->field_0x12C.z < -10.0f && puni->field_0x138.z >= -10.0f) {
+    if (puni->field_0x12C.z < -10.00012f && puni->field_0x138.z >= -10.00012f) {
         *(Vec*)&puni->field_0x12C = puni->field_0x138;
         puni->field_0x12C.z += 0.0002f;
     }
@@ -1629,51 +1623,6 @@ void puniMapdata_MRI_09_getpos(s32 idx, s32 sub, f32* outX, f32* outZ) {
         break;
     }
 }
-
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapdata_MRI_16_getidx(s32* out1, s32* out2, f32 x, f32 z) {
     if (x <= -350.0) {
         *out1 = -1;
@@ -1719,9 +1668,6 @@ void puniMapdata_MRI_16_getidx(s32* out1, s32* out2, f32 x, f32 z) {
         *out2 = -1;
     }
 }
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapdata_MRI_16_getpos(s32 a, s32 b, f32* outX, f32* outZ) {
     switch (a) {
     case 1:
@@ -1783,9 +1729,6 @@ void puniMapdata_MRI_16_getpos(s32 a, s32 b, f32* outX, f32* outZ) {
         break;
     }
 }
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapPos2Blk(s32* out1, s32* out2, f32 x, f32 z) {
     switch (Punigp->field_0x340) {
     case 0:
@@ -1801,9 +1744,6 @@ void puniMapPos2Blk(s32* out1, s32* out2, f32 x, f32 z) {
         break;
     }
 }
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapBlk2Pos(s32 a, s32 b, f32* outX, f32* outZ) {
     switch (Punigp->field_0x340) {
     case 0:
@@ -1855,9 +1795,6 @@ void puniMapBlk2Pos(s32 a, s32 b, f32* outX, f32* outZ) {
         break;
     }
 }
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 u16 puniMapGetInfo(s32 x, s32 y) {
     PuniMap* map = Punimap;
     u32 info = map->field_0x20[y * map->field_0x8 + x];
@@ -1866,16 +1803,10 @@ u16 puniMapGetInfo(s32 x, s32 y) {
         return info | 0xFFFF;
     return info;
 }
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapInit(void) {
     Punimap = _mapAlloc(0x24);
     memset(Punimap, 0, 0x24);
 }
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     Punimap->field_0x0 = a;
     Punimap->field_0x4 = b;
@@ -1892,11 +1823,7 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
         memcpy(Punimap->field_0x18, data, Punimap->field_0x10);
     }
 }
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-// NONMATCHING (75.66%): MWCC emits an extra `add` before each `lhz` of the work buffer instead of the indexed `lhzx`
-// and allocates the loop temps differently (frame 0x20 vs 0x30); the flood-fill algorithm is faithful.
+// NONMATCHING (75.66%): register allocation and scheduling differ.
 void puniMapFindbuff(Vec* pos) {
     s32 out1;
     s32 out2;
@@ -2011,10 +1938,6 @@ void puniMapFindbuff(Vec* pos) {
         id++;
     }
 }
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-// NONMATCHING (89.82%): register allocation and scheduling differ.
 void puniTargetSearch(PuniData* punidat) {
     s32 i;
     PuniTarget* target = (PuniTarget*)((u8*)Punigp + 0x374); // PuniWork 0x374, 10 entries of 0x14
@@ -2028,7 +1951,7 @@ void puniTargetSearch(PuniData* punidat) {
         if (target->flags & 1) {
             f64 limit = 32.0;
 
-            if (limit < fabs(punidat->field_0x12C.y - target->position.y))
+            if (limit < __fabs(punidat->field_0x12C.y - target->position.y))
                 continue;
             if (target->flags & 4) {
                 f32 dist = PSVECSquareDistance(&punidat->field_0x12C, &target->position);
@@ -2047,9 +1970,6 @@ void puniTargetSearch(PuniData* punidat) {
         }
     }
 }
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     u8 b0, b1, b2, b3, b4, b5, b6;
     u32 off;
@@ -2086,11 +2006,7 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
         }
     }
 }
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-// NONMATCHING (88.5%): the original hoists the high-byte `extrwi`s for x/y into live registers (frame 0x40); MWCC
-// rematerializes them at each call here (frame 0x30). Same seven byte writes, same order.
+// NONMATCHING (88.5%): register allocation and scheduling differ.
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     s32 x = (s32)pos->x;
     s32 y = (s32)pos->y;
@@ -2108,9 +2024,6 @@ void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     _swByteSet(off + 0x8F0D185, z);
     _swByteSet(off + 0x8F0D186, zh);
 }
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniswTrapGetindex(s32 index, s32* out) {
     s32 byte;
 
@@ -2121,9 +2034,6 @@ void puniswTrapGetindex(s32 index, s32* out) {
         *out = (byte >> (index % 8)) & 1;
     }
 }
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniswTrapSetindex(s32 index, s32* value) {
     if (index < 0x67) {
         s32 byteIndex = index / 8;
@@ -2135,98 +2045,11 @@ void puniswTrapSetindex(s32 index, s32* value) {
         swByteSet(byteIndex + 0x28C, (u8)byte);
     }
 }
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 static f32 randf(f32 min, f32 max) {
     f32 q = (f32)rand() / 32767.0f;
 
     return q * (max - min) + min;
 }
-
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 s32 randi(s32 min, s32 max) {
     s32 r = rand() % (max - min + 1);
 
@@ -2237,8 +2060,7 @@ void qrndseed(s32 seed) {
     Punigp->field_0x454 = 0x21708331;
 }
 
-// NONMATCHING (93.4%): register allocation (target keeps the Punigp base in r7, we use r5/r0) and the
-// sign test (target `cmpwi/bge`, we fold to `clrrwi.`). `opt_common_subs-off` keeps the target's branchy negate.
+// NONMATCHING (93.4%): register allocation and scheduling differ.
 s32 qrnd(s32 max) {
     s32 v;
 
@@ -2546,133 +2368,7 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     }
 }
 
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// NONMATCHING (70.58%): register allocation and the +0x10 stack-frame size differ; the
+// NONMATCHING (80.43%): register allocation and the +0x10 stack-frame size differ; the
 // control flow and constants match the original.
 void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
     Vec hitN;
@@ -2686,14 +2382,14 @@ void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
     f32 scale;
     f32 moved;
 
-    *(s32*)((u8*)puni + 0x214) = 0;
-    *(s32*)((u8*)puni + 0x210) = 0;
+    puni->field_0x214 = 0;
+    puni->field_0x210 = 0;
     if (puni->unk4 & 0x1000) {
-        *(s32*)((u8*)puni + 0x210) = (s32)hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x,
+        puni->field_0x210 = hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x,
                                                          &hitN.y, &hitN.z, pos->x, pos->y, pos->z, dir->x,
                                                          dir->y, dir->z);
     }
-    if (*(s32*)((u8*)puni + 0x210) == 0) {
+    if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
     } else {
         saved = puni->field_0x12C;
@@ -2716,22 +2412,18 @@ void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
             PSVECNormalize(&diff, &diff);
             *pos = saved;
             pos->y += 1.0f;
-            *(s32*)((u8*)puni + 0x214) =
-                (s32)hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
+            puni->field_0x214 =
+                hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
                                     pos->x, pos->y, pos->z, diff.x, diff.y, diff.z);
-            if (*(s32*)((u8*)puni + 0x214) != 0) {
+            if (puni->field_0x214 != 0) {
                 puni->field_0x12C = saved;
             }
         }
     }
-    if (*(s32*)((u8*)puni + 0x210) != 0 || *(s32*)((u8*)puni + 0x214) != 0) {
-        puni->unk4 |= 0x00400000;
-    } else {
-        puni->unk4 &= ~0x00400000;
-    }
+
 }
 
-// NONMATCHING (79.52%): stack frame is 0x10 smaller and many register choices differ; the
+// NONMATCHING (81.32%): stack frame is 0x10 smaller and many register choices differ; the
 // speed clamp, hit handling and 0.6 damping match.
 void puniMoveDecel(PuniData* puni) {
     Vec* pos = &puni->field_0x12C;
@@ -2772,15 +2464,15 @@ void puniMoveDecel(PuniData* puni) {
     PSVECNormalize(&tmp, &tmp);
     dir = tmp;
 
-    *(s32*)((u8*)puni + 0x214) = 0;
-    *(s32*)((u8*)puni + 0x210) = 0;
+    puni->field_0x214 = 0;
+    puni->field_0x210 = 0;
     dist = mag;
     if (puni->unk4 & 0x1000) {
-        *(s32*)((u8*)puni + 0x210) =
-            (s32)hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
+        puni->field_0x210 =
+            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
                                 up.z, dir.x, dir.y, dir.z);
     }
-    if (*(s32*)((u8*)puni + 0x210) == 0) {
+    if (puni->field_0x210 == 0) {
         PSVECAdd(pos, vel, pos);
     } else {
         saved = *pos;
@@ -2801,15 +2493,15 @@ void puniMoveDecel(PuniData* puni) {
         dist = moved;
         if (moved > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            *(s32*)((u8*)puni + 0x214) =
-                (s32)hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
+            puni->field_0x214 =
+                hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
                                     saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
-            if (*(s32*)((u8*)puni + 0x214) != 0) {
+            if (puni->field_0x214 != 0) {
                 *pos = saved;
             }
         }
     }
-    if (*(s32*)((u8*)puni + 0x210) != 0 || *(s32*)((u8*)puni + 0x214) != 0) {
+    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
         puni->unk4 |= 0x00400000;
     } else {
         PSVECScale(vel, vel, 0.6f);
@@ -2817,7 +2509,7 @@ void puniMoveDecel(PuniData* puni) {
     }
 }
 
-// NONMATCHING (66.55%): the `Punigp->unk328 == 0x12` early-out reshapes the tail, and the
+// NONMATCHING (73.93%): the `Punigp->unk328 == 0x12` early-out reshapes the tail, and the
 // frame/register allocation still differ.
 void puniMoveLimitedNormal(PuniData* puni) {
     Vec* pos = &puni->field_0x12C;
@@ -2849,15 +2541,15 @@ void puniMoveLimitedNormal(PuniData* puni) {
     dir = *vel;
     PSVECNormalize(&dir, &dir);
 
-    *(s32*)((u8*)puni + 0x214) = 0;
-    *(s32*)((u8*)puni + 0x210) = 0;
+    puni->field_0x214 = 0;
+    puni->field_0x210 = 0;
     dist = mag;
     if (puni->unk4 & 0x1000) {
-        *(s32*)((u8*)puni + 0x210) =
-            (s32)hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
+        puni->field_0x210 =
+            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
                                 up.z, dir.x, dir.y, dir.z);
     }
-    if (*(s32*)((u8*)puni + 0x210) == 0) {
+    if (puni->field_0x210 == 0) {
         PSVECAdd(pos, vel, pos);
     } else if (Punigp->unk328 != 0x12) {
         saved = *pos;
@@ -2867,8 +2559,6 @@ void puniMoveLimitedNormal(PuniData* puni) {
             hitN.y = 0.0f;
         }
         PSVECNormalize(&hitN, &hitN);
-        C_VECReflect(&dir, &hitN, &refl);
-        PSVECScale(&refl, vel, mag);
         scale = PSVECDotProduct(&dir, &hitN);
         scale = scale * -(mag - dist) + 0.1f;
         PSVECScale(&hitN, &hitN, scale);
@@ -2878,22 +2568,22 @@ void puniMoveLimitedNormal(PuniData* puni) {
         dist = moved;
         if (moved > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            *(s32*)((u8*)puni + 0x214) =
-                (s32)hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
+            puni->field_0x214 =
+                hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
                                     saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
-            if (*(s32*)((u8*)puni + 0x214) != 0) {
+            if (puni->field_0x214 != 0) {
                 *pos = saved;
             }
         }
     }
-    if (*(s32*)((u8*)puni + 0x210) != 0 || *(s32*)((u8*)puni + 0x214) != 0) {
+    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
         puni->unk4 |= 0x00400000;
     } else {
         puni->unk4 &= ~0x00400000;
     }
 }
 
-// NONMATCHING (80.27%): stack frame is 0x10 smaller and the register allocation differs;
+// NONMATCHING (81.57%): stack frame is 0x10 smaller and the register allocation differs;
 // the two ray casts and reflect/damp logic match.
 void puniMoveNormal(PuniData* puni) {
     Vec* pos = &puni->field_0x12C;
@@ -2923,15 +2613,15 @@ void puniMoveNormal(PuniData* puni) {
     PSVECNormalize(&tmp, &tmp);
     dir = tmp;
 
-    *(s32*)((u8*)puni + 0x214) = 0;
-    *(s32*)((u8*)puni + 0x210) = 0;
+    puni->field_0x214 = 0;
+    puni->field_0x210 = 0;
     dist = mag;
     if (puni->unk4 & 0x1000) {
-        *(s32*)((u8*)puni + 0x210) =
-            (s32)hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
+        puni->field_0x210 =
+            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
                                 up.z, dir.x, dir.y, dir.z);
     }
-    if (*(s32*)((u8*)puni + 0x210) == 0) {
+    if (puni->field_0x210 == 0) {
         PSVECAdd(pos, vel, pos);
     } else {
         saved = *pos;
@@ -2952,15 +2642,15 @@ void puniMoveNormal(PuniData* puni) {
         dist = moved;
         if (moved > 0.0f) {
             PSVECNormalize(&diff, &diff);
-            *(s32*)((u8*)puni + 0x214) =
-                (s32)hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
+            puni->field_0x214 =
+                hitCheckFilter(0, &hitP2.x, &hitP2.y, &hitP2.z, &dist, &hitN2.x, &hitN2.y, &hitN2.z,
                                     saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
-            if (*(s32*)((u8*)puni + 0x214) != 0) {
+            if (puni->field_0x214 != 0) {
                 *pos = saved;
             }
         }
     }
-    if (*(s32*)((u8*)puni + 0x210) != 0 || *(s32*)((u8*)puni + 0x214) != 0) {
+    if (puni->field_0x210 != 0 || puni->field_0x214 != 0) {
         puni->unk4 |= 0x00400000;
     } else {
         puni->unk4 &= ~0x00400000;
@@ -2982,7 +2672,7 @@ void puniMoveCustom(PuniData* puni) {
     }
 }
 
-// NONMATCHING (77.17%): the `unkC == 8` test comes out with the opposite branch polarity and
+// NONMATCHING (77.79%): the `unkC == 8` test comes out with the opposite branch polarity and
 // the inlined qrnd register allocation differs.
 void puniParaAttack(PuniData* puni, PuniData* other) {
     s16 chance;
@@ -3000,7 +2690,7 @@ void puniParaAttack(PuniData* puni, PuniData* other) {
         span = chance + other->field_0x588;
     }
 
-    if (chance > (s16)puni_rnd(span)) {
+    if (chance > (s16)puni_rnd(span) || (other->unk4 & 0x08000000)) {
         if (puni->field_0x586 == 0) {
             other->field_0x584 = puni->field_0x57E - other->field_0x580;
             other->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
@@ -3082,7 +2772,7 @@ s32 puniParaRecoverCheck(PuniData* puni) {
     return puni->field_0x574 >= puni->field_0x576;
 }
 
-// NONMATCHING (72.4%): the inlined qrnd is branchless here vs the original's cror/neg branch,
+// NONMATCHING (60.28%): the inlined qrnd is branchless here vs the original's cror/neg branch,
 // so its register allocation also shifts; the scan loop matches.
 PuniData* puniSearchRandom(s32 start, s32 count) {
     s32 i = 0;
@@ -3104,7 +2794,7 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     }
 }
 
-// NONMATCHING (67.8%): same inlined-qrnd difference as puniSearchRandom; the 1..102 scan and
+// NONMATCHING (55.54%): same inlined-qrnd difference as puniSearchRandom; the 1..102 scan and
 // wrap match.
 PuniData* puniSearchRandom_Mikata(void) {
     s32 i;
@@ -3350,7 +3040,7 @@ void puniModeChangeAway(void) {
     }
 }
 
-// NONMATCHING (74.21%): hitCheckFilter argument setup; the original hoists the hit pointers and spills the float args.
+// NONMATCHING (84.73%): hitCheckFilter argument setup; the original hoists the hit pointers and spills the float args.
 void puniModeChangeFallCheck(void) {
     s32 i;
     PuniData* puni;
@@ -3362,7 +3052,7 @@ void puniModeChangeFallCheck(void) {
     f32 hitZ;
     f32 hitY;
     f32 hitX;
-    f32 dist = 2.0f;
+    f32 dist;
 
     for (i = 1; i <= 102; i++) {
         puni = &Punidat[i];
@@ -3372,6 +3062,7 @@ void puniModeChangeFallCheck(void) {
         pos = puni->field_0x12C;
         pos.y += 1.0f;
         vec = (Vec){0.0f, -1.0f, 0.0f};
+        dist = 2.0f;
         if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &hitNX, &hitNY, &hitNZ, pos.x, pos.y, pos.z, vec.x,
                            vec.y, vec.z) != NULL) {
             continue;
@@ -3521,216 +3212,6 @@ void puniModeALLCheck(void) {
         break;
     }
 }
-
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_0000980c (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveDecel (global, 0x350 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveLimitedNormal (global, 0x2f0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveNormal (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveSimple (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaAttack (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDamage (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecover (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDangerCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaSelfCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecoverCheck (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Mikata (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A820 (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Teki (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A8DC (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearch (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAttack (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAway (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeFallCheck (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniFukki (global, 0x308 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLCheck (global, 0x2d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniModeALLEndCheck(PuniData* punidat) {
     switch (Punigp->field_0x43C) {
     case 0:
@@ -3810,7 +3291,6 @@ void puniModeParentpre(PuniData* punidat) {
     punidat->field_0x114 = 0;
     punidat->field_0x11C = 1;
 }
-// NONMATCHING (98.2%): register allocation and scheduling differ.
 void puniModeParent(PuniData* punidat) {
     PuniData* parent;
     Vec vec;
@@ -3857,7 +3337,7 @@ void puniModeParent(PuniData* punidat) {
         punidat->field_0x1A8 = PSVECMag(&vec);
         if (!(bero_get_BeroEXEC() & 1)) {
             parent = (PuniData*)punidat->field_0x1D0;
-            if (32.0 < fabs(punidat->field_0x12C.y - parent->field_0x12C.y)) {
+            if (32.0 < __fabs(punidat->field_0x12C.y - parent->field_0x12C.y)) {
                 flag = 1;
             } else {
                 if (punidat->field_0x1A8 > 80.0f) {
@@ -4152,231 +3632,6 @@ void puniModeSearch(PuniData* puni) {
     puni->field_0x174 = 3.0f;
 }
 
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_0000980c (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveDecel (global, 0x350 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveLimitedNormal (global, 0x2f0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveNormal (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveSimple (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaAttack (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDamage (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecover (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDangerCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaSelfCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecoverCheck (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Mikata (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A820 (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Teki (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A8DC (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearch (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAttack (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAway (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeFallCheck (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniFukki (global, 0x308 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLCheck (global, 0x2d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLEndCheck (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeNormal (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParentpre (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParent (global, 0x424 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeSearch (global, 0x1e88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
 // NONMATCHING (98.22%): the inlined qrnd(3) abs is emitted branchless here (srawi/xor/subf)
 // where the original keeps the `cmpwi; bge; neg` branch; register allocation of the two
 // LCG updates also differs (r5/r7/r8 vs r7/r0/r3).
@@ -4600,7 +3855,7 @@ void puniModeEscape(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (89.18%): the region-test float register order is swapped (target keeps -1000 in f0,
+// NONMATCHING (92.12%): the region-test float register order is swapped (target keeps -1000 in f0,
 // 0x350/0x358 in f2), the hitCheckFilter local frame is ordered differently, and the int->float
 // conversion emits an anonymous 2^52 double instead of reusing 4503601774854144.0.
 void puniModeRecover(PuniData* punidat) {
@@ -4658,9 +3913,9 @@ void puniModeRecover(PuniData* punidat) {
             punidat->field_0x594 = *(s32*)&punidat->field_0x12C.y;
             punidat->field_0x598 = *(s32*)&punidat->field_0x12C.z;
             *(Vec*)&punidat->field_0x12C = Punigp->field_0x344;
-            r = (f32)(u32)rand() / 32767.0f;
+            r = (f32)rand() / 32767.0f;
             punidat->field_0x12C.x += r * 2.0f - 1.0f;
-            r = (f32)(u32)rand() / 32767.0f;
+            r = (f32)rand() / 32767.0f;
             punidat->field_0x12C.z += r * 2.0f - 1.0f;
             *(Vec*)&punidat->field_0x138 = punidat->field_0x12C;
             *(Vec*)((u8*)punidat + 0x59C) = punidat->field_0x12C;  // PuniData 0x59C
@@ -5305,7 +4560,7 @@ void puniModeFunbari(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (95.48%): the compiler emits its own anonymous int->float pool double and a cheaper
+// NONMATCHING (98.55%): the compiler emits its own anonymous int->float pool double and a cheaper
 // small-range conversion instead of the original's xoris + 4503601774854144.0 sequence
 // (same limitation noted for display() in sys.c).
 void puniModeWater(PuniData* punidat) {
@@ -5347,7 +4602,7 @@ void puniModeWater(PuniData* punidat) {
             u32 divisor = (__OSBusClock >> 2) / 1000;
             u32 step = (u32)(*(s32*)((u8*)gp + 0x3C) - punidat->field_0x1CC) / divisor;
             if ((s32)step < 0x12C) {
-                f32 t = (f32)step / 300.0f;
+                f32 t = (f32)(s32)step / 300.0f;
                 f32 y;
                 punidat->field_0x12C.x =
                     intplGetValue(0, step, 0x12C, punidat->field_0x1F8.x, *(f32*)((u8*)punidat + 0x150));
@@ -5371,7 +4626,7 @@ void puniModeWater(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (81.44%): stack frame 0x10 short; pos/normal not spilled (see REPORT.md)
+// NONMATCHING (81.44%): register allocation and scheduling differ.
 void puniModePrehagure(PuniData* puni) {
     u8* p = (u8*)puni;
     Vec pos;
@@ -5550,7 +4805,7 @@ void puniModeTrap_sub(PuniData* puni) {
     NpcEntry* npc;
 
     if (*(u32*)(p + 0x4) & 0x20) {
-        npc = npcNameToPtr("カイド");
+        npc = npcNameToPtr("ガイド");
         *(u32*)(p + 0x4) &= ~0x800;
         *(u32*)(p + 0x4) |= 0x100000;
         npc->flags &= ~0x20;
@@ -5559,7 +4814,7 @@ void puniModeTrap_sub(PuniData* puni) {
         npc->position.z = 0.0f;
     }
     if (*(u32*)(p + 0x4) & 0x40) {
-        npc = npcNameToPtr("カイド離");
+        npc = npcNameToPtr("ガイド妹");
         *(u32*)(p + 0x4) &= ~0x800;
         *(u32*)(p + 0x4) |= 0x100000;
         npc->flags &= ~0x20;
@@ -5584,7 +4839,7 @@ void puniModeTrap(PuniData* puni) {
     if (*(u16*)(p + 0x114) == 0) {
         *(u32*)(p + 0x4) |= 0x100000;
         if (*(u32*)(p + 0x4) & 0x20) {
-            npc = npcNameToPtr("カイド");
+            npc = npcNameToPtr("ガイド");
             *(u32*)(p + 0x4) |= 0x800;
             npc->position.x = *(f32*)(p + 0x12C);
             npc->position.y = *(f32*)(p + 0x130);
@@ -5593,7 +4848,7 @@ void puniModeTrap(PuniData* puni) {
             npc->flags |= 0x20;
         }
         if (*(u32*)(p + 0x4) & 0x40) {
-            npc = npcNameToPtr("カイド離");
+            npc = npcNameToPtr("ガイド妹");
             *(u32*)(p + 0x4) |= 0x800;
             npc->position.x = *(f32*)(p + 0x12C);
             npc->position.y = *(f32*)(p + 0x130);
@@ -5615,7 +4870,7 @@ void puniModeTrap(PuniData* puni) {
     }
     if (*(f32*)(p + 0x1A0) > 10.0f) {
         if (*(u32*)(p + 0x4) & 0x20) {
-            npc = npcNameToPtr("カイド");
+            npc = npcNameToPtr("ガイド");
             *(u32*)(p + 0x4) &= ~0x800;
             *(u32*)(p + 0x4) |= 0x100000;
             npc->flags &= ~0x20;
@@ -5624,7 +4879,7 @@ void puniModeTrap(PuniData* puni) {
             npc->position.z = 0.0f;
         }
         if (*(u32*)(p + 0x4) & 0x40) {
-            npc = npcNameToPtr("カイド離");
+            npc = npcNameToPtr("ガイド妹");
             *(u32*)(p + 0x4) &= ~0x800;
             *(u32*)(p + 0x4) |= 0x100000;
             npc->flags &= ~0x20;
@@ -5650,7 +4905,7 @@ void puniModeTrap(PuniData* puni) {
     }
     if (*(s32*)(p + 0x1B4) != -1) {
         if (*(u32*)(p + 0x4) & 0x20) {
-            npc = npcNameToPtr("カイド");
+            npc = npcNameToPtr("ガイド");
             *(u32*)(p + 0x4) &= ~0x800;
             *(u32*)(p + 0x4) |= 0x100000;
             npc->flags &= ~0x20;
@@ -5659,7 +4914,7 @@ void puniModeTrap(PuniData* puni) {
             npc->position.z = 0.0f;
         }
         if (*(u32*)(p + 0x4) & 0x40) {
-            npc = npcNameToPtr("カイド離");
+            npc = npcNameToPtr("ガイド妹");
             *(u32*)(p + 0x4) &= ~0x800;
             *(u32*)(p + 0x4) |= 0x100000;
             npc->flags &= ~0x20;
@@ -6070,343 +5325,8 @@ void puni_puni_init(void) {
     memset(Punimap, 0, 0x24);
 }
 
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_0000980c (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveDecel (global, 0x350 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveLimitedNormal (global, 0x2f0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveNormal (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveSimple (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaAttack (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDamage (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecover (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDangerCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaSelfCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecoverCheck (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Mikata (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A820 (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Teki (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A8DC (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearch (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAttack (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAway (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeFallCheck (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniFukki (global, 0x308 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLCheck (global, 0x2d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLEndCheck (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeNormal (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParentpre (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParent (global, 0x424 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeSearch (global, 0x1e88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeMass (global, 0x40c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAwayjump (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway_sub (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAttack (global, 0x290 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDamage (global, 0x268 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePiyori (global, 0x1a8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEscape (global, 0x300 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeRecover (global, 0x500 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDead (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_sub (global, 0x228 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_kaiten (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind (global, 0x6d0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFall (global, 0x528 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePreupdraft (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeUpdraft (global, 0x4d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWonder (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFunbari (global, 0x23c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWater (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePrehagure (global, 0x2cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeHagure (global, 0x35c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDodai (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap_sub (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap (global, 0x3f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSubInit (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnter (global, 0x3ac bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSubInit (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExit (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePoint (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDokan (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_disp (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_shadow_disp (global, 0x248 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_init (global, 0x298 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
 // The original unit's rodata is not yet moved into this source; the symbols are declared above.
-// NONMATCHING (94.28%): MWCC frame 0xb0 vs 0xc0 (stack-slot reuse for the case-1/case-7 Vec temporaries
-// and the random-conversion scratch), anonymous int->float double pool entry instead of
-// 4503601774854144.0, and case-1/case-15 register allocation. See REPORT.md.
+// NONMATCHING (94.28%): register allocation and scheduling differ.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->unkC) {
     case 0:
@@ -6832,342 +5752,6 @@ void unk_mri_00012d58(PuniData* self) {
     }
 }
 
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_0000980c (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveDecel (global, 0x350 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveLimitedNormal (global, 0x2f0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveNormal (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveSimple (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaAttack (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDamage (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecover (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDangerCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaSelfCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecoverCheck (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Mikata (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A820 (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Teki (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A8DC (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearch (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAttack (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAway (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeFallCheck (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniFukki (global, 0x308 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLCheck (global, 0x2d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLEndCheck (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeNormal (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParentpre (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParent (global, 0x424 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeSearch (global, 0x1e88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeMass (global, 0x40c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAwayjump (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway_sub (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAttack (global, 0x290 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDamage (global, 0x268 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePiyori (global, 0x1a8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEscape (global, 0x300 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeRecover (global, 0x500 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDead (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_sub (global, 0x228 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_kaiten (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind (global, 0x6d0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFall (global, 0x528 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePreupdraft (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeUpdraft (global, 0x4d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWonder (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFunbari (global, 0x23c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWater (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePrehagure (global, 0x2cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeHagure (global, 0x35c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDodai (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap_sub (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap (global, 0x3f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSubInit (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnter (global, 0x3ac bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSubInit (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExit (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePoint (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDokan (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_disp (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_shadow_disp (global, 0x248 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_init (global, 0x298 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_00012d58 (global, 0xdfc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
 // NONMATCHING (96.22%): four puni-collision bodies. The remaining diff is stack layout: the reference
 // interleaves the 4-byte distance temp (ref +0x74/+0x58/+0x3c/+0x20) with the 12-byte Vecs, while this
 // compiler segregates 4-byte scalars below all struct locals. A few body-B register/scheduling choices differ too.
@@ -7566,7 +6150,7 @@ void puniOption(void) {
                     }
                     PSVECNormalize(&tmp, &tmp);
                     f0 = (range - dist) / range;
-                    f1 = 0.85f * (0.3f * f0) + 0.045f;
+                    f1 = 0.85f * (0.3f * f0) + 0.044999994f;
                     tmp.y = 0.0f;
                     PSVECScale(&tmp, &tmp, f1);
                     PSVECAdd((Vec*)&puni->field_0x15C, &tmp, (Vec*)&puni->field_0x15C);
@@ -7649,7 +6233,7 @@ void unk_mri_00014ad4(void) {
                     }
                     PSVECNormalize(&tmp, &tmp);
                     f0 = (range - dist) / range;
-                    f1 = 0.85f * (0.3f * f0) + 0.045f;
+                    f1 = 0.85f * (0.3f * f0) + 0.044999994f;
                     tmp.y = 0.0f;
                     PSVECScale(&tmp, &tmp, f1);
                     PSVECAdd((Vec*)&puni->field_0x15C, &tmp, (Vec*)&puni->field_0x15C);
@@ -7674,354 +6258,6 @@ void unk_mri_00014ad4(void) {
         }
     }
 }
-
-// TODO: write puniAnimCount (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimationInit2 (global, 0x2d4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniAnimation (global, 0x464 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _chukanhosei (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _areacheck (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_09 (global, 0x450 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_00 (global, 0x4cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _ymode_mri_16_01 (global, 0x51c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSetYPosition (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getidx (global, 0x214 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_06_getpos (global, 0x140 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getidx (global, 0x174 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_09_getpos (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getidx (global, 0x254 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapdata_MRI_16_getpos (global, 0x15c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapPos2Blk (global, 0x68 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapBlk2Pos (global, 0x160 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapGetInfo (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapInit (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapDataSet (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMapFindbuff (global, 0x2dc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniTargetSearch (global, 0xe8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswGetindex (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswSetindex (global, 0xd8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapGetindex (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniswTrapSetindex (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randf (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write randi (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrndseed (global, 0x2c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write qrnd (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniDeleteEffect (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _daime_change (global, 0x3b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniDokuritsu (global, 0x158 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniSakanobori (global, 0x18 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write PuniChildHagure (global, 0x230 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchParent (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMario (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionCheck (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniPositionRecover (global, 0x130 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveAtari (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_000095f0 (global, 0x21c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_0000980c (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveDecel (global, 0x350 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveLimitedNormal (global, 0x2f0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveNormal (global, 0x2e4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveSimple (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniMoveCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaAttack (global, 0x200 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDamage (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecover (global, 0xb0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaDangerCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaSelfCheck (global, 0x28 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniParaRecoverCheck (global, 0x1c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Mikata (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A820 (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearchRandom_Teki (global, 0xb8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_A8DC (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattle (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleMikata (global, 0xc4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write searchBattleTeki (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSearch (global, 0x190 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAttack (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeAway (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeChangeFallCheck (global, 0x150 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniFukki (global, 0x308 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLCheck (global, 0x2d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeALLEndCheck (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeNormal (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParentpre (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeParent (global, 0x424 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeSearch (global, 0x1e88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeMass (global, 0x40c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAwayjump (global, 0x1b0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway_sub (global, 0x1b8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAway (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeAttack (global, 0x290 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDamage (global, 0x268 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePiyori (global, 0x1a8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEscape (global, 0x300 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeRecover (global, 0x500 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDead (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_sub (global, 0x228 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind_kaiten (global, 0xa4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWind (global, 0x6d0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFall (global, 0x528 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePreupdraft (global, 0x100 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeUpdraft (global, 0x4d8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWonder (global, 0x144 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeFunbari (global, 0x23c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeWater (global, 0x270 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePrehagure (global, 0x2cc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeHagure (global, 0x35c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDodai (global, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap_sub (global, 0x13c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeTrap (global, 0x3f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSubInit (global, 0x40 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnterSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeEnter (global, 0x3ac bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSubInit (global, 0x34 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExitSub (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeExit (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModePoint (global, 0x204 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeDokan (global, 0x48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniModeCustom (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_disp (global, 0xd0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_shadow_disp (global, 0x248 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_puni_init (global, 0x298 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_00012d58 (global, 0xdfc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write fn_19_13A90 (global, 0xc48 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniOption (global, 0x338 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write unk_mri_00014ad4 (global, 0x314 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniSound (global, 0x500 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 void puniSound(void) {
     s32 i;
     s32 num = 0;
@@ -8161,7 +6397,7 @@ void puniSound(void) {
     Punigp->field_0x4C4 = 0;
 }
 
-// NONMATCHING (88.88%): remaining diffs are register allocation (loop pointers and the
+// NONMATCHING (94.28%): remaining diffs are register allocation (loop pointers and the
 // float_1E06 base sit one callee-saved register too high) and `debug$437` vs the target's
 // `debug$2303` (that static was shared with an inlined function whose name is unrecoverable).
 void puni_puni_main(void) {
@@ -8250,7 +6486,7 @@ void puni_puni_main(void) {
                         tmp2 = pd->field_0x12C;
                         pd->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp2);
                     }
-                    if (32.0 < fabsf(pd->field_0x12C.y - mario->position.y)) {
+                    if (32.0 < __fabsf(pd->field_0x12C.y - mario->position.y)) {
                         pd->field_0x1A4 = 1000.0f;
                     } else {
                         pd->field_0x1A4 = PSVECDistance(&pd->field_0x12C, &mario->position);
@@ -8261,7 +6497,7 @@ void puni_puni_main(void) {
                     pd->field_0x1C0 = 1e+06f;
                     sei = (PuniSearchEntry*)((u8*)Punigp + 0x374);
                     for (k = 0; k < 10; k++, sei++) {
-                        if ((sei->flags & 1) != 0 && !(32.0 < fabsf(pd->field_0x12C.y - sei->pos.y))) {
+                        if ((sei->flags & 1) != 0 && !(32.0 < __fabsf(pd->field_0x12C.y - sei->pos.y))) {
                             if ((sei->flags & 4) != 0) {
                                 f32 d = PSVECSquareDistance(&pd->field_0x12C, &sei->pos);
                                 if (pd->field_0x1C0 > d) {
@@ -8294,7 +6530,7 @@ void puni_puni_main(void) {
                     tmp3 = pd->field_0x12C;
                     pd->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp3);
                 }
-                if (32.0 < fabsf(pd->field_0x12C.y - mario->position.y)) {
+                if (32.0 < __fabsf(pd->field_0x12C.y - mario->position.y)) {
                     pd->field_0x1A4 = 1000.0f;
                 } else {
                     pd->field_0x1A4 = PSVECDistance(&pd->field_0x12C, &mario->position);
@@ -8305,7 +6541,7 @@ void puni_puni_main(void) {
                 pd->field_0x1C0 = 1e+06f;
                 sei = (PuniSearchEntry*)((u8*)Punigp + 0x374);
                 for (k = 0; k < 10; k++, sei++) {
-                    if ((sei->flags & 1) != 0 && !(32.0 < fabsf(pd->field_0x12C.y - sei->pos.y))) {
+                    if ((sei->flags & 1) != 0 && !(32.0 < __fabsf(pd->field_0x12C.y - sei->pos.y))) {
                         if ((sei->flags & 4) != 0) {
                             f32 d = PSVECSquareDistance(&pd->field_0x12C, &sei->pos);
                             if (pd->field_0x1C0 > d) {
@@ -8518,28 +6754,28 @@ USER_FUNC(evt_puni_main) {
     return 0;
 }
 
-// NONMATCHING (20.13%): first candidate pair keeps v1 in f5 and diff's subtract in f2;
+// NONMATCHING (99.34%): first candidate pair keeps v1 in f5 and diff's subtract in f2;
 // the target has v1 in f2 and an in-place fabs (fsubs f3; fabs f3,f3).
 f32 puni_init_posy(f32 y) {
     f32 diff;
     f32 d;
     f32 v0 = Punigp->field_0x32C;
     f32 v1 = Punigp->field_0x330;
-    diff = fabs(y - v0);
-    d = fabs(y - v1);
+    diff = __fabs(y - v0);
+    d = __fabs(y - v1);
 
     if (diff > d) {
         diff = d;
         v0 = v1;
     }
     v1 = Punigp->field_0x334;
-    d = fabs(y - v1);
+    d = __fabs(y - v1);
     if (diff > d) {
         diff = d;
         v0 = v1;
     }
     v1 = Punigp->field_0x338;
-    d = fabs(y - v1);
+    d = __fabs(y - v1);
     if (diff > d) {
         v0 = v1;
     }
@@ -8604,7 +6840,7 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->unk4 |= 0x00101402;
 }
 
-// NONMATCHING (83.47%): puni_init_posy/randf are inlined here; the target computes the
+// NONMATCHING (86.8%): puni_init_posy/randf are inlined here; the target computes the
 // x+/-10 (or x+/-50) range only after rand() and keeps the puni_init_posy result in f27,
 // while we hoist the subtraction before rand().
 USER_FUNC(evt_puni_rnd_pos) {
@@ -8706,15 +6942,15 @@ USER_FUNC(evt_puni_debug_info) {
         if (flag) {
             sprintf(buf, "No%03d,＜トラップにかかっています＞\n", i);
         } else if (cond) {
-            sprintf(buf, "No%03d,＜まだ仲間になっていますん＞\n", i);
+            sprintf(buf, "No%03d,＜まだ仲間になっていません＞\n", i);
         } else if (a) {
-            sprintf(buf, "No%03d,はぎりています area = mri_%02d, x = %04d, y = %04d, z = %04d,\n", i, a - 1,
+            sprintf(buf, "No%03d,はぐれています area = mri_%02d, x = %04d, y = %04d, z = %04d,\n", i, a - 1,
                     (s32)x, (s32)y, (s32)z);
         } else {
             sprintf(buf, "No%03d,ついて来ています\n", i);
         }
         if (i == 1 && swGet(0xB14) != 0) {
-            sprintf(buf, "No%03d,＜mri_03の牢屋に袋在しています＞\n", i);
+            sprintf(buf, "No%03d,＜mri_03の牢屋に滞在しています＞\n", i);
         }
     }
     return EVT_RETURN_DONE;
@@ -8762,7 +6998,7 @@ USER_FUNC(evt_puni_setup) {
         return 2;
 
     p = &Punidat[1];
-    for (i = 1; i <= 0x6c; i++, p++) {
+    for (i = 1; i <= 0x6d; i++, p++) {
         s32 c0;
         u8 b1, b2, b3, b4, b5, b6;
         f32 v1, v2, v3;
@@ -9332,69 +7568,6 @@ USER_FUNC(evt_puni_init_teki) {
 
 // TODO: write evt_puni_get_position (global, 0x9c bytes) here:
 // its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init (global, 0x184 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_yuka (global, 0x194 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_hamari (global, 0x1ec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_maze (global, 0x394 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_main (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_posy (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_para (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write toge_init_para (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_rnd_pos (global, 0x2f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_systemmode (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_systemmode (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_wait_systemmode (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_debug_info (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_setup (global, 0xa10 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_toge_setup (global, 0x324 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _puniVAtari (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniHagurePos (global, 0x568 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_exit (global, 0x740 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_puni (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_teki (global, 0x170 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 USER_FUNC(evt_puni_set_position) {
     s32* args = event->args;
     PuniData* punidat = &Punidat[evtGetValue(event, args[0])];
@@ -9623,111 +7796,6 @@ USER_FUNC(evt_puni_flag_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// TODO: write evt_puni_init (global, 0x184 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_yuka (global, 0x194 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_hamari (global, 0x1ec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_maze (global, 0x394 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_main (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_posy (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_para (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write toge_init_para (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_rnd_pos (global, 0x2f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_systemmode (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_systemmode (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_wait_systemmode (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_debug_info (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_setup (global, 0xa10 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_toge_setup (global, 0x324 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _puniVAtari (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniHagurePos (global, 0x568 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_exit (global, 0x740 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_puni (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_teki (global, 0x170 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_position (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_dir (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_dir (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_anim (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_anim (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_korokoro (global, 0x124 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_move_position (global, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_move_position2 (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_jump_position (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_mode (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_mode (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_setsudan (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_flag (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_flag_onoff (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
 // NONMATCHING (98.19%): one register swap in the puni pointer computation; logic matches.
 USER_FUNC(evt_puni_dokan_onoff) {
     s32* args = event->args;
@@ -9927,7 +7995,7 @@ USER_FUNC(evt_puni_count) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (82.04%): int->float constant goes to an anonymous rodata symbol (unit rodata not laid out).
+// NONMATCHING (93.9%): int->float constant goes to an anonymous rodata symbol (unit rodata not laid out).
 USER_FUNC(evt_puni_count_area) {
     s32* args = event->args;
     f32 x = (f32)evtGetValue(event, args[0]);
@@ -9946,13 +8014,13 @@ USER_FUNC(evt_puni_count_area) {
         if (puni->unkC == 0x10) {
             continue;
         }
-        if (10.0 < fabs(y - puni->field_0x12C.y)) {
+        if (10.0 < __fabs(y - puni->field_0x12C.y)) {
             continue;
         }
-        if (range < fabs(x - puni->field_0x12C.x)) {
+        if (range < __fabs(x - puni->field_0x12C.x)) {
             continue;
         }
-        if (range < fabs(z - puni->field_0x12C.z)) {
+        if (range < __fabs(z - puni->field_0x12C.z)) {
             continue;
         }
         count++;
@@ -10043,153 +8111,6 @@ USER_FUNC(evt_puni_fade_onoff) {
     puniFadeOff(evtGetValue(event, event->args[0]));
     return EVT_RETURN_DONE;
 }
-
-// TODO: write evt_puni_init (global, 0x184 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_yuka (global, 0x194 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_hamari (global, 0x1ec bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_maze (global, 0x394 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_main (global, 0x24 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_posy (global, 0x98 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puni_init_para (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write toge_init_para (global, 0xc0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_rnd_pos (global, 0x2f8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_systemmode (global, 0x38 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_systemmode (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_wait_systemmode (global, 0x4c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_debug_info (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_setup (global, 0xa10 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_toge_setup (global, 0x324 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write _puniVAtari (global, 0x114 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write puniHagurePos (global, 0x568 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_exit (global, 0x740 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_puni (global, 0x30c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_init_teki (global, 0x170 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_position (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_position (global, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_dir (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_dir (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_anim (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_anim (global, 0x60 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_korokoro (global, 0x124 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_move_position (global, 0x1e8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_move_position2 (global, 0x258 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_jump_position (global, 0x28c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_mode (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_mode (global, 0x8c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_setsudan (global, 0x70 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_flag (global, 0x58 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_flag_onoff (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_dokan_onoff (global, 0x90 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_lsw_index (global, 0x1b4 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_lsw_index (global, 0x1a0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_get_trap_index (global, 0x84 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_trap_index (global, 0x9c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_set_ymode (global, 0x3c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_all_fall_check (global, 0x154 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_all_movestop (global, 0x78 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_count (global, 0xa8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_count_area (global, 0x1a8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_zenmetsu_check (global, 0xc8 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_landon_check (global, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_pera_onoff (global, 0x7c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_puni_fade_onoff (global, 0x30 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_puni.s; this is where the original has it, just before the first script that uses it
 USER_FUNC(evt_puni_attack_on) {
     Punigp->field_0x43C = 3;
     return EVT_RETURN_DONE;
@@ -10222,8 +8143,7 @@ USER_FUNC(evt_puni_force_se_off) {
 // MWCC rematerializes the xh/yh `extrwi` extracts at every `_swByteSet`; the original hoists them
 // into callee-saved registers before the first call (frame 0x50, `stmw r24`). `#pragma opt_propagation off`
 // forces the hoist but also hoists `zh` (frame 0x60, `stmw r23`) and puts puni in r31 vs the original r29.
-// NONMATCHING (62.61%): no pragma / `opt_lifetimes` / `scheduling off`, `zh` inline vs cached, `u8`/`s32`
-// temps and four declaration orders all land between 60.5% and 64.3%.
+// NONMATCHING (62.61%): register allocation and scheduling differ.
 USER_FUNC(evt_puni_all_save) {
     PuniData* puni = &Punidat[1];
     s32 i;
@@ -10318,8 +8238,7 @@ const char* npcGetTribeName(NpcTribeInfo* tribe) {
 
 // Only the 8-instruction clear loop differs: MWCC puts the byte offset `o` in r7 and Punigp in r6, the
 // original uses o r3 and Punigp r7 (mask r4 vs r3). Everything else in the function is byte-identical;
-// NONMATCHING (64.1%): `opt_lifetimes`/`opt_propagation`/`scheduling off` and all loop/declaration
-// forms tried leave it at 99.44%.
+// NONMATCHING (99.44%): register allocation and scheduling differ.
 USER_FUNC(puni_piders_check_func) {
     s32 i;
     NpcWork* work = npcGetWorkPtr();
@@ -10351,19 +8270,19 @@ USER_FUNC(puni_piders_check_func) {
         }
         pos = npc->position;
         hit = 0;
-        if (50.0 >= fabs(pos.y - Punigp->field_0x32C)) {
+        if (50.0 >= __fabs(pos.y - Punigp->field_0x32C)) {
             hit = 1;
             pos.y = Punigp->field_0x32C;
         }
-        if (50.0 >= fabs(pos.y - Punigp->field_0x330)) {
+        if (50.0 >= __fabs(pos.y - Punigp->field_0x330)) {
             hit = 1;
             pos.y = Punigp->field_0x330;
         }
-        if (50.0 >= fabs(pos.y - Punigp->field_0x334)) {
+        if (50.0 >= __fabs(pos.y - Punigp->field_0x334)) {
             hit = 1;
             pos.y = Punigp->field_0x334;
         }
-        if (50.0 >= fabs(pos.y - Punigp->field_0x338)) {
+        if (50.0 >= __fabs(pos.y - Punigp->field_0x338)) {
             hit = 1;
             pos.y = Punigp->field_0x338;
         }
