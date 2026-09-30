@@ -251,8 +251,20 @@ void effNozleMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.11%): data lands in r28 instead of the target's r27, shifting the loop-table
-// pointers and counters by one register; the instructions themselves match.
+#ifdef MUST_MATCH
+// The original builds the GXColor temp at 0x8 and copies it to the 0xc argument slot; building
+// it directly in `color` puts the temp in the swapped slot, so it is built in a returning inline.
+static inline GXColor nozleTevColor(u8 alpha) {
+	GXColor c = *(GXColor*)&unk_80423300;
+	c.a = alpha;
+	return c;
+}
+#endif
+
+// Every instruction is present; MWCC colours the long-lived webs differently from the
+// target: effect is r31 (target r25), base r29 (r30) and camera r30 (r31), which rotates the
+// per-branch loop pointers and counters too (target j/size/dl in r31/r29/r28, i/entry in r26/r27).
+// NONMATCHING (99.28%): register colours differ; the type-3 reload is the original's remat.
 void effNozleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effNozleData* data = effect->userdata;
@@ -414,10 +426,19 @@ void effNozleDisp(CameraId camId, void* param) {
 		break;
 	case 3:
 		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+#ifdef MUST_MATCH
+		color = nozleTevColor(alpha);
+#else
 		color = *(GXColor*)&unk_80423300;
 		color.a = alpha;
+#endif
 		GXSetTevColor(1, color);
+#ifdef MUST_MATCH
+		// the original rematerialises data here, re-reading effect->userdata
+		entry = ((effNozleData*)effect->userdata)->entries;
+#else
 		entry = data->entries;
+#endif
 		for (i = 1; i < effect->count; i++) {
 			PSMTXTrans(transMtx, entry->field_0x18, -entry->field_0x1C, float_0_80421234);
 			GXLoadTexMtxImm(transMtx, 0x1E, 1);

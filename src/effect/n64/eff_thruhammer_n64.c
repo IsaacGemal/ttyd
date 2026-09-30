@@ -89,8 +89,9 @@ static inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (99.80%): only the sin block's register allocation differs (sin in f3
-// instead of f1); the rest are anonymous .sdata2/.rodata pool labels.
+// The single-use temp forces sin's result to stay in f1 through the negate
+// (retail: frsp f1,f1 / fneg f1,f1 / fmuls f1,f3,f1); the inline expression
+// makes MWCC move it to f3 and load 0.5f into f1 instead.
 void effThruHammerMain(EffectEntry* effect) {
 	EffThruHammerData* data = effect->userdata;
 	Vec disp;
@@ -116,7 +117,14 @@ void effThruHammerMain(EffectEntry* effect) {
 			data->x = 0.0f;
 			data->y = 0.0f;
 			data->z = 0.0f;
+#ifdef MUST_MATCH
+			{
+				f32 s = (f32)sin(6.2831855f * data->field_0x34 / 360.0f);
+				data->field_0x10 = -s * 0.5f;
+			}
+#else
 			data->field_0x10 = -(f32)sin(6.2831855f * data->field_0x34 / 360.0f) * 0.5f;
+#endif
 			data->field_0x14 = 0.5f * (f32)cos(6.2831855f * data->field_0x34 / 360.0f);
 			data->field_0x18 = 0.0f;
 			data->field_0x3C = 32.0f;

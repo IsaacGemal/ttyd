@@ -18,8 +18,7 @@ const char str_802FFA6C[] = "EFF_batten_rocket";
 extern u32 str_80421980;
 extern const u32 dat_80421984;
 extern const f32 float_deg2rad_80421988;
-extern const f32 float_0_8042198c;
-extern const f32 float_2_80421990;
+
 extern const f32 float_32_80421994;
 extern const f32 float_0p5_80421998;
 extern const f32 float_16_8042199c;
@@ -39,6 +38,10 @@ static inline GXColor battenColor(u8 alpha) {
 #endif
 
 void effBattenDisp2(CameraId camId, void* param) {
+	// Read as plain constants here: this function's calls already force reloads, and volatile would
+	// change its schedule (see effBattenDisp).
+	extern const f32 float_0_8042198c;
+	extern const f32 float_2_80421990;
 	EffectEntry* effect = param;
 	BattenData* data = effect->userdata;
 	Mtx mtx;
@@ -76,13 +79,9 @@ static inline GXColor battenHeaderColor(u8 alpha) {
 }
 #endif
 
-// NONMATCHING (98.47%): the vertex float literals become anonymous @248/@327 sdata2 symbols instead of
-// float_0_8042198c/float_2_80421990 (declaring them volatile matches but breaks Disp2), the color temp slot is
-// swapped as in Disp2, and a few integer registers differ (data in r29 not r27, element-ptr setup order).
 void effBattenDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	BattenData* data = effect->userdata;
-	BattenData* elem;
 	CameraEntry* cam;
 	GXTexObj texObj;
 	Mtx mtxBase;
@@ -90,10 +89,10 @@ void effBattenDisp(CameraId camId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxFinal;
 	GXColor color;
-	u8 headerAlpha;
 	f32 x1;
 	f32 x0;
 	s32 i;
+	u8 headerAlpha;
 
 	cam = camGetPtr(camId);
 	headerAlpha = data->alpha;
@@ -124,19 +123,19 @@ void effBattenDisp(CameraId camId, void* param) {
 	x0 = -float_32_80421994 * float_0p5_80421998;
 	x1 = float_16_8042199c;
 
-	for (i = 1, elem = &data[1]; i < effect->count; i++, elem++) {
-		PSMTXTrans(mtxBase, elem->position.x, elem->position.y, elem->position.z);
-		PSMTXScale(mtxScale, elem->scale, elem->scale, elem->scale);
+	for (i = 1, data = &data[1]; i < effect->count; i++, data++) {
+		PSMTXTrans(mtxBase, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 		PSMTXConcat(mtxBase, mtxScale, mtxScale);
 		PSMTXConcat(mtxFinal, mtxScale, mtxScale);
 		GXLoadPosMtxImm(mtxScale, 0);
 		GXSetCurrentMtx(0);
 
 #ifdef MUST_MATCH
-		color = battenHeaderColor((headerAlpha * elem->alpha) / 255);
+		color = battenHeaderColor((headerAlpha * data->alpha) / 255);
 #else
 		color = *(GXColor*)&str_80421980;
-		color.a = (headerAlpha * elem->alpha) / 255;
+		color.a = (headerAlpha * data->alpha) / 255;
 #endif
 		GXSetChanMatColor(4, color);
 

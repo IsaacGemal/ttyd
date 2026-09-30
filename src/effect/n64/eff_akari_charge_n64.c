@@ -326,6 +326,9 @@ static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
 // fpr, which grows the frame and shifts every local, so they use 0.0f literals.
 // NONMATCHING (99.17%): only the loop-setup order of `li r29,1` (i) and `addi r30,r30,0x44`
 // (part = data->particles) differs, the same mwcc scheduler artifact eff_akari_pose_n64.c reports.
+// Separate statements (either order), a comma in the for-init, `&particles[i-1]`, `particles + 0`,
+// a byte-cast address and a while loop all give the same two-instruction swap; `particles + i - 1`
+// makes MWCC strength-reduce and regress to 98.99%.
 void effAkariChargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffAkariChargeParticle* part;

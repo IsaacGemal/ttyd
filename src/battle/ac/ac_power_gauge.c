@@ -35,17 +35,13 @@ typedef struct PowerGaugeDecWork {
 
 // optimize_for_size: the original saves r28-r31 with `stmw`; the default model uses individual saves.
 #pragma optimize_for_size on
-// NONMATCHING (98.26%): MWCC rematerialises `dec` instead of giving it a register. The original keeps
-// work=r29, autoCommand=r30, dec (work+0x1F4C)=r31 and disp (work+0x1F20)=r28; ours folds dec into disp
-// (`0x2C(r31)`). Deriving dec from `work` folds it into the work base (`0x1F4C(r29)`). Exhaustive tries that
-// did not move it: declaration/assignment order permutations (tools/perm_decls.py); opt_propagation/
-// opt_common_subs/opt_lifetimes off (alone and combined); -O2/-O3/-O4 with p/s; GC 1.3-2.7; const/register/
-// volatile/restrict; a local disp+dec overlay struct; member-array casts; a local work copy; inline helpers
-// taking `dec` (inlining removes the value use). The only shape that gets MWCC to materialise dec is a
-// non-inlined call with `dec` as an argument (proved with a minimal repro), which the original does not have.
+// NONMATCHING (98.85%): register allocation matches, but MWCC's scheduler hoists `lwz r3, dat_80421588` in
+// case 0 and `lwz r4, 0x8(r31)` before intplGetValue's `lfs` pair (same near-miss as ac_power_gauge_lv).
+// The `ac` intermediate keeps dec=r31/disp=r28 apart; the int->float magic stays a local `@362` (.rodata:0x8).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)((u8*)disp + 0x2C);
+    BattleActions* ac = &work->actionCommands;
+    PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
+    BattleACDispParams* disp = &ac->dispParams;
     s32 autoCommand = 0;
 
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {

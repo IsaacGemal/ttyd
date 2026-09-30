@@ -77,7 +77,15 @@ void effKemuri8N64SetCamId(EffectEntry* entry, s32 camId) {
 
 // NONMATCHING (99.18%): instruction sequence and integer registers match; the ten callee-saved FP
 // registers are rotated (original scale f31, constants f23-f30, params f26/f27/f22; ours scale f24,
-// constants f25-f31/f23, params f28/f23/f22).
+// constants f25-f31/f23, params f28/f23/f22). The compiler-generated int->double magic always takes
+// f31 here, where the original gives it f29 and puts the (loop-longest-lived) scale in f31. Tried
+// without effect: declaration order (all permutations), float literals instead of the externs (whole
+// function and per constant), static-const definitions, per-constant and shared named temporaries,
+// integer and float temps for the angle conversion, an angle helper, recomputing angle, loop forms
+// (while/p++/data[i]), position via a Vec, fusing the loop init, wrapping the init in for(i<1;i++),
+// moving the angle computation or scale assignment, MWCC 1.3.2/2.0/2.5/2.6/2.7, and the
+// opt_common_subs/opt_propagation/global_optimizer/opt_lifetimes/defer_codegen/pool_data/
+// optimize_for_size/fp_contract pragmas.
 EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effKemuri8Particle* data;

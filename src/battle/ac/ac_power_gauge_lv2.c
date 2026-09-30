@@ -18,7 +18,9 @@ const Vec vec3_803001c0[5] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
 };
-const f64 double_to_int_80300200 = 4503601774854144.0;
+// The int->float magic double (0x4330000080000000) is the compiler's own pool entry at
+// 0x80300200; naming it in the source duplicates it and the function then relocates to the
+// anonymous @NNN instead of the target's double_to_int_80300200. Leave it to the pool.
 
 // --- .sdata literals of this unit ---
 // _power_table is local to this unit in the original; _power_table2 is global. They are non-const,
@@ -27,7 +29,14 @@ static s32 _power_table[7] = {0x12C, 0xC8, 0x96, 0x64, 0x50, 0x3C, 0x28};
 s32 _power_table2[7] = {0x64, 0x64, 0x64, 0x64, 0x6E, 0x78, 0x82};
 
 // --- .sdata2 literals ---
-extern const s32 dat_80421c20;
+#ifdef MUST_MATCH
+// Match-only: MWCC hoists a load of a `const` global above the surrounding stores, changing
+// the register allocation; a non-const definition keeps the load where the target has it.
+// __declspec keeps it in .sdata2 so the unit's data still matches.
+__declspec(section ".sdata2") s32 dat_80421c20 = -1;
+#else
+const s32 dat_80421c20 = -1;
+#endif
 extern const f32 float_neg200_80421c24;
 extern const f32 float_25_80421c28;
 extern const f32 float_1_80421c2c;
@@ -56,9 +65,6 @@ typedef struct PowerGaugeLv2DecWork {
 
 static void actionCommandDisp(f32, f32);
 
-// NONMATCHING (98.44%): `BattleActionCommandGetDifficulty` returns s8 in the header, so the
-// assignment emits `extsb r31, r3`; the original references the named double_to_int_80300200
-// instead of an anonymous @NNN; and a few scheduler/register choices differ.
 s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     s32 difficulty;
     PowerGaugeLv2DecWork* dec;
@@ -70,7 +76,13 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
 
     dec = (PowerGaugeLv2DecWork*)((u8*)work + 0x1F4C);
     disp = &work->actionCommands.dispParams;
+#ifdef MUST_MATCH
+    // Match-only: the callee really returns 4 bytes (no extsb in the original); the `s8` header
+    // would sign-extend the `slwi r0, r31, 2` index.
+    difficulty = ((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work);
+#else
     difficulty = BattleActionCommandGetDifficulty(work);
+#endif
     autoCommand = 0;
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;
@@ -94,14 +106,21 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
             work->actionCommands.result = 1;
             dec->frameLimit = sysMsec2Frame(0x1B58);
             dec->gaugePercent = float_0_80421c44;
-            dec->field_0x10 = (f32)*(s32*)((u8*)work + 0x1CCC) * float_0p01_80421c48;
-            dec->field_0x14 = (f32)*(s32*)((u8*)work + 0x1CD0) * float_0p01_80421c48;
+#ifdef MUST_MATCH
+            // Match-only: the constant-first form is what makes the magic double land in f1
+            // and 0.01f in f2 (the natural value-first form swaps them).
+            dec->field_0x10 = float_0p01_80421c48 * (f32)*(s32*)&work->actionCommands.field_34[8];
+            dec->field_0x14 = float_0p01_80421c48 * (f32)*(s32*)&work->actionCommands.field_34[0xC];
+#else
+            dec->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[8] * float_0p01_80421c48;
+            dec->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0xC] * float_0p01_80421c48;
+#endif
             dec->flag = 0;
             dec->flag2 = 0;
             dec->button = 0x100;
             sysMsec2Frame(0x3E8);
             for (i = 0; i < 3; i++) {
-                dec->timing[i] = (s16)(irand(sysMsec2Frame(0xFA)) + (i + 1) * sysMsec2Frame(0x3E8));
+                dec->timing[i] = (s16)(irand(sysMsec2Frame(0xFA)) + (i * 2 + 1) * sysMsec2Frame(0x3E8));
             }
             break;
         case 0x63:
@@ -115,7 +134,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                 }
                 else {
                     work->actionCommands.outputParams[0] =
-                        (s32)irand(*(s32*)((u8*)work + 0x1CD4) - 1) + 1;
+                        (s32)irand(*(s32*)&work->actionCommands.field_34[0x10] - 1) + 1;
                     work->actionCommands.field_0x8 = 0x1E;
                 }
                 work->actionCommands.mAcState = 0x3E9;
@@ -127,7 +146,7 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
         case 0x3E8:
             dec->frame++;
             if (dec->frame > dec->frameLimit) {
-                if (*(s32*)((u8*)work + 0x1CE8) < *(s32*)((u8*)work + 0x1CD8)) {
+                if (work->actionCommands.outputParams[0] < *(s32*)&work->actionCommands.field_34[0x14]) {
                     work->actionCommands.result = 0;
                     work->actionCommands.result &= ~2;
                 }
@@ -173,24 +192,35 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
                 else {
                     dec->gaugePercent -= dec->field_0x14;
                 }
+#ifdef MUST_MATCH
+                {
+                    // Match-only: the volatile read forces the reload into f1 the target has;
+                    // the natural form reuses f0 and swaps the compare operands.
+                    f32 g = *(volatile f32*)&dec->gaugePercent;
+                    if (g <= float_0_80421c44) {
+                        dec->gaugePercent = float_0_80421c44;
+                    }
+                }
+#else
                 if (dec->gaugePercent <= float_0_80421c44) {
                     dec->gaugePercent = float_0_80421c44;
                 }
+#endif
             }
             BattleAcGaugeSeUpdate(dec->gaugePercent);
             work->actionCommands.outputParams[0] =
-                (s32)(dec->gaugePercent * (f32)*(s32*)((u8*)work + 0x1CD4) / float_100_80421c30);
-            if (work->actionCommands.outputParams[0] >= *(s32*)((u8*)work + 0x1CD4)) {
-                work->actionCommands.outputParams[0] = *(s32*)((u8*)work + 0x1CD4) - 1;
+                (s32)(dec->gaugePercent * (f32)*(s32*)&work->actionCommands.field_34[0x10] / float_100_80421c30);
+            if (work->actionCommands.outputParams[0] >= *(s32*)&work->actionCommands.field_34[0x10]) {
+                work->actionCommands.outputParams[0] = *(s32*)&work->actionCommands.field_34[0x10] - 1;
             }
-            if (!(*(u32*)((u8*)work + 0x1CC4) & 1) && dec->gaugePercent >= float_100_80421c30) {
+            if (!(*(u32*)&work->actionCommands.field_34[0] & 1) && dec->gaugePercent >= float_100_80421c30) {
                 work->actionCommands.outputParams[0]++;
             }
             break;
         case 0x3E9:
             work->actionCommands.field_0x8--;
             if (work->actionCommands.field_0x8 < 0) {
-                if (work->actionCommands.outputParams[0] >= *(s32*)((u8*)work + 0x1CD8)) {
+                if (work->actionCommands.outputParams[0] >= *(s32*)&work->actionCommands.field_34[0x14]) {
                     work->actionCommands.result = 2;
                     work->actionCommands.mResultCount++;
                 }
@@ -382,7 +412,6 @@ static void actionCommandDisp(f32 x, f32 y) {
 }
 
 // --- .sdata2 definitions ---
-const s32 dat_80421c20 = -1;
 const f32 float_neg200_80421c24 = -200.0f;
 const f32 float_25_80421c28 = 25.0f;
 const f32 float_1_80421c2c = 1.0f;

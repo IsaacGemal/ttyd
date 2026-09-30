@@ -10,6 +10,7 @@
 #include "pmario_sound.h"
 #include "system.h"
 #include <stdlib.h>
+#include "matching.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
@@ -30,9 +31,18 @@ extern const u32 dat_80420f14;
 
 // .rodata
 const Vec vec3_802fe3c0 = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// The non-const forms stop MWCC hoisting the loop-invariant cc/d8/e4 field loads out of the inner loop
+// (with const it preloads them into r23-r30 and the whole function's allocation shifts); the section
+// declspec keeps them in .rodata so the unit's section layout is unchanged.
+__declspec(section ".rodata") Vec vec3_802fe3cc = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802fe3cc = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
+#endif
 const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
 const f64 double_to_int_802fe3f8 = 4503601774854144.0;
 const f64 double_to_int_mask_802fe400 = 4503599627370496.0;
@@ -81,23 +91,25 @@ static inline Vec getStageClearCamPos(void) {
 	return temp;
 }
 
-// NONMATCHING (81.04%): frame is 0x270 vs 0x230 and MWCC preloads the loop-invariant camPos/camUp/target Vec
-// fields into r23-r30 (the original spills them to the stack temp at r1+0x10), spilling f24/f25 and diverging
-// in register allocation throughout.
+#pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
+// NONMATCHING (94.35%): the anonymous int-to-double pool double (0x4330000080000000) makes Disp's base+offset
+// `lfd`s point at 0x58/0x68 instead of 0x38/0x30 and colours the r/f registers differently; frame, Vec copies,
+// matrices and GX state match. See REPORT.md for the full diff.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
 	CameraEntry* cam;
 	CameraEntry* cam2;
-	s32 type = data->type;
-	s32 field1C = data->field_0x1C;
-	u32 shadow;
+	s32 type;
+	s32 field1C;
+	s32 shadow;
 	f32 scale;
-	f32 f29;
-	f32 f28;
-	f32 f31;
-	f32 f27;
 	f32 f26;
+	f32 f27;
+	f32 f28;
+	f32 f29;
+	f32 f31;
+	GXTexObj tex;
 	f32 proj[7];
 	f32 viewport[6];
 	Mtx trans;
@@ -105,15 +117,16 @@ void effStageClearDisp(CameraId camId, void* param) {
 	Mtx mtx;
 	Mtx persp;
 	Mtx lookAt;
-	GXTexObj tex;
 	s32 i, j;
 
 	cam = camGetPtr(camId);
 	scale = float_1p7_80420f1c * data->scale;
 	scale = float_0p9_80420f18 * scale;
+	field1C = data->field_0x1C;
 	if ((u32)gp->language != 0) {
 		scale = scale * float_0p6_80420f20;
 	}
+	type = data->type;
 	GXGetProjectionv(proj);
 	GXGetViewportv(viewport);
 	cam2 = camGetPtr(CAMERA_2D);
@@ -203,7 +216,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 					GXSetTevOp(0, 3);
 				}
 			}
-			PSMTXTrans(trans, work->x + f27, work->y + f26, float_0_80420f28);
+			PSMTXTrans(trans, work->x + f27, work->y + f26, MATCH_F32(float_0_80420f28));
 			PSMTXScale(scaleMtx, work->scale, work->scale, work->scale);
 			PSMTXConcat(mtx, trans, trans);
 			PSMTXConcat(trans, scaleMtx, trans);
@@ -221,18 +234,18 @@ void effStageClearDisp(CameraId camId, void* param) {
 				C_MTXLookAt(lookAt, &camPos, &camUp, &target);
 				PSMTXConcat(persp, lookAt, persp);
 				PSMTXConcat(persp, trans, trans);
-				PSMTXTrans(scaleMtx, (f32)-field1C, float_0_80420f28, float_0_80420f28);
+				PSMTXTrans(scaleMtx, (f32)-field1C, MATCH_F32(float_0_80420f28), MATCH_F32(float_0_80420f28));
 				PSMTXConcat(trans, scaleMtx, trans);
 				GXLoadTexMtxImm(trans, 0x1E, 1);
 				GXBegin(0x80, 0, 4);
-				GXPosition3f32(f29, f28, float_0_80420f28);
-				GXTexCoord2f32(float_0_80420f28, float_0_80420f28);
-				GXPosition3f32(f28, f28, float_0_80420f28);
-				GXTexCoord2f32(float_1_80420f2c, float_0_80420f28);
-				GXPosition3f32(f28, f29, float_0_80420f28);
+				GXPosition3f32(f29, f28, MATCH_F32(float_0_80420f28));
+				GXTexCoord2f32(MATCH_F32(float_0_80420f28), MATCH_F32(float_0_80420f28));
+				GXPosition3f32(f28, f28, MATCH_F32(float_0_80420f28));
+				GXTexCoord2f32(float_1_80420f2c, MATCH_F32(float_0_80420f28));
+				GXPosition3f32(f28, f29, MATCH_F32(float_0_80420f28));
 				GXTexCoord2f32(float_1_80420f2c, float_1_80420f2c);
-				GXPosition3f32(f29, f29, float_0_80420f28);
-				GXTexCoord2f32(float_0_80420f28, float_1_80420f2c);
+				GXPosition3f32(f29, f29, MATCH_F32(float_0_80420f28));
+				GXTexCoord2f32(MATCH_F32(float_0_80420f28), float_1_80420f2c);
 			}
 		}
 	}
@@ -240,6 +253,8 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetProjectionv(proj);
 	GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
 }
+
+#pragma opt_common_subs reset
 
 static inline Vec initializeStageClearVec(Vec* input) {
 	Vec temp = vec3_802fe3c0;

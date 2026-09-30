@@ -29,8 +29,6 @@ u8 poyon_scale[40] = {
 GXColor unk_80423308;
 const GXColor dat_804212b0 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-// NONMATCHING (94.20%): work pointer lands in r4 instead of r5 (swapped with type_tbl); the 0x28/0x14
-// float branches use f0/f1 swapped.
 EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	effMiniGameWork* data;
@@ -65,65 +63,72 @@ EffectEntry* effMiniGameEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->field_0x1C = 0.0f;
 	data->field_0x28 = 0;
 	data->field_0x2C = 0;
-	for (i = 1; i < entry->count; i++) {
-		effMiniGameWork* work = &data[i];
-
-		work->field_0x30 = type_tbl[type][i - 1];
-		work->field_0x1C = 0.0f;
-		work->field_0x34 = 0xFF;
-		switch (work->field_0x30) {
+	data++;
+	for (i = 1; i < entry->count; i++, data++) {
+		data->field_0x30 = type_tbl[type][i - 1];
+		data->field_0x1C = 0.0f;
+		data->field_0x34 = 0xFF;
+		switch (data->field_0x30) {
 		case 0:
-			work->field_0x04 = 0.0f;
-			work->field_0x28 = (i - 1) * gp->framerate;
-			work->field_0x08 = 0.0f;
-			work->field_0x0C = 0.0f;
-			work->field_0x14 = 0.0f;
-			work->field_0x10 = 0.0f;
-			work->field_0x18 = 0.0f;
-			work->field_0x2C = 0;
-			work->field_0x34 = 0;
+			data->field_0x04 = 0.0f;
+			data->field_0x28 = (i - 1) * gp->framerate;
+			data->field_0x08 = 0.0f;
+			data->field_0x0C = 0.0f;
+			data->field_0x14 = 0.0f;
+			data->field_0x10 = 0.0f;
+			data->field_0x18 = 0.0f;
+			data->field_0x2C = 0;
+			data->field_0x34 = 0;
 			break;
 		case 0x1E:
 		case 0x28:
-			if (work->field_0x30 == 0x28) {
-				work->field_0x04 =
-					(f32)(i - 1) * 26.0f - (f32)(entry->count - 1) * 26.0f * 0.5f;
-				work->field_0x28 = (i - 1) * 10;
-				work->field_0x30 = 50;
+// Yoda comparison: the natural `data->field_0x30 == 0x28` makes mwcc reload the field before the
+// test; the original keeps the switch value in r3. The count terms below are written as
+// `* 26.0f / 2.0f` rather than `* 26.0f * 0.5f`, which keeps the product as the first fmuls operand
+// (same idiom as effMiniGameMain).
+#ifdef MUST_MATCH
+			if (0x28 == data->field_0x30) {
+#else
+			if (data->field_0x30 == 0x28) {
+#endif
+				data->field_0x04 =
+					(f32)(i - 1) * 26.0f - (f32)(entry->count - 1) * 26.0f / 2.0f;
+				data->field_0x28 = (i - 1) * 10;
+				data->field_0x30 = 50;
 			} else {
-				work->field_0x04 = 0.0f;
-				work->field_0x28 = (i - 1) * gp->framerate;
+				data->field_0x04 = 0.0f;
+				data->field_0x28 = (i - 1) * gp->framerate;
 			}
-			work->field_0x08 = 500.0f;
-			work->field_0x0C = 0.0f;
-			work->field_0x14 = 1.0f;
-			work->field_0x10 = 1.0f;
-			work->field_0x18 = 0.0f;
-			work->field_0x2C = 0;
-			work->field_0x20 = 0.0f;
-			work->field_0x24 = 1.0f;
+			data->field_0x08 = 500.0f;
+			data->field_0x0C = 0.0f;
+			data->field_0x14 = 1.0f;
+			data->field_0x10 = 1.0f;
+			data->field_0x18 = 0.0f;
+			data->field_0x2C = 0;
+			data->field_0x20 = 0.0f;
+			data->field_0x24 = 1.0f;
 			break;
 		case 0x0A:
 		case 0x14:
-			work->field_0x04 = 1000.0f;
-			work->field_0x08 = 0.0f;
-			work->field_0x0C = 0.0f;
-			work->field_0x14 = 1.0f;
-			work->field_0x10 = 1.0f;
-			work->field_0x18 = 0.0f;
-			if (work->field_0x30 == 0x0A) {
-				work->field_0x28 = (i - 1) * 10;
+			data->field_0x04 = 1000.0f;
+			data->field_0x08 = 0.0f;
+			data->field_0x0C = 0.0f;
+			data->field_0x14 = 1.0f;
+			data->field_0x10 = 1.0f;
+			data->field_0x18 = 0.0f;
+			if (data->field_0x30 == 0x0A) {
+				data->field_0x28 = (i - 1) * 10;
 			} else {
-				work->field_0x28 = gp->framerate * 3;
-				work->field_0x14 = 0.0f;
-				work->field_0x10 = 0.0f;
-				work->field_0x04 =
-					(f32)(i - 3) * 26.0f - (f32)(entry->count - 3) * 26.0f * 0.5f;
-				work->field_0x34 = 0;
+				data->field_0x28 = gp->framerate * 3;
+				data->field_0x14 = 0.0f;
+				data->field_0x10 = 0.0f;
+				data->field_0x04 =
+					(f32)(i - 3) * 26.0f - (f32)(entry->count - 3) * 26.0f / 2.0f;
+				data->field_0x34 = 0;
 			}
-			work->field_0x2C = 0;
-			work->field_0x20 = 0.0f;
-			work->field_0x24 = 1.0f;
+			data->field_0x2C = 0;
+			data->field_0x20 = 0.0f;
+			data->field_0x24 = 1.0f;
 			break;
 		}
 	}

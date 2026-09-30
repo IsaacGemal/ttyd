@@ -36,22 +36,43 @@ void arcDelete(s32 id) {
 }
 
 
-// NONMATCHING (87.13%): 3 instructions differ, 3 missing, 1 extra, plus register differences.
+// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
+void arcEntry(s32 id, void* data, u32 size) {
+
+}
+
 void* arcOpen(const char* filename, void** addr, u32* length) {
 	ARCFileInfo info;
-	void* startAddr;
+#ifdef MUST_MATCH
+	// MUST_MATCH: without a named pointer MWCC rematerializes &info at each call instead of
+	// caching it in one register (the target computes it once before the loop).
+	ARCFileInfo* infoPtr = &info;
+#endif
 	int i;
 
 	for (i = 0; i < 4; i++) {
+#ifdef MUST_MATCH
+		if ((work[i].flags & 1) && ARCOpen(&work[i].handle, filename, infoPtr)) {
+			void* startAddr = ARCGetStartAddrInMem(infoPtr);
+#else
 		if ((work[i].flags & 1) && ARCOpen(&work[i].handle, filename, &info)) {
-			startAddr = ARCGetStartAddrInMem(&info);
+			void* startAddr = ARCGetStartAddrInMem(&info);
+#endif
 			if (addr) {
 				*addr = startAddr;
 			}
 			if (length) {
+#ifdef MUST_MATCH
+				*length = ARCGetLength(infoPtr);
+#else
 				*length = ARCGetLength(&info);
+#endif
 			}
+#ifdef MUST_MATCH
+			ARCClose(infoPtr);
+#else
 			ARCClose(&info);
+#endif
 			return startAddr;
 		}
 	}
@@ -62,9 +83,4 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 		*length = 0;
 	}
 	return NULL;
-}
-
-// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
-void arcEntry(s32 id, void* data, u32 size) {
-
 }

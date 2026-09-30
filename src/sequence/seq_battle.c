@@ -72,8 +72,15 @@ void seq_battleExit(SequenceWork* work) {
     battle_exit();
 }
 
-// NONMATCHING (95.83%): `work` holds r31 instead of r30 and the .rodata base is the
-// section symbol instead of vec3_802c4820; the rest is schedule/allocation noise.
+// Every instruction matches except the six `addi rX, r31, off` immediates that name the pool
+// strings. MWCC pools literals in first-use order, and seq_battleMain reaches the four "bti_0N"
+// bmap names (case 3) after the two battle/audience/... names (case 1). The target's .rodata has
+// bti_01..04 (0x14..0x2C) before audience_normal/luigi (0x34/0x58); ours has the audience pair
+// first (0x14/0x38) and the bti names at 0x5C. That order is fixed during pool emission, so it
+// can only be moved by an emitter defined before seq_battleMain (an unused static function does
+// it), which is outside this function. The do-while, the switch(type) (which gives the `bge`/`b`
+// shape) and the function-scope fbat/case-2 store are what got it to 99.98%.
+// NONMATCHING (99.98%): .rodata string-pool order only; all instructions match.
 void seq_battleMain(SequenceWork* work) {
     FieldBattleData* fbat;
     s32 mode;
@@ -118,7 +125,8 @@ void seq_battleMain(SequenceWork* work) {
                     }
                     break;
             }
-            *(u32*)((u8*)fbatGetPointer() + 0x570) = 0;
+            fbat = fbatGetPointer();
+            *(u32*)fbat->field_570 = 0;
             work->state++;
             // fall through
 
@@ -126,44 +134,53 @@ void seq_battleMain(SequenceWork* work) {
             {
                 u8* setup;
                 PouchData* pouch;
-                BOOL loadMap;
+                BOOL skip;
 
                 fbat = fbatGetPointer();
                 setup = *(u8**)((u8*)fbat->target + 0x230);
                 pouch = pouchGetPtr();
 
-                loadMap = TRUE;
-                if (fbat->firstStrike.enabled != 0) {
-                    s32 type = (s32)fbat->firstStrike.type;
-                    if (type < 3) {
-                        if (type >= 1) {
-                            if (fbat->firstStrike.field_0x4 != 0) {
-                                loadMap = FALSE;
+                do {
+                    if (fbat->firstStrike.enabled != 0) {
+                        s32 type = (s32)fbat->firstStrike.type;
+                        BOOL loadMap = TRUE;
+                        switch (type) {
+                            case 1:
+                            case 2:
+                                if (fbat->firstStrike.field_0x4 != 0) {
+                                    loadMap = FALSE;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        if (loadMap == 0) {
+                            (*(s32*)fbat->field_570)++;
+                            if (*(s32*)fbat->field_570 < 0xC8) {
+                                skip = TRUE;
+                                break;
                             }
                         }
                     }
-                    if (loadMap == 0) {
-                        (*(s32*)fbat->field_570)++;
-                        if (*(s32*)fbat->field_570 < 0xC8) {
+                    switch (pouch->rank) {
+                        case 0:
+                            bmapLoad("bti_01", *(char**)(setup + 0x4));
                             break;
-                        }
+                        case 1:
+                            bmapLoad("bti_02", *(char**)(setup + 0x4));
+                            break;
+                        case 2:
+                            bmapLoad("bti_03", *(char**)(setup + 0x4));
+                            break;
+                        case 3:
+                        default:
+                            bmapLoad("bti_04", *(char**)(setup + 0x4));
+                            break;
                     }
-                }
-
-                switch (pouch->rank) {
-                    case 0:
-                        bmapLoad("bti_01", *(char**)(setup + 0x4));
-                        break;
-                    case 1:
-                        bmapLoad("bti_02", *(char**)(setup + 0x4));
-                        break;
-                    case 2:
-                        bmapLoad("bti_03", *(char**)(setup + 0x4));
-                        break;
-                    case 3:
-                    default:
-                        bmapLoad("bti_04", *(char**)(setup + 0x4));
-                        break;
+                    skip = FALSE;
+                } while (0);
+                if (skip) {
+                    break;
                 }
             }
             work->state++;

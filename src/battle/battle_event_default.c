@@ -167,17 +167,25 @@ USER_FUNC(_get_heart_suitoru_point) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.10%): body is identical except the two argument
-// loads are emitted in the opposite order (target loads args[0] into r4 then
-// args[1] into r30; our build hoists the callee-saved args[1] load first).
+// MUST_MATCH: reading args[0] through a volatile pointer forces MWCC to emit the
+// args[0] load before the callee-saved args[1] load, as the original does.
+// event->args is plain s32*, nothing here is actually volatile.
 USER_FUNC(_get_flower_suitoru_point) {
     BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit;
     s32* args = event->args;
-    s32 arg1 = args[1];
+    s32 arg0;
+    s32 arg1;
     s32 value;
 
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, args[0]));
+#ifdef MUST_MATCH
+    arg0 = *(volatile s32*)&args[0];
+#else
+    arg0 = args[0];
+#endif
+    arg1 = args[1];
+
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg0));
     value = 0;
     if (unit) {
         value = unit->badgesEquipped.FpDrain;

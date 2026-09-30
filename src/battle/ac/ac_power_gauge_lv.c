@@ -22,12 +22,23 @@ const Vec vec3_802fea38[7] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
 };
-const f64 double_to_int_802fea90 = 4503601774854144.0;
+
+// The original's 2^52 double at 0x802fea90 is the int->float conversion magic MWCC generates for the
+// `(f32)*(s32*)...` compares below. Defining it as a named object here makes MWCC emit a second
+// anonymous pool entry (an extra 8 bytes that shifts the rest of .rodata), so it is left to the
+// compiler; the anonymous entry lands at the same offset with the same bytes.
 
 // --- .sdata2 literals of this unit (offsets in REPORT.md) ---
-// Declared here and defined at the bottom so the compiler emits a reference to the named symbol
-// instead of folding the value into its own literal pool.
-extern const s32 dat_804215d0;
+// The float constants are declared here and defined at the bottom so the compiler emits a reference to
+// the named symbol instead of folding the value into its own literal pool.
+#ifdef MUST_MATCH
+// A `const` object here lets MWCC hoist this function's `lwz r6, dat` above the disp stores; the
+// original schedules the load at its store. Non-const defeats the alias analysis, and the section
+// directive keeps it in .sdata2 where the original has it.
+__declspec(section ".sdata2") s32 dat_804215d0 = -1;
+#else
+const s32 dat_804215d0 = -1;
+#endif
 extern const f32 float_neg200_804215d4;
 extern const f32 float_25_804215d8;
 extern const f32 float_1_804215dc;
@@ -189,12 +200,20 @@ s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
 // optimize_for_size: the original main saves r29-r31 with `stmw`; the size model reproduces its
 // prologue/register choice for the state machine. The rest of the file does not need it.
 #pragma optimize_for_size on
-// NONMATCHING (96.38%): register allocation only. The original keeps work=r30, dec=r31, disp=r29;
-// mwcc folds dec (and sometimes disp) into the BattleWork base instead of materialising them.
-// All logic, switch tree, thresholds and the `result &= ~2` bit clear match.
+// Matched. MWCC folds dec (and disp) into the BattleWork base when both are derived directly from
+// `work`; the MUST_MATCH `ac` intermediate below keeps work=r30, dec=r31 and disp=r29 as the original.
 s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
+#ifdef MUST_MATCH
+    // MWCC folds dec (and disp) into the BattleWork base when both are derived directly from `work`;
+    // deriving both from the `ac` intermediate keeps work, dec and disp in their own registers, as the
+    // original does (same fix as battleAcMain_CraneTiming).
+    BattleActions* ac = &work->actionCommands;
+    PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)&ac->field_0x2BC[0];
+    BattleACDispParams* disp = &ac->dispParams;
+#else
     PowerGaugeLvDecWork* dec = (PowerGaugeLvDecWork*)((u8*)work + 0x1f4c);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
 
     switch (work->actionCommands.mAcState) {
     case 0x63:
@@ -313,7 +332,6 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
 #pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
-const s32 dat_804215d0 = -1;
 const f32 float_neg200_804215d4 = -200.0f;
 const f32 float_25_804215d8 = 25.0f;
 const f32 float_1_804215dc = 1.0f;

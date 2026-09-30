@@ -2921,3 +2921,11 @@ Linked `eff_kemuri3_n64`, `eff_energy`, `eff_rothammer_fail_n64`, `ac_timing_wid
 - `.sbss2` pairs with `#pragma section ".sdata" ".sbss2"`, which captures every zero-initialised global after it: place the block after the file's own `.sbss` globals (`evt_twoddisp`'s `twodPtr`/`twodID`). A `gap_NN_..._sbss2` is one more object of the same type, declared first. A `gap_NN_..._data` after a script table is `#pragma explicit_zero_data on` + `__declspec(section ".data") u32 gap = 0;` at the end of the file; a GXColor constant (`dat_xxx`) is `const GXColor` defined after the code.
 - **Named constant vs schedule.** Units where the original loads `0.0f` (and other constants) by name from the pool: a literal in the code gives the original's schedule but adds an anonymous pool entry; the named constant gives the right pool but the compiler hoists it into a callee-saved FPR (frame +0x10) or reorders the loads: `eff_break` Disp 93-94%, `eff_mist2` Disp 91%, `eff_magic3` Entry 99.84%, `eff_peach_dust` Disp 99.73%, `eff_snowfall` `cam_clip_chk` 99.90% (`/ 2.0f` becomes a `*0.5` literal; named `float_0p5` leaves a 3-instruction register swap). `MATCH_F32` around the named zero is 94.58 for `eff_break`. These are queued for the permuter on the tower with the named-constant variant as the base.
 - `eff_toge_flush`: `0.9f` pools before 6.28/360 whatever the expression order (the target has it after); parked. `unit_mario`: reordering the functions drops one to 99.85% and the unit has 5 KB of tables; parked.
+
+## Wave 36: near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 dol near-miss files (closest function at 80% or better, units with one or two open functions), 15:25-16:52,
+from main d6017e6. **26 of 48 reached 100%, 18 improved, 4 unchanged, 0 worse.** Fixed at collection: the evt_item
+agent changed an existing header line (itemEntry's third parameter to u16) that itemdrv.c defines as s32, breaking
+the build, so the header keeps main's line; eff_batten's Disp had extern'd the vertex constants the unit pools, and
+with main's literals it now reaches 100%.

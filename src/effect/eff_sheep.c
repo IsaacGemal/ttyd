@@ -219,31 +219,28 @@ void effSheepMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (98.21%): only the loop preheader's `li r30,1` (i) and `addi r31,r31,0x34` (p) are
-// scheduled in the opposite order; every other instruction matches.
+// 100%: `data++; for (i = 1; i < effect->count; i++, data++)` (the effStarPointDisp shape)
+// makes MWCC schedule the preheader as `li r30,1` then `addi r31,r31,0x34`, matching the original;
+// with a separate pointer (`p = &data[1]; while (...)`) the scheduler emits the addi first.
 void effSheepDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffSheepWork* data = effect->userdata;
 	Mtx mtxLocal;
 	Mtx mtxScale;
 	Mtx mtxBase;
-	EffSheepWork* p;
 	s32 i;
 
 	PSMTXTrans(mtxBase, data->x, data->y, data->z);
-	i = 1;
-	p = &data[1];
-	while (i < effect->count) {
-		if (p->poseId != -1) {
-			PSMTXTrans(mtxLocal, p->x, p->y, p->z);
-			PSMTXScale(mtxScale, p->scale, p->scale, p->scale);
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->poseId != -1) {
+			PSMTXTrans(mtxLocal, data->x, data->y, data->z);
+			PSMTXScale(mtxScale, data->scale, data->scale, data->scale);
 			PSMTXConcat(mtxLocal, mtxScale, mtxLocal);
 			PSMTXConcat(mtxBase, mtxLocal, mtxLocal);
-			animPoseDrawMtx(p->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(data->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
 		}
-		i++;
-		p++;
 	}
 }

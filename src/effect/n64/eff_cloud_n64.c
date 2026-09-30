@@ -8,6 +8,8 @@
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
 
+const f32 float_0p015625_8041eb98 = 0.015625f;
+const f32 float_0p03125_8041eb9c = 0.03125f;
 extern const f32 float_0_8041eba0;
 
 #define FP_NAN 1
@@ -41,7 +43,7 @@ static inline s32 __fpclassifyf(f32 x) {
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
 static inline f32 sqrtf(f32 x) {
-	if (x > float_0_8041eba0) {
+	if (x > 0.0f) {
 		f64 guess = __frsqrte(x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);
@@ -181,13 +183,17 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// Pool order and one FP register. effCloudDisp is missing from this unit; it is emitted first
-// in the original and seeds the .rodata pool with vec3 then the compiler-generated
-// double_to_int. Without it MWCC pools this function's sqrtf doubles before the generated
-// conversion, so the conversion loads at 0x28(r31) instead of 0x10(r31) and the sqrtf doubles
-// shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The ring-buffer block also colours the current
-// position f2/f3/f4 where the target uses f3/f4/f5 (and dist f5 vs f4).
-// NONMATCHING (99.17%): the pool shift above, plus one FP register in the ring-buffer block.
+// effCloudDisp is missing from this unit; it is emitted first in the original and seeds
+// the .rodata pool with vec3 then the compiler-generated double_to_int (its int->float magic,
+// used by its rand conversions). Without it MWCC pools this function's sqrtf doubles before
+// Main's own int->float conversion, so the conversion loads at 0x28(r31) instead of 0x10(r31)
+// and the three sqrtf doubles shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The other remaining
+// difference is one fcmpu operand order: `dist != 0.0f` makes MWCC emit `fcmpu cr0, f0, f4`
+// where the original has `f4, f0`. Using the `0.0f` literal in both the outer check and the
+// inlined sqrtf, plus declaring the two earlier .sdata2 floats so the pooled 0.0 lands at 0x8,
+// restores the original's FPR allocation in the ring-buffer block (px/py/pz f3/f4/f5, dist
+// accumulator f1, zero f0).
+// NONMATCHING (99.94%): pool order (needs effCloudDisp) and one fcmpu operand order.
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
@@ -229,13 +235,13 @@ void effCloudMain(EffectEntry* effect) {
 	}
 
 	{
-		f32 px = data->field_0x38;
-		f32 py = data->field_0x3C;
-		f32 pz = data->field_0x40;
 		s32 index = data->field_0x2A8 % 30;
 		f32 ox = data->field_0x50[index];
 		f32 oy = data->field_0xC8[index];
 		f32 oz = data->field_0x140[index];
+		f32 px = data->field_0x38;
+		f32 py = data->field_0x3C;
+		f32 pz = data->field_0x40;
 
 		if (px != ox || py != oy || pz != oz) {
 			f32 len = data->field_0x2AC[index];
@@ -258,7 +264,7 @@ void effCloudMain(EffectEntry* effect) {
 			data->field_0x140[index] = pz;
 			data->field_0x1B8[index] = counter;
 			dist = dx * dx + dy * dy + dz * dz;
-			if (dist != float_0_8041eba0) {
+			if (dist != 0.0f) {
 				dist = sqrtf(dist);
 			}
 			data->field_0x2AC[index] = len + dist;

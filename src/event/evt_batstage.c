@@ -40,6 +40,21 @@ typedef struct Blob60 {
 	char b[0x60];
 } Blob60;
 
+typedef struct Blob3 {
+	u16 a;
+	u8 b;
+} Blob3;
+
+typedef struct Blob9 {
+	u32 a;
+	u32 b;
+	u8 c;
+} Blob9;
+
+typedef struct Vec3 {
+	Vec v[3];
+} Vec3;
+
 // .sbss2
 u8 unk_80423030[4];
 u8 gap_10_80423034_sbss2[4];
@@ -118,17 +133,20 @@ s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (81.55%): 18 instructions differ, 16 missing, 17 extra, plus register differences.
+#pragma opt_dead_assignments off // keep the original's r16/r17 assignment in the setup copy block
+// NONMATCHING (95.42%): the four Vec3 copies, the mode switch and the whole light loop match; only the
+// load/register schedule of the copy block differs (original spills pos.x, unitOff1.z/2.y/2.z, all of
+// up and color word0 to 0x108+, ours spills a different subset and starts r18.. at 0x6c not 0x64).
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	BattleWork* bw = _battleWorkPointer;
 	s32* args = event->args;
 	s32 mode;
 	u8 enabled[3];
 	u8 color[3][3];
-	Vec up[3];
-	Vec unitOff[3];
-	Vec target[3];
 	Vec pos[3];
+	Vec target[3];
+	Vec unitOff[3];
+	Vec up[3];
 	char name[3][0x20];
 	s32 i;
 	s32 lightNo;
@@ -137,31 +155,25 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 
 	*(Blob60*)name = *(const Blob60*)dat_802f32f8;
 
-	pos[0] = dat_802f3358[0];
-	pos[1] = dat_802f3358[1];
-	pos[2] = dat_802f3358[2];
-	target[0] = dat_802f337c[0];
-	target[1] = dat_802f337c[1];
-	target[2] = dat_802f337c[2];
-	unitOff[0] = dat_802f33a0[0];
-	unitOff[1] = dat_802f33a0[1];
-	unitOff[2] = dat_802f33a0[2];
-	up[0] = dat_802f33c4[0];
-	up[1] = dat_802f33c4[1];
-	up[2] = dat_802f33c4[2];
+	*(Vec3*)pos = *(const Vec3*)dat_802f3358;
+	*(Vec3*)target = *(const Vec3*)dat_802f337c;
+	*(Vec3*)unitOff = *(const Vec3*)dat_802f33a0;
+	*(Vec3*)up = *(const Vec3*)dat_802f33c4;
+	*(Blob3*)enabled = *(const Blob3*)unk_80423030;
+	*(Blob9*)color = *(const Blob9*)dat_802f33e8;
 
-	memcpy(enabled, unk_80423030, sizeof(enabled));
-	memcpy(color, dat_802f33e8, sizeof(color));
-
-	if (mode == 1) {
+	switch (mode) {
+	case 1:
 		enabled[2] = 1;
 		color[2][0] = 0xff;
 		color[2][1] = 0xff;
 		color[2][2] = 0xff;
-	} else {
+		break;
+	default:
 		enabled[0] = 1;
 		enabled[1] = 1;
 		enabled[2] = 1;
+		break;
 	}
 
 	for (i = 0; i < 3; i++) {
@@ -184,6 +196,7 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	return EVT_RETURN_DONE;
 }
 
+#pragma opt_dead_assignments reset
 s32 evt_batstage_light_set_player_off(EventEntry* event, BOOL isFirstCall) {
 	s32 lightNo;
 

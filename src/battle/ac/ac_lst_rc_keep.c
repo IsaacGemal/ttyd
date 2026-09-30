@@ -57,10 +57,10 @@ char* ac_lstrckeep_iconname[4] = {(char*)str_802F94E0, (char*)str_802F94E8, (cha
 static void actionCommandDisp(f32 x, f32 y, s32 type);
 
 
-// `BattleActionCommandGetDifficulty` is declared `s8`, so MWCC emits `extsb r0, r3` before the `slwi`
-// table index; the original callee is `lbz r3, 0x1cbd(r3); blr` (zero-extending) and the caller does
-// `slwi r0, r3, 2` with no extension, i.e. the return is really `u8`.
-// NONMATCHING (99.52%): one instruction differs (the `extsb` above).
+// `BattleActionCommandGetDifficulty` is declared `s8`, so a plain call makes MWCC emit `extsb r0, r3`
+// before the `slwi` table index; the original callee is `lbz r3, 0x1cbd(r3); blr` (zero-extending) and
+// the caller does `slwi r0, r3, 2` with no extension, i.e. the return is really `u8`. Calling through a
+// function pointer (as ac_stick_keep_left does) suppresses the `extsb`.
 s32 battleAcMain_LstRcKeep(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     LstRcKeepWork* dec = (LstRcKeepWork*)&ac->field_0x2BC[0];
@@ -193,7 +193,12 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
                 s32 flag = 0;
                 if (dec->field_0x04 == 4) {
                     s32 remaining = *(s32*)&ac->field_34[0x14] - cur;
+#ifdef MUST_MATCH
+                    // Match-only: the header says `s8` but the callee returns a zero-extended 4-byte value.
+                    if (remaining <= ac_lstrckeep_ok_frame[((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(work)]) {
+#else
                     if (remaining <= ac_lstrckeep_ok_frame[BattleActionCommandGetDifficulty(work)]) {
+#endif
                         flag = 1;
                     }
                 }

@@ -28,6 +28,10 @@ const Vec vec3_802fd5d0[5] = {
     {0.0f, 0.0f, 0.0f},
 };
 
+// The int->float magic constant (2^52) the original unit emitted into .rodata at +0x40. Declared so the
+// unit's .rodata layout matches; the cast below still uses a compiler-generated pool copy (see NONMATCHING).
+const f64 double_to_int_802fd610 = 4503601774854144.0;
+
 // The seven button masks, used for the "pick a unique button" modes.
 u32 _button_table[7] = {0x100, 0x200, 0x400, 0x800, 0x40, 0x20, 0x10};
 
@@ -48,35 +52,44 @@ typedef struct ButtonDownWork {
 // stmw/lmw, which -O4,p never emits. The file has no per-Object flag in configure.py, so scope the
 // pragma to the two functions that need it.
 #pragma optimize_for_size on
+#pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
+#pragma opt_propagation off // needed: with propagation on limit drops to r29 and iconX/iconY swap FPRs
 
-// NONMATCHING (87.85%): 7 instructions differ, 8 missing, 10 extra, plus register differences.
+// NONMATCHING (95.17%): the int->float conversion's 2^52 constant is emitted as an anonymous pool entry
+// (lis/addi), where the target reuses the named double_to_int_802fd610 at 0x40(r31); the final loop's
+// button/address temporaries are also swapped (button r4 vs the target's r3).
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-    ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
+    ButtonDownWork* bd;
     s32 flags;
-    s32 count = *(s32*)&work->actionCommands.field_34[0x0C];
-    s32 limit;
     s32 i;
-    f32 baseX = x + float_neg200_804204e8;
-    f32 iconX = baseX - float_40_804204ec;
-    f32 iconY = float_70_804204f0 + y;
+    s32 j;
+    s32 limit;
+    f32 baseX = float_neg200_804204e8 + x;
+    f32 iconY;
+    f32 iconX;
     const Vec* vec = vec3_802fd5d0;
-    Vec v;
 
-    limit = count * 3 + 2;
+    iconX = baseX - float_40_804204ec;
+    iconY = float_70_804204f0 + y;
+    limit = *(s32*)&work->actionCommands.field_34[0x0C] * 3 + 2;
+    bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
 
     {
-        Vec t;
-        t = vec[0];
+        Vec t = vec[0];
         t.x = iconX;
         t.y = iconY;
         iconDispGx(&t, 0x10, 0x8F, float_1_804204f4);
     }
 
     iconX += float_16_804204f8;
-    for (i = 1; i < limit; i++) {
-        Vec t;
-        t = vec[1];
+    for (j = 1; j < limit; j++) {
+#ifdef MUST_MATCH
+        // volatile: stops MWCC hoisting the const vec[1] load out of the loop, which the target does not do.
+        Vec t = *(volatile Vec*)&vec[1];
+#else
+        Vec t = vec[1];
+#endif
         t.x = iconX;
         t.y = iconY;
         iconDispGx(&t, 0x10, 0x8E, float_1_804204f4);
@@ -84,8 +97,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     }
 
     {
-        Vec t;
-        t = vec[2];
+        Vec t = vec[2];
         t.x = iconX;
         t.y = iconY;
         iconDispGx(&t, 0x10, 0x90, float_1_804204f4);
@@ -94,23 +106,23 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
     flags = *(s32*)&work->actionCommands.field_34[0x00];
     if (flags & 1) {
         limit = 0;
-        for (i = 0; i < count; i++) {
+        for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
             if (bd->states[i] == 0) {
                 break;
             }
             limit++;
         }
-        if (limit < count) {
+        if (limit < *(s32*)&work->actionCommands.field_34[0x0C]) {
             limit++;
         }
     } else {
-        limit = count;
+        limit = *(s32*)&work->actionCommands.field_34[0x0C];
     }
 
     for (i = 0; i < limit; i++) {
         u32 button = bd->buttons[i];
-        s32 pressed;
-        s32 released;
+        s16 pressed;
+        s16 released;
 
         if (button == 0) {
             continue;
@@ -151,12 +163,12 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
                 break;
         }
         if (bd->states[i] != 0) {
-            v = vec[3];
+            Vec v = vec[3];
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
             iconDispGx(&v, 0x10, pressed, float_1_804204f4);
         } else {
-            v = vec[4];
+            Vec v = vec[4];
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
             iconDispGx(&v, 0x10, released, float_1_804204f4);
