@@ -2406,3 +2406,12 @@ read other agents' workspaces; the next launcher runs each agent under bubblewra
   (reads `flags` at 0xc where our `SND_EMITTER` has it at 0x10; library version difference), iconDispGx `s16`→`u16` (changes
   the dol checksum). Matches: effFallDispInseki (`rad` temp under `MUST_MATCH`), mario_kemuri_landon (`!x` keeps the compare
   order), mapGrpSetOffScreen (locals instead of a nested call), evt_nannpc_move_position2 (declaration order).
+
+- **Pool-literal finisher, second round** (2026-09-30): eff_snowman_n64, eff_onpu_n64, eff_kemuri6_n64, eff_crystal_n64 and
+  eff_rubble_n64 link. A `lbl_*` `.data` pair another unit reaches (`{ -1.0f, 1.0f }` in snowman and onpu) is a
+  `__declspec(section ".data") f32 lbl_...[2]` defined after the unit's other `.data`. The pool order follows first use, and a
+  `C * sin(x)` / `(f32)i * 0.8f` written with a temp (`f32 t = (f32)sin(x); ... C * t`, `f32 k = 0.8f;`, under `MUST_MATCH`)
+  swaps two adjacent pool entries. Left open with one to sixteen differing words: eff_kemuri4 (compare operands of `a5 != 0.0f`
+  keep their register order), eff_kemuri7 (the `field_0x60 == 0.0f` load order), eff_ice_n64 (one `fmuls` operand order),
+  eff_packn_bfire (FP register allocation once the volatile constants become literals), eff_bush (Disp frame size),
+  eff_ice/eff_mizutama/eff_machinegun/evt_snd (event-script data or `.data` objects not written).
