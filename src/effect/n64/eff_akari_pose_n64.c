@@ -1,16 +1,36 @@
 #include "eff/n64/eff_akari_pose_n64.h"
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 
+#include <math.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+
+// Building the zero Vec through this inline (rather than `position = vec3_...;` and then assigning
+// the fields) reproduces the original's schedule: the zero words are materialised first, overwritten
+// in place, then copied to the second Vec.
+static inline Vec akariMakeVec(f32 x, f32 y, f32 z) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_deg2rad_8041e8d0;
 extern const f32 float_0p03125_8041e8d4;
 extern const f32 float_0_8041e8d8;
+extern const f32 float_0p1_8041e8dc;
+extern const f32 float_0p2_8041e8e0;
+extern const f32 float_360_8041e8e4;
+extern const f32 float_6p2832_8041e8e8;
+extern const f32 float_16_8041e8ec;
+extern const f32 float_45_8041e8f0;
+extern const f32 float_1_8041e8f4;
 extern const f32 float_0p5_8041e8f8;
 extern const f32 float_neg1_8041e8fc;
 
@@ -32,11 +52,37 @@ static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
     0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
 };
 
+// .data per-frame scale tables, local to this file in the original.
+static f32 scale_data[24] = {
+    0.9f, 1.0f, 1.0f, 0.9f, 0.85f, 0.8f, 0.75f, 0.7f, 0.65f, 0.6f, 0.55f, 0.5f,
+    0.45f, 0.4f, 0.35f, 0.3f, 0.25f, 0.2f, 0.15f, 0.1f, 0.05f, 0.03f, 0.02f, 0.01f,
+};
+static f32 scale_data2[24] = {
+    0.9f, 1.0f, 1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f, 0.4f, 0.3f, 0.2f, 0.1f,
+    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+};
+
+// .sdata per-frame alpha tables, local to this file in the original.
+static u8 a_data[24] = {
+    0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+};
+static u8 a_data2[24] = {
+    0xFA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
 typedef struct effAkariPosePart {
     u8 pad_0x00[0x4];  // 0x00
     f32 x;             // 0x04
     f32 y;             // 0x08
-    u8 pad_0x0C[0x14]; // 0x0C
+    u8 pad_0x0C[0x4];  // 0x0C
+    f32 vx;            // 0x10
+    f32 vy;            // 0x14
+    f32 field_0x18;    // 0x18
+    f32 field_0x1c;    // 0x1C
     s32 field_0x20;    // 0x20
     f32 field_0x24;    // 0x24
     u8 pad_0x28[0x8];  // 0x28
@@ -100,6 +146,94 @@ EffectEntry* effAkariPoseN64Entry(s32 type, s32 count, s32 lifetime, f32 x, f32 
         part->field_0x20 = (s32)(float_neg1_8041e8fc - seqStep * (f32)(i & 1));
     }
     return effect;
+}
+
+// Only register allocation of the `data` pointer differs. The original coalesces `data` into the loop
+// pointer's callee-saved r28; mwcc (GC/2.6 and 1.3.x both) keeps the pre-loop `data` in caller-saved r6
+// and the loop pointer in r28 (the live range is not split, it is just coloured r6), which also shifts
+// `type`/`i` to r27/r26. The only other diff is that each `if (type == 0)` compiles to `bne else` here vs
+// the target's `beq then; b else` (2 op_mismatch instructions). Every other instruction, GPR and FPR
+// matches, including the sinusoid, the alpha/scale tables and dispCalcZ.
+// NONMATCHING (98.43%): the `data` pointer register (r6 vs r28) and the two `if (type == 0)` branch layouts.
+void effAkariPoseMain(EffectEntry* effect) {
+    effAkariPoseData* data;
+    effAkariPosePart* part;
+    Vec position;
+    Vec position2;
+    s32 type;
+    s32 i;
+    s32 unk2c;
+    f32 velScale;
+    f32 lerpScale;
+    f32 rad;
+    f32 angle;
+
+    data = effect->userdata;
+    position = akariMakeVec(data->x, data->y, data->z);
+    position2 = position;
+    type = data->type;
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->field_0x28 = 0x10;
+    }
+    if (data->field_0x28 < 1000) {
+        data->field_0x28--;
+    }
+    data->field_0x2c++;
+    if (data->field_0x28 < 0) {
+        effDelete(effect);
+        return;
+    }
+    unk2c = data->field_0x2c;
+    if (data->field_0x28 < 0x10) {
+        data->field_0x30 = data->field_0x28 << 4;
+    }
+    part = data->part;
+    if (type == 0) {
+        velScale = float_0p1_8041e8dc;
+        lerpScale = float_0p2_8041e8e0;
+    } else {
+        velScale = float_0p2_8041e8e0;
+        lerpScale = velScale;
+    }
+    for (i = 1; i < effect->count; i++, part++) {
+        part->field_0x20++;
+        if (part->field_0x20 >= max_seq_num[type]) {
+            part->field_0x20 = 0;
+        }
+        if (part->field_0x20 < 0) {
+            continue;
+        }
+        if (part->field_0x20 == 0) {
+            angle = float_360_8041e8e4 * (f32)i / (f32)(effect->count - 1);
+            rad = float_6p2832_8041e8e8 * angle / float_360_8041e8e4;
+            part->x = float_16_8041e8ec * (f32)sin(rad);
+            part->y = float_16_8041e8ec * (f32)cos(rad);
+            part->vx = part->x * velScale;
+            part->vy = part->y * velScale;
+            part->field_0x18 = float_0_8041e8d8;
+            part->field_0x1c = float_0_8041e8d8;
+            part->field_0x24 = -angle - float_45_8041e8f0;
+            part->field_0x34 = float_1_8041e8f4;
+        }
+        if (type == 0) {
+            part->field_0x30 = a_data[part->field_0x20];
+            part->field_0x34 = scale_data[part->field_0x20];
+        } else {
+            part->field_0x30 = a_data2[part->field_0x20];
+            part->field_0x34 = scale_data2[part->field_0x20];
+        }
+        if ((unk2c & 1) == (i & 1)) {
+            part->x += part->vx;
+            part->y += part->vy;
+        } else {
+            part->x += float_0p2_8041e8e0 * part->vx;
+            part->y += float_0p2_8041e8e0 * part->vy;
+        }
+        part->vx += lerpScale * (part->field_0x18 - part->vx);
+        part->vy += lerpScale * (part->field_0x1c - part->vy);
+    }
+    dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effAkariPoseDisp, effect);
 }
 
 #ifdef MUST_MATCH

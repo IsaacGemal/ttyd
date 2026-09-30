@@ -13,5 +13,6 @@ void nokonoko_init(PartyEntry* party);
 void nokonoko_move(PartyEntry* party);
 void nokonoko_use(PartyEntry* party);
 void nokonoko_use_post(PartyEntry* party);
+struct HitEntry* ccwall(PartyEntry* party, s32 flag);
 #include <dolphin/mtx.h>
 s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height);

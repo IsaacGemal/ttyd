@@ -229,7 +229,7 @@ s32 _damage(EventEntry* event) {
     return 2;
 }
 
-void* btlataudGetMoveEventPtr(void) {
+void* btlataudGetMoveEventPtr(s32 unitId) {
     s32 type = BattleAudience_GetPresentItemType();
 
     switch (type) {

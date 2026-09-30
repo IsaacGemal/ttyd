@@ -1,9 +1,11 @@
 #include "eff/n64/eff_kemuri3_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
@@ -21,6 +23,9 @@ extern const f32 float_neg0p08_8041f314;
 extern const f32 float_neg3p9_8041f318;
 extern const f32 float_6p2832_8041f31c;
 extern const f32 float_360_8041f320;
+extern const f32 float_8_8041f2ec;
+extern const f32 float_neg8_8041f2f8;
+extern const u32 dat_8041f2e8;
 
 typedef struct effKemuri3Data {
     s32 type;       // 0x0
@@ -162,5 +167,101 @@ void effKemuri3Main(EffectEntry* effect) {
     }
 }
 #pragma opt_common_subs reset
+
+static inline void kemuri3SetColor(u8 alpha) {
+    GXColor color = *(GXColor*)&dat_8041f2e8;
+    color.a = alpha;
+    GXSetTevColor(1, color);
+}
+
+// Volatile load forces the original's one-load-per-store cadence for the shared
+// .sdata2 vertex constants; plain const loads get CSE'd into FPRs.
+#ifdef MUST_MATCH
+static inline void kemuri3WriteF32(const f32* value) {
+    GXWGFifo.f32 = *(volatile const f32*)value;
+}
+#endif
+
+void effKemuri3Disp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effKemuri3Data* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx mtx;
+    s32 i;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3c, 0, 0x7d);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 0xa, 8, 0xf);
+    GXSetTevAlphaIn(0, 7, 1, 4, 7);
+    effGetTexObjN64(0xf, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xb, 1);
+    GXSetVtxDesc(0xd, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+    GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+
+    for (i = 0; i < effect->count; i++, data++) {
+        if (data->type == 0) {
+            continue;
+        }
+        kemuri3SetColor(data->field_08);
+        PSMTXConcat(cam->view, data->field_30, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+        kemuri3WriteF32(&float_8_8041f2ec);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_8_8041f2ec);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        kemuri3WriteF32(&float_1_8041f2f4);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_8_8041f2ec);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_neg8_8041f2f8);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        kemuri3WriteF32(&float_1_8041f2f4);
+        kemuri3WriteF32(&float_1_8041f2f4);
+        kemuri3WriteF32(&float_neg8_8041f2f8);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_neg8_8041f2f8);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_1_8041f2f4);
+        kemuri3WriteF32(&float_neg8_8041f2f8);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_8_8041f2ec);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        kemuri3WriteF32(&float_0_8041f2f0);
+        kemuri3WriteF32(&float_0_8041f2f0);
+#else
+        GXPosition3f32(float_8_8041f2ec, float_0_8041f2f0, float_8_8041f2ec);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        GXTexCoord2f32(float_1_8041f2f4, float_0_8041f2f0);
+        GXPosition3f32(float_8_8041f2ec, float_0_8041f2f0, float_neg8_8041f2f8);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        GXTexCoord2f32(float_1_8041f2f4, float_1_8041f2f4);
+        GXPosition3f32(float_neg8_8041f2f8, float_0_8041f2f0, float_neg8_8041f2f8);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        GXTexCoord2f32(float_0_8041f2f0, float_1_8041f2f4);
+        GXPosition3f32(float_neg8_8041f2f8, float_0_8041f2f0, float_8_8041f2ec);
+        GXColor4u8(0xff, 0xff, 0xff, 0xff);
+        GXTexCoord2f32(float_0_8041f2f0, float_0_8041f2f0);
+#endif
+    }
+}
 
 const char str_802FA8E4[] = "Kemuri3N64";

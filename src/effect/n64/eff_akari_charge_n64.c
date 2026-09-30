@@ -1,9 +1,13 @@
 #include "eff/n64/eff_akari_charge_n64.h"
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include "math_ext.h"
+#include "system.h"
 
+#include <stdlib.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -14,9 +18,70 @@ extern const f32 float_0p0625_8041e8b0;
 extern const f32 float_1_8041e8b4;
 extern const f32 float_0p0039062_8041e8b8;
 extern const f32 float_0p03125_8041e8bc;
+extern const f32 float_6p2832_8041e8c0;
+extern const f32 float_360_8041e8c4;
+extern const f32 float_1024_8041e8c8;
 
 // .rodata double used for the integer-to-float conversion.
 extern const f64 double_to_int_802fa188;
+
+// .rodata zero vector and the double constants the inlined sqrtf pools after it.
+extern const Vec vec3_802fa178;
+extern const f64 double_0p5_802fa190;
+extern const f64 double_3_802fa198;
+extern const f64 double_0_802fa1a0;
+
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			} else {
+				return FP_INFINITE;
+			}
+			break;
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			} else {
+				return FP_ZERO;
+			}
+			break;
+		default:
+			return FP_NORMAL;
+	}
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+// Inlined MSL sqrtf; the original pools _half/_three/0.0 after vec3_802fa178.
+static inline f32 sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > float_0_8041e8ac) {
+		f64 guess = __frsqrte(x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return NAN;
+	} else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
 
 // .sbss2 scratch GXColors the original builds its TEV colours from.
 extern GXColor unk_80423090;
@@ -110,6 +175,123 @@ EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f3
 	}
 
 	return entry;
+}
+
+// The early work pointer lands in r5 instead of the original's r29, so p = work->particles is computed at
+// the top of the early block rather than at loop setup, and the FP allocator keeps x + dx and the 0.0f
+// constant in f2 rather than f4/f0. Every other instruction, GPR and FPR matches; this is the same mwcc
+// allocator/coalescing difference documented for the other effect units.
+// NONMATCHING (98.73%): early work pointer r5 not r29; x+dx / 0.0f temporaries in f2 not f4/f0.
+void effAkariChargeMain(EffectEntry* effect) {
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+	   local before dispCalcZ; a single local folds the copy away (same idiom as
+	   effAkariSflushMain/effNokotarouMain). */
+	Vec position;
+#endif
+	Vec disp = { 0 };
+	EffAkariChargeParticle* p;
+	s32 i;
+	s32 type;
+	s32 life;
+	s32 counter;
+	f32 x;
+	f32 y;
+	f32 dx;
+	f32 dy;
+
+	{
+		EffAkariChargeWork* work = effect->userdata;
+		p = work->particles;
+
+		disp.x = work->x;
+		disp.y = work->y;
+		disp.z = work->z;
+#ifdef MUST_MATCH
+		position = disp;
+#endif
+
+		type = work->type;
+
+		if (effect->flags & 4) {
+			effect->flags &= ~4;
+			work->field_0x10 = 16;
+		}
+		if (work->field_0x10 < 1000) {
+			work->field_0x10--;
+		}
+		work->field_0x14++;
+
+		if (work->field_0x10 < 0) {
+			effDelete(effect);
+			return;
+		}
+		life = work->field_0x10;
+		counter = work->field_0x14;
+		if (life < 16) {
+			work->field_0x24 = life << 4;
+		}
+		if (counter < 16) {
+			work->field_0x24 = (counter << 4) + 15;
+		}
+
+	}
+
+	for (i = 1; i < effect->count; i += 3, p += 3) {
+		if (p->counter >= p->life) {
+			p->life = rand() % 50 + 20;
+			p->counter = 0;
+			p->angle = (f32)(rand() % 360);
+			p->field_0x4 = float_0_8041e8ac;
+			p->field_0x8 = float_0_8041e8ac;
+		}
+		if (rand() % 100 <= 50) {
+			x = p->field_0x4;
+			y = p->field_0x8;
+			dx = (f32)(rand() % 17 - 8);
+			dy = (f32)(rand() % 17 - 8);
+			p[2] = p[1];
+			p[1] = p[0];
+			p->field_0x4 = x + dx;
+			p->field_0x8 = y + dy;
+			p->angle = angleABf(float_0_8041e8ac, float_0_8041e8ac, dx, dy);
+			if (dx != float_0_8041e8ac || dy != float_0_8041e8ac) {
+				p->scale = sqrtf(dx * dx + dy * dy);
+			} else {
+				p->scale = float_0_8041e8ac;
+			}
+		}
+		p->field_0x24 = (s32)(float_1024_8041e8c8 *
+		                     (f32)sin(float_6p2832_8041e8c0 * (f32)((p->counter * 180) / p->life) /
+		                              float_360_8041e8c4));
+		if (p->field_0x24 > 255) {
+			p->field_0x24 = 255;
+		}
+		p->counter++;
+	}
+
+	{
+		EffAkariChargeWork* work = effect->userdata;
+
+		p = work->particles;
+	}
+	for (i = 1; i < effect->count; i++, p++) {
+		p->index = rand() % 16;
+	}
+
+	if (type == 0) {
+#ifdef MUST_MATCH
+		dispEntry(4, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
+#else
+		dispEntry(4, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
+#endif
+	} else {
+#ifdef MUST_MATCH
+		dispEntry(8, dispCalcZ(&position), 2, effAkariChargeDisp, effect);
+#else
+		dispEntry(8, dispCalcZ(&disp), 2, effAkariChargeDisp, effect);
+#endif
+	}
 }
 
 // The two integer-to-float PSMTXTrans calls use 0.0f literals; naming float_0_8041e8ac there makes mwcc hoist

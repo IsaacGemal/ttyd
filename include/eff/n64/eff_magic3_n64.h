@@ -28,3 +28,4 @@ extern const f32 float_0p7_8041f730;
 extern const f32 float_30_8041f734;
 typedef struct EffectEntry EffectEntry;
 void effMagic3Main(EffectEntry* effect);
+EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z);

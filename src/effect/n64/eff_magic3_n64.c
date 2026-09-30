@@ -2,10 +2,12 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math_ext.h>
+#include <stdlib.h>
 
 // .data: retail Ncube vertices for the 32x16 quad textured with a 64x32 image.
 u32 size32x16_tex64x32_vtx[14] = {
@@ -20,10 +22,162 @@ extern const f32 float_0p03125_8041f708;
 extern const f32 float_0_8041f70c;
 extern const f32 float_deg2rad_8041f710;
 extern const f32 float_1_8041f714;
+extern const f32 float_neg1_8041f738;
+extern const f32 float_18_8041f73c;
+extern const f32 float_100_8041f740;
+extern const f32 float_0p25_8041f744;
+extern const f32 float_50_8041f748;
+extern const f32 float_0p5_8041f74c;
 
 // .rodata zero vectors (named after their original addresses).
+#ifdef MUST_MATCH
+// volatile makes the loop rebuild each axis from the shared zero Vec through memory,
+// as retail does (same idiom as eff_sweat_n64.c's vec3_802fb810).
+const volatile Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
+#endif
 const Vec vec3_802fab54 = { 0.0f, 0.0f, 0.0f };
+
+// Inlined MetroWerks sqrtf (same shape as eff_blow_n64.c and eff_kemuri10_n64.c).
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+	case 0x7F800000:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return FP_NAN;
+		}
+		else {
+			return FP_INFINITE;
+		}
+	case 0:
+		if (*(s32*)&x & 0x007FFFFF) {
+			return FP_SUBNORMAL;
+		}
+		else {
+			return FP_ZERO;
+		}
+	default:
+		return FP_NORMAL;
+	}
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > float_0_8041f70c) {
+		f64 guess = __frsqrte(x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	}
+	else if (x < 0.0) {
+		return NAN;
+	}
+	else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
+
+#pragma opt_common_subs off // without it MWCC CSEs the dir.z*norm multiply and the second float_0 load, changing FPR allocation
+EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
+	EffectEntry* effect;
+	effMagic3Data* data;
+	f32 dirX;
+	f32 dirY;
+	f32 dirZ;
+	f32 perpX;
+	f32 perpY;
+	f32 perpZ;
+	Vec axis;
+	Mtx mtx;
+	f32 angle;
+	f32 mag;
+	f32 norm;
+	s32 i;
+
+	effect = effEntry();
+	dirZ = float_0_8041f70c;
+	dirX = float_0_8041f70c;
+	dirY = float_neg1_8041f738;
+	mag = dirX * dirX + float_1_8041f714 + dirZ;
+	if (mag == float_0_8041f70c) {
+		return NULL;
+	}
+	norm = float_neg1_8041f738 / sqrtf(mag);
+	dirX *= norm;
+	dirY *= norm;
+	dirZ *= norm;
+	if (dirX != float_0_8041f70c) {
+		perpX = -dirY / dirX;
+		perpY = float_1_8041f714;
+		perpZ = float_0_8041f70c;
+	}
+	else if (dirY != float_0_8041f70c) {
+		perpX = float_1_8041f714;
+		perpY = -dirX / dirY;
+		perpZ = float_0_8041f70c;
+	}
+	else {
+		perpX = float_1_8041f714;
+		perpY = float_0_8041f70c;
+		perpZ = -dirX / dirZ;
+	}
+	mag = perpX * perpX + perpY * perpY + perpZ * perpZ;
+	if (mag == float_0_8041f70c) {
+		return NULL;
+	}
+	norm = float_1_8041f714 / sqrtf(mag);
+	perpX *= norm;
+	perpY *= norm;
+	perpZ *= norm;
+	dirX *= float_18_8041f73c;
+	dirY *= float_18_8041f73c;
+	dirZ *= float_18_8041f73c;
+	effect->type = "Magic3N64";
+	effect->count = 5;
+	data = __memAlloc(HEAP_EFFECT, 0xF0);
+	effect->userdata = data;
+	effect->callback = effMagic3Main;
+	for (i = 0; i < 5; i++, data++) {
+		f32 yaw = float_6p2832_8041f718 * camGetPtr(CAMERA_3D)->viewYaw / float_360_8041f724;
+		Vec temp = vec3_802fab48;
+
+		temp.x = (f32)sin(yaw);
+		temp.z = -(f32)cos(yaw);
+		axis = temp;
+		angle = (i == 1) ? float_0_8041f70c : 100.0f * i * float_0p25_8041f744 - float_50_8041f748;
+		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041f710 * angle);
+		data->type = type;
+		data->x = x;
+		data->y = y;
+		data->z = z;
+		data->vx = float_0p6_8041f72c * (mtx[0][0] * dirX + mtx[0][1] * dirY + mtx[0][2] * dirZ);
+		data->vy = mtx[1][0] * dirX + mtx[1][1] * dirY + mtx[1][2] * dirZ;
+		data->vz = float_0p6_8041f72c * (mtx[2][0] * dirX + mtx[2][1] * dirY + mtx[2][2] * dirZ);
+		data->rot = (f32)(-(i * 100 / 4 - 50));
+		data->scale = float_0p5_8041f74c;
+		data->life = life;
+		data->timer = 0;
+		data->alpha = 0;
+	}
+	return effect;
+}
+#pragma opt_common_subs reset // scope the workaround above to effMagic3N64Entry only
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_onpu.c).
 inline Vec initializeVec(Vec* input) {

@@ -1,0 +1,7 @@
+#pragma once
+
+#include <dolphin/types.h>
+#include "driver/effdrv.h"
+
+EffectEntry* effBrokenBarrierN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
+void effBrokenBarrierMain(EffectEntry* effect);

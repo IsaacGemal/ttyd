@@ -1,11 +1,18 @@
 #include "eff/n64/eff_kemuri5_n64.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
 #include "system.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math.h>
+#include <stdlib.h>
+
+// .rodata constants defined by this unit (order matches the original).
+const Vec vec3_802fa918 = { 0.0f, 0.0f, 0.0f };
+const char str_802FA924[] = "Kemuri5N64";
+const f64 double_to_int_802fa930 = 4503601774854144.0;
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_12_8041f368;
@@ -20,6 +27,13 @@ extern const f32 float_0p9_8041f388;
 extern const f32 float_0p0625_8041f35c;
 extern const f32 float_0_8041f360;
 extern const f32 float_deg2rad_8041f364;
+extern const f32 float_1_8041f38c;
+extern const f32 float_0p03_8041f390;
+extern const f32 float_1p7_8041f394;
+extern const f32 float_0p5_8041f398;
+extern const f32 float_neg0p02_8041f39c;
+extern const f32 float_5Eneg05_8041f3a0;
+extern const f32 float_neg3p9_8041f3a4;
 
 // .sdata2 GXColor: r=0x70, g=0x60, b=0x18, a=0x00.
 extern const volatile u32 dat_8041f358;
@@ -63,6 +77,54 @@ static inline Vec initializeVec(Vec* input) {
     temp.y = input->y;
     temp.z = input->z;
     return temp;
+}
+
+// Every instruction and every GPR matches; only the callee-saved FPR colouring differs. The target puts
+// the four arguments in f23-f26, the loop-invariant constants used up to the third rand() in f27-f31 and
+// the ones used after it in f17-f22 (rad in f16). MWCC colours ours with the arguments in f19-f22 and
+// constants f23-f31/f17-f18 (rad f16), i.e. it treats the post-rand constants as long-lived. Reordering
+// declarations/statements, named temporaries, the Vec and compound-literal position forms, and
+// opt_common_subs/opt_propagation/optimize_for_size pragmas all leave the colouring unchanged. The
+// int->float magic also emits an anonymous @N entry instead of the named double_to_int_802fa930 (a
+// project-wide folded-pool issue; it does not lower objdiff's score).
+// NONMATCHING (99.04%): only the callee-saved FPR colouring differs (arguments f19-f22 vs f23-f26).
+EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
+    EffectEntry* effect;
+    effKemuri5Data* data;
+    f32 rad;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = str_802FA924;
+    effect->count = 8;
+    data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri5Data) * 8);
+    effect->userdata = data;
+    effect->callback = effKemuri5Main;
+
+    for (i = 0; i < 8; i++, data++) {
+        data->field_0x0 = 1;
+        data->field_0x40 = float_0_8041f360;
+        data->position.x = x;
+        data->position.y = y;
+        data->position.z = z;
+        data->field_0x18 = float_1_8041f38c;
+        data->field_0x1C = float_1_8041f38c;
+        data->field_0x20 = float_1_8041f38c;
+        data->field_0x8 = 0xFF;
+        data->field_0x24 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1_8041f38c;
+        data->field_0x28 = float_0p03_8041f390 * (f32)(rand() % 11) + float_1p7_8041f394;
+        data->field_0x2C = (f32)(rand() % 61);
+        data->field_0x6 = 0x1E;
+        data->field_0x34 = float_0p5_8041f398;
+        data->field_0x38 = float_neg0p02_8041f39c;
+        data->field_0x3C = float_5Eneg05_8041f3a0;
+        data->field_0x30 = float_neg3p9_8041f3a4;
+        rad = float_6p2832_8041f36c * reviseAngle(a4 + (f32)(i * 45)) / float_360_8041f370;
+        data->field_0x44 = sin(rad);
+        data->field_0x48 = cos(rad);
+    }
+
+    return effect;
 }
 
 // NONMATCHING (98.94%): the cos() result lands in f2 where the original used f3, which then swaps

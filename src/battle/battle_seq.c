@@ -1,6 +1,8 @@
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
 #include "battle/battle_actrecord.h"
+#include "battle/battle_sub.h"
+#include "driver/mapdrv.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_unit_event.h"
 #include "battle/battle_damage_split.h"
@@ -42,6 +44,8 @@ f32 float_1_8041c284 = 1.0f;
 f32 float_110_8041c28c = 110.0f;
 f32 float_90_8041c290 = 90.0f;
 f32 float_100_8041c294 = 100.0f;
+const char str_8041C27C[] = "A1";
+const char str_8041C288[] = "A2";
 f32 float_1000_8041c298 = 1000.0f;
 f32 float_10_8041c2a0 = 10.0f;
 f32 float_94_8041c2a4 = 94.0f;
@@ -55,6 +59,9 @@ const char str_802EF62C[] = "SFX_BTL_PINCH1";
 
 //local prototypes
 
+// Needed: without dont_inline the compiler inlines this loop into its caller
+// _set_haikei_entry_scale, which the original calls.
+#pragma dont_inline on
 void _mapobj_data_touch_scale(s32 kind) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
@@ -66,6 +73,7 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 		}
 	}
 }
+#pragma dont_inline reset
 
 // NONMATCHING (79.18%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
 // compiler inlines them away and the case-3 compare/branch tree differs.
@@ -757,3 +765,131 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	}
 	return (wp->flags & 0x30) != 0;
 }
+
+// EVT command (default_haikei_set_entry_event): 60-frame delay, then animates the A1/A2
+// background objects in over 15/20 frames. Returns 2 once both have finished (0 while animating).
+s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
+	BattleWork* wp = _battleWorkPointer;
+	s32 ret = 0;
+#ifdef MUST_MATCH
+	// Declaration order and the separate obj2 reproduce the original's FPR/GPR allocation; the
+	// natural form is under #else.
+	f32 scale2, scale1, scaleDiv;
+	BattleStageObject* obj;
+	BattleStageObject* obj2;
+#else
+	f32 scale1, scale2, scaleDiv;
+	BattleStageObject* obj;
+#endif
+	s32 i;
+
+	if (isFirstCall) {
+		event->userdata[0] = 60;
+		event->userdata[1] = 0;
+		if (mapGetMapObj(str_8041C27C) != NULL) {
+			mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+		}
+		if (mapGetMapObj(str_8041C288) != NULL) {
+			mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+		}
+	}
+	if (event->userdata[0] > 0) {
+		event->userdata[0]--;
+		if (event->userdata[0] > 0) {
+			if (mapGetMapObj(str_8041C27C) != NULL) {
+				mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				_mapobj_data_touch_scale(0);
+			}
+			if (mapGetMapObj(str_8041C288) != NULL) {
+				mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				_mapobj_data_touch_scale(1);
+			}
+			return 0;
+		}
+	}
+	event->userdata[1]++;
+	if (mapGetMapObj(str_8041C27C) != NULL) {
+		if (event->userdata[1] >= 40) {
+			mapObjScale(str_8041C27C, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+			_mapobj_data_touch_scale(0);
+		} else {
+			ret = 1;
+			if (event->userdata[1] < 15) {
+				mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				_mapobj_data_touch_scale(0);
+			} else {
+				mapObjScale(str_8041C27C, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+				_mapobj_data_touch_scale(0);
+				if (event->userdata[1] < 25) {
+					scale1 = intpl_sub(5, event->userdata[1] - 15, 10, float_0_8041c280, float_110_8041c28c);
+				} else if (event->userdata[1] < 35) {
+					scale1 = intpl_sub(11, event->userdata[1] - 25, 10, float_110_8041c28c, float_90_8041c290);
+				} else if (event->userdata[1] < 40) {
+					scale1 = intpl_sub(11, event->userdata[1] - 35, 5, float_90_8041c290, float_100_8041c294);
+				}
+				if (event->userdata[1] < 25) {
+					scale2 = intpl_sub(5, event->userdata[1] - 15, 10, float_100_8041c294, float_90_8041c290);
+				} else if (event->userdata[1] < 35) {
+					scale2 = intpl_sub(11, event->userdata[1] - 25, 10, float_90_8041c290, float_110_8041c28c);
+				} else if (event->userdata[1] < 40) {
+					scale2 = intpl_sub(11, event->userdata[1] - 35, 5, float_110_8041c28c, float_100_8041c294);
+				}
+				scaleDiv = float_100_8041c294;
+				for (i = 0; i < 32; i++) {
+					obj = &wp->stageObjects[i];
+					if (obj->id > 0 && obj->data->mLayer == 0) {
+						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						obj->mFlags |= 2;
+					}
+				}
+			}
+		}
+	}
+	if (mapGetMapObj(str_8041C288) != NULL) {
+		if (event->userdata[1] >= 45) {
+			mapObjScale(str_8041C288, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+			_mapobj_data_touch_scale(1);
+		} else {
+			ret = 1;
+			if (event->userdata[1] < 20) {
+				mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				_mapobj_data_touch_scale(1);
+			} else {
+				mapObjScale(str_8041C288, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+				_mapobj_data_touch_scale(1);
+				if (event->userdata[1] < 30) {
+					scale1 = intpl_sub(5, event->userdata[1] - 20, 10, float_0_8041c280, float_110_8041c28c);
+				} else if (event->userdata[1] < 40) {
+					scale1 = intpl_sub(11, event->userdata[1] - 30, 10, float_110_8041c28c, float_90_8041c290);
+				} else if (event->userdata[1] < 45) {
+					scale1 = intpl_sub(11, event->userdata[1] - 40, 5, float_90_8041c290, float_100_8041c294);
+				}
+				if (event->userdata[1] < 30) {
+					scale2 = intpl_sub(5, event->userdata[1] - 20, 10, float_100_8041c294, float_90_8041c290);
+				} else if (event->userdata[1] < 40) {
+					scale2 = intpl_sub(11, event->userdata[1] - 30, 10, float_90_8041c290, float_110_8041c28c);
+				} else if (event->userdata[1] < 45) {
+					scale2 = intpl_sub(11, event->userdata[1] - 40, 5, float_110_8041c28c, float_100_8041c294);
+				}
+				scaleDiv = float_100_8041c294;
+				for (i = 0; i < 32; i++) {
+#ifdef MUST_MATCH
+					obj2 = &wp->stageObjects[i];
+					if (obj2->id > 0 && obj2->data->mLayer == 1) {
+						mapObjScale(obj2->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						obj2->mFlags |= 2;
+					}
+#else
+					obj = &wp->stageObjects[i];
+					if (obj->id > 0 && obj->data->mLayer == 1) {
+						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						obj->mFlags |= 2;
+					}
+#endif
+				}
+			}
+		}
+	}
+	return ret ? 0 : 2;
+}
+

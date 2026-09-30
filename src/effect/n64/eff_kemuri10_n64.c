@@ -1,5 +1,6 @@
 #include "eff/n64/eff_kemuri10_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
 
 #include <dolphin/mtx.h>
@@ -45,6 +46,8 @@ extern const f32 float_4_8041f4d4;
 extern const f32 float_278_8041f4d8;
 extern const f32 float_32_8041f4dc;
 extern const f32 float_0p1_8041f4e0;
+extern const f32 float_0p015625_8041f4b0;
+extern const f32 float_0p03125_8041f4b4;
 
 // Scalar sqrtf the original inlines: same shape as the one in libc/math.h plus
 // the NAN paths the original keeps (see eff_sstar_n64.c).
@@ -251,4 +254,92 @@ void effKemuri10Main(EffectEntry* effect) {
     }
 
     dispEntry(camera, dispCalcZ(&position2), 2, effKemuri10Disp, effect);
+}
+
+// .data vertex array this unit defines in the original; its address is passed
+// to effSetVtxDescN64.
+extern effVtxArray stg_houki_kemuri_v;
+// .sbss2 GXColor scratch this unit defines in the original.
+extern u32 unk_80423178;
+
+// Build the TEV register colour from the scratch colour and the effect data.
+static inline void kemuri10SetColor(effKemuri10Data* data) {
+    GXColor color = *(GXColor*)&unk_80423178;
+    color.r = data->field_0x64[0];
+    color.g = data->field_0x64[1];
+    color.b = data->field_0x64[2];
+    color.a = data->field_0x58;
+    GXSetTevColor(GX_TEVREG0, color);
+}
+
+void effKemuri10Disp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effKemuri10Data* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx m0;
+    Mtx m1;
+    s32 field4C;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+    field4C = (s32)data->field_0x4C;
+
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    PSMTXScale(m1, float_0p015625_8041f4b0, float_0p03125_8041f4b4, float_0_8041f4b8);
+    PSMTXTrans(m0, (f32)field4C, float_0_8041f4b8, float_0_8041f4b8);
+    PSMTXConcat(m1, m0, m0);
+    GXLoadTexMtxImm(m0, 0x1e, 1);
+    effGetTexObjN64(0x1f, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xff);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    kemuri10SetColor(data);
+    PSMTXTrans(m0, data->position.x, data->position.y, data->position.z);
+    PSMTXConcat(m0, (MtxPtr)&data->field_0x1C, m0);
+    PSMTXScale(m1, data->field_0x54, data->field_0x54, data->field_0x54);
+    PSMTXConcat(m0, m1, m0);
+    PSMTXConcat(cam->view, m0, m0);
+    GXLoadPosMtxImm(m0, 0);
+    GXSetCurrentMtx(0);
+    effSetVtxDescN64(&stg_houki_kemuri_v);
+    GXBegin(0x90, 0, 0xc0);
+    tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    tri2(3, 2, 4, 0, 3, 4, 5, 0);
+    tri2(2, 6, 7, 0, 2, 7, 4, 0);
+    tri2(1, 8, 6, 0, 1, 6, 2, 0);
+    tri2(4, 7, 9, 0, 4, 9, 10, 0);
+    tri2(5, 4, 10, 0, 5, 10, 11, 0);
+    tri2(10, 9, 8, 0, 10, 8, 1, 0);
+    tri2(11, 10, 1, 0, 11, 1, 0, 0);
+    tri2(6, 12, 13, 0, 6, 13, 7, 0);
+    tri2(8, 14, 12, 0, 8, 12, 6, 0);
+    tri2(7, 13, 15, 0, 7, 15, 9, 0);
+    tri2(9, 15, 14, 0, 9, 14, 8, 0);
+    tri2(16, 17, 18, 0, 16, 18, 19, 0);
+    tri2(20, 21, 17, 0, 20, 17, 16, 0);
+    tri2(22, 20, 16, 0, 22, 16, 23, 0);
+    tri2(23, 16, 19, 0, 23, 19, 24, 0);
+    tri2(19, 18, 25, 0, 19, 25, 26, 0);
+    tri2(24, 19, 26, 0, 24, 26, 27, 0);
+    tri2(28, 23, 24, 0, 28, 24, 29, 0);
+    tri2(29, 24, 27, 0, 29, 27, 30, 0);
+    tri2(26, 25, 21, 0, 26, 21, 20, 0);
+    tri2(27, 26, 20, 0, 27, 20, 22, 0);
+    tri2(30, 27, 22, 0, 30, 22, 31, 0);
+    tri2(31, 22, 23, 0, 31, 23, 28, 0);
+    tri2(32, 29, 30, 0, 32, 30, 33, 0);
+    tri2(12, 32, 33, 0, 12, 33, 13, 0);
+    tri2(13, 33, 34, 0, 13, 34, 15, 0);
+    tri2(33, 30, 31, 0, 33, 31, 34, 0);
+    tri2(34, 31, 28, 0, 34, 28, 35, 0);
+    tri2(15, 34, 35, 0, 15, 35, 14, 0);
+    tri2(35, 28, 29, 0, 35, 29, 32, 0);
+    tri2(14, 35, 32, 0, 14, 32, 12, 0);
 }

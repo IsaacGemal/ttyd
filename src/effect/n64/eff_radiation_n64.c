@@ -4,6 +4,9 @@
 #include "system.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+
 // Zero vector the original loads before filling in the per-effect position.
 const Vec vec3_802fb478 = { 0.0f, 0.0f, 0.0f };
 
@@ -267,6 +270,186 @@ void effRadiationMain(EffectEntry* effect) {
 			dispEntry(data2->field_0x98, dispCalcZ(&position), 2, effRadiationDisp, effect);
 		} else {
 			dispEntry(data2->field_0x98, dispCalcZ(&position), 8, effRadiationDisp, effect);
+		}
+	}
+}
+
+// .sdata2/.rodata constants and .data/.sdata vertex arrays used by effRadiationDisp
+// (original symbols from config/G8MJ01/symbols.txt).
+extern const f64 double_to_int_802fb488;
+extern const f32 float_0p03125_8041fa98;
+extern const f32 float_0_8041fa9c;
+extern const f32 float_255_8041faa0;
+extern const f32 float_deg2rad_8041faa4;
+extern const f32 float_0p25_8041faa8;
+extern const f32 float_3_8041faac;
+extern const f32 float_0p3_8041fab0;
+extern const f32 float_0p5_8041fab4;
+extern const f32 float_0p9_8041fab8;
+extern const GXColor dat_8041fa90;
+extern const GXColor dat_8041fa94;
+extern u32 size150x20_tex32x32[14];
+extern u32 size300x40_tex32x32[11];
+
+// MUST_MATCH: building the colour in an inline is what makes the two call sites keep
+// their own GXColor temporary (0x10/0x14 and 0x8/0xc); the natural assignment reuses one slot.
+#ifdef MUST_MATCH
+static inline GXColor radiationSetColor(s32 alpha, GXColor color) {
+	color.a = alpha;
+	return color;
+}
+#endif
+
+// NONMATCHING (99.74%): the original emits `li r6, 0x0` before `bl tri1` (a 4th argument);
+// include/eff/eff_n64.h declares tri1(u16,u16,u16) to match eff_n64.c's 3-arg definition
+// (tri1's body ignores r6), and fixing that needs the definition, outside this file.
+void effRadiationDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	EffRadiationData* data;
+	CameraEntry* cam;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx work;
+	Mtx trans2;
+	GXTexObj texObj;
+	effVtxArray* vtx;
+	f32 alpha;
+	f32 scaleY;
+	f32 scaleX;
+	f32 scaleZ;
+	s32 i;
+	s32 type;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	type = data->type;
+
+	if (data->field_0x94 != 0) {
+		GXSetBlendMode(1, 4, 5, 0);
+		GXSetZCompLoc(1);
+		GXSetAlphaCompare(7, 0, 0, 7, 0);
+		GXSetZMode(0, 3, 0);
+	}
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	switch (type) {
+	case 0:
+	case 1:
+		GXSetNumTevStages(1);
+		GXSetTevOrder(0, 0, 0, 0xff);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 2, 0xc, 8, 0xf);
+		GXSetTevAlphaIn(0, 7, 1, 4, 7);
+		effGetTexObjN64(0x2c, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		GXSetNumTexGens(1);
+		GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+		PSMTXScale(scale, float_0p03125_8041fa98, float_0p03125_8041fa98, float_0_8041fa9c);
+		GXLoadTexMtxImm(scale, 0x1e, 1);
+		break;
+	default:
+		GXSetNumTevStages(1);
+		GXSetTevOrder(0, 0xff, 0xff, 4);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
+		GXSetTevAlphaIn(0, 7, 7, 7, 5);
+		GXSetNumTexGens(0);
+		break;
+	}
+
+	GXSetCullMode(0);
+	PSMTXTrans(trans, data->x, data->y, data->z);
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		alpha = (f32)data->field_0x24 / float_255_8041faa0;
+
+		PSMTXRotRad(rot, 'x', float_deg2rad_8041faa4 * data->field_0x5C);
+		PSMTXConcat(trans, rot, work);
+
+		if (type >= 2) {
+			PSMTXRotRad(rot, 'z', float_deg2rad_8041faa4 * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXConcat(work, rot, work);
+			PSMTXRotRad(rot, 'y', float_deg2rad_8041faa4 * data->field_0x60);
+			PSMTXConcat(work, rot, work);
+			PSMTXTrans(trans2, data->field_0x58, float_0_8041fa9c, float_0_8041fa9c);
+			PSMTXConcat(work, trans2, work);
+#ifdef MUST_MATCH
+			scaleX = float_0p25_8041faa8 * (float_3_8041faac + alpha);
+			scaleZ = float_0p25_8041faa8 * (float_3_8041faac + alpha);
+#else
+			scaleX = float_0p25_8041faa8 * (float_3_8041faac + alpha);
+			scaleZ = scaleX;
+#endif
+			switch (i & 3) {
+			case 0:
+				scaleY = float_0p3_8041fab0 * alpha;
+				break;
+			case 1:
+				scaleY = float_0p5_8041fab4 * alpha;
+				break;
+			case 2:
+				scaleY = float_0p9_8041fab8 * alpha;
+				break;
+			default:
+				scaleY = alpha;
+				break;
+			}
+			PSMTXScale(scale, scaleX, scaleY, scaleZ);
+			PSMTXConcat(work, scale, work);
+#ifdef MUST_MATCH
+			GXSetTevColor(1, radiationSetColor(data->field_0x24, dat_8041fa90));
+#else
+			{
+				GXColor color = dat_8041fa90;
+				color.a = data->field_0x24;
+				GXSetTevColor(1, color);
+			}
+#endif
+		} else {
+			PSMTXRotRad(rot, 'y', float_deg2rad_8041faa4 * data->field_0x60);
+			PSMTXConcat(work, rot, work);
+			PSMTXRotRad(rot, 'z', float_deg2rad_8041faa4 * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXConcat(work, rot, work);
+			PSMTXTrans(trans2, data->field_0x58, float_0_8041fa9c, float_0_8041fa9c);
+			PSMTXConcat(work, trans2, work);
+#ifdef MUST_MATCH
+			GXSetTevColor(1, radiationSetColor(data->field_0x24, dat_8041fa94));
+#else
+			{
+				GXColor color = dat_8041fa94;
+				color.a = data->field_0x24;
+				GXSetTevColor(1, color);
+			}
+#endif
+		}
+
+		PSMTXConcat(cam->view, work, work);
+		GXLoadPosMtxImm(work, 0);
+		GXSetCurrentMtx(0);
+		switch (type) {
+		case 0:
+		case 1:
+			vtx = (effVtxArray*)size150x20_tex32x32;
+			break;
+		default:
+			vtx = (effVtxArray*)size300x40_tex32x32;
+			break;
+		}
+		effSetVtxDescN64(vtx);
+		switch (type) {
+		case 0:
+		case 1:
+			GXBegin(0x90, 0, 6);
+			tri2(0, 1, 2, 0, 0, 2, 3, 0);
+			break;
+		default:
+			GXBegin(0x90, 0, 3);
+			tri1(0, 1, 2);
+			break;
 		}
 	}
 }

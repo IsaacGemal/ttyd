@@ -4,6 +4,9 @@
 #include "memory.h"
 #include "eff/eff_n64.h"
 
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+
 typedef struct effBreathFireData {
 	s32 field_0x00; //0x00
 	s32 field_0x04; //0x04
@@ -38,7 +41,11 @@ typedef struct effBreathFireData {
 	u32 field_0x78; //0x78
 } effBreathFireData;
 
+extern const f32 float_256_8041ea80;
+extern const f32 float_0p0078125_8041ea84;
+extern const f32 float_0p03125_8041ea88;
 extern const f32 float_0_8041ea8c;
+extern const f32 float_deg2rad_8041ea90;
 extern const f32 float_4_8041ea94;
 extern const f32 float_10_8041ea98;
 extern const f32 float_0p05_8041ea9c;
@@ -50,6 +57,13 @@ extern const f32 float_0p2_8041eab0;
 
 const f64 double_to_int_802fa300 = 4503601774854144.0;
 const char str_802FA318[] = "BreathFireN64";
+
+// .sbss2 zero GXColor locals the original copies before filling its fields.
+extern GXColor unk_804230b0;
+extern GXColor unk_804230b4;
+
+// .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
+extern u8 stg_fire_breath_v[];
 
 #pragma opt_common_subs off // without it MWCC CSEs the two 0.2f pool loads across the rand call into a callee-saved FPR
 EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32 g, s32 h, f32 i, f32 j) {
@@ -172,4 +186,113 @@ void effBreathFireMain(EffectEntry* effect) {
 		data->field_0x38 = data->field_0x3C * (data->field_0x34 - data->field_0x38) + data->field_0x38;
 	}
 	dispEntry(4, dispCalcZ(&position), 2, effBreathFireDisp, effect);
+}
+
+#ifdef MUST_MATCH
+// Match-only: building each colour in its own inline (the shape eff_rubble_n64 uses) makes mwcc
+// place the by-value GXSetTevColor GXColor temporaries in the original's stack slots. The plain
+// form under #else reverses the first colour's home and outgoing slots (the known mwcc quirk).
+static inline void breathSetColor0(effBreathFireData* data) {
+	GXColor color = unk_804230b0;
+	color.r = data->field_0x64;
+	color.g = data->field_0x68;
+	color.b = data->field_0x6C;
+	color.a = data->field_0x40;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void breathSetColor1(effBreathFireData* data, f32 s, s32 frame) {
+	GXColor color = unk_804230b4;
+	color.r = data->field_0x70;
+	color.g = data->field_0x74;
+	color.b = data->field_0x78;
+	color.a = (u8)(float_256_8041ea80 * (s - (f32)frame));
+	GXSetTevColor(GX_TEVREG1, color);
+}
+#endif
+
+void effBreathFireDisp(CameraId camId, void* param) {
+	EffectEntry* effect;
+	effBreathFireData* data;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	GXColor color;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	s32 frame;
+	s32 frame2;
+	f32 s;
+
+	effect = param;
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	s = data->field_0x5C;
+	frame = (s32)s;
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTevStages(2);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_RASC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A1, GX_CA_ZERO);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, 0x7D);
+
+#ifdef MUST_MATCH
+	breathSetColor0(data);
+	breathSetColor1(data, s, frame);
+#else
+	color = unk_804230b0;
+	color.r = data->field_0x64;
+	color.g = data->field_0x68;
+	color.b = data->field_0x6C;
+	color.a = data->field_0x40;
+	GXSetTevColor(GX_TEVREG0, color);
+
+	color = unk_804230b4;
+	color.r = data->field_0x70;
+	color.g = data->field_0x74;
+	color.b = data->field_0x78;
+	color.a = (u8)(float_256_8041ea80 * (s - (f32)frame));
+	GXSetTevColor(GX_TEVREG1, color);
+#endif
+
+	effGetTexObjN64(0x77, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	effGetTexObjN64(0x77, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
+
+	frame2 = frame << 5;
+	PSMTXScale(scale, float_0p0078125_8041ea84, float_0p03125_8041ea88, float_0_8041ea8c);
+	PSMTXTrans(trans, (f32)frame2, float_0_8041ea8c, float_0_8041ea8c);
+	PSMTXConcat(scale, trans, scale);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+	PSMTXScale(scale, float_0p0078125_8041ea84, float_0p03125_8041ea88, float_0_8041ea8c);
+	PSMTXTrans(trans, (f32)(frame2 + 0x20), float_0_8041ea8c, float_0_8041ea8c);
+	PSMTXConcat(scale, trans, scale);
+	GXLoadTexMtxImm(scale, GX_TEXMTX1, GX_MTX2x4);
+
+	PSMTXTrans(trans, data->field_0x0C, data->field_0x10, data->field_0x14);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041ea90 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(scale, data->field_0x38, data->field_0x38, float_0_8041ea8c);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(trans, scale, trans);
+	PSMTXConcat(cam->view, trans, trans);
+	GXLoadPosMtxImm(trans, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_NONE);
+
+	effSetVtxDescN64((effVtxArray*)((u8*)stg_fire_breath_v + 0x46));
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xC);
+	tri2(0, 1, 2, 0, 1, 3, 2, 0);
+	tri2(4, 2, 3, 0, 4, 0, 2, 0);
 }

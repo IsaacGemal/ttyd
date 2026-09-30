@@ -19,6 +19,11 @@ typedef struct effRappaData {
 	s32 counter;     // 0x34
 } effRappaData; // 0x38
 // .sdata2 float constants (named after their original addresses).
+extern const f32 float_0p0625_8041fad8;
+extern const f32 float_0p03125_8041fadc;
+extern const f32 float_0_8041fae0;
+extern const f32 float_deg2rad_8041fae4;
+extern const f32 float_1_8041fae8;
 extern const f32 float_0p8_8041faec;
 extern const f32 float_0p9_8041faf0;
 extern const f32 float_10_8041faf4;

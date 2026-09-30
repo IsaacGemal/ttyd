@@ -21,6 +21,7 @@ typedef struct NiceEffectWork {
 BOOL effNiceAsync(s32 group);
 EffectEntry* effNiceEntry(s32 type, f32 x, f32 y, f32 z);
 void effNiceMain(EffectEntry* effect);
+void acrobatMain(EffectEntry* effect);
 #include "driver/camdrv.h"
 void effNiceDisp(CameraId camId, void* param);
 void effAcrobatDisp(CameraId camId, void* param);

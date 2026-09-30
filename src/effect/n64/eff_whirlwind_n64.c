@@ -1,7 +1,9 @@
 #include "eff/n64/eff_whirlwind_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "mario/mario.h"
 #include <stdlib.h>
@@ -10,6 +12,23 @@
 __declspec(section ".sdata") u8 col_r[4] = { 0xFF, 0xFF, 0x40, 0x00 };
 __declspec(section ".sdata") u8 col_g[4] = { 0xFF, 0x40, 0x40, 0x00 };
 __declspec(section ".sdata") u8 col_b[4] = { 0xFF, 0x40, 0xFF, 0x00 };
+
+// .data vertex array (original symbol eff_whirlwind_v, 0x16C bytes).
+u32 eff_whirlwind_v[0x16C / 4] = {
+	0xFFFBFFFE, 0x000903AB, 0x0000FFFF, 0xFFFFFFFB, 0x00020009, 0x03AB0200, 0xFFFFFFFF,
+	0xFFF70002, 0x00050355, 0x0200FFFF, 0xFFFFFFF7, 0xFFFE0005, 0x03550000, 0xFFFFFFFF,
+	0x0000FFFE, 0x000A0400, 0x0000FFFF, 0xFFFF0000, 0x0002000A, 0x04000200, 0xFFFFFFFF,
+	0xFFF60002, 0x00000300, 0x0200FFFF, 0xFFFFFFF6, 0xFFFE0000, 0x03000000, 0xFFFFFFFF,
+	0x0005FFFE, 0x00090055, 0x0000FFFF, 0xFFFF0005, 0x00020009, 0x00550200, 0xFFFFFFFF,
+	0x00000002, 0x000A0000, 0x0200FFFF, 0xFFFF0000, 0xFFFE000A, 0x00000000, 0xFFFFFFFF,
+	0x0009FFFE, 0x000500AB, 0x0000FFFF, 0xFFFF0009, 0x00020005, 0x00AB0200, 0xFFFFFFFF,
+	0x000AFFFE, 0x00000100, 0x0000FFFF, 0xFFFF000A, 0x00020000, 0x01000200, 0xFFFFFFFF,
+	0x0009FFFE, 0xFFFB0155, 0x0000FFFF, 0xFFFF0009, 0x0002FFFB, 0x01550200, 0xFFFFFFFF,
+	0xFFF70002, 0xFFFB02AB, 0x0200FFFF, 0xFFFFFFF7, 0xFFFEFFFB, 0x02AB0000, 0xFFFFFFFF,
+	0x0005FFFE, 0xFFF701AB, 0x0000FFFF, 0xFFFF0005, 0x0002FFF7, 0x01AB0200, 0xFFFFFFFF,
+	0x0000FFFE, 0xFFF60200, 0x0000FFFF, 0xFFFF0000, 0x0002FFF6, 0x02000200, 0xFFFFFFFF,
+	0xFFFBFFFE, 0xFFF70255, 0x0000FFFF, 0xFFFFFFFB, 0x0002FFF7, 0x02550200, 0xFFFFFFFF,
+};
 
 typedef struct EffWhirlwindData {
 	s32 type;         //0x0
@@ -223,4 +242,98 @@ void effWhirlwindMain(EffectEntry* effect) {
 	}
 
 	dispEntry(CAMERA_3D, dispCalcZ(&pos2), 2, effWhirlwindDisp, effect);
+}
+
+// TEV colour setup for one particle; kept as an inline so the 4-byte colour scratch lands in the
+// low stack slot the original uses (same idiom as eff_bush_n64's bushSetColor).
+static inline void whirlwindSetColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor color = unk_80423088;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	GXSetTevColor(1, color);
+}
+
+void effWhirlwindDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam = camGetPtr(camId);
+	EffWhirlwindData* data = effect->userdata;
+	GXTexObj texObj;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx work;
+	s32 type;
+	s32 alpha;
+	f32 scaleA;
+	f32 scaleB;
+	s32 i;
+
+	alpha = data->field_0x1C;
+	scaleA = data->field_0x14;
+	scaleB = data->field_0x18;
+	type = data->type;
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
+	GXLoadTexMtxImm(scale, 0x1e, 1);
+	effGetTexObjN64(0x58, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
+	GXSetTevAlphaIn(0, 7, 4, 1, 7);
+
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(trans, rot, work);
+	PSMTXConcat(cam->view, work, work);
+
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)eff_whirlwind_v);
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		PSMTXTrans(trans, data->x, data->y, data->z);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x2C);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x34);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXScale(scale, scaleA * data->field_0x14, scaleA * data->field_0x14, scaleA * data->field_0x14);
+		PSMTXConcat(trans, scale, trans);
+		PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x30);
+		PSMTXConcat(trans, rot, rot);
+
+		if (type < 8) {
+			PSMTXTrans(trans, 3.0f - 3.0f * (scaleA - scaleB) / scaleB, 0.0f, 0.0f);
+			PSMTXConcat(rot, trans, trans);
+		} else {
+			PSMTXTrans(trans, 2.0f, 0.0f, 0.0f);
+			PSMTXConcat(rot, trans, trans);
+		}
+		PSMTXConcat(work, trans, trans);
+
+		GXLoadPosMtxImm(trans, 0);
+		GXSetCurrentMtx(0);
+
+		whirlwindSetColor(data->field_0x44, data->field_0x45, data->field_0x46, alpha);
+		GXBegin(0x90, 0, 0x48);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+		tri2(4, 5, 1, 0, 4, 1, 0, 0);
+		tri2(3, 2, 6, 0, 3, 6, 7, 0);
+		tri2(8, 9, 10, 0, 8, 10, 11, 0);
+		tri2(12, 13, 9, 0, 12, 9, 8, 0);
+		tri2(14, 15, 13, 0, 14, 13, 12, 0);
+		tri2(16, 17, 15, 0, 16, 15, 14, 0);
+		tri2(7, 6, 18, 0, 7, 18, 19, 0);
+		tri2(20, 21, 17, 0, 20, 17, 16, 0);
+		tri2(22, 23, 21, 0, 22, 21, 20, 0);
+		tri2(24, 25, 23, 0, 24, 23, 22, 0);
+		tri2(19, 18, 25, 0, 19, 25, 24, 0);
+	}
 }

@@ -15,7 +15,7 @@ void btlseqEnd(BattleWork* wp);
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp);
 struct BattleWeapon;
 BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp);
-void _set_haikei_entry_scale(BattleWork* wp, s32 mode);
+s32 _set_haikei_entry_scale(struct EventEntry* event, BOOL isFirstCall);
 void _mapobj_data_touch_scale(s32 kind);
 void battleMakePhaseEvtTable(BattleWork* wp);
 void btlseqPhaseFirstProcess(BattleWork* wp);

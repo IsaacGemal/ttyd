@@ -22,5 +22,6 @@ typedef struct effPikkyoloN64Data {
 	s16 b2;        // 0x38
 	s16 a2;        // 0x3A
 } effPikkyoloN64Data;
+EffectEntry* effPikkyoloN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effPikkyoloMain(EffectEntry* effect);
 void effPikkyoloDisp(CameraId cameraId, void* param);

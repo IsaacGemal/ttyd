@@ -231,6 +231,8 @@ extern const Vec vec3_802c58a4;
 // strings/rodata with no home header (addressed from the rodata base symbol)
 extern const u8 vec3_802c5730[];
 extern const u8 vec3_802c573c[];
+extern const Vec vec3_802c58b0;
+extern const Vec vec3_802c58bc;
 
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry) {
     s32 attr = entry->attributes;
@@ -1140,6 +1142,63 @@ extern const f32 float_40_8041a800;
 extern const f32 float_47_8041a84c;
 extern const Vec vec3_802c5838;
 
+#define ROUND_MILLI(v)                                                                        \
+    ((f32)(s32)(float_1000_8041a7a0 * (v) +                                                   \
+                ((v) >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /      \
+     float_1000_8041a7a0)
+
+// Inline sqrtf from the SDK's math.h, redeclared here because including math.h clashes with
+// math_ext.h's out-of-line sqrt. Same expansion the original used (frsqrte + NaN handling).
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+extern s32 __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+
+static inline s32 __fpclassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+        case 0x7F800000:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_NAN;
+            } else {
+                return FP_INFINITE;
+            }
+            break;
+        case 0:
+            if (*(s32*)&x & 0x007FFFFF) {
+                return FP_SUBNORMAL;
+            } else {
+                return FP_ZERO;
+            }
+            break;
+        default:
+            return FP_NORMAL;
+    }
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        guess = double_0p5_802c5928 * guess * (double_3_802c5930 - guess * guess * x);
+        return x * guess;
+    } else if (x < double_0_802c5938) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+
+
 // NONMATCHING (74.47%): 0xf0 frame in the original vs 0xe0 here (one fewer stack
 // Vec); dir/targetPos copies and rounding blocks scheduled differently; logic (sincos
 // dir, rounded distance compare, distABf) is the same.
@@ -1165,6 +1224,126 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     *out = float_neg1_8041a7dc;
     return NULL;
 }
+
+// The original loads `base` (vec3_802c5730) early and reads targetPos at +0x180 and
+// targetDir at +0x18c; `n`/`hitPos` are declared volatile to force the same stack
+// spills the original has (kept only under MUST_MATCH). The biggest remaining diff is
+// the int->float magic double: the original reads it as `lfd f1, 0x1f0(r30)` (folded
+// into the vec3_802c5730 pool, where double_to_int_802c5920 lives) while MWCC here
+// emits an anonymous local `lis r3,@862@ha; lfd f1,@862@l(r3)`. That pool folding is a
+// file-wide rodata issue (same blocker as marioSlitChkWallAround/marioChkOverhead): the
+// base is declared `extern`, so the compiler will not make it the pool anchor. Other
+// diffs: the original keeps 7 callee-saved GPRs (r25=second marioGetPtr result,
+// r26-r28=out args, r29=hit, r30=base, r31=wp) vs 5 here (r27-r31), and it emits a
+// second `if (hit != NULL)` after the rounding block instead of CSE-ing it with the first.
+// NONMATCHING (73.93%): int->float magic double not folded into the rodata base pool;
+// callee-saved GPR set/assignment differs; redundant second hit test CSEd away.
+HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
+#ifdef MUST_MATCH
+    const u8* base = vec3_802c5730;
+#endif
+    MarioWork* wp = marioGetPtr();
+    HitCheckQuery query;
+    HitEntry* hit;
+#ifdef MUST_MATCH
+    volatile Vec hitPos;
+    volatile Vec n;
+#else
+    Vec hitPos;
+    Vec n;
+#endif
+    Vec v;
+    f32 h;
+    f32 px, py, pz;
+    f32 angle;
+    f32 s, c;
+    f32 off;
+    f32 rad;
+
+    *(f32*)&wp->field_0x1F0[0x28] = float_0_8041a7a4;
+    *(f32*)&wp->field_0x1F0[0x2C] = float_0_8041a7a4;
+    *(f32*)&wp->field_0x1F0[0x30] = float_0_8041a7a4;
+    *(f32*)&wp->field_0x1F0[0x24] = float_0_8041a7a4;
+    if (wp->flags & 0x1000000) {
+        h = float_18p5_8041a7ec;
+    } else {
+        h = float_0p5_8041a7c4 * wp->wPlayerCollisionBox.y;
+    }
+    py = wp->position.y;
+    *outY = wp->position.y;
+    *outDist = float_neg1_8041a7dc;
+    if (wp->baseSpeed != float_0_8041a7a4) {
+        angle = wp->directionView;
+    } else {
+        angle = toMovedir(wp->unk1A8);
+    }
+    angle = revise360((f32)(s32)(float_0p5_8041a7c4 + angle));
+    if (wp->flags & 0x1000000) {
+        off = float_3_8041a7f0;
+    } else {
+        off = float_0p265_8041a7f4 * wp->wPlayerCollisionBox.x;
+    }
+    rad = (float_3p1416_8041a7e0 * angle) / float_180_8041a7cc;
+    s = (f32)sin((f64)rad);
+    c = (f32)cos((f64)rad);
+    px = wp->position.x;
+    py = wp->position.y;
+#ifdef MUST_MATCH
+    v = *(const Vec*)(base + 0x180);
+#else
+    v = vec3_802c58b0;
+#endif
+    {
+        f32 t = off * s;
+        v.x = px + t;
+        v.y = py + h;
+        pz = wp->position.z;
+        t = off * -c;
+        v.z = pz + t;
+    }
+    query.targetPos = v;
+#ifdef MUST_MATCH
+    query.targetDir = *(const Vec*)(base + 0x18c);
+#else
+    query.targetDir = vec3_802c58bc;
+#endif
+    query.targetDistance = float_0p1_8041a7e4 + (float_11_8041a7ac + h);
+    if (marioGetPtr()->currMotionId == 0x1C) {
+        hit = hitCheckVecFilter(&query, chkfilterVecVivian);
+    } else if (marioGetPtr()->flags & 0x1000000) {
+        hit = hitCheckVecFilter(&query, chkfilterVecRoll);
+    } else {
+        hit = hitCheckVecFilter(&query, chkfilterVec);
+    }
+    if (hit != NULL) {
+        hitPos.x = ROUND_MILLI(query.hitPos.x);
+        hitPos.y = ROUND_MILLI(query.hitPos.y);
+        hitPos.z = ROUND_MILLI(query.hitPos.z);
+    }
+    n = query.hitNormal;
+    if (hit != NULL) {
+        *(f32*)&wp->field_0x1F0[0x28] = ROUND_MILLI(
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.z, float_100_8041a7f8 * n.y) -
+            float_180_8041a7cc);
+        *(f32*)&wp->field_0x1F0[0x2C] = float_0_8041a7a4;
+        *(f32*)&wp->field_0x1F0[0x30] = ROUND_MILLI(
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.x, float_100_8041a7f8 * n.y) -
+            float_180_8041a7cc);
+        *(f32*)&wp->field_0x1F0[0x24] =
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, sqrtf(n.x * n.x + n.z * n.z), -n.y);
+        if (hitPos.y < py && __fabsf(hitPos.y - py) >= float_2_8041a7e8) {
+            *outDist = py - hitPos.y;
+            *outAngle = angleABf(px, pz, hitPos.x, hitPos.z);
+            return NULL;
+        }
+        *outY = hitPos.y;
+        *outDist = float_0_8041a7a4;
+        *outAngle = angleABf(px, pz, hitPos.x, hitPos.z);
+        return hit;
+    }
+    return NULL;
+}
+
 
 // The original schedules each dir vector's y-component load after the sn/cs loads
 // instead of grouping all three component loads first. The `volatile` copy keeps
