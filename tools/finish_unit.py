@@ -48,6 +48,13 @@ def summary(secs):
     return " ".join(f"{k}:{v:.0f}" for k, v in secs.items() if k != ".text")
 
 
+def changed_headers():
+    r = subprocess.run(["git", "diff", "--name-only", "--", "include"], capture_output=True, text=True)
+    return set(r.stdout.split())
+
+
+HEADERS_BEFORE = changed_headers()  # header edits that were already there are not ours to undo
+ORIGINAL = open(src).read()
 fns, secs, ok = measure()
 if not ok:
     sys.exit(f"{unit} does not build")
@@ -124,30 +131,45 @@ def sbss2():
     open(src, "w").write(t)
 
 
-if secs.get(".data", 100) < 100 or secs.get(".sdata", 100) < 100:
-    step("pool_data", run_tool("pool_data"))
-step("math.h -> math_ext.h", math_ext)
-if secs.get(".sdata2", 100) < 100 or secs.get(".rodata", 100) < 100:
-    step("pool_define", run_tool("pool_define"))
-if secs.get(".rodata", 100) < 100:
-    step("literal strings", literal_strings)
-if secs.get(".sbss2", 100) < 100:
-    step("sbss2 idiom", sbss2)
-if DATA_ONLY:
-    print("done; sections", summary(secs))
-    sys.exit(0)
-r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
-tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
-print("  autolink:", " / ".join(tail))
-subprocess.run(["git", "checkout", "include"], capture_output=True)
-bad = {k: v for k, v in secs.items() if v < 100}
-if "LINKED" in "".join(tail):
-    print("linked")
-else:
-    print("still not linked; sections below 100%:", bad or "none")
-    if not bad:
-        print("  every section is 100%: look for base-reached data (`#pragma force_active on/off`), alignment padding at the ends "
-              "of .data/.sdata (the next unit's alignment), or a literal that the target loads by name (dol diff: "
-              "`python3 tools/split_scan.py`, ledger Grind 27-29)")
+def RESTORE_HEADERS():
+    """Undo the header declarations the generators added (they clash with other files' local externs): only the files this run changed."""
+    mine = sorted(changed_headers() - HEADERS_BEFORE)
+    if mine:
+        subprocess.run(["git", "checkout", "--"] + mine, capture_output=True)
+
+
+OK_RUN = False
+try:
     if secs.get(".data", 100) < 100 or secs.get(".sdata", 100) < 100:
-        print("  .data/.sdata: event scripts or typed tables? python3 tools/dol_gen.py UNIT --append src/UNIT.c > /tmp/new.c")
+        step("pool_data", run_tool("pool_data"))
+    step("math.h -> math_ext.h", math_ext)
+    if secs.get(".sdata2", 100) < 100 or secs.get(".rodata", 100) < 100:
+        step("pool_define", run_tool("pool_define"))
+    if secs.get(".rodata", 100) < 100:
+        step("literal strings", literal_strings)
+    if secs.get(".sbss2", 100) < 100:
+        step("sbss2 idiom", sbss2)
+    if DATA_ONLY:
+        print("done; sections", summary(secs))
+        OK_RUN = True
+        sys.exit(0)
+    r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
+    tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
+    print("  autolink:", " / ".join(tail))
+    bad = {k: v for k, v in secs.items() if v < 100}
+    if "LINKED" in "".join(tail):
+        print("linked")
+    else:
+        print("still not linked; sections below 100%:", bad or "none")
+        if not bad:
+            print("  every section is 100%: look for base-reached data (`#pragma force_active on/off`), alignment padding at the ends "
+                  "of .data/.sdata (the next unit's alignment), or a literal that the target loads by name (dol diff: "
+                  "`python3 tools/split_scan.py`, ledger Grind 27-29)")
+        if secs.get(".data", 100) < 100 or secs.get(".sdata", 100) < 100:
+            print("  .data/.sdata: event scripts or typed tables? python3 tools/dol_gen.py UNIT --append src/UNIT.c > /tmp/new.c")
+
+    OK_RUN = True
+finally:
+    RESTORE_HEADERS()
+    if not OK_RUN:
+        open(src, "w").write(ORIGINAL)

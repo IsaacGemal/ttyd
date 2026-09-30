@@ -5023,8 +5023,44 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     return 0;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: the retail code loads these doubles from .rodata at vec3_802ede88 + 0x298..0x2E0; until this unit defines that
+// data, literals are the only way to get them.
+#define MJ_D20 20.0
+#define MJ_D6 6.0
+#define MJ_D47 47.0
+#define MJ_D1P12 1.12
+#define MJ_D1 1.0
+#define MJ_D0P53 0.53
+#define MJ_D1P25 1.25
+#define MJ_D0P8 0.8
+#define MJ_D16P5 16.5
+#define MJ_D33 33.0
+#else
+extern const f64 double_20_802ee120;
+extern const f64 double_6_802ee128;
+extern const f64 double_47_802ee130;
+extern const f64 double_1p12_802ee138;
+extern const f64 double_1_802ee140;
+extern const f64 double_0p53_802ee148;
+extern const f64 double_1p25_802ee150;
+extern const f64 double_0p8_802ee158;
+extern const f64 double_16p5_802ee160;
+extern const f64 double_33_802ee168;
+#define MJ_D20 double_20_802ee120
+#define MJ_D6 double_6_802ee128
+#define MJ_D47 double_47_802ee130
+#define MJ_D1P12 double_1p12_802ee138
+#define MJ_D1 double_1_802ee140
+#define MJ_D0P53 double_0p53_802ee148
+#define MJ_D1P25 double_1p25_802ee150
+#define MJ_D0P8 double_0p8_802ee158
+#define MJ_D16P5 double_16p5_802ee160
+#define MJ_D33 double_33_802ee168
+#endif
+
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* type, s32* a
-// NONMATCHING (96.74%): the logic and frame match; ours addresses the double constants (20, 6, 47, 1.12, 0.53, ...) from
+// NONMATCHING (96.74%): the logic and frame match; ours addresses the double constants (20, 6, 47, MJ_D1P12, MJ_D0P53, ...) from
 // anonymous pool entries instead of the vec3_802ede88 base, `tx - x > 0` loads its operands in the other FPR order (as
 // btlevtcmd_JumpPosition), and the fmadd operands land in different FPRs. Type 1 skips the setup, 2 and 4 stretch the arc.
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
@@ -5089,33 +5125,33 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
                 *(f32*)((u8*)unit + 0x1B0) = float_90_8041bfb0;
                 *(f32*)((u8*)unit + 0x1B4) = float_360_8041bfd8 / (f32)*(s32*)((u8*)unit + 0x168);
                 h = *(f32*)((u8*)unit + 0x17C);
-                h -= 20.0;
-                h /= 6.0;
-                h += 47.0;
+                h -= MJ_D20;
+                h /= MJ_D6;
+                h += MJ_D47;
                 *(f32*)((u8*)unit + 0x180) = h;
                 if (type == 2) {
-                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * 1.12;
+                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * MJ_D1P12;
                 }
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 unit->mMoveSpeedY = unit->mFallAccel *
-                                        (0.53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
+                                        (MJ_D0P53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + MJ_D1) +
                                     unit->mMoveSpeedY;
             } else {
                 *(f32*)((u8*)unit + 0x1B0) = float_90_8041bfb0;
                 *(f32*)((u8*)unit + 0x1B4) = (f32)(360 / *(s32*)((u8*)unit + 0x168));
                 h = *(f32*)((u8*)unit + 0x17C);
-                h -= 20.0;
-                h /= 6.0;
-                h += 47.0;
+                h -= MJ_D20;
+                h /= MJ_D6;
+                h += MJ_D47;
                 *(f32*)((u8*)unit + 0x180) = h;
                 if (type == 4) {
-                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * 1.25;
+                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * MJ_D1P25;
                 }
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 unit->mMoveSpeedY = unit->mFallAccel *
-                                        (0.8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
+                                        (MJ_D0P8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + MJ_D1) +
                                     unit->mMoveSpeedY;
             }
             BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
@@ -5147,11 +5183,11 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         *(f32*)((u8*)unit + 0x1B8) = y;
         if (type < 3) {
             unit->mMoveSpeedY = unit->mFallAccel *
-                                    (0.53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
+                                    (MJ_D0P53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + MJ_D1) +
                                 unit->mMoveSpeedY;
         } else {
             unit->mMoveSpeedY = unit->mFallAccel *
-                                    (0.8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
+                                    (MJ_D0P8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + MJ_D1) +
                                 unit->mMoveSpeedY;
         }
         *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
@@ -5174,14 +5210,14 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         *(s32*)((u8*)unit + 0x168) = 1;
         *(f32*)((u8*)unit + 0x1B0) = float_90_8041bfb0;
         *(f32*)((u8*)unit + 0x1B4) = (f32)(360 / *(s32*)((u8*)unit + 0x168));
-        *(f32*)((u8*)unit + 0x180) = (f32)(__fabs(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8)) / 16.5);
+        *(f32*)((u8*)unit + 0x180) = (f32)(__fabs(*(f32*)((u8*)unit + 0x1B8) - *(f32*)((u8*)unit + 0x1B8)) / MJ_D16P5);
         BtlUnit_GetPos(unit, &unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.y, &unit->mMoveCurrentPos.z);
         event->blocked = 3;
         break;
     case 3:
         unit->mMoveCurrentPos.x = (f32)(unit->mMoveCurrentPos.x +
                                         (*(f32*)((u8*)unit + 0x180) *
-                                         (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8)) / 33.0);
+                                         (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8)) / MJ_D33);
         unit->mMoveCurrentPos.y -= *(f32*)((u8*)unit + 0x180) *
                                    (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
         *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
@@ -5345,7 +5381,9 @@ USER_FUNC(btlevtcmd_DivePosition) {
     return 0;
 }
 
-//s32* result, s32* flag, f32* dx, f32* dy, f32* dz
+//s32* battleId, s32* partNo, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
+// NONMATCHING (93.57%): btlevtcmd_DivePosition on a part (part offsets are the unit's minus 0xC8); same instruction count
+// and control flow, the callee-saved registers are assigned in another order and the frame is larger.
 USER_FUNC(btlevtcmd_DivePartsPosition) {
     s32* args = event->args;
     BattleUnit* unit;

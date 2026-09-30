@@ -2573,3 +2573,11 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   part offsets are the unit's minus 0xC8), countdown `Start` (100%), `SaveReStart` (100%; 64-bit locals in the order the target
   multiplies them), `Main` (97.1%) and `Disp` (94.4%; `GSW(0)` is 0xF5DE0180, the flag tests are `& 4` in Disp and `& 8` in
   Main). `GSW(n)` in evt_cmd.h is `n - 170000000`, so the target constant is `GSW(0)`.
+
+- **Raw offsets in the new battle handlers** (BattleUnit has these as unnamed gaps; a header pass should name them):
+  `0x168` frame counter, `0x178` angle, `0x17C` distance, `0x180` arc height / step counter, `0x1A4/0x1A8/0x1AC` per-frame
+  position deltas, `0x1B0` arc angle, `0x1B4` arc angle step, `0x1B8` previous height, `0x188/0x1C0` sound-mode outputs of
+  `BtlUnit_LoadSeMode` (BattleUnitPart: the same fields at 0xA0/0xB0/0xB4/0xB8/0xC0/0xF8, i.e. minus 0xC8).
+  `btlevtcmd_MarioJumpPosition` computes `-(*(f32*)(unit+0x1B8) - *(f32*)(unit+0x1B8))` (a value minus itself) where the target
+  loads the field twice and subtracts: an artefact of the original source (it was probably `prevY - y` with both reads
+  compiled to the same location), kept because it is what the target does.

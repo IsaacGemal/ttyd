@@ -7,7 +7,7 @@ For each function scoring MINPCT..MAXPCT it permutes the leading local declarati
 compiles the variants from copies in a scratch dir (PB_DIR, default /tmp/perm_batch), scores just that function with objdiff
 and appends the best order to PB_DIR/results.jsonl when it beats the baseline. Never edits src/: apply the results with
 tools/perm_apply.py. Skips files listed in scratch/wave*/units.json of a sibling checkout when present."""
-import concurrent.futures as cf, json, os, random, re, subprocess, sys, tempfile, itertools
+import concurrent.futures as cf, json, os, random, re, shutil, subprocess, sys, tempfile, itertools, zlib
 PB=os.environ.get("PB_DIR","/tmp/perm_batch"); os.makedirs(PB,exist_ok=True)
 lo, hi = float(sys.argv[1]), float(sys.argv[2])
 limit = int(sys.argv[3]) if len(sys.argv) > 3 else 10**9
@@ -41,12 +41,12 @@ def flags_for(unit):
     if not m: return None
     f=re.sub(r"\$\n\s*","",m.group(2)); f=re.sub(r"\s+"," ",f).replace("-MMD","").strip()
     return f
-DECL=re.compile(r"^\s+[\w\s\*]+(\[[^\]]*\])?(\s*=\s*[^;]+)?(,\s*\**\w+(\[[^\]]*\])?)*;\s*(//.*)?$")
+DECL=re.compile(r"^\s+(?!(?:return|goto|else|break|continue|case|do|if|while|for|switch|sizeof)\b)(?:(?:const|volatile|unsigned|signed|struct|enum|register|static)\s+)*[A-Za-z_]\w*(?:\s*\*+\s*|\s+)[A-Za-z_]\w*(?:\[[^\]]*\])*(?:\s*=\s*[^;]+)?(?:\s*,\s*\**\s*[A-Za-z_]\w*(?:\[[^\]]*\])*(?:\s*=\s*[^;]+)?)*;\s*(?://.*)?$")
 def find_decls(text,func):
     m=re.search(rf"\b{re.escape(func)}\b[^;{{]*\)\s*{{\n",text)
     if not m: return None
     lines=text[m.end():].split("\n"); n=0
-    while n<len(lines) and DECL.match(lines[n]) and not re.match(r"^\s*(return|goto|else|break|continue)\b",lines[n]): n+=1
+    while n<len(lines) and DECL.match(lines[n]): n+=1
     return m.end(),lines[:n],"\n".join(lines[n:])
 def score_variant(unit,func,text,flags,tag):
     d=tempfile.mkdtemp(prefix="pb_",dir=PB)
@@ -64,8 +64,8 @@ def score_variant(unit,func,text,flags,tag):
     if rr.returncode: return -1
     for f in json.loads(rr.stdout)["units"][0].get("functions",[]):
         if f["name"]==func:
-            subprocess.run(["rm","-rf",d]); return f.get("fuzzy_match_percent",0)
-    subprocess.run(["rm","-rf",d]); return -1
+            shutil.rmtree(d, ignore_errors=True); return f.get("fuzzy_match_percent",0)
+    shutil.rmtree(d, ignore_errors=True); return -1
 pool=cf.ThreadPoolExecutor(max_workers=int(os.environ.get("PB_WORKERS","6")))
 out=open(PB+"/results.jsonl","a")
 count=0
@@ -83,7 +83,7 @@ for base,unit,func in cands:
         for j in range(n):
             if i!=j:
                 o=decls[:]; x=o.pop(i); o.insert(j,x); orders.append(tuple(o))
-    rnd=random.Random(hash((unit,func))&0xffff)
+    rnd=random.Random(zlib.crc32(f"{unit}:{func}".encode()))
     for _ in range(30):
         o=decls[:]; rnd.shuffle(o); orders.append(tuple(o))
     orders=list(dict.fromkeys(o for o in orders if list(o)!=decls))[:70]

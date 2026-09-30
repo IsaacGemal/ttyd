@@ -697,7 +697,7 @@ s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
     return width;
 }
 
-// NONMATCHING: same as iconNumberDispGx (spacing 10/8, flags 0).
+// NONMATCHING (92.09%): same as iconNumberDispGx (spacing 10/8, flags 0).
 s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     BOOL big;
     s32 width;

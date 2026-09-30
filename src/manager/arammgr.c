@@ -5,6 +5,18 @@
 #include "memory.h"
 #include <string.h>
 
+// The owner value every ARQPostRequest of this manager passes.
+#define ARAM_OWNER 0x19751128
+
+#ifdef MUST_MATCH
+// MUST_MATCH: retail loads the flag halfword (and the busy word) again at every test; plain field reads would be reused.
+#define NODE_FLAGS(n) (*(volatile u16*)(n))
+#define GARBAGE_BUSY() (*(volatile s32*)&wp->garbageBusy)
+#else
+#define NODE_FLAGS(n) ((n)->flags)
+#define GARBAGE_BUSY() (wp->garbageBusy)
+#endif
+
 //.bss
 static ARAMWork work;
 
@@ -46,12 +58,12 @@ void aramMgrGarbage(void) {
 
 	first = wp->nodes;
 	for (node = first; node != NULL; node = node->next) {
-		if (*(volatile u16*)node & 2) {
-			while (!(*(volatile u16*)node & 4)) {
+		if (NODE_FLAGS(node) & 2) {
+			while (!(NODE_FLAGS(node) & 4)) {
 			}
 		}
-		if (*(volatile u16*)node & 8) {
-			while (!(*(volatile u16*)node & 0x10)) {
+		if (NODE_FLAGS(node) & 8) {
+			while (!(NODE_FLAGS(node) & 0x10)) {
 			}
 		}
 	}
@@ -82,14 +94,14 @@ void aramMgrGarbage(void) {
 			count = (wp->garbageChunk - 1 + cur->size) / wp->garbageChunk;
 			for (i = 0, offset = 0; i < count; i++) {
 				wp->garbageBusy = 1;
-				ARQPostRequest(&wp->request, 0x19751128, 1, 0, cur->aramAddr + offset, (u32)wp->garbageBuf,
+				ARQPostRequest(&wp->request, ARAM_OWNER, 1, 0, cur->aramAddr + offset, (u32)wp->garbageBuf,
 				               wp->garbageChunk, aramCallbackGarbage);
-				while (*(volatile s32*)&wp->garbageBusy) {
+				while (GARBAGE_BUSY()) {
 				}
 				wp->garbageBusy = 1;
-				ARQPostRequest(&wp->request, 0x19751128, 0, 0, (u32)wp->garbageBuf, cursor + offset,
+				ARQPostRequest(&wp->request, ARAM_OWNER, 0, 0, (u32)wp->garbageBuf, cursor + offset,
 				               wp->garbageChunk, aramCallbackGarbage);
-				while (*(volatile s32*)&wp->garbageBusy) {
+				while (GARBAGE_BUSY()) {
 				}
 				offset += 0x8000;
 			}
@@ -138,7 +150,7 @@ void* aramMgrToAramAsync(void* data, u32 size) {
 		wp->aramCursor += size;
 	}
 	DCStoreRange(data, size);
-	ARQPostRequest(&node->request, 0x19751128, 0, 0, (u32)data, aram, size, arqCallbackToAram);
+	ARQPostRequest(&node->request, ARAM_OWNER, 0, 0, (u32)data, aram, size, arqCallbackToAram);
 	node->flags |= 1;
 	node->flags |= 2;
 	node->data = data;
@@ -181,11 +193,11 @@ void arqCallbackToMram(u32 request) {
 void aramMgrToMram(void* aram, void* mram) {
 	ARAMWorkNode* node = aram;
 
-	while (!(*(volatile u16*)node & 4)) {
+	while (!(NODE_FLAGS(node) & 4)) {
 	}
-	ARQPostRequest(&node->request, 0x19751128, 1, 0, node->aramAddr, (u32)mram, node->size, arqCallbackToMram);
+	ARQPostRequest(&node->request, ARAM_OWNER, 1, 0, node->aramAddr, (u32)mram, node->size, arqCallbackToMram);
 	node->flags |= 8;
 	node->mramAddr = mram;
-	while (!(*(volatile u16*)node & 0x10)) {
+	while (!(NODE_FLAGS(node) & 0x10)) {
 	}
 }

@@ -11,8 +11,11 @@
 #include <dolphin/mtx.h>
 
 extern GlobalWork* gp;
+// .sdata2 colours of this unit: white (0xFFFFFFFF) for the digits and the colon, and a yellowish 0xFFFFFF99 for the frame.
 extern u32 dat_80420498;
 extern u32 dat_8042049c;
+#define COUNTDOWN_WHITE (*(GXColor*)&dat_80420498)
+#define COUNTDOWN_YELLOW (*(GXColor*)&dat_8042049c)
 
 //.sbss
 static CountdownWork* wp;
@@ -111,7 +114,11 @@ void countDownMain(void) {
 // NONMATCHING (94.42%): the two-digit tables and matrix order match; the register assignment of sec/ms and the two
 // white GXColor locals (stack slots 0x1c/0x20) differ, and the pool constants are anonymous.
 void countDownDisp(CameraId camId, void* param) {
-	GXColor colColon = *(GXColor*)&dat_80420498;
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail keeps three copies of the white colour on the stack (one of them never read); they only shape the
+	// stack slots and the registers, the natural code passes COUNTDOWN_WHITE directly. The declaration order is the
+	// permutation search's best.
+	GXColor colColon = COUNTDOWN_WHITE;
 	s32 sec;
 	s32 ms;
 	s32 i;
@@ -119,9 +126,21 @@ void countDownDisp(CameraId camId, void* param) {
 	Mtx mtx;
 	CountdownWork* work = wp;
 	Mtx scale;
-	GXColor col0 = *(GXColor*)&dat_80420498;
-	GXColor colDigit = *(GXColor*)&dat_80420498;
+	GXColor col0 = COUNTDOWN_WHITE;
+	GXColor colDigit = COUNTDOWN_WHITE;
 	Mtx base;
+#else
+	s32 sec;
+	s32 ms;
+	s32 i;
+	s32 digits[3];
+	Mtx mtx;
+	CountdownWork* work = wp;
+	Mtx scale;
+	Mtx base;
+#define colColon COUNTDOWN_WHITE
+#define colDigit COUNTDOWN_WHITE
+#endif
 
 	ms = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
 	if (work->flags & 4) {
@@ -135,7 +154,7 @@ void countDownDisp(CameraId camId, void* param) {
 	PSMTXTrans(base, work->x + work->dx, work->y + work->dy, 0.0f);
 	PSMTXScale(scale, 2.5f, 1.0f, 1.0f);
 	PSMTXConcat(base, scale, mtx);
-	iconDispGxCol(mtx, 0x10, 0x1F6, *(GXColor*)&dat_8042049c);
+	iconDispGxCol(mtx, 0x10, 0x1F6, COUNTDOWN_YELLOW);
 	digits[0] = sec / 100;
 	digits[1] = (sec % 100) / 10;
 	digits[2] = sec % 10;
