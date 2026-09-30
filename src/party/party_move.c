@@ -1640,8 +1640,6 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
 }
 
 // partyMoveMain returns a state code in r3.
-// Match note: the three zero compares need the named zero below to keep the constant in f0 and
-// the field in f1 as the original does.
 #ifdef MUST_MATCH
 // Match shape: for these zero compares the original loads the field into f1 and 0.0f into f0;
 // comparing against a named zero makes this compiler allocate the same registers.

@@ -384,10 +384,6 @@ static inline GXColor itemColor1(u8 a, GXColor c) {
 	return c;
 }
 
-static inline GXColor itemColor2(u8 a, GXColor c) {
-	c.a = a;
-	return c;
-}
 #endif
 
 // NONMATCHING (99.91%): scheduling only. The 21.333334/42.666668/2.0/0.5 .sdata2 pool entries are in the
@@ -450,14 +446,7 @@ void effItemUseDisp(CameraId camId, void* param) {
 	for (; i < effect->count; i++, data++) {
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
-#ifdef MUST_MATCH
-				{
-					f32 f = 2.0f;
-					PSMTXTrans(mtx1, f + data->position.x, data->position.y - f, data->position.z);
-				}
-#else
 				PSMTXTrans(mtx1, data->position.x + 2.0f, data->position.y - 2.0f, data->position.z);
-#endif
 				PSMTXRotRad(mtx2, 'z', data->field_0x30);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
@@ -476,7 +465,7 @@ void effItemUseDisp(CameraId camId, void* param) {
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
 #ifdef MUST_MATCH
-				GXSetChanMatColor(4, itemColor2((data->field_0x34 * 128) / 255, dat_80420ba0));
+				GXSetChanMatColor(4, itemColor1((data->field_0x34 * 128) / 255, dat_80420ba0));
 #else
 				{
 					GXColor color2 = dat_80420ba0;

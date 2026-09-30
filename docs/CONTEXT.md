@@ -2980,8 +2980,18 @@ have agent files in scratch to finish from.
 
 ## Wave 37: the closest near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
-The 48 closest open functions left in dol files (all at 99.8% or better, any number of open functions in the unit),
-16:45-18:03, from main 835c93a. **27 of 48 reached 100%, 1 improved, 21 unchanged, 0 worse.** The unchanged ones are
+The 48 closest open functions left in dol files (all at 99.77% or better, any number of open functions in the unit),
+16:45-18:03, from main 835c93a. **27 of 48 reached 100%, 1 improved, 20 unchanged, 0 worse.** The unchanged ones are
 the register-allocation tail the permuter targets. Fixed at collection: eff_kemuri, eff_itemget and sac_scissor had
 extern'd constants their units pool themselves; mobjdrv's mobjNearDistCheck2 had become a pool-base hack that cost
 the unit's .rodata, so it is back to main's version.
+
+Three rewrites fix bugs in main, each confirmed against the retail asm:
+- imgMain tested the shadow flag inverted; the loop now exits at the first shadow with flag 4 set.
+- BattleAudience_Case_TurnEnd called BattleAudienceNumToTarget unconditionally; retail skips it when flag 0x40000 is
+  set.
+- BattleIconInit cleared only 10 icons; retail clears 16 (0x9C0 bytes), so `BattleWork.icons` is now `[16]` and the
+  padding after it starts at 0x18C70.
+
+Two functions outside the targets also gained from mapdrv's const definitions of float_0_80419850 and
+float_1_80419860: mapCheckAnimation 94.21 to 99.47 and mapCalcAnimMatrix 93.45 to 94.26.

@@ -210,13 +210,13 @@ void imgMain(void) { //1:1
 							animPoseSetMaterialFlagOff(entry->poseId, 0x10000);
 							break;
 						case 1:
-							dispEntry(CAMERA_SHADOW, float_0_8041a280, 1, imgShadowDisp, entry);
-							dispEntry(CAMERA_3D_IMAGE, float_0_8041a280, 5, imgDisp_ProjPlane, entry);
+							dispEntry(CAMERA_SHADOW, 0.0f, 1, imgShadowDisp, entry);
+							dispEntry(CAMERA_3D_IMAGE, 0.0f, 5, imgDisp_ProjPlane, entry);
 							break;
 						case 2:
 							animPoseSetMaterialFlagOn(entry->poseId, 0x10000);
-							dispEntry(CAMERA_SHADOW, float_0_8041a280, 6, imgShadowDisp, entry);
-							dispEntry(CAMERA_3D_IMAGE, float_0_8041a280, 5, imgDisp_ProjPlane, entry);
+							dispEntry(CAMERA_SHADOW, 0.0f, 6, imgShadowDisp, entry);
+							dispEntry(CAMERA_3D_IMAGE, 0.0f, 5, imgDisp_ProjPlane, entry);
 							break;
 					}
 				}
@@ -225,7 +225,7 @@ void imgMain(void) { //1:1
 	}
 
 	for (i = 0; i < 13; i++) {
-		dispEntry(i, float_0_8041a280, 7, imgCapture, NULL);
+		dispEntry(i, 0.0f, 7, imgCapture, NULL);
 	}
 }
 

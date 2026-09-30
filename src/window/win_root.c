@@ -807,7 +807,6 @@ void sort_1_1_func(WindowWork* work) {
 
 // The two trailing lerps use separate deltas so MWCC keeps the first fmadd's
 // difference/accumulator in the original's FPRs.
-// NONMATCHING (99.9%): the int->float magic pools as @NNN@, not double_to_int_802f44d0.
 void winSortMain(WindowWork* work) {
     u32 trg = work->buttonTrg;
     u32 rep = work->dirRep;

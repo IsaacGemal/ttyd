@@ -147,10 +147,8 @@ extern BattleWeapon partyWeapon_ChristineKiss;
 // (`lis r5, unk_evt_80390b30+0x40@ha` / `addi r30, r5, unk_evt_80390b30+0x40@l`); MWCC 2.6 folds it into the
 // first weapon offset (`lis ...unk_evt_80390b30@l` / `addi r30, ...@l` / leaf `addi 0x490`). 0x80390B70 is the
 // base the original used and it exists in no object's symbol table, so dtk's `dol split` names the reference as
-// the nearest known symbol plus addend; MWCC 2.6 (checked every GC/ProDG/Wii version and every opt level) always
-// canonicalises `sym + K` to addend 0 with K in the following immediate, so it cannot emit that addend. It also
-// ignores `__declspec(section)`, and `extern u8 x[] : 0x80390B70;` folds the whole leaf away. The real fix is a
-// symbol at 0x80390B70 in config/G8MJ01/symbols.txt (then the yoshi/chuchurina pattern matches).
+// the nearest known symbol plus addend, which MWCC cannot emit (it folds `sym + K` into the following
+// immediate). The real fix is a symbol at 0x80390B70 in config/G8MJ01/symbols.txt.
 // NONMATCHING (99.98%): the +0x40 sits in the later immediate instead of the symbol addend (same final address).
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH

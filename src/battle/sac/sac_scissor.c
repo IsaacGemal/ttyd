@@ -1158,14 +1158,14 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
 
     d1x = bx - ax;
     type1 = 0;
-    if (0.0f == d1x) type1 = 1;
+    if (d1x == 0.0f) type1 = 1;
     d1y = by - ay;
-    if (0.0f == d1y) type1 = 2;
+    if (d1y == 0.0f) type1 = 2;
     d2x = dx - cx;
     type2 = 0;
-    if (0.0f == d2x) type2 = 1;
+    if (d2x == 0.0f) type2 = 1;
     d2y = dy - cy;
-    if (0.0f == d2y) type2 = 2;
+    if (d2y == 0.0f) type2 = 2;
 
     if (type1 == 0 && type2 == 0) {
         f32 m1, m2, den;

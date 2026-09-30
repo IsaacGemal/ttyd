@@ -562,7 +562,7 @@ USER_FUNC(zakoEntryDokan) {
 // (str_802ECF20+0x690/0x6A8/0x6C0) differ only in their addend. Every literal string in this TU pools into the
 // original `.rodata` block anchored at str_802ECF20, but this source has no `.data`/`.sdata` yet, so the unit's
 // `.data`-referenced strings never populate the pool: our `.rodata` is 0x1D0 vs the target's 0x748, which puts
-// the whole tail block exactly 0x578 bytes early. Not fixable from `dokanCheck` alone; see REPORT.md.
+// the whole tail block exactly 0x578 bytes early. Not fixable from `dokanCheck` alone.
 USER_FUNC(dokanCheck) {
     s32* args = event->args;
     NpcEntry* npc = evtNpcNameToPtr(event, "me");

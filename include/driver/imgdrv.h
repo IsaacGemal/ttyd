@@ -44,8 +44,6 @@ typedef struct ImageWork {
 	ImageEntry* entries; //0x4
 } ImageWork;
 
-extern f32 float_0_8041a280;
-
 void imgInit(void);
 void imgAutoRelease(s32 type);
 s32 imgEntry(const char* name, s32 type);

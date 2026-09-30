@@ -954,7 +954,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
-// 100%: the 1.0f/1000.0f literals must be the named .sdata2 externs, and float_0/float_1 must be
+// the 1.0f/1000.0f literals must be the named .sdata2 externs, and float_0/float_1 must be
 // declared `const` (they are read-only in the original) so the compiler hoists both loads ahead of
 // the stores and assigns f1=float_0, f0=float_1. objdiff still prints an arg_mismatch for the
 // compiler-generated int->float `double_to_int` constant (local @nnnn vs the named .rodata symbol);
@@ -1039,7 +1039,7 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 }
 
-// NONMATCHING (94.21%): search-loop register permutation and the search branch shape
+// NONMATCHING (99.47%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	MapEntryAnimData* found = mapSearchAnmObj(animName);
 
@@ -1266,7 +1266,7 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (93.45%): first pass
+// NONMATCHING (94.26%): first pass
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
