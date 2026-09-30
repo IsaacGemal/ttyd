@@ -2230,5 +2230,5 @@ checked, so reviews should be asked to say which findings need a second look aft
 
 ## Grind 18 (Claude #3)
 
-- **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, the index is `u32`, and the static buffer is used directly instead of through an `out` pointer.
+- **win_mario**: `unk_8016af5c` and `winZenkakuStr` match (only pool symbol names differ): the digit table and the `"-"`, `""`, `"%d"` strings are literals (they pool into `.sdata2`/`.rodata` by themselves), the `char` buffer is `signed char`, `winZenkakuStr`'s index is `u32` (`unk_8016af5c` keeps `s32 i`), and the static buffer is used directly instead of through an `out` pointer.
 - **battle_event_cmd**: the `btlevtcmd_*` handlers that fetch a unit match with `BattleWork* wp = _battleWorkPointer;` declared (after `args`) and the call nested as `BattleGetUnitPtr(wp, BattleTransID(event, id))` (no `id` temp); 7 more at 100%. `btlevtcmd_SpawnUnit` is an early return on NULL. `btlevtcmd_onoff_battleflag` reads `args[1]` and `wp` after the call (97.9%).
