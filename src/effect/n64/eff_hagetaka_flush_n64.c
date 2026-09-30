@@ -7,13 +7,14 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423130;
+
+
 // .sdata2 constants (defined in the original unit's data section).
-extern const f32 float_deg2rad_8041f0c8;
-extern const f32 float_0p03125_8041f0cc;
-extern const f32 float_0_8041f0d0;
 
 // .sbss2 shared scratch GXColor, only its bytes are overwritten.
-GXColor unk_80423130;
 
 // .sdata byte-indexed color rotation table (24 bytes).
 static u8 color_rotation_data[24] = {
@@ -138,7 +139,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	alpha = data->field_0x24;
 	scale = data->field_0x28 * data->field_0x2C;
 	PSMTXTrans(mtxTrans, data->x, data->y, data->z);
-	PSMTXRotRad(mtxRot, 'y', float_deg2rad_8041f0c8 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(mtxRot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(mtxScale, scale, scale, scale);
 	PSMTXConcat(mtxTrans, mtxRot, mtxTrans);
 	PSMTXConcat(mtxTrans, mtxScale, mtxTrans);
@@ -154,7 +155,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(0, 7, 1, 4, 7);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	PSMTXScale(mtxScale, float_0p03125_8041f0cc, float_0p03125_8041f0cc, float_0_8041f0d0);
+	PSMTXScale(mtxScale, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(mtxScale, 0x1e, 1);
 	effGetTexObjN64(0x1c, &texObj);
 	GXLoadTexObj(&texObj, 0);
@@ -172,3 +173,5 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).

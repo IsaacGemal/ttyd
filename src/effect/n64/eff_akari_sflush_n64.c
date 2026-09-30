@@ -7,19 +7,15 @@
 #include "matching.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230a0;
+
+
 // .sdata2 constants owned by this unit (named after their original addresses).
-extern const f32 float_deg2rad_8041e904;
-extern const f32 float_6p2832_8041e908;
-extern const f32 float_360_8041e90c;
-extern const f32 float_0p1_8041e910;
-extern const f32 float_1_8041e914;
-extern const f32 float_30_8041e918;
-extern const f32 float_0_8041e91c;
 extern GXColor dat_8041e900;
 // .sbss2 scratch GXColor the original builds its TEV colour from.
-extern GXColor unk_804230a0;
 // .rodata integer-to-float conversion constant.
-extern const f64 double_to_int_802fa1f0;
 
 // .data vertex array, local to this unit (0x54 bytes).
 static u32 size16x16_tex32x32_vtx[0x54 / 4] = {
@@ -97,7 +93,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 	counter = data->field_0x14;
 
 	if (life < 8) {
-		data->field_0x2C += float_0p3_8041e920 * (8 - life);
+		data->field_0x2C += 0.3f * (8 - life);
 	}
 
 	if (counter < 16) {
@@ -122,7 +118,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 // plain build under #else.
 //
 // The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each
-// inner iteration (pool entries float_1_8041e914 / float_30_8041e918 / float_0_8041e91c); referencing
+// inner iteration (pool entries 1.0f / 30.f / 0.0f); referencing
 // the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
 // register.  The literals get anonymous .sdata2 labels (@227-@229), which objdiff scores as equal to
 // the named symbols, so the function is 100%.
@@ -168,7 +164,7 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	field14 = data->field_0x14;
 	alpha = data->field_0x24;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041e904);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
 	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -206,17 +202,17 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
 	for (i = 0; i < data->field_0x30 + 1; i++) {
-		scaleVal = float_0p1_8041e910 * (f32)cos(float_6p2832_8041e908 *
+		scaleVal = 0.1f * (f32)cos(6.2831855f *
 		                                        (f32)(field14 * 8 + i * 180 / (data->field_0x30 + 1)) /
-		                                        float_360_8041e90c) +
+		                                        360.f) +
 		           (f32)(i + 1);
 		scaleVal *= data->field_0x2C;
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e904 * (f32)(i * 36));
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)(i * 36));
 		PSMTXScale(scaleMtx, scaleVal, scaleVal, scaleVal);
 		PSMTXConcat(rotMtx, scaleMtx, outerMtx);
 
 		for (j = 0; j < 5; j++) {
-			PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e904 * (f32)(90 + j * 72));
+			PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)(90 + j * 72));
 			PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
 			PSMTXConcat(rotMtx, scaleMtx, rotMtx);
 			PSMTXTrans(mtx, 30.0f, 0.0f, 0.0f);
@@ -233,3 +229,5 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
