@@ -1,7 +1,9 @@
 #include "eff/eff_hibashira.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "mario/mariost.h"
 #include "math_ext.h"
 #include "memory.h"
 
@@ -9,8 +11,15 @@
 #include <dolphin/mtx.h>
 
 // .rodata
+const Vec vec3_803013b8 = { 0.0f, 0.0f, 0.0f };
+const char str_803013C4[] = "EFF_hibashira";
+const char str_803013D4[] = "EFF_hibashira2";
 const char str_803013E4[] = "hibashira";
 const f64 double_to_int_803013f0 = 4503601774854144.0;
+
+// .sdata2 strings effHibashiraMain reads from the original unit's data.
+extern const char str_80422348[4];
+extern const char str_8042234C[4];
 
 // .sdata2
 extern const u32 dat_80422338;
@@ -92,6 +101,119 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 	}
 
 	return entry;
+}
+
+// The vec3_803013b8 -> disp copy in the first basic block is scheduled differently:
+// MWCC emits the words 0,2,1 and hoists the copy above the userdata load; retail emits
+// 0,1,2 interleaved with the data->position loads. Every other instruction matches.
+// NONMATCHING (96.16%): first basic block scheduling only.
+void effHibashiraMain(EffectEntry* effect) {
+	HibashiraData* data;
+	HibashiraData* elem;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local
+	   before dispCalcZ; a single local folds the copy away. */
+	Vec position;
+#endif
+	Vec disp;
+	s32 type;
+	s32 inBattle;
+	s32 i;
+
+	data = effect->userdata;
+	disp = vec3_803013b8;
+	disp.x = data->position.x;
+	disp.y = data->position.y;
+	disp.z = data->position.z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	inBattle = gp->inBattle != 0;
+	type = data->type;
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->field_0x1C = 16;
+	}
+
+	switch (type) {
+	case 0:
+	case 1:
+	case 3:
+	case 4:
+		if (!animGroupBaseAsync(str_803013C4, inBattle, NULL)) {
+			return;
+		}
+		break;
+	case 2:
+	case 5:
+		if (!animGroupBaseAsync(str_803013D4, inBattle, NULL)) {
+			return;
+		}
+		break;
+	}
+
+	if (data->field_0x1C < 1000) {
+		data->field_0x1C--;
+	}
+	if (data->field_0x1C < 16) {
+		data->field_0x18 = data->field_0x1C << 4;
+	}
+	if (data->field_0x1C < 0) {
+		elem = data;
+		for (i = 0; i < effect->count; i++) {
+			if (elem->animPose != -1) {
+				animPoseRelease(elem->animPose);
+			}
+			elem++;
+		}
+		effDelete(effect);
+		return;
+	}
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->field_0x24 != 0) {
+			data->field_0x24--;
+		} else {
+			if (data->animPose == -1) {
+				switch (type) {
+				case 0:
+				case 3:
+					data->animPose = animPoseEntry(str_803013C4, inBattle);
+					animPoseSetAnim(data->animPose, str_80422348, TRUE);
+					break;
+				case 1:
+				case 4:
+					data->animPose = animPoseEntry(str_803013C4, inBattle);
+					animPoseSetAnim(data->animPose, str_8042234C, TRUE);
+					break;
+				case 2:
+				case 5:
+					data->animPose = animPoseEntry(str_803013D4, inBattle);
+					animPoseSetAnim(data->animPose, str_80422348, TRUE);
+					break;
+				}
+			}
+			data->field_0x20++;
+			if (data->field_0x20 > 1000) {
+				data->field_0x20 = 1000;
+			}
+			if (data->field_0x20 > 5) {
+				data->field_0x18 -= 10;
+			}
+			if (data->field_0x18 < 0) {
+				data->field_0x18 = 0;
+			}
+		}
+	}
+
+#ifdef MUST_MATCH
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effHibashiraDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effHibashiraDisp, effect);
+#endif
 }
 
 void effHibashiraDisp(CameraId camId, void* param) {

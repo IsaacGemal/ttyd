@@ -2,11 +2,237 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include "system.h"
+#include "seq/seq_title.h"
+#include "pmario_sound.h"
+#include <demo/DEMOInit.h>
+#include <dolphin/os.h>
+#include <dolphin/base/PPCArch.h>
+#include <dolphin/vi.h>
+#include <string.h>
+#include <stdio.h>
+
+// These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob).
+extern const char str_803019E0[24];
+extern const char str_803019F8[24];
+extern const char str_80301A10[28];
+extern const char str_80301A2C[28];
+extern const char str_80301A48[36];
+extern const char str_80301A6C[32];
+extern const char str_80301A8C[32];
+extern const char str_80301AAC[32];
+extern const char str_80301ACC[40];
+extern const char str_80301AF4[28];
+extern const char str_80301B10[96];
+extern const u32 dat_80422600;
+extern const char str_80422604[4];
+extern const f32 float_0_80422608;
+extern const f32 float_608_8042260c;
+extern const f32 float_480_80422610;
+extern const f32 float_1_80422614;
+extern const f32 float_0p5_80422618;
 
 void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_DSI, (OSErrorHandler)N_systemErrorHandler);
 	OSSetErrorHandler(OS_ERROR_ISI, (OSErrorHandler)N_systemErrorHandler);
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
+}
+
+// NONMATCHING (89.04%): register allocation, the signed int->float conversion, and the interrupt
+// restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm
+// is not allowed here), written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. The original keeps
+// context/error/dsisr/dar in r26/r23/r25/r24 and the string base in r29 with an indexed gpr loop, while
+// this compiler uses different callee-saved registers and a running pointer, so two more callee-saved
+// registers and 0x10 of frame differ. The original's font MTXScale u16->float conversion uses the
+// unsigned magic double_to_int_mask_80301b70 from unk_0x8025de70.o's .rodata; under MUST_MATCH it
+// converts as signed and shares double_to_int_803019d8.
+void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
+	//registers
+	OSFontHeader* fontHeader;
+	s8* loop_newline;
+	s8* loop_zero;
+	s32 width2, height2;
+	int i;
+	u32 count, stack;
+	u16 w1, w2, h1, h2, x1, x2, y1, y2;
+	//stack vars
+	char print_buffer2[0x400]; // 0x10E0
+	char print_buffer[0x1000]; // 0xE0
+	Mtx44 projection; // 0xA0
+	Mtx matrix; // 0x70
+	Mtx matrix2; // 0x40
+	GXTexObj texObj; // 0x20
+	void* image; // 0x1C
+	s32 x; // 0x18
+	s32 y; // 0x14
+	s32 width; // 0x10
+#ifdef MUST_MATCH
+	u32 clearColor;
+#endif
+
+	if (N_getDebugMode() >= 0) {
+		psndExit();
+		while (1) {} //softlock
+	}
+
+	switch (error) {
+		case OS_ERROR_DSI:
+			strcpy(print_buffer, str_803019E0);
+			break;
+		case OS_ERROR_ISI:
+			strcpy(print_buffer, str_803019F8);
+			break;
+		case OS_ERROR_PROGRAM:
+			strcpy(print_buffer, str_80301A10);
+			break;
+	}
+	sprintf(print_buffer2, str_80301A2C, context);
+	strcat(print_buffer, print_buffer2);
+	for (i = 0; i < 16; i++) {
+		sprintf(print_buffer2, str_80301A48,
+			i, context->gpr[i],
+			i + 16, context->gpr[i + 16]
+		);
+		strcat(print_buffer, print_buffer2);
+	}
+	sprintf(print_buffer2, str_80301A6C, context->lr, context->cr);
+	strcat(print_buffer, print_buffer2);
+	sprintf(print_buffer2, str_80301A8C, context->srr0, context->srr1);
+	strcat(print_buffer, print_buffer2);
+	sprintf(print_buffer2, str_80301AAC, dsisr, dar);
+	strcat(print_buffer, print_buffer2);
+	strcat(print_buffer, str_80422604);
+	sprintf(print_buffer2, str_80301ACC);
+	strcat(print_buffer, print_buffer2);
+	stack = context->gpr[1]; //get r1 (stack)
+	i = 0;
+	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
+		sprintf(print_buffer2, str_80301AF4, stack, *(u32*)stack, *(u32*)(stack + 4));
+		strcat(print_buffer, print_buffer2);
+		stack = *(u32*)stack;
+	}
+	strcat(print_buffer, str_80422604);
+	sprintf(print_buffer2, str_80301B10, context->srr0, dar);
+	strcat(print_buffer, print_buffer2);
+	psndExit();
+	OSFillFPUContext(context);
+	PPCMtmsr(PPCMfmsr() | 0x8002);
+	L_smartReInit();
+	if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
+		fontHeader = smartAlloc(OS_FONT_SIZE_SJIS, 0)->address;
+	}
+	else {
+		fontHeader = smartAlloc(OS_FONT_SIZE_ANSI, 0)->address;
+	}
+	OSInitFont(fontHeader);
+#ifdef MUST_MATCH
+	// The original loads the clear colour from the shared constant pool and copies it through a
+	// u32 local (giving the two stores before the call); the plain compound literal folds away.
+	clearColor = dat_80422600;
+	GXSetCopyClear(*(GXColor*)&clearColor, 0xFFFFFF);
+#else
+	GXSetCopyClear((GXColor){0, 0, 0, 0xFF}, 0xFFFFFF);
+#endif
+	GXCopyDisp((void*)DEMOGetCurrentBuffer(), 1);
+	GXSetViewport(float_0_80422608, float_0_80422608, float_608_8042260c, float_480_80422610, float_0_80422608, float_1_80422614);
+	GXSetScissor(0, 0, 608, 480);
+	MTXOrtho(projection, float_0_80422608, float_608_8042260c, float_0_80422608, float_480_80422610, float_0_80422608, float_1_80422614);
+	GXSetProjection(projection, GX_ORTHOGRAPHIC);
+	MTXScale(matrix, float_0p5_80422618, float_0p5_80422618, float_1_80422614);
+	GXLoadPosMtxImm(matrix, 0);
+	GXSetCurrentMtx(0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_LO_CLEAR);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, 1, 3, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, 1, 3, 0);
+	while (1) {
+		count = VIGetRetraceCount();
+		loop_newline = (s8*)&print_buffer;
+		width2 = 50;
+		height2 = 50;
+		i = 0;
+		loop_zero = loop_newline;
+		while (*loop_zero != '\0') {
+			if (*loop_newline == '\n') {
+				width2 = 50;
+				height2 += 24;
+				i++;
+				loop_zero++;
+				loop_newline++;
+			}
+			else {
+				OSGetFontTexture((const char*)&print_buffer[i], &image, &x, &y, &width);
+				GXInitTexObj(&texObj, image, fontHeader->sheetWidth, fontHeader->sheetHeight,
+					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
+				GXLoadTexObj(&texObj, GX_TEXMAP0);
+#ifdef MUST_MATCH
+				MTXScale(matrix2, float_1_80422614 / (s32)fontHeader->sheetWidth, float_1_80422614 / (s32)fontHeader->sheetHeight, float_1_80422614);
+#else
+				MTXScale(matrix2, float_1_80422614 / fontHeader->sheetWidth, float_1_80422614 / fontHeader->sheetHeight, float_1_80422614);
+#endif
+				GXLoadTexMtxImm(matrix2, 0x1E, GX_MTX2x4);
+				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+				w1 = width2;
+				w2 = (s16)width2 + fontHeader->cellWidth;
+				h1 = height2;
+				h2 = (s16)height2 + fontHeader->cellHeight;
+				x1 = x;
+				x2 = x + fontHeader->cellWidth;
+				y1 = y;
+				y2 = y + fontHeader->cellHeight;
+
+				GXPosition1x16(w1);
+				GXPosition1x16(h1);
+				GXPosition1x16(0);
+				GXPosition1x16(x1);
+				GXPosition1x16(y1);
+
+				GXPosition1x16(w2);
+				GXPosition1x16(h1);
+				GXPosition1x16(0);
+				GXPosition1x16(x2);
+				GXPosition1x16(y1);
+
+				GXPosition1x16(w2);
+				GXPosition1x16(h2);
+				GXPosition1x16(0);
+				GXPosition1x16(x2);
+				GXPosition1x16(y2);
+
+				GXPosition1x16(w1);
+				GXPosition1x16(h2);
+				GXPosition1x16(0);
+				GXPosition1x16(x1);
+				GXPosition1x16(y2);
+
+				i++;
+				loop_zero++;
+				loop_newline++;
+				width2 += width;
+			}
+		}
+		GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+		GXSetColorUpdate(1);
+		GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_OR, GX_ALWAYS, 0);
+		GXSetAlphaUpdate(1);
+		GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
+		VISetNextFrameBuffer(DemoCurrentBuffer);
+		VISetBlack(0);
+		VIFlush();
+		do { ; } while (count == VIGetRetraceCount());
+		if (DemoCurrentBuffer == DemoFrameBuffer1)
+			DemoCurrentBuffer = DemoFrameBuffer2;
+		else
+			DemoCurrentBuffer = DemoFrameBuffer1;
+	}
 }
 
 #ifdef __MWERKS__

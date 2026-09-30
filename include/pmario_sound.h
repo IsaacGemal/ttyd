@@ -106,6 +106,7 @@ void psndSFXAllOff(void);
 s32 psndSFXOn(const char* name);
 s32 psndSFXOn_(const char* name);
 s32 psndSFXOn_3D(const char* name, Vec* position);
+void psndSFXOnVol(s32 a, s32 b);
 
 BOOL psndBGMOff_f_d(s32 flags, s32 fadetime, BOOL someswitch);
 BOOL psndBGMStartCheck(s32 id);
@@ -139,4 +140,4 @@ s32 psndENV_LPF(s32 id, s32 freq);
 void psndSFX_dist(s32 id, u16 dist);
 BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d);
 extern PaperSoundBGM psbgm[2];
-void psndENV_stop(u16 id);
+void psndENV_stop(u32 id);

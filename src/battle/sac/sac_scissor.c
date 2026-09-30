@@ -36,6 +36,7 @@ extern f32 float_neg304_80421740;
 extern f32 float_304_80421744;
 extern f32 float_0p5_80421748;
 extern f32 float_1_80421754;
+extern f32 float_1Eneg06_804217b4;
 extern f32 float_neg1_80421750;
 extern f32 float_9_80421758;
 extern f32 float_100_8042175c;
@@ -1108,6 +1109,163 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
     return scissor_intersection(ax, ay, bx, by, cx, cy, dx, dy, ox, oy);
 }
 #pragma dont_inline reset
+
+// NONMATCHING (99.85%): the two independent `fabs` at each axis test are scheduled
+// |dx| before |dy|, while the original computes |dy| first. The 0.0f/1.0f literals
+// also pool as anonymous @NNN constants rather than the named float_0/float_1 symbols.
+s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
+    f32 d1x, d1y, d2x, d2y;
+    f32 minX1, minY1, maxX1, maxY1;
+    f32 minX2, minY2, maxX2, maxY2;
+    s32 type1;
+    s32 type2;
+
+    if (ax <= bx) {
+        minX1 = ax;
+        maxX1 = bx;
+    } else {
+        minX1 = bx;
+        maxX1 = ax;
+    }
+    if (ay <= by) {
+        minY1 = ay;
+        maxY1 = by;
+    } else {
+        minY1 = by;
+        maxY1 = ay;
+    }
+    if (cx <= dx) {
+        minX2 = cx;
+        maxX2 = dx;
+    } else {
+        minX2 = dx;
+        maxX2 = cx;
+    }
+    if (cy <= dy) {
+        minY2 = cy;
+        maxY2 = dy;
+    } else {
+        minY2 = dy;
+        maxY2 = cy;
+    }
+
+    d1x = bx - ax;
+    type1 = 0;
+    if (d1x == 0.0f) type1 = 1;
+    d1y = by - ay;
+    if (d1y == 0.0f) type1 = 2;
+    d2x = dx - cx;
+    type2 = 0;
+    if (d2x == 0.0f) type2 = 1;
+    d2y = dy - cy;
+    if (d2y == 0.0f) type2 = 2;
+
+    if (type1 == 0 && type2 == 0) {
+        f32 m1, m2, den;
+
+        if (__fabs(d1x) > __fabs(d1y)) {
+            m1 = d1y / d1x;
+            if (__fabs(d2x) > __fabs(d2y)) {
+                m2 = d2y / d2x;
+                if (m1 - m2 != 0.0f) {
+                    den = m1 - m2;
+                } else {
+                    den = float_1Eneg06_804217b4;
+                }
+                *ox = ((cy - ay) + (m1 * ax - m2 * cx)) / den;
+                *oy = m1 * (*ox - ax) + ay;
+            } else {
+                m2 = d2x / d2y;
+                if (m1 * m2 != 1.0f) {
+                    den = 1.0f - m1 * m2;
+                } else {
+                    den = float_1Eneg06_804217b4;
+                }
+                *ox = (m2 * (-m1 * ax + ay - cy) + cx) / den;
+                *oy = m1 * (*ox - ax) + ay;
+            }
+        } else {
+            m1 = d1x / d1y;
+            if (__fabs(d2x) > __fabs(d2y)) {
+                m2 = d2y / d2x;
+                if (m1 * m2 != 1.0f) {
+                    den = 1.0f - m1 * m2;
+                } else {
+                    den = float_1Eneg06_804217b4;
+                }
+                *oy = (m2 * (-m1 * ay + ax - cx) + cy) / den;
+                *ox = m1 * (*oy - ay) + ax;
+            } else {
+                m2 = d2x / d2y;
+                if (m1 - m2 != 0.0f) {
+                    den = m1 - m2;
+                } else {
+                    den = float_1Eneg06_804217b4;
+                }
+                *oy = ((cx - ax) + (m1 * ay - m2 * cy)) / den;
+                *ox = m1 * (*oy - ay) + ax;
+            }
+        }
+        if (*ox >= minX1 && *ox <= maxX1 && *oy >= minY1 && *oy <= maxY1 &&
+            *ox >= minX2 && *ox <= maxX2 && *oy >= minY2 && *oy <= maxY2) {
+            return 1;
+        }
+        return 0;
+    } else if (type1 == 0 && type2 == 1) {
+        f32 m1 = d1y / d1x;
+
+        *ox = cx;
+        *oy = m1 * (*ox - ax) + ay;
+        if (*ox >= minX1 && *ox <= maxX1 && *oy >= minY2 && *oy <= maxY2) return 1;
+        return 0;
+    } else if (type1 == 1 && type2 == 0) {
+        f32 m2 = d2y / d2x;
+
+        *ox = ax;
+        *oy = m2 * (*ox - cx) + cy;
+        if (*ox >= minX2 && *ox <= maxX2 && *oy >= minY1 && *oy <= maxY1) return 1;
+        return 0;
+    } else if (type1 == 0 && type2 == 2) {
+        f32 m1 = d1y / d1x;
+
+        *oy = cy;
+        *ox = (m1 * ax + (*oy - ay)) / m1;
+        if (*oy >= minY1 && *oy <= maxY1 && *ox >= minX2 && *ox <= maxX2) return 1;
+        return 0;
+    } else if (type1 == 2 && type2 == 0) {
+        f32 m2 = d2y / d2x;
+
+        *oy = ay;
+        *ox = (m2 * cx + (*oy - cy)) / m2;
+        if (*oy >= minY2 && *oy <= maxY2 && *ox >= minX1 && *ox <= maxX1) return 1;
+        return 0;
+    } else if (type1 == 1 && type2 == 1) {
+        if (ax == cx) {
+            *ox = cx;
+            *oy = cy;
+            if ((ay >= minY2 && ay <= maxY2) || (by >= minY2 && by <= maxY2)) return 1;
+        }
+        return 0;
+    } else if (type1 == 1 && type2 == 2) {
+        *ox = ax;
+        *oy = cy;
+        if (ax >= minX2 && ax <= maxX2 && cy >= minY1 && cy <= maxY1) return 1;
+        return 0;
+    } else if (type1 == 2 && type2 == 1) {
+        *ox = cx;
+        *oy = ay;
+        if (cx >= minX1 && cx <= maxX1 && ay >= minY2 && ay <= maxY2) return 1;
+        return 0;
+    } else if (type1 == 2 && type2 == 2) {
+        if (ay == cy) {
+            *ox = cx;
+            *oy = cy;
+            if ((ax >= minX2 && ax <= maxX2) || (bx >= minX2 && bx <= maxX2)) return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
 
 // Keep scissor_intersection2 out of line: scissor_cross calls (bl) it in the
 // original rather than inlining its body.

@@ -46,6 +46,20 @@ s32 marioGetPlaneStatus(void) {
 	return 1;
 }
 
+s32 mario_plane_cancel(void) {
+	MarioWork* mario = marioGetPtr();
+
+	if (mario->currMotionId != MARIO_MOTION_PLANE) {
+		return 0;
+	}
+	if ((s32)mario->currSubMotionId >= 0xC && (s32)mario->currSubMotionId < 0x14) {
+		mario->currSubMotionId = 0x32;
+		*(f32*)mario->field_0x2AC = mario->position.y;
+		return 1;
+	}
+	return 0;
+}
+
 // NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
 void mot_plane(void) {
 	MarioWork* mario;

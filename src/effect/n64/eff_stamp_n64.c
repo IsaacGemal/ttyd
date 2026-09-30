@@ -1,8 +1,12 @@
 #include "eff/n64/eff_stamp_n64.h"
+#include "eff/eff_n64.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include <math.h>
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
 
 // .rodata
 const Vec vec3_802fb6f0 = { 0.0f, 0.0f, 0.0f };
@@ -10,6 +14,8 @@ const f64 double_to_int_802fb700 = 4503601774854144.0;
 const char str_802FB708[0xC] = "StampN64";
 
 // .sdata2 shared float pool
+extern const f32 float_deg2rad_8041fde0;
+extern const f32 float_0p03125_8041fde4;
 extern const f32 float_0p9_8041fdf0;
 extern const f32 float_0p1_8041fdf4;
 extern const f32 float_2p4_8041fdf8;
@@ -25,6 +31,16 @@ extern const f32 float_90_8041fe1c;
 extern const f32 float_360_8041fe20;
 extern const f32 float_1_8041fdec;
 extern const f32 float_0_8041fde8;
+
+// .sbss2 GXColor scratch globals used to seed the TEV colours.
+extern GXColor unk_80423270;
+extern GXColor unk_80423274;
+
+// .data
+u32 size16x16_tex64x32_vtx[0x38 / 4] = {
+    0xFFF80000, 0x00000000, 0x00000000, 0x00000008, 0x00000000, 0x08000000, 0x00000000,
+    0x000A0010, 0x00000800, 0x04000000, 0x00FFFFF6, 0x00100000, 0x00000400, 0x000000FF,
+};
 
 typedef struct effStampData {
     u16 type;       // 0x0
@@ -149,4 +165,81 @@ void effStampMain(EffectEntry* effect) {
         data->y = data->scale * (f32)sin(float_6p2832_8041fe18 * (float_90_8041fe1c + data->angle) / float_360_8041fe20);
     }
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
+}
+
+// NONMATCHING (98.60%): the by-value GXColor argument slots (0x8/0xc/0x10/0x14) are permuted and one
+// `addi r29` is scheduled a slot earlier.
+void effStampDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effStampData* data;
+    effStampData* part;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx mtx;
+    Mtx scaleMtx;
+    Mtx rotMtx;
+    Mtx viewMtx;
+    f32 deg2rad;
+    s32 i;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 2, 4, 0xb, 0xf);
+    GXSetTevAlphaIn(0, 7, 1, 4, 7);
+
+    PSMTXTrans(mtx, data->x, data->y, data->z);
+    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fde0);
+    PSMTXConcat(mtx, rotMtx, mtx);
+    PSMTXConcat(cam->view, mtx, viewMtx);
+
+    {
+        GXColor color;
+        GXColor color2;
+        GXColor tmp;
+
+        tmp = unk_80423270;
+        color = tmp;
+        color.r = data->field_0x38;
+        color.g = data->field_0x39;
+        color.b = data->field_0x3A;
+        color.a = data->alpha;
+        GXSetTevColor(1, color);
+        tmp = unk_80423274;
+        color2 = tmp;
+        color2.r = data->field_0x3B;
+        color2.g = data->field_0x3C;
+        color2.b = data->field_0x3D;
+        GXSetTevColor(2, color2);
+    }
+
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    PSMTXScale(scaleMtx, float_0p03125_8041fde4, float_0p03125_8041fde4, float_0_8041fde8);
+    GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+    effGetTexObjN64(0x2b, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetCullMode(0);
+    effSetVtxDescN64((effVtxArray*)size16x16_tex64x32_vtx);
+
+    deg2rad = float_deg2rad_8041fde0;
+    part = data + 1;
+    for (i = 1; i < effect->count; i++, part++) {
+        PSMTXTrans(mtx, part->x, part->y, part->z);
+        PSMTXRotRad(rotMtx, 'z', deg2rad * part->angle);
+        PSMTXScale(scaleMtx, part->field_0x20, part->field_0x1C, float_1_8041fdec);
+        PSMTXConcat(mtx, rotMtx, mtx);
+        PSMTXConcat(mtx, scaleMtx, mtx);
+        PSMTXConcat(viewMtx, mtx, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXSetCurrentMtx(0);
+        GXBegin(0x90, 0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    }
 }

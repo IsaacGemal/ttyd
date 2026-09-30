@@ -1,8 +1,10 @@
 #include "eff/n64/eff_dogabon_attack_n64.h"
+#include "eff/n64/eff_stone_smoke_n64.h"
 #include "eff/eff_n64.h"
 #include "memory.h"
 #include "math_ext.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -42,6 +44,20 @@ typedef struct DogabonAttackData {
     s32 field_0x734[25]; // 0x734
 } DogabonAttackData;
 
+static u8 scale_data[8] = { 0x5E, 0x5C, 0x64, 0x69, 0x6B, 0x69, 0x64, 0x00 };
+u8 scale_data_2[8] = { 0x14, 0x28, 0x3A, 0x49, 0x55, 0x5C, 0x61, 0x64 };
+u8 move_data_1[16] = { 0x00, 0x02, 0x05, 0x09, 0x0E, 0x14, 0x1B, 0x23, 0x2C, 0x36, 0x40, 0x4A, 0x54, 0x5E, 0x64, 0x00 };
+u8 move_data_hazure[20] = { 0x00, 0x0A, 0x14, 0x1E, 0x28, 0x32, 0x3C, 0x46, 0x50, 0x5A,
+                            0x64, 0x6D, 0x75, 0x7C, 0x82, 0x87, 0x8B, 0x8E, 0x90, 0x91 };
+u8 move_data_2[72] = {
+    0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x65, 0x66, 0x66, 0x67,
+    0x67, 0x68, 0x68, 0x68, 0x6B, 0x6B, 0x6E, 0x6E, 0x76, 0x76, 0x7E, 0x7E,
+    0x86, 0x8E, 0x91, 0x91, 0x91, 0x8E, 0x86, 0x7E, 0x7E, 0x76, 0x76, 0x6E,
+    0x6E, 0x69, 0x69, 0x69, 0x66, 0x67, 0x67, 0x68, 0x68, 0x68, 0x6B, 0x6B,
+    0x6E, 0x6E, 0x76, 0x76, 0x7E, 0x7E, 0x86, 0x8E, 0x91, 0x91, 0x91, 0x8E,
+    0x86, 0x7E, 0x7E, 0x76, 0x76, 0x6E, 0x6E, 0x69, 0x69, 0x69, 0x00, 0x00,
+};
+
 static s8 y_data[28] = {
     -5, -5, -5, -4, -4, -4, -3, -3, -2, -2, -1, -1, 0, 0,
     1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 0, 0, 0,
@@ -51,9 +67,16 @@ extern const f32 float_0_8041ecf4;
 extern const f32 float_0p03125_8041ecf0;
 extern const f32 float_deg2rad_8041ecf8;
 extern const f32 float_1_8041ecfc;
+extern const f32 float_0p01_8041ed00;
+extern const f32 float_2_8041ed04;
+extern const f32 float_0p5_8041ed08;
 extern const f32 float_6p2832_8041ed0c;
 extern const f32 float_360_8041ed10;
+extern const f32 float_1080_8041ed14;
 extern const f32 float_15_8041ed18;
+extern const f32 float_0p99_8041ed1c;
+extern const f32 float_neg0p1_8041ed20;
+extern const f32 float_0p9_8041ed24;
 extern const f32 float_120_8041ed28;
 
 // .data vertex array for the 12x12 textured quad.
@@ -61,6 +84,11 @@ u32 size12x12_tex32x32_vtx[14] = {
     0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006, 0xFFFA0000, 0x04000000, 0x000000FF,
     0x00060006, 0x00000400, 0x04000000, 0x00FFFFFA, 0x00060000, 0x00000400, 0x000000FF,
 };
+
+// .rodata zero vector and the two int->float conversion doubles (named so the pool matches).
+const Vec vec3_802fa4b0 = { 0.0f, 0.0f, 0.0f };
+const f64 double_to_int_mask_802fa4c0 = 4503599627370496.0;
+const f64 double_to_int_802fa4c8 = 4503601774854144.0;
 
 const char str_802FA4D0[20] = "DogabonAttackN64";
 
@@ -116,6 +144,231 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
     }
 
     return effect;
+}
+
+void effDogabonAttackMain(EffectEntry* effect) {
+    DogabonAttackData* data = effect->userdata;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local before
+       dispCalcZ; a single local folds the copy away (same idiom as effGlassMain/effStoneSmokeMain). */
+    Vec position;
+#endif
+    Vec disp = vec3_802fa4b0;
+    s32 i;
+    s32 type;
+    s32 index;
+    f32 x0;
+    f32 y0;
+    f32 z0;
+
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+#ifdef MUST_MATCH
+    position = disp;
+#endif
+
+    type = data->type;
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->lifetime = 0x40;
+    }
+
+    if (data->lifetime < 1000) {
+        data->lifetime--;
+    }
+    data->field_0x14++;
+
+    if (data->lifetime < 0) {
+        effDelete(effect);
+        return;
+    }
+
+    index = data->field_0x14 % 7;
+
+    for (i = 0; i < 25; i++) {
+        f32 scale;
+
+        scale = float_0p01_8041ed00 * (f32)scale_data[index];
+        data->field_0x414[i] = scale;
+        data->field_0x3B0[i] = float_2_8041ed04 - scale;
+
+        x0 = data->field_0x158[i];
+        y0 = data->field_0x1BC[i];
+        z0 = data->field_0x220[i];
+
+        switch (data->field_0x6D0[i]) {
+        case 0:
+            data->field_0x2C[i] = x0;
+            data->field_0x90[i] = y0;
+            data->field_0xF4[i] = z0;
+            if (data->field_0x66C[i] != 0) {
+                data->field_0x66C[i]--;
+            } else {
+                f32 s;
+                data->field_0x6D0[i] = 1;
+                s = float_0p01_8041ed00 * (f32)scale_data_2[data->field_0x734[i]];
+                data->field_0x414[i] = s;
+                data->field_0x3B0[i] = s;
+                data->field_0x734[i]++;
+            }
+            break;
+        case 1:
+            {
+                f32 s = float_0p01_8041ed00 * (f32)scale_data_2[data->field_0x734[i]];
+                data->field_0x414[i] = s;
+                data->field_0x3B0[i] = s;
+                data->field_0x734[i]++;
+            }
+            if (data->field_0x734[i] >= 8) {
+                if (type == 0) {
+                    data->field_0x6D0[i] = 2;
+                } else {
+                    data->field_0x6D0[i] = 20;
+                }
+                data->field_0x734[i] = 0;
+            }
+            break;
+        case 20:
+            {
+                f32 s = float_0p01_8041ed00 * (f32)move_data_hazure[data->field_0x734[i]];
+                data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
+                data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
+                data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
+            }
+            data->field_0x414[i] = float_1_8041ecfc;
+            data->field_0x3B0[i] = float_1_8041ecfc;
+            data->field_0x734[i]++;
+            if (data->field_0x734[i] >= 20) {
+                data->field_0x6D0[i] = 5;
+                data->field_0x734[i] = 0;
+                data->field_0x540[i] = float_0p5_8041ed08 * data->field_0x284[i];
+                data->field_0x5A4[i] = float_0p5_8041ed08 * data->field_0x2E8[i];
+                data->field_0x608[i] = float_0p5_8041ed08 * data->field_0x34C[i];
+            }
+            break;
+        case 2:
+            {
+                f32 s = float_0p01_8041ed00 * (f32)move_data_1[data->field_0x734[i]];
+                data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
+                data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
+                data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
+            }
+            data->field_0x414[i] = float_1_8041ecfc;
+            data->field_0x3B0[i] = float_1_8041ecfc;
+            data->field_0x734[i]++;
+            if (data->field_0x734[i] >= 15) {
+                data->field_0x6D0[i] = 3;
+                data->field_0x734[i] = 0;
+            }
+            break;
+        case 3:
+            if (i == 24) {
+                /* MWCC only emits the original's 25 straight stores if they are written out; a loop
+                   leaves a redundant guard. */
+                data->field_0x6D0[0] = 4;
+                data->field_0x6D0[1] = 4;
+                data->field_0x6D0[2] = 4;
+                data->field_0x6D0[3] = 4;
+                data->field_0x6D0[4] = 4;
+                data->field_0x6D0[5] = 4;
+                data->field_0x6D0[6] = 4;
+                data->field_0x6D0[7] = 4;
+                data->field_0x6D0[8] = 4;
+                data->field_0x6D0[9] = 4;
+                data->field_0x6D0[10] = 4;
+                data->field_0x6D0[11] = 4;
+                data->field_0x6D0[12] = 4;
+                data->field_0x6D0[13] = 4;
+                data->field_0x6D0[14] = 4;
+                data->field_0x6D0[15] = 4;
+                data->field_0x6D0[16] = 4;
+                data->field_0x6D0[17] = 4;
+                data->field_0x6D0[18] = 4;
+                data->field_0x6D0[19] = 4;
+                data->field_0x6D0[20] = 4;
+                data->field_0x6D0[21] = 4;
+                data->field_0x6D0[22] = 4;
+                data->field_0x6D0[23] = 4;
+                data->field_0x6D0[24] = 4;
+            }
+            break;
+        case 4:
+            {
+                f32 t = float_0p01_8041ed00 * (f32)move_data_2[data->field_0x734[i]];
+                f32 sinAng;
+                f32 ang;
+                f32 cosAng;
+                f32 factor;
+                f32 cosVal = (f32)cos(float_6p2832_8041ed0c * (f32)(i * 180 / 25) / float_360_8041ed10);
+                f32 amp = float_0p5_8041ed08 * (float_1080_8041ed14 * (float_1_8041ecfc - t));
+
+                ang = float_6p2832_8041ed0c
+                    * ((f32)(i * 1080 / 25) + amp * cosVal)
+                    / float_360_8041ed10;
+                sinAng = (f32)sin(ang);
+                cosAng = (f32)cos(ang);
+                factor = float_15_8041ed18 / t / t;
+                data->field_0x2C[i] = sinAng * factor;
+                data->field_0x90[i] = (f32)(y_data[i] + 10);
+                data->field_0xF4[i] = cosAng * factor;
+            }
+            data->field_0x734[i]++;
+            if (data->field_0x734[i] >= 70) {
+                data->field_0x6D0[i] = 5;
+                data->field_0x734[i] = 0;
+                data->field_0x540[i] = float_0p5_8041ed08 * data->field_0x284[i];
+                data->field_0x5A4[i] = float_0p5_8041ed08 * data->field_0x2E8[i];
+                data->field_0x608[i] = float_0p5_8041ed08 * data->field_0x34C[i];
+            }
+            break;
+        case 5:
+            data->field_0x2C[i] += data->field_0x540[i];
+            data->field_0x90[i] += data->field_0x5A4[i];
+            data->field_0xF4[i] += data->field_0x608[i];
+            data->field_0x540[i] *= float_0p99_8041ed1c;
+            data->field_0x5A4[i] *= float_0p99_8041ed1c;
+            data->field_0x608[i] *= float_0p99_8041ed1c;
+            data->field_0x5A4[i] += float_neg0p1_8041ed20;
+            data->field_0x734[i]++;
+            if (data->field_0x734[i] > 16) {
+                data->field_0x734[i] = 0;
+                data->field_0x6D0[i] = 6;
+            }
+            data->field_0x478[i] *= float_0p9_8041ed24;
+            break;
+        case 6:
+            {
+                Mtx transMtx;
+                Mtx rotMtx;
+                EffectEntry* smokeEffect;
+                f32 x;
+                f32 y;
+                f32 z;
+
+                PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041ecf8 * data->field_0x4DC[i]);
+                PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
+                PSMTXConcat(rotMtx, transMtx, transMtx);
+                x = data->x + transMtx[0][3];
+                y = data->y + transMtx[1][3];
+                z = data->z + transMtx[2][3];
+                smokeEffect = effStoneSmokeN64Entry(0, 0x10, x, y, z, float_1_8041ecfc);
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x28 = 100;
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x2C = 0;
+                ((effStoneSmokeN64Data*)smokeEffect->userdata)->field_0x30 = 0;
+                data->field_0x6D0[i] = 7;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+#ifdef MUST_MATCH
+    dispEntry(4, dispCalcZ(&position), 1, effDogabonAttackDisp, effect);
+#else
+    dispEntry(4, dispCalcZ(&disp), 1, effDogabonAttackDisp, effect);
+#endif
 }
 
 void effDogabonAttackDisp(CameraId camId, void* param) {

@@ -111,3 +111,10 @@ u32 weaponGetPowerHPHalf(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* un
 u32 weaponGetPowerHPHalf2(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
     return unit2->currentHp / 2;
 }
+
+u32 weaponGetFPPowerFPHalf(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
+    if ((unit2->currentFp & 1) == 1) {
+        return unit2->currentFp / 2 + 1;
+    }
+    return unit2->currentFp / 2;
+}

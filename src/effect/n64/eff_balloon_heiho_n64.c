@@ -1,9 +1,12 @@
 #include "eff/n64/eff_balloon_heiho_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "driver/mapdrv.h"
 #include "memory.h"
 
 #include <dolphin/mtx.h>
+#include <dolphin/gx.h>
 
 EffectEntry* effBalloonHeihoN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	EffectEntry* effect;
@@ -51,4 +54,62 @@ void effBalloonHeihoMain(EffectEntry* effect) {
 		data->position.y += data->field_0x10;
 		dispEntry(4, dispCalcZ(&position), 2, effBalloonHeihoDisp, effect);
 	}
+}
+
+static u32 size32x64_tex32x64_vtx[28] = {
+	0xFFF00040, 0x00000000, 0x08000000, 0x00FF0010, 0x00400000, 0x04000800, 0x000000FF,
+	0xFFF00020, 0x00000000, 0x04000000, 0x00FF0010, 0x00200000, 0x04000400, 0x000000FF,
+	0xFFF00010, 0x00000000, 0x02000000, 0x00FF0010, 0x00100000, 0x04000200, 0x000000FF,
+	0xFFF00000, 0x00000000, 0x00000000, 0x00FF0010, 0x00000000, 0x04000000, 0x000000FF,
+};
+
+void effBalloonHeihoDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	BalloonHeihoData* data;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	s32 type;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	type = data->type;
+	mapSetMaterialFog();
+	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(scaleMtx, data->field_0x18, data->field_0x18, 1.0f);
+	PSMTXConcat(mtx, rotMtx, mtx);
+	PSMTXConcat(mtx, scaleMtx, mtx);
+	PSMTXConcat(cam->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, 0);
+	GXSetCurrentMtx(0);
+	switch (type) {
+	case 0:
+		effGetTexObjN64(0x60, &texObj);
+		break;
+	case 1:
+		effGetTexObjN64(0x61, &texObj);
+		break;
+	case 2:
+		effGetTexObjN64(0x62, &texObj);
+		break;
+	}
+	GXLoadTexObj(&texObj, 0);
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	PSMTXScale(scaleMtx, 0.03125f, 0.015625f, 0.0f);
+	GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevOp(0, 3);
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)size32x64_tex32x64_vtx);
+	GXBegin(0x90, 0, 0x18);
+	tri2(0, 1, 2, 0, 1, 2, 3, 0);
+	tri2(0, 1, 2, 0, 1, 2, 3, 0);
+	tri2(2, 3, 4, 0, 3, 4, 5, 0);
+	tri2(4, 5, 6, 0, 5, 6, 7, 0);
 }

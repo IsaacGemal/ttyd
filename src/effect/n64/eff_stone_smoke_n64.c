@@ -1,6 +1,25 @@
 #include "eff/n64/eff_stone_smoke_n64.h"
 #include "driver/dispdrv.h"
+#include "driver/camdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
+
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+
+// .sbss2 scratch GXColors the original builds its TEV colours from.
+extern GXColor unk_80423288;
+extern GXColor unk_8042328c;
+
+// .sdata2 constant referenced by the disp function.
+extern const f32 float_0p03125_8041ff50;
+extern const f32 float_0_8041ff54;
+
+// .data
+static u32 size16x16_tex32x32_vtx[14] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
+	0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
+};
 
 const char str_802FB7B8[] = "StoneSmokeN64";
 
@@ -96,4 +115,62 @@ void effStoneSmokeMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effStoneSmokeDisp, effect);
 #endif
+}
+
+// The only difference is the stack-slot layout of the two by-value GXColor arguments to
+// GXSetTevColor. The target interleaves each colour's local with its by-value copy
+// (0x8/0xc and 0x10/0x14); this build groups the locals (0x10/0x14) and the copies
+// (0x8/0xc) separately. Known mwcc quirk, also seen in eff_confetti_n64.c and
+// eff_release_n64.c.
+// NONMATCHING (99.90%): GXColor by-value stack-slot layout differs.
+void effStoneSmokeDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effStoneSmokeN64Data* data;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	GXColor color0;
+	GXColor color1;
+	Mtx mtx;
+	Mtx scaleMtx;
+	s32 alpha;
+	f32 scale;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	alpha = data->field_0x24;
+	scale = data->field_0x34 * data->field_0x38;
+	PSMTXTrans(mtx, data->x, data->y, data->z);
+	PSMTXScale(scaleMtx, scale, scale, scale);
+	PSMTXConcat(mtx, scaleMtx, mtx);
+	PSMTXConcat(cam->view, mtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	color0 = unk_80423288;
+	color0.r = data->field_0x18;
+	color0.g = data->field_0x1C;
+	color0.b = data->field_0x20;
+	color0.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color0);
+	color1 = unk_8042328c;
+	color1.r = data->field_0x28;
+	color1.g = data->field_0x2C;
+	color1.b = data->field_0x30;
+	GXSetTevColor(GX_TEVREG1, color1);
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
+	PSMTXScale(scaleMtx, float_0p03125_8041ff50, float_0p03125_8041ff50, float_0_8041ff54);
+	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	effGetTexObjN64(0x5C, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

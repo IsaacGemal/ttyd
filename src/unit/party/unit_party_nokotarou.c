@@ -30,3 +30,26 @@ USER_FUNC(_color_lv_set) {
     }
     return EVT_RETURN_DONE;
 }
+
+static USER_FUNC(_check_guard_koura) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    s32 id = evtGetValue(event, args[0]);
+    s32 index = args[1];
+    BattleUnit* unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    BattleUnit* koura;
+
+    if (!(unit->mAttributeFlags & kShellShielded)) {
+        evtSetValue(event, index, -1);
+        return EVT_RETURN_DONE;
+    }
+
+    koura = BtlUnit_GetGuardKouraPtr(unit);
+    if (koura == NULL) {
+        evtSetValue(event, index, -1);
+        return EVT_RETURN_DONE;
+    }
+
+    evtSetValue(event, index, koura->unitId);
+    return EVT_RETURN_DONE;
+}

@@ -1,8 +1,10 @@
 #include "eff/n64/eff_coin_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "eff/eff_n64.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
 typedef struct effCoinData {
@@ -28,11 +30,28 @@ const f64 double_to_int_802fa428 = 4503601774854144.0;
 const f32 float_0p01_8041ebec = 0.01f;
 const char str_802FA430[] = "CoinN64";
 
+// .sdata2 constants of this unit, referenced by effCoinDisp (names from the original).
+extern const u32 dat_8041ebd0;
+extern const f32 float_deg2rad_8041ebd4;
+extern const f32 float_1_8041ebd8;
+extern const f32 float_0p03125_8041ebdc;
+extern const f32 float_0p00625_8041ebe0;
+extern const f32 float_0_8041ebe4;
+extern const f32 float_32_8041ebe8;
+
 static effCoinN64Spawn _data[4] = {
 	{ 2, 0, 0, 0, 100 },
 	{ 4, 4, -2, 0, 100 },
 	{ 6, -2, 2, 0, 70 },
 	{ 8, 2, 4, 0, 40 },
+};
+
+// .data: one effVtxArray (0x38 bytes) for the textured quad.
+static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
+	0xFFF80000, 0x04000000, 0x000000FF, 0x00080008,
+	0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000,
+	0x00000400, 0x000000FF,
 };
 
 EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
@@ -109,4 +128,61 @@ void effCoinMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCoinDisp, effect);
 #endif
+}
+
+void effCoinDisp(CameraId camId, void* param) {
+	EffectEntry* effect;
+	effCoinData* data;
+	s32 i;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx mtx0;
+	Mtx scaleMtx;
+	Mtx mtx1;
+	Mtx mtx2;
+	f32 scale;
+
+	effect = param;
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(mtx1, 'y', float_deg2rad_8041ebd4 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(mtx0, mtx1, mtx2);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_TEXC, GX_CC_ZERO, GX_CC_C0, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	effGetTexObjN64(0x84, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	GXSetTevColor(GX_TEVREG0, *(GXColor*)&dat_8041ebd0);
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->timer != 0) {
+			continue;
+		}
+		scale = data->field_0x1C;
+		PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
+		if (float_1_8041ebd8 != scale) {
+			PSMTXScale(scaleMtx, scale, scale, float_1_8041ebd8);
+			PSMTXConcat(mtx0, scaleMtx, mtx0);
+		}
+		PSMTXConcat(mtx2, mtx0, mtx0);
+		PSMTXConcat(cam->view, mtx0, mtx0);
+		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		PSMTXScale(scaleMtx, float_0p03125_8041ebdc, float_0p00625_8041ebe0, float_0_8041ebe4);
+		PSMTXTrans(mtx0, float_0_8041ebe4, float_32_8041ebe8 * (f32)(4 - (data->anim >> 1)), float_0_8041ebe4);
+		PSMTXConcat(scaleMtx, mtx0, scaleMtx);
+		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	}
 }

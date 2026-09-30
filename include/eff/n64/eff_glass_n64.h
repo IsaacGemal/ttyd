@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dolphin/types.h>
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
@@ -30,6 +31,14 @@ typedef struct effGlassData {
 // .sdata2 constants shared with the display code, named as in the original unit.
 extern const f32 float_0_8041f094;
 extern const f32 float_1_8041f098;
+extern const f32 float_deg2rad_8041f080;
+extern const f32 float_4_8041f084;
+extern const f32 float_256_8041f088;
+extern const f32 float_0p015625_8041f08c;
+extern const f32 float_0p0078125_8041f090;
+extern GXColor unk_80423120;
+extern GXColor unk_80423124;
+extern GXColor unk_80423128;
 void effGlassMain(EffectEntry* effect);
 void effGlassDisp(CameraId camId, void* param);
 extern const f32 float_neg0p1_8041f0a4;
