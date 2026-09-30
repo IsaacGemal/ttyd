@@ -864,7 +864,7 @@ config.libs = [
         "objects": [
             Object(NonMatching, "sdk/arc.c"),
             Object(Matching, "sdk/DEMOInit.c"),
-            Object(NonMatching, "sdk/DEMOPad.c"),
+            Object(Matching, "sdk/DEMOPad.c"),
             Object(Matching, "sdk/texPalette.c"),
         ],
     },
