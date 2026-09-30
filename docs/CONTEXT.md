@@ -2209,6 +2209,15 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   12 bytes before it are that alignment). The `{-1, 1}` pair is `eff_fukidashi`'s.
 - **mot_hip** linked (`14.0f * marioGetScale() / 2.0f` gives the target's operand order).
 
+## Grind 17 (Claude #3)
+
+- **battle_unit_event** linked: `BattleRunPhaseEvent` entered the event only when the code pointer was NULL (`if (!code)`); retail has `if (code)`. Declaration order `valid` before `i` in `BattleCheckEndUnitInitEvent`.
+- **eff_scanning**, **eff_uranoko**, **eff_peach_fukidashi** linked. `effScanningMain` calls `animGroupBaseAsync` (the
+  commented-out call was real); `effScanningDisp` written. Under `MUST_MATCH`: the `fmuls f1, f0, f1` operand order of
+  `-cam->viewYaw * deg2rad` comes from a `rad` temp (`rad = -cam->viewYaw; rad = deg * rad;`), `f32 k = 0.125f;` fixes
+  uranoko's pool order (1.0 before 0.125), and scanning builds `disp` from a second `Vec` local. peach_fukidashi's `.sdata2`
+  pool is plain literals (the colour is a `static const GXColor` at the top of `effPeachFukidashiDisp`), with the functions in
+  reverse address order in the source. Its `vec3_802fdc28`/`dat_802fdc34` rodata are still stand-ins.
 ## Review routine from Sep 29 evening (Isaac: "use your judgement"; written by TTYD Claude #1)
 
 Every PR: one fresh Claude (Opus) review, fixes, then the merger rebuilds (all sources compile, 32 checksums, ci)
