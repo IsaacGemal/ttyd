@@ -3,6 +3,11 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 
+// .sbss2 zero GXColor scratch objects (declared in reverse: placed in reverse of declaration order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042335C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423358;
+
 typedef struct EnergyData {
     s32 type;       // 0x00
     f32 x;          // 0x04
@@ -19,15 +24,13 @@ typedef struct EnergyData {
     s32 alphaSpeed; // 0x30
 } EnergyData;
 
-const char str_8030148C[] = "Energy";
-extern const f32 float_0_80422470;
 
 EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5, f32 p6) {
     EffectEntry* entry;
     EnergyData* data;
 
     entry = effEntry();
-    entry->type = str_8030148C;
+    entry->type = "Energy";
     entry->count = 1;
     data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(EnergyData));
     entry->userdata = data;
@@ -37,10 +40,10 @@ EffectEntry* effEnergyEntry(s32 a, s32 b, f32 p1, f32 p2, f32 p3, f32 p4, f32 p5
     data->x = p1;
     data->y = p2;
     data->z = p3;
-    data->angle = float_0_80422470;
+    data->angle = 0.0f;
     data->angleSpeed = p5;
     data->scale = p4;
-    data->scaleAnim = float_0_80422470;
+    data->scaleAnim = 0.0f;
     data->scaleSpeed = p6;
     data->alpha = 0xFF;
     data->alphaAnim = 0;
