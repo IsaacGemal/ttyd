@@ -6,7 +6,6 @@
 const Vec vec3_802fa510 = { 0.0f, 0.0f, 0.0f };
 
 // The .sbss2 work colours and the two .sdata2 packed TEV colours are defined by the split map.
-
 EffectEntry* effExplosionN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effExplosionN64Data* data;
@@ -35,7 +34,6 @@ EffectEntry* effExplosionN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
 	}
 	return effect;
 }
-
 void effExplosionMain(EffectEntry* effect) {
 	effExplosionN64Data* data;
 	Vec position2;
@@ -100,7 +98,7 @@ static inline void explosionSetColorAlt(s32 a) {
 	GXSetTevColor(GX_TEVREG1, c);
 }
 
-// NONMATCHING (98.9%): the type-0 TEV colour temp/argument stack slots and the type!=0 branch's
+// NONMATCHING (98.91%): the type-0 TEV colour temp/argument stack slots and the type!=0 branch's
 // first GXSetTevColor argument are 4 bytes off (the else's first colour gets 0x28 instead of 0x10),
 // and the texture-matrix offset uses r29 instead of r28.
 void effExplosionDisp(CameraId camId, void* param) {

@@ -70,7 +70,7 @@ s32 _get_ok_frame_range(s32 idx) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (90.10%): callee-saved register allocation (SFX pointers land in r25-r28 here
+// NONMATCHING (90.24%): callee-saved register allocation (SFX pointers land in r25-r28 here
 // instead of the original's r28-r31; work/bd/disp/auto/cont shift accordingly).
 s32 battleAcMain_SignalTiming(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
@@ -137,13 +137,13 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
                     bd->buttons[i] = pick;
                     i++;
                 }
+                bd->field_0x34 = bd->buttons[0];
             } else {
                 bd->field_0x34 = 0x100;
                 for (i = 0; i < *(s32*)&ac->field_34[4]; i++) {
                     bd->buttons[i] = 0x100;
                 }
             }
-            bd->field_0x34 = bd->buttons[0];
             ac->mAcState = 0x63;
             break;
         }
@@ -328,11 +328,9 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
 
     return 1;
 }
-
 s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
-
 void battleAcDisp_SignalTiming(CameraId camId, void* param) {
     BattleActions* ac = &((BattleWork*)param)->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
@@ -368,12 +366,11 @@ void battleAcDisp_SignalTiming(CameraId camId, void* param) {
         break;
     }
 }
-
 void battleAcDelete_SignalTiming(BattleWork* work) {
     work->actionCommands.mAcState = 0x3EC;
 }
 
-// NONMATCHING (55.92%): register allocation / stack slots; see REPORT.md for the two causes.
+// NONMATCHING (56.05%): register allocation / stack slots; for the two causes.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     const volatile Vec* vec = vec3_802fedc8;

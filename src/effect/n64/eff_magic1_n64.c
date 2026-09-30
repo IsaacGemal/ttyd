@@ -40,7 +40,6 @@ extern const f32 float_6p2_8041f6a8;
 extern u32 dat_8041f650;
 extern GXColor unk_804231a8;
 const f64 double_to_int_802fab00 = 4503601774854144.0;
-
 EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
     EffectEntry* effect;
     effMagic1Data* data;
@@ -83,7 +82,6 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
     }
     return effect;
 }
-
 void effMagic1Main(EffectEntry* effect) {
     effMagic1Data* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -153,7 +151,7 @@ void effMagic1Main(EffectEntry* effect) {
 // leaving effMagic1N64Entry/effMagic1Main referencing the externs unchanged.
 
 // Details of the remaining 15.38% (MWCC-6 pool/register artefacts) are in REPORT.md.
-// NONMATCHING (84.62%): named sdata2 constants fold into anonymous @NNN pool entries,
+// NONMATCHING (82.63%): named sdata2 constants fold into anonymous @NNN pool entries,
 // and `size` gets r29 instead of sharing r30 with the anime-byte scratch.
 static void main_dl(EffectEntry* effect, Mtx mtx) {
     u8* anime;
@@ -280,7 +278,6 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
         }
     }
 }
-
 void effMagic1Disp(CameraId camId, EffectEntry* effect) {
     effMagic1Data* data;
     CameraEntry* camera;

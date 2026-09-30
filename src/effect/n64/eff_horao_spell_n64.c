@@ -84,7 +84,6 @@ effHoraoSpellVtx horao_spell_vtx[32] = {
 };
 
 // .sbss2 scratch GXColors and the .data vertex table are declared in the unit header.
-
 EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effHoraoSpellData* data;
@@ -117,7 +116,6 @@ EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 
 	data->field_0x34 = 255;
 	return effect;
 }
-
 void effHoraoSpellMain(EffectEntry* effect) {
 	effHoraoSpellData* data;
 	s32 timer;
@@ -174,7 +172,7 @@ static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* 
 	vtx->pos[2] = v.z;
 }
 
-// NONMATCHING (73.04%): retail converts the vertex s16 positions through psq_l/psq_st (GQR5); plain C
+// NONMATCHING (73.03%): retail converts the vertex s16 positions through psq_l/psq_st (GQR5); plain C
 // lowers to lha/int->float and fctiwz, so the vertex loop and everything downstream of it differ.
 void effHoraoSpellDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

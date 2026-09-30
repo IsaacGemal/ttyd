@@ -113,7 +113,6 @@ typedef struct effBrokenBarrierData {
 GXColor unk_804230b8;
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
-
 EffectEntry* effBrokenBarrierN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* entry;
     effBrokenBarrierData* data;
@@ -356,7 +355,6 @@ static inline GXColor effBrokenBarrierMakeColor(u8 r, u8 g, u8 b, u8 a) {
     c.a = a;
     return c;
 }
-
 void effBrokenBarrierDisp(CameraId camId, void* param) {
     effBrokenBarrierData* data;
     CameraEntry* camera;
@@ -426,7 +424,6 @@ static inline GXColor effBrokenBarrierBarrierColor(u8 r, u8 g, u8 b, u8 a) {
     return c;
 }
 #endif
-
 static void main_dl(EffectEntry* effect, Mtx matrix) {
     effBrokenBarrierData* data;
     Mtx mtx, scale, rot;

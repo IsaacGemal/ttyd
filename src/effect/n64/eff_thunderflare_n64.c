@@ -222,7 +222,6 @@ void effThunderflareMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&pos), 2, effThunderflareDisp, effect);
 }
 #pragma opt_common_subs reset
-
 void effThunderflareDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;

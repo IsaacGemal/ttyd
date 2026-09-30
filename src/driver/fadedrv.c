@@ -26,7 +26,6 @@ static FadeWork* wp;
 
 //local prototypes
 static void zFill(void);
-
 static void _callback(s32 error, DVDFileInfo* info) {
 	void* userData = info->cb.userData;
 
@@ -34,7 +33,6 @@ static void _callback(s32 error, DVDFileInfo* info) {
 	DVDMgrClose(userData);
 	wp->loaded = TRUE;
 }
-
 void fadeInit(void) {
 	int i;
 
@@ -62,7 +60,6 @@ void fadeInit(void) {
 	wp->texture = NULL;
 	wp->loaded = FALSE;
 }
-
 void fadeTexSetup(void) {
 	DVDEntry* dvd;
 	u32 size;
@@ -106,7 +103,7 @@ static inline void fadeEntryReset(FadeEntry* entry) {
 	entry->field_0x90 = 1.0f;
 }
 
-// NONMATCHING (6.42%): being reconstructed.
+// NONMATCHING (68.46%): being reconstructed.
 void fadeEntry(s32 type, s32 duration, GXColor color) {
 	FadeEntry* entry;
 	s32 index;
@@ -343,45 +340,49 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 			entry->field_0x64 = "Z_1";
 			entry->imageType = 2;
 			break;
-		case 41:
 		case 50:
 		case 53:
 			entry->field_0x60 = "OFF_d_meku";
 			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
+		case 41:
+			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
 		case 42:
-			entry->field_0x60 = "OFF_d_meku";
+			entry->field_0x60 = "OFF_d_dokan_down";
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
 			break;
 		case 43:
-			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x60 = "OFF_d_dokan_up";
 			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
 		case 44:
-			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x60 = "OFF_d_dokan_up";
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
 			break;
 		case 45:
-			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x60 = "OFF_d_dokan_left";
 			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
 		case 46:
-			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x60 = "OFF_d_dokan_left";
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
 			break;
 		case 47:
-			entry->field_0x60 = "OFF_d_dokan_left";
+			entry->field_0x60 = "OFF_d_dokan_right";
 			entry->field_0x64 = "A_1";
 			entry->imageType = 2;
 			break;
 		case 48:
-			entry->field_0x60 = "OFF_d_dokan_left";
+			entry->field_0x60 = "OFF_d_dokan_right";
 			entry->field_0x64 = "A_2";
 			entry->imageType = 2;
 			break;
@@ -445,61 +446,49 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 			break;
 	}
 }
-
 void fadeTecOn(void) {
 	wp->flags |= 0x1000;
 }
-
 void fadeTecOff(void) {
 	wp->flags &= ~0x1000;
 }
-
 void fadeTecSoftOn(void) {
 	wp->flags |= 0x1010;
 	wp->field_0x354 = 0.0f;
 }
-
 void fadeTecSoftOff(void) {
 	wp->flags |= 0x1020;
 	wp->field_0x354 = 1.0f;
 }
-
 void fadeSoftFocusOn(void) {
 	wp->flags |= 0x2000;
 }
-
 void fadeSoftFocusOff(void) {
 	wp->flags &= ~0x2000;
 }
-
 void fadeWhiteOutOn(void) {
 	wp->flags |= 0x4000;
 }
-
 void fadeWhiteOutOff(void) {
 	wp->flags &= ~0x4000;
 }
-
 void fadeSetSpotPos(f32 x, f32 y) {
 	FadeEntry* entry = &wp->entries[0];
 
 	entry->fadeSpotX = x;
 	entry->fadeSpotY = y;
 }
-
 void fadeSetAnimOfsPos(f32 x, f32 y) {
 	FadeEntry* entry = &wp->entries[1];
 
 	entry->animOffsetX = x;
 	entry->animOffsetY = y;
 }
-
 void fadeSetAnimVirtualPos(f32 x, f32 y, f32 z) {
 	FadeEntry* entry = &wp->entries[1];
 	entry->VirtualPos = (Vec){x, y, z};
 	entry->flags |= 4;
 }
-
 void fadeSetOffscreenCallback(OffscreenCallback callback, void* param) {
 	FadeEntry* entry = &wp->entries[3];
 
@@ -512,7 +501,7 @@ void fadeMain(void) {
 
 }
 
-// NONMATCHING (0%): being reconstructed.
+// NONMATCHING (99.97%): being reconstructed.
 void disp_texture(CameraId camId, void* param) {
 	CameraEntry* camera;
 	FadeEntry* entry;
@@ -631,7 +620,7 @@ void disp_texture(CameraId camId, void* param) {
 			break;
 	}
 
-	GXLoadTexMtxImm((f32(*)[4])entry->field_0x2C, 0x1e, GX_MTX3x4);
+	GXLoadTexMtxImm((f32(*)[4])entry->field_0x2C, 0x1e, GX_MTX2x4);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1e, GX_FALSE, GX_PTIDENTITY);
 	GXSetTevColor(GX_TEVREG0, entry->color);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -674,7 +663,6 @@ static f32 z(void) {
 	      + cam->viewport[5]) / denom;
 }
 #pragma dont_inline reset
-
 static void zFill(void) {
 	CameraEntry* camera;
 	f32 y0, y1, x0, x1;
@@ -732,7 +720,7 @@ static void zFill(void) {
 
 
 
-// NONMATCHING (0%): being reconstructed.
+// NONMATCHING (93.04%): being reconstructed.
 void disp_maku(CameraId camId, void* param) {
 	FadeEntry* entry = param;
 	CameraEntry* camera;
@@ -833,7 +821,7 @@ void disp_maku(CameraId camId, void* param) {
 	sysWaitDrawSync();
 }
 
-// NONMATCHING (0%): being reconstructed.
+// NONMATCHING (99.96%): being reconstructed.
 void disp_tec(CameraId camId, void* param) {
 	CameraEntry* camera;
 	GXTexObj texObj;
@@ -915,7 +903,6 @@ void disp_tec(CameraId camId, void* param) {
 	GXPosition3s16(-308, -244, 0);
 	GXTexCoord2f32(0.0f, 2.0f);
 }
-
 void disp_dummy_black(CameraId camId, void* param) {
 	CameraEntry* cam;
 	f32 projv[7];
@@ -954,7 +941,6 @@ void disp_dummy_black(CameraId camId, void* param) {
 	GXPosition3s16(-32, -24, 0);
 	GXSetProjectionv(projv);
 }
-
 BOOL fadeIsFinish(void) {
 	FadeEntry* entry;
 
@@ -965,7 +951,6 @@ BOOL fadeIsFinish(void) {
 	entry = &wp->entries[wp->field_0x350];
 	return (entry->flags >> 1) & 1;
 }
-
 void fadeReset(s32 id) { //TODO: better param name?
 	FadeEntry* entry;
 
@@ -988,11 +973,9 @@ void fadeReset(s32 id) { //TODO: better param name?
 	entry->animOffsetY = 0.0f;
 	entry->field_0x90 = 1.0f;
 }
-
 TEXPalette* fadeGetTpl(void) {
 	return wp->texture;
 }
-
 void fadeSetNarrowFast(void) {
 	wp->entries[1].flags |= 8;
 }

@@ -223,7 +223,6 @@ s32 evt_continue[] = {
 #else
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
-
 void continueGame(void) {
     MarioWork* mario;
     const char* base = (const char*)&vec3_802ed670;
@@ -379,7 +378,6 @@ void continueGame(void) {
             break;
     }
 }
-
 void seq_loadMain(SequenceWork* workArg) {
     switch (workArg->state) {
         case 0: {
@@ -446,25 +444,22 @@ void seq_loadMain(SequenceWork* workArg) {
             break;
     }
 }
-
 void seq_loadExit(SequenceWork* workArg) {
     if (wp->file != NULL) {
         fileFree(wp->file);
     }
     wp->file = NULL;
 }
-
 void seq_loadInit(SequenceWork* workArg) {
     memset(wp, 0, sizeof(LoadWork));
 }
-
 s32 unk_800f2398(EventEntry* event, BOOL isFirstCall) {
     fadeReset(4);
     wp->field_0x48 = event->printWindowId;
     return 2;
 }
 
-// NONMATCHING (96%): full reconstruction; remaining diffs are base+offset materialisation for
+// NONMATCHING (96.25%): full reconstruction; remaining diffs are base+offset materialisation for
 // win_dt/win_dt2/win_dt3 accesses (compiler folds 0x40/0x13c/0x200 into the load displacement) and
 // the s32->f32 magic double (anonymous @NNN instead of double_to_int_802ed9c8).
 void loadMain(SequenceWork* workArg) {
@@ -828,13 +823,13 @@ void loadMain(SequenceWork* workArg) {
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
-                wp->field_0x20 = WDT3(sel).b18;
+                wp->field_0x20 = WDT2(sel).b18;
             } else if (dir & 0x2000) {
-                wp->field_0x20 = WDT3(sel).b19;
+                wp->field_0x20 = WDT2(sel).b19;
             } else if (dir & 0x4000) {
-                wp->field_0x20 = WDT3(sel).b1a;
+                wp->field_0x20 = WDT2(sel).b1a;
             } else if (dir & 0x8000) {
-                wp->field_0x20 = WDT3(sel).b1b;
+                wp->field_0x20 = WDT2(sel).b1b;
             } else if (btn & 0x100) {
                 if (sel < 4) {
                     card = cardGetFilePtr();
@@ -861,8 +856,8 @@ void loadMain(SequenceWork* workArg) {
                     psndSFXOn((const char*)9);
                 }
             }
-            wp->field_0x10 = WDT3(wp->field_0x20).x + WDT3(wp->field_0x20).z;
-            wp->field_0x14 = WDT3(wp->field_0x20).y + WDT3(wp->field_0x20).w;
+            wp->field_0x10 = WDT2(wp->field_0x20).x + WDT2(wp->field_0x20).z;
+            wp->field_0x14 = WDT2(wp->field_0x20).y + WDT2(wp->field_0x20).w;
             break;
 
         case 0x33:
@@ -900,8 +895,8 @@ void loadMain(SequenceWork* workArg) {
                 }
             }
             wp->field_0x34 = wp->field_0x20;
-            wp->field_0x10 = WDT3(wp->field_0x20).x + WDT3(wp->field_0x20).z;
-            wp->field_0x14 = WDT3(wp->field_0x20).y + WDT3(wp->field_0x20).w;
+            wp->field_0x10 = WDT2(wp->field_0x20).x + WDT2(wp->field_0x20).z;
+            wp->field_0x14 = WDT2(wp->field_0x20).y + WDT2(wp->field_0x20).w;
             break;
 
         case 0x34:

@@ -23,7 +23,7 @@ typedef struct AcSignalTimingWork {
     s32 field_0x30; // 0x30, in-window flag
     s32 field_0x34; // 0x34, expected button
     u32 buttons[5]; // 0x38
-    u8 states[8];   // 0x4C
+    s8 states[8];   // 0x4C
     s32 field_0x54; // 0x54, post-AC timer
 } AcSignalTimingWork;
 

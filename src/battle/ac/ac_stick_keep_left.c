@@ -274,7 +274,6 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 #undef STICK_PI_NAME
 #undef STICK_PONE_NAME
 #pragma optimize_for_size reset
-
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
@@ -332,7 +331,6 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     }
 }
 #pragma optimize_for_size reset
-
 void battleAcDelete_StickKeepLeft(BattleWork* work) {
     work->actionCommands.mAcState = 0x3ED;
 }

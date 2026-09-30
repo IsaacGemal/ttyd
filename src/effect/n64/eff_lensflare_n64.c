@@ -64,7 +64,6 @@ static u32 size10x10_tex32x32_vtx[0xE0 / 4] = {
 // .rodata
 const Vec vec3_802faac8 = { 0.0f, 0.0f, 0.0f };
 const char str_802FAAE0[16] = "LensflareN64";
-
 EffectEntry* effLensflareN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z, f32 a2) {
     EffectEntry* effect;
     LensflareData* data;
@@ -226,9 +225,9 @@ static inline void lensflareSetColor6(void) {
 }
 #endif
 
-// NONMATCHING (99.88%): every instruction matches except the callee-saved
+// NONMATCHING (99.87%): every instruction matches except the callee-saved
 // colours of `cam` and `alpha` (target cam r27 / alpha r26, ours cam r26 /
-// alpha r27) and the loop counter that reuses cam's register. See REPORT.md.
+// alpha r27) and the loop counter that reuses cam's register.
 void effLensflareDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     LensflareEntry* data;

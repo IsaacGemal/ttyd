@@ -52,7 +52,6 @@ extern u8 lbl_80376320[]; // this unit's .data weapon tables
     cmd->mWeaponTable[*count].mName =                                                 \
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
     (*count)++;
-
 USER_FUNC(_clauda_make_extra_work_area) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -97,7 +96,6 @@ static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
     }
 #endif
 }
-
 USER_FUNC(_check_blow_rate) {
     s32* args = event->args;
     BattleWork* work = _battleWorkPointer;
@@ -111,7 +109,6 @@ USER_FUNC(_check_blow_rate) {
     evtSetValue(event, arg1, unit->vulnStatus->galeForceRate);
     return EVT_RETURN_DONE;
 }
-
 static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
     BattleWork* work = _battleWorkPointer;
     BattleUnit* unit;
@@ -141,7 +138,6 @@ static s32 _clauda_breath_effect_ready(EventEntry* event, BOOL isFirstCall) {
     ((ClaudaBreathEffectData*)effect->userdata)->field_0x30 = 0xF5;
     return EVT_RETURN_DONE;
 }
-
 static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -176,7 +172,6 @@ static s32 _clauda_breath_effect_fire(EventEntry* event, BOOL isFirstCall) {
     evtSetValue(event, arg0, (s32)effect);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_breath_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -198,7 +193,6 @@ USER_FUNC(_make_breath_weapon) {
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_kiss_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;
@@ -218,7 +212,6 @@ USER_FUNC(_make_kiss_weapon) {
     evtSetValue(event, arg0, (s32)area);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_get_clauda_kiss_hit_position) {
     s32* args = event->args;
     BattleWork* work = _battleWorkPointer;
@@ -258,7 +251,6 @@ USER_FUNC(_get_clauda_kiss_hit_position) {
     evtSetFloat(event, out2, pos.z);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(_make_kumoguard_weapon) {
     BattleWork* work = _battleWorkPointer;
     s32* args = event->args;

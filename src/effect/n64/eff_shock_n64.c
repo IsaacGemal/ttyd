@@ -17,7 +17,6 @@ extern const f32 float_0p8_8041fc78;
 // .rodata constants owned by this unit in the original.
 const Vec vec3_802fb5c8 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb5d8 = 4503601774854144.0;
-
 EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 	EffectEntry* effect;
 	EffShockData* data;
@@ -71,7 +70,6 @@ EffectEntry* effShockN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6) {
 
 	return effect;
 }
-
 void effShockMain(EffectEntry* effect) {
 	EffShockData* data;
 	Vec position2;
@@ -147,7 +145,6 @@ static inline void effShockSetColor3(EffShockData* data) {
 	GXSetTevColor(1, color);
 }
 #endif
-
 void effShockDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	EffShockData* data;

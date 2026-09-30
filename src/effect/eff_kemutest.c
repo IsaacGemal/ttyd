@@ -28,14 +28,12 @@ typedef struct {
 
 const GXColor dat_80420ab0 = { 0x80, 0x80, 0x80, 0x80 };
 const GXColor dat_80420ab4 = { 0x00, 0x00, 0x00, 0x60 };
-
 void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	effKemuTestData* data = effect->userdata;
 
 	data->field_0x50 = rx;
 	data->field_0x54 = rz;
 }
-
 void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	effKemuTestData* data = effect->userdata;
 
@@ -221,7 +219,6 @@ void effKemuTestDisp(CameraId camId, void* param) {
 		}
 	}
 }
-
 void effKemuTestMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it to a second local before
@@ -413,7 +410,7 @@ const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
 const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
 const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
 
-// NONMATCHING (84.88%): frame 0x150, rodata arrays and the scratch Vec/word copies line up. Still
+// NONMATCHING (84.84%): frame 0x150, rodata arrays and the scratch Vec/word copies line up. Still
 // differs: `entry` in a callee-saved reg other than r31 and `count` in r17 (not r4), pool base
 // `...rodata.0` not `vec3_802fdc88`, the int->double magic and .sdata2 pool at other offsets.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
@@ -627,7 +624,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->scale = 1.0f;
 				work->field_0x44 = irand(0x1E);
 				if (type == 13) {
-					work->field_0x34 = 0.6f;
+					work->field_0x34 = 0.59999996f;
 					work->field_0x38 = -0.08f;
 					work->field_0x3C = 0.94f;
 					work->field_0x4C = 0xAA;
@@ -714,7 +711,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x30 = 0x40;
 			work->field_0x28 = 0;
 			work->field_0x44 = irand(0xA);
-			work->field_0x34 = 0.6f;
+			work->field_0x34 = 0.59999996f;
 			work->field_0x38 = -0.04f;
 			work->field_0x3C = 0.94f;
 			work->field_0x4C = 0xFF;

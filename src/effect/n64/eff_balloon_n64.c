@@ -18,7 +18,6 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
-
 EffectEntry* effBalloonN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
 	EffectEntry* effect;
 	effBalloonN64Data* data;

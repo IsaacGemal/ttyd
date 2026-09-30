@@ -15,4 +15,6 @@ BOOL parsePush(const char* tag);
 void parsePop(void);
 void parsePopNext(void);
 BOOL parseTagGet1(const char* tag, s32 type, void* data);
+BOOL parseGet1Next(s32 type, void* data);
+// libc's stdio.h here doesn't declare it
 int sscanf(const char* str, const char* format, ...);

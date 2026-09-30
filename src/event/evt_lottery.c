@@ -11,7 +11,6 @@ extern GlobalWork* gp;
 BOOL dbg_lotteryinfo;
 
 //local prototypes
-
 lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
@@ -190,7 +189,6 @@ USER_FUNC(evt_lottery) {
 	}
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_lottery_buy) {
 	s32* args = event->args;
 	OSTime time = OSGetTime();
@@ -225,14 +223,12 @@ USER_FUNC(evt_lottery_buy) {
 	evtSetValue(event, args[0], *(s16*)((u8*)info + 0x20));
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_lottery_flag) {
 	s32* args = event->args;
 
 	evtSetValue(event, args[0], gp->mLotteryInfo.mFlags);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_lottery_todaynum) {
 	s32* args = event->args;
 
@@ -240,7 +236,6 @@ USER_FUNC(evt_lottery_todaynum) {
 	evtSetValue(event, args[0], *(s16*)((u8*)&gp->mLotteryInfo + 0x10));
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_lottery_error_check) {
 	s32* args = event->args;
 	lottery_info* info = &gp->mLotteryInfo;

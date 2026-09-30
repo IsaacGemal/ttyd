@@ -15,12 +15,10 @@ extern f32 float_neg148_80420d74;
 extern f32 float_498_80420d78;
 
 const char str_802FE1D8[28] = "\202\337\202\301\202\271\201[\202\266\202\252\202\335\202\302\202\251\202\350\202\334\202\271\202\361";
-
 void BattleAcHelpSetHelp(const char* msg) {
     // field_18FF0 is where the move-described help message pointer is kept.
     *(const char**)&_battleWorkPointer->field_18FF0 = msg;
 }
-
 void BattleAcHelpSetDispType(s32 type) {
     *(s32*)&_battleWorkPointer->field_18FF0[4] = type;
     switch (type) {
@@ -32,11 +30,9 @@ void BattleAcHelpSetDispType(s32 type) {
         break;
     }
 }
-
 void BattleAcHelpInit(void) {
 	//stubbed in retail
 }
-
 void BattleAcHelpMain(void) {
     BattleWork* wp = _battleWorkPointer;
     u8* field = wp->field_18FF0;

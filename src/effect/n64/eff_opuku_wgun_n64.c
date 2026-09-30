@@ -48,7 +48,6 @@ inline Vec initializeVec(Vec* input) {
 	temp.z = input->z;
 	return temp;
 }
-
 EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale) {
 	EffectEntry* effect;
 	EffOpukuWgunData* data;
@@ -112,7 +111,6 @@ EffectEntry* effOpukuWgunN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
 
 	return effect;
 }
-
 void effOpukuWgunMain(EffectEntry* effect) {
 	EffOpukuWgunData* data = effect->userdata;
 	Vec disp = initializeVec(&data->position);
@@ -176,7 +174,7 @@ void effOpukuWgunMain(EffectEntry* effect) {
 // integer path. That changes the transform loop, the saved FPR set (retail keeps f21-f31, we keep
 // f24-f31) and the 0x190 vs 0x140 frame, which shifts every local slot and register assignment.
 // No source form in this toolchain emits the psq path (see eff_balloon_n64.c / eff_flame_n64.c).
-// NONMATCHING (85.60%): transform loop uses lha/fctiwz instead of retail's psq_l/psq_st.
+// NONMATCHING (85.6%): transform loop uses lha/fctiwz instead of retail's psq_l/psq_st.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);

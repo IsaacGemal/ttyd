@@ -37,7 +37,6 @@ static inline void effFlameSetVtx(effFlameData* data, Mtx mtx, s32 idx, effFlame
 	data->vtx[idx].pos[1] = v.y;
 	data->vtx[idx].pos[2] = v.z;
 }
-
 EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* entry;
 	effFlameData* data;
@@ -121,7 +120,7 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		data->field_0x48 = 1.3f;
 		data->field_0x50 = 0.0f;
 		data->field_0x5C = 0.04f;
-		data->field_0x54 = 0.16f;
+		data->field_0x54 = 0.16000001f;
 		data->field_0x60 = 1.04f;
 		break;
 	default:
@@ -141,7 +140,7 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		data->field_0x48 = 1.7f;
 		data->field_0x50 = 0.0f;
 		data->field_0x5C = 0.04f;
-		data->field_0x54 = 0.08f;
+		data->field_0x54 = 0.080000006f;
 		data->field_0x60 = 1.36f;
 		break;
 	}
@@ -152,7 +151,6 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 
 	return entry;
 }
-
 void effFlameMain(EffectEntry* effect) {
 	effFlameData* data = effect->userdata;
 #ifdef MUST_MATCH

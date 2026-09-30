@@ -100,7 +100,6 @@ u16 tex_id_list_big[] = { '0', '2', '4', '3', '1', 0 };
 const SlotCards8 R_slot_1_cards = { { 0, 1, 2, 1, 2, 0, 3, 4 } };
 const SlotCards8 R_slot_2_cards = { { 3, 1, 0, 1, 4, 2, 0, 2 } };
 const SlotCards5 R_slot_3_cards = { { 0, 1, 2, 3, 4 } };
-
 void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
     s32 i;
 
@@ -113,7 +112,6 @@ void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
         }
     }
 }
-
 void BattleBreakSlot_HideReel(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel = BattleBreakSlotReelGetPtr(0);
@@ -125,7 +123,6 @@ void BattleBreakSlot_HideReel(void) {
     }
     slot->counter = 0;
 }
-
 void BattleBreakSlot_DecBreakTurn(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
 
@@ -134,11 +131,9 @@ void BattleBreakSlot_DecBreakTurn(void) {
         slot->breakTurn = 0;
     }
 }
-
 s32 BattleBreakSlot_GetBreakTurn(void) {
     return BattleBreakSlotGetPtr()->breakTurn;
 }
-
 s32 BattleBreakSlot_CheckReaction(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
 
@@ -155,7 +150,6 @@ s32 BattleBreakSlot_CheckReaction(void) {
     slot->event = NULL;
     return 0;
 }
-
 void BattleBreakSlot_Start(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
 
@@ -173,7 +167,6 @@ void BattleBreakSlot_Start(void) {
         }
     }
 }
-
 void BattleBreakSlot_PointInc(void) {
     u8* battle = (u8*)_battleWorkPointer + 0x20000;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
@@ -237,7 +230,6 @@ void BattleBreakSlot_PointInc(void) {
     }
     }
 }
-
 void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
@@ -337,7 +329,6 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
     }
     GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
 }
-
 void BattleBreakSlot_Disp(void) {
     dispEntry(CAMERA_2D, 490.0f, 0, BattleBreakSlotDispReel, NULL);
 }
@@ -346,7 +337,6 @@ void BattleBreakSlot_Disp(void) {
 void BattleBreakSlot_Main(void) {
 
 }
-
 void BattleBreakSlot_Init(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
@@ -385,7 +375,6 @@ void BattleBreakSlot_Init(void) {
 BattleBreakSlotReel* BattleBreakSlotReelGetPtr(s32 index) {
     return &BattleBreakSlotGetPtr()->reels[index];
 }
-
 BattleBreakSlot* BattleBreakSlotGetPtr(void) {
     return (BattleBreakSlot*)((u8*)_battleWorkPointer + 0x1616C);
 }

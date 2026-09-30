@@ -158,7 +158,6 @@ typedef struct WprotectData {
 	f32 field_0x78[4];  // 0x78
 	s32 field_0x88[4];  // 0x88
 } WprotectData;         // 0x98
-
 void effOpukuWprotectMain(EffectEntry* effect) {
 	WprotectData* data = effect->userdata;
 	Vec pos = initializeVec((Vec*)&data->x);
@@ -265,8 +264,6 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effOpukuWprotectDisp, effect);
 }
-
-
 EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effOpukuWprotectData* data;

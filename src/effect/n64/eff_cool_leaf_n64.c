@@ -65,7 +65,6 @@ typedef struct effCoolLeafData {
     f32 field_0x34;  // 0x34
     f32 field_0x38;  // 0x38
 } effCoolLeafData;
-
 EffectEntry* effCoolLeafN64Entry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effCoolLeafData* data;
@@ -145,7 +144,7 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // f30=360.0, f31=10.0. The type-0 loop (and the rest of the function) matches exactly.
 // Adding a local to pin a constant (as effFallLeafMain does with `half`) shifts the
 // type-0 loop too; opt_common_subs/opt_lifetimes/opt_propagation off make it worse.
-// NONMATCHING (99.82%): the type-1/type-2 loop-constant FPRs are permuted.
+// NONMATCHING (99.81%): the type-1/type-2 loop-constant FPRs are permuted.
 void effCoolLeafMain(EffectEntry* effect) {
     effCoolLeafData* data = effect->userdata;
     Vec position;
@@ -306,7 +305,6 @@ void effCoolLeafMain(EffectEntry* effect) {
     }
     dispEntry(4, dispCalcZ(&position), 2, effCoolLeafDisp, effect);
 }
-
 void effCoolLeafDisp(CameraId cameraId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam = camGetPtr(cameraId);

@@ -171,7 +171,6 @@ u32 _map_attr_data[597] = {
 //.sbss
 void* ptr; //but why
 u32 size;
-
 void setupDataLoad(const char* mapName) {
     char path[64];
     DVDEntry* dvd;
@@ -195,7 +194,6 @@ void setupDataLoad(const char* mapName) {
         }
     }
 }
-
 BOOL setupDataCheck(void) {
     char tribeName[64];
     BOOL flag;

@@ -98,7 +98,7 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // puts stepA/stepB in f25/f24 and angleScale/yScale in f20/f19 (original f21/f19 and f27/f31), and
 // 2pi/10/90 land one register higher (f29/f30/f31 vs f28/f29/f30). The int->float pool constant also
 // resolves to an anonymous .rodata entry because Main/Disp pool two extra double literals there.
-// NONMATCHING (98.11%): see above.
+// NONMATCHING (98.24%): see above.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
@@ -162,7 +162,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         rad = float_6p2832_8041fec8 * (y + (f32)r) / float_360_8041fec0;
         s = (f32)sin(rad);
         c = (f32)cos(rad);
-        t = (f32)sin(float_6p2832_8041fec8 * (float_90_8041fedc - float_10_8041fed8 * y) / float_360_8041fec0);
+        t = (f32)sin(float_6p2832_8041fec8 * (float_10_8041fed8 * y - float_90_8041fedc) / float_360_8041fec0);
         vA = baseA - stepA * t;
         vB = baseB - stepB * t;
 
@@ -207,7 +207,6 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
     }
     return effect;
 }
-
 void effStardust2Main(EffectEntry* effect) {
     EffStardust2Data* data;
     Vec position2;
@@ -346,7 +345,6 @@ static inline GXColor stardustColor(u8 r, u8 g, u8 b) {
     return c;
 }
 #endif
-
 void effStardust2Disp(CameraId camId, void* param) {
     EffectEntry* entry = param;
     CameraEntry* cam;
@@ -488,7 +486,6 @@ void effStardust2Disp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
-
 void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
     *(s32*)((u8*)entry->userdata + 0x2C) = cam;
 }

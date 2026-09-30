@@ -116,7 +116,7 @@ inline Vec initializeVec(Vec* input) {
 
 // NONMATCHING (74.94%): control flow/constants/GX state match, but MWCC emits lha/fctiwz for the
 // vertex s16<->f32 conversions where the original uses psq_l/psq_st (GQR2-5 + qr5), so it saves a
-// different register set (f25-f31 vs f31) and a different frame (0x1c0 vs 0x1a0). See REPORT.md.
+// different register set (f25-f31 vs f31) and a different frame (0x1c0 vs 0x1a0).
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -152,7 +152,7 @@ void effSstarDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx1, mtx2, mtx3);
     PSMTXScale(mtx4, scale, scale, scale);
     PSMTXConcat(mtx3, mtx4, mtx3);
-    PSMTXRotRad(mtx2, 'z', data->angle * 0.017453292f);
+    PSMTXRotRad(mtx2, 'z', data->field_0x24 * 0.017453292f);
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);

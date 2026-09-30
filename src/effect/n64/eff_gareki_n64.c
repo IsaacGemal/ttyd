@@ -169,7 +169,6 @@ EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     }
     return effect;
 }
-
 void effGarekiMain(EffectEntry* effect) {
     GarekiData* data = effect->userdata;
     Vec position;

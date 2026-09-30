@@ -11,7 +11,7 @@
 // `#pragma opt_propagation off` required: with it on MWCC rematerialises the polynomial
 // coefficients into every branch, as in evt_sub_get_coin.
 #pragma opt_propagation off
-// NONMATCHING (76.90%): radian lands in f0 vs f5 and the coefficients/accumulator use
+// NONMATCHING (76.89%): radian lands in f0 vs f5 and the coefficients/accumulator use
 // different FPRs; event->userdataf temporaries are not stack-spilled (frame 0x50 vs 0x60).
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
@@ -174,7 +174,6 @@ USER_FUNC(evt_item_move_3d_position) {
 	return EVT_RETURN_DONE;
 }
 #pragma opt_propagation reset
-
 USER_FUNC(evt_item_set_alpha) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -187,7 +186,6 @@ USER_FUNC(evt_item_set_alpha) {
 	item->alpha = alpha;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_scale) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -200,7 +198,6 @@ USER_FUNC(evt_item_set_scale) {
 	item->scale = scale;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_get_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -217,7 +214,6 @@ USER_FUNC(evt_item_get_position) {
 	evtSetFloat(event, outZ, item->position.z);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_position) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -234,7 +230,6 @@ USER_FUNC(evt_item_set_position) {
 	item->position.z = z;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_bound_next_dir) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -246,7 +241,6 @@ USER_FUNC(evt_item_set_bound_next_dir) {
 	*(s32*)((u8*)item + 0x90) = dir;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_bound_next_speed) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -258,7 +252,6 @@ USER_FUNC(evt_item_set_bound_next_speed) {
 	*(f32*)((u8*)item + 0x94) = speed;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_change_mode) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -271,7 +264,6 @@ USER_FUNC(evt_item_change_mode) {
 	itemModeChange(item, (u16)mode);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_get_item_end_wait) {
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
 
@@ -286,7 +278,6 @@ USER_FUNC(evt_item_get_item_end_wait) {
 	}
 	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(evt_item_get_item) {
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, event->args[0]));
 
@@ -305,7 +296,6 @@ USER_FUNC(evt_item_get_item) {
 	}
 	return itemStatus(item, 0x10000) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-
 USER_FUNC(evt_item_set_bound_limit) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -317,7 +307,6 @@ USER_FUNC(evt_item_set_bound_limit) {
 	*(s32*)((u8*)item + 0x88) = limit;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_bound_rate) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -329,7 +318,6 @@ USER_FUNC(evt_item_set_bound_rate) {
 	*(f32*)((u8*)item + 0x80) = rate;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_gravity) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -341,7 +329,6 @@ USER_FUNC(evt_item_set_gravity) {
 	*(f32*)((u8*)item + 0x84) = gravity;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_jump_power) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -353,7 +340,6 @@ USER_FUNC(evt_item_set_jump_power) {
 	*(f32*)((u8*)item + 0x58) = power;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_set_move_dir_speed) {
 	s32* args = event->args;
 	s32 name = evtGetValue(event, args[0]);
@@ -368,7 +354,6 @@ USER_FUNC(evt_item_set_move_dir_speed) {
 	*(f32*)((u8*)item + 0x50) = speed;
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_status_on) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -380,7 +365,6 @@ USER_FUNC(evt_item_status_on) {
 	itemStatusOn(item, mask);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_flag_off) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -392,7 +376,6 @@ USER_FUNC(evt_item_flag_off) {
 	itemFlagOff(item, flag);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_flag_on) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -404,7 +387,6 @@ USER_FUNC(evt_item_flag_on) {
 	itemFlagOn(item, flag);
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_delete_check) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -417,7 +399,6 @@ USER_FUNC(evt_item_delete_check) {
 	}
 	return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_item_delete) {
 	s32* args = event->args;
 

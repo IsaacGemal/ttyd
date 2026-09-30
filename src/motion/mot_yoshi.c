@@ -4,7 +4,6 @@
 #include "evt/evt_bero.h"
 #include "party.h"
 #include "pmario_sound.h"
-
 void mot_yoshi(void) {
     MarioWork* mario = marioGetPtr();
 

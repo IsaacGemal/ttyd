@@ -9,7 +9,7 @@
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// Float literals this unit emitted into .sdata2 (offsets listed in REPORT.md).
+// Float literals this unit emitted into .sdata2.
 extern const f32 float_10_8041c7e0;
 extern const f32 float_0_8041c7d8;
 extern const f32 float_0p01_8041c7c0;
@@ -158,7 +158,6 @@ static void _init_param(BattleWork* work) {
     ac->outputParams[0] = 0;
 }
 #pragma optimize_for_size reset
-
 s32 battleAcMain_Repeatedly(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
@@ -368,11 +367,9 @@ s32 battleAcMain_Repeatedly(BattleWork* work) {
     }
     return 1;
 }
-
 s32 battleAcResult_Repeatedly(BattleWork* work) {
     return work->actionCommands.result;
 }
-
 void battleAcDisp_Repeatedly(CameraId camId, void* param) {
     BattleWork* work = param;
     BattleActions* ac = &work->actionCommands;

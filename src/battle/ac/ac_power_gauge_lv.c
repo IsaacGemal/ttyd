@@ -59,10 +59,7 @@ static void actionCommandDisp(f32, f32);
 // don't_inline: the original keeps actionCommandDisp as its own local function.
 #pragma optimize_for_size on
 #pragma dont_inline on
-// opt_common_subs off: with it on, MWCC allocates the ratio division's operands f1/f0/f2; off gives the
-// original's f2 (gaugePercent), f1 (100), f0 (1) register order.
-#pragma opt_common_subs off
-// NONMATCHING (99.13%): only the fdivs destination differs (original `fdivs f1, f2, f1` overwrites the divisor, MWCC emits `fdivs f2, f2, f1` overwriting the numerator); the following fctiwz/stfs and argument schedule shift with it.
+// NONMATCHING (98.94%): only the fdivs destination differs (original `fdivs f1, f2, f1` overwrites the divisor, MWCC emits `fdivs f2, f2, f1` overwriting the numerator); the following fctiwz/stfs and argument schedule shift with it.
 static void actionCommandDisp(f32 f1, f32 f2) {
     BattleWork* work = _battleWorkPointer;
 #ifdef MUST_MATCH
@@ -160,8 +157,6 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 }
 #pragma dont_inline reset
 #pragma optimize_for_size reset
-#pragma opt_common_subs reset
-
 void battleAcDelete_PowerGaugeLv(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
         work->actionCommands.mAcState = 0x3eb;
@@ -203,7 +198,6 @@ void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
         break;
     }
 }
-
 s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
     return work->actionCommands.result;
 }

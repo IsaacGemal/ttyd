@@ -7,7 +7,6 @@ ParseWork parse;
 
 const char str_8041A6B0[] = "%d";
 const char str_8041A6B4[] = "%f";
-
 void parseInit(void* ptr, u32 size) {
 	parse.ptr = ptr;
 	parse.field_0x54 = 0;
@@ -19,7 +18,7 @@ void parseInit(void* ptr, u32 size) {
 
 
 
-// NONMATCHING (99.71%): the copy loop's strength-reduced buffer pointer and index use swapped scratch
+// NONMATCHING (99.7%): the copy loop's strength-reduced buffer pointer and index use swapped scratch
 // registers (mine buf=r4/j=r6, original buf=r6/j=r4); everything else matches.
 BOOL parsePush(const char* tag) {
 	static char buf[128];

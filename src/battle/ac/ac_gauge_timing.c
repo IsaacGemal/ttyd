@@ -10,7 +10,7 @@
 #include "system.h"
 #include <string.h>
 
-// sdata2 constants of this unit (offsets listed in REPORT.md).
+// sdata2 constants of this unit.
 #ifdef MUST_MATCH
 __declspec(section ".sdata2") s32 dat_80421870 = -1;
 #else
@@ -83,7 +83,7 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// NONMATCHING (94.38%): newly written; remaining diffs are constant-pool labels and branch polarity, see REPORT.md.
+// NONMATCHING (94.38%): newly written; remaining diffs are constant-pool labels and branch polarity,
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #ifdef MUST_MATCH
     // MWCC folds two bases derived directly from `work` into one register; deriving both from
@@ -249,7 +249,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     goto tail;
                 }
             }
-            if (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x14]) {
+            if (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x10]) {
                 dec->field_0x10 = 1;
             } else {
                 dec->field_0x10 = 0;
@@ -345,11 +345,9 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
     return 1;
 }
 #pragma optimize_for_size reset
-
 s32 battleAcResult_GaugeTiming(BattleWork* work) {
     return work->actionCommands.result;
 }
-
 void battleAcDisp_GaugeTiming(CameraId camId, void* param) {
     BattleActions* ac = &((BattleWork*)param)->actionCommands;
     BattleACDispParams* disp = &ac->dispParams;
@@ -383,7 +381,6 @@ void battleAcDisp_GaugeTiming(CameraId camId, void* param) {
         break;
     }
 }
-
 void battleAcDelete_GaugeTiming(BattleWork* work) {
     if (!(work->actionCommands.field_0x30 & 1)) {
         work->actionCommands.mAcState = 0x3EC;
@@ -401,7 +398,7 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 
 // optimize_for_size: the original saves r25-r31 with `stmw` and keeps the 2D camera in r27.
 #pragma optimize_for_size on
-// NONMATCHING (88.69%): newly written; remaining diffs are register allocation and constant-pool labels, see REPORT.md.
+// NONMATCHING (88.96%): newly written; remaining diffs are register allocation and constant-pool labels,
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
 #ifdef MUST_MATCH
@@ -434,7 +431,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     disp->value = value;
 
     if (*(s32*)&work->actionCommands.field_34[0x0C] == 1) {
-        f32 ratio = dec->field_0x04 * float_100_80421874 / (f32)*(s32*)&work->actionCommands.field_34[0x10];
+        f32 ratio = disp->value * float_100_80421874 / (f32)*(s32*)&work->actionCommands.field_34[0x10];
         if (ratio > float_100_80421874) {
             ratio = float_100_80421874;
         }
@@ -485,8 +482,8 @@ static void actionCommandDisp(f32 x, f32 y) {
         icon1 = BattleACGetButtonIcon(0x20, 0);
         break;
     case 2:
-        icon0 = BattleACGetButtonIcon(0x4, 1);
-        icon1 = BattleACGetButtonIcon(0x4, 0);
+        icon0 = BattleACGetButtonIcon(0x40000, 1);
+        icon1 = BattleACGetButtonIcon(0x40000, 0);
         break;
     default:
         icon0 = BattleACGetButtonIcon(0x100, 1);

@@ -55,7 +55,6 @@ inline Vec initializeVec(Vec* input) {
     temp.z = input->z;
     return temp;
 }
-
 EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
     EffStarPowerData* data;
@@ -188,7 +187,6 @@ static inline GXColor starPowerColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
     return c;
 }
 #endif
-
 void effStarPowerDisp(CameraId camId, void* param) {
     s32 halfAlpha;
     EffStarPowerData* data;

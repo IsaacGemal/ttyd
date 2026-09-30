@@ -11,7 +11,6 @@ static ArchiveEntry work[4];
 
 
 //BOOL arcDataCheck()
-
 void arcInit(void) {
 	int i;
 
@@ -19,7 +18,6 @@ void arcInit(void) {
 		memset(&work[i], 0, sizeof(ArchiveEntry));
 	}
 }
-
 BOOL arcDataCheck(void* data) {
 	int i;
 
@@ -30,12 +28,9 @@ BOOL arcDataCheck(void* data) {
 	}
 	return FALSE;
 }
-
 void arcDelete(s32 id) {
 	memset(&work[id], 0, sizeof(ArchiveEntry));
 }
-
-
 void* arcOpen(const char* filename, void** addr, u32* length) {
 	ARCFileInfo info;
 #ifdef MUST_MATCH
@@ -79,7 +74,6 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 	}
 	return NULL;
 }
-
 void arcEntry(s32 id, void* data, u32 size) {
 	ArchiveEntry* entry = &work[id];
 
