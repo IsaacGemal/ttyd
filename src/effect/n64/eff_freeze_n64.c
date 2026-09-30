@@ -12,21 +12,16 @@
 #include <stdlib.h>
 
 // .sdata2 constants shared with the rest of the unit.
-extern const f32 float_10_8041f010;
-extern const f32 float_32_8041f030;
-extern const f32 float_30_8041f034;
 
 // .rodata
-const char str_802FA6C0[] = "FreezeN64";
 // Pooled double the compiler reuses for the u32->f32 conversion in effFreezeMain.
-const f64 double_to_int_802fa6b8 = 4503601774854144.0;
 
 EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effFreezeData* data;
 
 	entry = effEntry();
-	entry->type = str_802FA6C0;
+	entry->type = "FreezeN64";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFreezeData));
 	entry->userdata = data;
@@ -55,7 +50,7 @@ EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scal
 	data->color1[3] = 0xff;
 	data->field_0x25 = 0;
 	data->field_0x24 = 0;
-	data->snowDust = effSnowDustN64Entry(1, x, float_10_8041f010 + y, z, 4, 0, float_32_8041f030, float_30_8041f034, scale);
+	data->snowDust = effSnowDustN64Entry(1, x, 10.0f + y, z, 4, 0, 32.0f, 30.0f, scale);
 	return entry;
 }
 
@@ -139,8 +134,6 @@ void effFreezeMain(EffectEntry* effect) {
 }
 
 //.sbss2
-GXColor unk_80423118;
-GXColor unk_8042311c;
 
 //.data
 static u32 size32x64_tex32x64_vtx[56] = {
@@ -161,7 +154,7 @@ static u32 size32x64_tex32x64_vtx[56] = {
 };
 
 static inline void effFreezeSetColor1(u8* color, u8 alpha) {
-	GXColor c = unk_80423118;
+	GXColor c = (GXColor){ 0, 0, 0, 0 };
 	c.r = color[0];
 	c.g = color[1];
 	c.b = color[2];
@@ -170,7 +163,7 @@ static inline void effFreezeSetColor1(u8* color, u8 alpha) {
 }
 
 static inline void effFreezeSetColor2(u8* color) {
-	GXColor c = unk_8042311c;
+	GXColor c = (GXColor){ 0, 0, 0, 0 };
 	c.r = color[0];
 	c.g = color[1];
 	c.b = color[2];
