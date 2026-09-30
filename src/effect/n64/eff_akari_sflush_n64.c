@@ -7,19 +7,20 @@
 #include "matching.h"
 #include "memory.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230a0;
+
+
 // .sdata2 constants owned by this unit (named after their original addresses).
+extern const GXColor dat_8041e900;
 extern const f32 float_deg2rad_8041e904;
 extern const f32 float_6p2832_8041e908;
 extern const f32 float_360_8041e90c;
 extern const f32 float_0p1_8041e910;
-extern const f32 float_1_8041e914;
-extern const f32 float_30_8041e918;
-extern const f32 float_0_8041e91c;
-extern GXColor dat_8041e900;
+
 // .sbss2 scratch GXColor the original builds its TEV colour from.
-extern GXColor unk_804230a0;
 // .rodata integer-to-float conversion constant.
-extern const f64 double_to_int_802fa1f0;
 
 // .data vertex array, local to this unit (0x54 bytes).
 static u32 size16x16_tex32x32_vtx[0x54 / 4] = {
@@ -97,7 +98,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 	counter = data->field_0x14;
 
 	if (life < 8) {
-		data->field_0x2C += float_0p3_8041e920 * (8 - life);
+		data->field_0x2C += 0.3f * (8 - life);
 	}
 
 	if (counter < 16) {
@@ -122,7 +123,7 @@ void effAkariSflushMain(EffectEntry* effect) {
 // plain build under #else.
 //
 // The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each
-// inner iteration (pool entries float_1_8041e914 / float_30_8041e918 / float_0_8041e91c); referencing
+// inner iteration (pool entries 1.0f / 30.f / 0.0f); referencing
 // the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
 // register.  The literals get anonymous .sdata2 labels (@227-@229), which objdiff scores as equal to
 // the named symbols, so the function is 100%.
@@ -233,3 +234,11 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+const GXColor dat_8041e900 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_deg2rad_8041e904 = 0.017453292f;
+const f32 float_6p2832_8041e908 = 6.2831855f;
+const f32 float_360_8041e90c = 360.0f;
+const f32 float_0p1_8041e910 = 0.1f;

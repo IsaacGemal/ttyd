@@ -2594,6 +2594,30 @@ drops 95.82 -> 94.12 only because effHibashiraMain's zero Vec is now an anonymou
 original's, and main already carries the extra 2^52 double at the end.
 The wave also fixed three bugs on main: evt_npc's moveFlags read args[10], win_main's TEVREG1 colour had its bytes in the wrong order, and evt_telop wrote .b instead of .a.
 
+## Grind 32 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked ten wave-28 code-complete units (`eff_kemuri12`, `kumokumo_chip`, `stamp`, `sweat`, `wangflush`, `glass`, `hagetaka_flush`, `stone_smoke`, `akari_sflush`, `bomhei`, all `effect/n64/eff_*_n64`).
+
+- Every section can score 100 in objdiff and the dol still differ: a named `const f32` defined in the file is placed before all pooled literals, so the unit's `.sdata2`/`.rodata` gets the same value twice (once named, once as the compiler's own pool entry) or in the wrong slot. `tools/pool_floats.py` turns the named f32 constants into literals (the compiler then pools them in first-use order); `tools/finish_unit.py` runs it, drops the unit's own `double_to_int_*` definition and its named string objects as a fallback after a failed link. `pool_define.py` no longer defines constants the code never loads by name.
+- Mixed cases: the constants the original loads by name from a slot that precedes the pooled ones stay named (`akari_sflush`: `dat`, deg2rad, 6.28, 360, 0.1), the rest are literals. A literal `0.0f` next to a named `float_0` in the same unit doubles the zero in `.sdata2` (`wangflush`, `bomhei`): use the named zero everywhere.
+- `.data` gaps: a `gap_NN_..._data` object of zeros or a `{-1.0f, 1.0f}` pair after a vertex table is part of the unit; widen the table or add the `__declspec(section ".data") u32 lbl_...[2]` pair after it. A `gap_NN_..._sbss2` object is one more `GXColor` in the sbss2 idiom (declared in reverse).
+- Section sizes of a linked unit differ from the target's object by the end padding (rodata/sdata2 end at 4 or 8 bytes instead of 16); the dol is what matters.
+- `eff_stamp_n64` lost matched_data 92.31 -> 61.54 in the ratchet (its named string and double became compiler-pooled); the unit is now byte-exact and linked, excused with `--allow-regress`.
+- Still open: `eff_teresa`, `eff_mist2`, `eff_hibashira`, `eff_nokotarou`, `eff_majinai` (sdata2 slots with strings/doubles), `evt_kinopio`, `battle_information`, `sunlight`, `batfukidashi`.
+
+## Grind 33 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked seven more wave-28 units: `eff_majinai`, `eff_hibashira`, `eff_teresa`, `eff_batfukidashi`, `eff_sunlight_n64`, `battle_information` (const `N_item_hog_table`), plus the ten of Grind 32 merged earlier.
+
+- A table the target keeps in `.rodata` must be `const` (`battle_information`: a non-const `HogTable` landed in `.data`).
+- `.sdata2` strings of at most 6 bytes sit in the constant pool in first-use order between the floats: use literals for them and for the floats after them (`majinai`, `hibashira`); the named (defined-after-code) constants come first, in definition order. `hibashira`: a block-scoped temp for `sin(...)` reorders the first uses of `3.14159f` and `0.5f`.
+- `teresa`: constants that the target lists after the named ones in the order of first use in `Disp` (16, 0, 2 …) are literals; only the first constants (`dat`, deg2rad, 32, 0.5) stay named (`pool_floats.py --keep=NAME,...`).
+- `pool_define.py` also reads the `extern const` declarations in the unit's own header (`sunlight`); a `.data` vertex array that no tool wrote is generated from the disassembly by hand (`testsrc__s_v`).
+- Zero `gap_NN_*` objects at a section end are part of the unit: pad the last `.data` table with a zero word, extend the last `.rodata` string array (a 4-byte zero const would land in `.sdata2`), `static u32` in `.sbss`, `#pragma explicit_zero_data on` for `.sdata`.
+- A string that nothing in the dol references by name is garbage-collected: `#pragma force_active on` (`evt_kinopio` `str_802ECF14`, read through `str + 0xC4`).
+- Function order: `fn_order.py` reports the source order that emits the target's `.text` order; `event/evt_kinopio` has its 20 functions in the opposite order, and reversing them drops `paper_on` to 99.78% (r5/r6 swap for the `str` base). Data sections of `evt_kinopio` already equal the target (kept out of the tree: the unit's matched_data metric fell without the link).
+- Still open: `eff_mist2` (`-16.0f * 0.5f` folds when the 16 is a literal; the named version drops Disp to 91%), `eff_nokotarou` (named `float_0/100/1` defined before the code fold and duplicate the pool), `evt_kinopio`.
+
 ## Wave 27: the REL finishing pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 Scope, per Claude #1's directive after #51, picked by `scratch/wave27/pick_units.py`: NonMatching REL sources with

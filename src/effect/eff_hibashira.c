@@ -22,22 +22,11 @@ static inline Vec makeHibashiraVec(f32 x, f32 y, f32 z) {
 }
 
 // .rodata
-const char str_803013C4[] = "EFF_hibashira";
-const char str_803013D4[] = "EFF_hibashira2";
-const char str_803013E4[] = "hibashira";
-const f64 double_to_int_803013f0 = 4503601774854144.0;
 
 // .sdata2 strings effHibashiraMain reads from the original unit's data.
-extern const char str_80422348[4];
-extern const char str_8042234C[4];
 
 // .sdata2
 extern const u32 dat_80422338;
-extern const f32 float_deg2rad_8042233c;
-extern const f32 float_0_80422340;
-extern const f32 float_10_80422344;
-extern const f32 float_3p1416_80422350;
-extern const f32 float_0p5_80422354;
 
 inline GXColor makeHibashiraColor(s32 alpha) {
 	GXColor color = *(GXColor*)&dat_80422338;
@@ -71,7 +60,7 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 		break;
 	}
 
-	entry->type = str_803013E4;
+	entry->type = "hibashira";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(HibashiraData));
 	entry->userdata = data;
@@ -102,7 +91,10 @@ EffectEntry* effHibashiraEntry(s32 type, s32 countArg, s32 c, f32 x, f32 y, f32 
 		elem->position.x = (f32)(i - 1) * (dx / (f32)(count - 1));
 		elem->position.y = (f32)(i - 1) * (dy / (f32)(count - 1));
 		elem->position.z = (f32)(i - 1) * (dz / (f32)(count - 1));
-		elem->scale = float_0p5_80422354 + (f32)sin(float_3p1416_80422350 * (f32)i / (f32)(entry->count - 1));
+		{
+			f32 s = (f32)sin(3.1415927f * (f32)i / (f32)(entry->count - 1));
+			elem->scale = 0.5f + s;
+		}
 		elem->animPose = -1;
 		elem->field_0x18 = 0xFF;
 		elem->field_0x1C = 0;
@@ -145,13 +137,13 @@ void effHibashiraMain(EffectEntry* effect) {
 	case 1:
 	case 3:
 	case 4:
-		if (!animGroupBaseAsync(str_803013C4, inBattle, NULL)) {
+		if (!animGroupBaseAsync("EFF_hibashira", inBattle, NULL)) {
 			return;
 		}
 		break;
 	case 2:
 	case 5:
-		if (!animGroupBaseAsync(str_803013D4, inBattle, NULL)) {
+		if (!animGroupBaseAsync("EFF_hibashira2", inBattle, NULL)) {
 			return;
 		}
 		break;
@@ -184,18 +176,18 @@ void effHibashiraMain(EffectEntry* effect) {
 				switch (type) {
 				case 0:
 				case 3:
-					data->animPose = animPoseEntry(str_803013C4, inBattle);
-					animPoseSetAnim(data->animPose, str_80422348, TRUE);
+					data->animPose = animPoseEntry("EFF_hibashira", inBattle);
+					animPoseSetAnim(data->animPose, "A_1", TRUE);
 					break;
 				case 1:
 				case 4:
-					data->animPose = animPoseEntry(str_803013C4, inBattle);
-					animPoseSetAnim(data->animPose, str_8042234C, TRUE);
+					data->animPose = animPoseEntry("EFF_hibashira", inBattle);
+					animPoseSetAnim(data->animPose, "A_2", TRUE);
 					break;
 				case 2:
 				case 5:
-					data->animPose = animPoseEntry(str_803013D4, inBattle);
-					animPoseSetAnim(data->animPose, str_80422348, TRUE);
+					data->animPose = animPoseEntry("EFF_hibashira2", inBattle);
+					animPoseSetAnim(data->animPose, "A_1", TRUE);
 					break;
 				}
 			}
@@ -231,7 +223,7 @@ void effHibashiraDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(spA0, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(sp70, data->scale, data->scale, data->scale);
-	PSMTXRotRad(sp40, 'y', float_deg2rad_8042233c * -camGetPtr(camId)->viewYaw);
+	PSMTXRotRad(sp40, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 	PSMTXConcat(spA0, sp40, spA0);
 	PSMTXConcat(spA0, sp70, sp10);
 
@@ -247,9 +239,12 @@ void effHibashiraDisp(CameraId camId, void* param) {
 			animPoseSetMaterialFlagOn(data->animPose, 0x40);
 			animPoseSetMaterialEvtColor(data->animPose, makeHibashiraColor((data->field_0x18 * alpha) / 255));
 			animPoseMain(data->animPose);
-			animPoseDrawMtx(data->animPose, spA0, 1, float_0_80422340, float_10_80422344);
-			animPoseDrawMtx(data->animPose, spA0, 2, float_0_80422340, float_10_80422344);
-			animPoseDrawMtx(data->animPose, spA0, 3, float_0_80422340, float_10_80422344);
+			animPoseDrawMtx(data->animPose, spA0, 1, 0.0f, 10.f);
+			animPoseDrawMtx(data->animPose, spA0, 2, 0.0f, 10.f);
+			animPoseDrawMtx(data->animPose, spA0, 3, 0.0f, 10.f);
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422338 = 0xFFFFFF00;

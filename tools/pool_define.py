@@ -77,8 +77,28 @@ for addr, sec, size, name, words, fl, db, body in objs:
         defs[name] = ("f64", fmt_double(bits), bits)
 
 ext_re = re.compile(r"^extern ((?:const |volatile )+)(f32|f64|u32|GXColor|Vec) (\w+);\n", re.M)
+def referenced(name, decl_end, decl_start):
+    """The name is used by code, not just declared: a constant the code no longer loads by name (it was turned into a
+    literal) must not be defined, or the unit gets a second copy of the value in its pool."""
+    rest = text[:decl_start] + text[decl_end:]
+    return re.search(rf"\b{re.escape(name)}\b", rest) is not None
+
+
+# constants declared in the unit's own header (the first #include) and used here count as declared here
+hdr = re.search(r'#include "([^"]+)"', text)
+hdr_text = ""
+if hdr:
+    try:
+        hdr_text = open("include/" + hdr.group(1)).read()
+    except OSError:
+        pass
+hdr_found = [(0, 0, ("volatile " if "volatile" in m.group(1) else "") + m.group(2), m.group(3)) for m in ext_re.finditer(hdr_text)
+             if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")
+             and re.search(rf"\b{re.escape(m.group(3))}\b", text)]
 found = [(m.start(), m.end(), ("volatile " if "volatile" in m.group(1) else "") + m.group(2), m.group(3)) for m in ext_re.finditer(text)
-         if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")]  # the compiler pools its own conversion constants
+         if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")
+         and referenced(m.group(3), m.end(), m.start())]  # the compiler pools its own conversion constants
+found = found + [f for f in hdr_found if f[3] not in {x[3] for x in found}]
 if not found:
     sys.exit(f"{unit}: no extern pool constants to define")
 order = {name: i for i, (_, _, _, _, _, _, _, _) in enumerate(objs) for name in [objs[i][3]]}

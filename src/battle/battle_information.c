@@ -62,7 +62,7 @@ typedef struct HogTable {
 } HogTable;
 
 // Items the Hog badge can drop when the player has no held items.
-HogTable N_item_hog_table = {
+const HogTable N_item_hog_table = {
 	{
 		0x00000098, 0x00000098, 0x00000098, 0x000000A2,
 		0x00000094, 0x0000009A, 0x00000099, 0x00000084,
