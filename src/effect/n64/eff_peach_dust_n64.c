@@ -3,6 +3,14 @@
 #include "eff/eff_n64.h"
 #include <dolphin/mtx.h>
 
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 // .rodata
 const f64 double_to_int_mask_802fb350 = 4503599627370496.0;
 
@@ -57,14 +65,6 @@ static u8 color_rotation_data[36] = {
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
-
-inline Vec makeVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
 
 void effPeachDustMain(EffectEntry* effect) {
 	PeachDustParticle* data;

@@ -7,6 +7,13 @@
 #include <dolphin/mtx.h>
 
 // .rodata / .sdata2 data used by effSweatN64Entry (originally local to this unit).
+#ifdef MUST_MATCH
+// volatile stops MWCC from hoisting vec3_802fb810's components out of the loop;
+// retail reloads them through a base register every iteration.
+const volatile Vec vec3_802fb810 = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_802fb810 = { 0.0f, 0.0f, 0.0f };
+#endif
 const f64 double_to_int_802fb838 = 4503601774854144.0;
 extern const char str_802FB828[];
 extern const f32 float_deg2rad_8041ffac;
@@ -48,7 +55,7 @@ EffectEntry* effSweatN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 	data->position.z = z;
 	p = data + 1;
 	for (i = 1; i < effect->count; i++, p++) {
-		Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+		Vec temp = vec3_802fb810;
 		temp.x = (f32)sin(float_0_8041ffbc);
 		temp.z = -(f32)cos(float_0_8041ffbc);
 		axis = temp;

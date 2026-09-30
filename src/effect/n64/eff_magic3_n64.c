@@ -21,12 +21,13 @@ extern const f32 float_0_8041f70c;
 extern const f32 float_deg2rad_8041f710;
 extern const f32 float_1_8041f714;
 
-// .rodata zero vector used by a function of this unit that is not written yet.
+// .rodata zero vectors (named after their original addresses).
 const Vec vec3_802fab48 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fab54 = { 0.0f, 0.0f, 0.0f };
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_onpu.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = vec3_802fab54;
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;

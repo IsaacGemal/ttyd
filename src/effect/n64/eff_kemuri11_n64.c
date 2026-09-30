@@ -42,6 +42,7 @@ extern GXColor unk_80423188;
 extern GXColor unk_8042318c;
 
 // .rodata constants (named after their original addresses).
+const Vec vec3_802faa00 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802faa10 = 4503601774854144.0;
 const char str_802FAA18[] = "Kemuri11N64";
 
@@ -86,7 +87,7 @@ static u32 stg_thruhammer_v[0x118 / 4] = {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
 inline Vec initializeVec(Vec* input) {
-    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    Vec temp = vec3_802faa00;
     temp.x = input->x;
     temp.y = input->y;
     temp.z = input->z;
@@ -259,7 +260,7 @@ void effKemuri11Disp(CameraId camId, void* param) {
     main_dl(effect, m2);
 }
 
-// NONMATCHING (95.84%): outer type check compiles to `blt` instead of the
+// NONMATCHING (93.85%): outer type check compiles to `blt` instead of the
 // original `bge`, and several float/stack-slot registers differ (sin/cos
 // temporaries, the 0.5p/0.94 constants, the int->float stack scratch pairs).
 void effKemuri11Main(EffectEntry* effect) {

@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// .rodata: zero vector the per-effect position helper starts from.
+const Vec vec3_802fb4a0 = { 0.0f, 0.0f, 0.0f };
+
 // .rodata: int->float conversion magic double.
 const f64 double_to_int_802fb4b0 = 4503601774854144.0;
 
@@ -15,7 +18,7 @@ const char str_802FB4B8[] = "RappaN64";
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_sstar.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = vec3_802fb4a0;
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -90,6 +93,7 @@ EffectEntry* effRappaN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 a4, 
 	return effect;
 }
 
+// NONMATCHING (98.29%): the original loads effect->userdata into r7 before the vec3_802fb4a0 words; MWCC GC/2.6 hoists the first two global loads into the prologue slots instead. Everything else matches.
 void effRappaMain(EffectEntry* effect) {
 	EffectEntry* e;
 	effRappaData* data;

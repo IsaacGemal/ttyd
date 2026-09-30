@@ -8,6 +8,7 @@
 #include <math.h>
 
 // .rodata
+const Vec vec3_802fb2c0 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb2d0 = 4503601774854144.0;
 const char str_802FB2D8[] = "OpukuWgunN64";
 
@@ -23,7 +24,7 @@ const f32 float_255_8041f87c = 255.0f;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = vec3_802fb2c0;
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;

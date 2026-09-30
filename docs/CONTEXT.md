@@ -2258,11 +2258,12 @@ write to. Next waves give each agent its own TMPDIR.
 
 - **Zero-Vec temp**: the `effXxxMain` functions that open with `position = vec3_...; position.x = ...` need the copy to come
   from an inline that builds the temp from a literal `(Vec){ 0, 0, 0 }` (`makeVec(x, y, z)` / `initializeVec`), not from a
-  named rodata `vec3_...`: the scheduler then keeps the `userdata` load ahead of the copy. The named definition goes away
-  with the use (the literal's pool entry replaces it; keeping both duplicates it in `.rodata`). kemuri10, vapor, hokori, rappa
-  and peach_dust `Main` match; kemuri9, kemuri11, radiation and star_power `Main` improve. The local `initializeVec` copies in
-  ten other effect files build from the literal too. magic3 keeps its unused `vec3_802fab48` (a target object no function
-  written here reads).
+  named rodata `vec3_...`: the scheduler then keeps the `userdata` load ahead of the copy. The literal's pool entry is
+  anonymous, so it replaces the named `vec3_...` object only where the unit's `.rodata` score does not drop (kemuri10, vapor,
+  hokori, peach_dust; the helper sits above the unit's other rodata so the literal lands at offset 0). In units that also carry
+  the extra anonymous 2^52 double pool (rappa, kemuri9, kemuri11, opuku_wgun/wprotect, recover_heart, star_power) the section
+  score fell 5 to 40 points against main with the literal, so those keep the named `vec3_...` and the old code shape
+  (rappa's `Main` reaches 100% with the literal; it stays at 98.29% here until the pool duplication is solved).
 - **`tri2` takes `s32` arguments**: none of the 520 call sites masks or sign-extends an argument, so the parameters are
   int-wide (the callee stores halfwords, so the asm cannot show signed or not; `s32` it is). pikkyolo and thunderflare `Disp`
   match, jetwrain `Disp` improves.

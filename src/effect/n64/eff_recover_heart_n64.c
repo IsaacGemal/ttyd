@@ -8,6 +8,7 @@
 #include <math_ext.h>
 
 // .rodata
+const Vec vec3_802fb4c8 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb4d8 = 4503601774854144.0;
 const char str_802FB4E0[] = "RecoverHeartN64";
 
@@ -102,7 +103,7 @@ EffectEntry* effRecoverHeartN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z) {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = vec3_802fb4c8;
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
