@@ -32,3 +32,10 @@ typedef struct ItemDataView {
 	u16 buy_price; //0x14
 	u8 pad_0x16[0x28 - 0x16];
 } ItemDataView;
+// battle_detect's BattleChoiceSamplingEnemy reads ItemData.sp_restored with `lbz`/`cmplwi` (unsigned), while
+// the field above is s8. This view has the field unsigned; fix ItemData.sp_restored and delete this when the
+// header is corrected.
+typedef struct ItemDataSpView {
+	u8 pad_0x0[0x1F];
+	u8 sp_restored; //0x1F
+} ItemDataSpView;

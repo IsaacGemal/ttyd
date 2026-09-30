@@ -165,8 +165,11 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
 }
 
 // NONMATCHING (99.36%): logic matches; only register allocation differs — t/inv/v0 land in f28/f29/f27
-// instead of the target's f24/f25/f23 (rotating the loop pool constants), `i`/`mtx` are swapped
-// (r23/r26), and the int->float magic uses a local @-pool symbol. See REPORT.md.
+// instead of the target's f24/f25/f23 (rotating the loop pool constants) and `i`/`mtx` are swapped
+// (r23/r26). The int->float magic is a local @-pool entry here, not `double_to_int_802f8080`: its
+// .rodata offset is fixed by himo_sqrtf's 0.5/3.0 literals (weak _half/_three pool entries), which
+// are emitted before this function's conversion constant, so the relocation lands at 0x38 not 0x18.
+// See REPORT.md.
 void vivihimoDisp(CameraId cameraId, void* data) {
     HimoWork* work = data;
     CameraEntry* cam;

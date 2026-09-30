@@ -8,7 +8,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#include <math.h>
+#include <math_ext.h>
 #include <stdlib.h>
 
 // Local copy of system.c's inline helper so it inlines here as in the original.
@@ -21,18 +21,17 @@ inline Vec initializeVec(Vec* input) {
 }
 
 // .rodata
+const f64 double_to_int_802faba0 = 4503601774854144.0;
 const char str_802FABA8[16] = "MagicHoraoN64";
 
 // .sdata2 owned by this unit; the zero Vec for initializeVec and the int->float
 // magic are left to the compiler's constant pool (@NNN), which objdiff folds back
-// to the original vec3_802fab90 / double_to_int_802faba0 symbols.
+// to the original vec3_802fab90 / double_to_int_802faba0 symbols. Defining
+// double_to_int_802faba0 before the string puts the .rodata copy where retail has it.
 extern const f32 float_0p02_8041f77c;
 extern const f32 float_5_8041f784;
 extern const f32 float_0p05_8041f788;
 
-// The unit's int->float magic constant (2^52 + 2^31), kept so the unit owns the
-// symbol in .rodata as the original does.
-const f64 double_to_int_802faba0 = 4503601774854144.0;
 
 EffectEntry* effMagicHoraoN64Entry(s32 type, s32 a1, s32 a2, s32 life, f32 x, f32 y, f32 z, f32 a4, f32 a5, f32 a6) {
 	EffectEntry* effect;
@@ -175,17 +174,14 @@ static inline GXColor makeHoraoColor2(u8 a) {
 }
 #endif
 
-// Register allocation is the only thing left. The local declaration order below is tuned so MWCC's
-// GPR allocator reproduces the original's loop registers; moving a line changes which register each
-// loop variable gets, so only reorder them together with a check. Remaining diffs: alpha is f29 where
-// the target has f31 and the vertex loop's FPRs are rotated (target 2pi/magic/360/500/200 = f26-f30 and
-// alpha f31; here alpha f29, 2pi/magic f30/f31, 360/500/200 f26/f27/f28); the first colour's local sits
-// at 0x14 (target 0x10), so its argument copy is at 0x10 (target 0x14) and colour.a stores before the
-// first fmadds; the vertex loop's i/off2/v are rotated (target i/off2/v = r26/r30/r24) and the draw
-// loop keeps i/j in r23/r24 (target r24/r23); the int->float magic is pooled (@NNN) instead of the named
-// double_to_int_802faba0 symbol because of the unit's extra compiler-emitted sqrt statics.
+// The FPR allocation (alpha in f31, the loop's 2pi/magic/360/500/200 in f26-f30) comes from the
+// named `s` temp in the vertex loop, see the MUST_MATCH block there. The source order of the
+// preheader assignments is also tuned: it decides the GPR schedule's load/increment interleave;
+// only reorder together with a check. The vertex writes use the sibling n64 quad layout.
 #pragma opt_lifetimes off // without it MWCC's lifetime analysis picks a worse register assignment here
-// NONMATCHING (98.51%): FPR/GPR register-allocation and first-colour stack-slot differences above.
+// NONMATCHING (98.90%): the first colour's local lands at 0x14 and its by-value copy at 0x10 where the
+// original has 0x10/0x14; `v = 0` and `j = k` compile to `li ...,0` where the original emits `mr`
+// (it copies the already-zero y/i). Everything else matches (FPRs, GPRs, schedule, values).
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	effMagicHoraoData* data;
 	Mtx mtx1;
@@ -203,6 +199,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	f32 angle;
 	MagicHoraoVtx* vtx;
 	s32 i;
+	s32 k;
 	s32 angleBase;
 	EffectEntry* effect;
 	s32 colorAlpha;
@@ -226,8 +223,8 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtx1, 0);
 	GXSetCurrentMtx(0);
 
-	angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
 	color = dat_8041f750;
+	angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
 	color.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
 	color.a = colorAlpha;
 	color.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
@@ -293,16 +290,27 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 
 		vtx = smartAlloc(0x1C0, 3)->address;
 		off1 = counter * 10;
-		off2 = off1;
-		vp = vtx;
 		y = 0;
+		i = 0;
+		vp = vtx;
+		off2 = off1;
 		v = 0;
-		for (i = 0; i < 16; i++) {
+		for (; i < 16; i++) {
 			s32 a;
 			s32 b;
 
+// MUST_MATCH: the named `s` temp (rather than reusing the sin expression inline) is what
+// makes MWCC put alpha in f31 and the loop's constants in f26-f30, as the original does.
+#ifdef MUST_MATCH
+			f32 s;
+			s = (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760);
+			a = (s32)(float_500_8041f774 * s * alpha);
+			s = (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760);
+			b = (s32)(float_200_8041f778 * s * alpha);
+#else
 			a = (s32)(float_500_8041f774 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760) * alpha);
 			b = (s32)(float_200_8041f778 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760) * alpha);
+#endif
 #ifdef MUST_MATCH
 			vp->x = a - 0xC80;
 			vp->y = b + y;
@@ -335,7 +343,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
 		effSetVtxDescN64((effVtxArray*)vtx);
-		for (i = 0, j = 0; i < 15; i++, j += 2) {
+		for (k = 0, j = k; k < 15; k++, j += 2) {
 			GXBegin(0x90, 0, 6);
 			tri2(j, j + 2, j + 1, j, j + 1, j + 2, j + 3, j);
 		}

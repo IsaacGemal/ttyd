@@ -10,7 +10,14 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // .sdata2 literals referenced by battleAcMain_PowerGauge and battleAcDisp_PowerGauge
 // (offsets in REPORT.md).
-extern const s32 dat_80421588;
+#ifdef MUST_MATCH
+// The original keeps the `lwz dat_80421588` late, after the disp stores; letting MWCC see the
+// object as mutable stops it hoisting that load above them. __declspec(section) keeps the object
+// in .sdata2, where the original const object lives.
+__declspec(section ".sdata2") s32 dat_80421588 = -1;
+#else
+const s32 dat_80421588 = -1;
+#endif
 extern const f32 float_100_8042158c;
 extern const f32 float_neg300_804215bc;
 extern const f32 float_30_804215c0;
@@ -33,11 +40,21 @@ typedef struct PowerGaugeDecWork {
     s32 countdown;    // 0x18
 } PowerGaugeDecWork;
 
+// The original called intplGetValue through a prototype that lists the two float bounds
+// before the step/duration words. The ABI is identical (ints->r3-r5, floats->f1-f2); only the
+// source argument order differs, and MWCC then schedules the float loads first as retail does.
+#ifdef MUST_MATCH
+#define intplGetValueFM(mode, start, end, currStep, steps) \
+    ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, currStep, steps)
+#else
+#define intplGetValueFM(mode, start, end, currStep, steps) intplGetValue(mode, currStep, steps, start, end)
+#endif
+
 // optimize_for_size: the original saves r28-r31 with `stmw`; the default model uses individual saves.
 #pragma optimize_for_size on
-// NONMATCHING (98.85%): register allocation matches, but MWCC's scheduler hoists `lwz r3, dat_80421588` in
-// case 0 and `lwz r4, 0x8(r31)` before intplGetValue's `lfs` pair (same near-miss as ac_power_gauge_lv).
-// The `ac` intermediate keeps dec=r31/disp=r28 apart; the int->float magic stays a local `@362` (.rodata:0x8).
+// The two near-misses this function had: MWCC hoists `lwz dat_80421588` above the disp stores
+// (fixed by the mutable dat declaration above) and schedules `lwz dec->counter` before
+// intplGetValue's `lfs` pair (fixed by intplGetValueFM above).
 s32 battleAcMain_PowerGauge(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     PowerGaugeDecWork* dec = (PowerGaugeDecWork*)&ac->field_0x2BC[0];
@@ -177,9 +194,7 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
             }
         }
         if (dec->frame <= *(s32*)((u8*)work + 0x1CCC)) {
-            dec->gaugePercent = intplGetValue(*(s32*)((u8*)work + 0x1CD4), dec->counter,
-                                              *(s32*)((u8*)work + 0x1CCC), float_0_804215c4,
-                                              float_100_8042158c);
+            dec->gaugePercent = intplGetValueFM(*(s32*)((u8*)work + 0x1CD4), float_0_804215c4, float_100_8042158c, dec->counter, *(s32*)((u8*)work + 0x1CCC));
         }
         else {
             dec->gaugePercent = float_100_8042158c;
@@ -291,7 +306,6 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
 }
 
 // .sdata2 definitions of this unit, in the original's order.
-const s32 dat_80421588 = -1;
 const f32 float_100_8042158c = 100.0f;
 const f32 float_neg300_804215bc = -300.0f;
 const f32 float_30_804215c0 = 30.0f;

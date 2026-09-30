@@ -187,11 +187,7 @@ static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
 }
 #endif
 
-#pragma opt_common_subs off // without it MWCC CSEs the 0.01*t/0.3*idx product across the conversion and picks different FPRs (94.0%)
-// Only the case-100 `field_0x74 < 30` block's scratch registers differ: the 0x4330/index pair uses
-// r7/r6 instead of r6/r9 and the mask/double address pair uses r8/r9 instead of r7/r8. The 0x70
-// dispatch also omits the target's redundant `bge default` before its `b default` (one instruction).
-// NONMATCHING (99.66%): see above.
+#pragma opt_common_subs off // without it MWCC CSEs a shared subexpression in case 0 and picks different FPRs (94.0%)
 void effReleaseMain(EffectEntry* effect) {
     effReleaseN64Data* data = effect->userdata;
     Vec position2;
@@ -264,9 +260,18 @@ void effReleaseMain(EffectEntry* effect) {
                     break;
             }
             if (data->field_0x74 < 30) {
+#ifdef MUST_MATCH
+                // The element address is built from an explicit byte offset and read through an AnimeData
+                // pointer; that steers MWCC's allocation (index in r9, scratch pair r7/r8 instead of r6/r9).
+                u32 off = data->field_0x74 << 2;
+                t = ((AnimeData*)((u8*)anime_data + off))->field_0;
+                s = float_0p3_8041fb84 * (f32)data->field_0x74 + float_0p01_8041fb88 * (f32)t;
+                b = ((AnimeData*)((u8*)anime_data + off))->field_2;
+#else
                 t = anime_data[data->field_0x74].field_0;
                 s = float_0p3_8041fb84 * (f32)data->field_0x74 + float_0p01_8041fb88 * (f32)t;
                 b = anime_data[data->field_0x74].field_2;
+#endif
             } else {
                 t = anime_data[29].field_0;
                 s = float_0p01_8041fb88 * (f32)t + float_0p3_8041fb84 * (f32)data->field_0x74;
@@ -349,6 +354,11 @@ void effReleaseMain(EffectEntry* effect) {
             }
             break;
         }
+#ifdef MUST_MATCH
+        // State 5 is a real state (case 4 sets it; effReleaseDisp tests it), and naming it here also
+        // makes MWCC keep the target's redundant `bge default` before the `b default` in the dispatch.
+        case 5:
+#endif
         default:
             data->scales[0] = float_0_8041fb40;
             data->scales[1] = float_0_8041fb40;

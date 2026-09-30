@@ -111,12 +111,15 @@ void winMarioMain2(WindowWork* work) {
     (void)work;
 }
 
-// NONMATCHING (99.57%): tail `d`/linkDt base in r31 (target r30), tail `anim` in r30 (target r31);
-// MWCC coalesces the early/tail `anim`; the int->float magic is a local @442@ not double_to_int_802f5e78
-// (the latter resolves with the unit's full .rodata pool).
+// The tail walks its own link pointer (`d2`) so MWCC colours it in r30 and the tail
+// `anim` in r31, as the target does; the early name is held in `d2` as well (the
+// match-only cast is guarded by MUST_MATCH below). The int->float magic still
+// pools as a local @NNN@ rather than double_to_int_802f5e78; that symbol name does
+// not affect the match score.
 s32 winMarioMain(WindowWork* work) {
     LinkDt* d;
     const char* anim;
+    LinkDt* d2;
     f32 f2;
 
     switch (WW_S32(work, 0x190)) {
@@ -129,44 +132,56 @@ s32 winMarioMain(WindowWork* work) {
             }
             goto tail;
         }
+#ifdef MUST_MATCH
+        // Match shape: the early name must land in the tail pointer's register
+        // (r30, `d2`); the plain `anim` form under #else scores 99.90%.
+#define SET_ANIM(s) (d2 = (LinkDt*)(s))
+#else
+#define SET_ANIM(s) (anim = (s))
+#endif
         if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
             if (work->flags & 0x2000) {
                 if (strcmp(str_8041D580, str_8041D580) == 0) {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = str_8041D580;
+                        SET_ANIM(str_8041D580);
                         break;
                     case 1:
-                        anim = str_8041D704;
+                        SET_ANIM(str_8041D704);
                         break;
                     case 2:
-                        anim = str_8041D708;
+                        SET_ANIM(str_8041D708);
                         break;
                     case 3:
-                        anim = str_8041D70C;
+                        SET_ANIM(str_8041D70C);
                         break;
                     }
                 } else {
                     switch (marioGetColor()) {
                     case 0:
-                        anim = str_8041D58C;
+                        SET_ANIM(str_8041D58C);
                         break;
                     case 1:
-                        anim = str_8041D710;
+                        SET_ANIM(str_8041D710);
                         break;
                     case 2:
-                        anim = str_8041D718;
+                        SET_ANIM(str_8041D718);
                         break;
                     case 3:
-                        anim = str_8041D720;
+                        SET_ANIM(str_8041D720);
                         break;
                     }
                 }
             } else {
-                anim = str_8041D578;
+                SET_ANIM(str_8041D578);
             }
+#ifdef MUST_MATCH
+            animPoseSetAnim(WW_S32(work, 0x188), (const char*)d2, 0);
+#else
             animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+#endif
+#undef SET_ANIM
             return -1;
         }
         if (work->buttonTrg & 0x1000) {
@@ -219,14 +234,14 @@ s32 winMarioMain(WindowWork* work) {
 #undef MARIO_TRAVERSE
 
     tail:
-        d = &linkDt[WW_S32(work, 0x160)];
-        WW_F32(work, 0x158) = (f32)d->field_0;
-        WW_F32(work, 0x15C) = (f32)d->field_2;
+        d2 = &linkDt[WW_S32(work, 0x160)];
+        WW_F32(work, 0x158) = (f32)d2->field_0;
+        WW_F32(work, 0x15C) = (f32)d2->field_2;
 
         switch (WW_S32(work, 0x160)) {
         case 2:
             if (work->flags & 0x2000) {
-                if (strcmp(d->field_C, str_8041D580) == 0) {
+                if (strcmp(d2->field_C, str_8041D580) == 0) {
                     switch (marioGetColor()) {
                     case 0:
                         anim = str_8041D580;
@@ -276,7 +291,7 @@ s32 winMarioMain(WindowWork* work) {
         default:
             WW_S32(work, 0x18C) = 0;
             if (work->flags & 0x2000) {
-                if (strcmp(d->field_C, str_8041D580) == 0) {
+                if (strcmp(d2->field_C, str_8041D580) == 0) {
                     switch (marioGetColor()) {
                     case 0:
                         anim = str_8041D580;
@@ -308,7 +323,7 @@ s32 winMarioMain(WindowWork* work) {
                     }
                 }
             } else {
-                anim = d->field_4;
+                anim = d2->field_4;
             }
             animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
                     break;
@@ -322,7 +337,7 @@ s32 winMarioMain(WindowWork* work) {
             winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
             break;
         default:
-            winMsgEntry(work, 0, d->field_14, 0);
+            winMsgEntry(work, 0, d2->field_14, 0);
             break;
         }
         break;

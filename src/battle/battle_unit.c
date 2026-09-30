@@ -1792,9 +1792,8 @@ void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
     }
 }
 
-// NONMATCHING (98.80%): the original emits one dead `b .L_801211F0` between its
-// switch (b) comparison tree and the first case body; MWCC here emits only the
-// tree's single fall-through branch. Every other instruction matches.
+// `case 0` shares the default body: the original routes b == 0 through the same
+// zero-fill as any other unlisted value, and MWCC emits its fall-through branch.
 void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d) {
     BtlUnitSeModeSrc* src = c;
     BtlUnitSeMode* dst = d;
@@ -1845,6 +1844,7 @@ void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d) {
         case -2:
             dst->field_0x12 = dst->field_0xC;
             break;
+        case 0:
         default:
             dst->field_0x0 = 0;
             dst->field_0x4 = 0;

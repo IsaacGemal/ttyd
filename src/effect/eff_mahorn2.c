@@ -129,12 +129,21 @@ static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
     v.z = data->target.z;
     return v;
 }
+
+static inline BOOL mahorn2BeyondHitDistance(effMahorn2Data* data, Vec* position, Vec* target, f32 hitDistance) {
+    Vec v = vec3_80301948[2];
+    v.x = position->x + data->position.x;
+    v.y = position->y + data->position.y;
+    v.z = position->z + data->position.z;
+    return PSVECDistance(target, &v) > hitDistance;
+}
 #endif
 
-// NONMATCHING (99.73%): all logic matches. The three Vec temps' stack slots are rotated vs retail
-// (retail: case-3 sum Vec 0x8, targetDisp 0x14, disp 0x20; here 0x20/0x8/0x14), because the two
-// helper returns are allocated in the inlining pass before the case-3 local. Registers and instructions
-// match; the helpers above reproduce retail's register allocation, and without them it is 99.63% (see #else).
+// MUST_MATCH: the original has three Vec stack temps in the order disp 0x20, targetDisp 0x14,
+// case-3 sum 0x8. Building them inline (the #else path) lets MWCC coalesce the copy temps and
+// allocate the case-3 sum first (0x20); returning each from an inline makes them inlined temps
+// allocated in source order, which reproduces both the stack slots and the scratch registers.
+// The (C - v) * k + v blend needs `t` as a named temp, or the 4.0f/0.125f loads land f0/f1 swapped.
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
@@ -195,19 +204,25 @@ void effMahorn2Main(EffectEntry* effect) {
             break;
         case 3: {
 #ifdef MUST_MATCH
-            Vec v = vec3_80301948[2];
+            if (mahorn2BeyondHitDistance(data, &position, &target, hitDistance)) {
 #else
             Vec v = { 0 };
-#endif
-
             v.x = position.x + data->position.x;
             v.y = position.y + data->position.y;
             v.z = position.z + data->position.z;
             if (PSVECDistance(&target, &v) > hitDistance) {
+#endif
                 angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.0f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
+#ifdef MUST_MATCH
+                {
+                    f32 t = 4.0f - data->scale;
+                    data->scale = t * 0.125f + data->scale;
+                }
+#else
                 data->scale = (4.0f - data->scale) * 0.125f + data->scale;
+#endif
             }
             else {
                 data->scale = (0.0f - data->scale) * 0.125f + data->scale;

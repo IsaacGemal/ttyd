@@ -221,9 +221,12 @@ static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (99.89%): the loop's color channel loads differ (r,b,g vs r,g,b) and the compiler pools
-// the int->float magic and the 0.0f/1.0f vertex literals as anonymous @255/@252/@253 instead of the
-// named double_to_int_802fe918/float_0_804214f4/float_1_804214f8 (known pool-naming limitation).
+// NONMATCHING (99.89%): the loop's colour bytes are loaded/scheduled r,b,g with r->r0/g->r5/b->r6,
+// where retail loads r,g,b with r->r6/g->r5/b->r0 (a register-colouring tie-break; the helper's
+// parameter order, statement order, and compiler versions 1.3-2.7 all leave this rotation). The
+// int->float magic and the 0.0f/1.0f vertex literals also pool as anonymous @NN instead of the named
+// double_to_int_802fe918/float_0_804214f4/float_1_804214f8 (pool naming is not scored: effMistEntry
+// is 100% with the same anonymous-@ mismatch).
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MistWork* work;

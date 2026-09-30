@@ -1829,10 +1829,16 @@ s32 partyKill2(s32 index) {
     return 0;
 }
 
-// NONMATCHING (99.38%): first draft of partyMakeDispDir.
+// The three `else if` clamp branches still swap f0/f1: the original reloads field_10C into f1 and
+// the bound into f0; we get the reverse. Field_110 is kept in f3 and the 0.0 compare is ordered
+// first by caching it in `want` inside the comparison (MUST_MATCH; the plain read form scores 99.38%).
+// NONMATCHING (99.64%): see above.
 void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
     f32 target;
+#ifdef MUST_MATCH
+    f32 want;
+#endif
 
     if (party->flags2 & 0x100) {
         return;
@@ -1864,7 +1870,11 @@ void partyMakeDispDir(PartyEntry* party) {
         }
     }
     if (party->field_10C <= float_180_8041b0fc) {
+#ifdef MUST_MATCH
+        if (float_0_8041b100 == (want = party->field_110)) {
+#else
         if (float_0_8041b100 == party->field_110) {
+#endif
             f32 t = (party->field_8 & 0x1000) ? float_20_8041b140 : float_neg40_8041b144;
             f32 s;
 
@@ -1878,7 +1888,11 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_10C = float_0_8041b100;
                 party->field_8 &= ~0x1000;
             }
+#ifdef MUST_MATCH
+        } else if (float_180_8041b0fc == want) {
+#else
         } else if (float_180_8041b0fc == party->field_110) {
+#endif
             f32 t = (party->field_8 & 0x1000) ? float_170_8041b138 : float_220_8041b14c;
             f32 s;
 
@@ -1894,7 +1908,11 @@ void partyMakeDispDir(PartyEntry* party) {
             }
         }
     } else if (party->field_10C > float_180_8041b0fc) {
+#ifdef MUST_MATCH
+        if (float_0_8041b100 == (want = party->field_110)) {
+#else
         if (float_0_8041b100 == party->field_110) {
+#endif
             f32 t = (party->field_8 & 0x1000) ? float_20_8041b140 : float_neg40_8041b144;
             f32 s;
 
@@ -1908,7 +1926,11 @@ void partyMakeDispDir(PartyEntry* party) {
                 party->field_10C = float_0_8041b100;
                 party->field_8 &= ~0x1000;
             }
+#ifdef MUST_MATCH
+        } else if (float_180_8041b0fc == want) {
+#else
         } else if (float_180_8041b0fc == party->field_110) {
+#endif
             f32 t = (party->field_8 & 0x1000) ? float_170_8041b138 : float_220_8041b14c;
             f32 s;
 

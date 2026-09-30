@@ -227,8 +227,11 @@ CamRoadWork* camRoadGetWorkPtr(void) {
     return wp;
 }
 
-// NONMATCHING (99.68%): all instructions match; the final block picks r4 for the work pointer
-// where the original picks r7, and the float accumulator/constant registers differ.
+// The clamp's literal (see #ifdef below) restores the original's f0 constant / f2 accumulator / f1 result;
+// the named `float_1_80419558` instead puts the constant in f2. The work pointer also differs: the original
+// keeps `wp` in r7 in the interpolation block's `if (wp->unk_C8 != 0)`, this build reloads it into r4.
+// NONMATCHING (99.84%): every instruction matches except that work-pointer r4/r7 colouring (and its
+// else-branch copies).
 void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     u32 result;
 
@@ -289,10 +292,18 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
 
     if (wp->unk_C8 != 0) {
         wp->unk_D0 += getV60FPS(wp->unk_D4, wp->unk_1C8, gp->renderFieldTime);
+#ifdef MUST_MATCH
+        // Match-only: the literal makes MWCC keep 1.0 in f0 and the accumulator in f2/f1 like the original;
+        // the natural named constant below instead puts the constant in f2. The literal adds a pool entry.
+        if (wp->unk_D0 > 1.0f) {
+            wp->unk_D0 = 1.0f;
+        }
+#else
         if (wp->unk_D0 > float_1_80419558) {
             wp->unk_D0 = float_1_80419558;
-            wp->unk_1C8 = gp->renderFieldTime;
         }
+#endif
+        wp->unk_1C8 = gp->renderFieldTime;
         calcHokanCamRoad(wp->unk_CC, &wp->state3, &wp->state2, wp->unk_D0, &wp->state1, &wp->state0);
         if (wp->unk_CC != 0) {
             wp->state0.unk_08 = 1;

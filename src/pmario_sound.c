@@ -4923,9 +4923,12 @@ u8 psndSFX_get_vol(s32 id) {
 	return sfx->unk8[0];
 }
 
-// NONMATCHING (99.27%): the loop-pointer init compiles as `addi r0,r4,psenv@l;
-// mr r30,r0` where the original writes r30 directly (`addi r30,r4,psenv@l`). See
-// REPORT.md: manual inline of psndSFXOff, and psndENV_stop is u32 (not u16) in the header.
+// NONMATCHING (99.27%): the loop pointer is initialised with an extra copy:
+// `addi r0,r4,psenv@l` then `mr r30,r0`, where the original writes
+// `addi r30,r4,psenv@l` directly. env still lands in r30 and the body is byte-for-byte
+// identical otherwise. The index form (`env = &psenv[i]` inside the loop) does give
+// the direct addi, but MWCC then colours the induction variable r31 and sfx r30,
+// swapping the two callee-saved registers. See REPORT.md for everything tried.
 void psndENV_stop(u32 id) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;
