@@ -1,6 +1,7 @@
 #include "pmario_sound.h"
 #include "matching.h"
 #include "sound.h"
+#include "system.h"
 #include "mario/mariost.h"
 #include <string.h>
 #include <dolphin/os.h>
@@ -4575,6 +4576,152 @@ typedef struct PaperSoundEnvWork {
 extern s32 silent_tbl[10];
 extern const f64 double_to_int_mask_802e56c0;
 extern const f32 float_16p667_8041b69c;
+
+// NONMATCHING (94.39%): register allocation: target keeps index/env/active in r31/r30/r29 and
+// reuses namePtr r27 for the tail's slot*2; ours puts slot*2 in r31 and rotates the three down.
+// The `switch (env->unk6[2])` also makes a pivot-1 tree, not the target's check-2-then-0 chain.
+s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
+	s32 index;
+	PaperSoundEnv* env;
+	PaperSoundEnvWork* work;
+	u16* active;
+	const char** namePtr;
+	SoundEnvList* list;
+	s32 slot;
+	s32 i;
+
+	list = psenvlist;
+	namePtr = psenvlistname;
+
+	if (name >= 0) {
+		index = name;
+	}
+	else {
+		for (index = 0; index < 0x76; index++) {
+			if (!strcmp(*namePtr, (char*)name)) {
+				break;
+			}
+			namePtr++;
+		}
+		if (index >= 0x76) {
+			index = 0;
+		}
+	}
+
+	slot = id & 0xF;
+	work = (PaperSoundEnvWork*)((u8*)&psnd + slot * 0xC);
+	if (psnd.unk56 & 2) {
+		return 0;
+	}
+
+	active = (u16*)&psnd.unk18 + slot;
+
+	if (active[0] != 0) {
+		if (!(id & 0x10)) {
+			if (id & 0x20) {
+				if (id & 0x100) {
+					work->unk0 = 1;
+					work->unk2 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+					work->unk4 = 0;
+				}
+				else {
+					work->unk0 = 0;
+					work->unk2 = 1;
+					work->unk4 = 1;
+				}
+				if (id & 0x80) {
+					if (work->unk6 == 8) {
+						work->unk6 = 0x10;
+						work->unk8 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+						work->unkA = (s16)((work->unk8 * work->unk7) / 100);
+					}
+				}
+				goto done;
+			}
+			if (active[0] == index) {
+				if (work->unk0 != 2) {
+					goto done;
+				}
+			}
+		}
+		psndENV_stop(active[0]);
+		active[0] = 0;
+	}
+
+	for (;;) {
+		if (list->field_0x0 == 0x76) {
+			break;
+		}
+		if (list->field_0x0 == index) {
+			env = NULL;
+			for (i = 0; i < 16; i++) {
+				if (*(u16*)&psenv[i].unk4 == 0) {
+					env = &psenv[i];
+					break;
+				}
+			}
+			if (env != NULL) {
+				env->unk4 = (s16)list->field_0x0;
+				*(u32*)env->unk0 = list->field_0x2;
+				env->unk6[0] = list->field_0x4;
+				env->unk6[1] = list->field_0x5;
+				env->unk6[2] = list->field_0x6;
+				env->unk6[3] = list->field_0x7;
+				env->unk6[4] = list->field_0x8;
+				*(u32*)(env->unk6 + 0x12) = list->field_0xC;
+				*(u32*)(env->unk6 + 0x16) = list->field_0x10;
+				*(u32*)(env->unk6 + 0x1A) = list->field_0x14;
+				env->unk6[5] = list->field_0x18;
+				env->unk6[6] = list->field_0x19;
+				*(u16*)(env->unk6 + 0xA) = list->field_0x1A;
+				env->unk6[7] = 0;
+				*(u16*)(env->unk6 + 8) = 0;
+
+				switch (env->unk6[2]) {
+				case 0:
+					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
+					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
+					break;
+				case 2:
+					*(u16*)(env->unk6 + 8) = env->unk6[4] * 60;
+					*(u16*)(env->unk6 + 8) += irand(env->unk6[3]) * 60;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		list++;
+	}
+
+	active[0] = index;
+	work->unk0 = 0;
+	*(u16*)(psnd.unk1C + slot * 2) = 0x7D00;
+	*(u16*)(psnd.unk1C + slot * 2 + 4) = 0x7D00;
+	if (id & 0x100) {
+		work->unk0 = 1;
+		work->unk2 = (s16)((u32)value / MATCH_F32(float_16p667_8041b69c));
+		work->unk4 = 0;
+		work->unk8 = 1;
+		work->unkA = 1;
+		work->unk6 = 0;
+		work->unk8 = 1;
+		work->unkA = 1;
+	}
+	else {
+		work->unk0 = 0;
+		work->unk2 = 1;
+		work->unk4 = 1;
+		work->unk8 = 1;
+		work->unkA = 1;
+		work->unk6 = 0;
+		work->unk8 = 1;
+		work->unkA = 1;
+	}
+
+done:
+	return 1;
+}
 
 s32 psndENVOff_f_d(s32 id, s32 value, s32 flag) {
 	s32 silent = silent_tbl[(id >> 12) & 0xF];

@@ -24,7 +24,7 @@ const char* DbgBtlSel_GetMsgDataPtr(void) {
 }
 
 void seq_titleInit(SequenceWork* work) {
-	titleInit(work);
+	L_titleInit(work);
 	gp->flags &= ~2;
 	gp->flags &= ~0x40;
 	gp->flags &= ~0x20;
@@ -50,7 +50,9 @@ s32 N_getDebugMode(void) {
 	return wp2->debug;
 }
 
-void titleInit(SequenceWork* work) {
+// NONMATCHING (91.55%): the original reaches its .rodata strings as offsets from one base register (vec3_802c11a0);
+// ours loads each string address on its own.
+void L_titleInit(SequenceWork* work) {
 	memset(wp2, 0, sizeof(TitleWork));
 	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
 	wp2->field_0xC = 0.0f;
@@ -74,20 +76,20 @@ void titleInit(SequenceWork* work) {
 	}
 	if (seqGetPrevSeq() != SEQ_LOAD) {
 		if (seqGetPrevSeq() == SEQ_GAME_OVER) {
-			if (OSGetSoundMode()) {
-				SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
-			}
-			else {
+			if (!OSGetSoundMode()) {
 				SoundSetOutputMode(SND_OUTPUTMODE_MONO);
 			}
+			else {
+				SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
+			}
 			psndBGMOn(0x200, "BGM_DIGEST1");
-			if (psbgm[0].streamId != -1) {
+			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
 		}
 		else {
 			psndBGMOn(0x200, "BGM_TITLE1");
-			if (psbgm[0].streamId != -1) {
+			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
 		}

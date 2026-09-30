@@ -1,9 +1,12 @@
 #include "eff/n64/eff_snowfall_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/camdrv.h"
+#include "driver/mapdrv.h"
 #include "memory.h"
 #include <dolphin/mtx.h>
+#include <dolphin/os.h>
 #include <stdlib.h>
 
 // .rodata
@@ -11,7 +14,18 @@ extern const Vec vec3_802fb668;
 extern const char str_802FB674[];
 extern const f64 double_to_int_802fb680;
 
+// .data vertex array (32 vertices, 14 bytes each)
+extern effVtxArray eff_snowfall_v[];
+
+// .sbss2 scratch GXColor the blend path builds its TEV colour from
+extern GXColor unk_80423268;
+
 // .sdata2
+extern const f32 float_0p03125_8041fd14;
+extern const f32 float_0_8041fd18;
+extern const f32 float_2_8041fd1c;
+extern const f32 float_deg2rad_8041fd20;
+extern const GXColor dat_8041fd10;
 extern const f32 float_166_8041fd24;
 extern const f32 float_1000_8041fd28;
 extern const f32 float_0p05_8041fd2c;
@@ -162,4 +176,95 @@ void effSnowfallMain(EffectEntry* effect) {
 		cam_clip_chk(data, 0x226, limit, life);
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 10, effSnowfallDisp, effect);
+}
+
+// (1) the colour is built at r1+0x14 and word-copied down to the argument slot at r1+0x10, while the
+//     original builds at r1+0x10 and copies up to r1+0x14 (the known mwcc GXColor quirk also recorded on
+//     eff_booboo_n64.c / eff_confetti_n64.c);
+// (2) the 8 differing instructions are that build/copy pair and its operands; everything else is identical.
+// NONMATCHING (99.97%): the temporary GXColor argument to GXSetTevColor in the blend branch is one word off.
+void effSnowfallDisp(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	effSnowfallData* data;
+	CameraEntry* cam;
+	Mtx transMtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	GXTexObj texObj;
+	GXTexObj texObj2;
+	s32 count;
+	u8* dst;
+	s32 i;
+	s32 alpha;
+	u8* src;
+	s32 j;
+	s32 k;
+	GXColor blend;
+	GXColor color;
+
+	cam = camGetPtr(cameraId);
+	data = effect->userdata;
+	if (data->field_0x00 == 0) {
+		return;
+	}
+	count = data->count;
+	alpha = data->field_0x28;
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	PSMTXScale(scaleMtx, float_0p03125_8041fd14, float_0p03125_8041fd14, float_0_8041fd18);
+	GXLoadTexMtxImm(scaleMtx, 0x1e, 1);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xc);
+	GXSetTevAlphaIn(0, 7, 4, 1, 7);
+	effGetTexObjN64(0x63, &texObj);
+	effGetTexObjN64(0x64, &texObj2);
+	dst = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj));
+	src = (u8*)OSPhysicalToCached(GXGetTexObjData(&texObj2));
+	dst += GXGetTexBufferSize(0x40, 0x40, 0, 1, 2);
+	memcpy(dst, src, GXGetTexBufferSize(0x10, 0x10, 0, 0, 0));
+	DCFlushRange(dst, GXGetTexBufferSize(0x40, 0x40, 0, 1, 3));
+	GXInitTexObjLOD(&texObj, 5, 1, float_0_8041fd18, float_2_8041fd1c, float_0_8041fd18, 1, 1, 0);
+	GXLoadTexObj(&texObj, 0);
+	if (mapGetWork()->entries[0].flags & 2) {
+		mapGetBlend(&blend);
+		color = unk_80423268;
+		color.r = blend.r * 0xFF;
+		color.g = blend.g * 0xFF;
+		color.b = blend.b * 0xFF;
+		color.a = alpha * blend.a;
+		GXSetTevColor(1, color);
+	} else {
+		color = dat_8041fd10;
+		color.a = alpha;
+		GXSetTevColor(1, color);
+	}
+	GXSetCullMode(0);
+	effSetVtxDescN64(eff_snowfall_v);
+	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fd20 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(cam->view, rotMtx, rotMtx);
+	data++;
+	for (i = 0; i < count; i++, data++) {
+		if (data->timer > 0) {
+			continue;
+		}
+		if (data->field_0x28 == 0) {
+			continue;
+		}
+		PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
+		PSMTXConcat(rotMtx, transMtx, transMtx);
+		GXLoadPosMtxImm(transMtx, 0);
+		GXSetCurrentMtx(0);
+		GXBegin(0x80, 0, 0x20);
+		for (j = 0; j < 4; j++) {
+			for (k = 0; k < 8; k++) {
+				GXPosition1x16(j * 8 + k);
+				GXColor1x16(j * 8 + k);
+				GXTexCoord1x16(j * 8 + k);
+			}
+		}
+	}
 }
