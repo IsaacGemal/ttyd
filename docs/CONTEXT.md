@@ -2847,3 +2847,13 @@ padding, and 22 agents would each invent fields; one struct pass (an agent or th
 from every access in the asm before the group wave. Then one agent per group in its own workspace, writing only its
 group's functions; collection splices each function into the file by name (they're independent blocks) and
 merges header additions; the file links only when all groups are done.
+
+## Grind 35 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Linked `eff_whirlwind_n64`, `eff_butterfly_n64`, `eff_fire_spark_n64`, `eff_rappa_n64` (all `effect/n64`).
+
+- `.data` order is declaration order: a `{-1.0f, 1.0f}` pair goes after the vertex table, and `scale_data` before it in `fire_spark`. A `.data` table that `dol_gen.py --append` leaves as `u32 x[N];` is generated from the disassembly (`butterfly`: 630 words, `(u8*)` cast at its use).
+- A trailing `gap_NN_..._data` after a compiler jump table is a zero word declared after the code with `#pragma explicit_zero_data on` (`whirlwind`); an `.sdata` gap is a longer array (`col_b[8]`, `color_rotation_data[40]`); an `.sbss2` gap is one more `GXColor` in the idiom, declared first.
+- A literal `0.0f` kept under `MUST_MATCH` next to named constants makes `ld` load an anonymous zero at another `@sda21` offset: one byte differs in the dol (`fire_spark`). Keep the first named constants of the original's order (`dat`, deg2rad, ...) and make the rest literals (`pool_floats.py --keep=...`): the literals then pool in first-use order.
+- The ratchet compares per-symbol data: `eff_whirlwind_n64` matched_data 91.18 -> 16.18 because its named string/double/colors became compiler-pooled; the unit is byte-exact and linked.
+- Near-misses that stay open because the pool only matches with a named constant that changes the function (permuter targets, queued on the tower): `eff_magic3_n64` `effMagic3N64Entry` (99.84%, named `float_100`), `eff_peach_dust_n64` `effPeachDustDisp` (99.73%, named 0.7: f2/f4 allocation).
