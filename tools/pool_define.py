@@ -84,9 +84,21 @@ def referenced(name, decl_end, decl_start):
     return re.search(rf"\b{re.escape(name)}\b", rest) is not None
 
 
+# constants declared in the unit's own header (the first #include) and used here count as declared here
+hdr = re.search(r'#include "([^"]+)"', text)
+hdr_text = ""
+if hdr:
+    try:
+        hdr_text = open("include/" + hdr.group(1)).read()
+    except OSError:
+        pass
+hdr_found = [(0, 0, ("volatile " if "volatile" in m.group(1) else "") + m.group(2), m.group(3)) for m in ext_re.finditer(hdr_text)
+             if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")
+             and re.search(rf"\b{re.escape(m.group(3))}\b", text)]
 found = [(m.start(), m.end(), ("volatile " if "volatile" in m.group(1) else "") + m.group(2), m.group(3)) for m in ext_re.finditer(text)
          if m.group(3) in defs and "const" in m.group(1) and not m.group(3).startswith("double_to_int")
          and referenced(m.group(3), m.end(), m.start())]  # the compiler pools its own conversion constants
+found = found + [f for f in hdr_found if f[3] not in {x[3] for x in found}]
 if not found:
     sys.exit(f"{unit}: no extern pool constants to define")
 order = {name: i for i, (_, _, _, _, _, _, _, _) in enumerate(objs) for name in [objs[i][3]]}

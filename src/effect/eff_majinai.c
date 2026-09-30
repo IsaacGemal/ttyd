@@ -12,27 +12,20 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-extern const f32 float_1_80422594;
 extern const u32 dat_80422568;
 extern const u32 dat_8042256c;
 extern const u32 dat_80422570;
-extern const char str_80301940[];
-extern const char str_8030192C[];
-extern const char str_80422584[4];
 extern const f32 float_deg2rad_80422578;
 extern const u32 dat_80422574;
 extern const f32 float_0_8042257c;
 extern const f32 float_10_80422580;
-extern const f32 float_0p93_80422588;
-extern const f32 float_45_8042258c;
-extern const f32 float_55_80422590;
 EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     MajinaiWork* work;
     MapWork* map;
 
     effect = effEntry();
-    effect->type = str_80301940;
+    effect->type = "Majinai";
     effect->count = 1;
     work = __memAlloc(HEAP_EFFECT, effect->count * sizeof(MajinaiWork));
     effect->userdata = work;
@@ -43,7 +36,7 @@ EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z) {
     work->x = x;
     work->y = y;
     work->z = z;
-    work->field_0x10 = float_1_80422594;
+    work->field_0x10 = 1.0f;
     work->alpha = 0xff;
     work->state = 0;
     work->animPose = -1;
@@ -97,11 +90,11 @@ void effMajinaiMain(EffectEntry* effect) {
 
     switch (work->state) {
         case 0:
-            if (!animGroupBaseAsync(str_8030192C, inBattle, NULL)) {
+            if (!animGroupBaseAsync("MOBJ_EFF_majinai", inBattle, NULL)) {
                 return;
             }
-            work->animPose = animPoseEntry(str_8030192C, inBattle);
-            animPoseSetAnim(work->animPose, str_80422584, TRUE);
+            work->animPose = animPoseEntry("MOBJ_EFF_majinai", inBattle);
+            animPoseSetAnim(work->animPose, "A_1", TRUE);
             work->state++;
             break;
         case 1:
@@ -133,16 +126,16 @@ void effMajinaiMain(EffectEntry* effect) {
                 animPoseSetMaterialFlagOn(*(s32*)((u8*)part + 0x1C0), 0x800);
             }
 
-            if (animPoseGetLoopTimes(work->animPose) >= float_0p93_80422588) {
+            if (animPoseGetLoopTimes(work->animPose) >= 0.93f) {
                 f32 scale = work->field_0x10;
                 effStardustEntry(0, 0x10, 0x3C, work->x,
-                    float_55_80422590 * scale + work->y, work->z,
-                    float_45_8042258c * scale, float_45_8042258c * scale);
+                    55.0f * scale + work->y, work->z,
+                    45.0f * scale, 45.0f * scale);
                 work->state++;
             }
             break;
         case 2:
-            if (animPoseGetLoopTimes(work->animPose) >= float_1_80422594) {
+            if (animPoseGetLoopTimes(work->animPose) >= 1.0f) {
                 work->state++;
             }
             break;
@@ -221,3 +214,12 @@ void effMajinaiDisp(CameraId cameraId, void* param) {
         animPoseDrawMtx(work->animPose, trans, 3, float_0_8042257c, float_10_80422580);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422568 = 0xFFFFFFFF;
+const u32 dat_8042256c = 0x000000FF;
+const u32 dat_80422570 = 0x000000FF;
+const u32 dat_80422574 = 0xFFFFFF00;
+const f32 float_deg2rad_80422578 = 0.017453292f;
+const f32 float_0_8042257c = 0.0f;
+const f32 float_10_80422580 = 10.0f;
