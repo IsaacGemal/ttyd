@@ -50,7 +50,9 @@ typedef struct EffThunderflareData {
 	s32 field_0x44; // 0x44
 } EffThunderflareData;
 
-// NONMATCHING (78.74%): instructions differ; see check.py
+// The element index-to-value expression must read `i + j - 1`, not `i - 1 + j`:
+// the former lets MWCC fold the second iteration back to `i` and reuse r10, the
+// latter makes it keep a copy of the pre-increment `i` in r11.
 EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 a6) {
 	EffectEntry* entry;
 	EffThunderflareData* data;
@@ -99,7 +101,7 @@ EffectEntry* effThunderflareN64Entry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 
 	for (i = 1; i < 0x1f; i += 2) {
 		elem = &data[i];
 		for (j = 0; j < 2; j++, elem++) {
-			s32 n = j == 0 ? i - 1 : i;
+			s32 n = i + j - 1;
 			elem->angle1 = (f32)(n * 0xca8 / 30);
 			elem->angle2 = 0.0f;
 			elem->radius = (f32)(n * 100 / 30);
@@ -296,3 +298,16 @@ void effThunderflareDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_80420080 = 0.017453292f;
+const f32 float_0p03125_80420084 = 0.03125f;
+const f32 float_0_80420088 = 0.0f;
+const f32 float_0p5_8042008c = 0.5f;
+const f32 float_6p2832_80420090 = 6.2831855f;
+const f32 float_360_80420094 = 360.0f;
+const f32 float_2_80420098 = 2.0f;
+const f32 float_255_8042009c = 255.0f;
+const f32 float_100_804200a0 = 100.0f;
+const f32 float_0p2_804200a4 = 0.2f;
+const f32 float_80_804200a8 = 80.0f;

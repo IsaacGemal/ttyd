@@ -1,14 +1,23 @@
 #include "eff/n64/eff_opuku_wprotect_n64.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "eff/n64/eff_water_damage_n64.h"
+#include "mario/mariost.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include <dolphin/os/OSCache.h>
+#include "math_ext.h"
 #include <stdlib.h>
 
 extern const f32 float_0_8041f890;
+extern const f32 float_100_8041f894;
 extern const f32 float_10_8041f898;
+extern const f32 float_20_8041f89c;
+extern const f32 float_0p03125_8041f8a0;
+extern const f32 float_0p0625_8041f8a8;
+extern const f32 float_0p3_8041f8ac;
 extern const f32 float_0p1_8041f8a4;
 extern const f32 float_24_8041f8b0;
 extern const f32 float_2_8041f8b4;
@@ -27,7 +36,93 @@ extern const f32 float_480_8041f8e4;
 
 // .rodata scratch vector the original zeroes before filling in the effect position.
 const Vec vec3_802fb2e8 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb2f8 = 4503601774854144.0;
+// The compiler's int->float magic double (0x4330000080000000) is intentionally not
+// defined here: defining it duplicates the pool. Left out, the single pooled entry is
+// emitted at the original's .rodata+0x10 offset and resolves to the original address.
+
+// .sdata2 scratch/default tev colours (loaded whole, one channel overwritten).
+const GXColor dat_8041f888 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041f88c = { 0x00, 0x00, 0xFF, 0x00 };
+// .sbss2 scratch colour the second pass fills in; the reference reads it before writing.
+GXColor unk_804231f0;
+
+// The 40-point ring the display pass renders: signed 1-byte XYZ (times 10),
+// a 16-bit ST pair and RGB8.
+typedef struct WprotectPoint {
+	s8 x;   // 0x0
+	s8 y;   // 0x1
+	s8 z;   // 0x2
+	u8 pad0; // 0x3
+	s16 s;  // 0x4
+	s16 t;  // 0x6
+	u8 r;   // 0x8
+	u8 g;   // 0x9
+	u8 b;   // 0xA
+	u8 pad1; // 0xB
+} WprotectPoint; // 0xC
+
+// One emitted N64 effect vertex: s16 XYZ, s16 ST, RGBA8 (14 bytes).
+typedef struct WprotectVtx {
+	s16 x; // 0x0
+	s16 y; // 0x2
+	s16 z; // 0x4
+	s16 s; // 0x6
+	s16 t; // 0x8
+	u8 r;  // 0xA
+	u8 g;  // 0xB
+	u8 b;  // 0xC
+	u8 a;  // 0xD
+} WprotectVtx; // 0xE
+
+// .data: the ring the display pass transforms; bytes copied verbatim from the original's .obj.
+u8 point_data[0x1E0] = {
+	0x19, 0x04, 0xE7, 0x00, 0x04, 0x01, 0x00, 0x48, 0xB0, 0xB0, 0xB0, 0x00,
+	0x16, 0x00, 0xEA, 0x00, 0x03, 0xC3, 0x00, 0x00, 0xB0, 0xB0, 0xB0, 0x00,
+	0xEA, 0x00, 0xEA, 0x00, 0x00, 0x3D, 0x00, 0x00, 0xB0, 0xB0, 0xB0, 0x00,
+	0xE7, 0x04, 0xE7, 0x00, 0x00, 0x01, 0x00, 0x48, 0xB0, 0xB0, 0xB0, 0x00,
+	0x19, 0x2E, 0xE7, 0x00, 0x04, 0x01, 0x03, 0xB7, 0xB0, 0xB0, 0xB0, 0x00,
+	0xE7, 0x2E, 0xE7, 0x00, 0x00, 0x01, 0x03, 0xB7, 0xB0, 0xB0, 0xB0, 0x00,
+	0x16, 0x32, 0xEA, 0x00, 0x03, 0x7A, 0x03, 0xE5, 0xAE, 0xD0, 0xD8, 0x00,
+	0xEA, 0x32, 0xEA, 0x00, 0x00, 0x85, 0x03, 0xE5, 0xAE, 0xD0, 0xD8, 0x00,
+	0xEA, 0x32, 0x16, 0x00, 0x00, 0x85, 0x03, 0xE5, 0xAE, 0xD0, 0xD8, 0x00,
+	0x16, 0x32, 0x16, 0x00, 0x03, 0x7A, 0x03, 0xE5, 0xAE, 0xD0, 0xD8, 0x00,
+	0xEA, 0x00, 0xEA, 0x00, 0x00, 0x85, 0x00, 0x19, 0x94, 0xA5, 0xB0, 0x00,
+	0x16, 0x00, 0xEA, 0x00, 0x03, 0x7A, 0x00, 0x19, 0x94, 0xA5, 0xB0, 0x00,
+	0x16, 0x00, 0x16, 0x00, 0x03, 0x7A, 0x00, 0x19, 0x94, 0xA5, 0xB0, 0x00,
+	0xEA, 0x00, 0x16, 0x00, 0x00, 0x85, 0x00, 0x19, 0x94, 0xA5, 0xB0, 0x00,
+	0xEA, 0x32, 0x16, 0x00, 0x03, 0xC3, 0x03, 0xFD, 0x78, 0x6E, 0x88, 0x00,
+	0xEA, 0x32, 0xEA, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0x78, 0x6E, 0x88, 0x00,
+	0xE7, 0x2E, 0xE7, 0x00, 0x00, 0x00, 0x03, 0xB7, 0x78, 0x6E, 0x88, 0x00,
+	0xE7, 0x2E, 0x19, 0x00, 0x04, 0x00, 0x03, 0xB7, 0x78, 0x6E, 0x88, 0x00,
+	0xE7, 0x04, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x48, 0x78, 0x6E, 0x88, 0x00,
+	0xE7, 0x04, 0x19, 0x00, 0x04, 0x00, 0x00, 0x48, 0x78, 0x6E, 0x88, 0x00,
+	0xEA, 0x00, 0xEA, 0x00, 0x00, 0x3D, 0x00, 0x00, 0x78, 0x6E, 0x88, 0x00,
+	0xEA, 0x00, 0x16, 0x00, 0x03, 0xC3, 0x00, 0x00, 0x78, 0x6E, 0x88, 0x00,
+	0xEA, 0x32, 0xEA, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0xB0, 0xB0, 0xB0, 0x00,
+	0x16, 0x32, 0xEA, 0x00, 0x03, 0xC3, 0x03, 0xFD, 0xB0, 0xB0, 0xB0, 0x00,
+	0x16, 0x00, 0x16, 0x00, 0x03, 0xC3, 0x00, 0x00, 0x78, 0x6E, 0x88, 0x00,
+	0x16, 0x00, 0xEA, 0x00, 0x00, 0x3D, 0x00, 0x00, 0x78, 0x6E, 0x88, 0x00,
+	0x19, 0x04, 0xE7, 0x00, 0x00, 0x00, 0x00, 0x48, 0x78, 0x6E, 0x88, 0x00,
+	0x19, 0x04, 0x19, 0x00, 0x04, 0x00, 0x00, 0x48, 0x78, 0x6E, 0x88, 0x00,
+	0x19, 0x2E, 0xE7, 0x00, 0x00, 0x00, 0x03, 0xB7, 0x78, 0x6E, 0x88, 0x00,
+	0x19, 0x2E, 0x19, 0x00, 0x04, 0x00, 0x03, 0xB7, 0x78, 0x6E, 0x88, 0x00,
+	0x16, 0x32, 0xEA, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0x78, 0x6E, 0x88, 0x00,
+	0xEA, 0x00, 0x16, 0x00, 0x00, 0x3D, 0x00, 0x00, 0xF0, 0xF0, 0xF0, 0x00,
+	0x19, 0x04, 0x19, 0x00, 0x04, 0x01, 0x00, 0x48, 0xF0, 0xF0, 0xF0, 0x00,
+	0x19, 0x2E, 0x19, 0x00, 0x04, 0x01, 0x03, 0xB7, 0xF0, 0xF0, 0xF0, 0x00,
+	0x16, 0x32, 0x16, 0x00, 0x03, 0xC3, 0x03, 0xFD, 0x78, 0x6E, 0x88, 0x00,
+	0x16, 0x00, 0x16, 0x00, 0x03, 0xC3, 0x00, 0x00, 0xF0, 0xF0, 0xF0, 0x00,
+	0xE7, 0x04, 0x19, 0x00, 0x00, 0x01, 0x00, 0x48, 0xF0, 0xF0, 0xF0, 0x00,
+	0xE7, 0x2E, 0x19, 0x00, 0x00, 0x01, 0x03, 0xB7, 0xF0, 0xF0, 0xF0, 0x00,
+	0x16, 0x32, 0x16, 0x00, 0x03, 0xC3, 0x03, 0xFD, 0xF0, 0xF0, 0xF0, 0x00,
+	0xEA, 0x32, 0x16, 0x00, 0x00, 0x3D, 0x03, 0xFD, 0xF0, 0xF0, 0xF0, 0x00,
+};
+
+// .data: the small quad the four drops draw; local to this file in the original.
+static u32 size8x8_tex32x32_vtx[14] = {
+	0xFFFCFFFC, 0x00000000, 0x00000000, 0x00FF0004, 0xFFFC0000, 0x04000000, 0x000000FF,
+	0x00040004, 0x00000400, 0x04000000, 0x00FFFFFC, 0x00040000, 0x00000400, 0x000000FF,
+};
 
 // Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
@@ -171,14 +266,13 @@ void effOpukuWprotectMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effOpukuWprotectDisp, effect);
 }
 
-const char str_802FB300[] = "OpukuWprotectN64";
 
 EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effOpukuWprotectData* data;
 
 	effect = effEntry();
-	effect->type = str_802FB300;
+	effect->type = "OpukuWprotectN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x98);
 	effect->userdata = data;
@@ -209,3 +303,225 @@ EffectEntry* effOpukuWprotectN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 
 	return effect;
 }
+
+// The display pass: build the 40-point ring from point_data, draw the four drops,
+// then two indexed passes over the built vertices. Every coordinate conversion is
+// integer magic (fctiwz + lfd/fsubs), so no inline asm is needed.
+#ifdef MUST_MATCH
+// Build each colour inside an inline so the returned by-value temp lands where the
+// original's does (the plain form below puts it in the outgoing-argument area instead).
+static inline GXColor wprotectColor1(s32 a) {
+	GXColor c = dat_8041f888;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor wprotectColor2(s32 a) {
+	GXColor c = dat_8041f88c;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor wprotectColor3(WprotectData* data, s32 a) {
+	GXColor c = unk_804231f0;
+	c.r = data->field_0x18;
+	c.g = data->field_0x1C;
+	c.b = data->field_0x20;
+	c.a = a;
+	return c;
+}
+#endif
+
+// NONMATCHING (99.98%): only the stack slots of the three by-value GXColor argument
+// copies differ (the original interleaves each local with its copy; MWCC groups them).
+void effOpukuWprotectDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam = camGetPtr(camId);
+	WprotectData* data = effect->userdata;
+	s32 i;
+	s32 alpha;
+	WprotectVtx* vtx;
+	WprotectVtx* p;
+	WprotectPoint* point;
+	GXTexObj texObj;
+	Mtx drop;
+	Mtx scale;
+	Mtx trans;
+	GXColor color1;
+	GXColor color2;
+	GXColor color3;
+	s32 counter;
+	f32 s1;
+	f32 px;
+	f32 py;
+	f32 pz;
+	f32 s2;
+	f32 s3;
+	f32 d1;
+	f32 d2;
+	f32 d3;
+	f32 t2;
+
+	alpha = data->field_0x24;
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXConcat(cam->view, trans, trans);
+
+	p = (WprotectVtx*)smartAlloc(0x460, HEAP_EFFECT)->address;
+	vtx = p;
+	point = (WprotectPoint*)point_data;
+	counter = gp->retraceCount >> 1;
+
+	for (i = 0; i < 40; i++) {
+		px = (f32)(point->x * 10);
+		py = (f32)(point->y * 10);
+		pz = (f32)(point->z * 10);
+		if (float_0_8041f890 != py) {
+			s1 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_100_8041f894 * pz + (float_10_8041f898 * py + px)))));
+			t2 = float_100_8041f894 * py;
+			s2 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(t2 + float_10_8041f898 * px + pz))));
+			s3 = (f32)sin((f32)(counter + (s32)effTblRandN64(1000, (s32)(float_10_8041f898 * pz + (float_100_8041f894 * px + py)))));
+			d1 = float_20_8041f89c * s1;
+			d2 = float_20_8041f89c * s2;
+			d3 = float_20_8041f89c * s3;
+			px += d1;
+			py += d2;
+			pz += d3;
+		}
+		p->x = (s16)px;
+		p->y = (s16)py;
+		p->z = (s16)pz;
+		p->s = point->s;
+		p->t = point->t;
+		p->r = point->r;
+		p->g = point->g;
+		p->b = point->b;
+		p->a = 0x50;
+		p++;
+		point++;
+	}
+
+#ifdef MUST_MATCH
+	color1 = wprotectColor1(alpha);
+#else
+	color1 = dat_8041f888;
+	color1.a = alpha;
+#endif
+	GXSetTevColor(GX_TEVREG0, color1);
+#ifdef MUST_MATCH
+	color2 = wprotectColor2(data->field_0x28);
+#else
+	color2 = dat_8041f88c;
+	color2.a = data->field_0x28;
+#endif
+	GXSetTevColor(GX_TEVREG1, color2);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C1, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	effGetTexObjN64(0x91, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	PSMTXScale(scale, float_0p03125_8041f8a0, float_0p03125_8041f8a0, float_0_8041f890);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+	GXSetCullMode(GX_CULL_NONE);
+
+	for (i = 0; i < 4; i++) {
+		if (data->field_0x88[i] >= 0) {
+			PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
+			PSMTXTrans(drop, data->field_0x38[i], data->field_0x48[i], float_0_8041f890);
+			PSMTXConcat(scale, drop, drop);
+			PSMTXScale(scale, data->field_0x78[i], data->field_0x78[i], data->field_0x78[i]);
+			PSMTXConcat(drop, scale, drop);
+			PSMTXConcat(trans, drop, drop);
+			GXLoadPosMtxImm(drop, 0);
+			GXSetCurrentMtx(0);
+			effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
+			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+			tri2(0, 1, 2, 0, 0, 2, 3, 0);
+		}
+	}
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTevStages(2);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_A1, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C1, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+	effGetTexObjN64(0x90, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	PSMTXScale(scale, float_0p0625_8041f8a8, float_0p03125_8041f8a0, float_0_8041f890);
+	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
+#ifdef MUST_MATCH
+	color3 = wprotectColor3(data, (s32)(float_0p3_8041f8ac * (f32)alpha));
+#else
+	color3 = unk_804231f0;
+	color3.r = data->field_0x18;
+	color3.g = data->field_0x1C;
+	color3.b = data->field_0x20;
+	color3.a = (s32)(float_0p3_8041f8ac * (f32)alpha);
+#endif
+	GXSetTevColor(GX_TEVREG0, color3);
+	GXSetCullMode(GX_CULL_FRONT);
+
+	DCFlushRange(vtx, 0x460);
+	GXInvalidateVtxCache();
+	PSMTXScale(scale, float_0p1_8041f8a4, float_0p1_8041f8a4, float_0p1_8041f8a4);
+	PSMTXConcat(trans, scale, scale);
+	GXLoadPosMtxImm(scale, 0);
+	GXSetCurrentMtx(0);
+	effSetVtxDescN64((effVtxArray*)vtx);
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 60);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	tri2(4, 0, 3, 0, 4, 3, 5, 0);
+	tri2(6, 7, 8, 0, 6, 8, 9, 0);
+	tri2(10, 11, 12, 0, 10, 12, 13, 0);
+	tri2(14, 15, 16, 0, 14, 16, 17, 0);
+	tri2(16, 18, 19, 0, 16, 19, 17, 0);
+	tri2(18, 20, 21, 0, 18, 21, 19, 0);
+	tri2(22, 23, 4, 0, 22, 4, 5, 0);
+	tri2(24, 25, 26, 0, 24, 26, 27, 0);
+	tri2(26, 28, 29, 0, 26, 29, 27, 0);
+	effSetVtxDescN64((effVtxArray*)((u8*)vtx + 0x188));
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 24);
+	tri2(0, 2, 6, 0, 0, 6, 1, 0);
+	tri2(3, 7, 4, 0, 3, 4, 8, 0);
+	tri2(4, 5, 9, 0, 4, 9, 8, 0);
+	tri2(5, 10, 11, 0, 5, 11, 9, 0);
+}
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0_8041f890 = 0.0f;
+const f32 float_100_8041f894 = 100.0f;
+const f32 float_10_8041f898 = 10.0f;
+const f32 float_20_8041f89c = 20.0f;
+const f32 float_0p03125_8041f8a0 = 0.03125f;
+const f32 float_0p1_8041f8a4 = 0.1f;
+const f32 float_0p0625_8041f8a8 = 0.0625f;
+const f32 float_0p3_8041f8ac = 0.3f;
+const f32 float_24_8041f8b0 = 24.0f;
+const f32 float_2_8041f8b4 = 2.0f;
+const f32 float_6p2832_8041f8b8 = 6.2831855f;
+const f32 float_360_8041f8bc = 360.0f;
+const f32 float_127_8041f8c0 = 127.0f;
+const f32 float_32_8041f8c4 = 32.0f;
+const f32 float_0p01_8041f8c8 = 0.01f;
+const f32 float_6_8041f8cc = 6.0f;
+const f32 float_256_8041f8d0 = 256.0f;
+const f32 float_0p2_8041f8d4 = 0.2f;
+const f32 float_128_8041f8d8 = 128.0f;
+const f32 float_240_8041f8dc = 240.0f;
+const f32 float_0p97_8041f8e0 = 0.97f;
+const f32 float_480_8041f8e4 = 480.0f;

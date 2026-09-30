@@ -4,6 +4,7 @@
 #include <dolphin/types.h>
 
 extern NpcTribeInfo npcTribe[];
+extern NpcTerritoryInfo npc_define_territory_type[];
 
 typedef struct NpcAiInfo {
 	const char* description; //0x0, used for s/etup.xml tag lookup
@@ -16,3 +17,5 @@ typedef struct NpcAiInfo {
 	s32* returnEvent; //0x1C
 	s32* blowEvent; //0x20
 } NpcAiInfo;
+
+extern NpcAiInfo npc_ai_type_table[];

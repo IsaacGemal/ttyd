@@ -7,6 +7,7 @@
 #include "mario/mario_sbr.h"
 #include "party.h"
 #include "party/party_cloud.h"
+#include "system.h"
 
 void marioResetCamShift(void) {
     MarioWork* mario = marioGetPtr();
@@ -64,8 +65,48 @@ void marioPreCamera(void) {
     marioGetPtr()->targetYaw = revise360((s32)((1000.0f * camGetPtr(CAMERA_3D)->viewYaw) + roundingFactor) / 1000.0f);
 }
 
-// NONMATCHING (1.25%): empty placeholder, not decompiled yet.
 void marioCamMain(void) {
+    MarioWork* mario = marioGetPtr();
+    MarioWork* mario2;
+    CameraEntry* camera;
+    EventEntry event;
+    s32 args[10];
+    s32 temp_r8;
+
+    if (mario->currMotionId != MARIO_MOTION_DOKAN) {
+        marioUpdateCam();
+    }
+
+    marioCamZoomUpLevelMain();
+
+    mario2 = marioGetPtr();
+    if (!(mario2->dispFlags & 0x100000)) {
+        mario2->dispFlags &= ~0x200000;
+    } else if (mario2->dispFlags & 0x200000) {
+        if (--mario2->unk5C <= 0) {
+            mario2->unk5C = 0;
+            mario2->unk60 = 0;
+            mario2->dispFlags &= ~0x300000;
+            temp_r8 = mario2->unk62 * 10;
+            mario2->unk5E = (temp_r8 * 60) / 1000;
+            args[0] = temp_r8;
+            args[1] = 11;
+            event.args = args;
+            evt_cam3d_evt_off(&event, TRUE);
+        }
+    }
+
+    camera = camGetPtr(CAMERA_3D);
+    mario2 = marioGetPtr();
+    if (mario2->controlStickSensitivity) {
+        if (camera->cameraPos.x == *(f32*)mario2->unk160) {
+            mario2->dispFlags |= 0x20;
+        } else {
+            mario2->dispFlags &= ~0x20;
+        }
+    }
+    *(f32*)mario2->unk160 = camera->cameraPos.x;
+    mario->dispFlags &= ~0x40000;
 }
 
 void marioUpdateCamCollision(Vec collision) {
@@ -74,8 +115,92 @@ void marioUpdateCamCollision(Vec collision) {
     mario->dispFlags |= 0x40000;
 }
 
-// NONMATCHING (0.64%): empty placeholder, not decompiled yet.
 void marioUpdateCam(void) {
+    MarioWork* mario = marioGetPtr();
+    CameraEntry* camera;
+    f32 sin;
+    f32 cos;
+    f32 rate;
+    f32 diff;
+    f32 step;
+
+    rate = mario->unk150.x;
+    if (mario->unk13C > mario->unk138) {
+        diff = (mario->unk138 - 1.0f) - mario->unk13C;
+        step = rate * diff;
+        mario->unk13C += step;
+        if (mario->unk13C < mario->unk138) {
+            mario->unk13C = mario->unk138;
+        }
+    } else if (mario->unk13C < mario->unk138) {
+        diff = (mario->unk138 + 1.0f) - mario->unk13C;
+        step = rate * diff;
+        mario->unk13C += step;
+        if (mario->unk13C > mario->unk138) {
+            mario->unk13C = mario->unk138;
+        }
+    }
+
+    rate = mario->unk150.y;
+    if (mario->unk144 > mario->unk140) {
+        diff = (mario->unk140 - 1.0f) - mario->unk144;
+        step = rate * diff;
+        mario->unk144 += step;
+        if (mario->unk144 < mario->unk140) {
+            mario->unk144 = mario->unk140;
+        }
+    } else if (mario->unk144 < mario->unk140) {
+        diff = (mario->unk140 + 1.0f) - mario->unk144;
+        step = rate * diff;
+        mario->unk144 += step;
+        if (mario->unk144 > mario->unk140) {
+            mario->unk144 = mario->unk140;
+        }
+    }
+
+    rate = mario->unk150.z;
+    if (mario->unk14C > mario->unk148) {
+        diff = (mario->unk148 - 1.0f) - mario->unk14C;
+        step = rate * diff;
+        mario->unk14C += step;
+        if (mario->unk14C < mario->unk148) {
+            mario->unk14C = mario->unk148;
+        }
+    } else if (mario->unk14C < mario->unk148) {
+        diff = (mario->unk148 + 1.0f) - mario->unk14C;
+        step = rate * diff;
+        mario->unk14C += step;
+        if (mario->unk14C > mario->unk148) {
+            mario->unk14C = mario->unk148;
+        }
+    }
+
+    if (!(mario->dispFlags & 0x10000)) {
+        camGetPtr(CAMERA_3D);
+        camera = camGetPtr(CAMERA_3D);
+        sincosf(&sin, &cos, camera->viewYaw - 90.0f);
+
+        if (!(mario->dispFlags & 0x20000)) {
+#ifdef MUST_MATCH
+            // The original emits the .x, .z, .y stores in this order; the natural .x, .y, .z order schedules differently.
+            mario->field_EC.x = mario->position.x + sin * mario->unk13C;
+            mario->field_EC.z = mario->position.z + cos * mario->unk13C;
+            mario->field_EC.y = mario->position.y + *(f32*)(mario->field_0x98 + 4) + mario->unk144;
+#else
+            mario->field_EC.x = mario->position.x + sin * mario->unk13C;
+            mario->field_EC.y = mario->position.y + *(f32*)(mario->field_0x98 + 4) + mario->unk144;
+            mario->field_EC.z = mario->position.z + cos * mario->unk13C;
+#endif
+            if (mario->currMotionId == MARIO_MOTION_SHIP) {
+                mario->field_EC.y += 10.0f;
+            }
+            mario->field_64 = mario->unk14C;
+        } else {
+            mario->field_EC.x = mario->position.x + sin * mario->unk13C + sin * mario->unk14C;
+            mario->field_EC.z = mario->position.z + cos * mario->unk13C + cos * mario->unk14C;
+            mario->field_64 = mario->unk14C;
+        }
+    }
 }
 
 void marioUpdateCamPos(void) {
@@ -234,7 +359,74 @@ BOOL marioCamZoomUp(void) {
     return TRUE;
 }
 
-// NONMATCHING (0.58%): empty placeholder, not decompiled yet.
 BOOL marioCamZoomUpLevelMain(void) {
+    MarioWork* mario;
+    EventEntry event;
+    s32 args[10];
+    Vec cloudPos;
+    Vec targetPos;
+    Vec cameraDir;
+    Vec sp8;
+    f32 xOffset;
+    f32 yOffset;
+    f32 zoomDistance;
+    CameraEntry* camera;
 
+    mario = marioGetPtr();
+
+    if (!(mario->trigFlags & 0x10)) {
+        return FALSE;
+    }
+    mario->trigFlags &= ~0x10;
+
+    if (marioBgmodeChk() == 1) {
+        return FALSE;
+    }
+
+    mario->dispFlags |= 0x100000;
+    mario->unk5E = 0;
+
+    if (mario->unk60 == 1) {
+        zoomDistance = 520.0f;
+    } else if (mario->unk60 == 2) {
+        zoomDistance = 475.0f;
+    } else if (mario->unk60 == 3) {
+        zoomDistance = 440.0f;
+    } else {
+        zoomDistance = 450.0f;
+    }
+
+    xOffset = (f32)(mario->unk168 - 303) / 5.0f;
+    yOffset = 0.0f;
+
+    if ((f32)mario->unk16C > 320.0f) {
+        yOffset = (320.0f - (f32)mario->unk16C) / 3.5f;
+    }
+
+    camera = camGetPtr(CAMERA_3D);
+
+    sp8 = (Vec){ 0.0f, 0.0f, 0.0f };
+    sp8.x = camera->cameraAt.x + xOffset;
+    sp8.y = camera->cameraAt.y + yOffset;
+    sp8.z = camera->cameraAt.z;
+    cloudPos = sp8;
+    targetPos = sp8;
+
+    PSVECSubtract(&camera->cameraPos, &camera->cameraAt, &cameraDir);
+    PSVECNormalize(&cameraDir, &cameraDir);
+    PSVECScale(&cameraDir, &cameraDir, zoomDistance);
+    PSVECAdd(&targetPos, &cameraDir, &targetPos);
+
+    args[0] = (s16)(s32)targetPos.x;
+    args[1] = (s16)(s32)targetPos.y;
+    args[2] = (s16)(s32)targetPos.z;
+    args[3] = (s16)(s32)cloudPos.x;
+    args[4] = (s16)(s32)cloudPos.y;
+    args[5] = (s16)(s32)cloudPos.z;
+    args[6] = 1500;
+    args[7] = 3;
+
+    event.args = args;
+    evt_cam3d_evt_set(&event, TRUE);
+    return TRUE;
 }

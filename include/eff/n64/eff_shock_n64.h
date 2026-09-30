@@ -28,3 +28,9 @@ typedef struct EffShockData {
 void effShockMain(EffectEntry* effect);
 #include "driver/camdrv.h"
 void effShockDisp(CameraId cameraId, void* param);
+// .sbss2 scratch GXColors and .sdata2 seed this unit's display code builds TEV colours from.
+extern GXColor unk_80423258;
+extern GXColor unk_8042325c;
+extern const GXColor dat_8041fc50;
+// .data vertex array owned by this unit.
+extern u32 testsrc_shock_v[];

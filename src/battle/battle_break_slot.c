@@ -242,9 +242,12 @@ void BattleBreakSlot_End(void) {
 	//stubbed in retail
 }
 
-// NONMATCHING (68.41%): 3 instructions differ, 35 missing, 33 extra, plus register differences.
+// NONMATCHING (96.91%): first-loop reel is r30 here vs r28 in the original (MWCC keeps r28 for the
+// third-loop tex temp), so the i2f scratch and the three GXColor argument slots land at different
+// stack offsets; the i->f32 conversion also folds its double into an anonymous @N pool entry.
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
-    GXColor color;
+    s32 i;
+    BattleBreakSlotReel* reel;
     Mtx mtxTrans;
     Mtx mtxScale;
     Mtx mtxPos;
@@ -254,16 +257,18 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
     Mtx mtxRotY;
     Mtx mtxRotZ;
     Mtx mtxFinal;
-    BattleBreakSlotReel* reel;
     u16* texList;
-    s32 i;
 
+    i = 0;
     reel = BattleBreakSlotReelGetPtr(0);
-    for (i = 0; i < 3; i++) {
+    for (; i < 3; i++) {
         if ((reel->flags & 1) && reel->state >= 1 && reel->state <= 4) {
             PSMTXTrans(mtxTrans, float_42_80420534 * (f32)i + float_226_80420530, float_122_80420538, float_0_8042053c);
-            *(u32*)&color = dat_80420524;
-            iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
+            {
+                GXColor color = *(GXColor*)&dat_80420524;
+
+                iconDispGxCol(mtxTrans, 0x10, 0x1D4, color);
+            }
         }
         reel++;
     }
@@ -277,7 +282,9 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             GXSetScissor(0, 0xB0, 0x260, 0x80);
         }
     }
-    for (i = 0; i < 3; i++) {
+    i = 0;
+    reel = BattleBreakSlotReelGetPtr(0);
+    for (; i < 3; i++) {
         if (reel->flags & 1) {
             GXSetBlendMode(1, 4, 5, 0);
             GXSetZCompLoc(1);
@@ -296,24 +303,34 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
             PSMTXConcat(mtxNeg, mtxFinal, mtxFinal);
             PSMTXConcat(mtxScale, mtxFinal, mtxFinal);
             PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
-            *(u32*)&color = dat_80420528;
-            color.a = reel->field_58;
-            btlDispTexPlane2(mtxFinal, texList[reel->value], color, 0);
+            {
+                GXColor color;
+
+                *(u32*)&color = dat_80420528;
+                color.a = reel->field_58;
+                btlDispTexPlane2(mtxFinal, texList[reel->value], color, 0);
+            }
             if (reel->state <= 0xA && reel->state != 3 && reel->state != 4) {
                 s32 idx = reel->index + 1;
+                u16 tex;
 
                 if (idx >= reel->count) {
                     idx = 0;
                 }
+                tex = texList[reel->cards[idx]];
                 if (reel->state >= 1 && reel->state <= 4) {
                     PSMTXTrans(mtxTrans, float_0_8042053c, float_neg32_80420544, float_0_8042053c);
                 } else {
                     PSMTXTrans(mtxTrans, float_0_8042053c, float_neg128_80420548, float_0_8042053c);
                 }
                 PSMTXConcat(mtxTrans, mtxFinal, mtxFinal);
-                *(u32*)&color = dat_8042052c;
-                color.a = reel->field_58;
-                btlDispTexPlane2(mtxFinal, texList[reel->cards[idx]], color, 0);
+                {
+                    GXColor color;
+
+                    *(u32*)&color = dat_8042052c;
+                    color.a = reel->field_58;
+                    btlDispTexPlane2(mtxFinal, tex, color, 0);
+                }
             }
         }
         reel++;

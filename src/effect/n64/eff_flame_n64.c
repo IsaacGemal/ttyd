@@ -4,6 +4,9 @@
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include <dolphin/mtx.h>
+#ifdef MUST_MATCH
+#include <dolphin/os/OSFastCast.h>
+#endif
 #include <string.h>
 
 extern f32 lbl_8039CDA8[];
@@ -13,14 +16,23 @@ GXColor unk_80423110;
 GXColor unk_80423114;
 
 /* MUST_MATCH: retail inlines a per-vertex helper; each inlining gets its own Vec slot and
-   the table base argument is passed as `lbl_8039CDA8 + table offset`, producing two adds. */
+   the table base argument is passed as `flameTbl + table offset`, producing two adds. */
 static inline void effFlameSetVtx(effFlameData* data, Mtx mtx, s32 idx, effFlameVtx* tbl) {
 	Vec v;
 	memcpy(&data->vtx[idx], &tbl[idx], sizeof(effFlameVtx));
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail originally used paired-single conversions, so it re-runs OSInitFastCast
+	   before each load and store; this toolchain lowers the casts to the integer path, so the calls
+	   exist only to reproduce the original GQR setup. */
+	OSInitFastCast();
+#endif
 	v.x = data->vtx[idx].pos[0];
 	v.y = data->vtx[idx].pos[1];
 	v.z = data->vtx[idx].pos[2];
 	PSMTXMultVec(mtx, &v, &v);
+#ifdef MUST_MATCH
+	OSInitFastCast();
+#endif
 	data->vtx[idx].pos[0] = v.x;
 	data->vtx[idx].pos[1] = v.y;
 	data->vtx[idx].pos[2] = v.z;
@@ -249,17 +261,20 @@ void effFlameMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (44.65%): bulk of the difference is in the 24 inlined vertex transforms. Retail
+// NONMATCHING (54.52%): bulk of the difference is in the 24 inlined vertex transforms. Retail
 // converts each s16 position component with scalar paired-single loads/stores (psq_l/psq_st,
-// GQR5 type 7) and keeps the intermediate Vecs in callee-saved f14-f31, which also grows the
-// frame to 0x4c0 and places the 24 Vec slots at 0x138-0x24c with the Mtxs at 0x278+. This toolchain
-// (GC/2.6, -O4,p) emits the xoris/lfd/fsubs integer path instead for the same `f32 v = s16` source,
-// so every block is ~15 instructions longer and the frame stays 0x2c0, shifting all local slots.
-// The GX/TEV setup, both matrix setups and the draw call sequence otherwise line up.
-// The GX/TEV setup, both matrix setups and the draw call sequence otherwise line up.
-// NONMATCHING (44.65%): 24 inlined vertex transforms differ (see the comment above).
+// GQR5 type 7, preceded by an inlined OSInitFastCast GQR2-5 setup) and keeps the intermediate Vecs
+// in callee-saved f14-f31, which also grows the frame to 0x4c0 and places the 24 Vec slots at
+// 0x138-0x24c with the Mtxs at 0x278+. With the OSInitFastCast calls below this build reproduces
+// the GQR setup byte-for-byte, but (GC/2.6, -O4,p) still lowers the `f32 v = s16` casts to the
+// xoris/lfd/fsubs and fctiwz integer paths, so each component costs ~8 more instructions and the
+// frame stays 0x2c0, shifting every local slot. The __psq_l/__psq_st names are runtime emulation
+// functions, not intrinsics, and no compiler version/flag here emits psq for the cast. The
+// GX/TEV setup, both matrix setups and the draw call sequence otherwise line up.
+// NONMATCHING (54.52%): 24 inlined vertex transforms differ (see the comment above).
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
+	effFlameVtx* flameTbl = (effFlameVtx*)lbl_8039CDA8;
 	CameraEntry* cam = camGetPtr(camId);
 	effFlameData* data = effect->userdata;
 	s32 type = data->type;
@@ -353,22 +368,22 @@ void effFlameDisp(CameraId camId, void* param) {
 	}
 	switch (type) {
 	case 0:
-		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
+		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)flameTbl + 0x40));
 		break;
 	case 1:
-		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
+		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)flameTbl + 0x120));
 		break;
 	default:
-		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
+		effFlameSetVtx(data, mtx3, 2, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 3, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 6, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 7, (effFlameVtx*)((u8*)flameTbl + 0xB0));
 		break;
 	}
 
@@ -390,22 +405,22 @@ void effFlameDisp(CameraId camId, void* param) {
 	}
 	switch (type) {
 	case 0:
-		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
-		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x40));
+		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)flameTbl + 0x40));
+		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)flameTbl + 0x40));
 		break;
 	case 1:
-		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
-		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0x120));
+		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)flameTbl + 0x120));
+		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)flameTbl + 0x120));
 		break;
 	default:
-		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
-		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)lbl_8039CDA8 + 0xB0));
+		effFlameSetVtx(data, mtx3, 0, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 1, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 4, (effFlameVtx*)((u8*)flameTbl + 0xB0));
+		effFlameSetVtx(data, mtx3, 5, (effFlameVtx*)((u8*)flameTbl + 0xB0));
 		break;
 	}
 

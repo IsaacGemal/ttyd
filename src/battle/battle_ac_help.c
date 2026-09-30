@@ -12,6 +12,7 @@ extern f32 float_20_80420d68;
 extern f32 float_neg145_80420d6c;
 extern f32 float_10_80420d70;
 extern f32 float_neg148_80420d74;
+extern f32 float_498_80420d78;
 
 const char str_802FE1D8[28] = "\202\337\202\301\202\271\201[\202\266\202\252\202\335\202\302\202\251\202\350\202\334\202\271\202\361";
 
@@ -36,9 +37,15 @@ void BattleAcHelpInit(void) {
 	//stubbed in retail
 }
 
-// NONMATCHING (4.00%): empty placeholder, not decompiled yet.
 void BattleAcHelpMain(void) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* field = wp->field_18FF0;
 
+    if (*(const char**)field != NULL
+        && *(s32*)(field + 4) != 0
+        && !(wp->flags & 2)) {
+        dispEntry(CAMERA_2D, float_498_80420d78, 1, _ac_help_disp, NULL);
+    }
 }
 
 // This function wants -O4,s (its stmw r30 prologue and signed div-by-2 only come out right with it);

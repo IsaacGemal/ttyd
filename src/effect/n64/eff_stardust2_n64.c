@@ -3,6 +3,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "matching.h"
+#include "memory.h"
 
 #include <stdlib.h>
 #include <math.h>
@@ -24,9 +25,6 @@ extern const f32 float_0p7_8041feac;
 extern const f32 float_1p4_8041feb0;
 
 // .rodata constants (in the original's order, named after their addresses).
-const Vec vec3_802fb740 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_mask_802fb750 = 4503599627370496.0;
-const f64 double_to_int_802fb758 = 4503601774854144.0;
 
 // .sdata colour rotation table, local to this file.
 static u8 color_rotation_data[36] = {
@@ -93,6 +91,121 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     temp.y = y;
     temp.z = z;
     return temp;
+}
+
+// The argument moves (x=f18/y=f22/z=f15), the loop angle/sin/cos (angle=f22, sin=f23, rad=f15) and
+// the dispatch all match. What differs is a register-allocation tie-break in the preheader: this build
+// puts stepA/stepB in f25/f24 and angleScale/yScale in f20/f19 (original f21/f19 and f27/f31), and
+// 2pi/10/90 land one register higher (f29/f30/f31 vs f28/f29/f30). The int->float pool constant also
+// resolves to an anonymous .rodata entry because Main/Disp pool two extra double literals there.
+// NONMATCHING (98.11%): see above.
+EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
+    EffectEntry* effect;
+    EffStardust2Data* data;
+    EffStardust2Data* ptr;
+    f32 stepA;
+    f32 stepB;
+    f32 s;
+    f32 c;
+    f32 angleScale;
+    f32 baseA;
+    f32 yScale;
+    f32 baseB;
+    f32 rad;
+    f32 t;
+    f32 vA;
+    f32 vB;
+    f32 yStep;
+    s32 i;
+    s32 r;
+
+    effect = effEntry();
+    effect->type = "Stardust2N64";
+    effect->count = count + 1;
+    data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(EffStardust2Data));
+    effect->userdata = data;
+    effect->callback = effStardust2Main;
+
+    if (type == 6) {
+        type = 3;
+        data->flags = 1;
+    }
+    else {
+        data->flags = 0;
+    }
+
+    stepA = float_0p1_8041fea4 * scaleA;
+    stepB = float_0p1_8041fea4 * scaleB;
+    baseA = float_0p4_8041fed4 * scaleA;
+
+    data->x = x;
+    baseB = float_0p4_8041fed4 * scaleB;
+    data->y = y;
+    data->z = z;
+    data->field_20 = 0;
+    data->type = type;
+    data->field_24 = life;
+    data->drawCam = 4;
+
+    angleScale = float_360_8041fec0 / ((f32)(count + 1) - float_1_8041fe9c);
+    yScale = scaleB / ((f32)(count + 1) - float_1_8041fe9c);
+
+    ptr = data + 1;
+    for (i = 1; i < count + 1; i++, ptr++) {
+        y = angleScale * (f32)i;
+        if (type > 1) {
+            r = rand() % 360;
+        }
+        else {
+            r = 0;
+        }
+        rad = float_6p2832_8041fec8 * (y + (f32)r) / float_360_8041fec0;
+        s = (f32)sin(rad);
+        c = (f32)cos(rad);
+        t = (f32)sin(float_6p2832_8041fec8 * (float_90_8041fedc - float_10_8041fed8 * y) / float_360_8041fec0);
+        vA = baseA - stepA * t;
+        vB = baseB - stepB * t;
+
+        ptr->field_24 = i + 30;
+        ptr->field_20 = 0;
+        ptr->scale = float_1_8041fe9c;
+        yStep = ((f32)i - float_1_8041fe9c) * yScale;
+
+        switch (type) {
+        case 0:
+        case 1:
+            ptr->field_18 = float_0_8041fe98;
+            ptr->field_10 = s * vA;
+            ptr->field_14 = c * vB;
+            ptr->z = float_0_8041fe98;
+            break;
+        case 2:
+        case 5:
+            ptr->field_10 = s * vA;
+            ptr->y = yStep;
+            ptr->z = c * vA;
+            ptr->field_14 = float_0p03_8041fee0 * (f32)(-(rand() % 10));
+            ptr->field_18 = float_0p04_8041fee4 * (f32)(rand() % 10) + float_0p01_8041feb8;
+            break;
+        case 3:
+            ptr->x = float_0p005_8041fee8 * (s * scaleA * (f32)(rand() % 100));
+            ptr->y = float_0p005_8041fee8 * (c * scaleB * (f32)(rand() % 100));
+            ptr->z = float_0_8041fe98;
+            ptr->field_14 = float_0_8041fe98;
+            ptr->field_10 = float_0_8041fe98;
+            ptr->field_18 = float_0_8041fe98;
+            ptr->field_24 = ptr->field_24 + i + i;
+            break;
+        default:
+            ptr->field_10 = s * vA;
+            ptr->y = yStep;
+            ptr->z = c * vA;
+            ptr->field_14 = float_0p03_8041fee0 * (f32)(-(rand() % 10));
+            ptr->field_18 = float_0p04_8041fee4 * (f32)(rand() % 10) + float_0p01_8041feb8;
+            break;
+        }
+    }
+    return effect;
 }
 
 void effStardust2Main(EffectEntry* effect) {
@@ -379,3 +492,37 @@ void effStardust2Disp(CameraId camId, void* param) {
 void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
     *(s32*)((u8*)entry->userdata + 0x2C) = cam;
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f64 double_to_int_mask_802fb750 = 4503599627370496.0;
+const f64 double_to_int_802fb758 = 4503601774854144.0;
+
+// .sdata2 constants, defined after the code that loads them by name (defined first, the compiler folds them).
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const Vec vec3_802fb740 = { 0.0f, 0.0f, 0.0f };
+const GXColor dat_8041fe88 = { 0x00, 0x00, 0x00, 0xFF };
+const f32 float_deg2rad_8041fe8c = 0.017453292f;
+const f32 float_0p0056818_8041fe90 = 0.0056818184f;
+const f32 float_0p045455_8041fe94 = 0.045454547f;
+const f32 float_0_8041fe98 = 0.0f;
+const f32 float_1_8041fe9c = 1.0f;
+const f32 float_0p5_8041fea0 = 0.5f;
+const f32 float_0p1_8041fea4 = 0.1f;
+const f32 float_0p8_8041fea8 = 0.8f;
+const f32 float_0p7_8041feac = 0.7f;
+const f32 float_1p4_8041feb0 = 1.4f;
+const f32 float_neg0p02_8041feb4 = -0.02f;
+const f32 float_0p01_8041feb8 = 0.01f;
+const f32 float_60_8041febc = 60.0f;
+const f32 float_360_8041fec0 = 360.0f;
+const f32 float_120_8041fec4 = 120.0f;
+const f32 float_6p2832_8041fec8 = 6.2831855f;
+const f32 float_neg0p05_8041fecc = -0.05f;
+const f32 float_0p96_8041fed0 = 0.96f;
+const f32 float_0p4_8041fed4 = 0.4f;
+const f32 float_10_8041fed8 = 10.0f;
+const f32 float_90_8041fedc = 90.0f;
+const f32 float_0p03_8041fee0 = 0.03f;
+const f32 float_0p04_8041fee4 = 0.04f;
+const f32 float_0p005_8041fee8 = 0.005f;

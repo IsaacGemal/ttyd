@@ -30,8 +30,8 @@ void mot_yoshi(void) {
 const Vec vec3_802f32e0 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f32ec = { 0.0f, 0.0f, 0.0f };
 
-// NONMATCHING (75.94%): the two Vec copies are scheduled differently: the original copies both after the flag
-// clears, with their address loads hoisted above them.
+// The two dispFlags read-modify-writes must run before the zero-vector copies, and the vector loads must
+// not be hoisted above the flag stores: volatile accesses pin the original's instruction order (rule 7).
 void mot_yoshi_post(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     MarioWork* mario = marioGetPtr();
@@ -41,12 +41,15 @@ void mot_yoshi_post(void) {
         party->yoshiPsndSFXId = -1;
     }
     bero_clear_Offset();
+#ifdef MUST_MATCH
+    *(volatile s32*)&mario->dispFlags &= ~0x4;
+    *(volatile s32*)&mario->dispFlags &= ~0x1000;
+    *(volatile Vec*)&mario->field_0x98[0] = *(volatile Vec*)&vec3_802f32e0;
+    *(volatile Vec*)&mario->field_0x98[0xC] = *(volatile Vec*)&vec3_802f32ec;
+#else
     mario->dispFlags &= ~0x4;
     mario->dispFlags &= ~0x1000;
-    {
-        Vec* v = (Vec*)&mario->field_0x98[0];
-        *v = vec3_802f32e0;
-        v++;
-        *v = vec3_802f32ec;
-    }
+    *(Vec*)&mario->field_0x98[0] = vec3_802f32e0;
+    *(Vec*)&mario->field_0x98[0xC] = vec3_802f32ec;
+#endif
 }

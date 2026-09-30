@@ -234,3 +234,8 @@ void effBalloonDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p0625_8041e940 = 0.0625f;
+const f32 float_0_8041e944 = 0.0f;
+const f32 float_deg2rad_8041e948 = 0.017453292f;

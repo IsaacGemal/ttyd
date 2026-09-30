@@ -16,41 +16,178 @@ lottery_info* lotteryGetPtr(void) {
 	return &gp->mLotteryInfo;
 }
 
-// NONMATCHING (3.63%): 3 instructions differ, 643 missing, plus register differences.
+// NONMATCHING (99.87%): 16 register-allocation mismatches, no logical differences.
+// The original keeps time18's low word in r24 (mine r25) in the four closing calendar
+// calls, and today/field20 land in r0/r3 instead of r3/r0 in the zero-match loop.
 USER_FUNC(evt_lottery) {
-	lottery_info* LotteryInfo;
-
+	lottery_info* info;
 	s32* args = event->args;
-	s32 arg1 = evtGetValue(event, args[0]); //r25
+	s32 arg1 = evtGetValue(event, args[0]);
 	OSTime start = OSGetTime();
+	OSCalendarTime ct[9];
+
 	dbg_lotteryinfo = TRUE;
 
-	LotteryInfo = &gp->mLotteryInfo;
+	info = &gp->mLotteryInfo;
 
-	LotteryInfo->mFlags &= ~0x1000;
-	LotteryInfo->mFlags &= ~0x2000;
-	LotteryInfo->mFlags &= ~0x4000;
-	LotteryInfo->mFlags &= ~0x8000;
+	info->mFlags &= ~0x1000;
+	info->mFlags &= ~0x2000;
+	info->mFlags &= ~0x4000;
+	info->mFlags &= ~0x8000;
 
-	if (LotteryInfo->mFlags & 8) {
-
+	if (info->mFlags & 8) {
+		if (*(OSTime*)((u8*)info + 0x18) < start) {
+			OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[8]);
+			OSTicksToCalendarTime(start, &ct[7]);
+			if (ct[8].year != ct[7].year || ct[8].mon != ct[7].mon || ct[8].mday != ct[7].mday) {
+				info->mFlags &= ~4;
+				info->mFlags &= ~8;
+			}
+		} else {
+			info->mFlags |= 4;
+			info->mFlags &= ~8;
+		}
 	}
 
+	if (info->mFlags & 2) {
+		u8* p = (u8*)info + arg1 * 8;
 
+		if (*(OSTime*)(p + 0x30) < start) {
+			OSTicksToCalendarTime(*(OSTime*)(p + 0x30), &ct[6]);
+			OSTicksToCalendarTime(start, &ct[5]);
+			if (ct[6].year == ct[5].year && ct[6].mon == ct[5].mon && ct[6].mday == ct[5].mday) {
+				info->mFlags &= ~0x10;
+			} else {
+				if (!(info->mFlags & 8)) {
+					info->mFlags |= 0x10;
+				}
+				*(OSTime*)(p + 0x30) = start;
+			}
+		} else {
+			OSTicksToCalendarTime(*(OSTime*)(p + 0x30), &ct[4]);
+			OSTicksToCalendarTime(start, &ct[3]);
+			if (ct[4].year == ct[3].year && ct[4].mon == ct[3].mon && ct[4].mday == ct[3].mday) {
+				info->mFlags &= ~0x10;
+			} else {
+				info->mFlags |= 0x10;
+				*(OSTime*)(p + 0x30) = start;
+			}
+			info->mFlags |= 4;
+		}
+	} else {
+#ifdef MUST_MATCH
+		// Match only: splitting the 64-bit zero into two 32-bit stores keeps the
+		// address base as info+arg1*8, as the original does.
+		s32* q = (s32*)((u8*)info + arg1 * 8);
 
+		q[13] = 0;
+		q[12] = 0;
+#else
+		*(OSTime*)((u8*)info + arg1 * 8 + 0x30) = 0;
+#endif
+	}
 
+	if (!(info->mFlags & 1)) {
+		info->mFlags |= 1;
+		*(OSTime*)((u8*)info + 0x8) = start;
+		*(s16*)((u8*)info + 0x10) = rand() % 10000;
+	} else if (*(OSTime*)((u8*)info + 0x8) < start) {
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x8), &ct[2]);
+		OSTicksToCalendarTime(start, &ct[1]);
+		if (ct[2].year != ct[1].year || ct[2].mon != ct[1].mon || ct[2].mday != ct[1].mday) {
+			if (arg1 == 1) {
+				*(OSTime*)((u8*)info + 0x8) = start;
+			}
+			if (!(info->mFlags & 2)) {
+				*(s16*)((u8*)info + 0x10) = rand() % 10000;
+			} else if (start >= *(OSTime*)((u8*)info + 0x18)) {
+				s32 limit;
+				s32 days;
 
+				days = (s32)((start - *(OSTime*)((u8*)info + 0x18)) / OS_TIMER_CLOCK / 60 / 60 / 24);
 
+				limit = *(s16*)((u8*)info + 0x22);
+				if (days > limit) {
+					while (days > limit) {
+						limit += 0x18b - rand() % 60;
+					}
+					*(s16*)((u8*)info + 0x22) = limit - days;
+				}
 
+				limit = *(s16*)((u8*)info + 0x24);
+				if (days > limit) {
+					while (days > limit) {
+						limit += 0x73 - rand() % 30;
+					}
+					*(s16*)((u8*)info + 0x24) = limit - days;
+				}
 
+				limit = *(s16*)((u8*)info + 0x26);
+				if (days > limit) {
+					while (days > limit) {
+						limit += 0x23 - rand() % 10;
+					}
+					*(s16*)((u8*)info + 0x26) = limit - days;
+				}
 
+				limit = *(s16*)((u8*)info + 0x28);
+				if (days > limit) {
+					while (days > limit) {
+						limit += 0xa - rand() % 6;
+					}
+					*(s16*)((u8*)info + 0x28) = limit - days;
+				}
 
+				if (days == *(s16*)((u8*)info + 0x22)) {
+					*(s16*)((u8*)info + 0x10) = *(s16*)((u8*)info + 0x20);
+					info->mFlags |= 0x1000;
+				} else if (days == *(s16*)((u8*)info + 0x24)) {
+					do {
+						*(s16*)((u8*)info + 0x10) = (rand() % 10) * 1000 + *(s16*)((u8*)info + 0x20) % 1000;
+					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20));
+					info->mFlags |= 0x2000;
+				} else if (days == *(s16*)((u8*)info + 0x26)) {
+					do {
+						*(s16*)((u8*)info + 0x10) = (rand() % 100) * 100 + *(s16*)((u8*)info + 0x20) % 100;
+					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
+						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000);
+					info->mFlags |= 0x4000;
+				} else if (days == *(s16*)((u8*)info + 0x28)) {
+					do {
+						*(s16*)((u8*)info + 0x10) = (rand() % 1000) * 10 + *(s16*)((u8*)info + 0x20) % 10;
+					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
+						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000
+						|| *(s16*)((u8*)info + 0x10) % 100 == *(s16*)((u8*)info + 0x20) % 100);
+					info->mFlags |= 0x8000;
+				} else {
+					do {
+						*(s16*)((u8*)info + 0x10) = rand() % 10000;
+					} while (*(s16*)((u8*)info + 0x10) == *(s16*)((u8*)info + 0x20)
+						|| *(s16*)((u8*)info + 0x10) % 1000 == *(s16*)((u8*)info + 0x20) % 1000
+						|| *(s16*)((u8*)info + 0x10) % 100 == *(s16*)((u8*)info + 0x20) % 100
+						|| *(s16*)((u8*)info + 0x10) % 10 == *(s16*)((u8*)info + 0x20) % 10);
+				}
+			} else {
+				info->mFlags |= 4;
+				*(s16*)((u8*)info + 0x10) = -1;
+			}
+		}
+	} else {
+		info->mFlags |= 4;
+		*(s16*)((u8*)info + 0x10) = -1;
+		*(OSTime*)((u8*)info + 0x8) = start;
+	}
 
-
-
-
-
-
+	evtSetValue(event, args[1], info->mFlags);
+	evtSetValue(event, args[2], *(s16*)((u8*)info + 0x10));
+	OSTicksToCalendarTime(start, &ct[0]);
+	if (info->mFlags & 2) {
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18), &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x22), &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x24), &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x26), &ct[0]);
+		OSTicksToCalendarTime(*(OSTime*)((u8*)info + 0x18) + OSSecondsToTicks((OSTime)86400) * *(s16*)((u8*)info + 0x28), &ct[0]);
+	}
 	return EVT_RETURN_DONE;
 }
 

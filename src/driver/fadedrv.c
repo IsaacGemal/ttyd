@@ -4,6 +4,7 @@
 #include "driver/camdrv.h"
 #include "driver/imgdrv.h"
 #include "manager/dvdmgr.h"
+#include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
 #include <dolphin/dvd.h>
@@ -84,8 +85,32 @@ void fadeTexSetup(void) {
 }
 
 //TODO: probably lots of switch statements
-// NONMATCHING (6.42%): 2 instructions differ, 431 missing, plus register differences.
+// Frees the resources held by an entry and re-initialises it.
+static inline void fadeEntryReset(FadeEntry* entry) {
+	if (entry->field_0x6C >= 0) {
+		animPoseRelease(entry->field_0x6C);
+	}
+	if (entry->field_0x70 >= 0) {
+		animPaperPoseRelease(entry->field_0x70);
+	}
+	if (entry->image) {
+		imgRelease(entry->image, entry->imageType);
+	}
+	memset(entry, 0, sizeof(FadeEntry));
+	entry->field_0x6C = -1;
+	entry->field_0x70 = -1;
+	entry->fadeSpotX = 0.0f;
+	entry->fadeSpotY = 0.0f;
+	entry->animOffsetX = 0.0f;
+	entry->animOffsetY = 0.0f;
+	entry->field_0x90 = 1.0f;
+}
+
+// NONMATCHING (6.42%): being reconstructed.
 void fadeEntry(s32 type, s32 duration, GXColor color) {
+	FadeEntry* entry;
+	s32 index;
+
 	if (!type) {
 		return;
 	}
@@ -126,6 +151,299 @@ void fadeEntry(s32 type, s32 duration, GXColor color) {
 		duration = 1000;
 	}
 
+	switch (type) {
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 13:
+		case 14:
+		case 15:
+			entry = &wp->entries[0];
+			index = 0;
+			fadeEntryReset(&wp->entries[2]);
+			entry->field_0xA4 = 0;
+			switch (type) {
+				case 1:
+				case 3:
+				case 5:
+				case 9:
+				case 11:
+				case 14:
+					if (duration != 0) {
+						entry->field_0xA4 = 2;
+					}
+					break;
+			}
+			break;
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+		case 29:
+		case 30:
+		case 31:
+		case 32:
+		case 33:
+		case 34:
+		case 35:
+		case 36:
+		case 37:
+		case 38:
+		case 39:
+		case 40:
+			entry = &wp->entries[1];
+			index = 1;
+			break;
+		case 41:
+		case 42:
+		case 43:
+		case 44:
+		case 45:
+		case 46:
+		case 47:
+		case 48:
+			entry = &wp->entries[2];
+			index = 2;
+			fadeEntryReset(&wp->entries[0]);
+			break;
+		case 49:
+		case 50:
+		case 52:
+		case 53:
+		case 54:
+		case 55:
+		case 56:
+		case 57:
+		case 58:
+		case 59:
+		case 60:
+		case 61:
+		case 62:
+			entry = &wp->entries[3];
+			index = 3;
+			switch (type) {
+				case 50:
+				case 53:
+				case 54:
+				case 56:
+				case 58:
+					fadeEntryReset(&wp->entries[0]);
+					break;
+			}
+			break;
+		case 51:
+			entry = &wp->entries[1];
+			index = 1;
+			break;
+		case 63:
+		case 64:
+			entry = &wp->entries[4];
+			index = 4;
+			break;
+		default:
+			break;
+	}
+
+	entry->flags = 0;
+	entry->flags |= 1;
+	entry->type = type;
+	entry->field_0x14 = duration;
+	entry->field_0x10 = duration >> 31;
+	entry->color = color;
+	entry->field_0x24 = 0;
+	entry->field_0x28 = 0;
+	entry->field_0x5C = 0;
+	entry->field_0x8 = 0;
+	entry->animOffsetX = 0.0f;
+	entry->animOffsetY = 0.0f;
+	entry->field_0x90 = 1.0f;
+	if (type != 50 && type != 53) {
+		entry->callback = NULL;
+	}
+	wp->field_0x350 = index;
+	if (type == 34 || type == 40) {
+		entry->field_0x90 = 3.0f;
+	}
+
+	switch (type) {
+		case 22:
+			entry->field_0x60 = "OFF_d_maku_up_down";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 23:
+			entry->field_0x60 = "OFF_d_maku_up_down";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 24:
+		case 27:
+		case 63:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 25:
+		case 28:
+		case 64:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 26:
+			entry->field_0x60 = "OFF_d_maku_left_right";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 29:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 30:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 31:
+		case 34:
+		case 37:
+		case 40:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "Z_2";
+			entry->imageType = 2;
+			break;
+		case 32:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 35:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 36:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 38:
+			entry->field_0x60 = "OFF_d_maku_center";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 41:
+		case 50:
+		case 53:
+			entry->field_0x60 = "OFF_d_meku";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 42:
+			entry->field_0x60 = "OFF_d_meku";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 43:
+			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 44:
+			entry->field_0x60 = "OFF_d_dokan_down";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 45:
+			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 46:
+			entry->field_0x60 = "OFF_d_dokan_up";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 47:
+			entry->field_0x60 = "OFF_d_dokan_left";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 48:
+			entry->field_0x60 = "OFF_d_dokan_left";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 49:
+		case 52:
+			entry->field_0x60 = "OFF_d_meku";
+			entry->field_0x64 = "Z_1";
+			entry->imageType = 2;
+			break;
+		case 51:
+			entry->field_0x60 = "OFF_d_four_meku_5sec";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 54:
+			entry->field_0x60 = "OFF_f_in_out_mario";
+			entry->field_0x64 = "A_3";
+			entry->imageType = 2;
+			break;
+		case 55:
+			entry->field_0x60 = "OFF_f_in_out_mario";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 56:
+			entry->field_0x60 = "OFF_f_in_out_peach";
+			entry->field_0x64 = "A_3";
+			entry->imageType = 2;
+			break;
+		case 57:
+			entry->field_0x60 = "OFF_f_in_out_peach";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 58:
+			entry->field_0x60 = "OFF_f_in_out_kuppa";
+			entry->field_0x64 = "A_3";
+			entry->imageType = 2;
+			break;
+		case 59:
+			entry->field_0x60 = "OFF_f_in_out_kuppa";
+			entry->field_0x64 = "A_1";
+			entry->imageType = 2;
+			break;
+		case 60:
+			entry->field_0x60 = "OFF_f_in_out_mario";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 61:
+			entry->field_0x60 = "OFF_f_in_out_peach";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		case 62:
+			entry->field_0x60 = "OFF_f_in_out_kuppa";
+			entry->field_0x64 = "A_2";
+			entry->imageType = 2;
+			break;
+		default:
+			break;
+	}
 }
 
 void fadeTecOn(void) {
@@ -194,11 +512,142 @@ void fadeMain(void) {
 
 }
 
-// NONMATCHING (0.27%): 374 missing.
+// NONMATCHING (0%): being reconstructed.
 void disp_texture(CameraId camId, void* param) {
-	//passed wp, unused
+	CameraEntry* camera;
+	FadeEntry* entry;
+	GXTexObj texObj;
+	f32 projv[7];
+	Mtx mtx1;
+	Mtx mtx2;
+	Mtx mtx3;
+	Mtx mtx4;
+	f32 f4;
+	f32 f31;
+
+	camera = camGetPtr(CAMERA_2D);
+	entry = &wp->entries[0];
+
+	switch (entry->type) {
+		case 1:
+		case 3:
+		case 5:
+		case 9:
+		case 11:
+		case 14:
+			if (entry->flags & 2) {
+				return;
+			}
+			break;
+	}
+
+	GXGetProjectionv(projv);
+	GXSetProjection(camera->projection, camera->projType);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetNumTexGens(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetCullMode(GX_CULL_BACK);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+	switch (entry->type) {
+		case 1:
+		case 2:
+			GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
+			TEXGetGXTexObjFromPalette(wp->texture, &texObj, 0);
+			GXLoadTexObj(&texObj, GX_TEXMAP0);
+			if (!(entry->flags & 2)) {
+				f4 = entry->field_0x24;
+				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
+				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
+				PSMTXScale(mtx2, f31, f31, 1.0f);
+				PSMTXTrans(mtx3, -0.5f, -0.5f, 0.0f);
+				PSMTXConcat(mtx1, mtx2, mtx2);
+				PSMTXConcat(mtx2, mtx3, (f32(*)[4])entry->field_0x2C);
+			}
+			else if (entry->type == 2) {
+				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);
+			}
+			break;
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+			GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
+			TEXGetGXTexObjFromPalette(wp->texture, &texObj, 1);
+			GXLoadTexObj(&texObj, GX_TEXMAP0);
+			if (!(entry->flags & 2)) {
+				f4 = entry->field_0x24;
+				f31 = 100.0f * f4 * f4 * f4 * f4 * f4;
+				PSMTXTrans(mtx1, 0.5f, 0.5f, 0.0f);
+				PSMTXScale(mtx2, f31, f31, 1.0f);
+				PSMTXRotRad(mtx4, 'z', 0.017453292f * entry->field_0x28);
+				PSMTXTrans(mtx3, -0.5f - entry->fadeSpotX / (f32)gp->fbWidth,
+				           -0.5f + entry->fadeSpotY / (f32)gp->efbHeight, 0.0f);
+				PSMTXConcat(mtx1, mtx2, mtx2);
+				PSMTXConcat(mtx2, mtx4, mtx2);
+				PSMTXConcat(mtx2, mtx3, (f32(*)[4])entry->field_0x2C);
+			}
+			else if (entry->type == 4 || entry->type == 6) {
+				PSMTXTrans((f32(*)[4])entry->field_0x2C, 1.0f, 1.0f, 0.0f);
+			}
+			break;
+		case 7:
+		case 8:
+			break;
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+		case 14:
+		case 15:
+			GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
+			GXInitTexObj(&texObj, &i4tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXLoadTexObj(&texObj, GX_TEXMAP0);
+			PSMTXIdentity((f32(*)[4])entry->field_0x2C);
+			entry->color.a = (u8)(255.0f * entry->field_0x24);
+			break;
+		case 13:
+			GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
+			GXInitTexObj(&texObj, &i4tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+			GXLoadTexObj(&texObj, GX_TEXMAP0);
+			PSMTXIdentity((f32(*)[4])entry->field_0x2C);
+			break;
+	}
+
+	GXLoadTexMtxImm((f32(*)[4])entry->field_0x2C, 0x1e, GX_MTX3x4);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1e, GX_FALSE, GX_PTIDENTITY);
+	GXSetTevColor(GX_TEVREG0, entry->color);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	f4 = 304.0f;
+	GXPosition3f32(-f4, f4, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(f4, f4, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3f32(f4, -f4, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(-f4, -f4, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXSetProjectionv(projv);
 }
 
+#pragma dont_inline on // keeps z a real bl from disp_maku, as the original does
 static f32 z(void) {
 	FadeEntry* entry = &wp->entries[1];
 	CameraEntry* cam;
@@ -224,6 +673,7 @@ static f32 z(void) {
 	      * (one * (cam->projection[2][2] * pos.z + cam->projection[2][3]))
 	      + cam->viewport[5]) / denom;
 }
+#pragma dont_inline reset
 
 static void zFill(void) {
 	CameraEntry* camera;
@@ -280,16 +730,190 @@ static void zFill(void) {
 	GXSetColorUpdate(GX_TRUE);
 }
 
-// NONMATCHING (0.49%): 205 missing.
+
+
+// NONMATCHING (0%): being reconstructed.
 void disp_maku(CameraId camId, void* param) {
 	FadeEntry* entry = param;
+	CameraEntry* camera;
+	Mtx mtx1;
+	Mtx mtx2;
+	Vec pos;
+	Vec normal;
+	f32 f30;
+	f32 f31;
+	f32 tx;
+	f32 ty;
 
+	camGetPtr(camId);
+
+	switch (entry->type) {
+		case 23:
+		case 25:
+		case 28:
+		case 64:
+			if (entry->flags & 2) {
+				return;
+			}
+			break;
+	}
+
+	switch (entry->type) {
+		case 22:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		case 28:
+		case 29:
+		case 30:
+		case 31:
+		case 32:
+		case 33:
+		case 34:
+		case 35:
+		case 36:
+		case 37:
+		case 38:
+		case 39:
+		case 40:
+		case 51:
+		case 63:
+		case 64:
+			break;
+		default:
+			return;
+	}
+
+	if (entry->field_0x6C < 0) {
+		return;
+	}
+	if (entry->flags & 4) {
+		f32 mag;
+
+		camera = camGetPtr(CAMERA_3D);
+		f30 = (camera->fovY * 0.5f) / 180.0f;
+		f30 = 3.141592f * f30;
+		f30 = 24.0f / (f32)tan(f30);
+		camera = camGetPtr(CAMERA_3D);
+		PSVECSubtract(&camera->cameraPos, &entry->VirtualPos, &pos);
+		camera = camGetPtr(CAMERA_3D);
+		normal = *(Vec*)&camera->view[2];
+		PSVECNormalize(&normal, &normal);
+		pos.x *= normal.x;
+		pos.y *= normal.y;
+		pos.z *= normal.z;
+		mag = PSVECMag(&pos);
+		f31 = mag / f30;
+		f30 = f30 - mag;
+		animPoseSetGXFunc(entry->field_0x6C, 0, 0);
+		GXSetZScaleOffset(z(), 0.0f);
+	}
+	else {
+		f31 = entry->field_0x90;
+		f30 = 0.0f;
+		zFill();
+	}
+
+	tx = entry->animOffsetX * f31 + 0.0f;
+	ty = entry->animOffsetY * f31 + 0.0f;
+
+	PSMTXTrans(mtx1, 64.0f * (tx / (f32)gp->fbWidth),
+	           48.0f * (ty / (f32)gp->efbHeight), f30);
+	PSMTXTrans(mtx2, -32.0f, 24.0f, 0.0f);
+	PSMTXConcat(mtx1, mtx2, mtx1);
+	PSMTXScale(mtx2, 608.0f / (f32)gp->fbWidth, 480.0f / (f32)gp->efbHeight, 608.0f / (f32)gp->fbWidth);
+	PSMTXConcat(mtx1, mtx2, mtx1);
+	PSMTXTrans(mtx2, 32.0f, -24.0f, 0.0f);
+	PSMTXConcat(mtx1, mtx2, mtx1);
+	animPoseDrawMtx(entry->field_0x6C, mtx1, 1, 0.0f, f31);
+	animPoseDrawMtx(entry->field_0x6C, mtx1, 2, 0.0f, f31);
+	animPoseDrawMtx(entry->field_0x6C, mtx1, 3, 0.0f, f31);
+	sysWaitDrawSync();
 }
 
-// NONMATCHING (0.39%): 256 missing.
+// NONMATCHING (0%): being reconstructed.
 void disp_tec(CameraId camId, void* param) {
-	//passed wp, unused
+	CameraEntry* camera;
+	GXTexObj texObj;
+	GXColor color;
 
+	camera = camGetPtr(camId);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+
+	if (wp->flags & 0x1000) {
+		TEXGetGXTexObjFromPalette(wp->texture, &texObj, 2);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+	}
+	else {
+		TEXGetGXTexObjFromPalette(wp->texture, &texObj, 3);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+	}
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_A0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_ZERO);
+
+	if (wp->flags & 0x1000) {
+		GXSetTevColor(GX_TEVREG0, (GXColor){0x19, 0x23, 0x2a, 0xff});
+	}
+	else {
+		GXSetTevColor(GX_TEVREG0, (GXColor){0xe6, 0xe6, 0xe6, 0xff});
+	}
+
+	if (wp->flags & 0x30) {
+		if (wp->flags & 0x10) {
+			wp->field_0x354 += 0.04f;
+			if (wp->field_0x354 > 1.0f) {
+				wp->field_0x354 = 1.0f;
+				wp->flags &= ~0x10;
+			}
+		}
+		else {
+			wp->field_0x354 -= 0.04f;
+			if (wp->field_0x354 < 0.0f) {
+				wp->field_0x354 = 0.0f;
+				wp->flags &= ~0x20;
+				wp->flags &= ~0x3000;
+			}
+		}
+		color = (GXColor){0, 0, 0, 0};
+		color.a = (u8)(255.0f * wp->field_0x354);
+		GXSetTevColor(GX_TEVREG1, color);
+		GXSetNumTevStages(2);
+		GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+		GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+		GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_A1, GX_CA_ZERO);
+	}
+
+	GXSetCullMode(GX_CULL_BACK);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camera->view, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3s16(-308, 244, 0);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3s16(308, 244, 0);
+	GXTexCoord2f32(2.0f, 0.0f);
+	GXPosition3s16(308, -244, 0);
+	GXTexCoord2f32(2.0f, 2.0f);
+	GXPosition3s16(-308, -244, 0);
+	GXTexCoord2f32(0.0f, 2.0f);
 }
 
 void disp_dummy_black(CameraId camId, void* param) {

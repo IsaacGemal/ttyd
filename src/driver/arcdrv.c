@@ -80,7 +80,11 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 	return NULL;
 }
 
-// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
 void arcEntry(s32 id, void* data, u32 size) {
+	ArchiveEntry* entry = &work[id];
 
+	entry->data = data;
+	entry->size = size;
+	ARCInitHandle(entry->data, &entry->handle);
+	entry->flags |= 1;
 }
