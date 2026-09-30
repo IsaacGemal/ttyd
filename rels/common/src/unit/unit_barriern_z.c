@@ -801,17 +801,7 @@ static USER_FUNC(barriern_zanzou3) {
     return barriern_zanzou_sub(isFirstCall, unit, zanzou3_scale, 2);
 }
 
-// NONMATCHING (97.89%): the always-phase zanzou_count and temp1 address registers are swapped (r22/r23),
-// and the first always-phase 1.0f load materialises its pool address (one extra addi).
-#ifdef MUST_MATCH
-// Argument order steers MWCC's loop-invariant hoisting of the two temp arrays. With the natural
-// intplGetValue call the allocator hoists zanzou_count's address ahead of temp2/temp1 (r21 becomes
-// zanzou_count); putting the float args first puts temp2 in r21, matching the target's first lfsx.
-static inline f32 zanzouIntpl(f32 start, f32 end, s32 a, s32 count, s32 num) {
-    return intplGetValue(a, count, num, start, end);
-}
-#endif
-
+// NONMATCHING (97.85%): the always-phase temp-array/zanzou_count address registers are permuted.
 static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
     BattleUnitPart* part;
     f32 temp2[5];
@@ -872,19 +862,11 @@ static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzo
         }
     }
     part = BtlUnit_GetPartsPtr(unit, 1);
-#ifdef MUST_MATCH
-    s = zanzouIntpl(1.0f, base, a, zanzou_count[0], num);
-#else
     s = intplGetValue(a, zanzou_count[0], num, 1.0f, base);
-#endif
     BtlUnit_SetPartsScale(part, s, s, 1.0f);
     for (i = 2, j = 0; i <= 6; i++, j++) {
         part = BtlUnit_GetPartsPtr(unit, i);
-#ifdef MUST_MATCH
-        s = zanzouIntpl(temp2[j], temp1[j], a, zanzou_count[0], num);
-#else
         s = intplGetValue(a, zanzou_count[0], num, temp2[j], temp1[j]);
-#endif
         BtlUnit_SetPartsScale(part, s, s, 1.0f);
         part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)alpha1, (f32)alpha2);
     }

@@ -74,7 +74,7 @@ USER_FUNC(unk_yuu_00009d5c) {
 
 // NONMATCHING (96.65%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
 // and the GXColor copy's scheduling follow from that. Writing case 0/1 in place (`seconds %= ...`) and case
-// 2 with a separate `rem` coalesces them like the target (`time` is now r20). Details in REPORT.md.
+// 2 with a separate `rem` coalesces them like the target (`time` is now r20).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;

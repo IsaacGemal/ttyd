@@ -2599,7 +2599,6 @@ USER_FUNC(pcharge_set_pos) {
 // (and a/c in f24/f25) only when y is declared after c and a.
 static USER_FUNC(starstone_entry) {
     s32* args = event->args;
-#ifdef MUST_MATCH
     f32 x0;
     f32 z0;
     f32 radius;
@@ -2614,17 +2613,6 @@ static USER_FUNC(starstone_entry) {
     y = evtGetFloat(event, args[1]);
     z0 = evtGetFloat(event, args[2]);
     radius = evtGetFloat(event, args[3]);
-#else
-    f32 x0 = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 z0 = evtGetFloat(event, args[2]);
-    f32 radius = evtGetFloat(event, args[3]);
-    f32 a;
-    f32 c;
-    f32 s;
-    s32 i;
-    char name[16];
-#endif
     for (i = 0; i < 7; i++) {
         EffectEntry* effect;
 

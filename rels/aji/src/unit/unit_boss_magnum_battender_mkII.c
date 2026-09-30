@@ -2194,7 +2194,6 @@ USER_FUNC(aud_fire_hit) {
     return EVT_RETURN_DONE;
 }
 
-extern Vec vec3_aji_0001621c;
 
 USER_FUNC(aud_fire_no_hit) {
     s32* args = event->args;
@@ -2232,7 +2231,7 @@ USER_FUNC(aud_fire_no_hit) {
     for (i = start; i < start + 2; i++) {
         aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
         BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
-        position = vec3_aji_0001621c;
+        position = (Vec){0.0f, 0.0f, 0.0f};
         position.x = posx;
         position.y = posy;
         position.z = posz;

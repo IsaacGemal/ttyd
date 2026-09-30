@@ -2,8 +2,8 @@
 
 #include "evt/evt_cmd.h"
 
-// Corrected signature: the original icondrv.h declares this with s16 iconId,
-// but the REL's call site passes a value that must be masked to 16 bits.
+// This unit's call site zero-extends iconId, so it sees iconDispGxAlpha with a u16 iconId (icondrv.h declares
+// s16; documented exception).
 void iconDispGxAlpha(Vec* position, s16 flags, u16 iconId, u8 alpha, f32 scale);
 // This REL drops the icondrv.h include (it conflicts with the u16 iconDispGxAlpha above);
 // these two are the only other icondrv.h prototypes the file needs, copied verbatim.

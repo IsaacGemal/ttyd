@@ -1,5 +1,4 @@
 #include "evt_lect_gor.h"
-#include "rel/gor/event/evt_lect_gor.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"

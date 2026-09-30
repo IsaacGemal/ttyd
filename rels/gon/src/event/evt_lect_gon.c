@@ -190,7 +190,7 @@ static USER_FUNC(x_flag_wait) {
 // The iconId 0x75..0x7D range test is a switch: MWCC lowers the grouped cases to the
 // original's `cmpwi 0x7e; bge zero; cmpwi 0x75; bge neg15; b zero` chain. Writing it as
 // `if (a < 0x7E && a >= 0x75)` instead makes MWCC invert the second branch (`blt zero`).
-// The position base must be built from `&b[8] + 4` so the original's `addi r4, r9, 0x8`
+// The position base must be built as `(u8*)b + 8`, then `+ 4`, so the original's `addi r4, r9, 0x8`
 // plus its 0x4/0x8/0xC field loads are reproduced (see the MUST_MATCH block).
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;

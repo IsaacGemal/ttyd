@@ -43,7 +43,7 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // half-width factor as a division rather than `* 0.5f` does reproduce the original's operand order
 // (`fmuls f30, f1, f0`, since MWCC keeps `x / 2.0f` as `x * 0.5` instead of forcing the constant into FRA),
 // which is where the extra 0.10% comes from.  The tail also hoists `lwz r3, wp->msg` one instruction early
-// (original: lfs 0x8, lfs 0xc, fsubs, lwz r3; ours: lfs 0x8, lwz r3, fsubs, lfs 0xc).  Tried this session:
+// (original: lfs 0x8, lfs 0xc, fsubs, lwz r3; ours: lfs 0x8, lwz r3, fsubs, lfs 0xc).  Tried:
 // every statement/temporary order, explicit/inline fade and lerp helpers, `opt_lifetimes`/`opt_propagation`/
 // `optimize_for_size`/`defer_codegen` pragmas, and the `/ 2.0f` shape on the blend; none changes the
 // factor/product allocation or the tail.  Same class as shadowdrv.c:cylinder.
@@ -72,7 +72,7 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         wp->field_0c = temp + wp->field_1c * t;
     }
 #ifdef MUST_MATCH
-    // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order (rule 7).
+    // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) / 2.0f;
 #else
     halfWidth = scale * (f32)FontGetMessageWidth(wp->msg) * 0.5f;

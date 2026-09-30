@@ -846,13 +846,9 @@ USER_FUNC(shadow_scale_memory) {
 // double and rematerialises the 0.0f load, so shadow_scale_return loses the original's
 // fp register allocation and store order; off keeps both as separate .rodata loads.
 #pragma opt_propagation off
-// The target's int->float setup: the original issues the 0.0f pool `lis` before `xoris`
-// and the magic store after it. The natural `end = 0.0f` schedules them the other way;
-// `end = start - start` (exactly +0 for the finite int-converted `start`, under
-// MUST_MATCH) makes MWCC keep the double in f1 and add the subtraction, matching more of
-// the text. The zero constant's own `lis`/`addi`/`lfs` load and the 4th/5th-arg register
-// order still differ.
-// NONMATCHING (90.00%): scheduling of the intplGetValue float-arg setup; see above.
+// NONMATCHING (86.75%): both constants are materialised, but MWCC issues the 0.0f `lis`
+// after `xoris` and orders the `lfd f0`/`li r3`/`lfs f2`/`li r5` 4th-arg setup
+// differently from the original. The instruction set is identical.
 USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -867,11 +863,7 @@ USER_FUNC(shadow_scale_small) {
         unit->work[1] = 0;
     }
     start = (f32)unit->work[0];
-#ifdef MUST_MATCH
-    end = start - start;
-#else
     end = 0.0f;
-#endif
     part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;

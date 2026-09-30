@@ -191,7 +191,6 @@ EVT_END()
 #pragma opt_dead_assignments off
 #pragma opt_common_subs off
 #pragma opt_propagation off
-// lecture_init matched at 100%.
 static USER_FUNC(lecture_init) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleAudience* aud = BattleAudienceBaseGetPtr();
