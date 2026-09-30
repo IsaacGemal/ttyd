@@ -33,13 +33,6 @@ extern u32 dat_80419778;
 extern u32 dat_80419784;
 extern Vec vec3_802c1598;
 
-// Animated icons store a packed {u16 tplId; u16 frameDelay} frame table starting
-// 8 bytes into the IconBinaryEntry; u16 data[][2] layout, 4 bytes per frame.
-typedef struct IconFrame {
-    u16 tplId;
-    u16 frameDelay;
-} IconFrame;
-
 static u8 dummy_tex[1] = { 0 };
 
 //.sbss
@@ -73,9 +66,20 @@ inline IconEntry* iconGetEntry(const char* name) {
     return NULL;
 }
 
+// MUST_MATCH: the retail code walks the frame table through a pointer cast from the entry start (frames at +2 u32 slots);
+// `data->frames[i]` compiles to the same loads but the registers come out differently (the inline accessor matters too).
+#ifdef MUST_MATCH
 static inline IconFrame* iconFramesOf(IconBinaryEntry* e) {
     return (IconFrame*)e;
 }
+#define ICON_FRAMES_DECL IconFrame* frames;
+#define ICON_FRAMES_INIT(d) frames = iconFramesOf(d);
+#define ICON_FRAME(d, i) frames[(i) + 2]
+#else
+#define ICON_FRAMES_DECL
+#define ICON_FRAMES_INIT(d)
+#define ICON_FRAME(d, i) (d)->frames[i]
+#endif
 
 static void _callback_tpl(s32 error, DVDFileInfo* info) {
     void* userData = info->cb.userData;
@@ -156,8 +160,8 @@ void iconMain(void) {
                 entry->height = data->height;
                 entry->numIcons = data->numIcons;
                 entry->currIcon = 0;
-                entry->tplId = data->tplId;
-                entry->frameDelay = data->frameDelay;
+                entry->tplId = data->frames[0].tplId;
+                entry->frameDelay = data->frames[0].frameDelay;
                 if (data->type & 1) {
                     entry->flags = entry->flags | 0x1000;
                 }
@@ -182,8 +186,8 @@ void iconMain(void) {
                         }
                         data = tmp;
                     }
-                    entry->tplId = ((IconFrame*)data)[entry->currIcon + 2].tplId;
-                    entry->frameDelay = ((IconFrame*)data)[entry->currIcon + 2].frameDelay;
+                    entry->tplId = data->frames[entry->currIcon].tplId;
+                    entry->frameDelay = data->frames[entry->currIcon].frameDelay;
                 }
             }
             if (!(entry->flags & 2)) {
@@ -245,8 +249,8 @@ void iconEntry(const char* name, u16 iconId) {
         entry->height = data->height;
         entry->numIcons = data->numIcons;
         entry->currIcon = 0;
-        entry->tplId = data->tplId;
-        entry->frameDelay = data->frameDelay;
+        entry->tplId = data->frames[0].tplId;
+        entry->frameDelay = data->frames[0].frameDelay;
         if (data->type & 1) {
             entry->flags = entry->flags | 0x1000;
         }
@@ -300,8 +304,8 @@ void iconEntry2D(const char* name, s16 iconId) {
         entry->height = data->height;
         entry->numIcons = data->numIcons;
         entry->currIcon = 0;
-        entry->tplId = data->tplId;
-        entry->frameDelay = data->frameDelay;
+        entry->tplId = data->frames[0].tplId;
+        entry->frameDelay = data->frames[0].frameDelay;
         if (data->type & 1) {
             entry->flags = entry->flags | 0x1000;
         }
@@ -342,8 +346,8 @@ void iconChange(const char* name, u16 iconId) {
     entry->height = data->height;
     entry->numIcons = data->numIcons;
     entry->currIcon = 0;
-    entry->tplId = data->tplId;
-    entry->frameDelay = data->frameDelay;
+    entry->tplId = data->frames[0].tplId;
+    entry->frameDelay = data->frames[0].frameDelay;
     if (data->type & 1) {
         entry->flags = entry->flags | 0x1000;
     }
@@ -369,7 +373,7 @@ void iconDisp(CameraId camId, void* param) {
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
 void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
-    IconFrame* frames;
+    ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -402,24 +406,24 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
     }
     entryp->width = data->width;
     entryp->height = data->height;
-    entryp->tplId = data->tplId;
-    entryp->frameDelay = data->frameDelay;
+    entryp->tplId = data->frames[0].tplId;
+    entryp->frameDelay = data->frames[0].frameDelay;
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
-        frames = iconFramesOf(data);
+        ICON_FRAMES_INIT(data)
         for (i = 0; i < data->numIcons; i++) {
-            total += frames[i + 2].frameDelay;
+            total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < frames[i + 2].frameDelay) {
-                entryp->tplId = frames[i + 2].tplId;
+            if (rest < ICON_FRAME(data, i).frameDelay) {
+                entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
             }
-            rest -= frames[i + 2].frameDelay;
+            rest -= ICON_FRAME(data, i).frameDelay;
         }
     }
     iconGX(mtx, entryp);
@@ -433,7 +437,7 @@ void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
 
 // NONMATCHING (96.00%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
-    IconFrame* frames;
+    ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -457,24 +461,24 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     }
     entryp->width = data->width;
     entryp->height = data->height;
-    entryp->tplId = data->tplId;
-    entryp->frameDelay = data->frameDelay;
+    entryp->tplId = data->frames[0].tplId;
+    entryp->frameDelay = data->frames[0].frameDelay;
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
-        frames = iconFramesOf(data);
+        ICON_FRAMES_INIT(data)
         for (i = 0; i < data->numIcons; i++) {
-            total += frames[i + 2].frameDelay;
+            total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < frames[i + 2].frameDelay) {
-                entryp->tplId = frames[i + 2].tplId;
+            if (rest < ICON_FRAME(data, i).frameDelay) {
+                entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
             }
-            rest -= frames[i + 2].frameDelay;
+            rest -= ICON_FRAME(data, i).frameDelay;
         }
     }
     PSMTXConcat(camera->view, mtx, view);
@@ -483,7 +487,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
 
 // NONMATCHING (95.50%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
-    IconFrame* frames;
+    ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -507,24 +511,24 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     }
     entryp->width = data->width;
     entryp->height = data->height;
-    entryp->tplId = data->tplId;
-    entryp->frameDelay = data->frameDelay;
+    entryp->tplId = data->frames[0].tplId;
+    entryp->frameDelay = data->frames[0].frameDelay;
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
-        frames = iconFramesOf(data);
+        ICON_FRAMES_INIT(data)
         for (i = 0; i < data->numIcons; i++) {
-            total += frames[i + 2].frameDelay;
+            total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < frames[i + 2].frameDelay) {
-                entryp->tplId = frames[i + 2].tplId;
+            if (rest < ICON_FRAME(data, i).frameDelay) {
+                entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
             }
-            rest -= frames[i + 2].frameDelay;
+            rest -= ICON_FRAME(data, i).frameDelay;
         }
     }
     PSMTXConcat(camera->view, pos, view);
@@ -534,7 +538,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
 // The frame table is reached through a typed accessor: a cast at each use moves `data` into another register.
 void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
     u16 tplId;
-    IconFrame* frames;
+    ICON_FRAMES_DECL
     IconBinaryEntry* data;
 
     if (!icon_tpl_ok || !icon_bin_ok) {
@@ -549,23 +553,23 @@ void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
             data = (IconBinaryEntry*)((u8*)bin + bin->offset[(u16)iconId]);
         }
     }
-    tplId = data->tplId;
+    tplId = data->frames[0].tplId;
     if (data->numIcons > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
-        frames = iconFramesOf(data);
+        ICON_FRAMES_INIT(data)
         for (i = 0; i < data->numIcons; i++) {
-            total += frames[i + 2].frameDelay;
+            total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < frames[i + 2].frameDelay) {
-                tplId = frames[i + 2].tplId;
+            if (rest < ICON_FRAME(data, i).frameDelay) {
+                tplId = ICON_FRAME(data, i).tplId;
                 break;
             }
-            rest -= frames[i + 2].frameDelay;
+            rest -= ICON_FRAME(data, i).frameDelay;
         }
     }
     TEXGetGXTexObjFromPalette(icon_tpl, texObj, tplId);
