@@ -162,5 +162,5 @@ for n in safe:
     if changed:
         print(f"  {n}: different code at the same score: " + ", ".join(changed))
 if out_json:
-    json.dump({"unit": unit_path, "results": results}, open(out_json, "w"))
+    json.dump({"unit": unit_path, "results": results}, open(out_json, "w"), default=lambda o: o.hex() if isinstance(o, bytes) else str(o))
 subprocess.run(["trash", work])
