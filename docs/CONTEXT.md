@@ -2499,3 +2499,21 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   `_get_itemsteal_param` and ac_lst_rc_keep want it as `u8`. `_get_itemsteal_param` casts at the use.
 - yoshi `yoshi_original_color_anim_set` (98.4%): six strings through one base register and a seven-entry jump table (`case 6:`
   falling into `default:` is what gives the table its seventh slot).
+
+## Grind 27 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Six more units link**: eff_syuryou, eff_hokori_n64, eff_kemuri2_n64, eff_pikkyolo_n64, eff_pokopi_pipo_n64, evt_snd.
+- **Data the unit only reaches through a base symbol is dropped by the linker** unless it is force-kept. eff_syuryou reaches its
+  two `.rodata` strings as offsets from the vec3 anchor, and eff_hokori's `.data` (float pairs and vertex arrays) is reached
+  through the previous unit's last object `lbl_8039D5D0`; with both compiled, all functions and all section scores were 100%
+  yet the dol lost the bytes (hokori's 224-byte `.data`, syuryou's 32 bytes of `.rodata`/`.sdata2` shifted everything after).
+  `#pragma force_active on` / `reset` around the definitions keeps them. The symptom to look for: every section 100%, autolink
+  says checksum mismatch, and the dol's section sizes are short by the size of the unit's own data.
+- The float pairs before the vertex arrays (`{ -1.0f, 1.0f }`) need `__declspec(section ".data")`, else 8-byte objects go to `.sdata`.
+- **Converting `extern const f32` to literals moves FP loads** (pool_literals.py): hokori `effHokoriMain` and pokopi_pipo's
+  `-1.0f` multiply came out at 99.1 to 99.7% until the constant went through a `f32 k = ...;` temp under `MUST_MATCH` (natural
+  expression under `#else`), the same trick as the int-to-float `k` in bush. fire_dust (`main_dl`, zero GXColor literal
+  schedules the load of the magic double differently) and kemuri10 (`fcmpu` operand order, `Disp` frame 0x10 larger) stay
+  unconverted.
+- evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
+  at link. They were not in the unit's target, so they are gone.

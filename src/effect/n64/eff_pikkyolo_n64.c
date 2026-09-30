@@ -8,12 +8,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const Vec vec3_802fb370 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb380 = 4503601774854144.0;
-const char str_802FB388[12] = "PikkyoloN64";
 
-GXColor unk_80423200;
-GXColor unk_80423204;
 
 static u32 size16x16_tex16x16_vtx[0xE0 / 4] = {
 	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
@@ -40,7 +35,7 @@ EffectEntry* effPikkyoloN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	s32 i;
 
 	entry = effEntry();
-	entry->type = str_802FB388;
+	entry->type = "PikkyoloN64";
 	entry->count = 6;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effPikkyoloN64Data) * 6);
 	entry->userdata = data;
@@ -129,7 +124,7 @@ void effPikkyoloMain(EffectEntry* effect) {
 }
 
 static inline void effPikkyoloSetColor1(effPikkyoloN64Data* data, s32 alpha) {
-	GXColor color = unk_80423200;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->r;
 	color.g = data->g;
 	color.b = data->b;
@@ -138,7 +133,7 @@ static inline void effPikkyoloSetColor1(effPikkyoloN64Data* data, s32 alpha) {
 }
 
 static inline void effPikkyoloSetColor2(effPikkyoloN64Data* data) {
-	GXColor color = unk_80423204;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->r2;
 	color.g = data->g2;
 	color.b = data->b2;
