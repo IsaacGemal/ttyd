@@ -22,12 +22,6 @@ typedef struct TimingWideDecWork {
 extern const Vec vec3_802fd630[12];
 
 // sdata2 constants.
-extern const f32 float_neg200_80420508;
-extern const f32 float_50_8042050c;
-extern const f32 float_1_80420510;
-extern const f32 float_30_80420514;
-extern const f32 float_neg300_80420518;
-extern const f32 float_0_8042051c;
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -80,15 +74,15 @@ static void actionCommandDisp(f32 x, f32 y) {
 	case 0:
 		if (dec->field_0x04 > 0) {
 			Vec v = vecs[0];
-			v.x = float_neg200_80420508 + x;
-			v.y = float_50_8042050c + y;
-			iconDispGx(&v, 0x10, down, float_1_80420510);
+			v.x = -200.f + x;
+			v.y = 50.f + y;
+			iconDispGx(&v, 0x10, down, 1.0f);
 		}
 		else {
 			Vec v = vecs[1];
-			v.x = float_neg200_80420508 + x;
-			v.y = float_50_8042050c + y;
-			iconDispGx(&v, 0x10, up, float_1_80420510);
+			v.x = -200.f + x;
+			v.y = 50.f + y;
+			iconDispGx(&v, 0x10, up, 1.0f);
 		}
 		break;
 	case 2:
@@ -99,29 +93,29 @@ static void actionCommandDisp(f32 x, f32 y) {
 		if (!(*(s32*)&ac->field_34[0x00] & 0x10)) {
 			if (dec->field_0x04 > 0) {
 				Vec v = vecs[2];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, down, 1.0f);
 			}
 			else {
 				Vec v = vecs[3];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, up, 1.0f);
 			}
 		}
 		else {
 			if (dec->field_0x04 > 0) {
 				Vec v = vecs[4];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, up, 1.0f);
 			}
 			else {
 				Vec v = vecs[5];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, down, 1.0f);
 			}
 		}
 		break;
@@ -131,44 +125,44 @@ static void actionCommandDisp(f32 x, f32 y) {
 			    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
 				if (dec->field_0x04 > 0) {
 					Vec v = vecs[6];
-					v.x = float_neg200_80420508 + x;
-					v.y = float_50_8042050c + y;
-					iconDispGx(&v, 0x10, up, float_1_80420510);
+					v.x = -200.f + x;
+					v.y = 50.f + y;
+					iconDispGx(&v, 0x10, up, 1.0f);
 				}
 				else {
 					Vec v = vecs[7];
-					v.x = float_neg200_80420508 + x;
-					v.y = float_50_8042050c + y;
-					iconDispGx(&v, 0x10, down, float_1_80420510);
+					v.x = -200.f + x;
+					v.y = 50.f + y;
+					iconDispGx(&v, 0x10, down, 1.0f);
 				}
 			}
 			else {
 				if (dec->field_0x04 > 0) {
 					Vec v = vecs[8];
-					v.x = float_neg200_80420508 + x;
-					v.y = float_50_8042050c + y;
-					iconDispGx(&v, 0x10, down, float_1_80420510);
+					v.x = -200.f + x;
+					v.y = 50.f + y;
+					iconDispGx(&v, 0x10, down, 1.0f);
 				}
 				else {
 					Vec v = vecs[9];
-					v.x = float_neg200_80420508 + x;
-					v.y = float_50_8042050c + y;
-					iconDispGx(&v, 0x10, up, float_1_80420510);
+					v.x = -200.f + x;
+					v.y = 50.f + y;
+					iconDispGx(&v, 0x10, up, 1.0f);
 				}
 			}
 		}
 		else {
 			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C]) {
 				Vec v = vecs[10];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, down, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, down, 1.0f);
 			}
 			else {
 				Vec v = vecs[11];
-				v.x = float_neg200_80420508 + x;
-				v.y = float_50_8042050c + y;
-				iconDispGx(&v, 0x10, up, float_1_80420510);
+				v.x = -200.f + x;
+				v.y = 50.f + y;
+				iconDispGx(&v, 0x10, up, 1.0f);
 			}
 		}
 		break;
@@ -196,10 +190,10 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	case 1:
 	case 2:
 		if (*(s32*)&ac->field_34[0x00] & 1) {
-			disp->iconX = float_30_80420514;
+			disp->iconX = 30.f;
 		}
 		else {
-			disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80420518, float_30_80420514);
+			disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.f, 30.f);
 		}
 		actionCommandDisp(disp->iconX, disp->iconY);
 		if (disp->counter > 0) {
@@ -222,15 +216,15 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 		}
 		if (disp->counter >= 0x28) {
 			if (flag != 0) {
-				disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80420514,
-				                            float_neg300_80420518);
+				disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.f,
+				                            -300.f);
 			}
 			else {
-				disp->iconX = float_30_80420514;
+				disp->iconX = 30.f;
 			}
 		}
 		else {
-			disp->iconX = float_30_80420514;
+			disp->iconX = 30.f;
 		}
 		actionCommandDisp(disp->iconX, disp->iconY);
 		if (disp->counter < 0x3C) {
@@ -267,8 +261,8 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 	switch (ac->mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_80420518;
-		disp->iconY = float_0_8042051c;
+		disp->iconX = -300.f;
+		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		dec->field_0x0C = 0;
 		dec->field_0x08 = 0;
@@ -458,3 +452,5 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 	return 1;
 }
 #pragma optimize_for_size reset
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
