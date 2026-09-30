@@ -3,6 +3,7 @@
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 #include "evt/evt_cmd.h"
+#include "driver/camdrv.h"
 
 #define PUNI_DATA_MAX 211
 #define PUNI_TEX_INFO_MAX 200
@@ -41,7 +42,7 @@ void puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag);
 void puniMoveDecel(PuniData* punidat);
 
 PuniTexInfo* puniGetTex(void);
-void evt_icon_disp_func(void);  // TODO: real signature
+void evt_icon_disp_func(CameraId camId, void* param);
 PuniTexInfo* _make_texbuf(PuniTexInfo* texbuf, s32 count, const char* a3, const char* a4, f32 a5);
 USER_FUNC(evt_make_texbuf);
 void puniAnimCount(void);  // TODO: real signature
@@ -164,23 +165,23 @@ USER_FUNC(evt_puni_main);
 void puni_init_posy(void);  // TODO: real signature
 void puni_init_para(void);  // TODO: real signature
 void toge_init_para(void);  // TODO: real signature
-void evt_puni_rnd_pos(void);  // TODO: real signature
-void evt_puni_get_systemmode(void);  // TODO: real signature
+USER_FUNC(evt_puni_rnd_pos);
+USER_FUNC(evt_puni_get_systemmode);
 USER_FUNC(evt_puni_set_systemmode);
 USER_FUNC(evt_puni_wait_systemmode);
-void evt_puni_debug_info(void);  // TODO: real signature
+USER_FUNC(evt_puni_debug_info);
 USER_FUNC(evt_puni_setup);
 USER_FUNC(evt_toge_setup);
 void _puniVAtari(void);  // TODO: real signature
 void puniHagurePos(void);  // TODO: real signature
 USER_FUNC(evt_puni_exit);
 USER_FUNC(evt_puni_init_puni);
-void evt_puni_init_teki(void);  // TODO: real signature
+USER_FUNC(evt_puni_init_teki);
 USER_FUNC(evt_puni_get_position);
 USER_FUNC(evt_puni_set_position);
 USER_FUNC(evt_puni_get_dir);
 USER_FUNC(evt_puni_set_dir);
-void evt_puni_get_anim(void);  // TODO: real signature
+USER_FUNC(evt_puni_get_anim);
 USER_FUNC(evt_puni_set_anim);
 USER_FUNC(evt_puni_korokoro);
 USER_FUNC(evt_puni_move_position);
@@ -188,7 +189,7 @@ USER_FUNC(evt_puni_move_position2);
 USER_FUNC(evt_puni_jump_position);
 USER_FUNC(evt_puni_get_mode);
 USER_FUNC(evt_puni_set_mode);
-void evt_puni_setsudan(void);  // TODO: real signature
+USER_FUNC(evt_puni_setsudan);
 USER_FUNC(evt_puni_get_flag);
 USER_FUNC(evt_puni_flag_onoff);
 USER_FUNC(evt_puni_dokan_onoff);
@@ -204,7 +205,7 @@ USER_FUNC(evt_puni_count_area);
 USER_FUNC(evt_puni_zenmetsu_check);
 USER_FUNC(evt_puni_landon_check);
 USER_FUNC(evt_puni_pera_onoff);
-void evt_puni_fade_onoff(void);  // TODO: real signature
+USER_FUNC(evt_puni_fade_onoff);
 USER_FUNC(evt_puni_attack_on);
 USER_FUNC(evt_puni_puninum_onoff);
 USER_FUNC(evt_puni_puninum_alpha);
@@ -216,7 +217,7 @@ USER_FUNC(evt_target_set_position);
 USER_FUNC(evt_target_set_soko);
 void npcGetTribeName(void);  // TODO: real signature
 USER_FUNC(puni_piders_check_func);
-void puni_disp_info_kassencheck(void);  // TODO: real signature
+USER_FUNC(puni_disp_info_kassencheck);
 void puniCountDisp(void);  // TODO: real signature
 USER_FUNC(puni_disp_info_sub);
 EVT_DEF(puni_piders_check);
