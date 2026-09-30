@@ -22,7 +22,6 @@ typedef struct IndirectData {
 	smartEntry* texBuffer; // 0x34
 } IndirectData;
 
-extern const char str_8030134C[];
 extern const u32 dat_804222c0;
 extern const f32 float_deg2rad_804222c4;
 extern const f32 float_25_804222c8;
@@ -43,7 +42,7 @@ EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	IndirectData* data;
 
 	entry = effEntry();
-	entry->type = str_8030134C;
+	entry->type = "Indirect";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(IndirectData));
 	entry->userdata = data;
@@ -226,3 +225,19 @@ void effIndirectDisp(CameraId camId, void* param) {
 	GXPosition3f32(half, half, IND_VERT_ZERO);
 	GXTexCoord2f32(IND_VERT_ZERO, v);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_804222c0 = 0xFFFFFF00;
+const f32 float_deg2rad_804222c4 = 0.017453292f;
+const f32 float_25_804222c8 = 25.0f;
+const f32 float_1p2667_804222cc = 1.2666667f;
+const f32 float_0p5_804222d0 = 0.5f;
+const f32 float_neg0p5_804222d4 = -0.5f;
+const f32 float_0p505_804222d8 = 0.505f;
+const f32 float_1_804222dc = 1.0f;
+const f32 float_2_804222e0 = 2.0f;
+const f32 float_32_804222e4 = 32.0f;
+const f32 float_16_804222e8 = 16.0f;
+const f32 float_0_804222ec = 0.0f;
+const f32 float_neg5_804222f0 = -5.0f;
+const f32 float_neg0p05_804222f4 = -0.05f;
