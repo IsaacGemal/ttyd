@@ -54,7 +54,6 @@ const char str_802EF62C[] = "SFX_BTL_PINCH1";
 
 //local prototypes
 
-// Needed: -O4,p unrolls this loop 4x; the original is not unrolled.
 void _mapobj_data_touch_scale(s32 kind) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	s32 i;
@@ -67,7 +66,6 @@ void _mapobj_data_touch_scale(s32 kind) { //1:1
 	}
 }
 
-// Needed: -O4,p inlines btlseqInit into this function; the original calls it.
 // NONMATCHING (79.18%): switch dispatch matches, but btlseqFirstAct/btlseqTurn are still stubs, so the
 // compiler inlines them away and the case-3 compare/branch tree differs.
 void BattleSequenceManager(void) { //1:1
@@ -91,8 +89,7 @@ void BattleSequenceManager(void) { //1:1
 	}
 }
 
-// Needed: -O4,p drops stmw; the original saves r28-r31 with stmw.
-void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forced
+void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 	BattleUnit* unit;
 	BOOL v6;
 	int i;
@@ -172,10 +169,9 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) { //1:1, needs stmw forc
 	}
 }
 
-// Needed: without dont_inline, -O4,p inlines this whole body into BattleSequenceManager.
+// Needed: without dont_inline this whole body is inlined into BattleSequenceManager; the original calls it.
 #pragma dont_inline on
-// Needed: -O4,p saves r30/r31 with two stw; the original uses stmw.
-void btlseqInit(BattleWork* wp) { //1:1, needs stmw
+void btlseqInit(BattleWork* wp) {
 	const char* base = (const char*)N_weapon_lucky_start;
 	MarioWork* mario;
 	PartyEntry* party;
@@ -276,7 +272,6 @@ void btlseqTurn(BattleWork* wp) {
 extern f32 lbl_80360FE0[];
 extern GXColor dat_8041c26c;
 
-// Needed: -O4,p saves r30/r31 with two individual stw; the original saves them with stmw.
 // The table loads use `add base,idx*4; lwz off(base)` where the original uses `addi base,off; lwzx`;
 // the pooled int->float double is a local @770, not double_to_int_802ef590 (the file's other
 // int->float users are not written yet); and MWCC swaps two temps (r6/r7). Control flow matches.
@@ -315,7 +310,6 @@ void btlseqEnd(BattleWork* wp) {
 
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 BOOL BattlePhaseEndCheck(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;
@@ -358,7 +352,6 @@ void btlseqPhase(BattleWork* wp) { //1:1
 	}
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleUnitKind* kind;
 	s32 i;
@@ -390,7 +383,6 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleFogEndCheck();
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 // NONMATCHING (80.03%): control-flow layout of the four event-id ifs differs (the original checks the condition
 // after the body) and wp/i land in r28/r30 instead of r30/r28; logic is verified against the asm.
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
@@ -484,7 +476,6 @@ BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	return TRUE;
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	BattleUnit* unit;
 	BattleUnitPart* part;
@@ -533,7 +524,6 @@ typedef struct PhaseEvtEntry {
 	s32 value;     //0x4
 } PhaseEvtEntry;
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
 	BattleUnit* unit;
@@ -578,7 +568,6 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 	}
 }
 
-// Needed: -O4,p unrolls the constant-count loop 4x and drops stmw; the original does neither.
 // NONMATCHING (94.40%): logic matches; the original keeps wp in r31 and adds 0x120 to the loop offset
 // (r0 = offset + 0x120; lwzx r0, wp, r0) while mine hoists order = wp + 0x120 into r31, and uses one
 // fewer saved register (stmw r22 vs r23).
@@ -628,7 +617,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 	}
 }
 
-// NONMATCHING (94.43%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
+// NONMATCHING (96.72%): logic and field offsets match; callee-saved registers are rotated (wp r28 vs
 // r27, ret r30 vs r31, offset r27 vs r30) so the whole body shifts by one register.
 BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	BattleUnit* unit;
