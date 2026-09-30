@@ -137,9 +137,8 @@ static inline Vec butterflyMakeVec(f32 x, f32 y, f32 z) {
 // opt_common_subs off required: with CSE on MWCC reuses the float_0_8041eb80 result
 // register for the later sqrtf `x > 0.0f` test (f2 cached vs the target's fresh f0).
 #pragma opt_common_subs off
-// NONMATCHING (99.89%): every instruction matches except the position x/z registers in the two
-// delta computations and the fallback (the target loads data->position.x into f3 and .z into f5;
-// this build assigns them the other way round).
+// The position components are loaded into scalars before the delta math; with the direct
+// data->position member form MWCC assigns the x/z temporaries to the opposite FPRs (f5/f3).
 void effButterflyMain(EffectEntry* effect) {
     effButterflyData* data = effect->userdata;
     Vec position;
@@ -148,6 +147,9 @@ void effButterflyMain(EffectEntry* effect) {
     f32 targetX;
     f32 targetY;
     f32 targetZ;
+    f32 px;
+    f32 py;
+    f32 pz;
     f32 dx;
     f32 dy;
     f32 dz;
@@ -177,13 +179,16 @@ void effButterflyMain(EffectEntry* effect) {
         targetY = data->field_0x18.y + (f32)(rand() % (s32)data->field_0x38);
         targetZ = data->field_0x34 * (f32)cos(angle) + data->field_0x18.z;
         data->field_0x30 = rand() % 100 + 10;
-        dx = targetX - data->position.x;
-        dy = targetY - data->position.y;
-        dz = targetZ - data->position.z;
+        px = data->position.x;
+        py = data->position.y;
+        pz = data->position.z;
+        dx = targetX - px;
+        dy = targetY - py;
+        dz = targetZ - pz;
         if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
-            dx = data->field_0x18.x - data->position.x;
-            dy = data->field_0x18.y - data->position.y;
-            dz = data->field_0x18.z - data->position.z;
+            dx = data->field_0x18.x - px;
+            dy = data->field_0x18.y - py;
+            dz = data->field_0x18.z - pz;
             if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
                 dx = float_1_8041eb8c;
                 dy = float_0_8041eb80;

@@ -2618,6 +2618,18 @@ Linked seven more wave-28 units: `eff_majinai`, `eff_hibashira`, `eff_teresa`, `
 - Function order: `fn_order.py` reports the source order that emits the target's `.text` order; `event/evt_kinopio` has its 20 functions in the opposite order, and reversing them drops `paper_on` to 99.78% (r5/r6 swap for the `str` base). Data sections of `evt_kinopio` already equal the target (kept out of the tree: the unit's matched_data metric fell without the link).
 - Still open: `eff_mist2` (`-16.0f * 0.5f` folds when the 16 is a literal; the named version drops Disp to 91%), `eff_nokotarou` (named `float_0/100/1` defined before the code fold and duplicate the pool), `evt_kinopio`.
 
+## Wave 29: near-misses again (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Wave 28's recipe on the next 48 dol files (units with one or two open functions), 02:42-03:55, from main 1b631ac: all 48
+merged cleanly. **25 of 48 reached 100%, 13 improved, 10 unchanged, 0 worse**, confirming wave 28. Fixed at collection:
+four units whose data got worse (deleted named definitions and .sbss2 objects in opuku_jetwrain, externs for constants
+the unit pools itself in snow_dust and kemutest, a removed double in starpoint). The wave also fixed three bugs on
+main: crane_timing's 0x3EB fall-through, opuku_jetwrain's TEV register, and release's case 2 fall-through.
+
+**Follow-ups:** `BattleActionCommandGetDifficulty` returns a word (`lbz r3,0x1cbd(r3); blr`), but battle_ac.h types it
+`s8`, so ac_stick_keep_left calls it through a function-pointer cast; romfont's glyph width is `u16` (the asm uses
+`lhz`), but include/romfont.h types it `s16`.
+
 ## Wave 27: the REL finishing pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 Scope, per Claude #1's directive after #51, picked by `scratch/wave27/pick_units.py`: NonMatching REL sources with

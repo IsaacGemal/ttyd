@@ -185,20 +185,17 @@ void battleAcDelete_TimingWide(BattleWork* work) {
 }
 
 
-// NONMATCHING (98.66%): only the disp-parameter pointer differs. The original materialises
-// `disp = param + 0x1F20` once (`addi r31, r4, 0x1f20`) and uses `0x14(r31)`..`0x20(r31)`; ours keeps `param`
-// in r31 and folds disp into `0x1f34(r31)`..`0x1f40(r31)`, which also moves the `flag` bool from r5 to r4.
 void battleAcDisp_TimingWide(CameraId camId, void* param) {
-	BattleACDispParams* disp = (BattleACDispParams*)((u8*)param + 0x1F20);
-	BattleWork* work = (BattleWork*)param;
-	TimingWideDecWork* dec = (TimingWideDecWork*)((u8*)param + 0x1F4C);
+	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	BattleACDispParams* disp = &ac->dispParams;
+	TimingWideDecWork* dec = (TimingWideDecWork*)&ac->field_0x2BC[0];
 	s32 flag;
 
 	switch (dec->field_0x0C) {
 	case 0:
 	case 1:
 	case 2:
-		if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
+		if (*(s32*)&ac->field_34[0x00] & 1) {
 			disp->iconX = float_30_80420514;
 		}
 		else {
@@ -215,12 +212,12 @@ void battleAcDisp_TimingWide(CameraId camId, void* param) {
 	case 4:
 	case 5:
 		flag = 1;
-		if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
-		    (work->actionCommands.result & 2)) {
+		if ((*(s32*)&ac->field_34[0x00] & 2) &&
+		    (ac->result & 2)) {
 			flag = 0;
 		}
-		if ((*(s32*)&work->actionCommands.field_34[0x00] & 4) &&
-		    !(work->actionCommands.result & 2)) {
+		if ((*(s32*)&ac->field_34[0x00] & 4) &&
+		    !(ac->result & 2)) {
 			flag = 0;
 		}
 		if (disp->counter >= 0x28) {
@@ -253,7 +250,7 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (95.86%): the state machine and all logic match; MWCC picked different callee-saved
+// NONMATCHING (96.24%): the state machine and all logic match; MWCC picked different callee-saved
 // registers. The original keeps work r30, dec r31, disp r29 (saving r28-r31); ours keeps work r31, disp r30,
 // autoCommand r29 and rematerialises dec (saving r29-r31). ~141 instructions differ only in register fields.
 s32 battleAcMain_TimingWide(BattleWork* work) {

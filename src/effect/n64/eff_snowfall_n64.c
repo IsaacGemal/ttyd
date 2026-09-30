@@ -178,11 +178,29 @@ void effSnowfallMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 10, effSnowfallDisp, effect);
 }
 
-// (1) the colour is built at r1+0x14 and word-copied down to the argument slot at r1+0x10, while the
-//     original builds at r1+0x10 and copies up to r1+0x14 (the known mwcc GXColor quirk also recorded on
-//     eff_booboo_n64.c / eff_confetti_n64.c);
-// (2) the 8 differing instructions are that build/copy pair and its operands; everything else is identical.
-// NONMATCHING (99.97%): the temporary GXColor argument to GXSetTevColor in the blend branch is one word off.
+// MUST_MATCH: the original builds GXSetTevColor's by-value GXColor argument in a scratch slot and word-copies
+// it up into the outgoing argument slot.  Building it in a plain local makes mwcc put the build in the higher of
+// the two slots (the known GXColor quirk); when the build and the call both live in an inline, mwcc keeps the
+// scratch below the outgoing copy, as the original does.  Natural form under #else.
+#ifdef MUST_MATCH
+static inline void effSnowfallSetBlendColor(GXColor* blend, s32 alpha) {
+	GXColor c = unk_80423268;
+	c.r = blend->r * 0xFF;
+	c.g = blend->g * 0xFF;
+	c.b = blend->b * 0xFF;
+	c.a = alpha * blend->a;
+	GXSetTevColor(1, c);
+}
+static inline void effSnowfallSetPlainColor(s32 alpha) {
+	GXColor c = dat_8041fd10;
+	c.a = alpha;
+	GXSetTevColor(1, c);
+}
+#endif
+
+// (1) The original builds the blend/flat GXColor in a scratch slot and copies it to the outgoing argument slot
+//     (local below the copy); a plain local lands the other way round.  The effSnowfallSet*Color inlines fix it.
+// (2) The rest of the function matches the original instruction for instruction.
 void effSnowfallDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effSnowfallData* data;
@@ -231,16 +249,24 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 	GXLoadTexObj(&texObj, 0);
 	if (mapGetWork()->entries[0].flags & 2) {
 		mapGetBlend(&blend);
+#ifdef MUST_MATCH
+		effSnowfallSetBlendColor(&blend, alpha);
+#else
 		color = unk_80423268;
 		color.r = blend.r * 0xFF;
 		color.g = blend.g * 0xFF;
 		color.b = blend.b * 0xFF;
 		color.a = alpha * blend.a;
 		GXSetTevColor(1, color);
+#endif
 	} else {
+#ifdef MUST_MATCH
+		effSnowfallSetPlainColor(alpha);
+#else
 		color = dat_8041fd10;
 		color.a = alpha;
 		GXSetTevColor(1, color);
+#endif
 	}
 	GXSetCullMode(0);
 	effSetVtxDescN64(eff_snowfall_v);

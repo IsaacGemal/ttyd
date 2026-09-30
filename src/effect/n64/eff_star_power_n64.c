@@ -26,8 +26,13 @@ extern const f32 float_2p044_8041fe78;
 extern const f32 float_0p7_8041fe7c;
 extern const f32 float_0p3_8041fe80;
 
+#ifdef MUST_MATCH
+// Non-const and forced into .rodata: with a plain `const` MWCC hoists two of the three
+// word loads into the prologue saves and the schedule no longer matches.
+__declspec(section ".rodata") Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb728 = 4503601774854144.0;
+#endif
 // Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
@@ -38,14 +43,12 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-const char str_802FB730[] = "StarPowerN64";
-
 EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
     EffStarPowerData* data;
 
     effect = effEntry();
-    effect->type = str_802FB730;
+    effect->type = "StarPowerN64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(EffStarPowerData));
     effect->userdata = data;
@@ -77,10 +80,13 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     return effect;
 }
 
-// The int->float conversions fold to an anonymous @216 local in our object (the original uses the
-// global double_to_int_802fb728; project-wide folded-pool issue, cf. eff_rappa/win_log), MWCC hoists
-// two vec3_802fb718 words into the prologue saves, and a few f-register choices differ.
-// NONMATCHING (98.55%): those two compiler behaviours plus the FP allocation.
+// NONMATCHING (99.86%): the instruction sequence is identical (only the int->float pool double
+// is an anonymous @216 in our object, which objdiff does not score against the original's
+// double_to_int_802fb728); the remaining difference is the FP register allocation in the
+// type==1 block: the original keeps the second (f32)counter conversion in f2 and the
+// float_4*counter product in f7, ours uses f3 and reuses f4. The pool double is placed after
+// vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
+// would be laid out before the compiler's pooled constants).
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
     Vec position = initializeVec((Vec*)&data->x);

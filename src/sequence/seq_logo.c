@@ -430,7 +430,9 @@ void dummy_draw(CameraId camId, void* param) {
 }
 
 //param is unused
-// NONMATCHING (99.92%): the selection-box message keeps the 2^52 constant in f5 instead of f4.
+// NONMATCHING (99.92%): in the selection-box call the int->float magic constant lands in f5 and the
+// 0.7f*width product in f4; the original swaps them (magic f4, product f5). Every source shape tried keeps
+// the compiler's reverse temp-register order (declaration permutations, named temps, inline helpers, pragmas).
 void progDisp(CameraId camId, void* param) {
 	static OSTime time; //time instance 2
 	const char* msg;

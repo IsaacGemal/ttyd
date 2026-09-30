@@ -32,6 +32,26 @@ typedef struct effFallLeafData {
 	effFallLeafParticle particle[4]; // 0x30
 } effFallLeafData;
 
+#ifdef MUST_MATCH
+// Match-only: a second description of the same 0x30-byte record as effFallLeafData/effFallLeafParticle.
+// Walking the loop with `data++` over this type is what reproduces the original's allocation; the
+// natural form (under #else in effFallLeafMain) walks effFallLeafData::particle instead.
+typedef struct effFallLeafMainData {
+	s32 type;        // 0x00
+	f32 x;           // 0x04
+	f32 y;           // 0x08
+	f32 z;           // 0x0C
+	f32 field_0x10;  // 0x10
+	f32 field_0x14;  // 0x14
+	f32 field_0x18;  // 0x18
+	f32 field_0x1C;  // 0x1C
+	f32 field_0x20;  // 0x20
+	s32 field_0x24;  // 0x24
+	s32 life;        // 0x28
+	s32 counter;     // 0x2C
+} effFallLeafMainData;
+#endif
+
 extern const u32 dat_8041edb0;
 extern const u32 dat_8041edb4;
 extern const u32 dat_8041edb8;
@@ -146,15 +166,96 @@ EffectEntry* effFallLeafN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 	return effect;
 }
 
-// The code and the original's instruction sequence line up; what still
-// differs is float callee-saved register allocation. The original puts the loop-invariant
-// constants in f25..f31 with the last one (0.5) wrapping to f24 (load order 6.2832, 2, 360,
-// -0.05, 0.2, double_to_int, 10, 0.5); MWCC instead assigns them f24..f31, so every constant
-// operand in the loop is one register low. The few non-register diffs are the hoisted setup
-// order (part of the constant loads around the `i = 1` / particle-pointer init) that follows
-// from that allocation; declaring the 0.5 as a variable does move it to f24 and fixes the
-// constants but hoists its load to the top and scores lower.
-// NONMATCHING (95.41%): float callee-saved register allocation is one register low (see above).
+// Every instruction is byte-identical except the order of the last two loop-setup float loads:
+// retail loads f31 (10.0) then f24 (0.5), this compiler emits the 0.5 load one slot earlier.
+// Retail's allocator hands the 8 loop constants f25..f31 and wraps the last (0.5) into f24;
+// MWCC 2.6 instead hands them f24..f31, so without help every constant operand is one register
+// low. `half` (MUST_MATCH) pins 0.5 to f24; its definition has to sit before the `field_0x18` sin
+// call so the value stays live and is kept in a callee-saved FPR, which is also what schedules it
+// ahead of the 10.0 load.
+// NONMATCHING (99.96%): the f24 (0.5) and f31 (10.0) loop-setup loads are swapped.
+#ifdef MUST_MATCH
+void effFallLeafMain(EffectEntry* effect) {
+	effFallLeafMainData* data = effect->userdata;
+	Vec position2;
+	Vec position;
+	s32 type;
+	s32 life;
+	s32 counter;
+	s32 idx;
+	s32 i;
+	f32 s;
+	f32 t;
+#ifdef MUST_MATCH
+	// MUST_MATCH: `half` pins 0.5 to f24 and `sn` pins the case-branch blend to the target's
+	// scratch registers; both only exist to reproduce the original allocation (see above).
+	f32 half;
+	f32 sn;
+#endif
+
+	position = vec3_802fa538;
+	position.x = data->x;
+	position.y = data->y;
+	position.z = data->z;
+	position2 = position;
+
+	data->life--;
+	data->counter++;
+	if (data->life < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->counter;
+	type = data->type;
+	life = data->life;
+	if (counter < 10) {
+		data->field_0x24 = (s32)(float_0p3_8041edd4 * (f32)(0xFF - data->field_0x24) + (f32)data->field_0x24);
+	}
+	if (life < 10) {
+		data->field_0x24 = (s32)((f32)data->field_0x24 * float_0p8_8041edd8);
+	}
+	idx = counter + 20;
+	i = 1;
+	data++;
+	for (; i < effect->count; idx += 20, i++, data++) {
+		s = (f32)sin(float_6p2832_8041eddc * (float_2_8041ede0 * data->field_0x18) / float_360_8041ede4);
+		data->field_0x14 += float_neg0p05_8041ede8;
+		t = float_0p2_8041edec * s;
+		data->field_0x10 += t;
+		switch (type) {
+		case 0:
+		case 2:
+		case 3:
+		case 4:
+			data->field_0x10 *= float_0p94_8041edf0;
+#ifdef MUST_MATCH
+			sn = (f32)sin(float_6p2832_8041eddc * data->field_0x18 / float_360_8041ede4);
+			data->field_0x14 *= float_0p05_8041edf8 * sn + float_0p95_8041edf4;
+#else
+			data->field_0x14 *= float_0p05_8041edf8 * (f32)sin(float_6p2832_8041eddc * data->field_0x18 / float_360_8041ede4) + float_0p95_8041edf4;
+#endif
+			break;
+		case 1:
+			data->field_0x14 += float_neg0p05_8041ede8;
+			data->field_0x10 *= float_0p92_8041edfc;
+			break;
+		}
+		data->field_0x1C += (f32)(s32)(effTblRandN64(50, idx) - 25);
+#ifdef MUST_MATCH
+		half = float_0p5_8041ee04;
+#endif
+		data->field_0x18 += float_10_8041ee00 * (f32)sin(float_6p2832_8041eddc * data->field_0x1C / float_360_8041ede4);
+#ifdef MUST_MATCH
+		data->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * half) / float_360_8041ede4);
+#else
+		data->field_0x20 += float_10_8041ee00 * (f32)cos(float_6p2832_8041eddc * (data->field_0x1C * float_0p5_8041ee04) / float_360_8041ede4);
+#endif
+		data->x += data->field_0x10;
+		data->y += data->field_0x14;
+	}
+	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
+}
+#else
 void effFallLeafMain(EffectEntry* effect) {
 	effFallLeafData* data = effect->userdata;
 	effFallLeafParticle* particle;
@@ -218,6 +319,7 @@ void effFallLeafMain(EffectEntry* effect) {
 	}
 	dispEntry(4, dispCalcZ(&position2), 2, effFallLeafDisp, effect);
 }
+#endif
 
 void effFallLeafDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;

@@ -116,8 +116,11 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// NONMATCHING (99.86%): only the two loop-preheader pointer setups are scheduled in the
-// opposite order (target: trans = &trans_data[1], then p = data->children; MWCC swaps them).
+// NONMATCHING (99.86%): byte-identical except the order of the two loop-preheader pointer
+// setups. The target emits the trans pre-bias (addi r29, r5, 0x8) before p = data->children
+// (addi r26, r30, 0x40); MWCC emits them in the opposite order. Register allocation is
+// otherwise exactly the target's (i=24, 0x6667=25, p=26, effect=27, vx=28, trans=29,
+// data=30, 0x4330=31). Reordering attempts all changed the score or the coloring; see REPORT.md.
 EffectEntry* effGarekiN64Entry(s32 type, f32 x, f32 y, f32 z, f32 groundY) {
     EffectEntry* effect;
     GarekiData* data;
