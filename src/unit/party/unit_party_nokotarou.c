@@ -6,8 +6,71 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_sub.h"
 #include "eff/eff_nokotarou.h"
+#include "driver/msgdrv.h"
+#include "mario/mario_party.h"
 
 const f64 double_to_int_802f8800 = 4503601774854144.0;
+
+extern BattleWeapon partyWeapon_NokotarouKouraAttack;
+extern BattleWeapon partyWeapon_NokotarouSyubibinKoura;
+extern BattleWeapon partyWeapon_NokotarouKouraGuard;
+extern BattleWeapon partyWeapon_NokotarouTsuranukiKoura;
+extern u8 lbl_8038BEB8[]; // this unit's .data weapon tables
+
+#define TECH_MENU_ENTRY(table)                                                        \
+    cmd->mWeaponTable[*count].mIndex = -1;                                            \
+    cmd->mWeaponTable[*count].mItem = 0;                                              \
+    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
+    cmd->mWeaponTable[*count].mIcon =                                                 \
+        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                    \
+    cmd->mWeaponTable[*count].mName =                                                 \
+        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+    (*count)++;
+
+#define TECH_MENU_ENTRY_ICON(table, icon)                                             \
+    cmd->mWeaponTable[*count].mIndex = -1;                                            \
+    cmd->mWeaponTable[*count].mItem = 0;                                              \
+    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
+    cmd->mWeaponTable[*count].mIcon = (icon);                                         \
+    cmd->mWeaponTable[*count].mName =                                                 \
+        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+    (*count)++;
+
+// The original addresses the four weapons from one base register (addi r30, r5, lbl_8038BEB8@l, then
+// +0x844/+0x904/+0x9C4/+0xA84); naming each weapon directly does not reproduce that.
+static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+#ifdef MUST_MATCH
+    u8* const weaponBase = lbl_8038BEB8;
+#endif
+    s32 techLv = partyGetTechLv(
+        BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
+
+#ifdef MUST_MATCH
+    TECH_MENU_ENTRY_ICON(weaponBase + 0x844, 0x150);  // partyWeapon_NokotarouKouraAttack
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY_ICON(weaponBase + 0x904, 0x151); // partyWeapon_NokotarouSyubibinKoura
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(weaponBase + 0x9C4); // partyWeapon_NokotarouKouraGuard
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(weaponBase + 0xA84); // partyWeapon_NokotarouTsuranukiKoura
+    }
+#else
+    TECH_MENU_ENTRY(&partyWeapon_NokotarouKouraAttack);
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(&partyWeapon_NokotarouSyubibinKoura);
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(&partyWeapon_NokotarouKouraGuard);
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(&partyWeapon_NokotarouTsuranukiKoura);
+    }
+#endif
+}
 
 USER_FUNC(_check_mario_move_count) {
     s32 index = event->args[0];

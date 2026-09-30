@@ -7,6 +7,8 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_sub.h"
 #include "driver/dispdrv.h"
+#include "driver/msgdrv.h"
+#include "mario/mario_party.h"
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <string.h>
@@ -20,6 +22,57 @@ USER_FUNC(_chuchu_make_extra_work_area) {
     unit = BattleGetUnitPtr(work, id);
     *(void**)((u8*)unit + 0x310) = BattleAlloc(0xC0);
     return EVT_RETURN_DONE;
+}
+
+extern BattleWeapon partyWeapon_ChuchurinaNormalAttackLeftLast;
+extern BattleWeapon partyWeapon_ChuchurinaItemSteal;
+extern BattleWeapon partyWeapon_ChuchurinaMadowaseAttack;
+extern BattleWeapon partyWeapon_ChuchurinaKiss;
+extern u8 lbl_8037EC10[]; // this unit's .data weapon tables
+
+#define TECH_MENU_ENTRY(table)                                                        \
+    cmd->mWeaponTable[*count].mIndex = -1;                                            \
+    cmd->mWeaponTable[*count].mItem = 0;                                              \
+    cmd->mWeaponTable[*count].mWeaponParams = (BattleWeapon*)(table);                 \
+    cmd->mWeaponTable[*count].field_0x4 = 0;                                          \
+    cmd->mWeaponTable[*count].mIcon =                                                 \
+        *(u16*)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 4);                    \
+    cmd->mWeaponTable[*count].mName =                                                 \
+        (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0)); \
+    (*count)++;
+
+// The original addresses the four weapons from one base register (addi r30, r5, lbl_8037EC10@l, then
+// +0x6A0/+0x8E0/+0x820/+0x9A0); naming each weapon directly does not reproduce that.
+static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
+#ifdef MUST_MATCH
+    u8* const weaponBase = lbl_8037EC10;
+#endif
+    s32 techLv = partyGetTechLv(
+        BattleTransPartyId(BattleGetPartyPtr(_battleWorkPointer)->currentKind));
+
+#ifdef MUST_MATCH
+    TECH_MENU_ENTRY(weaponBase + 0x6A0);  // partyWeapon_ChuchurinaNormalAttackLeftLast
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(weaponBase + 0x8E0); // partyWeapon_ChuchurinaItemSteal
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(weaponBase + 0x820); // partyWeapon_ChuchurinaMadowaseAttack
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(weaponBase + 0x9A0); // partyWeapon_ChuchurinaKiss
+    }
+#else
+    TECH_MENU_ENTRY(&partyWeapon_ChuchurinaNormalAttackLeftLast);
+    if (techLv >= 0) {
+        TECH_MENU_ENTRY(&partyWeapon_ChuchurinaItemSteal);
+    }
+    if (techLv >= 1) {
+        TECH_MENU_ENTRY(&partyWeapon_ChuchurinaMadowaseAttack);
+    }
+    if (techLv >= 2) {
+        TECH_MENU_ENTRY(&partyWeapon_ChuchurinaKiss);
+    }
+#endif
 }
 
 // NONMATCHING (92.29%): same instruction sequence; the callee-saved registers are assigned in a different order
@@ -61,16 +114,16 @@ USER_FUNC(_make_madowase_weapon) {
     BattleUnit* unit;
     s32 id, src, val;
     s32 dst;
-    void* area;
+    BattleWeapon* area;
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(work, id);
     dst = args[0];
-    area = *(void**)((u8*)unit + 0x310);
+    area = *(BattleWeapon**)((u8*)unit + 0x310);
     src = evtGetValue(event, dst);
     val = evtGetValue(event, args[1]);
     memcpy(area, (void*)src, 0xC0);
-    *(u8*)((u8*)area + 0x84) = val;
+    area->dizzyChance = val;
     evtSetValue(event, dst, (s32)area);
     return EVT_RETURN_DONE;
 }
@@ -86,7 +139,7 @@ USER_FUNC(_get_itemsteal_param) {
     work = _battleWorkPointer;
     b = args[2];
     unit = BattleGetUnitPtr(work, BattleTransID(event, id));
-    chance = 0x50 - (*(u8*)((u8*)work + 0x1CBD) - 3) * 0x14;
+    chance = 0x50 - ((u8)work->actionCommands.mAcDifficulty - 3) * 0x14;
     if (chance <= 5) {
         chance = 5;
     }
