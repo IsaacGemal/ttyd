@@ -71,6 +71,7 @@ try:
 finally:
     if not globals().get("done"):
         open(path, "w").write(original)  # interrupted or failed: leave the source as it was
+        subprocess.run(["ninja", obj], capture_output=True)
 if subprocess.run(["ninja", obj], capture_output=True).returncode:
     sys.exit("the chosen placement doesn't build")
 print(subprocess.run(["python3", "tools/rel_cmp.py", mod, unit], capture_output=True, text=True).stdout.strip()[:300])

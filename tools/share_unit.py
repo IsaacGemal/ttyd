@@ -57,8 +57,11 @@ for gi, mods in enumerate(groups):
     hdst = f"rels/common/include/{name}.h"
     hmove = None
     if os.path.exists(hsrc):
-        if os.path.exists(hdst) and open(hdst).read() != open(hsrc).read():
-            sys.exit(f"{hdst} exists and differs from {hsrc}: merge them by hand first")
+        # the common header, as it exists or as an earlier group of this run will write it, must say the same
+        planned = next((open(h[0]).read() for _, _, _, h, _ in plan if h and h[1] == hdst), None)
+        have = planned if planned is not None else (open(hdst).read() if os.path.exists(hdst) else None)
+        if have is not None and have != open(hsrc).read():
+            sys.exit(f"{hsrc} differs from the common {hdst} (or another group's header): merge them by hand first")
         hmove = (hsrc, hdst)
     lines = []
     for mod in mods:

@@ -15,6 +15,11 @@ cuts = [x.start() for x in re.finditer(r"\n\n(?=\S)", rest)]
 obj = None
 import json
 obj = next(u["base_path"] for u in json.load(open("objdiff.json"))["units"] if u["name"] == f"{mod}/{unit}")
+# where the original's last real object in each section ends: a shorter section is only padding if it keeps them all
+ends = {}
+for m in re.finditer(r"^# (\.\w+):(0x[0-9A-F]+) \| \S+ \| size: (0x[0-9A-F]+)\n\.obj (\S+?),", open(f"build/G8MJ01/{mod}/asm/{unit}.s").read(), re.M):
+    if not m.group(4).startswith("gap_"):
+        ends[m.group(1)] = max(ends.get(m.group(1), 0), int(m.group(2), 16) + int(m.group(3), 16))
 good = []
 try:
     for c in cuts:
@@ -28,15 +33,17 @@ try:
         r = subprocess.run(["python3", "tools/rel_cmp.py", mod, unit], capture_output=True, text=True)
         out = [l for l in r.stdout.strip().splitlines() if l != "OK"]
         # a section a few bytes short is its trailing alignment padding (the linker adds it back); anything else differs
-        pad = lambda l: (lambda m: m and 0 < int(m.group(1), 16) - int(m.group(2), 16) < 8)(
-            re.match(r"\.(?:data|rodata|bss) size (0x[0-9a-f]+) \(original\) vs (0x[0-9a-f]+)$", l))
+        pad = lambda l: (lambda m: m and 0 < int(m.group(2), 16) - int(m.group(3), 16) < 8
+                         and int(m.group(3), 16) >= ends.get(m.group(1), 0))(
+            re.match(r"(\.(?:data|rodata|bss)) size (0x[0-9a-f]+) \(original\) vs (0x[0-9a-f]+)$", l))
         real = [l for l in out if not pad(l)]
         ok = r.returncode in (0, 1) and not real and (r.returncode == 0 or out)
-        if r.returncode not in (0, 1):
-            real = [f"rel_cmp failed: {(r.stderr.strip().splitlines() or ['?'])[-1]}"]
+        if r.returncode not in (0, 1) or not (ok or real):
+            real = [f"rel_cmp failed: {(r.stderr.strip().splitlines() or ['no output'])[-1]}"]
         print(line, "OK" if ok else real[0][:60], flush=True)
         if ok:
             good.append(line)
 finally:
     open(path, "w").write(text)
+    subprocess.run(["ninja", obj], capture_output=True)  # don't leave the last trial's object behind
 print("positions that match:", good)

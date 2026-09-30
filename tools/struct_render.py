@@ -454,23 +454,38 @@ def fix_index(src, sym, old_size, stride):
     num = r'(0[xX][0-9A-Fa-f]+|\d+)'
     code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|(&\s*)?\b' + re.escape(sym) + r'\b(\s*\[\s*' + num +
                       r'\s*\]|\s*([-+])\s*' + num + r'\b|\s*\[|\s*[-+](?![>=]))?', re.S)
-    decl = re.compile(r'^\s*(?:extern |static |const |struct )*[A-Za-z_]\w*\s*\*?\s*' + re.escape(sym) + r'\s*\[')
+    decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b)[A-Za-z_]\w*\s*\*?\s*' +
+                      re.escape(sym) + r'\s*\[')
     out, pos = [], 0
     for m in code.finditer(src):
-        if not m.group(0).lstrip('&').lstrip().startswith(sym) or not m.group(2):
-            continue  # a comment or string, or a plain use of SYM
+        if not m.group(0).lstrip('&').lstrip().startswith(sym):
+            continue  # a comment or string
         line_start = src.rfind('\n', 0, m.start()) + 1
+        if not m.group(2):  # a plain use: fine unless it's inside arithmetic, e.g. `4 + sym`, `(sym) + 4`, `sym += 4`
+            b = src[line_start:m.start()].rstrip()
+            a = src[m.end():m.end() + 4]
+            if (re.search(r'[-+]$', b) and not b.endswith('->')) or re.match(r'\s*\)\s*[-+]', a) or re.match(r'\s*[-+]=', a):
+                raise ValueError(f'{sym}: arithmetic around it near {src[max(line_start, m.start() - 20):m.end() + 10]!r}')
+            continue
         if decl.match(src[line_start:m.end()]):
             continue  # its declaration or definition
+        before = src[line_start:m.start()].rstrip()
+        after = src[m.end():m.end() + 3].lstrip()
+        near = src[max(line_start, m.start() - 20):m.end() + 10]
+        if re.search(r'(\.|->)$', before):
+            continue  # a struct member with the same name
+        if re.search(r'\(\s*(?:const\s+)?[A-Za-z_]\w*\s*\*+\s*\)$', before):
+            continue  # after a cast, e.g. (u8*)sym + 0x8: a byte offset, whatever the element type
         amp, idx, sign, add = m.group(1), m.group(3), m.group(4), m.group(5)
         if idx is None and add is None:
-            raise ValueError(f'{sym}: an index or arithmetic fix_index can\'t convert near {m.group(0)!r}')
+            raise ValueError(f'{sym}: an index or arithmetic fix_index can\'t convert near {near!r}')
+        if re.search(r'[-+*/]$|\($', before) and not re.search(r'PTR\($|,$|\{$', before) or re.match(r'[-+]', after) \
+                or re.match(r'=', after) or re.search(r'\breturn$', before):
+            raise ValueError(f'{sym}: arithmetic around it near {near!r}')
         n = int(idx if idx is not None else add, 0) * (-1 if sign == '-' else 1)
         off = n * old_size
-        if idx is not None and not amp:  # sym[N]: an element
-            if off % stride:
-                raise ValueError(f'{sym}[{idx}] is not a whole element of the new type')
-            rep = f'{sym}[{off // stride}]'
+        if idx is not None and not amp:  # sym[N] as a value: its type changes with the table's
+            raise ValueError(f'{sym}[{idx}] read as a value near {near!r}')
         elif amp and idx is None:
             raise ValueError(f'{sym}: `&{sym} +/- N` near {m.group(0)!r}')
         else:  # &sym[N], sym + N: an address
@@ -638,21 +653,46 @@ def macro_aliases(cfile):
     return {}
 
 
+def _blank(src):
+    """src with comments and string/char literals blanked out (same length, so offsets stay valid)."""
+    return re.sub(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'',
+                  lambda m: re.sub(r'[^\n]', ' ', m.group(0)), src, flags=re.S)
+
+
 def function_bodies(src):
-    """The text of every C function body in src (scripts and data initializers excluded)."""
-    out = []
-    for m in re.finditer(r'^(?!static EVT_BEGIN|EVT_BEGIN)[A-Za-z_][^;\n{}=]*\)\s*\{\s*$', src, re.M):
-        i, depth = m.end() - 1, 0
-        while i < len(src):
-            if src[i] == '{':
-                depth += 1
-            elif src[i] == '}':
-                depth -= 1
-                if depth == 0:
-                    break
-            i += 1
-        out.append(src[m.end():i])
+    """The text of every C function body in src: each top-level `{` right after a `)` (a definition, USER_FUNC
+    included, however its signature is laid out), to its matching `}`. Initializers (`= {`) and scripts aren't."""
+    b = _blank(src)
+    out, depth, i = [], 0, 0
+    while i < len(b):
+        c = b[i]
+        if c == '{':
+            if depth == 0 and b[:i].rstrip().endswith(')'):
+                j, d = i, 0
+                while j < len(b):
+                    d += (b[j] == '{') - (b[j] == '}')
+                    if d == 0:
+                        break
+                    j += 1
+                out.append(b[i + 1:j])
+                i = j + 1
+                continue
+            depth += 1
+        elif c == '}':
+            depth -= 1
+        i += 1
     return '\n'.join(out)
+
+
+_CODE_INDEX = None
+
+
+def code_everywhere():
+    """Every function body in the tree's C files, for globals another file's code may use."""
+    global _CODE_INDEX
+    if _CODE_INDEX is None:
+        _CODE_INDEX = '\n'.join(function_bodies(open(f, errors='replace').read()) for f in c_files())
+    return _CODE_INDEX
 
 
 def auto_types(cfile, objs):
@@ -663,7 +703,9 @@ def auto_types(cfile, objs):
     raw = {m.group(1) for m in re.finditer(r'^(?:static |const )*[su]32 (\w+)(?:\[\w*\])? = \{', src, re.M)}
     # a raw table that C code uses stays raw: retyping it would change what indexing it means
     code = function_bodies(src)
-    raw_in_code = {n for n in raw if re.search(r'\b' + re.escape(n) + r'\b', code)}
+    statics = {m.group(1) for m in re.finditer(r'^static (?:const )?[su]32 (\w+)', src, re.M)}
+    raw_in_code = {n for n in raw if re.search(r'\b' + re.escape(n) + r'\b', code) or
+                   (n not in statics and re.search(r'\b' + re.escape(n) + r'\b', code_everywhere()))}
     defined -= raw_in_code
     raw -= raw_in_code
     alias = macro_aliases(cfile)
@@ -729,28 +771,35 @@ def run_all(skip=()):
     tables that became scalars or arrays, extern declarations, and casts the new declarations made unneeded."""
     import collections, glob
     counts = collections.Counter()
+    snap, exclude = {}, collections.defaultdict(set)
+
+    def render_file(f):
+        ap = asm_path(f)
+        if not ap or not os.path.exists(ap):
+            return
+        try:
+            objs = load_objects(ap)
+            mapping, alias = auto_types(f, objs)
+            mapping = {k: v for k, v in mapping.items() if k not in exclude[f]}
+            if not mapping:
+                return
+            for a, c in alias.items():
+                if a in objs:
+                    objs[c] = objs[a]
+            snap.setdefault(f, open(f).read())
+            done, failed = rewrite(f, mapping, objs, alias)
+        except Exception as e:  # one file's problem shouldn't stop the rest
+            print('FAILED', f, repr(e))
+            return
+        counts.update(mapping[d] for d in done)
+        for sym, why in failed:
+            print('FAILED', f, sym, why)
+
     for f in c_files():
         if f in skip or f in SKIP or (f.startswith('src/') and '// TODO: type' not in open(f).read() and
                          not re.search(r'^(?:static |const )*(' + STRUCTS_RE + r') \w+', open(f).read(), re.M)):
             continue
-        ap = asm_path(f)
-        if not ap or not os.path.exists(ap):
-            continue
-        try:
-            objs = load_objects(ap)
-            mapping, alias = auto_types(f, objs)
-            if not mapping:
-                continue
-            for a, c in alias.items():
-                if a in objs:
-                    objs[c] = objs[a]
-            done, failed = rewrite(f, mapping, objs, alias)
-        except Exception as e:  # one file's problem shouldn't stop the rest
-            print('FAILED', f, repr(e))
-            continue
-        counts.update(mapping[d] for d in done)
-        for sym, why in failed:
-            print('FAILED', f, sym, why)
+        render_file(f)
     # shared units: UNIT_DATA_SYM is a different global per module (configure.py -D flags)
     cfg = open('configure.py').read()
     for f in glob.glob('rels/common/src/**/*.c', recursive=True):
@@ -760,18 +809,46 @@ def run_all(skip=()):
                 RESHAPED[('<shared>', name)] = (False, False)
     everything = glob.glob('rels/**/*.[ch]', recursive=True) + glob.glob('src/**/*.[ch]', recursive=True) + \
         glob.glob('include/**/*.h', recursive=True)
-    for (f, sym), (old_size, stride, static) in RETYPED.items():
-        for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
-            text = open(p, errors='replace').read()
-            try:
-                new = fix_index(text, sym, old_size, stride)
-            except ValueError as e:
-                print('FIX BY HAND', p, e)  # nothing is written for this file
+    users = lambda f, sym, static: [f] if static else [p for p in everything if sym in open(p, errors='replace').read()]
+    # Check every conversion the retyped tables need before writing any. A table whose uses can't all be converted
+    # stays raw: its file is restored and rendered again without it, until everything converts.
+    for _ in range(4):
+        bad = set()
+        for (f, sym), (old_size, stride, static) in RETYPED.items():
+            for p in users(f, sym, static):
+                try:
+                    fix_index(open(p, errors='replace').read(), sym, old_size, stride)
+                except ValueError as e:
+                    print('LEFT RAW', f, sym, '-', p, e)
+                    bad.add((f, sym))
+        for (f, sym), (arr, static) in RESHAPED.items():
+            if f == '<shared>':
                 continue
+            for p in users(f, sym, static):
+                try:
+                    fix_refs(open(p, errors='replace').read(), sym, arr)
+                except ValueError as e:
+                    print('LEFT RAW', f, sym, '-', p, e)
+                    bad.add((f, sym))
+        if not bad:
+            break
+        for f, sym in bad:
+            exclude[f].add(sym)
+        for f in {f for f, _ in bad}:
+            open(f, 'w').write(snap.pop(f))
+            for k in [k for k in RETYPED if k[0] == f]:
+                del RETYPED[k]
+            for k in [k for k in RESHAPED if k[0] == f]:
+                del RESHAPED[k]
+            render_file(f)
+    for (f, sym), (old_size, stride, static) in RETYPED.items():
+        for p in users(f, sym, static):
+            text = open(p, errors='replace').read()
+            new = fix_index(text, sym, old_size, stride)
             if new != text:
                 open(p, 'w').write(new)
     for (f, sym), (arr, static) in RESHAPED.items():
-        for p in ([f] if static else [p for p in everything if sym in open(p, errors='replace').read()]):
+        for p in users(f, sym, static):
             text = open(p, errors='replace').read()
             try:
                 new = fix_refs(text, sym, arr)
