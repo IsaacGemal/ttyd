@@ -37,7 +37,7 @@ try:
                          and int(m.group(3), 16) >= ends.get(m.group(1), 0))(
             re.match(r"(\.(?:data|rodata|bss)) size (0x[0-9a-f]+) \(original\) vs (0x[0-9a-f]+)$", l))
         real = [l for l in out if not pad(l)]
-        ok = r.returncode in (0, 1) and not real and (r.returncode == 0 or out)
+        ok = (r.returncode == 0 and "OK" in r.stdout.splitlines()) or (r.returncode == 1 and out and not real)
         if r.returncode not in (0, 1) or not (ok or real):
             real = [f"rel_cmp failed: {(r.stderr.strip().splitlines() or ['no output'])[-1]}"]
         print(line, "OK" if ok else real[0][:60], flush=True)

@@ -67,11 +67,16 @@ try:
         print(fn, "at line", text[:best[1]].count("\n") + 1, "prefix", best[0], "of", len(want), flush=True)
     final = assemble({**placed})
     open(path, "w").write(final)
+    # the placement is kept only if it builds and the object compares equal (rel_cmp's status and its OK line decide)
+    if subprocess.run(["ninja", obj], capture_output=True).returncode:
+        sys.exit("the chosen placement doesn't build; source restored")
+    r = subprocess.run(["python3", "tools/rel_cmp.py", mod, unit], capture_output=True, text=True)
+    print(r.stdout.strip()[:300])
+    if r.returncode != 0 or "OK" not in r.stdout.splitlines():
+        sys.exit(f"the object doesn't compare equal (rel_cmp exit {r.returncode}"
+                 + (f": {r.stderr.strip().splitlines()[-1]}" if r.stderr.strip() else "") + "); source restored")
     done = True
 finally:
     if not globals().get("done"):
-        open(path, "w").write(original)  # interrupted or failed: leave the source as it was
+        open(path, "w").write(original)  # interrupted, failed or not equal: leave the source as it was
         subprocess.run(["ninja", obj], capture_output=True)
-if subprocess.run(["ninja", obj], capture_output=True).returncode:
-    sys.exit("the chosen placement doesn't build")
-print(subprocess.run(["python3", "tools/rel_cmp.py", mod, unit], capture_output=True, text=True).stdout.strip()[:300])

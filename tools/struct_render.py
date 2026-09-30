@@ -447,13 +447,15 @@ def update_externs(typed, roots=('include', 'src', 'rels')):
 
 
 def fix_index(src, sym, old_size, stride):
-    """Uses of SYM counted in the old raw element size, rewritten for the new type: `&sym[N]`, `sym[N]` and
-    `sym + N` / `sym - N` (N decimal or hex, any spacing) become `&sym[k]` / `sym[k]` where N lands on an element,
-    otherwise a byte offset. Any other index or arithmetic on SYM (a variable index, a cast) raises: its meaning
-    changes with the type and nothing here can tell what it should be."""
+    """Uses of SYM counted in the old raw element size, rewritten for the new type: `&sym[N]` and `sym + N` /
+    `sym - N` (N decimal or hex) become `&sym[k]` where N lands on an element, otherwise a byte offset. A plain use
+    (`sym`, `&sym`) stays. Every use must be a whole operand: after it (past any closing parentheses) only `)`, `,`,
+    `;` or `}` may follow, and no operator may precede it. Anything else (`&(sym)[N]`, `sym + N * 2`, `sym[N]` as a
+    value, a variable index) raises: its meaning changes with the type. After a cast, `(u8*)sym + 0x8` is a byte
+    offset and is left alone; comments, strings, declarations and struct members of the same name are skipped."""
     num = r'(0[xX][0-9A-Fa-f]+|\d+)'
     code = re.compile(r'//[^\n]*|/\*.*?\*/|"(?:[^"\\\n]|\\.)*"|(&\s*)?\b' + re.escape(sym) + r'\b(\s*\[\s*' + num +
-                      r'\s*\]|\s*([-+])\s*' + num + r'\b|\s*\[|\s*[-+](?![>=]))?', re.S)
+                      r'\s*\]|\s*([-+])\s*' + num + r'\b)?', re.S)
     decl = re.compile(r'^\s*(?:extern |static |const |struct )*(?!return\b|sizeof\b|case\b)[A-Za-z_]\w*\s*\*?\s*' +
                       re.escape(sym) + r'\s*\[')
     out, pos = [], 0
@@ -461,35 +463,41 @@ def fix_index(src, sym, old_size, stride):
         if not m.group(0).lstrip('&').lstrip().startswith(sym):
             continue  # a comment or string
         line_start = src.rfind('\n', 0, m.start()) + 1
-        if not m.group(2):  # a plain use: fine unless it's inside arithmetic, e.g. `4 + sym`, `(sym) + 4`, `sym += 4`
-            b = src[line_start:m.start()].rstrip()
-            a = src[m.end():m.end() + 4]
-            if (re.search(r'[-+]$', b) and not b.endswith('->')) or re.match(r'\s*\)\s*[-+]', a) or re.match(r'\s*[-+]=', a):
-                raise ValueError(f'{sym}: arithmetic around it near {src[max(line_start, m.start() - 20):m.end() + 10]!r}')
-            continue
         if decl.match(src[line_start:m.end()]):
             continue  # its declaration or definition
         before = src[line_start:m.start()].rstrip()
-        after = src[m.end():m.end() + 3].lstrip()
-        near = src[max(line_start, m.start() - 20):m.end() + 10]
+        near = src[max(line_start, m.start() - 20):m.end() + 12]
         if re.search(r'(\.|->)$', before):
             continue  # a struct member with the same name
         if re.search(r'\(\s*(?:const\s+)?[A-Za-z_]\w*\s*\*+\s*\)$', before):
             continue  # after a cast, e.g. (u8*)sym + 0x8: a byte offset, whatever the element type
+        # a whole operand: no operator before it, only `)` `,` `;` `}` after it (past closing parentheses)
+        b, wraps = before, 0
+        while b.endswith('('):
+            b, wraps = b[:-1].rstrip(), wraps + 1
+        if re.search(r'[A-Za-z_]\w*$', b) and wraps:
+            wraps -= 1  # the last `(` opens a call (PTR(sym), f(sym)), not a wrap around sym
+        rest = src[m.end():]
+        k = 0
+        while True:
+            k += len(rest[k:]) - len(rest[k:].lstrip())
+            if wraps and rest[k:k + 1] == ')':
+                k, wraps = k + 1, wraps - 1
+                continue
+            break
+        if re.search(r'[-+*/%&|^]$', b.rstrip('&').rstrip()) and not b.endswith('->') or \
+                not re.match(r'[),;}]|$', rest[k:k + 1]):
+            raise ValueError(f'{sym}: a use fix_index can\'t convert near {near!r}')
         amp, idx, sign, add = m.group(1), m.group(3), m.group(4), m.group(5)
-        if idx is None and add is None:
-            raise ValueError(f'{sym}: an index or arithmetic fix_index can\'t convert near {near!r}')
-        if re.search(r'[-+*/]$|\($', before) and not re.search(r'PTR\($|,$|\{$', before) or re.match(r'[-+]', after) \
-                or re.match(r'=', after) or re.search(r'\breturn$', before):
-            raise ValueError(f'{sym}: arithmetic around it near {near!r}')
+        if m.group(2) is None:
+            continue  # a plain use: sym or &sym
+        if idx is not None and not amp:
+            raise ValueError(f'{sym}[{idx}] read as a value near {near!r}')
+        if amp and idx is None:
+            raise ValueError(f'{sym}: `&{sym} +/- N` near {near!r}')
         n = int(idx if idx is not None else add, 0) * (-1 if sign == '-' else 1)
         off = n * old_size
-        if idx is not None and not amp:  # sym[N] as a value: its type changes with the table's
-            raise ValueError(f'{sym}[{idx}] read as a value near {near!r}')
-        elif amp and idx is None:
-            raise ValueError(f'{sym}: `&{sym} +/- N` near {m.group(0)!r}')
-        else:  # &sym[N], sym + N: an address
-            rep = f'&{sym}[{off // stride}]' if off % stride == 0 and off >= 0 else f'(void*)((u8*){sym} + {off:#x})'
+        rep = f'&{sym}[{off // stride}]' if off % stride == 0 and off >= 0 else f'(void*)((u8*){sym} + {off:#x})'
         out.append(src[pos:m.start()])
         out.append(rep)
         pos = m.end()

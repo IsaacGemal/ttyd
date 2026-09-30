@@ -81,17 +81,40 @@ for gi, mods in enumerate(groups):
         flag_text = ", ".join(f'"{f}"' for f in flags)
         lines.append(f'            Object(NonMatching, "{unit}.c", modules=["{mod}"]{srcopt}, extra_cflags=[{flag_text}]),\n')
     plan.append((src, dst, s, hmove, lines))
-for src, dst, s, hmove, lines in plan:
-    os.makedirs(os.path.dirname(dst), exist_ok=True)
-    open(dst, "w").write(s)
-    tail = tail[:end] + "".join(lines) + tail[end:]
-    end += sum(len(l) for l in lines)
-open("configure.py", "w").write(head + '        "common",' + tail)
-for src, dst, s, hmove, lines in plan:  # the originals go last, once the new files and configure.py are written
-    os.remove(src)
-    if hmove:
-        if os.path.exists(hmove[1]):
+
+def write_atomic(path, text):
+    tmp = path + ".tmp_share_unit"
+    open(tmp, "w").write(text)
+    os.replace(tmp, path)
+
+
+# Commit: new files and configure.py first (each written to a temp file and renamed), the originals removed last.
+# Any failure, or an interrupt, puts everything back as it was.
+created, removed = [], {}
+try:
+    for src, dst, s, hmove, lines in plan:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        write_atomic(dst, s)
+        created.append(dst)
+        if hmove and not os.path.exists(hmove[1]):
+            os.makedirs(os.path.dirname(hmove[1]), exist_ok=True)
+            write_atomic(hmove[1], open(hmove[0]).read())
+            created.append(hmove[1])
+        tail = tail[:end] + "".join(lines) + tail[end:]
+        end += sum(len(l) for l in lines)
+    write_atomic("configure.py", head + '        "common",' + tail)
+    for src, dst, s, hmove, lines in plan:
+        removed[src] = open(src).read()
+        os.remove(src)
+        if hmove:
+            removed[hmove[0]] = open(hmove[0]).read()
             os.remove(hmove[0])
-        else:
-            shutil.move(*hmove)
+except BaseException:
+    for path, text in removed.items():
+        write_atomic(path, text)
+    for path in created:
+        if os.path.exists(path):
+            os.remove(path)
+    write_atomic("configure.py", cfg)
+    raise
 print("shared", unit, groups)
