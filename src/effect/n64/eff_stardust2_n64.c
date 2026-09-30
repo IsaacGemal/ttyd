@@ -81,9 +81,6 @@ static inline GXColor stardustColor(u8 r, u8 g, u8 b) {
 }
 #endif
 
-// NONMATCHING (99.97%): the unsigned-conversion magic and the render-type switch jump table are
-// emitted as anonymous pool entries (@243 / @249) instead of the original's named symbols, and the
-// by-value GXSetTevColor GXColor temp lands at r1+0x8/r1+0xC the opposite way round.
 void effStardust2Disp(CameraId camId, void* param) {
     EffectEntry* entry = param;
     CameraEntry* cam;

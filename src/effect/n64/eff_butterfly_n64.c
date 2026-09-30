@@ -84,9 +84,6 @@ static inline GXColor butterflyColor(u8 v) {
 }
 #endif
 
-// NONMATCHING (99.96%): the GXColor local and by-value argument stack slots
-// are swapped (original builds at r1+0x8 and copies to r1+0xC), and the
-// int->float magic is an anonymous @166, not double_to_int_802fa3a8.
 void effButterflyDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;

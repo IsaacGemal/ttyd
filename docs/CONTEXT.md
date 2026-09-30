@@ -2280,4 +2280,4 @@ write to. Next waves give each agent its own TMPDIR.
   returns it (`static inline GXColor f(u8 a) { GXColor c = <global>; c.a = a; return c; }`, `color = f(a);`) puts them the
   other way round. Under `MUST_MATCH` (see eff_sandars): effBattenDisp2, effButterflyDisp and effStardust2Disp match;
   akari_pose, booboo and batten `Disp` improve. It does not help when the function passes several by-value colours
-  (shadowdrv, itemget) or a colour built without a base.
+  (shadowdrv, itemget, envDisp_Blur) or a colour built without a base.
