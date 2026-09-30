@@ -608,7 +608,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_kemuri3_n64.c"),
             Object(NonMatching, "effect/n64/eff_kemuri4_n64.c"),
             Object(NonMatching, "effect/n64/eff_kemuri5_n64.c"),
-            Object(NonMatching, "effect/n64/eff_kemuri6_n64.c"),
+            Object(Matching, "effect/n64/eff_kemuri6_n64.c"),
             Object(NonMatching, "effect/n64/eff_kemuri7_n64.c"),
             Object(NonMatching, "effect/n64/eff_kemuri8_n64.c"),
             Object(NonMatching, "effect/n64/eff_kemuri9_n64.c"),

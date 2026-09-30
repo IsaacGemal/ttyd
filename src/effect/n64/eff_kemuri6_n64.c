@@ -12,18 +12,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-const f64 double_to_int_802fa950 = 4503601774854144.0;
-const char str_802FA944[] = "Kemuri6N64";
 
-extern const f32 float_0_8041f3b0;
-extern const f32 float_1_8041f3d0;
-extern const f32 float_1p4_8041f3d4;
-extern const f32 float_0p03_8041f3d8;
-extern const f32 float_1p5_8041f3dc;
-extern const f32 float_2_8041f3e0;
-extern const f32 float_neg0p5_8041f3e4;
-extern const f32 float_0p0625_8041f3ac;
-extern const f32 float_deg2rad_8041f3b4;
 
 // .data quad vertex array for effSetVtxDescN64 (kmr_a_1_v).
 static u32 kmr_a_1_v[14] = {
@@ -71,7 +60,7 @@ EffectEntry* effKemuri6N64Entry(s32 type, f32 x, f32 y, f32 z) {
     s32 i;
 
     effect = effEntry();
-    effect->type = str_802FA944;
+    effect->type = "Kemuri6N64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri6Data));
     effect->userdata = data;
@@ -80,21 +69,21 @@ EffectEntry* effKemuri6N64Entry(s32 type, f32 x, f32 y, f32 z) {
     for (i = 0; i < 1; i++) {
         data->field_0x0 = 1;
         data->field_0x4 = type;
-        data->field_0x40 = float_0_8041f3b0;
-        data->field_0x44 = float_0_8041f3b0;
+        data->field_0x40 = 0.0f;
+        data->field_0x44 = 0.0f;
         data->position.x = x;
         data->position.y = y;
         data->position.z = z;
-        data->field_0x1C = float_1_8041f3d0;
-        data->field_0x20 = float_1_8041f3d0;
-        data->field_0x24 = float_1_8041f3d0;
+        data->field_0x1C = 1.0f;
+        data->field_0x20 = 1.0f;
+        data->field_0x24 = 1.0f;
         data->field_0x8 = 0xFF;
-        data->field_0x28 = float_0p03_8041f3d8 * (f32)(rand() % 11) + float_1p4_8041f3d4;
-        data->field_0x2C = float_0p03_8041f3d8 * (f32)(rand() % 11) + float_1p5_8041f3dc;
+        data->field_0x28 = 0.03f * (f32)(rand() % 11) + 1.4f;
+        data->field_0x2C = 0.03f * (f32)(rand() % 11) + 1.5f;
         data->field_0x30 = (f32)(rand() % 61);
         data->field_0x4 = type;
-        data->field_0x38 = float_2_8041f3e0;
-        data->field_0x3C = float_neg0p5_8041f3e4;
+        data->field_0x38 = 2.0f;
+        data->field_0x3C = -0.5f;
         data->field_0x6 = 15;
         data->field_0x18 = (f32)(rand() % 361);
         data->field_0x8 = 0xFF;
@@ -121,8 +110,22 @@ void effKemuri6Main(EffectEntry* effect) {
             else {
                 active = 1;
                 data->field_0x30 = reviseAngle(12.0f + data->field_0x30);
+                #ifdef MUST_MATCH
+{
+                    f32 t = (f32)sin(6.2831855f * data->field_0x30 / 360.0f);
+                    data->field_0x1C = 0.1f * t + data->field_0x28;
+                }
+#else
                 data->field_0x1C = 0.1f * (f32)sin(6.2831855f * data->field_0x30 / 360.0f) + data->field_0x28;
+#endif
+                #ifdef MUST_MATCH
+{
+                    f32 t = (f32)cos(6.2831855f * data->field_0x30 / 360.0f);
+                    data->field_0x20 = 0.1f * t + data->field_0x2C;
+                }
+#else
                 data->field_0x20 = 0.1f * (f32)cos(6.2831855f * data->field_0x30 / 360.0f) + data->field_0x2C;
+#endif
                 if (data->field_0x4 == 0
                     && data->field_0x6 > 4
                     && data->field_0x6 <= 5
@@ -167,7 +170,7 @@ void effKemuri6Disp(CameraId camId, void* param) {
     GXSetNumChans(0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, 0, 0x7D);
-    PSMTXScale(scale, float_0p0625_8041f3ac, float_0p0625_8041f3ac, float_0_8041f3b0);
+    PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
     GXLoadTexMtxImm(scale, 0x1E, 1);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0, 0, 0xFF);
@@ -186,11 +189,11 @@ void effKemuri6Disp(CameraId camId, void* param) {
         }
         GXSetTevColor(1, (GXColor){ 0x70, 0x60, 0x18, data->field_0x8 });
         PSMTXTrans(model, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041f3b4);
+        PSMTXRotRad(rot, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
         PSMTXConcat(model, rot, model);
         PSMTXScale(scale, data->field_0x1C, data->field_0x20, data->field_0x24);
         PSMTXConcat(model, scale, model);
-        PSMTXRotRad(rot, 'z', float_deg2rad_8041f3b4 * data->field_0x18);
+        PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x18);
         PSMTXConcat(model, rot, model);
         PSMTXConcat(cam->view, model, model);
         GXLoadPosMtxImm(model, 0);
