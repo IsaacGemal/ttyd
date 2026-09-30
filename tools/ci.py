@@ -154,12 +154,23 @@ def ratchet(allowed=()):
         cmp(unit["name"], unit, UNIT_KEYS)
         for fn in unit.get("functions", []):
             cmp(f"{unit['name']}:{fn['name']}", fn, FUNC_KEYS)
+    # Data sections of units that aren't linked yet: `changes` leaves them out, and a function can reach 100% while
+    # the unit's .rodata/.sdata2 gets worse (e.g. a named constant left behind next to the literal that replaced it).
+    sections = lambda report: {(u["name"], s["name"]): s["fuzzy_match_percent"]
+                               for u in json.loads(report.read_text())["units"] for s in u.get("sections", [])
+                               if s["name"] != ".text" and s.get("fuzzy_match_percent") is not None}
+    before = sections(ACCEPTED)
+    for (u, sec), b in sections(current).items():
+        if (u, sec) in before:
+            a = before[(u, sec)]
+            (worse if b < a else better if b > a else []).append((f"{u}[{sec}]", "fuzzy_match_percent", a, b))
     if allowed:
         # A name is a function (its fuzzy drop, while below 100%, excuses its unit's and the total's fuzzy drop)
         # or a unit path such as MarioSt/event/evt_eff (any of its measures, and the total's same measure).
-        named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed]
-        units = {n.split(":", 1)[0] for n, _, _, _ in named}
-        keys = {k for n, k, _, _ in named if ":" not in n}
+        named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed
+                 or w[0].split("[")[0] in allowed]
+        units = {n.split(":", 1)[0].split("[")[0] for n, _, _, _ in named}
+        keys = {k for n, k, _, _ in named if ":" not in n and "[" not in n}
         excused = named + [w for w in worse if w not in named and (
             (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))
             or (w[0] == "TOTAL" and w[1] in keys))]
