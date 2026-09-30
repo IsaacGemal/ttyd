@@ -166,8 +166,6 @@ void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
 	}
 }
 
-// NONMATCHING (98.08%): the disp pointer is folded into the BattleWork base (0x1f34 offsets) instead of the
-// original's `addi r31, work, 0x1f20`; the original also keeps the work pointer in r3 rather than r31.
 void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
 	BattleWork* work = _battleWorkPointer;
 	s32 state = work->actionCommands.mAcState;
@@ -199,7 +197,7 @@ void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
 	case 0x3EB:
 		if (p->counter >= 0x28) {
 			p->iconX = intplGetValue(4, p->counter - 0x28, 0x14, MATCH_F32(float_30_804209a8),
-			                          MATCH_F32(float_neg300_804209a4));
+			                         MATCH_F32(float_neg300_804209a4));
 		}
 		else {
 			p->iconX = MATCH_F32(float_30_804209a8);

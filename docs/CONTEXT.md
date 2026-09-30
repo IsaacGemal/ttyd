@@ -2907,7 +2907,7 @@ collection promotes (rerun scan.py and structs.py).
 
 ## Grind 37: permuter wins, batch 2 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
 
-- `BattleAudience_GetExist` takes `u32 id` (the permuter's only change was the prototype type): `BattleAudience_Init` 98.58 -> 99.12.
+- `BattleAudience_Init` 98.58 -> 99.12 with `BattleAudience_GetExist((u32)index)` at its two call sites (`MUST_MATCH` only). The permuter changed the prototype to `unsigned long`, but the asm does not justify `u32` (`id` only passes through to `BattleAudienceGetPtr(s32)`; all callers mask the boolean with `clrlwi 24`), so the header stays `s32`.
 - `battleAcDisp_PendulumCraneTiming` 98.08 -> 100%: a second pointer `p` to the dispParams is assigned before the switch and again in `case 0x63` (`MUST_MATCH`; natural form: one `p = ag`). The permuter's `new_var = ag` twice.
 - `kpaEnemyHitChk` -> 100%: `mp->position.x = mp->position.x;` after the fire-hit check (`MUST_MATCH` only; a pure no-op that pins the float load order).
 - Runs that found a lower score but nothing natural stay unapplied (`kpaSwimMove`, `hitDelete` 3605 -> 3175, `sort_5_3_func` 230 -> 225). `marioSetJumpPara` ends with `permuter-error` (the round trip does not compile; not looked at).

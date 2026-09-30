@@ -188,6 +188,12 @@ BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 
 // NONMATCHING (99.12%): blocked by the empty BattleAudienceSettingAudience stub (its bl is
 // dropped); the resulting liveness difference also shifts the loop registers.
+// MUST_MATCH: the retail Init passes an unsigned index to GetExist (same asm, different scheduling).
+#ifdef MUST_MATCH
+#define INIT_EXIST_ARG(i) ((u32)(i))
+#else
+#define INIT_EXIST_ARG(i) (i)
+#endif
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -212,7 +218,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j + 10;
-			if ((u8)BattleAudience_GetExist(index) == 1) {
+			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountRight++;
@@ -224,7 +230,7 @@ void BattleAudience_Init(void) {
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
 			index = (i * 20) + j;
-			if ((u8)BattleAudience_GetExist(index) == 1) {
+			if ((u8)BattleAudience_GetExist(INIT_EXIST_ARG(index)) == 1) {
 				status = BattleAudienceGetPtr(index)->status;
 				if (status != 12 && status != 11) { //TODO: add status enum
 					audience->mCurrentAudienceIntCountLeft++;
@@ -846,13 +852,13 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 #pragma dont_inline reset
 //breaks -inline auto,deferred
 /*
-BOOL BattleAudience_GetExist(u32 id) {
+BOOL BattleAudience_GetExist(s32 id) {
 	return FALSE;
 }
 */
 
 #pragma dont_inline on
-BOOL BattleAudience_GetExist(u32 id) {
+BOOL BattleAudience_GetExist(s32 id) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
 	member = BattleAudienceGetPtr(id);

@@ -293,8 +293,6 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     return result;
 }
 
-// NONMATCHING (98.08%): one scheduled instruction -- mine hoists `lfs f1,0x90(r31)` (mario y) above the
-// preceding `fadds`; every other instruction matches.
 s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     MarioWork* mp = marioGetPtr();
     f32 halfH;
