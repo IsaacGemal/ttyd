@@ -2857,3 +2857,12 @@ Linked `eff_whirlwind_n64`, `eff_butterfly_n64`, `eff_fire_spark_n64`, `eff_rapp
 - A literal `0.0f` kept under `MUST_MATCH` next to named constants makes `ld` load an anonymous zero at another `@sda21` offset: one byte differs in the dol (`fire_spark`). Keep the first named constants of the original's order (`dat`, deg2rad, ...) and make the rest literals (`pool_floats.py --keep=...`): the literals then pool in first-use order.
 - The ratchet compares per-symbol data: `eff_whirlwind_n64` matched_data 91.18 -> 16.18 because its named string/double/colors became compiler-pooled; the unit is byte-exact and linked.
 - Near-misses that stay open because the pool only matches with a named constant that changes the function (permuter targets, queued on the tower): `eff_magic3_n64` `effMagic3N64Entry` (99.84%, named `float_100`), `eff_peach_dust_n64` `effPeachDustDisp` (99.73%, named 0.7: f2/f4 allocation).
+
+## Grind 36: first permuter wins (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Tower batch 2 (`~/permuter/runs.log`) found, and these were re-expressed by hand:
+
+- `iconGetTexObj` 97.54 -> 100% (permuter score 0): the frame table is reached through a typed accessor (`static inline IconFrame* iconFramesOf(IconBinaryEntry*)`, assigned to a local `frames` before the loops) instead of a cast at each of the six uses; the permuter's `inline_fn(arg) { return (IconFrame*)arg; }` + `new_var` is this. The same change lifts `iconDispGx2` 93.48 -> 96.0, `iconDispGxCol` 92.88 -> 95.5, `iconDispGxAlpha` 96.60 -> 98.56 (the declaration of `frames` as the first or second local scores the same; assigning it inside the `if (numIcons > 1)` block does not compile in this C89 mode).
+- `BattleAudienceCtrlProcessKinopioDamage` 97.50 -> 99.76: the 270.0f constant is loaded into a local before the stores (`f32 angle = float_270...`).
+- Not applied: `kpaSwimMove` (220 -> 90) adds a duplicate `f31 = ... * fabs(speed)` statement inside a clamp; it is not natural code.
+- Pitfalls: `perm_prepare` needs the tower's `build.ninja` to be the Mac's (copy it over `~/ttyd-perm/build.ninja`), and `mwcc -E` output holds Shift-JIS bytes (decoded with `errors="replace"`). `prepare-failed` lines in the log mean one of those two. The supervisor stopped once at load 20 (other waves), as designed.
