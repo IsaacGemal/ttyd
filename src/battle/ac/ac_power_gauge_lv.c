@@ -185,9 +185,6 @@ s32 battleAcResult_PowerGaugeLv(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: the original main saves r29-r31 with `stmw`; the size model reproduces its
-// prologue/register choice for the state machine. The rest of the file does not need it.
-#pragma optimize_for_size on
 // NONMATCHING (96.38%): register allocation only. The original keeps work=r30, dec=r31, disp=r29;
 // mwcc folds dec (and sometimes disp) into the BattleWork base instead of materialising them.
 // All logic, switch tree, thresholds and the `result &= ~2` bit clear match.
@@ -309,7 +306,6 @@ s32 battleAcMain_PowerGaugeLv(BattleWork* work) {
     }
     return 1;
 }
-#pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
 const s32 dat_804215d0 = -1;

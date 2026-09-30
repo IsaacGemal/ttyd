@@ -53,9 +53,6 @@ s32 battleAcResult_CraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// optimize_for_size: the original battleAcMain saves r27-r31 with `stmw`; the size model reproduces
-// its prologue. Scope the pragma to that one function.
-#pragma optimize_for_size on
 // NONMATCHING (98.87%): identical instruction sequence and count; MWCC 2.6 merges two of the three
 // base pointers. The original materialises work=r28, dec=r31 (work+0x1F4C, offsets 0x0..) and
 // disp=r27 (work+0x1F20, offsets 0x14..); ours materialises work=r28 and disp=r31 and folds dec as
@@ -168,4 +165,3 @@ s32 battleAcMain_CraneTiming(BattleWork* work) {
 	}
 	return 1;
 }
-#pragma optimize_for_size reset

@@ -177,9 +177,6 @@ typedef struct GenkiWork {
     GenkiStar stars[7];         // 0x510
 } GenkiWork;
 
-// The whole file was compiled with -O4,s (optimize for size); without this every constant-trip
-// loop is unrolled and nothing matches. configure.py should carry extra_cflags=["-O4,s"] for it.
-#pragma optimize_for_size on
 // The original file never inlines its own helpers: every call is a real `bl`.
 #pragma dont_inline on
 

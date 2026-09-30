@@ -32,8 +32,6 @@ typedef struct AcRepeatedlyWork {
     u8 field_0x2C;  // 0x2C
 } AcRepeatedlyWork;
 
-// optimize_for_size: the original _init_param saves its three callee-saved registers with stmw/lmw.
-#pragma optimize_for_size on
 static void _init_param(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
     AcRepeatedlyWork* dec = (AcRepeatedlyWork*)&ac->field_0x2BC[0];
@@ -123,7 +121,6 @@ static void _init_param(BattleWork* work) {
     }
     ac->outputParams[0] = 0;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_Repeatedly(BattleWork* work) {
     return work->actionCommands.result;

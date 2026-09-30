@@ -40,9 +40,6 @@ s32 battleAcMain_TimingA(BattleWork* work) {
 	}
 }
 
-// optimize_for_size: ac_timing_a is built with -O4,s (its other functions use stmw/lmw prologues);
-// without it this loop is rotated and the original's is not.
-#pragma optimize_for_size on
 // NONMATCHING (88.39%): the header's s8 return makes MWCC emit an extra `extsb r3, r3` before the table index (the original is plain `slwi`; the definition is u8 `lbz; blr`, so this caller used full width), which also reorders the next two loads.
 s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	AcTimingADecWork* dec = (AcTimingADecWork*)((u8*)work + 0x1F4C);
@@ -73,7 +70,6 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	}
 	return result;
 }
-#pragma optimize_for_size reset
 
 // The disp base pointer is the only difference. The original materialises `disp = param + 0x1F20` in r31
 // (`addi r31, r4, 0x1f20`) and reads the state from r4; MWCC folds the disp pointer into the BattleWork
@@ -116,9 +112,7 @@ void battleAcDelete_TimingA(BattleWork* work) {
 	work->actionCommands.mAcState = 1000;
 }
 
-// optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
 // dont_inline: the original keeps actionCommandDisp as its own local function (callers emit `bl`).
-#pragma optimize_for_size on
 #pragma dont_inline on
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
@@ -144,5 +138,4 @@ static void actionCommandDisp(f32 x, f32 y) {
 	(*(s32*)&disp->field_0x0[0])++;
 }
 #pragma dont_inline reset
-#pragma optimize_for_size reset
 

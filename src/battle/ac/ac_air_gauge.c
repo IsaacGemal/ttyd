@@ -203,7 +203,6 @@ f32 _GetGaugeDecValue(void) {
 
 
 // NONMATCHING (96.12%): 3 instructions differ, 3 missing, 3 extra, plus register differences.
-#pragma optimize_for_size on
 s32 battleAcMain_AirGauge(BattleWork* work) {
 	AirGaugeDecWork* dec = (AirGaugeDecWork*)((u8*)work + 0x1f4c);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -365,7 +364,6 @@ s32 battleAcMain_AirGauge(BattleWork* work) {
 	}
 	return 1;
 }
-#pragma optimize_for_size reset
 
 // .data: float pairs and gauge tables. The gauge tables are reached from lbl_803ABCE0 (defined in
 // nameent.c) + 0x40, so this block's layout (7 pairs, then 7 tables of 5 records) is load-bearing.

@@ -41,9 +41,6 @@ void BattleAcHelpMain(void) {
 
 }
 
-// This function wants -O4,s (its stmw r30 prologue and signed div-by-2 only come out right with it);
-// the ledger replaces such pragmas with a file-level -O4,s.
-#pragma optimize_for_size on
 // NONMATCHING (98.68%): the fallback string address is materialized through r0 with an extra `mr` instead of `addi r31, r3, str@l`, and the GXColor local is in stack slot 0x10 with its outgoing copy at 0xc (the original has the two swapped).
 void _ac_help_disp(CameraId camera, void* param) {
     BattleWork* wp = _battleWorkPointer;
@@ -74,4 +71,3 @@ void _ac_help_disp(CameraId camera, void* param) {
     FontDrawStart_alpha(alpha);
     FontDrawMessage((s32)x, (s32)float_neg148_80420d74 + (lines - 1) * 0x1D, msg);
 }
-#pragma optimize_for_size off

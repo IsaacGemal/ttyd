@@ -44,11 +44,6 @@ typedef struct ButtonDownWork {
     s32 field_0x70;  // 0x70, post-AC timer
 } ButtonDownWork;
 
-// The original ac_button_down unit was compiled with -O4,s (optimize for size): the prologues use
-// stmw/lmw, which -O4,p never emits. The file has no per-Object flag in configure.py, so scope the
-// pragma to the two functions that need it.
-#pragma optimize_for_size on
-
 // NONMATCHING (87.85%): 7 instructions differ, 8 missing, 10 extra, plus register differences.
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
@@ -163,7 +158,6 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         }
     }
 }
-#pragma optimize_for_size reset
 
 void battleAcDelete_ButtonDown(BattleWork* work) {
     work->actionCommands.mAcState = 1003;
@@ -198,8 +192,6 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: battleAcMain's prologue uses stmw/lmw.
-#pragma optimize_for_size on
 // NONMATCHING (82.01%): the state machine and all logic match, but MWCC assigns the callee-saved
 // registers differently (work is r24 instead of r22, smooth r28 instead of r25, ...), so almost every
 // instruction that touches a pointer/loop variable differs in its register field.
@@ -407,4 +399,3 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset

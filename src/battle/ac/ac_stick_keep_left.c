@@ -34,9 +34,6 @@ typedef struct StickKeepLeftWork {
     u32 sfx[12];    // 0x0C, psndSFXOn handles for the notes (u32 so `== -1` compares unsigned)
 } StickKeepLeftWork;
 
-// optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
-// with -O4,s; without this pragma MWCC emits separate stw/lwz for r23-r31.
-#pragma optimize_for_size on
 // NONMATCHING (98.29%): string pointers copied through a `mr`; case 0x3EB empty loop lacks the second
 // bound check (`blt` + `cmpwi r3, 0`); ok_frame index gets an extra `extsb` after the call to
 // BattleActionCommandGetDifficulty (header and definition both return `s8`, so the cause is not the
@@ -241,15 +238,11 @@ s32 battleAcMain_StickKeepLeft(BattleWork* work) {
 
     return 1;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_StickKeepLeft(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// optimize_for_size: the original prologue uses stmw/lmw (this file's other functions do too), i.e. built
-// with -O4,s; without this pragma MWCC emits separate stw/lwz for r30/r31.
-#pragma optimize_for_size on
 void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
     BattleActions* ac = &((BattleWork*)param)->actionCommands;
     StickKeepLeftWork* dec = (StickKeepLeftWork*)&ac->field_0x2BC[0];
@@ -299,7 +292,6 @@ void battleAcDisp_StickKeepLeft(CameraId camId, void* param) {
         break;
     }
 }
-#pragma optimize_for_size reset
 
 void battleAcDelete_StickKeepLeft(BattleWork* work) {
     work->actionCommands.mAcState = 0x3ED;

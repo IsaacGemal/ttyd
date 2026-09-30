@@ -33,8 +33,6 @@ typedef struct PowerGaugeDecWork {
     s32 countdown;    // 0x18
 } PowerGaugeDecWork;
 
-// optimize_for_size: the original saves r28-r31 with `stmw`; the default model uses individual saves.
-#pragma optimize_for_size on
 // NONMATCHING (98.26%): register allocation of the two base pointers only; the original materialises
 // dec (work+0x1F4C) in r31 and disp (work+0x1F20) in r28, while MWCC folds dec to 0x2C(r31) and
 // materialises disp in r31. Deriving dec from `work` folds it into the work base entirely (93.83%).
@@ -244,7 +242,6 @@ s32 battleAcMain_PowerGauge(BattleWork* work) {
     }
     return 1;
 }
-#pragma optimize_for_size reset
 
 s32 battleAcResult_PowerGauge(BattleWork* work) {
     return work->actionCommands.result;

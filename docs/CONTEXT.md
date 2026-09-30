@@ -2444,3 +2444,20 @@ The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only fu
   follows its first reference in code emission order (functions are emitted in reverse source order), not declaration order.
 - **What did not work** (so nobody repeats it): operand-order and declaration-order searches over the eleven remaining
   units of the class (kemuri4/7, ice_n64, packn_bfire) and over 130 near-miss functions moved one score by 0.2 points.
+
+## Grind 23 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Per-file flag sweep** (`tools/flag_sweep.py UNIT [--quick] [--json OUT]`): recompiles a dol unit with -O4,p / -O4,s /
+  -O2,p / -O2,s, `-inline auto` against the unit's own `auto,deferred`, and with or without the file's
+  `#pragma optimize_for_size` lines, then lists every function's score per variant and the variants where nothing drops.
+  Objects go to a scratch dir. Run over all of `battle/ac/*`, `battle_ac_help`, `battle_icon`, `battle_enemy_item`,
+  `sac_deka` and `sac_genki`.
+- **Result**: -O2 is worse everywhere (2 to 10 functions drop per unit). -O4,s with the pragmas removed matches today's
+  score for every unit that carried `optimize_for_size` pragmas, so those fourteen files now build with
+  `extra_cflags=["-O4,s"]` and the pragmas are gone. Two gained: battle_icon (BtlIcon_Entry 7.6 -> 71.5, BattleIconMain
+  59.4 -> 81.0, BattleIconEnd 72.6 -> 100, btlevtcmd_BtlIconSetFallAccel 77 -> 100) and ac_gauge_timing2 (battleAcMain 91.25
+  -> 96.10). The units already at -O4,s (ac_lst_rc_keep, ac_stick_rotate, ...) and the four ac units with no pragma
+  (ac_shot, ac_signal_timing, ac_gauge_timing, ac_repeatedly_lv) score the same under every -O4 variant, so flags do not
+  gate the remaining battle/ac functions: their gap is register allocation. The wave-24 report of
+  battleAcDisp_GaugeTiming2 at 100% under -O2,p does not reproduce (both functions of the unit drop under -O2).
+- **Review needed**: compiler-flag changes wait for Isaac's morning review.

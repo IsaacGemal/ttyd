@@ -38,11 +38,6 @@ static void yuka_init(void);  // local to this file in the original
 void psndSFX_pit(s32 id, s32 pitch);
 
 
-// The original sac_deka unit was compiled with -O4,s (optimize for size): the
-// prologues/epilogues use stmw/lmw, which -O4,p never emits. There is no
-// per-Object flag for this unit, so set it here.
-#pragma optimize_for_size on
-
 // ---- local declarations (no header yet) ----
 
 // ---- local work struct at _battleWorkPointer + 0x1F4C ----
