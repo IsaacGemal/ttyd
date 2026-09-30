@@ -72,15 +72,17 @@ static inline Vec effHitInitVec(Vec* input) {
 
 // The instruction sequence matches; only MWCC's callee-saved register colouring and the loop-body
 // schedule still differ (details in REPORT.md).
-// NONMATCHING (90.08%): effect/angle/magic registers permuted, the two int->double conversions serialized.
+// NONMATCHING (91.92%): f30/f31 (the int->float magic double vs 0.0f) are swapped, effect/count/
+// count-1/magic land in different callee-saved registers, and the loop's two int->float conversions
+// are scheduled in a different order; the field/member writes are grouped to reproduce that schedule.
 EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
-	s32 angle;
+	effHitData* data;
+	s32 r;
+	s32 count;
 	effHitParticle* part;
 	s32 i;
-	s32 count;
-	s32 r;
-	effHitData* data;
 	EffectEntry* effect;
+	s32 angle;
 
 	effect = effEntry();
 	count = (duration * 5 + 20) / 3 + 1;
@@ -140,14 +142,14 @@ EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 sca
 	for (i = 1; i < count; i++, part++) {
 		r = rand();
 		angle = (i * 360) / (count - 1);
-		part->rotZ = (f32)angle;
 		part->position.x = float_0_8041f0f0;
 		part->position.y = float_0_8041f0f0;
-		part->position.z = float_0_8041f0f0;
-		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x14 = float_0_8041f0f0;
-		part->field_0x20 = float_0_8041f0f0;
+		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x0 = 0;
+		part->rotZ = (f32)angle;
+		part->field_0x20 = float_0_8041f0f0;
+		part->position.z = float_0_8041f0f0;
 		part->rotY = (f32)(r % 360);
 		part->field_0x10 = float_0_8041f0f0;
 		part->field_0x2C = 0xff;

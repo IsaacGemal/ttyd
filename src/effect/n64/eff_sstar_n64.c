@@ -266,8 +266,10 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.65%): a few register names (f4/f5 swap around the sqrt and the d2 cache),
-// one operand order on `fcmpu f31,f0`, and the sqrtf-double pool anchor offset.
+// MWCC's FPR allocation follows the local declaration order: with negSin declared next to
+// negCos (the file's earlier 99.65% shape) negSin lands in f4 and d2 in f5; the order below
+// gives the original's negSin=f5, d2=f4. The two `if (x)` truthiness tests (not `x != 0.0f`)
+// are also needed for the original's `fcmpu f31,f0` operand order. Do not reorder/simplify.
 EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
     EffectEntry* effect;
     SstarWork* data;
@@ -276,10 +278,10 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     f32 scale;
     f32 angle;
     f32 negCos;
-    f32 negSin;
     f32 c;
     f32 s;
     f32 d2;
+    f32 negSin;
     s32 i;
 
     effect = effEntry();
@@ -315,7 +317,7 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     dz = a7 - z;
     dist = dx * dx + dy * dy + dz * dz;
     scale = dist;
-    if (dist != 0.0f) {
+    if (dist) {
         dist = sqrtf(dist);
         scale = a8 / dist;
     }
@@ -329,7 +331,7 @@ EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32
     c = negCos * data->velX;
     s = negSin * data->velZ;
     d2 = c * c + s * s;
-    if (d2 != 0.0f) {
+    if (d2) {
         d2 = sqrtf(d2);
     }
     if (negCos * data->velX + negSin * data->velZ < 0.0f) {

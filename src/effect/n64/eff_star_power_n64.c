@@ -80,12 +80,11 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     return effect;
 }
 
-// NONMATCHING (99.86%): the instruction sequence is identical (only the int->float pool double
-// is an anonymous @216 in our object, which objdiff does not score against the original's
-// double_to_int_802fb728); the remaining difference is the FP register allocation in the
-// type==1 block: the original keeps the second (f32)counter conversion in f2 and the
-// float_4*counter product in f7, ours uses f3 and reuses f4. The pool double is placed after
-// vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
+// Matched: the type==1 block's FP register allocation (retail keeps the counter fold in f2,
+// float_0p4953 in f3, the float_4*counter product in f7 and the counter*4 conversion in f4)
+// only comes out when the product assignment is folded into the field_0x40 multiply's first
+// operand; assigning f7 on its own line rotates them to f3/f2/f4/f3. The pool double is placed
+// after vec3_802fb718 only because "StarPowerN64" is written as a literal (a named const char[]
 // would be laid out before the compiler's pooled constants).
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
@@ -129,11 +128,20 @@ void effStarPowerMain(EffectEntry* effect) {
         *(f32*)&data->field_0x50 = data->field_0x44;
         *(f32*)&data->field_0x54 = data->field_0x38;
         if (type == 1) {
+#ifdef MUST_MATCH
+            /* MUST_MATCH: the embedded `f7 = ...` is allocator steering, not logic; the natural
+               form under #else rotates the FPRs (fold f3, product f4, counter*4 f3). */
+            f32 f7;
+            data->field_0x3C = (f32)(counter * 4);
+            data->field_0x40 = float_0p4953_8041fe38 * (f7 = float_4_8041fe3c * (f32)counter);
+            data->field_0x44 = float_0p2234_8041fe40 * f7;
+#else
             f32 f7;
             data->field_0x3C = (f32)(counter * 4);
             f7 = float_4_8041fe3c * (f32)counter;
             data->field_0x40 = float_0p4953_8041fe38 * f7;
             data->field_0x44 = float_0p2234_8041fe40 * f7;
+#endif
             data->color1A = 0xFF;
             data->color2A = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_7p1234_8041fe48 * (f32)counter) / float_360_8041fe4c) + float_128_8041fe50);
             data->color1R = (u8)(float_127_8041fe54 * (f32)sin(float_6p2832_8041fe44 * (float_1p231_8041fe58 * (f32)counter) / float_360_8041fe4c) + float_215_8041fe5c);

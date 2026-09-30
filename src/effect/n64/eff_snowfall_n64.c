@@ -132,20 +132,28 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 	return effect;
 }
 
-// Only the callee-saved pointer pair differs. GC/2.6 assigns the `effect` parameter the higher
-// NONMATCHING (86.22%): data is r30/effect r31 here, the original is data r31/effect r30.
+// The position Vec is built by this makeVec inline (the plain `Vec position = vec3_802fb668;` plus three
+// field stores schedules the loads worse).  `data++` rather than a byte-cast add is what makes mwcc colour
+// data r31 and the effect parameter r30 as the original does; together they give a byte-exact match.
+static inline Vec effSnowfallMakeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effSnowfallMain(EffectEntry* effect) {
 	effSnowfallData* data = effect->userdata;
 	Vec position2;
-	Vec position = vec3_802fb668;
+	Vec position;
 	s32 i;
 	s32 life;
 	s32 count;
 	s32 limit;
 
-	position.x = data->position.x;
-	position.y = data->position.y;
-	position.z = data->position.z;
+	position = effSnowfallMakeVec(data->position.x, data->position.y, data->position.z);
 	position2 = position;
 	camGetPtr(CAMERA_3D);
 	if (data->life < 100) {
@@ -162,7 +170,7 @@ void effSnowfallMain(EffectEntry* effect) {
 		data->field_0x28 = life * 25;
 	}
 	limit = (s32)float_166_8041fd24;
-	data = (effSnowfallData*)((u8*)data + 0x34);
+	data++;
 	for (i = 0; i < count; i++, data++) {
 		if (data->timer > 0) {
 			data->timer--;

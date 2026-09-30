@@ -118,14 +118,14 @@ void effRippleMain(EffectEntry* effect) {
 	}
 
 	if (timer > 5) {
-		data->field_0x18 = (s32)(0.3f * (f32)(120 - data->field_0x18) + (f32)data->field_0x18);
+		data->field_0x18 = (s32)(float_0p3_8041fbb0 * (f32)(120 - data->field_0x18) + (f32)data->field_0x18);
 	}
 
 	if ((type == 1 || type == 2 || type == 3) && timer == 15) {
 #ifdef MUST_MATCH
 		/* MUST_MATCH: the original loads the new effect's userdata into r3 before reading
 		   data->rz, so rz lands in f1; the natural one-liner reads userdata first and reuses f0. */
-		EffectEntry* e = effRippleN64Entry(type * 10, data->x, data->y, data->z, 0.0f);
+		EffectEntry* e = effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0);
 		f32 rz = data->rz;
 		EffRippleData* newData = e->userdata;
 		f32 rx = data->rx;
@@ -133,17 +133,17 @@ void effRippleMain(EffectEntry* effect) {
 		newData->rz = rz;
 #else
 		EffRippleData* newData =
-			effRippleN64Entry(type * 10, data->x, data->y, data->z, 0.0f)->userdata;
+			effRippleN64Entry(type * 10, data->x, data->y, data->z, float_0_8041fba0)->userdata;
 		newData->rx = data->rx;
 		newData->rz = data->rz;
 #endif
 	}
 
 	if (type == 2 || type == 20) {
-		data->field_0x10 *= 1.05f;
+		data->field_0x10 *= float_1p05_8041fbb4;
 	}
 	if (type == 3 || type == 30) {
-		data->field_0x10 *= 1.05f;
+		data->field_0x10 *= float_1p05_8041fbb4;
 	}
 
 	if (timer < 0x20) {
@@ -155,7 +155,7 @@ void effRippleMain(EffectEntry* effect) {
 		data->field_0x24 -= 0x20;
 	}
 
-	data->field_0x10 += 0.1f;
+	data->field_0x10 += float_0p1_8041fbb8;
 	dispEntry(data->camId, dispCalcZ(&position2), 2, effRippleDisp, effect);
 }
 

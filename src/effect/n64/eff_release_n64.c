@@ -34,10 +34,9 @@ extern const f32 float_0p6_8041fb8c;
 extern const f32 float_1p2_8041fb90;
 
 // .rodata
-const Vec vec3_802fb4f0 = {0.0f, 0.0f, 0.0f};
-const f64 double_to_int_802fb500 = 4503601774854144.0;
-const f64 double_to_int_mask_802fb508 = 4503599627370496.0;
-const char str_802FB510[] = "ReleaseN64";
+// The zero Vec (vec3_802fb4f0), the two int->float magic doubles (double_to_int_802fb500,
+// double_to_int_mask_802fb508) and the "ReleaseN64" string are compiler-generated here and land at
+// the original's offsets; defining them by name as well only emitted duplicates after them.
 
 // .data
 // lbl_803A4C60 belongs to the previous unit (eff_recover_heart_n64); effReleaseDisp reaches
@@ -129,7 +128,7 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     s32 typeLo;
 
     effect = effEntry();
-    effect->type = str_802FB510;
+    effect->type = "ReleaseN64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, 0x78);
     effect->userdata = data;
@@ -176,21 +175,30 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     return effect;
 }
 
-// NONMATCHING (92.84%): the switch bodies are byte-identical in structure; what differs is
-// register allocation in case 0/case 100, the compiler-pool names for the double_to_int
-// conversion constants, and the vec3 prologue scheduling.
+// Match-only helper: builds the initial Vec from an anonymous zero literal so the
+// compiler schedules the loads the way the original does (see the prologue).
+static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
+#pragma opt_common_subs off // without it MWCC CSEs the 0.01*t/0.3*idx product across the conversion and picks different FPRs (94.0%)
+// Only the case-100 `field_0x74 < 30` block's scratch registers differ: the 0x4330/index pair uses
+// r7/r6 instead of r6/r9 and the mask/double address pair uses r8/r9 instead of r7/r8. The 0x70
+// dispatch also omits the target's redundant `bge default` before its `b default` (one instruction).
+// NONMATCHING (99.66%): see above.
 void effReleaseMain(EffectEntry* effect) {
     effReleaseN64Data* data = effect->userdata;
     Vec position2;
-    Vec position = vec3_802fb4f0;
+    Vec position;
     s32 counter;
     s32 type;
     s32 i;
-    u8 b;
 
-    position.x = data->x;
-    position.y = data->y;
-    position.z = data->z;
+    position = releaseMakeVec(data->x, data->y, data->z);
     position2 = position;
     type = data->field_0x4;
 
@@ -216,7 +224,7 @@ void effReleaseMain(EffectEntry* effect) {
             data->field_0x74++;
             data->alphas[0] = 200 + (counter & 3) * 30;
             data->scales[0] = float_0p04_8041fb74 * (f32)sin(float_6p2832_8041fb68 * (f32)(counter * 20) / float_360_8041fb6c) + float_0p5_8041fb70;
-            if (data->field_0x0 != 0) {
+            if ((s32)data->field_0x0 != 0) {
                 data->x += (f32)sin(float_6p2832_8041fb68 * (f32)counter / float_360_8041fb6c);
                 data->y += (f32)cos(float_6p2832_8041fb68 * (float_1p2356_8041fb78 * (f32)counter) / float_360_8041fb6c);
                 if (data->field_0x74 > 50) {
@@ -231,6 +239,7 @@ void effReleaseMain(EffectEntry* effect) {
             break;
         case 100: {
             u16 t;
+            u8 b;
             f32 s;
             switch (data->field_0x74) {
                 case 0:
@@ -248,12 +257,12 @@ void effReleaseMain(EffectEntry* effect) {
             }
             if (data->field_0x74 < 30) {
                 t = anime_data[data->field_0x74].field_0;
-                b = anime_data[data->field_0x74].field_2;
                 s = float_0p3_8041fb84 * (f32)data->field_0x74 + float_0p01_8041fb88 * (f32)t;
+                b = anime_data[data->field_0x74].field_2;
             } else {
                 t = anime_data[29].field_0;
-                b = anime_data[29].field_2;
                 s = float_0p01_8041fb88 * (f32)t + float_0p3_8041fb84 * (f32)data->field_0x74;
+                b = anime_data[29].field_2;
             }
             data->alphas[0] = 0;
             data->scales[0] = float_0_8041fb40;
@@ -266,7 +275,7 @@ void effReleaseMain(EffectEntry* effect) {
         }
         case 1: {
             u16 t;
-            u32 a;
+            u8 a;
             f32 s;
             switch (data->field_0x74) {
                 case 0:
@@ -283,12 +292,12 @@ void effReleaseMain(EffectEntry* effect) {
                     break;
             }
             t = anime_data[data->field_0x74].field_0;
-            a = anime_data[data->field_0x74].field_2 & 0xFF;
+            s = float_0p01_8041fb88 * (f32)t;
+            a = anime_data[data->field_0x74].field_2;
             data->alphas[0] = 0;
-            data->scales[0] = float_0_8041fb40;
             data->alphas[1] = a;
             data->alphas[2] = a;
-            s = float_0p01_8041fb88 * (f32)t;
+            data->scales[0] = float_0_8041fb40;
             data->scales[1] = s;
             data->scales[2] = float_1p2_8041fb90 * s + float_4_8041fb7c;
             data->field_0x74++;
@@ -300,7 +309,8 @@ void effReleaseMain(EffectEntry* effect) {
         }
         case 4: {
             u16 t;
-            u32 a;
+            u8 a;
+            f32 s;
             switch (29 - data->field_0x74) {
                 case 0:
                     data->scales[3] = float_4_8041fb7c;
@@ -316,12 +326,13 @@ void effReleaseMain(EffectEntry* effect) {
                     break;
             }
             t = anime_data_2[data->field_0x74].field_0;
-            a = anime_data_2[data->field_0x74].field_2 & 0xFF;
+            s = float_0p01_8041fb88 * (f32)t;
+            a = anime_data_2[data->field_0x74].field_2;
             data->alphas[0] = 0;
             data->scales[0] = float_0_8041fb40;
             data->alphas[1] = a;
             data->alphas[2] = 0;
-            data->scales[1] = float_0p01_8041fb88 * (f32)t;
+            data->scales[1] = s;
             data->scales[2] = float_0_8041fb40;
             data->field_0x74++;
             if (data->field_0x74 >= 30) {
@@ -358,6 +369,7 @@ void effReleaseMain(EffectEntry* effect) {
 
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effReleaseDisp, effect);
 }
+#pragma opt_common_subs reset
 
 // .text
 

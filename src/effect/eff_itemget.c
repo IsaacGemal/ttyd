@@ -45,106 +45,6 @@ GXColor unk_804232f0;
 GXColor unk_804232f4;
 GXColor unk_804232f8;
 
-// NONMATCHING (99.90%): the -21.333334/2.0f negate lands in f1 and the 42.666668 load in f2;
-// the target wants them swapped (negate f2, 42.666668 f1); the 0.5 load and fmuls now match, and
-// the two GXSetChanMatColor temporaries still land 8 bytes lower. The /2.0f is a MUST_MATCH nudge.
-void effItemUseDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	effItemGetData* data = effect->userdata;
-	CameraEntry* cam;
-	GXTexObj texObj;
-	Mtx mtx1;
-	Mtx mtx3;
-	Mtx mtx2;
-	Mtx mtx4;
-	GXColor color2;
-	GXColor color;
-	s32 i;
-	s32 j;
-	f32 f30;
-	f32 f31;
-	f32 f29;
-
-	cam = camGetPtr(camId);
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
-	PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
-	PSMTXScale(mtx3, 0.4f, 0.4f, 0.4f);
-	PSMTXConcat(mtx1, mtx3, mtx4);
-	PSMTXConcat(mtx4, mtx2, mtx4);
-	PSMTXConcat(cam->view, mtx4, mtx4);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevOp(0, 0);
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetCullMode(0);
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xD, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-	effGetTexObj(0x2B, &texObj);
-	GXLoadTexObj(&texObj, 0);
-
-	{
-		f32 f = 42.666668f;
-		f30 = -f;
-	}
-#ifdef MUST_MATCH
-	{
-		f32 f = 21.333334f;
-		f31 = -f / 2.0f;
-	}
-#else
-	{
-		f32 f = 21.333334f;
-		f31 = -f * 0.5f;
-	}
-#endif
-	f29 = 10.666667f;
-	i = 1;
-	data++;
-	for (; i < effect->count; i++, data++) {
-		for (j = 0; j < 2; j++) {
-			if (j == 0) {
-				PSMTXTrans(mtx1, data->position.x + 2.0f, data->position.y - 2.0f, data->position.z);
-				PSMTXRotRad(mtx2, 'z', data->field_0x30);
-				PSMTXConcat(mtx1, mtx2, mtx1);
-				PSMTXConcat(mtx4, mtx1, mtx1);
-				color = unk_804232f8;
-				color.a = (data->field_0x34 * 64) / 255;
-				GXSetChanMatColor(4, color);
-			} else {
-				PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
-				PSMTXRotRad(mtx2, 'z', data->field_0x30);
-				PSMTXConcat(mtx1, mtx2, mtx1);
-				PSMTXConcat(mtx4, mtx1, mtx1);
-				color2 = dat_80420ba0;
-				color2.a = (data->field_0x34 * 128) / 255;
-				GXSetChanMatColor(4, color2);
-			}
-			GXLoadPosMtxImm(mtx1, 0);
-			GXSetCurrentMtx(0);
-			GXBegin(0x80, 0, 4);
-			GXPosition3f32(f31, 0.0f, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(f29, 0.0f, 0.0f);
-			GXTexCoord2f32(2.0f, 0.0f);
-			GXPosition3f32(f29, f30, 0.0f);
-			GXTexCoord2f32(2.0f, 1.0f);
-			GXPosition3f32(f31, f30, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
-		}
-	}
-}
 
 // NONMATCHING (99.68%): MWCC reuses f29 (dead scale) for the cos result instead of f31, and
 // the GXSetChanMatColor temporaries sit at different stack offsets.
@@ -476,4 +376,105 @@ EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 		ptr->field_0x1C = 0;
 	}
 	return entry;
+}
+
+// NONMATCHING (99.90%): values match; only scheduling/allocation differs. The 21.333334/42.666668/2.0/0.5
+// .sdata2 pool entries are in the wrong first-use order; the -f/2.0f negate temp is f1 not f2 (42.666668
+// loads f2 not f1); the two GXSetChanMatColor temps land 8 bytes lower (0xc/0x8 vs 0x14/0xc).
+void effItemUseDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effItemGetData* data = effect->userdata;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx mtx1;
+	Mtx mtx3;
+	Mtx mtx2;
+	Mtx mtx4;
+	GXColor color2;
+	GXColor color;
+	s32 i;
+	s32 j;
+	f32 f30;
+	f32 f31;
+	f32 f29;
+
+	cam = camGetPtr(camId);
+	GXSetBlendMode(1, 4, 5, 0);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetZMode(1, 3, 0);
+	PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(mtx2, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
+	PSMTXScale(mtx3, 0.4f, 0.4f, 0.4f);
+	PSMTXConcat(mtx1, mtx3, mtx4);
+	PSMTXConcat(mtx4, mtx2, mtx4);
+	PSMTXConcat(cam->view, mtx4, mtx4);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevOp(0, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetCullMode(0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	effGetTexObj(0x2B, &texObj);
+	GXLoadTexObj(&texObj, 0);
+
+	{
+		f32 f = 42.666668f;
+		f30 = -f;
+	}
+#ifdef MUST_MATCH
+	{
+		f32 f = 21.333334f;
+		f31 = -f / 2.0f;
+	}
+#else
+	{
+		f32 f = 21.333334f;
+		f31 = -f * 0.5f;
+	}
+#endif
+	f29 = 10.666667f;
+	i = 1;
+	data++;
+	for (; i < effect->count; i++, data++) {
+		for (j = 0; j < 2; j++) {
+			if (j == 0) {
+				PSMTXTrans(mtx1, data->position.x + 2.0f, data->position.y - 2.0f, data->position.z);
+				PSMTXRotRad(mtx2, 'z', data->field_0x30);
+				PSMTXConcat(mtx1, mtx2, mtx1);
+				PSMTXConcat(mtx4, mtx1, mtx1);
+				color = unk_804232f8;
+				color.a = (data->field_0x34 * 64) / 255;
+				GXSetChanMatColor(4, color);
+			} else {
+				PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
+				PSMTXRotRad(mtx2, 'z', data->field_0x30);
+				PSMTXConcat(mtx1, mtx2, mtx1);
+				PSMTXConcat(mtx4, mtx1, mtx1);
+				color2 = dat_80420ba0;
+				color2.a = (data->field_0x34 * 128) / 255;
+				GXSetChanMatColor(4, color2);
+			}
+			GXLoadPosMtxImm(mtx1, 0);
+			GXSetCurrentMtx(0);
+			GXBegin(0x80, 0, 4);
+			GXPosition3f32(f31, 0.0f, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(f29, 0.0f, 0.0f);
+			GXTexCoord2f32(2.0f, 0.0f);
+			GXPosition3f32(f29, f30, 0.0f);
+			GXTexCoord2f32(2.0f, 1.0f);
+			GXPosition3f32(f31, f30, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+		}
+	}
 }

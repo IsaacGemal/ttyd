@@ -221,19 +221,16 @@ void kemuri_mugi(void) {
     }
 }
 
-// In the characterId!=2 increment branch mwcc schedules the `cos` load (and
-// therefore the z product) before `sin`; the reference does `sin` first. This also
-// leaves the 1.5f/pos.y pair in f2/f0 in the reference but f6/f2 here in the
-// characterId==2 decrement branch's final effKemuri2Entry call.
-// NONMATCHING (97.23%): sin/cos scheduling in the increment branch.
+// The two effKemuri2Entry calls must build their x/y/z arguments in separate
+// locals in this order (x, y, z): folding them back into the call makes mwcc
+// schedule the cos product before the sin product and pick different FPRs,
+// which loses the match in both branches.
 void kemuri(void) {
     MarioWork* mario = marioGetPtr();
     f32 sin;
     f32 cos;
     f32 fade;
     f32 dist;
-    f32 sx;
-    f32 sz;
     EffectEntry* effect;
     f32 x;
     f32 y;
@@ -265,9 +262,10 @@ void kemuri(void) {
         if (ct552++ > 6) {
             ct552 = 0;
             sincosf(&sin, &cos, 6.2831855f * reviseAngle(-mario->directionView) / 360.0f);
-            sx = mario->position.x + 0.2f * (mario->wPlayerCollisionBox.x * sin);
-            sz = mario->position.z + 0.2f * (mario->wPlayerCollisionBox.x * cos);
-            effect = effKemuri2Entry(0, sx, mario->position.y + 1.5f, sz, sin, cos);
+            x = mario->position.x + 0.2f * (mario->wPlayerCollisionBox.x * sin);
+            y = mario->position.y + 1.5f;
+            z = mario->position.z + 0.2f * (mario->wPlayerCollisionBox.x * cos);
+            effect = effKemuri2Entry(0, x, y, z, sin, cos);
             if (mario->flags & 0x02000000) {
                 *(f32*)((u8*)effect->userdata + 0x74) = 0.6f;
             }
@@ -298,8 +296,10 @@ void kemuri(void) {
                     fade = 4.0f;
                     break;
             }
-            effect = effKemuri2Entry(0, mario->position.x + dist * sin, mario->position.y + 1.5f,
-                                     mario->position.z + dist * cos, sin, cos);
+            x = mario->position.x + dist * sin;
+            y = mario->position.y + 1.5f;
+            z = mario->position.z + dist * cos;
+            effect = effKemuri2Entry(0, x, y, z, sin, cos);
             *(f32*)((u8*)effect->userdata + 0x74) = fade;
         }
     }

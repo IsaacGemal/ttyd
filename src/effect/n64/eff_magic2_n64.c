@@ -167,18 +167,31 @@ void effMagic2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effMagic2Disp, effect);
 }
 
-// NONMATCHING (95.74%): structure matches; remaining diffs are callee-saved register
-// assignments (r20-r28 mapping) and two GXColor stack temp slots.
+#ifdef MUST_MATCH
+// Match-only: building color2 through an inline return puts its local at 0x8 and its
+// by-value argument copy at 0xc, as the original does (a plain local lands at 0x14/0x8).
+static inline GXColor magic2Color2(s32 alpha) {
+	GXColor c = unk_804231b4;
+	c.a = alpha / 2;
+	return c;
+}
+#endif
+
+// The declaration order below is tuned so MWCC assigns the original's callee-saved registers
+// (data=r29, i=r28, idx=r27, alpha=r26, type=r25, rot=r24, vOffset=r23, rot2=r22).
+// NONMATCHING (96.24%): structure and instruction count match. effect and uOffset still swap
+// callee-saved registers (target effect=r21/uOffset=r20).
 void effMagic2Disp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
 	effMagic2Data* data;
-	s32 type;
-	s32 alpha;
+	s32 i;
 	s32 idx;
-	s32 uOffset;
-	s32 vOffset;
+	s32 alpha;
+	s32 type;
 	s32 rot;
+	s32 vOffset;
 	s32 rot2;
+	EffectEntry* effect;
+	s32 uOffset;
 	Mtx mtxD;
 	Mtx mtxE;
 	Mtx44 mtxC;
@@ -186,8 +199,8 @@ void effMagic2Disp(CameraId camId, void* param) {
 	Mtx44 mtxB;
 	f32 proj[7];
 	f32 viewport[6];
-	s32 i;
 
+	effect = param;
 	camGetPtr(camId);
 	data = effect->userdata;
 	type = data->type;
@@ -200,11 +213,11 @@ void effMagic2Disp(CameraId camId, void* param) {
 	PSMTX44Concat(mtxC, mtxA, mtxC);
 	GXSetProjection(mtxC, 0);
 	switch (type) {
-	case 0:
-		PSMTXTrans(mtxD, 0.0f, 0.0f, -80.0f);
-		break;
 	case 1:
 		PSMTXTrans(mtxD, 0.0f, 0.0f, -70.0f);
+		break;
+	case 0:
+		PSMTXTrans(mtxD, 0.0f, 0.0f, -80.0f);
 		break;
 	}
 	GXLoadPosMtxImm(mtxD, 0);
@@ -228,8 +241,12 @@ void effMagic2Disp(CameraId camId, void* param) {
 		color1.b = ptr[2];
 		color1.a = alpha;
 		GXSetTevColor(1, color1);
+#ifdef MUST_MATCH
+		color2 = magic2Color2(alpha);
+#else
 		color2 = unk_804231b4;
 		color2.a = alpha / 2;
+#endif
 		GXSetTevColor(2, color2);
 		if (type == 0) {
 			PSMTXScale(mtxE, 0.015625f, 0.015625f, 1.0f);

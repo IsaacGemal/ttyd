@@ -2879,3 +2879,11 @@ finishing it. A fresh Claude review found no regression and three bugs on main t
 `firebar_entry` had its loop-sound check inverted; rsh `rsh_window_tev` passed the frustum's left/right with the
 wrong sign, and read through NULL where retail walks its ancestors; unit_barriern_z passed `a` where retail's
 first `intplGetValue` takes 4. Labels and agent notes cleaned up after it.
+
+## Wave 33: near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 dol near-miss files (closest function at 85% or better, units with one or two open functions), 13:43-15:20,
+from main b369036. **19 of 48 reached 100%, 16 improved, 13 unchanged, 0 worse.** Lower than waves 28-31: the queue now
+reaches into the 85-90% band. Fixed at collection: rothammer_fail had extern'd constants its unit pools itself;
+battle_mario's `_hammer_star_effect` pinned its load order with extern'd constants, which cost the unit's .sdata2,
+so it is back to main's version.

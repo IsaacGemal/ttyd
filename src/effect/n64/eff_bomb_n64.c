@@ -212,16 +212,26 @@ static inline GXColor bombColor2(u8 b, u8 a) {
 	c.a = a;
 	return c;
 }
+
+// Helper added for this match: calling GXSetTevColor inside each inline places the colour build word
+// and its by-value argument copy in the original's slots (color1 0x10/0x14, color2 0x8/0xc). The
+// return-inline pair above leaves color1's copy and color2's build word swapped (the old 99.77%).
+static inline void bombSetColor1(u8 a) {
+	GXColor c = dat_8041e9d0;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+static inline void bombSetColor2(u8 b, u8 a) {
+	GXColor c = dat_8041e9d4;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(GX_TEVREG0, c);
+}
 #endif
 
-// Two MWCC allocation artifacts keep this below 100%. (1) The original keeps timer/camera in r31/r30;
-// this build swaps them (camera r31, timer r30); both keep data in r29. (2) The colour temporaries
-// interleave: this build writes color1's build word at 0x10/0x14 and color2's at 0x8/0x10, so color1's
-// local (0xc here vs 0x10 original) and color2's by-value copy (0x10 here vs 0xc original) are swapped,
-// while color1's copy (0x14) and color2's local (0x8) match. Same mwcc by-value-GXColor quirk as
-// effStoneSmokeDisp/effConfettiDisp.
-// NONMATCHING (99.77%): (1) camera/timer are r31/r30 here vs r30/r31 original;
-// (2) color1's local and color2's copy stack slots are swapped (0xc/0x10 vs 0x10/0xc).
+// NONMATCHING (99.92%): color1's seed load and alpha load use r0/r5 where the original uses r5/r0
+// (4 instructions). Everything else matches, including the stack slots and camera/timer registers.
+#pragma opt_propagation off // default propagation puts camera/timer in r31/r30, the reverse of the target
 static void effBombDisp(CameraId camId, void* param) {
 	s32 timer;
 	effBombN64Data* data;
@@ -263,7 +273,7 @@ static void effBombDisp(CameraId camId, void* param) {
 		effGetTexObjN64(0x18, &texObj);
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
-		GXSetTevColor(GX_TEVREG0, bombColor1(data->field_0x7C));
+		bombSetColor1(data->field_0x7C);
 #else
 		{
 			GXColor color1 = dat_8041e9d0;
@@ -296,7 +306,7 @@ static void effBombDisp(CameraId camId, void* param) {
 		blue = 0xFF;
 	}
 #ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, bombColor2(blue, alpha));
+	bombSetColor2(blue, alpha);
 #else
 	color2 = dat_8041e9d4;
 	color2.b = blue;
@@ -329,3 +339,4 @@ static void effBombDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+#pragma opt_propagation reset

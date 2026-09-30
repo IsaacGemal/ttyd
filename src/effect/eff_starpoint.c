@@ -38,9 +38,15 @@ extern const f32 float_14_804209fc;
 const f64 double_to_int_802fdbf8 = 4503601774854144.0;
 const char str_802FDBEC[] = "StarPoint";
 
-// NONMATCHING (95.44%): logic/scheduling match; the int->float magic f64 lands in f22 vs f26,
-// shifting k16605/cOne/k4967/c14 down one register and the seed/temp FPRs (f4 vs f2). Anonymous
-// pooled constant vs double_to_int_802fdbf8 does not score (cf. effStarPointMain at 100%).
+// opt_common_subs off: with CSE on MWCC merges the loop-invariant float pool loads, which
+// shifts the loop constants (k16605/cOne/k4967/14) one FPR too high versus the target.
+#pragma opt_common_subs off
+// opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
+// (0.00761 lands in f4 vs f2); this recovers the target's instruction scheduling.
+#pragma opt_lifetimes off
+// NONMATCHING (96.83%): loop constants/seed FPRs now match; only the int->float magic is f31
+// instead of f26, rotating the six top-block values (target cTwo..c0=f31..f27,magic=f26; ours
+// magic=f31,cTwo..c0=f30..f26). Pooled @N double vs double_to_int does not score.
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
@@ -156,6 +162,9 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 
     return entry;
 }
+
+#pragma opt_lifetimes reset
+#pragma opt_common_subs reset
 
 void effStarPointMain(EffectEntry* effect) {
     Vec position;

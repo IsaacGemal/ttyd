@@ -21,7 +21,14 @@ const GXColor dat_8041e33c = { 0xC9, 0xC0, 0xCF, 0x00 };
 const GXColor dat_8041e340 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor unk_80423070;
 
+#ifdef MUST_MATCH
+// MUST_MATCH: non-const (pinned to .rodata, as kpa_act.c does) so MWCC assumes the store to
+// data->field_0x28 may alias vec3_802f8e80 and leaves its three lwz after that store, as retail
+// schedules them. A plain `const Vec` makes the scheduler hoist them above the second fctiwz.
+__declspec(section ".rodata") Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802f8e80 = { 0.0f, 0.0f, 0.0f };
+#endif
 const char str_802F8E98[] = "TogeFlush";
 
 EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
@@ -54,9 +61,6 @@ EffectEntry* effTogeFlushEntry(s32 type, f32 x, f32 y, f32 z, s32 life) {
 	return entry;
 }
 
-// NONMATCHING (95.82%): register allocation, both int->float alpha conversions and the float integrator
-// (0x10/0x14/0x18/0x1C) match. The compiler hoists the three `vec3_802f8e80` loads above the second
-// `fctiwz`; the original schedules them after the `stw r0, 0x28(r30)` that stores the colour index.
 void effTogeFlushMain(EffectEntry* effect) {
 	s32 life;
 	effTogeFlushData* data = effect->userdata;

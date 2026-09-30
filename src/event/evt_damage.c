@@ -32,9 +32,6 @@ USER_FUNC(camdir) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.91%): only the live range of the elapsed-step `divwu` result differs; the
-// original computes it into r4 and copies it to r26 before the first intplGetValue call, MWCC
-// keeps it in r26 from the start. Values, constants and control flow otherwise match.
 USER_FUNC(evt_gazigazi_move_position) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
@@ -53,9 +50,17 @@ USER_FUNC(evt_gazigazi_move_position) {
     if (isFirstCall) {
         event->userdata[0] = (s32)gp->renderTime;
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: evaluating the step expression in the condition and assigning curStep inside the
+    // first call keeps the divwu result in r4 and its callee-saved copy in r26; the natural s32
+    // form homes the step in r26 throughout.
+    if ((s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]) < steps) {
+        startX = intplGetValue(mode, curStep = (u32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]), steps, startX, endX);
+#else
     curStep = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)event->userdata[0]);
     if (curStep < steps) {
         startX = intplGetValue(mode, curStep, steps, startX, endX);
+#endif
         startY = intplGetValue(mode, curStep, steps, startY, endY);
         startZ = intplGetValue(mode, curStep, steps, startZ, endZ);
         pos = (Vec){ startX, startY, startZ };

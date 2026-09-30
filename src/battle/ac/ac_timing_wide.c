@@ -250,20 +250,21 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// NONMATCHING (96.24%): the state machine and all logic match; MWCC picked different callee-saved
-// registers. The original keeps work r30, dec r31, disp r29 (saving r28-r31); ours keeps work r31, disp r30,
-// autoCommand r29 and rematerialises dec (saving r29-r31). ~141 instructions differ only in register fields.
+// MATCHING. Holding the work-area pointer in `ac` (rather than spelling out work->actionCommands) makes MWCC
+// keep dec, disp and AutoCommand in r31/r29/r28 exactly as the original does. The inner switch's cases are
+// written 5,0,1,2,3 so the compiler lays the bodies out in the original's order.
 s32 battleAcMain_TimingWide(BattleWork* work) {
-	TimingWideDecWork* dec = (TimingWideDecWork*)((u8*)work + 0x1F4C);
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
+	BattleActions* ac = &work->actionCommands;
+	TimingWideDecWork* dec = (TimingWideDecWork*)ac->field_0x2BC;
+	BattleACDispParams* disp = &ac->dispParams;
 	s32 autoCommand = 0;
 	s32 cond;
 
-	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
+	if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
 		autoCommand = 1;
 	}
 
-	switch (work->actionCommands.mAcState) {
+	switch (ac->mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
 		disp->iconX = float_neg300_80420518;
@@ -271,7 +272,11 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 		disp->counter = 0x14;
 		dec->field_0x0C = 0;
 		dec->field_0x08 = 0;
-		switch (*(s32*)&work->actionCommands.field_34[4]) {
+		switch (*(s32*)&ac->field_34[4]) {
+		case 5:
+			dec->field_0x00 = 0x100;
+			dec->field_0x04 = 1;
+			break;
 		case 0:
 			dec->field_0x00 = 0x40000;
 			dec->field_0x04 = 0;
@@ -288,65 +293,61 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			dec->field_0x00 = 0x80000;
 			dec->field_0x04 = -1;
 			break;
-		case 5:
-			dec->field_0x00 = 0x100;
-			dec->field_0x04 = 1;
-			break;
 		default:
 			dec->field_0x00 = 0x40000;
 			dec->field_0x04 = 0;
 			break;
 		}
-		work->actionCommands.outputParams[0] = 0;
-		work->actionCommands.outputParams[1] = 0;
-		work->actionCommands.outputParams[2] = 0;
-		work->actionCommands.mAcState = 0x63;
-		work->actionCommands.result = 1;
+		ac->outputParams[0] = 0;
+		ac->outputParams[1] = 0;
+		ac->outputParams[2] = 0;
+		ac->mAcState = 0x63;
+		ac->result = 1;
 		break;
 	case 0x64:
-		if ((work->actionCommands.field_0x4 & 1) &&
-		    (work->actionCommands.mAcUnit->mTokenFlags & 0x10)) {
+		if ((ac->field_0x4 & 1) &&
+		    (ac->mAcUnit->mTokenFlags & 0x10)) {
 			if ((s32)irand(100) >= 0) {
-				work->actionCommands.field_0x8 = 0;
-				if (*(s32*)&work->actionCommands.field_34[0x0C] > 0) {
-					work->actionCommands.field_0x8 = irand(*(s32*)&work->actionCommands.field_34[0x0C]);
+				ac->field_0x8 = 0;
+				if (*(s32*)&ac->field_34[0x0C] > 0) {
+					ac->field_0x8 = irand(*(s32*)&ac->field_34[0x0C]);
 				}
-				if (work->actionCommands.field_0x8 <= 0) {
-					work->actionCommands.field_0x8 = *(s32*)&work->actionCommands.field_34[0x08] + 2;
+				if (ac->field_0x8 <= 0) {
+					ac->field_0x8 = *(s32*)&ac->field_34[0x08] + 2;
 				}
 			}
 			else {
-				s32 r = (s32)irand(*(s32*)&work->actionCommands.field_34[0x10] -
-				                   *(s32*)&work->actionCommands.field_34[0x0C]);
-				work->actionCommands.field_0x8 = *(s32*)&work->actionCommands.field_34[0x0C] + r;
+				s32 r = (s32)irand(*(s32*)&ac->field_34[0x10] -
+				                   *(s32*)&ac->field_34[0x0C]);
+				ac->field_0x8 = *(s32*)&ac->field_34[0x0C] + r;
 			}
-			work->actionCommands.mAcState = 0x3EA;
+			ac->mAcState = 0x3EA;
 			dec->field_0x0C = 2;
 		}
 		else {
-			if (*(s32*)&work->actionCommands.field_34[4] == 4) {
-				work->actionCommands.mAcState = 0x3E8;
+			if (*(s32*)&ac->field_34[4] == 4) {
+				ac->mAcState = 0x3E8;
 			}
 			else {
-				work->actionCommands.mAcState = 0x3E9;
+				ac->mAcState = 0x3E9;
 			}
 			dec->field_0x0C = 1;
 		}
 		break;
 	case 0x3E8:
 		if (BattlePadCheckTrigger(dec->field_0x00)) {
-			work->actionCommands.outputParams[1] = 1;
-			work->actionCommands.mAcState = 0x3E9;
+			ac->outputParams[1] = 1;
+			ac->mAcState = 0x3E9;
 		}
 		break;
 	case 0x3E9:
 		dec->field_0x08++;
-		if (dec->field_0x08 > *(s32*)&work->actionCommands.field_34[0x08]) {
-			work->actionCommands.result = 0;
-			work->actionCommands.mAcState = 0x3EC;
+		if (dec->field_0x08 > *(s32*)&ac->field_34[0x08]) {
+			ac->result = 0;
+			ac->mAcState = 0x3EC;
 			dec->field_0x0C = 4;
-			if (*(s32*)&work->actionCommands.field_34[0x00] & 8) {
-				work->actionCommands.mAcState = 0x3EB;
+			if (*(s32*)&ac->field_34[0x00] & 8) {
+				ac->mAcState = 0x3EB;
 				dec->field_0x0C = 3;
 			}
 			break;
@@ -359,87 +360,96 @@ s32 battleAcMain_TimingWide(BattleWork* work) {
 			}
 			break;
 		case -1:
+#ifdef MUST_MATCH
+			// battle_pad.h declares these u32, but the original tests the result signed (cmpwi r3,0).
+			if ((s32)BattlePadCheckUp(dec->field_0x00) != 0) {
+#else
 			if (BattlePadCheckUp(dec->field_0x00)) {
+#endif
 				cond = 1;
 			}
 			break;
 		default:
+#ifdef MUST_MATCH
+			if ((s32)BattlePadCheckNow(dec->field_0x00) == 0) {
+#else
 			if (!BattlePadCheckNow(dec->field_0x00)) {
+#endif
 				cond = 1;
 			}
 			break;
 		}
-		if (dec->field_0x08 >= *(s32*)&work->actionCommands.field_34[0x0C] &&
-		    dec->field_0x08 < *(s32*)&work->actionCommands.field_34[0x10]) {
-			work->actionCommands.outputParams[2] = 1;
+		if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
+		    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+			ac->outputParams[2] = 1;
 		}
 		else {
-			work->actionCommands.outputParams[2] = 0;
+			ac->outputParams[2] = 0;
 		}
 		if (autoCommand) {
-			if (work->actionCommands.outputParams[2] == 0) {
-				cond = 0;
+			if (ac->outputParams[2] != 0) {
+				cond = 1;
 			}
 			else {
-				cond = 1;
+				cond = 0;
 			}
 		}
 		if (cond != 0) {
-			if (work->actionCommands.outputParams[2] != 0) {
-				work->actionCommands.result = 2;
-				work->actionCommands.mResultCount++;
-				work->actionCommands.outputParams[0] = 1;
+			if (ac->outputParams[2] != 0) {
+				ac->result = 2;
+				ac->mResultCount++;
+				ac->outputParams[0] = 1;
 			}
 			else {
-				work->actionCommands.result = 0;
-				work->actionCommands.outputParams[0] = -1;
+				ac->result = 0;
+				ac->outputParams[0] = -1;
 			}
-			work->actionCommands.mAcState = 0x3EC;
+			ac->mAcState = 0x3EC;
 			dec->field_0x0C = 4;
-			if (*(s32*)&work->actionCommands.field_34[0x00] & 8) {
-				work->actionCommands.mAcState = 0x3EB;
+			if (*(s32*)&ac->field_34[0x00] & 8) {
+				ac->mAcState = 0x3EB;
 				dec->field_0x0C = 3;
 			}
 		}
 		break;
 	case 0x3EA:
 		dec->field_0x08++;
-		work->actionCommands.field_0x8--;
-		if (dec->field_0x08 > *(s32*)&work->actionCommands.field_34[0x08]) {
-			work->actionCommands.result = 0;
+		ac->field_0x8--;
+		if (dec->field_0x08 > *(s32*)&ac->field_34[0x08]) {
+			ac->result = 0;
 			return 0;
 		}
-		if (work->actionCommands.field_0x8 < 0) {
-			if (dec->field_0x08 >= *(s32*)&work->actionCommands.field_34[0x0C] &&
-			    dec->field_0x08 < *(s32*)&work->actionCommands.field_34[0x10]) {
-				work->actionCommands.result = 2;
-				work->actionCommands.mResultCount++;
-				work->actionCommands.outputParams[0] = 1;
+		if (ac->field_0x8 < 0) {
+			if (dec->field_0x08 >= *(s32*)&ac->field_34[0x0C] &&
+			    dec->field_0x08 < *(s32*)&ac->field_34[0x10]) {
+				ac->result = 2;
+				ac->mResultCount++;
+				ac->outputParams[0] = 1;
 			}
 			else {
-				work->actionCommands.result = 0;
-				work->actionCommands.outputParams[0] = -1;
+				ac->result = 0;
+				ac->outputParams[0] = -1;
 			}
 			return 0;
 		}
 		break;
 	case 0x3EC:
 		dec->field_0x10 = 0x3C;
-		work->actionCommands.mAcState = 0x3ED;
+		ac->mAcState = 0x3ED;
 		dec->field_0x0C = 5;
 		// fallthrough
 	case 0x3ED:
 		dec->field_0x10--;
 		if (dec->field_0x10 <= 0) {
-			work->actionCommands.mAcState = 0x3EE;
+			ac->mAcState = 0x3EE;
 			dec->field_0x0C = 6;
 		}
 		break;
 	case 0x3EE:
-		work->actionCommands.maincb = NULL;
-		work->actionCommands.dispcb = NULL;
-		work->actionCommands.resultcb = NULL;
-		work->actionCommands.deletecb = NULL;
+		ac->maincb = NULL;
+		ac->dispcb = NULL;
+		ac->resultcb = NULL;
+		ac->deletecb = NULL;
 		return 0;
 	default:
 		break;

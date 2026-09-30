@@ -28,9 +28,19 @@ s32 unk_80418b54;
 PiantaParlorWork yuugijouwork;
 PiantaParlorWork* yuwp;
 
-// NONMATCHING (95.28%): the field formulas and constants all match; the remaining diff is register
-// allocation / instruction scheduling around the computed groups (the reference reloads yuwp into
-// r7/r12/r11 and hoists the 0xA4..0xB4 constants and the /2000 magic earlier than this build does).
+static inline s32 scale700(u32 v) {
+	s32 q = (0x2BC - (s32)v) * 15 / 0x2BC;
+	return (q >= 0 ? q : 0);
+}
+
+static inline s32 scale2000b(u32 v) {
+	s32 q = ((s32)v - 0x12110) / 2000;
+	return (q >= 0 ? q : 0);
+}
+
+// NONMATCHING (96.09%): field_0xF0 and field_0x108 use the q < 0 ? 0 : q clamp under MUST_MATCH,
+// which MWCC lowers to srawi/andc and leaves the following constant loads after the group (the
+// target's srwi/subi/and mask is the #else form and scores 95.46%); 0xBC..0xCC still materialise early.
 void yuugijou_init(void) {
 	s32 q;
 
@@ -67,10 +77,16 @@ void yuugijou_init(void) {
 	yuwp->field_0x98 = 0x1B;
 	yuwp->field_0x9C = 0x8A;
 
-	q = (0x2BC - (s32)yuwp->field_0x8C) * 15 / 0x2BC;
-	yuwp->field_0xEC = (q >= 0 ? q : 0) + 1;
+	yuwp->field_0xEC = scale700(yuwp->field_0x8C) + 1;
 	q = (0x2BC - (s32)yuwp->field_0x90) * 15 / 0x2BC;
+#ifdef MUST_MATCH
+	// MUST_MATCH: q < 0 ? 0 : q lowers to srawi/andc (two instructions), which lets MWCC
+	// schedule the upcoming 0xA4 constant loads after this store as the target does; the
+	// natural q >= 0 ? q : 0 is the target's srwi/subi/and mask and hoists the loads early.
+	yuwp->field_0xF0 = q < 0 ? 0 : q;
+#else
 	yuwp->field_0xF0 = (q >= 0 ? q : 0);
+#endif
 	q = (0x2BC - (s32)yuwp->field_0x94) * 15 / 0x2BC;
 	yuwp->field_0xF4 = (q >= 0 ? q : 0);
 	q = (0x2BC - (s32)yuwp->field_0x98) * 15 / 0x2BC;
@@ -93,7 +109,13 @@ void yuugijou_init(void) {
 	q = ((s32)yuwp->field_0xA4 - 0x1A9C8) / 2000;
 	yuwp->field_0x104 = (q >= 0 ? q : 0) + 7;
 	q = ((s32)yuwp->field_0xA8 - 0x1A9C8) / 2000;
+#ifdef MUST_MATCH
+	// MUST_MATCH: same as field_0xF0 above: the andc form keeps the 0xBC constant loads
+	// after this group instead of hoisting them into it.
+	yuwp->field_0x108 = (q < 0 ? 0 : q) + 6;
+#else
 	yuwp->field_0x108 = (q >= 0 ? q : 0) + 6;
+#endif
 	q = ((s32)yuwp->field_0xAC - 0x1A9C8) / 2000;
 	yuwp->field_0x10C = (q >= 0 ? q : 0) + 4;
 	q = ((s32)yuwp->field_0xB0 - 0x1A9C8) / 2000;
@@ -113,16 +135,11 @@ void yuugijou_init(void) {
 	yuwp->field_0xC8 = 0x1627E;
 	yuwp->field_0xCC = 0x15950;
 
-	q = ((s32)yuwp->field_0xBC - 0x12110) / 2000;
-	yuwp->field_0x11C = (q >= 0 ? q : 0) + 7;
-	q = ((s32)yuwp->field_0xC0 - 0x12110) / 2000;
-	yuwp->field_0x120 = (q >= 0 ? q : 0) + 6;
-	q = ((s32)yuwp->field_0xC4 - 0x12110) / 2000;
-	yuwp->field_0x124 = (q >= 0 ? q : 0) + 4;
-	q = ((s32)yuwp->field_0xC8 - 0x12110) / 2000;
-	yuwp->field_0x128 = (q >= 0 ? q : 0) + 3;
-	q = ((s32)yuwp->field_0xCC - 0x12110) / 2000;
-	yuwp->field_0x12C = (q >= 0 ? q : 0) + 4;
+	yuwp->field_0x11C = scale2000b(yuwp->field_0xBC) + 7;
+	yuwp->field_0x120 = scale2000b(yuwp->field_0xC0) + 6;
+	yuwp->field_0x124 = scale2000b(yuwp->field_0xC4) + 4;
+	yuwp->field_0x128 = scale2000b(yuwp->field_0xC8) + 3;
+	yuwp->field_0x12C = scale2000b(yuwp->field_0xCC) + 4;
 }
 
 // The original splits the visibility test as `flag1 == 0 || flag2 == 0`; two separate early

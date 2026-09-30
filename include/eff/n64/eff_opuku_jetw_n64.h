@@ -33,3 +33,4 @@ typedef struct effOpukuJetwPoint {
 } effOpukuJetwPoint; // 0xA
 void effOpukuJetwDisp(CameraId camId, void* param);
 void effOpukuJetwMain(EffectEntry* effect);
+extern f32 lbl_803A33D8[];

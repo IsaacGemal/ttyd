@@ -183,14 +183,15 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
-// The instruction sequence and the .sdata2/.rodata pool now match the target; what is left is the
-// compiler's register choice for the outer loop and the int->float magic. Original: vtx=r31,
-// magic 0x4330=r29, xoris temp=r30, iPos=r24, fieldBase=r26, fieldEnd=r25, xBase=r3, xEnd=r4.
-// Ours: vtx=r29, magic=r30, xoris temp=r31, iPos=r26, fieldBase=r24, fieldEnd=r25, xBase=r0,
-// xEnd=r3 (the {r29,r30,r31} triple and the {r24,r26} pair are permuted; r25, i, j, jPos, data,
-// the field pointer and the conversion operands all match). Declaration-order, arithmetic-order,
-// pragma and type sweeps did not change the permutation.
-// NONMATCHING (99.51%): register-allocation-only differences (see above).
+// The vtx/field/x/descriptor shuffles below are match-only (the natural positions are under
+// #else); they change mwcc's live ranges so it matches the target's callee-saved allocation.
+// Original: vtx=r31, magic 0x4330=r29, xoris temp=r30, iPos=r24, fieldBase=r26, fieldEnd=r25,
+// xBase=r3, xEnd=r0. Ours: every instruction's opcode, order and stack slot match; only xBase
+// and xEnd land in each other's volatile register (ours xBase=r0, xEnd=r3) and the operand order
+// of xEnd += iPos follows from it. All callee-saved registers (vtx, magic, xoris, iPos, fieldBase,
+// fieldEnd, x, jPos, i, j) now match. Declaration-order, arithmetic-order, pragma, type and
+// statement-position sweeps did not move xBase/xEnd.
+// NONMATCHING (99.78%): xBase/xEnd volatile-register swap (r0/r3 vs r3/r0).
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
@@ -207,8 +208,13 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 outerEdge;
 	s32 xEnd;
+#ifdef MUST_MATCH
+	s32 x2;
+	s32 innerEdge;
+#else
 	s32 innerEdge;
 	s32 x2;
+#endif
 	s32 base;
 	smartEntry* entry;
 	Mtx transMtx;
@@ -221,7 +227,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	Vec target;
 	Vec eye;
 	GXColor color;
-
 	camGetPtr(camId);
 	data = effect->userdata;
 	alpha = data->field_0x1F;
@@ -266,8 +271,9 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);
+#ifndef MUST_MATCH
 	vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
-
+#endif
 	for (i = 0; i < 12; i++) {
 		outerEdge = 0;
 		if (i == 0) {
@@ -285,16 +291,21 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 		iPos = 0x18 + i * 0x10;
 #ifdef MUST_MATCH
 		xEnd += 0x10;
-		xBase += iPos;
+		xBase = iPos + xBase;
 		xEnd += iPos;
 #else
 		xBase += iPos;
 		xEnd += iPos + 0x10;
 #endif
+#ifndef MUST_MATCH
 		fieldBase = xBase << 2;
 		fieldEnd = xEnd << 2;
-
+#endif
 		for (j = 0; j < 18; j++) {
+#ifdef MUST_MATCH
+			fieldBase = xBase << 2;
+			fieldEnd = xEnd << 2;
+#endif
 			innerEdge = 0;
 			if (j == 0) {
 				x = -4;
@@ -311,7 +322,11 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			jPos = 0x10 + j * 0x10;
 
 			PSMTXScale(texMtx, float_0p0039062_8041f7ec, float_0p0039062_8041f7ec, float_1_8041f7e4);
+#ifdef MUST_MATCH
+			x = jPos + x;
+#else
 			x += jPos;
+#endif
 			PSMTXTrans(transMtx, (f32)x, (f32)xBase, float_0_8041f7d8);
 			PSMTXConcat(texMtx, transMtx, texMtx);
 			GXLoadTexMtxImm(texMtx, GX_TEXMTX0, GX_MTX2x4);
@@ -326,6 +341,10 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 				base = 0;
 			}
 
+			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
+#ifdef MUST_MATCH
+			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
+#endif
 			vtx[base + 0].x = x << 2;
 			vtx[base + 0].y = (s8)data->field_0x23[j][i] + fieldBase;
 			vtx[base + 1].x = (jPos + x2 + 0x10) << 2;
