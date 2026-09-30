@@ -270,7 +270,41 @@ void romFontPrintGX(f32 x, f32 y, f32 scale, GXColor* color, const char* msg, ..
     }
 }
 
-// NONMATCHING (2.06%): empty placeholder, not decompiled yet.
+// NONMATCHING (96.84%): the cached `wp` is r7 here (r6 in the original) and the temporaries around it are shifted.
 s32 romFontGetWidth(const char* message) {
-    return 0;
+    s32 curX = 0;
+    s32 i = 0;
+    s32 maxX = 0;
+    RomFontChar* glyph;
+
+    for (;;) {
+        u32 c = ((u8*)message)[i];
+        u16 c16 = *(u16*)&message[i];
+
+        if (c >= 0x20 && c < 0x80) {
+            glyph = romFontFindChar(c & 0xFFFF);
+            i += 1;
+        } else if ((c >= 0x80 && c < 0xA0) || c >= 0xE0) {
+            glyph = romFontFindChar(c16);
+            i += 2;
+        } else if (c == 0x00) {
+            if (maxX < curX) {
+                maxX = curX;
+            }
+            break;
+        } else if (c == 0x0A) {
+            if (maxX < curX) {
+                maxX = curX;
+            }
+            curX = 0;
+            i += 1;
+            continue;
+        } else {
+            glyph = wp->unk0;
+            i += 1;
+        }
+
+        curX += glyph->width;
+    }
+    return maxX;
 }
