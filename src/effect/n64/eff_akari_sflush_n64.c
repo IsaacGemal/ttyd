@@ -233,3 +233,12 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041e904 = 0.017453292f;
+const f32 float_6p2832_8041e908 = 6.2831855f;
+const f32 float_360_8041e90c = 360.0f;
+const f32 float_0p1_8041e910 = 0.1f;
+const f32 float_1_8041e914 = 1.0f;
+const f32 float_30_8041e918 = 30.0f;
+const f32 float_0_8041e91c = 0.0f;

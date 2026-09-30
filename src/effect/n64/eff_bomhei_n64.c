@@ -203,3 +203,13 @@ void effBomheiDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_256_8041ea2c = 256.0f;
+const f32 float_0p03125_8041ea30 = 0.03125f;
+const f32 float_0p0034722_8041ea34 = 0.0034722222f;
+const f32 float_0_8041ea38 = 0.0f;
+const f32 float_32_8041ea3c = 32.0f;
+const f32 float_deg2rad_8041ea40 = 0.017453292f;
+const f32 float_1_8041ea44 = 1.0f;
+const f32 float_4_8041ea48 = 4.0f;

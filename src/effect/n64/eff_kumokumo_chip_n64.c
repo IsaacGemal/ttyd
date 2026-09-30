@@ -7,6 +7,10 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
+__declspec(section ".data") u32 lbl_803A2280[2] = {
+    0xBF800000, 0x3F800000,
+};
+
 // This unit's .sdata2 literals. float_0_8041f56c stays an extern (like eff_kumokumo_n64.c)
 // and is only ever read through the named symbol. float_1_8041f570 is *defined* here:
 // with no definition MWCC pools the `1.0f` as an anonymous .sdata2 entry instead of
@@ -288,3 +292,7 @@ void effKumokumoChipDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p03125_8041f568 = 0.03125f;
+const f32 float_0_8041f56c = 0.0f;

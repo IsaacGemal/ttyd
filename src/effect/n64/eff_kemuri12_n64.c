@@ -272,3 +272,6 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0_8041f55c = 0.0f;

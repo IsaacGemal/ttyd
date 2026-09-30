@@ -11,7 +11,6 @@
 // .rodata string; the .sdata2 constants this unit owns, in the original's data order. float_100 and
 // float_1 must be defined (not extern): MWCC colours the second pose's stretch FPRs differently when
 // it knows their values, which is what makes effNokotarouDisp byte-exact.
-const char str_803014B8[] = "Nokotarou";
 const f32 float_0_8042248c = 0.0f;
 const f32 float_100_80422494 = 100.0f;
 const f32 float_1_80422498 = 1.0f;
@@ -29,7 +28,7 @@ EffectEntry* effNokotarouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 
 	EffectEntry* entry = effEntry();
 	NokotarouWork* work;
 
-	entry->type = str_803014B8;
+	entry->type = "Nokotarou";
 	entry->count = 1;
 	work = __memAlloc(HEAP_EFFECT, sizeof(NokotarouWork));
 	entry->userdata = work;
@@ -175,3 +174,10 @@ void effNokotarouDisp(CameraId cameraId, void* param) {
 		animPoseDrawMtx(work->animPose2, mtx, 3, float_0_8042248c, float_2_80422490);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422480 = 0xFFFFFF00;
+const u32 dat_80422484 = 0xFFFFFF00;
+const f32 float_deg2rad_80422488 = 0.017453292f;
+const f32 float_2_80422490 = 2.0f;
+const f32 float_0p03125_804224a4 = 0.03125f;

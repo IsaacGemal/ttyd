@@ -21,14 +21,13 @@ static u32 size16x16_tex32x32_vtx[14] = {
 	0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
 };
 
-const char str_802FB7B8[] = "StoneSmokeN64";
 
 EffectEntry* effStoneSmokeN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effStoneSmokeN64Data* data;
 
 	effect = effEntry();
-	effect->type = str_802FB7B8;
+	effect->type = "StoneSmokeN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x3C);
 	effect->userdata = data;
@@ -198,3 +197,9 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p03125_8041ff50 = 0.03125f;
+const f32 float_0_8041ff54 = 0.0f;
+const f32 float_0p6_8041ff58 = 0.6f;
+const f32 float_0p01_8041ff5c = 0.01f;

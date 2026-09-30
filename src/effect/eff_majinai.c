@@ -221,3 +221,16 @@ void effMajinaiDisp(CameraId cameraId, void* param) {
         animPoseDrawMtx(work->animPose, trans, 3, float_0_8042257c, float_10_80422580);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422568 = 0xFFFFFFFF;
+const u32 dat_8042256c = 0x000000FF;
+const u32 dat_80422570 = 0x000000FF;
+const u32 dat_80422574 = 0xFFFFFF00;
+const f32 float_deg2rad_80422578 = 0.017453292f;
+const f32 float_0_8042257c = 0.0f;
+const f32 float_10_80422580 = 10.0f;
+const f32 float_0p93_80422588 = 0.93f;
+const f32 float_45_8042258c = 45.0f;
+const f32 float_55_80422590 = 55.0f;
+const f32 float_1_80422594 = 1.0f;

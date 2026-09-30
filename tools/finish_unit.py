@@ -79,8 +79,8 @@ def step(name, fn):
         print(f"  {name}: nothing to do")
         return
     f2, s2, ok2 = measure()
-    fn_ok = all(f2.get(k, 0) >= v - 1e-9 for k, v in base_fns.items()) if DATA_ONLY else min(f2.values()) >= 100
-    good = ok2 and fn_ok and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
+    fn_ok = ok2 and (all(f2.get(k, 0) >= v - 1e-9 for k, v in base_fns.items()) if DATA_ONLY else min(f2.values()) >= 100)
+    good = fn_ok and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
     if good:
         fns, secs = f2, s2
         print(f"  {name}: kept; sections {summary(secs)}")
@@ -106,14 +106,25 @@ def math_ext():
 
 
 def literal_strings():
+    """Named string objects (`const char str_X[] = "..."`) and extern declarations of strings this unit defines (its
+    disassembly has the text) become literals at their uses: the compiler pools them itself, in first-use order."""
     t = open(src).read()
-    defs = re.findall(r'^const char (str_\w+)\[\d*\] = ("(?:[^"\\]|\\.)*");\n', t, re.M)
-    if not defs:
-        return False
-    for name, lit in defs:
+    asm = open(f"build/G8MJ01/asm/{unit}.s", errors="replace").read()
+    text_of = {n: v.split("\\000")[0] for n, v in re.findall(r'^\.obj (str_\w+), \w+\n\s*\.string "((?:[^"\\]|\\.)*)"', asm, re.M)}
+    changed = False
+    for name, lit in re.findall(r'^const char (str_\w+)\[\d*\] = ("(?:[^"\\]|\\.)*");\n', t, re.M):
         t = re.sub(rf'^const char {name}\[\d*\] = {re.escape(lit)};\n', "", t, flags=re.M)
         t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
         t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
+        changed = True
+    for name in re.findall(r'^extern const char (str_\w+)\[\];\n', t, re.M):
+        if name in text_of:
+            lit = '"' + text_of[name] + '"'
+            t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
+            t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
+            changed = True
+    if not changed:
+        return False
     open(src, "w").write(t)
 
 

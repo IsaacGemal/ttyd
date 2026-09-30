@@ -172,3 +172,8 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	GXBegin(0x90, 0, 6);
 	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041f0c8 = 0.017453292f;
+const f32 float_0p03125_8041f0cc = 0.03125f;
+const f32 float_0_8041f0d0 = 0.0f;

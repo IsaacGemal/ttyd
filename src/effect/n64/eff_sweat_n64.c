@@ -4,7 +4,7 @@
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/mtx.h>
 
 // .rodata / .sdata2 data used by effSweatN64Entry (originally local to this unit).
@@ -255,3 +255,15 @@ void effSweatDisp(CameraId camId, void* param) {
 		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041ffa8 = 0xFFFFFF00;
+const f32 float_deg2rad_8041ffac = 0.017453292f;
+const f32 float_9p6_8041ffb0 = 9.6f;
+const f32 float_6p4_8041ffb4 = 6.4f;
+const f32 float_neg1_8041ffb8 = -1.0f;
+const f32 float_0_8041ffbc = 0.0f;
+const f32 float_0p5_8041ffc0 = 0.5f;
+const f32 float_4p8_8041ffc4 = 4.8f;
+const f32 float_1_8041ffc8 = 1.0f;
+const f32 float_16_8041ffd8 = 16.0f;

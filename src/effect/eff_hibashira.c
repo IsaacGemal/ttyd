@@ -253,3 +253,11 @@ void effHibashiraDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_80422338 = 0xFFFFFF00;
+const f32 float_deg2rad_8042233c = 0.017453292f;
+const f32 float_0_80422340 = 0.0f;
+const f32 float_10_80422344 = 10.0f;
+const f32 float_3p1416_80422350 = 3.1415927f;
+const f32 float_0p5_80422354 = 0.5f;

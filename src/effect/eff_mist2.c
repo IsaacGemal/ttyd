@@ -17,7 +17,6 @@ extern const f32 float_100_80421ccc;
 extern const f32 float_0p2_80421cd0;
 extern const f32 float_10_80421cd4;
 extern const Vec vec3_80300248;
-const char str_80421CD8[] = "Mist2";
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool
 // templates, so pair it with a small-data section and place it by hand.
@@ -205,7 +204,7 @@ EffectEntry* effMist2Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 rang
 	entry = effEntry();
 	num = (type == 0) ? 30 : 10;
 	count = num + 1;
-	entry->type = str_80421CD8;
+	entry->type = "Mist2";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * sizeof(EffMist2Data));
 	entry->userdata = data;

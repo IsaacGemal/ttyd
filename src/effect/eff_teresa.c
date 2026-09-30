@@ -7,7 +7,11 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const char str_802FE944[] = "Teresa";
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423328;
+
+
 const Vec vec3_802fe920 = {0.0f, 0.0f, 0.0f};
 extern const f32 float_0p1_80421564;
 extern const f32 float_0p8_80421568;
@@ -19,7 +23,6 @@ extern const f32 float_30_8042157c;
 extern const f32 float_3_80421580;
 extern const f32 float_0p98_80421584;
 extern const f32 float_0_8042155c;
-GXColor unk_80423328;
 const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
 const f32 float_deg2rad_8042154c = 0.01745329252f;
 const f32 float_32_80421550 = 32.0f;
@@ -31,7 +34,7 @@ EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	Vec pos;
 
 	entry = effEntry();
-	entry->type = str_802FE944;
+	entry->type = "Teresa";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffTeresaData));
 	entry->userdata = data;
@@ -205,3 +208,15 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXPosition3f32(negSize, negSize, 0.0f);
 	GXTexCoord2f32(0.0f, 2.0f);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0_8042155c = 0.0f;
+const f32 float_0p1_80421564 = 0.1f;
+const f32 float_0p8_80421568 = 0.8f;
+const f32 float_1_8042156c = 1.0f;
+const f32 float_10_80421570 = 10.0f;
+const f32 float_178p5_80421574 = 178.5f;
+const f32 float_20_80421578 = 20.0f;
+const f32 float_30_8042157c = 30.0f;
+const f32 float_3_80421580 = 3.0f;
+const f32 float_0p98_80421584 = 0.98f;
