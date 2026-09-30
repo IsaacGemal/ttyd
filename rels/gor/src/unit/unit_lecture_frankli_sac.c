@@ -213,11 +213,9 @@ static USER_FUNC(lecture_init) {
     }
     return EVT_RETURN_DONE;
 }
-#pragma opt_dead_assignments reset
-#pragma opt_common_subs reset
-#pragma opt_propagation reset
 
-// NONMATCHING (98.75%): 4 of 16 instructions differ in operands only (registers or offsets)
+// The opt_* block above also covers this function: with the default
+// optimizations it keeps _battleWorkPointer's address temp in r5 instead of r4.
 static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -225,6 +223,9 @@ static USER_FUNC(_battle_set_lecture_unit_id) {
     wp->field_424 = evtGetValue(event, args[0]);
     return EVT_RETURN_DONE;
 }
+#pragma opt_dead_assignments reset
+#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(lecture_init)

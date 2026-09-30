@@ -571,10 +571,13 @@ static void monte_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (95.56%): the monte-table sum loop now matches; what remains is scheduling/register
-// tie-breaks in the constant-setup block (li r24/r18/r21/r17 order, the second monte_p load into r9
-// vs r8, montetable@ha reusing r7 vs r8), the placement of the z-store relative to the x/y pointer
-// setup, and the sfx string address register (original r26, ours r21). FPR allocation matches.
+// NONMATCHING (95.57%): the monte-table sum loop and FPR allocation match. What remains is integer
+// scheduling/register allocation in the constant-setup block: the original forms &zero_yuu_00014548 with
+// an extra `addi r8, r7, zero@l` (so its second monte_p load goes to r9, ours reuses r8), computes the
+// montetable base (r30) and the li r24/r18/r21/r17 sequence in a different order, places the z-store
+// before the x/y pointer setup, and keeps the sfx string address in r26 (ours uses r21 plus an extra mr).
+// Referencing the target's named .rodata globals (zero_yuu_00014548, float_20/100/1_yuu_*, str_00000550)
+// instead of literals does not change any of these, so the literal version is kept.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;

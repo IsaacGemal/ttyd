@@ -1051,7 +1051,19 @@ void teresa_ext_init(void) {
     }
 }
 
-// NONMATCHING (99.44%): 6 of 1087 instructions differ: 3 missing, 3 extra
+// The original intplGetValue prototype orders the float ranges before the integer step. That order is
+// ABI-identical to include/system.h's declaration (r3, f1, f2, r4, r5) but makes MWCC load the float args
+// before entry->field_0xC, as the retail bytes do; the cast selects it.
+#ifdef MUST_MATCH
+static inline f32 teresa_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 teresa_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
+
 void teresa_ext_main(void) {
     s32 i;
     ExtPose* pose = extGetPosePtr();
@@ -1327,9 +1339,9 @@ void teresa_ext_main(void) {
                 (*pose->matrix)[0][0] = 1.0f;
             }
             (*pose->matrix)[1][1] = (*pose->matrix)[0][0];
-            (*pose->matrix)[0][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x1C, entry->field_0x28.x);
-            (*pose->matrix)[1][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x20, entry->field_0x28.y);
-            (*pose->matrix)[2][3] = intplGetValue(entry->field_0x34, entry->field_0xC, 0x1E, entry->field_0x24, entry->field_0x28.z);
+            (*pose->matrix)[0][3] = teresa_intpl(entry->field_0x34, entry->field_0x1C, entry->field_0x28.x, entry->field_0xC, 0x1E);
+            (*pose->matrix)[1][3] = teresa_intpl(entry->field_0x34, entry->field_0x20, entry->field_0x28.y, entry->field_0xC, 0x1E);
+            (*pose->matrix)[2][3] = teresa_intpl(entry->field_0x34, entry->field_0x24, entry->field_0x28.z, entry->field_0xC, 0x1E);
             if (entry->field_0xC >= 0x1E) {
                 entry->state = 0x3C;
             }

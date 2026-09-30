@@ -47,7 +47,7 @@ extern const f32 float_1_eki_0000a6c4;
 extern const f64 double_to_int_eki_0000a6c8;
 
 // Forward declarations for the unit's .bss objects (defined near the end, at their original .bss position).
-static s32 wwstart[2];
+static OSTime wwstart;
 static s32 x_flag_data[2];
 static LectureButton lbtn[2];
 
@@ -118,50 +118,41 @@ static f32 lect_mario_ido_sub(f32 a, f32 b, f32 c, f32 d) {
     return (diff * c + a * d) / b;
 }
 
-// NONMATCHING (98.67%): the elapsed division's divisor-high `li r5,0` is scheduled before the 64-bit
-// subtraction instead of after it, so `ww` lands in r7 rather than r5; and the 2^52 conversion constant
-// is pooled as @604@ instead of the original's double_to_int_eki_0000a6c8.
 static USER_FUNC(lect_mario_ido_sum) {
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 total = evtGetValue(event, args[0]);
-    s32 elapsed;
-    s32 diff;
-    s32 ev;
-    s32 ww;
-    f32 d;
-    f32 start;
-    f32 end;
+    s32 progress;
 
     if (isFirstCall) {
-        *(OSTime*)wwstart = event->lifetime;
+        wwstart = event->lifetime;
         evtSetFloat(event, LW(0), mario->position.x);
         evtSetFloat(event, LW(1), mario->position.y);
         evtSetFloat(event, LW(2), mario->position.z);
     }
-
-    ev = ((s32*)&event->lifetime)[1];
-    ww = ((s32*)wwstart)[1];
-    diff = ev - ww;
-    elapsed = (s32)OSTicksToMilliseconds((u64)diff);
-    if (elapsed > total) {
-        elapsed = total;
+    progress = (s32)((u64)((s32)event->lifetime - (s32)wwstart) / (OS_TIMER_CLOCK / 1000));
+    if (progress > total) {
+        progress = total;
     }
-
-    start = evtGetFloat(event, LW(0));
-    end = evtGetFloat(event, LW(3));
-    d = (f32)total - (f32)elapsed;
-    mario->position.x = (d * end + (f32)elapsed * start) / (f32)total;
-
-    start = evtGetFloat(event, LW(1));
-    end = evtGetFloat(event, LW(4));
-    mario->position.y = (d * end + (f32)elapsed * start) / (f32)total;
-
-    start = evtGetFloat(event, LW(2));
-    end = evtGetFloat(event, LW(5));
-    mario->position.z = (d * end + (f32)elapsed * start) / (f32)total;
-
-    if (elapsed >= total) {
+    {
+        f32 start = evtGetFloat(event, LW(0));
+        f32 target = evtGetFloat(event, LW(3));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.x = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(1));
+        f32 target = evtGetFloat(event, LW(4));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.y = (t * target + (f32)progress * start) / (f32)total;
+    }
+    {
+        f32 start = evtGetFloat(event, LW(2));
+        f32 target = evtGetFloat(event, LW(5));
+        f32 t = (f32)total - (f32)progress;
+        mario->position.z = (t * target + (f32)progress * start) / (f32)total;
+    }
+    if (progress >= total) {
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;
@@ -906,8 +897,8 @@ EVT_BEGIN(all_juyoitem_lecture_rel_7_data_150F8)
     RETURN
 EVT_END()
 
-// TODO: type
-static s32 wwstart[2];
+// Start time of the lecture move-in animation (captured on the first call).
+static OSTime wwstart;
 
 // TODO: type
 static s32 x_flag_data[2];

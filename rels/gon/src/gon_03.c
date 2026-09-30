@@ -676,8 +676,9 @@ static void senkaron_ext_init(void) {
     marioHammerFrame = 0;
 }
 
-// NONMATCHING (97.68%): identical length and instruction mix; only register allocation differs
-// (pose/i/offset land in r29/r28/r24 here vs r25/r26/r23 in the original).
+// NONMATCHING (98.40%): only register allocation differs. GPR: 8 callee-saved registers here
+// (stmw r24) vs 9 (stmw r23) - the original keeps a second copy of the fly SFX pointer in r27, so
+// pose/offset are r29/r24 vs r25/r23. FPR: mz/pz/px land in f4/f3/f2 vs f2/f3/f4.
 static void senkaron_ext_main(void) {
     f32 f31;
     ExtPose* pose;
@@ -702,12 +703,12 @@ static void senkaron_ext_main(void) {
     }
 
     i = extGetPoseNum() - 1;
-    f30 = 3.0f * f29;
     f31 = 1.5f * (6.0f * f29);
+    f30 = 3.0f * f29;
     sfxLanding = "SFX_STG1_HONE_LANDING1";
     sfxFly = "SFX_STG1_HONE_FLY1";
 
-    for (; i >= 0; i--) {
+    for (; i >= 0; i--, pose++) {
         switch (senkaron[i].state) {
             case 0:
                 pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
@@ -772,7 +773,7 @@ static void senkaron_ext_main(void) {
                                     f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
 
                                     senkaron[i].field_0x8 = 3.0f * dx / len - 1.0f;
-                                    senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                    senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                     senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                     senkaron[i].state = 0x61;
                                     {
@@ -789,7 +790,7 @@ static void senkaron_ext_main(void) {
                                 f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
 
                                 senkaron[i].field_0x8 = 1.0f + 3.0f * dx / len;
-                                senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                 senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                 senkaron[i].state = 0x61;
                                 {
@@ -897,7 +898,6 @@ static void senkaron_ext_main(void) {
             case 0x63:
                 break;
         }
-        pose++;
     }
 
     if (marioPushedFlag == 1) {

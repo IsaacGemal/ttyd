@@ -178,31 +178,44 @@ static USER_FUNC(x_flag_wait) {
 
     return (x_flag_data[idx] == value) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
-// NONMATCHING (93.57%): 8 of 53 instructions differ: 4 with different operands, 2 missing, 1 extra, 1 with a different opcode
 static void lecture_button_disp(CameraId cameraId, void* param) {
     s32 i;
 
     for (i = 0; i < 2; i++) {
-        if (!(lbtn[i].flags & 1)) {
+        LectureButton* btn = &lbtn[i];
+#ifdef MUST_MATCH
+        // The original addresses the button Vec off &lbtn[i] + 8 with a +4 displacement; matching MWCC's
+        // base register needs the pointer built the same way. The natural btn->position scores lower.
+        u8* ppos = (u8*)&lbtn[i] + 8;
+#endif
+
+        if (!(btn->flags & 1)) {
             Vec pos;
             f32 yOff;
 
-            if (lbtn[i].iconId >= 0x7E) {
-                goto set_zero;
+            switch (btn->iconId) {
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+            case 0x79:
+            case 0x7A:
+            case 0x7B:
+            case 0x7C:
+            case 0x7D:
+                yOff = float_neg15_muj_00014368;
+                break;
+            default:
+                yOff = zero_muj_00014358;
+                break;
             }
-            if (lbtn[i].iconId >= 0x75) {
-                goto set_neg15;
-            }
-            goto set_zero;
-        set_neg15:
-            yOff = float_neg15_muj_00014368;
-            goto set_done;
-        set_zero:
-            yOff = zero_muj_00014358;
-        set_done:
-            pos = lbtn[i].position;
+#ifdef MUST_MATCH
+            pos = *(Vec*)(ppos + 4);
+#else
+            pos = btn->position;
+#endif
             pos.y += yOff;
-            iconDispGxAlpha(&pos, 0x50, lbtn[i].iconId, lbtn[i].alpha, float_1_muj_0001436c);
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, float_1_muj_0001436c);
         }
     }
 }

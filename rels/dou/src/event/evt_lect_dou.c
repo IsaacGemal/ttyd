@@ -271,116 +271,13 @@ static USER_FUNC(lecture_button_set_pos) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.24%): the register reused for the later q = c->next / q = p->next live ranges is r29 in
-// our build but r28 in the target (r30/r29/r28 first-level pointers match); code is otherwise identical.
 static void lect_map_cam_chg_sub(MapObject* obj, s32 value, s32 recurse) {
-    MapObject* q;
-    MapObject* c;
-    MapObject* p;
     obj->field_0x0[5] = value;
-    p = obj->child;
-    if (p != NULL) {
-        p->field_0x0[5] = value;
-        c = p->child;
-        if (c != NULL) {
-            c->field_0x0[5] = value;
-            q = c->child;
-            if (q != NULL) {
-                q->field_0x0[5] = value;
-                if (q->child != NULL) {
-                    lect_map_cam_chg_sub(q->child, value, 1);
-                }
-                if (q->next != NULL) {
-                    lect_map_cam_chg_sub(q->next, value, 1);
-                }
-            }
-            q = c->next;
-            if (q != NULL) {
-                q->field_0x0[5] = value;
-                if (q->child != NULL) {
-                    lect_map_cam_chg_sub(q->child, value, 1);
-                }
-                if (q->next != NULL) {
-                    lect_map_cam_chg_sub(q->next, value, 1);
-                }
-            }
-        }
-        q = p->next;
-        if (q != NULL) {
-            q->field_0x0[5] = value;
-            c = q->child;
-            if (c != NULL) {
-                c->field_0x0[5] = value;
-                if (c->child != NULL) {
-                    lect_map_cam_chg_sub(c->child, value, 1);
-                }
-                if (c->next != NULL) {
-                    lect_map_cam_chg_sub(c->next, value, 1);
-                }
-            }
-            q = q->next;
-            if (q != NULL) {
-                q->field_0x0[5] = value;
-                if (q->child != NULL) {
-                    lect_map_cam_chg_sub(q->child, value, 1);
-                }
-                if (q->next != NULL) {
-                    lect_map_cam_chg_sub(q->next, value, 1);
-                }
-            }
-        }
+    if (obj->child != NULL) {
+        lect_map_cam_chg_sub(obj->child, value, 1);
     }
     if (recurse && obj->next != NULL) {
-        q = obj->next;
-        q->field_0x0[5] = value;
-        c = q->child;
-        if (c != NULL) {
-            c->field_0x0[5] = value;
-            p = c->child;
-            if (p != NULL) {
-                p->field_0x0[5] = value;
-                if (p->child != NULL) {
-                    lect_map_cam_chg_sub(p->child, value, 1);
-                }
-                if (p->next != NULL) {
-                    lect_map_cam_chg_sub(p->next, value, 1);
-                }
-            }
-            c = c->next;
-            if (c != NULL) {
-                c->field_0x0[5] = value;
-                if (c->child != NULL) {
-                    lect_map_cam_chg_sub(c->child, value, 1);
-                }
-                if (c->next != NULL) {
-                    lect_map_cam_chg_sub(c->next, value, 1);
-                }
-            }
-        }
-        q = q->next;
-        if (q != NULL) {
-            q->field_0x0[5] = value;
-            c = q->child;
-            if (c != NULL) {
-                c->field_0x0[5] = value;
-                if (c->child != NULL) {
-                    lect_map_cam_chg_sub(c->child, value, 1);
-                }
-                if (c->next != NULL) {
-                    lect_map_cam_chg_sub(c->next, value, 1);
-                }
-            }
-            q = q->next;
-            if (q != NULL) {
-                q->field_0x0[5] = value;
-                if (q->child != NULL) {
-                    lect_map_cam_chg_sub(q->child, value, 1);
-                }
-                if (q->next != NULL) {
-                    lect_map_cam_chg_sub(q->next, value, 1);
-                }
-            }
-        }
+        lect_map_cam_chg_sub(obj->next, value, 1);
     }
 }
 

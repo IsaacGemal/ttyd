@@ -227,10 +227,10 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (98.97%: only the loop register (r6 vs r7) differs.)
 static USER_FUNC(lecture_button_rtn) {
-    s32 done;
     s32 i;
+    LectureButton* btn;
+    s32 done;
 
     if (isFirstCall) {
         Vec pos;
@@ -243,7 +243,7 @@ static USER_FUNC(lecture_button_rtn) {
     }
     done = 0;
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        btn = &lbtn[i];
 
         switch (btn->seq) {
             case 0:

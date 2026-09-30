@@ -72,30 +72,29 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.65%): 174 of 502 instructions differ: 160 with different operands, 1 replaced, 7 missing, 6 extra
+// NONMATCHING (96.42%): 100/502 instructions differ only by register, 6 scheduled earlier and 6 later; MWCC keeps
+// `work` in r31 (target r24) and `time` in r21 (target r20), shifting every case loop, and ~14k
+// declaration-order/pragma/local-merge variants never reached the target allocation (same limit as
+// evt_yuutitle_disp_func).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
-    s32 digit;
-    s32 xoff;
-    s32 xoff0, xoff1, xoff2, xoff3;
     s32 digits[4];
     s32 digit0, digit1, digit2;
     s32 i0, i1, i2, i3;
-    GXColor iconColor;
-    s32 icon;
-    s32 subsec;
-    f32 scale;
-    Mtx mtx;
-    s32 skip0, skip2;
     GXColor digitColor;
-    Mtx mtxScale;
-    s32 skip;
-    Mtx mtxTemp;
     s32 time;
-    s32 i;
+    s32 subsec;
+    GXColor iconColor;
+    Mtx mtxTemp;
+    s32 icon;
+    s32 xoff0, xoff1, xoff2, xoff3;
+    YuuCounterWork* work;
+    s32 skip0, skip2;
+    Mtx mtxScale;
+    f32 scale;
     s32 seconds;
+    Mtx mtx;
     f32 xbase;
     GXColor color;
-    YuuCounterWork* work;
     work = param;
     color = *(GXColor*)&dat_yuu_00014dd0;
     iconColor = *(GXColor*)&dat_yuu_00014dd0;
@@ -104,7 +103,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     switch (work->mode) {
     case 0:
         if (!(work->flags2 & 2)) {
-            work->time = (s32)(200.0f * (1300.0f + marioGetPtr()->position.x));
+            f32 x = marioGetPtr()->position.x;
+            work->time = (s32)(200.0f * (1300.0f + x));
         }
         scale = 2.5f;
         icon = 0x202;
@@ -253,6 +253,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             iconDispGxCol(mtxTemp, 0x10, (u16)(digits[i3] + 0x1F7), digitColor);
             xoff3 += 15;
         }
+        break;
+    case 2:
         break;
     }
 }

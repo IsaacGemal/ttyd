@@ -134,8 +134,15 @@ char* name_tbl2[6] = {
     "A_zenmai1", "A_zenmai2", "A_zenmai3", "A__zenmai4", "A_zenmai5", "A_zenmai6",
 };
 
-Vec vec3_aji_00014358 = {0.0f, 0.0f, 0.0f};
-Vec vec3_aji_00014364 = {0.0f, 0.0f, 0.0f};
+// The original keeps these two vectors in .rodata yet reloads them every init-loop iteration (a const
+// qualifier lets MWCC hoist the loads, so the section is chosen by hand and the mutable type is kept).
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_aji_00014358 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_aji_00014364 = {0.0f, 0.0f, 0.0f};
+#else
+const Vec vec3_aji_00014358 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_aji_00014364 = {0.0f, 0.0f, 0.0f};
+#endif
 const Vec vec3_aji_00014370 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_aji_0001437c = {0.0f, 1.0f, 0.0f};
 
@@ -658,7 +665,6 @@ typedef struct ChkEntry {
     Vec diff;
 } ChkEntry;
 
-// NONMATCHING (98.97%): 78 of 331 instructions differ: 77 with different operands, 1 missing
 static USER_FUNC(mario_chk) {
     f32 dir;
     f32 dist;
@@ -670,30 +676,33 @@ static USER_FUNC(mario_chk) {
     Vec pos;
     s32 i;
     s32 j;
-    HitEntry* hit;
+    HitEntry* hit1;
+    HitEntry* hit2;
+    HitEntry* hit3;
+    HitEntry* hit5;
     PartyEntry* party;
     MarioWork* mario;
     ChkEntry* area;
 
     if (isFirstCall) {
-        ChkEntry* p = _mapAlloc(13 * sizeof(ChkEntry));
+        area = _mapAlloc(13 * sizeof(ChkEntry));
         for (i = 0; i < 13; i++) {
-            p[i].prev = vec3_aji_00014358;
-            p[i].diff = vec3_aji_00014364;
+            area[i].prev = vec3_aji_00014358;
+            area[i].diff = vec3_aji_00014364;
         }
-        event->userdata[0] = (s32)p;
+        event->userdata[0] = (s32)area;
         event->userdataf[1] = 0.0f;
         event->userdata[2] = 0;
     }
     area = (ChkEntry*)event->userdata[0];
 
     for (i = 0; i < 13; i++) {
-        hit = hitNameToPtr((const char*)name_tbl[i]);
-        if (hit != NULL && hit->mapObj != NULL) {
+        hit1 = hitNameToPtr((const char*)name_tbl[i]);
+        if (hit1 != NULL && hit1->mapObj != NULL) {
             pos = vec3_aji_00014370;
-            pos.x = hit->mapObj->unkAC[0][3];
-            pos.y = hit->mapObj->unkAC[1][3];
-            pos.z = hit->mapObj->unkAC[2][3];
+            pos.x = hit1->mapObj->unkAC[0][3];
+            pos.y = hit1->mapObj->unkAC[1][3];
+            pos.z = hit1->mapObj->unkAC[2][3];
             tmp = pos;
             PSVECSubtract(&tmp, &area[i].prev, &area[i].diff);
             area[i].prev = tmp;
@@ -701,10 +710,10 @@ static USER_FUNC(mario_chk) {
     }
 
     for (j = 0; j < 13; j++) {
-        hit = hitNameToPtr((const char*)name_tbl[j]);
+        hit2 = hitNameToPtr((const char*)name_tbl[j]);
         mario = marioGetPtr();
-        if (hit != NULL && mario != NULL && mario->hitobjStandOn != NULL &&
-            hitIsGroup((HitEntry*)mario->hitobjStandOn, hit) != 0) {
+        if (hit2 != NULL && mario != NULL && mario->hitobjStandOn != NULL &&
+            hitIsGroup((HitEntry*)mario->hitobjStandOn, hit2) != 0) {
             mario->riderDelta.x = area[j].diff.x * 10.0f;
             mario->riderDelta.z = area[j].diff.z * 10.0f;
             break;
@@ -712,10 +721,10 @@ static USER_FUNC(mario_chk) {
     }
 
     for (j = 0; j < 13; j++) {
-        hit = hitNameToPtr((const char*)name_tbl[j]);
+        hit3 = hitNameToPtr((const char*)name_tbl[j]);
         party = partyGetPtr(0);
-        if (hit != NULL && party != NULL && party->field_138 != NULL &&
-            hitIsGroup((HitEntry*)party->field_138, hit) != 0) {
+        if (hit3 != NULL && party != NULL && party->field_138 != NULL &&
+            hitIsGroup((HitEntry*)party->field_138, hit3) != 0) {
             *(f32*)((u8*)party + 0xAC) = area[j].diff.x * 10.0f;
             *(f32*)((u8*)party + 0xB4) = area[j].diff.z * 10.0f;
             break;
@@ -736,9 +745,9 @@ static USER_FUNC(mario_chk) {
     }
 
     for (j = 0; j < 6; j++) {
-        hit = hitNameToPtr((const char*)name_tbl2[j]);
+        hit5 = hitNameToPtr((const char*)name_tbl2[j]);
         mario = marioGetPtr();
-        if (hit == NULL) {
+        if (hit5 == NULL) {
             continue;
         }
         if (mario->hitobjStandOn == NULL) {
@@ -746,9 +755,9 @@ static USER_FUNC(mario_chk) {
             event->userdata[2] = 0;
             continue;
         }
-        if (hitIsGroup((HitEntry*)mario->hitobjStandOn, hit) != 0) {
+        if (hitIsGroup((HitEntry*)mario->hitobjStandOn, hit5) != 0) {
             up = vec3_aji_0001437c;
-            mtxGetRotationElement(hit->mapObj->unkAC, rot, 0x78, 0x79);
+            mtxGetRotationElement(hit5->mapObj->unkAC, rot, 0x78, 0x79);
             PSMTXMultVec(rot, &up, &up);
             angle = angleABf(0.0f, 0.0f, up.x, up.y);
             diff = angle - event->userdataf[1];
@@ -756,12 +765,12 @@ static USER_FUNC(mario_chk) {
             dist = distABf(mario->position.x, mario->position.y, up.x, up.y);
             dir = angleABf(up.x, up.y, mario->position.x, mario->position.y);
             if ((HitEntry*)event->userdata[2] != NULL &&
-                strcmp(hit->joint->name, ((HitEntry*)event->userdata[2])->joint->name) == 0) {
+                strcmp(hit5->joint->name, ((HitEntry*)event->userdata[2])->joint->name) == 0) {
                 mario->riderDelta.x = up.x + dist * (f32)sin(6.2831855f * (dir + diff) / 360.0f) - mario->position.x;
                 mario->riderDelta.y = up.y - dist * (f32)cos(6.2831855f * (dir + diff) / 360.0f) - mario->position.y;
             }
             event->userdataf[1] = angle;
-            event->userdata[2] = (s32)hit;
+            event->userdata[2] = (s32)hit5;
             break;
         }
     }

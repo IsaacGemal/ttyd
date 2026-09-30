@@ -229,14 +229,28 @@ static f32 view_dy;
 static s32 view_trg;
 static TegamiWork* wp;
 
-// NONMATCHING (99.89%): the local `color` and the winTexSet outgoing copy swap stack slots
-// (target: local at 0x8, outgoing at 0xc; ours: outgoing at 0x8, local at 0xc).
+// Builds draw's GXColor in a returning inline: this makes the local colour take the lower
+// stack slot (0x8) and winTexSet's outgoing copy the higher one (0xc), as the original does.
+// Written inline the two copies swap slots.
+#ifdef MUST_MATCH
+static inline GXColor drawColor(u8 a) {
+    GXColor c = dat_gor_0001da50;
+
+    c.a = a;
+    return c;
+}
+#endif
+
 static void draw(CameraId cameraId, void* param) {
     winTexInit((TEXPalette*)wp->file->data[0]);
     {
+#ifdef MUST_MATCH
+        GXColor color = drawColor(wp->unk0);
+#else
         GXColor color = dat_gor_0001da50;
 
         color.a = wp->unk0;
+#endif
         winTexSet(4, vec3_gor_0001da38, vec3_gor_0001da44, color);
     }
 }
