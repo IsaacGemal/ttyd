@@ -4,32 +4,18 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-extern const char str_8030142C[];
-extern u32 str_804223D8;
-extern const f32 float_deg2rad_804223dc;
-extern const f32 float_180_804223e0;
-extern const f32 float_32_804223e4;
-extern const f32 float_0p5_804223e8;
-extern const f32 float_16_804223ec;
 // MUST_MATCH: the original reloads these two .sdata2 constants before every FIFO store;
 // as plain `const` MWCC keeps them live and the vertex block differs.
 #ifdef MUST_MATCH
-extern volatile const f32 float_0_804223f0;
-extern volatile const f32 float_2_804223f4;
 #else
-extern const f32 float_0_804223f0;
-extern const f32 float_2_804223f4;
 #endif
-extern const f32 float_6p2832_804223f8;
-extern const f32 float_360_804223fc;
-extern const f32 float_0p9_80422400;
 
 EffectEntry* effMachinegunEntry(s32 type, f32 x, f32 y, f32 z, f32 angle, f32 scale, f32 field_0x10) {
 	EffectEntry* entry;
 	effMachinegunData* data;
 
 	entry = effEntry();
-	entry->type = str_8030142C;
+	entry->type = "Machinegun";
 	entry->count = 1;
 	data = __memAlloc(3, 0x28);
 	entry->userdata = data;
@@ -58,9 +44,9 @@ void effMachinegunMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	position = disp;
 #endif
-	data->position.x += data->scale * (f32)cos(float_6p2832_804223f8 * data->angle / float_360_804223fc);
-	data->position.y += data->scale * (f32)sin(float_6p2832_804223f8 * data->angle / float_360_804223fc);
-	data->scale *= float_0p9_80422400;
+	data->position.x += data->scale * (f32)cos(6.2831855f * data->angle / 360.f);
+	data->position.y += data->scale * (f32)sin(6.2831855f * data->angle / 360.f);
+	data->scale *= 0.9f;
 	data->lifetime -= 10;
 	if (data->lifetime < 0) {
 		effDelete(effect);
@@ -75,7 +61,7 @@ void effMachinegunMain(EffectEntry* effect) {
 }
 
 static inline void effMachinegunSetColor(effMachinegunData* data) {
-	GXColor color = *(GXColor*)&str_804223D8;
+	GXColor color = *(GXColor*)&"|tl";
 	color.a = data->lifetime;
 	GXSetChanMatColor(4, color);
 }
@@ -115,9 +101,9 @@ void effMachinegunDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 	PSMTXScale(scale, data->field_0x10, data->field_0x10, data->field_0x10);
-	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_804223dc);
+	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
-	PSMTXRotRad(rot, 'z', (float_180_804223e0 + data->angle) * float_deg2rad_804223dc);
+	PSMTXRotRad(rot, 'z', (180.f + data->angle) * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
 	PSMTXConcat(mtx, scale, mtx);
 	PSMTXConcat(cam->view, mtx, mtx);
@@ -128,19 +114,22 @@ void effMachinegunDisp(CameraId camId, void* param) {
 	GXBegin(0x80, 0, 4);
 #ifdef MUST_MATCH
 	// MUST_MATCH: splitting the negation and multiply keeps x0 in f2 and x1 in f1.
-	x0 = -float_32_804223e4;
-	x1 = float_16_804223ec;
-	x0 = x0 * float_0p5_804223e8;
+	{
+		f32 f = 32.0f;
+		f32 h = 0.5f;
+		x0 = -f * h;
+	}
+	x1 = 16.0f;
 #else
-	x0 = -float_32_804223e4 * float_0p5_804223e8;
-	x1 = float_16_804223ec;
+	x0 = -32.0f * 0.5f;
+	x1 = 16.0f;
 #endif
-	GXPosition3f32(x0, x1, float_0_804223f0);
-	GXTexCoord2f32(float_0_804223f0, float_0_804223f0);
-	GXPosition3f32(x1, x1, float_0_804223f0);
-	GXTexCoord2f32(float_2_804223f4, float_0_804223f0);
-	GXPosition3f32(x1, x0, float_0_804223f0);
-	GXTexCoord2f32(float_2_804223f4, float_2_804223f4);
-	GXPosition3f32(x0, x0, float_0_804223f0);
-	GXTexCoord2f32(float_0_804223f0, float_2_804223f4);
+	GXPosition3f32(x0, x1, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(x1, x1, 0.0f);
+	GXTexCoord2f32(2.0f, 0.0f);
+	GXPosition3f32(x1, x0, 0.0f);
+	GXTexCoord2f32(2.0f, 2.0f);
+	GXPosition3f32(x0, x0, 0.0f);
+	GXTexCoord2f32(0.0f, 2.0f);
 }

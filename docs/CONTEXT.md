@@ -2518,6 +2518,40 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
   at link. They were not in the unit's target, so they are gone.
 
+- **unit_party_nokotarou links** (19 KB of `.data`): `tools/dol_gen.py UNIT --append SRC > new.c` writes the unit's event scripts and tables
+  (it prints the merged file: redirect it; the header declarations it adds to `include/` clash with other files' local
+  `extern s32 X[]` stand-ins, so revert `include/battle/*` and declare the four handlers as local array externs). Three fixes
+  after that: `$` in a local's name (`negone_one$374`) becomes `_374`; the data needs `#pragma force_active on/off`; and
+  `__makeTechMenuFunc` keeps the `lbl_8038BEB8` anchor under MUST_MATCH (the anchor is the label 8 bytes before the unit's
+  `.data`, so compiling the weapons in the same TU changes the `lis/addi` immediates by 8 unless the code uses the extern).
+- eff_machinegun links: the `-16.0f` fold (`x0 = -32.0f * 0.5f` computed at compile time) is avoided with `f32 f = 32.0f;
+  f32 h = 0.5f; x0 = -f * h;` under MUST_MATCH. eff_mizutama has the same fold but the target also re-multiplies `sz * 0.5f` in
+  the loop (loop-invariant hoisting differs), left open at 95.6%.
+
+## Grind 28 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **eff_ice links** (10.8 KB of `.data` through `tools/dol_gen.py --append`). Its `.data` in the original object ends with 24 zero
+  bytes: the linker's padding before eff_torch's first object, a 1 KB texture that is 32-byte aligned (eff_torch's section
+  alignment is 32 in the original, 8 in dtk's regenerated object). With `align:32` on eff_torch's `.data` in splits.txt and
+  `ATTRIBUTE_ALIGN(32)` on `torch_obj2_texture` the linker pads the same way and eff_ice needs no pad objects. The `.sdata` and
+  `.sdata2` tails are padded to 8 by the linker on its own.
+- **nokotarou's `.data` split was 8 bytes off**: `party/party_chuchu` ended at 0x8038BEB8+8 with a `{ -1.0f, 1.0f }` pair
+  (`lbl_8038BEB8`), and `__makeTechMenuFunc` addressed the weapons as `lbl_8038BEB8 + 0x844`. That pair is the first object of
+  nokotarou's `.data` (the unit's base label), so the split now starts nokotarou at 0x8038BEB8; the MUST_MATCH anchor is gone and
+  the function reads the weapons by name and compiles to the target. Symptom for other units: a dtk `lbl_XXXX` used as the base
+  register of `lis/addi` with a big offset, sitting at the end of the previous unit's `.data`.
+- **Systematic version of the 8-byte split error**: `python3 tools/split_scan.py` lists the 32 units whose `.data` ends with an
+  8-byte `lbl_XXXXXXXX = {-1.0f, 1.0f}` that the next unit's code uses as its base register (the makeTech `weaponBase` anchors of
+  clauda/yoshi/chuchurina/vivian/sanders are this pattern). Moving each boundary 8 bytes down and defining the pair first in the
+  next unit's `.data` removes the anchors; only nokotarou's has been done.
+- **struct_render on dol units**: `fix_index` treated a scalar definition (`static BattleUnitDefense defence = {`) as a use and
+  refused to convert (only `[`-suffixed declarations were skipped), so the typed tables were left raw; it now also skips a
+  definition or declaration ending in `=` or `;`. With that, `tools/struct_render.py FILE --auto` plus the two `run_all` passes
+  (driver: monkey-patch `c_files` to the one file) types nokotarou's entry, data table, defence tables, resistance table, the
+  first weapon and the pose tables (two `extern s32 pose_table_nokotarou_*[]` in rels/jin and rels/las become `BattleDispPose[N]`);
+  the other four weapons, `unitdata_Party_Nokotarou` and `unitpartsdata_Party_Nokotarou` were typed by name
+  (`SYMBOL=BattleWeapon` etc.). Left raw: `unk_evt_80390b30` and the effect mesh tables of eff_ice (no layout for them).
+
 ## Grind 29 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
 
 - **Seven more units link**: eff_ice_n64, eff_kemuri4_n64, eff_kemuri7_n64, eff_kemuri10_n64, eff_fire_dust_n64,
