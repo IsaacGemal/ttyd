@@ -1,11 +1,15 @@
 #include <dolphin/types.h>
 #include "unit/party/unit_party_chuchurina.h"
 #include "manager/evtmgr.h"
+#include "manager/evtmgr_cmd.h"
 #include "evt/evt_cmd.h"
 #include "battle/battle.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_sub.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
+#include <dolphin/gx.h>
+#include <string.h>
 
 USER_FUNC(_chuchu_make_extra_work_area) {
     BattleWork* work = _battleWorkPointer;
@@ -18,8 +22,94 @@ USER_FUNC(_chuchu_make_extra_work_area) {
     return EVT_RETURN_DONE;
 }
 
+// NONMATCHING (92.29%): same instruction sequence; the callee-saved registers are assigned in a different order
+// (target: event r29, args r27, work r28; ours r31, r29, r30).
+USER_FUNC(_get_binta_hit_position) {
+    s32 id1, id2, outX, outY, outZ;
+    BattleWork* work;
+    s32* args;
+    BattleUnit* unit;
+    f32 z, y, x;
+    f32 scale;
+    s32 dir;
+
+    args = event->args;
+    work = _battleWorkPointer;
+    id1 = evtGetValue(event, args[0]);
+    id2 = evtGetValue(event, args[1]);
+    evtGetValue(event, args[2]);
+    outX = args[3];
+    outY = args[4];
+    outZ = args[5];
+    BattleGetUnitPtr(work, BattleTransID(event, id1));
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id2));
+    dir = unit->faceDirection;
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    scale = unit->mSizeMultiplier;
+    x += (f32)dir * (unit->bintaHitOffset.x * scale);
+    y += unit->bintaHitOffset.y * scale;
+    z += unit->bintaHitOffset.z * scale;
+    evtSetFloat(event, outX, x);
+    evtSetFloat(event, outY, y);
+    evtSetFloat(event, outZ, z);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_make_madowase_weapon) {
+    BattleWork* work = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 id, src, val;
+    s32 dst;
+    void* area;
+
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(work, id);
+    dst = args[0];
+    area = *(void**)((u8*)unit + 0x310);
+    src = evtGetValue(event, dst);
+    val = evtGetValue(event, args[1]);
+    memcpy(area, (void*)src, 0xC0);
+    *(u8*)((u8*)area + 0x84) = val;
+    evtSetValue(event, dst, (s32)area);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(_get_itemsteal_param) {
+    BattleWork* work;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 id, a, b, chance, steal;
+
+    id = evtGetValue(event, args[0]);
+    a = args[1];
+    work = _battleWorkPointer;
+    b = args[2];
+    unit = BattleGetUnitPtr(work, BattleTransID(event, id));
+    chance = 0x50 - (*(u8*)((u8*)work + 0x1CBD) - 3) * 0x14;
+    if (chance <= 5) {
+        chance = 5;
+    }
+    steal = 100 - unit->mKindParams->itemStealParam;
+    evtSetValue(event, a, chance);
+    evtSetValue(event, b, steal);
+    return EVT_RETURN_DONE;
+}
+
 // .sbss:0x0 | 0x80418A28
 s32 mono_alpha;
+
+void mono_capture(CameraId cameraId, void* param) {
+    BattleUnit* unit = param;
+    BattleUnitPart* parts = BtlUnit_GetPartsPtr(unit, 1);
+
+    *(smartEntry**)((u8*)unit + 0x318) = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 1, 0, 0), 1);
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x260, 0x1E0, 1, 0);
+    GXCopyTex((*(smartEntry**)((u8*)unit + 0x318))->address, 0);
+    GXPixModeSync();
+    *(u32*)((u8*)parts + 0x204) &= ~0x100;
+}
 
 USER_FUNC(mono_main) {
     BattleUnit* unit;
@@ -49,6 +139,25 @@ USER_FUNC(mono_on) {
     mono_alpha += 10;
     if (mono_alpha > 0xFF) {
         mono_alpha = 0xFF;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(mono_off) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, -2);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    mono_alpha -= 10;
+    if (mono_alpha < 0) {
+        mono_alpha = 0;
+        BtlUnit_GetPartsPtr(unit, 1);
+        if (*(smartEntry**)((u8*)unit + 0x318) != NULL) {
+            smartFree(*(smartEntry**)((u8*)unit + 0x318));
+        }
+        *(smartEntry**)((u8*)unit + 0x318) = NULL;
         return EVT_RETURN_DONE;
     }
     return EVT_RETURN_BLOCK;

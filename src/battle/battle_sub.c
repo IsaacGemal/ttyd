@@ -55,6 +55,16 @@ void btlsubResetMoveColorLvAll(BattleWork* work) {
 	}
 }
 
+// NONMATCHING (80.67%): the original is built -O4,s (stmw r30, separate fmuls/fadds); at -O4,s this scores 91.51%.
+void btlMovePos(f32* x, f32* z, f32 speed, f32 angle) {
+	f32 rad = 6.2831855f * angle / 360.0f;
+	f32 s = (f32)sin(rad);
+	f32 c = (f32)cos(rad);
+
+	*x += speed * s;
+	*z += -speed * c;
+}
+
 s32 BtlCompForwardLv(s32 direction, f32 dist) {
 	s32 lv = 0;
 	s32 result;
