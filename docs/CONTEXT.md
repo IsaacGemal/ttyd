@@ -2545,6 +2545,42 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
   code is unchanged and none of it is needed.
 
+## Grind 30 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **arammgr links** (all eight functions): `ARAMWork`/`ARAMWorkNode` named field by field (the header had unnamed tails), `wp` is
+  `static ARAMWork* wp = &work;` (`.sdata`, not `.sbss`). `aramMgrGarbage` (a defragmenter: wait for pending nodes, unlink
+  freed ones, then copy each moved block through a 32 KB bounce buffer) matched after: `*(volatile u16*)node & N` for each flag test
+  (two loads, no CSE), a separate loop variable for the third loop, `(chunk - 1 + size) / chunk` (the compiler
+  reassociates `chunk + size - 1`), and `for (i = 0, offset = 0; ...)` (register order of the two counters).
+- icondrv `iconNumberDispGx`/`iconNumberDispGx3D` written (92%): digits by `/` and `%` (the target keeps a separate quotient
+  for the `%`, so `rem % 100000` then `rem /= ...` is not the same as subtracting `q * 100000`), the top digit tested
+  against the original number, six digits shown as five; return type is `s32` (the header said `f32`; every caller ignores it).
+
+## Grind 31 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Parallel declaration-order search** (`tools/perm_batch.py MIN MAX`, `tools/perm_apply.py`): for every partial function in a
+  score band it compiles up to 70 orderings of the leading local declarations (single moves plus shuffles; initialised
+  declarations are allowed, a variant that no longer compiles is skipped) from scratch copies, scores only that function with
+  objdiff, and records the best; the applier rewrites the declarations, rebuilds the unit, keeps the change only if nothing in
+  the unit dropped and updates the NONMATCHING comments. About one function in ten of the 97-100% band gained: five went to
+  100% (BattleAudienceSoundWhistleKind, btlevtcmd_GetHitPos/SetPos/SetRotate/SetBaseRotate) and four improved (sac_muki
+  end_muki, eff_kemuri11 Disp, eff_pokopi_pcharge Entry, evt_badgeshop badgeShop_set). A companion search that swaps the operands
+  of one commutative operator or comparison at a time found only 0.02 to 0.2 point gains and the three 100% results the
+  declaration search had already found: not worth running again.
+- `tools/finish_unit.py UNIT`: pool_data, math_ext, pool_define, literal strings, the `.sbss2` idiom and autolink in one
+  command, keeping a step only if no function or section drops; it links eff_kemuri4 from its pre-fix source.
+- Written: `btlevtcmd_MarioJumpPosition` (96.7%), `btlevtcmd_DivePosition` (94.7%), `btlevtcmd_DivePartsPosition` (93.5%; the
+  part offsets are the unit's minus 0xC8), countdown `Start` (100%), `SaveReStart` (100%; 64-bit locals in the order the target
+  multiplies them), `Main` (97.1%) and `Disp` (94.4%; `GSW(0)` is 0xF5DE0180, the flag tests are `& 4` in Disp and `& 8` in
+  Main). `GSW(n)` in evt_cmd.h is `n - 170000000`, so the target constant is `GSW(0)`.
+
+- **Raw offsets in the new battle handlers** (BattleUnit has these as unnamed gaps; a header pass should name them):
+  `0x168` frame counter, `0x178` angle, `0x17C` distance, `0x180` arc height / step counter, `0x1A4/0x1A8/0x1AC` per-frame
+  position deltas, `0x1B0` arc angle, `0x1B4` arc angle step, `0x1B8` previous height, `0x188/0x1C0` sound-mode outputs of
+  `BtlUnit_LoadSeMode` (BattleUnitPart: the same fields at 0xA0/0xB0/0xB4/0xB8/0xC0/0xF8, i.e. minus 0xC8).
+  `btlevtcmd_MarioJumpPosition` computes `-(*(f32*)(unit+0x1B8) - *(f32*)(unit+0x1B8))` (a value minus itself) where the target
+  loads the field twice and subtracts: an artefact of the original source (it was probably `prevY - y` with both reads
+  compiled to the same location), kept because it is what the target does.
 ## Wave 28: near-misses, one per file (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
 Instead of untouched functions, each agent got one file's closest near-miss (90-99%), 37 of them the only open

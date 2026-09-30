@@ -75,13 +75,13 @@ u32 size128x10_tex32x32_2_vtx[56] = {
 };
 
 
-// NONMATCHING (98.36%): 1 missing, 2 extra, plus register differences.
+// NONMATCHING (98.91%): 1 missing, 2 extra, plus register differences.
 EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32 b) {
+	s32 n;
 	EffectEntry* effect;
 	effPokopiPchargeData* data;
 	effPokopiPchargeData* root;
 	s32 count;
-	s32 n;
 	s32 i;
 	f32 angle;
 
