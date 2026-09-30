@@ -1,20 +1,36 @@
 #include "evt_shuryolight.h"
+#include "driver/animdrv.h"
+#include "driver/npcdrv.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
 
 #pragma pool_data off
 
 #pragma force_active on
-static void evt_shuryolight_run_tue_evt(void);  // TODO: real signature
-static void evt_shuryolight_run_power_evt(void);  // TODO: real signature
-static void evt_shuryolight_get_status(void);  // TODO: real signature
-static void evt_shuryolight_get_anim_time(void);  // TODO: real signature
 static USER_FUNC(evt_shuryolight_wait_anim_end);
 static USER_FUNC(evt_shuryolight_set_anim);
-static void shuryolightRunEvt(void);  // TODO: real signature
-static void shuryolightSetAnim(void);  // TODO: real signature
-static void shuryolight_callback(void);  // TODO: real signature
+
+// Per-light state owned by evt_shuryolight_init and handed to shuryolight_callback as its display user data.
+typedef struct ShuryolightEntry {
+    NpcEntry* npc;    // 0x0
+    char** animTable; // 0x4
+    s32 animIdx;      // 0x8
+    s32 groupIdx;     // 0xC
+    s32 shapeIdx;     // 0x10
+} ShuryolightEntry;
+
+// The 0x70-byte block allocated by evt_shuryolight_init; slhp points at it.
+typedef struct ShuryolightWork {
+    s32 powerEvtId;               // 0x0
+    s32 headEvtId;                // 0x4
+    s32 tueEvtId;                 // 0x8
+    ShuryolightEntry entries[5];  // 0xC
+} ShuryolightWork;
+
+static ShuryolightWork* slhp;
 
 // clang-format off
 extend_data(188,
@@ -50,9 +66,6 @@ static char* red_light_anim[5] = {
 static char* orange_light_anim[5] = {
     "L_4C", "L_4B", "L_4D", "L_4A", "L_4E",
 };
-
-// TODO: write evt_shuryolight_set_anim (static, 0x7c bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(shuryolight_pow_normal_17_data_53DB0)
     LOOP(0)
@@ -103,9 +116,6 @@ EVT_BEGIN(shuryolight_head_normal_17_data_53EDC)
     RETURN
 EVT_END()
 
-// TODO: write evt_shuryolight_wait_anim_end (static, 0x64 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
 EVT_BEGIN(shuryolight_head_tenmetu_17_data_53F54)
     LOOP(0)
         CALL(evt_shuryolight_set_anim, 1, 4)
@@ -137,41 +147,246 @@ EVT_BEGIN(shuryolight_tue_normal_17_data_53FDC)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 slhp[1] = {
-    0x00000000,
-};
-
-// TODO: write evt_shuryolight_delete_17_text_10588 (global, 0x108 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_run_tue_evt (static, 0x88 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_run_head_evt_17_text_10718 (global, 0x88 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_run_power_evt (static, 0x88 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_run_evt_17_text_10828 (global, 0x164 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_get_status (static, 0x58 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_get_anim_time (static, 0x9c bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write evt_shuryolight_init_17_text_10B60 (global, 0x358 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shuryolightRunEvt (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shuryolightSetAnim (static, 0x50 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shuryolight_callback (static, 0x80 bytes) here:
-// its asm is in build/G8MJ01/las/asm/event/evt_shuryolight.s; this is where the original has it, just before the first script that uses it
 // clang-format on
+
+// Display callback for the light pose: find the entry whose group is being drawn and draw its plane shape.
+static void shuryolight_callback(void* userData, s32 groupId, Mtx mtx) {
+    ShuryolightEntry* entries = userData;
+    s32 i;
+
+    for (i = 0; i < 5; i++) {
+        if (groupId == entries[i].groupIdx) {
+            break;
+        }
+    }
+    if (i != 5) {
+        animPoseMain(entries[i].npc->poseId);
+        animPoseDrawShape(entries[i].npc->poseId, entries[i].shapeIdx);
+    }
+}
+
+static void shuryolightSetAnim(s32 index, s32 anim) {
+    ShuryolightEntry* entry = &slhp->entries[index];
+
+    entry->animIdx = anim;
+    animPoseSetAnim(entry->npc->poseId, entry->animTable[anim], TRUE);
+}
+
+static s32 shuryolightRunEvt(void* evtCode, s32 id) {
+    if (evtCheckID(id)) {
+        evtDeleteID(id);
+    }
+    return evtEntryType(evtCode, 0, 0, 0)->eventId;
+}
+
+USER_FUNC(evt_shuryolight_init_17_text_10B60) {
+    NpcEntry* mainNpc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
+    NpcEntry* npc;
+    ShuryolightEntry* entries;
+
+    npcEntry("light_power", "c_shuryo");
+    npcEntry("light_head_1", "c_shuryo");
+    npcEntry("light_head_2", "c_shuryo");
+    npcEntry("light_head_3", "c_shuryo");
+    npcEntry("light_tue_1", "c_shuryo");
+
+    slhp = _mapAlloc(0x70);
+    slhp->powerEvtId = 0;
+    slhp->headEvtId = 0;
+    slhp->tueEvtId = 0;
+    entries = slhp->entries;
+
+    npc = npcNameToPtr("light_power");
+    npc->flags |= 0xa0;
+    entries[0].npc = npc;
+    entries[0].animTable = green_light_anim;
+    entries[0].groupIdx = animPoseGetGroupIdx(mainNpc->poseId, "locator6");
+    entries[0].shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape34");
+    shuryolightSetAnim(0, 1);
+
+    npc = npcNameToPtr("light_head_1");
+    npc->flags |= 0xa0;
+    entries[1].npc = npc;
+    entries[1].animTable = orange_light_anim;
+    entries[1].groupIdx = animPoseGetGroupIdx(mainNpc->poseId, "locator9");
+    entries[1].shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape37");
+    shuryolightSetAnim(1, 3);
+
+    npc = npcNameToPtr("light_head_2");
+    npc->flags |= 0xa0;
+    entries[2].npc = npc;
+    entries[2].animTable = red_light_anim;
+    entries[2].groupIdx = animPoseGetGroupIdx(mainNpc->poseId, "locator8");
+    entries[2].shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape36");
+    shuryolightSetAnim(2, 3);
+
+    npc = npcNameToPtr("light_head_3");
+    npc->flags |= 0xa0;
+    entries[3].npc = npc;
+    entries[3].animTable = yellow_light_anim;
+    entries[3].groupIdx = animPoseGetGroupIdx(mainNpc->poseId, "locator7");
+    entries[3].shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape35");
+    shuryolightSetAnim(3, 3);
+
+    npc = npcNameToPtr("light_tue_1");
+    npc->flags |= 0xa0;
+    entries[4].npc = npc;
+    entries[4].animTable = red_light_anim;
+    entries[4].groupIdx = animPoseGetGroupIdx(mainNpc->poseId, "locator5");
+    entries[4].shapeIdx = animPoseGetShapeIdx(npc->poseId, "pPlaneShape36");
+    shuryolightSetAnim(4, 1);
+
+    animPoseSetDispCallBack(mainNpc->poseId, shuryolight_callback, entries);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_set_anim) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 anim = evtGetValue(event, args[1]);
+    ShuryolightEntry* entry = &slhp->entries[index];
+
+    entry->animIdx = anim;
+    animPoseSetAnim(entry->npc->poseId, entry->animTable[anim], TRUE);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_wait_anim_end) {
+    s32 index = evtGetValue(event, event->args[0]);
+    ShuryolightEntry* entry = &slhp->entries[index];
+
+    if (animPoseGetLoopTimes(entry->npc->poseId) < 1.0f) {
+        return EVT_RETURN_BLOCK;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_get_anim_time) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    ShuryolightEntry* entry = &slhp->entries[index];
+    AnimData* data = animPoseGetAnimDataPtr(entry->npc->poseId);
+    f32 start = *(f32*)(*(u8**)((u8*)data + 0x24) + 0x4);
+    f32 end = *(f32*)(*(u8**)((u8*)data + 0x24) + 0x8);
+    f32 time = 1000.0f * (end - start) / 60.0f;
+
+    evtSetValue(event, args[1], (s32)time);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_get_status) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    ShuryolightEntry* entry = &slhp->entries[index];
+
+    evtSetValue(event, args[1], entry->animIdx);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_run_evt_17_text_10828) {
+    s32 id;
+    s32* args = event->args;
+    u32 power = evtGetValue(event, args[0]);
+    u32 head = evtGetValue(event, args[1]);
+    u32 tue = evtGetValue(event, args[2]);
+    if (power != 0) {
+        id = slhp->powerEvtId;
+        if (evtCheckID(id)) {
+            evtDeleteID(id);
+        }
+        slhp->powerEvtId = evtEntryType((void*)power, 0, 0, 0)->eventId;
+    }
+    if (head != 0) {
+        id = slhp->headEvtId;
+        if (evtCheckID(id)) {
+            evtDeleteID(id);
+        }
+        slhp->headEvtId = evtEntryType((void*)head, 0, 0, 0)->eventId;
+    }
+    if (tue != 0) {
+        id = slhp->tueEvtId;
+        if (evtCheckID(id)) {
+            evtDeleteID(id);
+        }
+        slhp->tueEvtId = evtEntryType((void*)tue, 0, 0, 0)->eventId;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_shuryolight_run_power_evt) {
+#ifdef MUST_MATCH
+    // declaration order puts evtCode in r30 and id in r31, as the original
+    s32 id;
+    s32 evtCode;
+    evtCode = evtGetValue(event, event->args[0]);
+    id = slhp->powerEvtId;
+#else
+    s32 evtCode = evtGetValue(event, event->args[0]);
+    s32 id = slhp->powerEvtId;
+#endif
+
+    if (evtCheckID(id)) {
+        evtDeleteID(id);
+    }
+    slhp->powerEvtId = evtEntryType((void*)evtCode, 0, 0, 0)->eventId;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_run_head_evt_17_text_10718) {
+#ifdef MUST_MATCH
+    s32 id;
+    s32 evtCode;
+    evtCode = evtGetValue(event, event->args[0]);
+    id = slhp->headEvtId;
+#else
+    s32 evtCode = evtGetValue(event, event->args[0]);
+    s32 id = slhp->headEvtId;
+#endif
+
+    if (evtCheckID(id)) {
+        evtDeleteID(id);
+    }
+    slhp->headEvtId = evtEntryType((void*)evtCode, 0, 0, 0)->eventId;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_shuryolight_run_tue_evt) {
+#ifdef MUST_MATCH
+    s32 id;
+    s32 evtCode;
+    evtCode = evtGetValue(event, event->args[0]);
+    id = slhp->tueEvtId;
+#else
+    s32 evtCode = evtGetValue(event, event->args[0]);
+    s32 id = slhp->tueEvtId;
+#endif
+
+    if (evtCheckID(id)) {
+        evtDeleteID(id);
+    }
+    slhp->tueEvtId = evtEntryType((void*)evtCode, 0, 0, 0)->eventId;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shuryolight_delete_17_text_10588) {
+    s32 i;
+
+    if (slhp->powerEvtId != 0) {
+        evtDeleteID(slhp->powerEvtId);
+        slhp->powerEvtId = 0;
+    }
+    if (slhp->headEvtId != 0) {
+        evtDeleteID(slhp->headEvtId);
+        slhp->headEvtId = 0;
+    }
+    if (slhp->tueEvtId != 0) {
+        evtDeleteID(slhp->tueEvtId);
+        slhp->tueEvtId = 0;
+    }
+    for (i = 0; i < 5; i++) {
+        npcDeleteGroup(slhp->entries[i].npc);
+    }
+    _mapFree(slhp);
+    slhp = NULL;
+    return EVT_RETURN_DONE;
+}

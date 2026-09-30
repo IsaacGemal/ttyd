@@ -4,6 +4,7 @@
 #include <dolphin/mtx.h>
 #include "evt/evt_cmd.h"
 #include "driver/camdrv.h"
+#include "punidrv.h"
 
 #define PUNI_DATA_MAX 211
 #define PUNI_TEX_INFO_MAX 200
@@ -25,10 +26,10 @@ typedef struct PuniWork {
     f32 field_0x358;                    // 0x358
     f32 field_0x35C;                    // 0x35C
     s32 field_0x360;                    // 0x360
-    s32 field_0x364;                    // 0x364
-    s32 field_0x368;                    // 0x368
-    s32 field_0x36C;                    // 0x36C
-    s32 field_0x370;                    // 0x370
+    struct PuniData* field_0x364;       // 0x364
+    struct PuniData* field_0x368;       // 0x368
+    struct PuniData* field_0x36C;       // 0x36C
+    struct PuniData* field_0x370;       // 0x370
     s32 field_0x374;                    // 0x374
     Vec field_0x378;                    // 0x378
     s32 field_0x384;                    // 0x384
@@ -122,13 +123,11 @@ typedef struct PuniData {
     u8 unk1F4[0x1F8 - 0x1F4];           // 0x1F4
     Vec field_0x1F8;                    // 0x1F8
     Vec field_0x204;                    // 0x204
-    s32 field_0x210;                    // 0x210
-    s32 field_0x214;                    // 0x214
+    struct HitEntry* field_0x210;       // 0x210
+    struct HitEntry* field_0x214;       // 0x214
     s32 field_0x218;                    // 0x218
     u8 unk21C[0x560 - 0x21C];           // 0x21C
-    s32 field_0x560;                    // 0x560
-    s32 field_0x564;                    // 0x564
-    s32 field_0x568;                    // 0x568
+    Vec field_0x560;                    // 0x560
     s32 field_0x56C;                    // 0x56C
     s32 field_0x570;                    // 0x570
     s16 field_0x574;                    // 0x574
@@ -152,6 +151,25 @@ typedef struct PuniData {
     s32 field_0x5A4;                    // 0x5A4
 } PuniData;  // 0x5A8
 
+typedef struct PuniMap {
+    f32 field_0x0;       // 0x0
+    f32 field_0x4;       // 0x4
+    s32 field_0x8;       // 0x8
+    s32 field_0xC;       // 0xC
+    s32 field_0x10;      // 0x10
+    s32 field_0x14;      // 0x14
+    void* field_0x18;    // 0x18
+    s32 field_0x1C;      // 0x1C
+    u16* field_0x20;     // 0x20
+} PuniMap; // 0x24
+
+// One entry of PuniWork's target table at 0x374.
+typedef struct PuniTarget {
+    s32 flags;               // 0x0
+    Vec position;            // 0x4
+    struct HitEntry* hit;    // 0x10
+} PuniTarget; // 0x14
+
 typedef struct PuniTexInfo {
     char* unk0; // 0x0
     char* unk4; // 0x4
@@ -164,120 +182,120 @@ PuniData* puniGetPunidat(void);
 PuniWork* puniGetPunigp(void);
 void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos);
 void puniswTrapGetindex(s32 index, s32* out);
-void puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag);
+s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag);
 void puniMoveDecel(PuniData* punidat);
 
 PuniTexInfo* puniGetTex(void);
 void evt_icon_disp_func(CameraId camId, void* param);
 PuniTexInfo* _make_texbuf(PuniTexInfo* texbuf, s32 count, const char* a3, const char* a4, f32 a5);
 USER_FUNC(evt_make_texbuf);
-void puniAnimCount(void);  // TODO: real signature
-void puniAnimationInit(void);  // TODO: real signature
-void puniAnimationInit2(void);  // TODO: real signature
-void puniAnimation(void);  // TODO: real signature
-void _chukanhosei(void);  // TODO: real signature
-void _areacheck(void);  // TODO: real signature
-void _ymode_mri_09(void);  // TODO: real signature
-void _ymode_mri_16_00(void);  // TODO: real signature
-void _ymode_mri_16_01(void);  // TODO: real signature
-void puniSetYPosition(void);  // TODO: real signature
-void puniMapdata_MRI_06_getidx(void);  // TODO: real signature
-void puniMapdata_MRI_06_getpos(void);  // TODO: real signature
-void puniMapdata_MRI_09_getidx(void);  // TODO: real signature
-void puniMapdata_MRI_09_getpos(void);  // TODO: real signature
-void puniMapdata_MRI_16_getidx(void);  // TODO: real signature
-void puniMapdata_MRI_16_getpos(void);  // TODO: real signature
-void puniMapPos2Blk(void);  // TODO: real signature
-void puniMapBlk2Pos(void);  // TODO: real signature
-void puniMapGetInfo(void);  // TODO: real signature
-void puniMapInit(void);  // TODO: real signature
-void puniMapDataSet(void);  // TODO: real signature
-void puniMapFindbuff(void);  // TODO: real signature
-void puniTargetSearch(void);  // TODO: real signature
-void puniswSetindex(void);  // TODO: real signature
-void puniswTrapSetindex(void);  // TODO: real signature
-void randi(void);  // TODO: real signature
-void qrndseed(void);  // TODO: real signature
-void qrnd(void);  // TODO: real signature
-void puniDeleteEffect(void);  // TODO: real signature
-void _daime_change(void);  // TODO: real signature
-void PuniSakanobori(void);  // TODO: real signature
-void PuniChildHagure(void);  // TODO: real signature
-void searchParent(void);  // TODO: real signature
-void searchMario(void);  // TODO: real signature
-void puniPositionCheck(void);  // TODO: real signature
-void puniPositionRecover(void);  // TODO: real signature
-void unk_mri_000095f0(void);  // TODO: real signature
-void unk_mri_0000980c(void);  // TODO: real signature
-void puniMoveLimitedNormal(void);  // TODO: real signature
-void puniMoveNormal(void);  // TODO: real signature
-void puniMoveSimple(void);  // TODO: real signature
-void puniMoveCustom(void);  // TODO: real signature
-void puniParaAttack(void);  // TODO: real signature
-void puniParaDamage(void);  // TODO: real signature
-void puniParaRecover(void);  // TODO: real signature
-void puniParaDangerCheck(void);  // TODO: real signature
-void puniParaSelfCheck(void);  // TODO: real signature
-void puniParaRecoverCheck(void);  // TODO: real signature
-void puniSearchRandom(void);  // TODO: real signature
-void puniSearchRandom_Mikata(void);  // TODO: real signature
+void puniAnimCount(s16* anim, s16* count, s16* term);
+void puniAnimationInit(s16** anim, s16** anim2);
+void puniAnimationInit2(void);
+void puniAnimation(PuniData* dat, PuniPose* pose);
+f32 _chukanhosei(f32 a, f32 b, f32 c);
+s32 _areacheck(f32 x, f32 z, f32 range, f32 cx, f32 cz);
+void _ymode_mri_09(PuniData* dat);
+void _ymode_mri_16_00(PuniData* puni);
+void _ymode_mri_16_01(PuniData* puni);
+void puniSetYPosition(PuniData* puni);
+void puniMapdata_MRI_06_getidx(s32* outX, s32* outZ, f64 x, f64 z);
+void puniMapdata_MRI_06_getpos(s32 idx, s32 sub, f32* outX, f32* outZ);
+void puniMapdata_MRI_09_getidx(s32* outX, s32* outZ, f64 x, f64 z);
+void puniMapdata_MRI_09_getpos(s32 idx, s32 sub, f32* outX, f32* outZ);
+void puniMapdata_MRI_16_getidx(s32* out1, s32* out2, f32 x, f32 z);
+void puniMapdata_MRI_16_getpos(s32 a, s32 b, f32* outX, f32* outZ);
+void puniMapPos2Blk(s32* out1, s32* out2, f32 x, f32 z);
+void puniMapBlk2Pos(s32 a, s32 b, f32* outX, f32* outZ);
+u16 puniMapGetInfo(s32 x, s32 y);
+void puniMapInit(void);
+void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data);
+void puniMapFindbuff(Vec* pos);
+void puniTargetSearch(PuniData* punidat);
+void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos);
+void puniswTrapSetindex(s32 index, s32* value);
+s32 randi(s32 min, s32 max);
+void qrndseed(s32 seed);
+s32 qrnd(s32 max);
+void puniDeleteEffect(PuniData* puni);
+void _daime_change(PuniData* puni);
+void PuniSakanobori(PuniData* puni);
+void PuniChildHagure(PuniData* puni);
+s32 searchParent(PuniData* puni);
+s32 searchMario(PuniData* puni);
+s32 puniPositionCheck(PuniData* puni);
+void puniPositionRecover(PuniData* puni);
+void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag);
+void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag);
+void puniMoveLimitedNormal(PuniData* puni);
+void puniMoveNormal(PuniData* puni);
+void puniMoveSimple(PuniData* puni);
+void puniMoveCustom(PuniData* puni);
+void puniParaAttack(PuniData* puni, PuniData* other);
+void puniParaDamage(PuniData* puni);
+void puniParaRecover(PuniData* puni);
+s32 puniParaDangerCheck(PuniData* puni);
+s32 puniParaSelfCheck(PuniData* puni);
+s32 puniParaRecoverCheck(PuniData* puni);
+PuniData* puniSearchRandom(s32 start, s32 count);
+PuniData* puniSearchRandom_Mikata(void);
 void fn_19_A820(void);  // TODO: real signature
-void puniSearchRandom_Teki(void);  // TODO: real signature
-void fn_19_A8DC(void);  // TODO: real signature
-void searchBattle(void);  // TODO: real signature
-void searchMikata(void);  // TODO: real signature
-void searchTeki(void);  // TODO: real signature
-void searchBattleMikata(void);  // TODO: real signature
-void searchBattleTeki(void);  // TODO: real signature
-void puniSearch(void);  // TODO: real signature
+PuniData* puniSearchRandom_Teki(void);
+void fn_19_A8DC(void);
+PuniData* searchBattle(PuniData* puni, s32 start, s32 count, f32 maxDist);
+PuniData* searchMikata(PuniData* puni);
+PuniData* searchTeki(PuniData* puni);
+PuniData* searchBattleMikata(PuniData* puni);
+PuniData* searchBattleTeki(PuniData* puni);
+void puniSearch(PuniData* puni);
 void puniModeChangeAttack(void);  // TODO: real signature
 void puniModeChangeAway(void);  // TODO: real signature
 void puniModeChangeFallCheck(void);  // TODO: real signature
-void puniFukki(void);  // TODO: real signature
+void puniFukki(PuniData* puni);
 void puniModeALLCheck(void);  // TODO: real signature
-void puniModeALLEndCheck(void);  // TODO: real signature
-void puniModeNormal(void);  // TODO: real signature
-void puniModeParentpre(void);  // TODO: real signature
-void puniModeParent(void);  // TODO: real signature
-void puniModeSearch(void);  // TODO: real signature
-void puniModeMass(void);  // TODO: real signature
-void puniModeAwayjump(void);  // TODO: real signature
-void puniModeAway_sub(void);  // TODO: real signature
-void puniModeAway(void);  // TODO: real signature
-void puniModeAttack(void);  // TODO: real signature
-void puniModeDamage(void);  // TODO: real signature
-void puniModePiyori(void);  // TODO: real signature
-void puniModeEscape(void);  // TODO: real signature
-void puniModeRecover(void);  // TODO: real signature
-void puniModeDead(void);  // TODO: real signature
-void puniModeWind_sub(void);  // TODO: real signature
-void puniModeWind_kaiten(void);  // TODO: real signature
-void puniModeWind(void);  // TODO: real signature
-void puniModeFall(void);  // TODO: real signature
-void puniModePreupdraft(void);  // TODO: real signature
-void puniModeUpdraft(void);  // TODO: real signature
-void puniModeWonder(void);  // TODO: real signature
-void puniModeFunbari(void);  // TODO: real signature
-void puniModeWater(void);  // TODO: real signature
-void puniModePrehagure(void);  // TODO: real signature
-void puniModeHagure(void);  // TODO: real signature
-void puniModeDodai(void);  // TODO: real signature
-void puniModeTrap_sub(void);  // TODO: real signature
-void puniModeTrap(void);  // TODO: real signature
-void puniModeEnterSubInit(void);  // TODO: real signature
-void puniModeEnterSub(void);  // TODO: real signature
-void puniModeEnter(void);  // TODO: real signature
-void puniModeExitSubInit(void);  // TODO: real signature
-void puniModeExitSub(void);  // TODO: real signature
-void puniModeExit(void);  // TODO: real signature
-void puniModePoint(void);  // TODO: real signature
-void puniModeDokan(void);  // TODO: real signature
-void puniModeCustom(void);  // TODO: real signature
-void puni_puni_disp(void);  // TODO: real signature
-void puni_puni_shadow_disp(void);  // TODO: real signature
+void puniModeALLEndCheck(PuniData* punidat);
+void puniModeNormal(PuniData* punidat);
+void puniModeParentpre(PuniData* punidat);
+void puniModeParent(PuniData* punidat);
+void puniModeSearch(PuniData* puni);
+void puniModeMass(PuniData* punidat);
+void puniModeAwayjump(PuniData* punidat);
+s32 puniModeAway_sub(PuniData* punidat);
+void puniModeAway(PuniData* punidat);
+void puniModeAttack(PuniData* punidat);
+void puniModeDamage(PuniData* punidat);
+void puniModePiyori(PuniData* punidat);
+void puniModeEscape(PuniData* punidat);
+void puniModeRecover(PuniData* punidat);
+void puniModeDead(PuniData* punidat);
+s32 puniModeWind_sub(PuniData* punidat);
+void puniModeWind_kaiten(PuniData* punidat);
+void puniModeWind(PuniData* punidat);
+void puniModeFall(PuniData* punidat);
+void puniModePreupdraft(PuniData* punidat);
+void puniModeUpdraft(PuniData* punidat);
+void puniModeWonder(PuniData* punidat);
+void puniModeFunbari(PuniData* punidat);
+void puniModeWater(PuniData* punidat);
+void puniModePrehagure(PuniData* puni);
+void puniModeHagure(PuniData* puni);
+void puniModeDodai(PuniData* puni);
+void puniModeTrap_sub(PuniData* puni);
+void puniModeTrap(PuniData* puni);
+void puniModeEnterSubInit(PuniData* puni);
+void puniModeEnterSub(PuniData* puni);
+void puniModeEnter(PuniData* puni);
+void puniModeExitSubInit(PuniData* puni);
+void puniModeExitSub(PuniData* puni);
+void puniModeExit(PuniData* punidat);
+void puniModePoint(PuniData* punidat);
+void puniModeDokan(PuniData* punidat);
+void puniModeCustom(PuniData* punidat);
+void puni_puni_disp(CameraId cameraId, void* param);
+void puni_puni_shadow_disp(CameraId camId, void* param);
 void puni_puni_init(void);  // TODO: real signature
-void unk_mri_00012d58(void);  // TODO: real signature
-void fn_19_13A90(void);  // TODO: real signature
+void unk_mri_00012d58(PuniData* puni);
+void fn_19_13A90(PuniData* puni);
 void puniOption(void);  // TODO: real signature
 void unk_mri_00014ad4(void);  // TODO: real signature
 void puniSound(void);  // TODO: real signature
@@ -288,9 +306,9 @@ USER_FUNC(evt_puni_set_yuka);
 USER_FUNC(evt_puni_set_hamari);
 USER_FUNC(evt_puni_set_maze);
 USER_FUNC(evt_puni_main);
-void puni_init_posy(void);  // TODO: real signature
-void puni_init_para(void);  // TODO: real signature
-void toge_init_para(void);  // TODO: real signature
+f32 puni_init_posy(f32 y);
+void puni_init_para(PuniData* punidat, f32 x, f32 y, f32 z);
+void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z);
 USER_FUNC(evt_puni_rnd_pos);
 USER_FUNC(evt_puni_get_systemmode);
 USER_FUNC(evt_puni_set_systemmode);
@@ -298,8 +316,8 @@ USER_FUNC(evt_puni_wait_systemmode);
 USER_FUNC(evt_puni_debug_info);
 USER_FUNC(evt_puni_setup);
 USER_FUNC(evt_toge_setup);
-void _puniVAtari(void);  // TODO: real signature
-void puniHagurePos(void);  // TODO: real signature
+s32 _puniVAtari(PuniData* punidat, Vec* src, Vec* dest);
+void puniHagurePos(PuniData* punidat);
 USER_FUNC(evt_puni_exit);
 USER_FUNC(evt_puni_init_puni);
 USER_FUNC(evt_puni_init_teki);
@@ -341,10 +359,10 @@ USER_FUNC(evt_puni_all_save);
 USER_FUNC(evt_target_flag_onoff);
 USER_FUNC(evt_target_set_position);
 USER_FUNC(evt_target_set_soko);
-void npcGetTribeName(void);  // TODO: real signature
+const char* npcGetTribeName(NpcTribeInfo* tribe);
 USER_FUNC(puni_piders_check_func);
 USER_FUNC(puni_disp_info_kassencheck);
-void puniCountDisp(void);  // TODO: real signature
+void puniCountDisp(CameraId cameraId, void* param);
 USER_FUNC(puni_disp_info_sub);
 EVT_DEF(puni_piders_check);
 EVT_DEF(puni_disp_info);
@@ -355,3 +373,4 @@ EVT_DEF(mri_puni_main);
 EVT_DEF(mri_puni_init_dvd);
 EVT_DEF(mri_puni_init);
 EVT_DEF(mri_puni_init_none);
+void PuniDokuritsu(PuniData* puni);

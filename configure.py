@@ -1534,7 +1534,7 @@ config.libs = [
             Object(Matching, "aji.c"),
             Object(NonMatching, "unit/unit_boss_magnum_battender_mkII.c"),
             Object(NonMatching, "unit/unit_barriern_custom.c"),
-            Object(NonMatching, "event/evt_shuryolight.c", modules=["aji"]),
+            Object(Matching, "event/evt_shuryolight.c", modules=["aji"]),
         ],
     ),
     Rel(
@@ -1631,7 +1631,7 @@ config.libs = [
             Object(Matching, "gra_00.c"),
             Object(Matching, "gra.c"),
             Object(Matching, "data/battle/battle_database_gra.c"),
-            Object(NonMatching, "event/evt_kagemario.c", modules=["gra"]),
+            Object(Matching, "event/evt_kagemario.c", modules=["gra"]),
         ],
     ),
     Rel(
@@ -1696,7 +1696,7 @@ config.libs = [
             Object(Matching, "unit/unit_faker_mario.c"),
             Object(Matching, "unit/unit_atmic_teresa.c"),
             Object(Matching, "data/battle/battle_database_jin.c"),
-            Object(NonMatching, "event/evt_kagemario.c", modules=["jin"]),
+            Object(Matching, "event/evt_kagemario.c", modules=["jin"]),
         ],
     ),
     Rel(
@@ -1788,7 +1788,7 @@ config.libs = [
             Object(NonMatching, "unit/unit_boss_black_peach.c"),
             Object(NonMatching, "unit/unit_boss_batten_leader.c"),
             Object(NonMatching, "unit/unit_boss_batten_satellite.c"),
-            Object(NonMatching, "event/evt_shuryolight.c", modules=["las"]),
+            Object(Matching, "event/evt_shuryolight.c", modules=["las"]),
         ],
     ),
     Rel(
