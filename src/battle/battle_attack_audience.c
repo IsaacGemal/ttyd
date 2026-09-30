@@ -54,12 +54,12 @@ s32* btlataudGetAttackEventPtr(s32 index) {
     return data;
 }
 
-// NONMATCHING (94.12%): the original keeps a redundant signed `bge` to the default label ahead of the
-// unconditional `b` (an unfolded single-case switch decision tree); MWCC here removes that branch.
 void* btlataudGetMoveEventPtr(void) {
     s32 type = BattleAudience_GetPresentItemType();
 
     switch (type) {
+    case 0:
+        break;
     case 1:
         return btlataudevtPresentItem_Damage;
     }
