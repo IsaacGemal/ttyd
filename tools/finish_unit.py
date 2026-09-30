@@ -131,7 +131,7 @@ def literal_strings():
 def sbss2():
     t = open(src).read()
     m = re.findall(r"^(?:GXColor|u32) (unk_8042\w+);\n", t, re.M)
-    if not m or "sbss2" in t:
+    if not m or '#pragma section ".sdata" ".sbss2"' in t:
         return False
     names = sorted(m, reverse=True)  # declared in reverse: they are placed in the reverse of their declaration order
     decl = "".join(f'__declspec(section ".sdata") GXColor {n};\n' for n in names)
