@@ -2130,3 +2130,15 @@ proof. Game code (src/, rels/) was compiled C: asm there is always a paste. Revi
   compare block in the original; hoisting it in the source did not do it), cylinderShadowDraw (GXColor temporaries
   swap slots and the display-list calls end in a different branch shape), _lvup_spot_move (intplGetValue argument
   scheduling, as before).
+
+## Grind 13: synthvoice linked (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+MusyX synthvoice.c: retail splits `voiceAllocate` into a static `voiceAllocateFind` (returns the voice with direct
+`return voice` at each exit, one shared fail label for the priority check, `-1` as s32) and two thin callers,
+`voiceAllocate` (unlinks the voice from the free list and adjusts the running counts) and `voiceAllocatePeek` (returns
+the stolen voice's allocId). voiceAllocate is inlined into `voiceBlock`, which sets `allocId = 0xFFFFFFFF`. Also
+written: `vidGetPublicId`, `synthKillVoicesBySampleReferences` (sampleId, MusyX >= 2.0.1); `vidRemoveVoiceReferences`
+updates the master list's root too; `vidMakeNew` restarts the list walk when a fresh vid ends up below the current
+node (`goto retry` to the start of the walk; the compiler reuses the `vidRoot` it already loaded). The new code
+is gated like upstream: the split at MusyX >= 2.0.1 (Peek at 2.0.3), vidGetPublicId, the restart and the master-list
+root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, untested (the project builds 2.0.3).
