@@ -1718,7 +1718,7 @@ USER_FUNC(btlevtcmd_GetOverTurnCount) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.11%): 1 instruction differs, plus register differences.
+// NONMATCHING (97.78%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_SetOverTurnCount) {
     s32 btlId;
     s32 id;
@@ -1773,10 +1773,12 @@ USER_FUNC(btlevtcmd_AddUnitWork) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.82%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetUnitWorkFloat) {
+    s32 btlId;
+    s32 id;
     s32* args = event->args;
-    s32 btlId, id, i, index;
+    s32 i;
+    s32 index;
     BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
@@ -2333,7 +2335,7 @@ USER_FUNC(btlevtcmd_GetFaceDirection) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.11%): 1 instruction differs, plus register differences.
+// NONMATCHING (97.78%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangeFaceDirection) {
     s8 value;
     s32 btlId;
@@ -2347,7 +2349,7 @@ USER_FUNC(btlevtcmd_ChangeFaceDirection) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.55%): 1 instruction differs, plus register differences.
+// NONMATCHING (98.06%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangePartsFaceDirection) {
     s32* args = event->args;
     s32 btlId, id, partId;
@@ -3619,10 +3621,11 @@ USER_FUNC(btlevtcmd_EnemyItemUseCheck) {
 }
 
 //s32* battleId, s32* kind
-// NONMATCHING (98.30%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_ChangeKind) {
+    s32 btlId;
+    s32 id;
     s32* args = event->args;
-    s32 btlId, id, kind;
+    s32 kind;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -3868,13 +3871,17 @@ USER_FUNC(btlevtcmd_FaceDirectionAdd) {
 }
 
 //s32* battleId, s32* partId, s32* retIndex, s32* dir
-// NONMATCHING (99.55%): only wp and id swap callee-saved registers (original wp=r29/id=r30, ours wp=r30/id=r29).
 USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
     s32* args = event->args;
     BattleUnit* unit;
     BattleUnitPart* part;
+    s32 btlId;
+    s32 id;
     BattleWork* wp = _battleWorkPointer;
-    s32 btlId, id, partId, retIndex, dir, delta;
+    s32 partId;
+    s32 retIndex;
+    s32 dir;
+    s32 delta;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -3889,12 +3896,15 @@ USER_FUNC(btlevtcmd_PartsFaceDirectionSub) {
 }
 
 //s32* battleId, s32* retIndex, s32* dir
-// NONMATCHING (93.82%): 1 instruction differs, 4 missing, 4 extra, plus register differences.
 USER_FUNC(btlevtcmd_FaceDirectionSub) {
+    s32 id;
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, retIndex, dir, delta;
+    s32 btlId;
+    s32 retIndex;
+    s32 dir;
+    s32 delta;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
@@ -4384,13 +4394,14 @@ USER_FUNC(btlevtcmd_SetPartsDiveSound) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.53%): `part` lands in r30 instead of r28 and `type1` in r28 instead of r30; MWCC gives the
-// long-lived `part` the higher callee-saved register where the original gives it the lower one. Semantics match.
-//s32* battleId, s32* partId, s32* type1, s32* type2, s32* retIndex
 USER_FUNC(btlevtcmd_AnimeCmpPoseType) {
     s32* args = event->args;
+    s32 id;
+    s32 partId;
+    s32 type1;
     BattleUnitPart* part;
-    s32 id, partId, type1, type2, retIndex;
+    s32 type2;
+    s32 retIndex;
     char* name1;
     char* name2;
 
@@ -5699,7 +5710,7 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
 }
 
 //s32 chan, s32 mask, s32 retIndex
-// NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
+// NONMATCHING (98.11%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckTrigger) {
     s32* args = event->args;
     s32 chan, index;
@@ -5716,7 +5727,7 @@ USER_FUNC(btlevtcmd_PadCheckTrigger) {
 }
 
 //s32 chan, s32 mask, s32 retIndex
-// NONMATCHING (88.82%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
+// NONMATCHING (98.11%): 1 instruction differs, 1 missing, 1 extra, plus register differences.
 USER_FUNC(btlevtcmd_PadCheckNow) {
     s32* args = event->args;
     s32 chan, index;
