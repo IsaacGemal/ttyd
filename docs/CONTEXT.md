@@ -2904,3 +2904,10 @@ callees and state across branches (PuniWork 24 -> 53 offsets, PuniData 39 -> 85 
 PuniWork 0x344-0x34C and PuniData 0x138-0x140 and 0x15C-0x164 as ints: they're Vecs. Fields are field_0xNNN until a
 function shows what they are; wave agents use them and write a commented raw offset for anything else, which
 collection promotes (rerun scan.py and structs.py).
+
+## Grind 37: permuter wins, batch 2 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- `BattleAudience_Init` 98.58 -> 99.12 with `BattleAudience_GetExist((u32)index)` at its two call sites (`MUST_MATCH` only). The permuter changed the prototype to `unsigned long`, but the asm does not justify `u32` (`id` only passes through to `BattleAudienceGetPtr(s32)`; all callers mask the boolean with `clrlwi 24`), so the header stays `s32`.
+- `battleAcDisp_PendulumCraneTiming` 98.08 -> 100%: a second pointer `p` to the dispParams is assigned before the switch and again in `case 0x63` (`MUST_MATCH`; natural form: one `p = ag`). The permuter's `new_var = ag` twice.
+- `kpaEnemyHitChk` -> 100%: `mp->position.x = mp->position.x;` after the fire-hit check (`MUST_MATCH` only; a pure no-op that pins the float load order).
+- Runs that found a lower score but nothing natural stay unapplied (`kpaSwimMove`, `hitDelete` 3605 -> 3175, `sort_5_3_func` 230 -> 225). `marioSetJumpPara` ends with `permuter-error` (the round trip does not compile; not looked at).

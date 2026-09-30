@@ -166,37 +166,45 @@ void battleAcDelete_PendulumCraneTiming(BattleWork* work) {
 	}
 }
 
-// NONMATCHING (98.08%): the disp pointer is folded into the BattleWork base (0x1f34 offsets) instead of the
-// original's `addi r31, work, 0x1f20`; the original also keeps the work pointer in r3 rather than r31.
 void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
 	BattleWork* work = _battleWorkPointer;
 	s32 state = work->actionCommands.mAcState;
 	BattleACDispParams* ag = &work->actionCommands.dispParams;
+#ifdef MUST_MATCH
+	BattleACDispParams* p; // retail copies the params pointer before the switch and again in case 0x63
+
+	p = ag;
+#else
+	BattleACDispParams* p = ag;
+#endif
 
 	switch (state) {
 	case 0x63:
 		ag->iconX =
 		    intplGetValue(4, 0x14 - ag->counter, 0x14, MATCH_F32(float_neg300_804209a4), MATCH_F32(float_30_804209a8));
+#ifdef MUST_MATCH
+		p = ag;
+#endif
 		// fallthrough
 	case 0x64:
 	case 0x3E8:
-		actionCommandDisp(ag->iconX, ag->iconY);
-		if (ag->counter > 0) {
-			ag->counter--;
+		actionCommandDisp(p->iconX, p->iconY);
+		if (p->counter > 0) {
+			p->counter--;
 		}
 		break;
 	case 0x3EA:
 	case 0x3EB:
-		if (ag->counter >= 0x28) {
-			ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, MATCH_F32(float_30_804209a8),
-			                          MATCH_F32(float_neg300_804209a4));
+		if (p->counter >= 0x28) {
+			p->iconX = intplGetValue(4, p->counter - 0x28, 0x14, MATCH_F32(float_30_804209a8),
+			                         MATCH_F32(float_neg300_804209a4));
 		}
 		else {
-			ag->iconX = MATCH_F32(float_30_804209a8);
+			p->iconX = MATCH_F32(float_30_804209a8);
 		}
-		actionCommandDisp(ag->iconX, ag->iconY);
-		if (ag->counter < 0x3C) {
-			ag->counter++;
+		actionCommandDisp(p->iconX, p->iconY);
+		if (p->counter < 0x3C) {
+			p->counter++;
 		}
 		break;
 	}
