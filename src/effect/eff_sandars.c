@@ -55,6 +55,10 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 // loads in retail's f27/f28/f29 (f27=0, f28=float_0p2, f29=float_51). It pools as an anonymous @NNN@ whose
 // bytes equal 0.0f; the int->float magic likewise pools anonymously instead of
 // double_to_int_80300168. Both relocations score the same in objdiff.
+#ifndef MUST_MATCH
+const Vec vec3_80300138 = { 0.0f, 0.0f, 0.0f }; // the zero vector the natural copy reads (MUST_MATCH uses a literal)
+#endif
+
 EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	EffectEntry* entry;
 	effSandarsData* data;
