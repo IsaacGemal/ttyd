@@ -162,7 +162,11 @@ void effSunlightMain(EffectEntry* effect) {
 		}
 	}
 
+#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effSunlightDisp, effect);
+#endif
 }
 
 // Matched by pooling the three view Vecs as file-local consts right after effSunlightMain's zero Vec,

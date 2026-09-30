@@ -168,9 +168,12 @@ s32 main_suki(EventEntry* event, BOOL isFirstCall) {
     SukiTable6 table = *(SukiTable6*)dat_8030096c;
 #else
     Vec table[6];
-    memcpy(table, dat_8030096c, 0x48);
 #endif
     s32 i;
+
+#ifndef MUST_MATCH
+    memcpy(table, dat_8030096c, 0x48);
+#endif
 
     if (isFirstCall) {
         memset(work, 0, sizeof(SukiWork));
