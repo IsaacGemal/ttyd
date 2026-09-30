@@ -109,8 +109,7 @@ typedef struct PuniData {
     s32 field_0x1BC;                    // 0x1BC
     f32 field_0x1C0;                    // 0x1C0
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
-    s32 field_0x1C8;                    // 0x1C8
-    s32 field_0x1CC;                    // 0x1CC
+    OSTime modeStartTime;               // 0x1C8
     s32 field_0x1D0;                    // 0x1D0
     s32 field_0x1D4;                    // 0x1D4
     s32 field_0x1D8;                    // 0x1D8
@@ -219,7 +218,7 @@ void qrndseed(s32 seed);
 s32 qrnd(s32 max);
 void puniDeleteEffect(PuniData* puni);
 void _daime_change(PuniData* puni);
-void PuniSakanobori(PuniData* puni);
+struct PuniData* PuniSakanobori(struct PuniData* puni);
 void PuniChildHagure(PuniData* puni);
 s32 searchParent(PuniData* puni);
 s32 searchMario(PuniData* puni);
