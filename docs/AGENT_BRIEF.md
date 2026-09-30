@@ -139,8 +139,8 @@ When the instructions match but the stack slots, register allocation or scheduli
   the call under `#ifdef MUST_MATCH`, with the plain assignment under `#else` (rule 7). It doesn't help when a
   function passes several colours by value.
 - **A `Vec` temp copied from a named zero vector schedules too early** (`position = vec3_...;` at the top of
-  `effXxxMain`): build it from a literal in an inline, `makeVec(0, 0, 0)` (eff_vapor_n64), placed above the unit's
-  other rodata. The anonymous literal is deliberate here: it replaces the named zero vector only where the unit's
+  `effXxxMain`): build it in an inline that starts from the literal `(Vec){ 0.0f, 0.0f, 0.0f }` and sets the fields,
+  `position = makeVec(x, y, z);` (see eff_vapor_n64), placed above the unit's other rodata. The anonymous literal is deliberate here: it replaces the named zero vector only where the unit's
   `.rodata` score doesn't drop (CI checks that).
 - **A blend `(C - v) * k + v` computes in the wrong order**: `f32 t = C - v; v = t * k + v;` under
   `#ifdef MUST_MATCH` (eff_mahorn).
