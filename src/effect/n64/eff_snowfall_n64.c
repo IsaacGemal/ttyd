@@ -11,13 +11,31 @@
 
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
 #pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042326C_sbss2;
 __declspec(section ".sdata") GXColor unk_80423268;
 
 
 // .rodata
 
 // .data vertex array (32 vertices, 14 bytes each)
-extern effVtxArray eff_snowfall_v[];
+u32 eff_snowfall_v[112] = {
+	0xFFB20003, 0xFFDA0000, 0x0800FFFF, 0xFFFFFFBC, 0x0003FFDA, 0x08000800, 0xFFFFFFFF,
+	0xFFBC000C, 0xFFDA0800, 0x0000FFFF, 0xFFFFFFB2, 0x000CFFDA, 0x00000000, 0xFFFFFFFF,
+	0xFFDFFFDF, 0xFFC20000, 0x0800FFFF, 0xFFFFFFE9, 0xFFDFFFC2, 0x08000800, 0xFFFFFFFF,
+	0xFFE9FFE8, 0xFFC20800, 0x0000FFFF, 0xFFFFFFDF, 0xFFE8FFC2, 0x00000000, 0xFFFFFFFF,
+	0xFFE20027, 0xFFF20000, 0x0800FFFF, 0xFFFFFFEC, 0x0027FFF2, 0x08000800, 0xFFFFFFFF,
+	0xFFEC0030, 0xFFF20800, 0x0000FFFF, 0xFFFFFFE2, 0x0030FFF2, 0x00000000, 0xFFFFFFFF,
+	0xFFF3FFBE, 0xFFDA0000, 0x0800FFFF, 0xFFFFFFFD, 0xFFBEFFDA, 0x08000800, 0xFFFFFFFF,
+	0xFFFDFFC7, 0xFFDA0800, 0x0000FFFF, 0xFFFFFFF3, 0xFFC7FFDA, 0x00000000, 0xFFFFFFFF,
+	0xFFFBFFFC, 0x00000000, 0x0800FFFF, 0xFFFF0005, 0xFFFC0000, 0x08000800, 0xFFFFFFFF,
+	0x00050005, 0x00000800, 0x0000FFFF, 0xFFFFFFFB, 0x00050000, 0x00000000, 0xFFFFFFFF,
+	0x004CFFF3, 0xFFD20000, 0x0800FFFF, 0xFFFF0056, 0xFFF3FFD2, 0x08000800, 0xFFFFFFFF,
+	0x0056FFFC, 0xFFD20800, 0x0000FFFF, 0xFFFF004C, 0xFFFCFFD2, 0x00000000, 0xFFFFFFFF,
+	0x002D0025, 0xFFF30000, 0x0800FFFF, 0xFFFF0037, 0x0025FFF3, 0x08000800, 0xFFFFFFFF,
+	0x0037002E, 0xFFF30800, 0x0000FFFF, 0xFFFF002D, 0x002EFFF3, 0x00000000, 0xFFFFFFFF,
+	0x001BFFCB, 0xFFC70000, 0x0800FFFF, 0xFFFF0025, 0xFFCBFFC7, 0x08000800, 0xFFFFFFFF,
+	0x0025FFD4, 0xFFC70800, 0x0000FFFF, 0xFFFF001B, 0xFFD4FFC7, 0x00000000, 0xFFFFFFFF,
+};
 
 // .sbss2 scratch GXColor the blend path builds its TEV colour from
 
@@ -51,8 +69,8 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 	effSnowfallData* data = p;
 	CameraEntry* cam = camGetPtr(CAMERA_3D);
 	f32 cx = cam->cameraAt.x;
-	f32 cy = (cam->cameraAt.y + cam->cameraPos.y) / 2.0f;
-	f32 cz = (cam->cameraAt.z + cam->viewDistance) / 2.0f;
+	f32 cy = (cam->cameraAt.y + cam->cameraPos.y) * float_0p5_8041fd3c;
+	f32 cz = (cam->cameraAt.z + cam->viewDistance) * float_0p5_8041fd3c;
 	f32 px = data->position.x;
 	f32 py = data->position.y;
 	f32 pz = data->position.z;
@@ -74,7 +92,7 @@ void cam_clip_chk(void* p, s32 a, s32 b, s32 c) {
 		data->position.y = cy - b + i;
 	} else if (i < -b) {
 		if (c < 100) {
-			data->velocity.y = 0.0f;
+			data->velocity.y = float_0_8041fd18;
 			data->field_0x28 = 0;
 		} else {
 			i = -i;
@@ -278,7 +296,7 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 #endif
 	}
 	GXSetCullMode(0);
-	effSetVtxDescN64(eff_snowfall_v);
+	effSetVtxDescN64((effVtxArray*)eff_snowfall_v);
 	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041fd20 * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(cam->view, rotMtx, rotMtx);
 	data++;
