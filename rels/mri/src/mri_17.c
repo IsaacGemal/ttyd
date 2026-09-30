@@ -1,3 +1,4 @@
+#include "mri_puni.h"
 #include "mri_17.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
@@ -27,23 +28,6 @@
 
 #pragma force_active on
 extern s32 evt_mri_get16bitdata[];
-extern s32 evt_puni_all_fall_check[];
-extern s32 evt_puni_count_area[];
-extern s32 evt_puni_flag_onoff[];
-extern s32 evt_puni_get_flag[];
-extern s32 evt_puni_get_position[];
-extern s32 evt_puni_get_trap_index[];
-extern s32 evt_puni_init_puni[];
-extern s32 evt_puni_mem_init[];
-extern s32 evt_puni_set_anim[];
-extern s32 evt_puni_set_hamari[];
-extern s32 evt_puni_set_mode[];
-extern s32 evt_puni_set_position[];
-extern s32 evt_puni_set_trap_index[];
-extern s32 evt_puni_set_yuka[];
-extern s32 evt_puni_wait_systemmode[];
-extern s32 evt_target_flag_onoff[];
-extern s32 evt_target_set_position[];
 extern s32 mri_countdown[];
 extern s32 mri_guide_goryu[];
 extern s32 mri_puni_init[];

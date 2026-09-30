@@ -2799,3 +2799,27 @@ Isaac approved running [decomp-permuter](https://github.com/simonlindholm/decomp
 - **`tools/perm_prepare.py UNIT FUNC`** builds `PERM_ROOT/inputs/UNIT__FUNC/` (`base.c` = the unit run through `mwcceppc -E` with the project flags, other functions reduced to prototypes; `target.o` = the original unit object; `compile.sh` = the project's wibo + sjiswrap + mwcc command; `settings.toml`). Two rewrites make pycparser's round trip compile: `__declspec(...)` removed, `__typeof__(sizeof(0))` -> `unsigned long`, `sizeof(T)` -> `(sizeof(T))`.
 - **`tools/perm_run.py QUEUE`** is the supervisor: queue of `UNIT FUNC` lines, `--minutes` (default 20) per function under `timeout -k 30`, `nice -n 15`, `--jobs` x `--threads` capped at 8, one process group per run, overdue runs killed from `ps -o etimes`, everything killed on exit/interrupt, whole supervisor stops above load 20 or below 100 GB free. One log line per run in `~/permuter/runs.log` (tab separated): `time  unit  func  base_score  best_score  runtime_s  exit_reason` (`zero`, `finished`, `timeout`, `killed-overdue`, `load`, `disk`, `prepare-failed`, `permuter-error`, `interrupted`; best = lowest `output-SCORE-N` directory, `-` = none). Results stay in `inputs/UNIT__FUNC/output-*/source.c` (the preprocessed, round-tripped C): nothing is applied to the repo automatically; a win is re-expressed by hand in the natural source form, under `MUST_MATCH` with the natural form in `#else` when it is weird.
 - Example line: `2026-09-30T13:54:01	koopa_motion	kpa_jump	25	-	60	timeout`. The scorer's base score for a function that is one register swap away is 25 (five register-allocation penalties).
+
+## mri_puni: skeleton and plan (2026-09-30, Claude Opus 5.5 "TTYD Claude #2")
+
+mri_puni (188 functions, the largest REL unit) was upstream's partial file: typed pattern tables, the four .bss
+pointers and six functions, with most of its data missing. It is now rel_gen's full skeleton
+(scratch/mripuni/build_puni.py, reproducible): all 78 data objects in order (.data 16% -> 93%), upstream's typed
+tables and functions grafted in, every other function at a `// TODO: write` placeholder, extend_data ids 76/77
+(upstream's 0/1 collided with other mri units' generated ids). The two empty stub bodies upstream had
+(`evt_icon_disp_func`, `puni_disp_info_sub`) are placeholders again (--allow-regress for their ~1% scores).
+mri is built without deferred inlining, so the placeholders are in the asm's order
+(scratch/mripuni/order_puni.py moved 22): with `_make_texbuf` ahead of it, `evt_make_texbuf` inlines it as retail
+does and goes 64.85% -> 100%.
+
+mri_puni.h keeps upstream's structs and prototypes and declares the 26+ functions other mri scripts CALL as
+USER_FUNC; the `extern s32 evt_puni_*[]` stand-ins in 20 mri files and include/rel/mri/mri.h are gone (those files
+include mri_puni.h; the linked ones still link). rel_gen: a byte-array static local (`name$NNN`) is commented out
+like a word one (it emitted `u8 h3$2957[2]`, which doesn't compile).
+
+**Plan for a wave** (scratch/mripuni/groups.json): 183 open functions, 88 KB, in 22 contiguous asm-order groups
+of ~4 KB (puniModeSearch, 7.8 KB, alone). Structs first: PuniData (0x5A8 bytes) and PuniWork are almost all
+padding, and 22 agents would each invent fields; one struct pass (an agent or the orchestrator) names their fields
+from every access in the asm before the group wave. Then one agent per group in its own workspace, writing only its
+group's functions; collection splices each function into the file by name (they're independent blocks) and
+merges header additions; the file links only when all groups are done.
