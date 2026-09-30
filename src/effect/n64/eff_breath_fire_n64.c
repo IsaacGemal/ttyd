@@ -4,8 +4,26 @@
 #include "memory.h"
 #include "eff/eff_n64.h"
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230b4;
+__declspec(section ".sdata") GXColor unk_804230b0;
+
+
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+
+u32 stg_fire_breath_v[35] = {
+    0x0064FF9C, 0x00000C00, 0x00000000, 0x00FF0064,
+    0x00640000, 0x0C000400, 0x000000FF, 0x00000000,
+    0x00000A00, 0x0200FFFF, 0xFFFFFF9C, 0x00640000,
+    0x08000400, 0x000000FF, 0xFF9CFF9C, 0x00000800,
+    0x00000000, 0x00FF0064, 0xFF9C0005, 0x04000000,
+    0x000000FF, 0x00640064, 0x00050400, 0x04000000,
+    0x00FF0000, 0x00000005, 0x02000200, 0xFFFFFFFF,
+    0xFF9C0064, 0x00050000, 0x04000000, 0x00FFFF9C,
+    0xFF9C0005, 0x00000000, 0x000000FF,
+};
 
 typedef struct effBreathFireData {
 	s32 field_0x00; //0x00
@@ -58,11 +76,8 @@ extern const f32 float_0p2_8041eab0;
 // .rodata zero vector, int->float and mode-1 doubles are compiler-generated pool constants here.
 
 // .sbss2 zero GXColor locals the original copies before filling its fields.
-extern GXColor unk_804230b0;
-extern GXColor unk_804230b4;
 
 // .data vertex array of this unit; the original hands a 0x46-byte slice to effSetVtxDescN64.
-extern u8 stg_fire_breath_v[];
 
 #pragma opt_common_subs off // without it MWCC CSEs the two 0.2f pool loads across the rand call into a callee-saved FPR
 EffectEntry* effBreathFireN64Entry(s32 a, f32 b, f32 c, s32 d, f32 e, s32 f, f32 g, s32 h, f32 i, f32 j) {
@@ -301,3 +316,18 @@ void effBreathFireDisp(CameraId camId, void* param) {
 	tri2(0, 1, 2, 0, 1, 3, 2, 0);
 	tri2(4, 2, 3, 0, 4, 0, 2, 0);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_256_8041ea80 = 256.0f;
+const f32 float_0p0078125_8041ea84 = 0.0078125f;
+const f32 float_0p03125_8041ea88 = 0.03125f;
+const f32 float_0_8041ea8c = 0.0f;
+const f32 float_deg2rad_8041ea90 = 0.017453292f;
+const f32 float_4_8041ea94 = 4.0f;
+const f32 float_10_8041ea98 = 10.0f;
+const f32 float_0p05_8041ea9c = 0.05f;
+const f32 float_2p5_8041eaa0 = 2.5f;
+const f32 float_0p01_8041eaa4 = 0.01f;
+const f32 float_0p04_8041eaa8 = 0.040000003f;
+const f32 float_0p1_8041eaac = 0.1f;
+const f32 float_0p2_8041eab0 = 0.2f;
