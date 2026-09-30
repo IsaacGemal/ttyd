@@ -583,13 +583,20 @@ void shadowCharShadowDisp_Texture(CameraId camId) {
     }
 }
 
-// NONMATCHING (99.98%): only the two GXColor argument-copy stack slots are swapped (original 0x10/0x14,
-// ours 0x14/0x10) and the 0.0f .sdata2 pool label differs; body/control flow match.
+#ifdef MUST_MATCH
+// MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the
+// lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
+// colour inline puts them the other way round. The independent form is under #else.
+static inline void shadowPolyMatColor(void) {
+    GXColor c = cswp->unk100;
+    GXSetChanMatColor(4, c);
+}
+#endif
+
 void shadowCharShadowDisp_Polygon(CameraId camId) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
-    GXColor color;
     Mtx mtx;
     f32 zero;
     s32 i;
@@ -597,8 +604,14 @@ void shadowCharShadowDisp_Polygon(CameraId camId) {
     view = camGetCurPtr()->view;
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
-    color = cswp->unk100;
-    GXSetChanMatColor(4, color);
+#ifdef MUST_MATCH
+    shadowPolyMatColor();
+#else
+    {
+        GXColor color = cswp->unk100;
+        GXSetChanMatColor(4, color);
+    }
+#endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0xFF, 0xFF, 4);

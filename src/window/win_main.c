@@ -380,11 +380,23 @@ USER_FUNC(famicom_check) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.97%): same instructions; only register numbers or operands differ.
+// Building the fog colour in an inlined helper puts the fog by-value temp in the
+// lower stack slot and winTexSet's later colour temp in the higher one; written
+// inline the two temps swap slots.
+#ifdef MUST_MATCH
+static inline void winDispKoopaSetFog(void) {
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+}
+#endif
+
 void winDispKoopa(CameraId camId, void* param) {
     winTexTpl = **(TEXPalette***)(*(u8**)((u8*)wp + 0x28) + 0xA0);
     GXSetCullMode(GX_CULL_NONE);
+#ifdef MUST_MATCH
+    winDispKoopaSetFog();
+#else
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+#endif
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);

@@ -1419,11 +1419,6 @@ void marioSetJumpPara(void) {
     }
 }
 
-// NONMATCHING (99.82%): only float register numbers differ. The 0.1f speed block puts the
-// constant in f1 and baseSpeed in f2; the original has them swapped. The 0.01f block's result
-// lands in f1 instead of f3. Source order (0.0f/0.1f on either side, temp locals, scope of the
-// local) does not move them; every variant either keeps the same registers or hoists the load
-// before the flag OR (worse score).
 void marioFall(void) {
     f32 f31;
     s32 unk14;
@@ -1468,7 +1463,7 @@ void marioFall(void) {
     if (!(mario->flags & MARIO_FLAG_FORCED_MOVEMENT)) {
         if (marioChkInScreen(mario->unk168, mario->unk16C) == 0) {
             mario->flags |= MARIO_FLAG_STOP_AIR_MOVEMENT;
-            mario->baseSpeed = 0.1f * -mario->baseSpeed + mario->baseSpeed;
+            mario->baseSpeed += 0.1f * -mario->baseSpeed;
         }
     }
     if (getRollEvtFlag() != 0) {
@@ -1480,7 +1475,7 @@ void marioFall(void) {
     if (marioKeyOffChk() == 0 || marioCtrlOffChk() == 0) {
         if (!(mario->flags & MARIO_FLAG_FORCED_MOVEMENT)) {
             f32 f3 = mario->baseSpeed;
-            f3 = 0.01f * (-0.5f - f3) + f3;
+            f3 = f3 + 0.01f * (-0.5f - f3);
             if (f3 < 0.0f) {
                 f3 = 0.0f;
             }

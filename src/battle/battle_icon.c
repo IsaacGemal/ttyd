@@ -35,7 +35,6 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 #pragma optimize_for_size reset
 #pragma dont_inline reset
 
-// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
 void BattleIconInit(void) {
 	memset(_battleWorkPointer->icons, 0, sizeof(_battleWorkPointer->icons));
 }

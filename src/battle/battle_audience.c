@@ -1512,8 +1512,6 @@ void BattleAudience_Case_Appeal(BattleUnit* unit) {
 	                           float_0_8041e618);
 }
 
-// NONMATCHING (99.94%): only the absolute target address printed for the flag-test branch differs
-// (same relative branch, different object base).
 void BattleAudience_Case_TurnEnd(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* mario = BattleGetMarioPtr(wp);
@@ -1559,8 +1557,8 @@ void BattleAudience_Case_TurnEnd(void) {
 			BattleAudienceAddPhaseEvtList(13);
 			audience->mTurnEndPhaseEventChance = 0;
 		}
+		BattleAudienceNumToTarget();
 	}
-	BattleAudienceNumToTarget();
 }
 
 s32 BattleAudienceSound0(const char* name) {
