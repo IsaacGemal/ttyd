@@ -248,9 +248,11 @@ void mapObjClearOffScreen(const char* name) {
 	*(u32*)obj->field_0x0 &= ~0x80;
 }
 
-// NONMATCHING (97.86%): offscreenNameToId result goes r3->r4 directly; target uses r0
 void mapGrpSetOffScreen(const char* name, const char* offName) {
-	_setOffScrnId(mapGetMapObjSub(name), offscreenNameToId(offName), 0);
+	MapObject* obj = mapGetMapObjSub(name);
+	s32 id = offscreenNameToId(offName);
+
+	_setOffScrnId(obj, id, 0);
 }
 
 void mapObjSetOffScreen(const char* name, const char* offName) {

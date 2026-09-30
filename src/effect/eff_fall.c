@@ -238,8 +238,10 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	}
 }
 
-// NONMATCHING (99.95%): see report; only the operand order of one `fmuls` differs.
 void effFallDispInseki(CameraId cameraId, void* param) {
+#ifdef MUST_MATCH
+	f32 rad;
+#endif
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
 	CameraEntry* cam;
@@ -251,7 +253,13 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 	camGetPtr(cameraId);
 	PSMTXTrans(mtxA, work->x, work->y, work->z);
 	cam = camGetPtr(cameraId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	rad = float_deg2rad_80420f70 * rad;
+	PSMTXRotRad(mtxB, 'y', rad);
+#else
 	PSMTXRotRad(mtxB, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+#endif
 	PSMTXConcat(mtxA, mtxB, mtxC);
 
 	if (work[1].unk5C != -1 && work[1].unk60 != -1) {
