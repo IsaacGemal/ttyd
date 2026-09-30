@@ -33,33 +33,58 @@ f64 double_to_int_802ffa48 = 4503601774854144.0;
 const char str_80421950[] = "A_1";
 const char str_80421964[] = "sheep";
 
-// NONMATCHING (98.21%): only the loop preheader's `li r30,1` (i) and `addi r31,r31,0x34` (p) are
-// scheduled in the opposite order; every other instruction matches.
-void effSheepDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	EffSheepWork* data = effect->userdata;
-	Mtx mtxLocal;
-	Mtx mtxScale;
-	Mtx mtxBase;
+// NONMATCHING (99.49%): only the float-register allocation in the `type != 0` block differs
+// (target divisor f2 / 0.2 f1 / 0.5 f0, here f1 / f0 / f2).
+EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
+	EffectEntry* entry;
+	EffSheepWork* data;
 	EffSheepWork* p;
 	s32 i;
 
-	PSMTXTrans(mtxBase, data->x, data->y, data->z);
-	i = 1;
-	p = &data[1];
-	while (i < effect->count) {
-		if (p->poseId != -1) {
-			PSMTXTrans(mtxLocal, p->x, p->y, p->z);
-			PSMTXScale(mtxScale, p->scale, p->scale, p->scale);
-			PSMTXConcat(mtxLocal, mtxScale, mtxLocal);
-			PSMTXConcat(mtxBase, mtxLocal, mtxLocal);
-			animPoseDrawMtx(p->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
-			animPoseDrawMtx(p->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
-		}
-		i++;
-		p++;
+	entry = effEntry();
+	if (gp->inBattle != 0) {
+		y = BattleGetFloorHeight(_battleWorkPointer, x, y, z);
 	}
+	entry->type = str_80421964;
+	entry->count = 0x33;
+	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(EffSheepWork));
+	entry->userdata = data;
+	entry->callback = effSheepMain;
+	entry->flags |= 2;
+
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = float_1_8042196c;
+	data->state = 0;
+
+	p = &data[1];
+	for (i = 1; i < entry->count; i++, p++) {
+		p->type = irand(100) < 20;
+		p->x = float_neg500_80421970;
+		p->y = float_0_80421948;
+		p->z = float_0_80421948;
+		p->poseId = -1;
+		p->state = 0;
+		p->scale = (f32)(irand(5) + 8) / float_10_8042194c;
+		p->field_0x2C = (f32)(irand(20) + 20) / float_10_8042194c;
+		p->timer = i + irand(30);
+		p->z = (f32)(100 - irand(200));
+
+		if (p->type != 0) {
+			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
+			p->field_0x1C = float_0p2_80421974;
+			p->field_0x18 = p->field_0x1C * p->field_0x14 * float_0p5_80421978;
+		}
+		if (entry->count - 1 == i) {
+			p->z = float_0_80421948;
+			p->type = 0;
+			p->scale = float_1_8042196c;
+			p->timer = entry->count + 200;
+		}
+	}
+	return entry;
 }
 
 // NONMATCHING (95.18%): the whole state machine matches; the remaining diffs are register numbers
@@ -187,56 +212,31 @@ void effSheepMain(EffectEntry* effect) {
 	}
 }
 
-// NONMATCHING (99.49%): only the float-register allocation in the `type != 0` block differs
-// (target divisor f2 / 0.2 f1 / 0.5 f0, here f1 / f0 / f2).
-EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
-	EffectEntry* entry;
-	EffSheepWork* data;
+// NONMATCHING (98.21%): only the loop preheader's `li r30,1` (i) and `addi r31,r31,0x34` (p) are
+// scheduled in the opposite order; every other instruction matches.
+void effSheepDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	EffSheepWork* data = effect->userdata;
+	Mtx mtxLocal;
+	Mtx mtxScale;
+	Mtx mtxBase;
 	EffSheepWork* p;
 	s32 i;
 
-	entry = effEntry();
-	if (gp->inBattle != 0) {
-		y = BattleGetFloorHeight(_battleWorkPointer, x, y, z);
-	}
-	entry->type = str_80421964;
-	entry->count = 0x33;
-	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(EffSheepWork));
-	entry->userdata = data;
-	entry->callback = effSheepMain;
-	entry->flags |= 2;
-
-	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->scale = float_1_8042196c;
-	data->state = 0;
-
+	PSMTXTrans(mtxBase, data->x, data->y, data->z);
+	i = 1;
 	p = &data[1];
-	for (i = 1; i < entry->count; i++, p++) {
-		p->type = irand(100) < 20;
-		p->x = float_neg500_80421970;
-		p->y = float_0_80421948;
-		p->z = float_0_80421948;
-		p->poseId = -1;
-		p->state = 0;
-		p->scale = (f32)(irand(5) + 8) / float_10_8042194c;
-		p->field_0x2C = (f32)(irand(20) + 20) / float_10_8042194c;
-		p->timer = i + irand(30);
-		p->z = (f32)(100 - irand(200));
-
-		if (p->type != 0) {
-			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
-			p->field_0x1C = float_0p2_80421974;
-			p->field_0x18 = p->field_0x1C * p->field_0x14 * float_0p5_80421978;
+	while (i < effect->count) {
+		if (p->poseId != -1) {
+			PSMTXTrans(mtxLocal, p->x, p->y, p->z);
+			PSMTXScale(mtxScale, p->scale, p->scale, p->scale);
+			PSMTXConcat(mtxLocal, mtxScale, mtxLocal);
+			PSMTXConcat(mtxBase, mtxLocal, mtxLocal);
+			animPoseDrawMtx(p->poseId, mtxLocal, 1, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(p->poseId, mtxLocal, 2, float_0_80421948, float_10_8042194c);
+			animPoseDrawMtx(p->poseId, mtxLocal, 3, float_0_80421948, float_10_8042194c);
 		}
-		if (entry->count - 1 == i) {
-			p->z = float_0_80421948;
-			p->type = 0;
-			p->scale = float_1_8042196c;
-			p->timer = entry->count + 200;
-		}
+		i++;
+		p++;
 	}
-	return entry;
 }
