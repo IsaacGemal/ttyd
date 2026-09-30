@@ -79,6 +79,8 @@ extern const f32 float_3p1416_8041bfe0;
 extern const f32 float_360_8041bfd8;
 extern const f32 float_6p2832_8041bfdc;
 extern const f32 float_1p8_8041bfe4;
+extern const f32 float_1_8041bfa4;
+extern const f32 float_180_8041bfc4;
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
 //s32 frameIndex, s32 retIndex
@@ -5191,6 +5193,155 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         }
         break;
     }
+    return 0;
+}
+
+//s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
+// NONMATCHING (94.66%): same instruction count and control flow; the frame is 0x10 larger (three extra float slots) and
+// the tx/ty/tz FPRs are assigned in another order. A dive from the start position to the target through intpl_sub
+// (interp >= 100 keeps the unit above the floor); curve 0 offsets the height by a sine, otherwise the offset follows the
+// direction of travel.
+USER_FUNC(btlevtcmd_DivePosition) {
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 btlId, id, frame, height, interp, curve, a;
+    s32 aboveFloor;
+    s32 left;
+    f32 tx, ty, tz;
+    f32 x, y, z;
+    f32 dx, dy, dz;
+    f32 dist, dist2;
+    f32 h, ang, offX, offZ, floor;
+
+    btlId = evtGetValue(event, args[0]);
+    id = BattleTransID(event, btlId);
+    tx = (f32)evtGetValue(event, args[1]);
+    ty = (f32)evtGetValue(event, args[2]);
+    tz = (f32)evtGetValue(event, args[3]);
+    frame = evtGetValue(event, args[4]);
+    height = evtGetValue(event, args[5]);
+    interp = evtGetValue(event, args[6]);
+    curve = evtGetValue(event, args[7]);
+    a = evtGetValue(event, args[8]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    aboveFloor = 0;
+    if (interp >= 100) {
+        aboveFloor = 1;
+        interp -= 100;
+    }
+    if (isFirstCall) {
+        event->blocked = 1;
+        *(s32*)((u8*)unit + 0x168) = frame;
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        BtlUnit_SetMoveStartPos(unit, x, y, z);
+        BtlUnit_SetMoveCurrentPos(unit, x, y, z);
+        BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
+        dy = y - ty;
+        dx = x - tx;
+        dz = z - tz;
+        dist = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
+        *(f32*)((u8*)unit + 0x17C) = dist;
+        if (*(s32*)((u8*)unit + 0x168) == 0) {
+            *(s32*)((u8*)unit + 0x168) = (s32)(*(f32*)((u8*)unit + 0x17C) / unit->mMoveSpeedXZ);
+        } else {
+            unit->mMoveSpeedXZ = *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
+        }
+        if (*(s32*)((u8*)unit + 0x168) == 0) {
+            return 2;
+        }
+        *(f32*)((u8*)unit + 0x180) = float_0_8041bf98;
+        *(f32*)((u8*)unit + 0x178) = float_0_8041bf98;
+        if (tx - x > float_0_8041bf98) {
+            unit->moveDirection = 1;
+        } else if (tx - x < float_0_8041bf98) {
+            unit->moveDirection = -1;
+        }
+        BtlUnit_LoadSeMode(3, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
+    }
+    unit->mMoveCurrentPos.x = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
+                                        unit->mMoveStartPos.x, unit->mMoveTargetPos.x);
+    unit->mMoveCurrentPos.y = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
+                                        unit->mMoveStartPos.y, unit->mMoveTargetPos.y);
+    unit->mMoveCurrentPos.z = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
+                                        unit->mMoveStartPos.z, unit->mMoveTargetPos.z);
+    if (aboveFloor) {
+        floor = BattleGetFloorHeight(_battleWorkPointer, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y,
+                                     unit->mMoveCurrentPos.z);
+        if (unit->mMoveCurrentPos.y < floor) {
+            *(f32*)((u8*)unit + 0x180) = (f32)*(s32*)((u8*)unit + 0x168);
+            BtlUnit_SetMoveTargetPos(unit, unit->mMoveCurrentPos.x, floor, unit->mMoveCurrentPos.z);
+        }
+    }
+    *(f32*)((u8*)unit + 0x180) += float_1_8041bfa4;
+    if (*(f32*)((u8*)unit + 0x180) > (f32)*(s32*)((u8*)unit + 0x168)) {
+        BtlUnit_SetPos(unit, unit->mMoveTargetPos.x, unit->mMoveTargetPos.y, unit->mMoveTargetPos.z);
+        _UnitMoveSoundControlEnd(unit);
+        return 2;
+    }
+    if (curve == 0) {
+        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
+        dx = unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x;
+        dz = unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z;
+        dist2 = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
+        if (dist2 == float_0_8041bf98) {
+            dist2 = float_1_8041bfa4;
+        }
+        if (*(f32*)((u8*)unit + 0x17C) == float_0_8041bf98) {
+            *(f32*)((u8*)unit + 0x17C) = float_1_8041bfa4;
+        }
+        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)((u8*)unit + 0x17C)));
+        if (height == 0) {
+            h = float_0_8041bf98;
+        }
+        if (height < 0) {
+            h = -h * (f32)(-height);
+        }
+        if (height > 0) {
+            h = h * (f32)height;
+        }
+        BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y + h, unit->mMoveCurrentPos.z);
+    } else {
+        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
+        dx = unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x;
+        dz = unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z;
+        dist2 = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
+        if (unit->mMoveTargetPos.x - unit->mMoveStartPos.x > float_0_8041bf98) {
+            left = 1;
+        } else if (unit->mMoveTargetPos.x - unit->mMoveStartPos.x < float_0_8041bf98) {
+            left = 0;
+        } else if (unit->mMoveTargetPos.y - unit->mMoveStartPos.y < float_0_8041bf98) {
+            left = 0;
+        } else {
+            left = 1;
+        }
+        if (dist2 == float_0_8041bf98) {
+            dist2 = float_1_8041bfa4;
+        }
+        if (*(f32*)((u8*)unit + 0x17C) == float_0_8041bf98) {
+            *(f32*)((u8*)unit + 0x17C) = float_1_8041bfa4;
+        }
+        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)((u8*)unit + 0x17C)));
+        if (left) {
+            ang = float_360_8041bfd8 * atan2f_safety(unit->mMoveTargetPos.x - unit->mMoveStartPos.x,
+                                                     unit->mMoveTargetPos.y - unit->mMoveStartPos.y) /
+                  float_6p2832_8041bfdc;
+        } else {
+            ang = float_180_8041bfc4 + float_360_8041bfd8 * atan2f_safety(unit->mMoveTargetPos.x - unit->mMoveStartPos.x,
+                                                                          unit->mMoveTargetPos.y - unit->mMoveStartPos.y) /
+                                           float_6p2832_8041bfdc;
+        }
+        offX = h * sinfd(ang);
+        offZ = h * cosfd(float_180_8041bfc4 + ang);
+        if (height == 0) {
+            offX = float_0_8041bf98;
+            offZ = offX;
+        } else {
+            offX = offX * (f32)height;
+            offZ = offZ * (f32)height;
+        }
+        BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x + offZ, unit->mMoveCurrentPos.y + offX, unit->mMoveCurrentPos.z);
+    }
+    _UnitMoveSoundControl(unit);
     return 0;
 }
 
