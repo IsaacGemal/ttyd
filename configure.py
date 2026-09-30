@@ -361,7 +361,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_unit_event.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_camera.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_item_data.c"),
-            Object(NonMatching, "battle/battle_monosiri.c"),
+            Object(Matching, "battle/battle_monosiri.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_stage.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_database_common.c"),
             Object(NonMatching, "battle/battle_attack_audience.c", extra_cflags=["-O4,s"]),

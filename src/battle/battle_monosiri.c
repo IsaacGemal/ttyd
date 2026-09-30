@@ -728,57 +728,62 @@ BattleUnitType* battle_monosiri_same_tbl[] = {
 	same_tbl_magunum_battender,
 	same_tbl_magunum_battender_mkii,
 	same_tbl_moamoa,
-	same_tbl_iron_sinemon
+	same_tbl_iron_sinemon,
+	NULL, // terminator
+	NULL, NULL, NULL // 12 zero bytes of padding before lbl_8036BEA0 in the original data
 };
+
+// The pair {-1.0f, 1.0f} eff_fukidashi (an asm object) reads; the original has 12 zero bytes between the table and it.
+__declspec(section ".data") f32 lbl_8036BEA0[2] = { -1.0f, 1.0f };
 
 TattleEntry* battleGetUnitMonosiriPtr(s32 id) {
 	return &monosiriMessageTable[id];
 }
 
-// NONMATCHING (87.19%): 2 instructions differ, 1 missing, 5 extra, plus register differences.
-BOOL battleCheckUnitMonosiriFlag(BattleUnit* unit) { //needs stmw, swGet | fix
+BOOL battleCheckUnitMonosiriFlag(BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnitType kind = unit->currentKind;
-	u32 flag;
+	s32 flag;
 	if (wp->badgeEquippedFlags & 2) {
 		return TRUE;
 	}
-	flag = swGet(kind + 0x117A) | (wp->tattledUnitTypeFlags[kind / 32] & (1 << (kind % 32)));
+	flag = swGet(kind + 0x117A);
+	flag |= wp->tattledUnitTypeFlags[kind / 32] & (1 << (kind % 32));
 	if (unit->flags & 4) {
 		kind = unit->initialKind;
 		flag |= wp->tattledUnitTypeFlags[kind / 32] & (1 << (kind % 32));
 	}
-	if (flag) //TODO: should be able to permute to != 0 like swGet
+	if (flag)
 		return TRUE;
 	else
 		return FALSE;
 }
 
-// NONMATCHING (65.79%): 5 instructions differ, 6 missing, 15 extra, plus register differences.
-void battleSetUnitMonosiriFlag(BattleUnitType kind) { //very non-matching, TODO permute
+void battleSetUnitMonosiriFlag(BattleUnitType kind) {
 	BattleWork* wp = _battleWorkPointer;
-	BattleUnitType** table;
+	BattleUnitType** table = battle_monosiri_same_tbl;
+	BattleUnitType* group;
 	int i, j, k;
 
-	table = battle_monosiri_same_tbl;
 	i = 0;
-	while (table[i]) { //check main table hasn't run out of entries
-		j = 0;
-		while (table[i][j]) { //check this table hasn't run out of IDs
-			if (kind == table[i][j]) { //found the type in a group
+	while (1) {
+		group = table[i];
+		if (group == NULL) {
+			break;
+		}
+		for (j = 0; group[j] != 0; j++) {
+			if (kind == group[j]) {
 				k = 0;
-				while (table[i][k]) { //write bits for all entries
-					swSet(table[i][k] + 0x117A);
-					wp->tattledUnitTypeFlags[table[i][k] / 32] |= 1 << (table[i][k] % 32);
+				while ((kind = group[k]) != 0) {
+					swSet(kind + 0x117A);
+					wp->tattledUnitTypeFlags[kind / 32] |= 1 << (kind % 32);
 					k++;
 				}
 				return;
 			}
-			j++;
 		}
 		i++;
 	}
-	//no group found, just write the single bit
 	swSet(kind + 0x117A);
 	wp->tattledUnitTypeFlags[kind / 32] |= 1 << (kind % 32);
 }
