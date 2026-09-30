@@ -387,23 +387,30 @@ s32 marioSetDirEventMain(void) {
     }
 }
 
-// NONMATCHING (99.35%): only the base pointer `w` and the hoisted `w->unk0C` are in swapped
-// registers (wanted r6/r5, got r5/r6). Declaration order, a separate init, direct rubwork
-// access and an explicit index local all leave it unchanged.
 s32 checkOneRevolution(s32 dir) {
 RubWork* w = &rubwork;
 s32 idx;
 s32 cur, prev, saved;
 s32 i;
 s32 result = 0;
+#ifdef MUST_MATCH
+s32* head; // retail reads the ring head through a pointer taken before the loop
+#endif
 
     if (w->unk08 < 2) {
         return -1;
     }
     cur = w->unk3C[w->unk0C];
     saved = w->unk14;
+#ifdef MUST_MATCH
+    head = &w->unk0C;
+#endif
     for (i = 1; i <= 20; i++) {
+#ifdef MUST_MATCH
+        idx = *head - i;
+#else
         idx = w->unk0C - i;
+#endif
         while (idx < 0) {
             idx += 20;
         }
