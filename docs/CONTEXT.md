@@ -2330,6 +2330,41 @@ sites returned pages without results; no collected file shares code with anythin
 other wave-22 workspaces and the tower's ~/ttyd copy (this project's own code). Next waves: the prompt forbids
 network access and reading outside the workspace, and the tower's agents should run without network.
 
+**Review round 1 (one fresh Claude; ~50 partial functions compared with the asm, plus an automated check of every
+partial function's call arguments).** Four partial functions were wrong in ways no score shows: sys's
+display_func passed a dozen wrong GX arguments (COLOR1A1 for COLOR0A0, GEQUAL for ALWAYS, a light and DF_CLAMP
+where the original has none, PASSCLR for MODULATE, TEVREG1 for TEVREG0, stage 3's TEV inputs on stage 2, ...),
+tik_05's tiz_broken dropped a negation, rsh's rsh_window_tev used a 2x4 texgen and tik_00's uranai_cap a
+point-sampled texture. All fixed against the asm (display_func's 87 GX calls now pass the original's constants).
+Also fixed: conflicting declarations between agents' headers, repeated prototypes, 104 bare returns in event
+functions, stale placeholders, unbalanced optimizer pragmas (gor_10's reset brings tegami_delete to 100% and costs
+depthDisp: 93.8% -> 72.2%), misplaced and stale labels. unit_boss_cortez's entry_honeduka had been rendered with
+an all-zero initializer although it's .bss in the original: tools/struct_render.py now leaves .bss objects alone,
+and the unit links. Lesson: an agent's own label ("every GX call is in the right order", "logic follows the asm")
+is not evidence; partial functions need their call arguments checked against the asm, which a script can do for
+every function (the constants loaded into r3-r10 before each `bl`).
+
+**Review round 2 (Claude #1's Claude and Codex reviews).** More wrong logic, each fixed against the asm: sys's
+display placed the letters mirrored (36*i - 18*(count-1), ours had the negation); yuu_03's evt_ryushi lacked a
+whole switch (states 2-4 and 6-8 set the scroll speed); tou's rankingControll inserted the 0x1000 fighter at
+position 0 instead of 1, searched for flag 4 where the original tests flag 2, and compared entries' ids with
+swByteGet(0x1FB) where the original compares the indices (and moves the winner to the front); dmo_00's demo_book
+lacked four calls; muj_20's elmos1000tai_init evaluated `0.9f * v * sin` in the wrong order and precision. Three
+stubs an agent had left as bodies ("stubbed so the unit links": jin_00's 10 KB senteresa_ext_main, tou_03's
+screen_tev and ext_kyaku_init) are TODO placeholders again, for the next wave. Five copies of original jump
+tables whose functions are now written (their offsets point into the original's code) are gone; 15 whose
+functions aren't written stay as generated data. batten_leader's satellite helpers use BattleUnit.work /
+BattleUnitPart.work instead of raw offsets.
+
+**Follow-ups:** 21 NonMatching units have their functions in the asm's order rather than rule 18's reverse order
+(listed in Claude #1's review) and won't link until reordered; named literal globals (`const f32 float_0p5_... =
+0.5f`) remain in tou.c, sys.c, las_05, bom_01, batten_satellite and three lecture files (the prompt forbade them;
+the agents wrote them anyway); unit_boss_gundan_zako_group2 (left out) needs its ZakogunEntry renamed onto
+group1/3's; MonteEntry is defined in yuu_02.h and yuu_01.c under different field names; EffPokopiThunderData's
+fields at 0x30-0x48 are unnamed (the units write two colours there); unit_churantalar should link once its code
+refers to double_to_int_jon_0000e888; tou.c names its local functions with dtk's `_27_text_` stand-ins; the three
+stubbed functions and the other unwritten ones go to the next wave.
+
 ## Wave 24: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
 Wave 23's recipe on 121 more files, 21:45-23:29, launched from e7a5263 and
