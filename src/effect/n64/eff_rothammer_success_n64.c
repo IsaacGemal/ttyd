@@ -1,7 +1,18 @@
 #include "eff/n64/eff_rothammer_success_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include <math.h>
+
+// .sdata2 scratch GXColor (only its bytes are copied into the TEV register).
+extern const u32 dat_8041fc00;
+extern const f32 float_deg2rad_8041fc04;
+
+// .data vertex array for the textured quad (local to this file in the original).
+static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
+    0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x00400000, 0x000000FF,
+    0x00080008, 0x00000040, 0x00200000, 0x00FFFFF8, 0x00080000, 0x00000020, 0x000000FF,
+};
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_water_damage.c).
 static inline Vec initializeVec(Vec* input) {
@@ -89,4 +100,54 @@ void effRotHammerSuccessMain(EffectEntry* effect) {
     }
 
     dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effRotHammerSuccessDisp, effect);
+}
+
+void effRotHammerSuccessDisp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effRotHammerSuccessData* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    GXColor color;
+    Mtx mtx;
+    Mtx scaleMtx;
+    Mtx rotMtx;
+    Mtx viewMtx;
+    s32 i;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    effGetTexObjN64(0x1D, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+    GXSetTevAlphaIn(0, 7, 1, 4, 7);
+    GXSetCullMode(0);
+    effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+
+    PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * float_deg2rad_8041fc04);
+    PSMTXConcat(mtx, rotMtx, mtx);
+    PSMTXConcat(cam->view, mtx, viewMtx);
+
+    color = *(GXColor*)&dat_8041fc00;
+    GXSetTevColor(1, color);
+
+    for (i = 1, data++; i < effect->count; i++, data++) {
+        PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+        PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041fc04 * data->angle);
+        PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
+        PSMTXConcat(mtx, rotMtx, mtx);
+        PSMTXConcat(mtx, scaleMtx, mtx);
+        PSMTXConcat(viewMtx, mtx, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXSetCurrentMtx(0);
+        GXBegin(0x90, 0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    }
 }

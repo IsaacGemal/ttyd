@@ -2,18 +2,12 @@
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
 #include "memory.h"
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-// .sdata2 constants. The first four are used by effFlowerDisp/effFlowerN64Entry;
-// they are defined here so the compiler's literal pool lands at their original
-// offsets (0x0-0xC), matching the original unit's .sdata2 layout.
+// .sdata2: effFlowerDisp's TEV colour, first in the original unit's .sdata2.
 const u32 dat_8041efc8 = 0x000000FF;
-const f32 float_deg2rad_8041efcc = 0.017453292f;
-const f32 float_0p0625_8041efd0 = 0.0625f;
-const f32 float_0_8041efd4 = 0.0f;
-
-const Vec vec3_802fa688 = { 0.0f, 0.0f, 0.0f };
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_water_damage_n64.c).
 static inline Vec initializeVec(Vec* input) {
@@ -131,4 +125,64 @@ void effFlowerMain(EffectEntry* effect) {
         return;
     }
     dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFlowerDisp, effect);
+}
+
+void effFlowerDisp(CameraId camId, void* param) {
+    EffectEntry* effect;
+    CameraEntry* cam;
+    effFlowerData* data;
+    GXTexObj texObj;
+    GXColor color;
+    Mtx trans;
+    Mtx scale;
+    Mtx rot;
+
+    effect = param;
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+    PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x28);
+    PSMTXConcat(trans, rot, trans);
+    PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x24);
+    PSMTXConcat(trans, rot, trans);
+    PSMTXConcat(cam->view, trans, trans);
+    GXLoadPosMtxImm(trans, 0);
+
+    color = *(GXColor*)&dat_8041efc8;
+    GXSetTevColor(1, color);
+    GXSetCullMode(0);
+    effGetTexObjN64(0x4c, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
+    GXLoadTexMtxImm(scale, 0x1e, 1);
+    GXSetNumChans(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xff);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 8, 3, 0xf);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    effSetVtxDescN64((effVtxArray*)flowers_v);
+    GXBegin(0x90, 0, 0x18);
+    tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    tri2(4, 2, 5, 0, 4, 5, 6, 0);
+    tri2(7, 8, 2, 0, 7, 2, 9, 0);
+    tri2(10, 2, 11, 0, 10, 11, 12, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0xff, 0xff, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 0xa, 3, 0xf);
+    GXSetTevAlphaIn(0, 7, 5, 1, 7);
+    effSetVtxDescN64((effVtxArray*)((u8*)flowers_v + 0xb6));
+    GXBegin(0x90, 0, 0x18);
+    tri2(0, 1, 2, 0, 0, 2, 3, 0);
+    tri2(2, 4, 5, 0, 2, 5, 3, 0);
+    tri2(6, 7, 8, 0, 6, 8, 9, 0);
+    tri2(8, 10, 11, 0, 8, 11, 9, 0);
 }

@@ -13,6 +13,15 @@ void effInit64(void) {
 	wp->effTextureLoaded = FALSE;
 }
 
+u32 effTblRandN64(u32 rand, s32 index) {
+	s32 rand2 = _rand_table[index % 128];
+
+	if (rand2 < 0) {
+		rand2 = -rand2;
+	}
+	return rand2 % (s32)(rand + 1);
+}
+
 void tri1(u16 x, u16 y, u16 z) {
 	GXWGFifo.u16 = x;
 	GXWGFifo.u16 = x;

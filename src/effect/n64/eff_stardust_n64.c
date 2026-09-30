@@ -6,9 +6,20 @@
 typedef struct EffStardustN64Data {
     u8 pad0[0x1C];
     f32 scale;   // 0x1C
-    u8 pad1[0x1C];
+    u8 pad1[0x8];
+    f32 r;       // 0x28
+    f32 g;       // 0x2C
+    f32 b;       // 0x30
+    u8 pad2[0x8];
     s32 drawCam; // 0x3C
 } EffStardustN64Data;
+
+void effStardustN64SetColor(EffectEntry* entry, f32 r, f32 g, f32 b) {
+    EffStardustN64Data* data = (EffStardustN64Data*)entry->userdata;
+    data->r = r;
+    data->g = g;
+    data->b = b;
+}
 
 void effStardustN64SetDrawCam(EffectEntry* entry, s32 cam) {
     ((EffStardustN64Data*)entry->userdata)->drawCam = cam;

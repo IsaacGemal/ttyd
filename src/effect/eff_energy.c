@@ -110,3 +110,91 @@ void effEnergyMain(EffectEntry* effect) {
     dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effEnergyDisp, effect);
 #endif
 }
+
+static GXColor color_tbl[10] = {
+    { 0x38, 0xF2, 0x2C, 0xFF },
+    { 0xEA, 0xFA, 0xB7, 0xFF },
+    { 0x59, 0xB4, 0xFF, 0xFF },
+    { 0xA2, 0xF8, 0xFD, 0xFF },
+    { 0xFF, 0xA3, 0x26, 0xFF },
+    { 0xFD, 0xF1, 0x89, 0xFF },
+    { 0xFD, 0xFB, 0x7E, 0xFF },
+    { 0xFF, 0xFF, 0xFF, 0xFF },
+    { 0xF5, 0x5A, 0xC5, 0xFF },
+    { 0xFD, 0xBC, 0xFB, 0xFF },
+};
+
+
+// NONMATCHING (99.96%): the GXColor local's stack slot and its by-value argument temp are
+// swapped (ours local 0x14/arg 0x10; original local 0x10/arg 0x14). The other 8 differing
+// instructions are exactly that swap; everything else, including the vertex block, matches.
+void effEnergyDisp(CameraId camId, void* param) {
+    GXColor color;
+    EffectEntry* effect = param;
+    EnergyData* data = effect->userdata;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx mtx3;
+    Mtx mtx2;
+    Mtx mtx1;
+    Mtx mtx0;
+    s32 type;
+    f32 scale;
+    f32 a;
+    f32 b;
+    f32 c;
+
+    cam = camGetPtr(camId);
+    type = data->type;
+
+    PSMTXTrans(mtx3, data->x, data->y, data->z);
+    scale = data->scaleAnim * data->scale;
+    PSMTXScale(mtx2, scale, scale, scale);
+    PSMTXRotRad(mtx1, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+    PSMTXConcat(mtx3, mtx1, mtx3);
+    PSMTXRotRad(mtx1, 'z', data->angle * 0.017453292f);
+    PSMTXConcat(mtx3, mtx1, mtx3);
+    PSMTXConcat(mtx3, mtx2, mtx0);
+    PSMTXConcat(cam->view, mtx0, mtx0);
+
+    GXLoadPosMtxImm(mtx0, 0);
+    GXSetCurrentMtx(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    color = unk_80423358;
+    color.r = data->alphaAnim;
+    color.g = data->alphaAnim;
+    color.b = data->alphaAnim;
+    color.a = data->alpha;
+    GXSetChanMatColor(4, color);
+    GXSetTevColor(1, color_tbl[type * 2]);
+    GXSetTevColor(2, color_tbl[type * 2 + 1]);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 2, 4, 10, 15);
+    GXSetTevAlphaIn(0, 7, 4, 5, 7);
+    effGetTexObj(0x8D, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(13, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 13, 1, 4, 0);
+    GXBegin(0x80, 0, 4);
+    a = 8.0f;
+    b = 4.0f;
+    c = -a / 2.0f;
+    GXPosition3f32(c, b, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(b, b, 0.0f);
+    GXTexCoord2f32(2.0f, 0.0f);
+    GXPosition3f32(b, c, 0.0f);
+    GXTexCoord2f32(2.0f, 1.0f);
+    GXPosition3f32(c, c, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+}

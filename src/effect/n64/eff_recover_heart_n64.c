@@ -1,9 +1,11 @@
 #include "eff/n64/eff_recover_heart_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math_ext.h>
 
@@ -26,6 +28,14 @@ extern const f32 float_neg30_8041fb28;
 extern const f32 float_8_8041fb2c;
 extern const f32 float_0p9_8041fb30;
 extern const f32 float_1p4_8041fb34;
+extern const f32 float_deg2rad_8041fb08;
+extern const f32 float_0p03125_8041fb0c;
+extern const f32 float_0p0026042_8041fb18;
+
+// uninitialized GXColor base (alpha is filled in per particle) and the .data vertex-array base
+// that sits 8 bytes before this file's own .data block.
+extern u32 unk_80423238;
+extern u8 lbl_803A4A60[];
 
 typedef struct RecoverHeartData {
 	s32 type;       // 0x00
@@ -167,3 +177,169 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
+
+#pragma opt_common_subs off // without it MWCC CSEs the tile-offset float-conversion loads and reorders them vs the target
+// NONMATCHING (96.93%): only the callee-saved register permutation and one hoisted tile-offset differ; full detail in REPORT.md.
+void effRecoverHeartDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	s32 flag;
+	s32 type;
+	s32 life;
+	s32 i;
+	RecoverHeartData* data;
+	s32 quotient;
+	s32 unknown;
+	u8* base = lbl_803A4A60;
+	CameraEntry* cam;
+	s32 stripe;
+	u32 texId;
+	GXTexObj texObj;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx work;
+	Mtx mtx;
+	Mtx finalMtx;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	flag = data->field_0x44;
+
+	PSMTXTrans(trans, data->x, data->y, data->z);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041fb08 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(trans, rot, work);
+
+	type = data->type;
+	life = data->field_0x40;
+	data++;
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetCullMode(0);
+
+	unknown = 0x160 - life * 32;
+	quotient = life / 10;
+
+	for (i = 1; i < effect->count; i++, data++) {
+		GXColor color;
+
+		if (data->field_0x34 > 0) {
+			continue;
+		}
+
+		color = *(GXColor*)&unk_80423238;
+		color.a = data->field_0x28;
+		GXSetTevColor(GX_TEVREG0, color);
+
+		if (data->field_0x28 == 0xff) {
+			GXSetNumTevStages(1);
+			GXSetTevOrder(0, 0, 0, 4);
+			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+			GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+			GXSetTevColorIn(0, 0xf, 8, 0xa, 0xf);
+			GXSetTevAlphaIn(0, 7, 7, 7, 4);
+		} else {
+			GXSetNumTevStages(1);
+			GXSetTevOrder(0, 0, 0, 4);
+			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+			GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+			GXSetTevColorIn(0, 0xf, 8, 0xa, 0xf);
+			GXSetTevAlphaIn(0, 7, 4, 1, 7);
+		}
+
+		if ((type == 0 || type == 2) != 0) {
+			texId = 0x51;
+			if (flag == 0) {
+				texId = 0x50;
+			}
+		} else {
+			texId = 0x52;
+		}
+		effGetTexObjN64(texId, &texObj);
+		GXLoadTexObj(&texObj, 0);
+
+		PSMTXScale(scale, float_0p03125_8041fb0c, float_0p03125_8041fb0c, float_0_8041fb10);
+		GXLoadTexMtxImm(scale, 0x1e, 1);
+		PSMTXTrans(trans, data->x + data->scale, data->y, data->z);
+		PSMTXScale(scale, data->scaleW, data->scaleH, float_1_8041fb14);
+		PSMTXConcat(trans, scale, trans);
+		PSMTXConcat(work, trans, mtx);
+		PSMTXRotRad(rot, 'z', float_deg2rad_8041fb08 * data->angle);
+		PSMTXConcat(mtx, rot, finalMtx);
+
+		if (i == 1 && type != 2) {
+			effSetVtxDescN64((effVtxArray*)(base + 0x40));
+			PSMTXConcat(cam->view, finalMtx, trans);
+			GXLoadPosMtxImm(trans, 0);
+			GXSetCurrentMtx(0);
+			GXBegin(0x90, 0, 6);
+			tri2(0, 1, 2, 0, 0, 2, 3, 0);
+
+			GXSetNumTevStages(1);
+			GXSetTevOrder(0, 0, 0, 4);
+			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+			GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+			GXSetTevColorIn(0, 0xf, 8, 0xa, 0xf);
+			GXSetTevAlphaIn(0, 7, 4, 1, 7);
+
+			if (life < 10 && flag == 0) {
+				effGetTexObjN64(0x53, &texObj);
+				GXLoadTexObj(&texObj, 0);
+				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
+				PSMTXTrans(trans, (f32)unknown, float_0_8041fb10, float_0_8041fb10);
+				PSMTXConcat(scale, trans, scale);
+				GXLoadTexMtxImm(scale, 0x1e, 1);
+				if (type == 0) {
+					effSetVtxDescN64((effVtxArray*)(base + 0xb0));
+				} else {
+					effSetVtxDescN64((effVtxArray*)(base + 0x158));
+				}
+				PSMTXConcat(cam->view, mtx, trans);
+				GXLoadPosMtxImm(trans, 0);
+				GXSetCurrentMtx(0);
+				GXBegin(0x90, 0, 6);
+				tri2(0, 1, 2, 0, 0, 2, 3, 0);
+			} else {
+				stripe = flag != 0 ? 10 : quotient;
+				effGetTexObjN64(0x53, &texObj);
+				GXLoadTexObj(&texObj, 0);
+				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
+				PSMTXTrans(trans, (f32)(0x160 - (life - quotient * 10) * 32), float_0_8041fb10, float_0_8041fb10);
+				PSMTXConcat(scale, trans, scale);
+				GXLoadTexMtxImm(scale, 0x1e, 1);
+				if (type == 0) {
+					effSetVtxDescN64((effVtxArray*)(base + 0x120));
+				} else {
+					effSetVtxDescN64((effVtxArray*)(base + 0x1c8));
+				}
+				PSMTXConcat(cam->view, mtx, trans);
+				GXLoadPosMtxImm(trans, 0);
+				GXSetCurrentMtx(0);
+				GXBegin(0x90, 0, 6);
+				tri2(0, 1, 2, 0, 0, 2, 3, 0);
+
+				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
+				PSMTXTrans(trans, (f32)(0x160 - stripe * 32), float_0_8041fb10, float_0_8041fb10);
+				PSMTXConcat(scale, trans, scale);
+				GXLoadTexMtxImm(scale, 0x1e, 1);
+				if (type == 0) {
+					effSetVtxDescN64((effVtxArray*)(base + 0xe8));
+				} else {
+					effSetVtxDescN64((effVtxArray*)(base + 0x190));
+				}
+				GXBegin(0x90, 0, 6);
+				tri2(0, 1, 2, 0, 0, 2, 3, 0);
+			}
+		} else {
+			PSMTXConcat(cam->view, finalMtx, trans);
+			GXLoadPosMtxImm(trans, 0);
+			GXSetCurrentMtx(0);
+			effSetVtxDescN64((effVtxArray*)(base + 0x78));
+			GXBegin(0x90, 0, 6);
+			tri2(0, 1, 2, 0, 0, 2, 3, 0);
+		}
+	}
+}
+#pragma opt_common_subs reset

@@ -5,6 +5,7 @@
 typedef struct BattleWork BattleWork;
 
 #include <dolphin/types.h>
+s32 _get_ok_frame_range(s32 idx);
 s32 battleAcMain_SignalTiming(BattleWork* work);
 s32 battleAcResult_SignalTiming(BattleWork* work);
 void battleAcDisp_SignalTiming(CameraId camId, void* param);

@@ -2281,3 +2281,16 @@ write to. Next waves give each agent its own TMPDIR.
   other way round. Under `MUST_MATCH` (see eff_sandars): effBattenDisp2, effButterflyDisp and effStardust2Disp match;
   akari_pose, booboo and batten `Disp` improve. It does not help when the function passes several by-value colours
   (shadowdrv, itemget, envDisp_Blur) or a colour built without a base.
+
+## Wave 24: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Wave 23's recipe on 121 more files (each agent had its own TMPDIR), 21:45-23:29, launched from e7a5263 and
+collected onto main ff4f263 with `scratch/wave24/collect.py` (per-file three-way merge, header patches applied).
+**73 at 100%, 44 at 90-99%, 3 at 50-89%, 1 reverted. Functions 5,888 -> 5,961.** 119 files merged cleanly; win_item
+and win_mario conflicted with main and were merged by hand (item_disp's Vecs are the named vec3 symbols, not a
+struct laid over str_802F4CE8). Reverted at collection: eff_toiki (the agent anchored the file's data by hand with
+`#pragma section` and `__declspec(section)` externs and broke effToikiMain), and one agent's `u16` -> `u32` change to
+DrawMainIconHukidasi, which is at 100% on main. The new section ratchet caught nine units whose data got worse
+(named constants beside the literals that replaced them, `<math.h>` statics, a definition turned into an extern);
+all nine are at or above main now. Agents searched Sourcegraph, Bing and GitHub for the function names; hits were
+upstream doldecomp/ttyd and NWPlayer123/PaperMario2.

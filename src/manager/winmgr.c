@@ -17,6 +17,7 @@
 #include "evt/evt_johoya.h"
 #include "pmario_sound.h"
 #include "statuswindow.h"
+#include "window/win_main.h"
 
 extern ItemData itemDataTable[];
 // .sdata
@@ -33,7 +34,18 @@ GXColor dat_80421a20 = { 0x2b, 0xa4, 0xff, 0x00 };
 GXColor dat_80421a24 = { 0x2b, 0xa4, 0xff, 0x00 };
 
 // .sdata2
+// GXColor dat_80421a28..dat_80421a60 are used by select_disp_party / select_disp_mario (not written yet).
+// Defined here only as far as select_disp_luigi needs them.
+GXColor dat_80421a64 = { 0xFF, 0x00, 0x00, 0x00 };
+GXColor dat_80421a68 = { 0xFF, 0xA0, 0xA0, 0xA0 };
+GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
+GXColor dat_80421a70 = { 0xFF, 0xFF, 0xFF, 0xFF };
+GXColor dat_80421a74 = { 0xFF, 0xF0, 0xF0, 0xF0 };
+
+// .sdata2
 f32 float_0_80421a80 = 0.0f;
+f32 float_32_80421a84 = 32.0f;
+f32 float_0p5_80421a94 = 0.5f;
 f32 float_1_80421a90 = 1.0f;
 f32 float_28_80421aac = 28.0f;
 f32 float_neg144_80421aa8 = -144.0f;
@@ -175,6 +187,7 @@ char str_804219FC[] = "\x82\x67\x82\x6f";
 char str_80421A04[] = "\x82\x65\x82\x6f";
 char str_80421A0C[] = "\x82\x61\x82\x6f";
 char str_80421A78[] = "help";
+char str_80421A88[] = "%3d";
 
 //.sdata
 static char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
@@ -979,6 +992,151 @@ void select_main(WinMgrEntry* entry) {
         *(u16*)&select->flags |= 0x1000;
         (*(s32*)select->field_0x8)++;
         break;
+    }
+}
+
+// NONMATCHING (92.61%): close, but MWCC folds the `0.0f + (f32)int` copies that the
+// original keeps (which is why the original also spills f29); the SDA/rodata label
+// spellings differ cosmetically. See REPORT.md.
+void select_disp_luigi(WinMgrEntry* entry) {
+    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    s32 i;
+    InformantInfo* info = _jdt.info;
+    Mtx mtx1;
+    Mtx mtx2;
+    char buf[0x20];
+    Vec posRow;
+    Vec tmpRow;
+    Vec scaleRow;
+    Vec posEdge;
+    Vec tmpEdge;
+    Vec scaleEdge;
+    Vec posTitle;
+    Vec tmpTitle;
+    Vec scaleTitle;
+    Vec posLuigi;
+    Vec posMain;
+    Vec posUp;
+    Vec posDown;
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWidth;
+    u32 scissorHeight;
+    GXColor colorBlack = dat_80421a64;
+    GXColor colorGray = dat_80421a68;
+    GXColor colorWhite = dat_80421a6c;
+    GXColor fogColor;
+    const char* msg;
+    u16 width;
+    u16 x;
+
+    if (wp->mEntries[select->descriptorId[0]].flags & 4) {
+        return;
+    }
+
+    fogColor = dat_80421a70;
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
+    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+
+    for (i = 0; i < select->field_0x34; i++, info++) {
+        char saved;
+
+        if ((f32)(entry->field_0x1C - 0x2c - i * 0x18) < select->field_0x1C + (f32)entry->field_0x1C - 32.0f) {
+            continue;
+        }
+        if ((f32)(entry->field_0x1C - entry->field_0x24) > select->field_0x1C + (f32)entry->field_0x1C + 32.0f) {
+            continue;
+        }
+
+        winFontInit();
+        saved = ((char*)info->initEndPos)[info->tagEndPos];
+        ((char*)info->initEndPos)[info->tagEndPos] = 0;
+        {
+            GXColor color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            f32 rowY;
+
+            tmpRow = vec3_802ffcc0;
+            scaleRow = vec3_802ffccc;
+            tmpRow.x = (f32)(entry->field_0x18 + 0x19);
+            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpRow.y = select->field_0x1C + rowY;
+            posRow = tmpRow;
+            winFontSet(&posRow, &scaleRow, &color, (const char*)info->initEndPos);
+        }
+        ((char*)info->initEndPos)[info->tagEndPos] = saved;
+
+        if (select->field_0x4 == 0x11 && !(((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1)) {
+            GXColor color;
+            f32 edgeY;
+
+            sprintf(buf, str_80421A88, info->unkA);
+            winFontInit();
+            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+            tmpEdge = vec3_802ffcd8;
+            scaleEdge = vec3_802ffce4;
+            tmpEdge.x = (f32)(entry->field_0x18 + 0xf5);
+            edgeY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
+            tmpEdge.y = select->field_0x1C + edgeY;
+            posEdge = tmpEdge;
+            winFontSet(&posEdge, &scaleEdge, &color, buf);
+        }
+    }
+
+    GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
+
+    switch (select->field_0x4) {
+    case 0x11:
+        msg = msgSearch(str_802FFED8);
+        break;
+    case 0x12:
+    default:
+        msg = msgSearch(str_802FFEEC);
+        break;
+    }
+
+    width = FontGetMessageWidth(msg);
+    x = (entry->field_0x20 - width) / 2;
+    winFontInit();
+    {
+        GXColor color = colorWhite;
+        tmpTitle = vec3_802ffcf0;
+        scaleTitle = vec3_802ffcfc;
+        tmpTitle.x = (f32)(entry->field_0x18 + x);
+        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        posTitle = tmpTitle;
+        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+    }
+
+    if (select->field_0x4 == 0x11) {
+        PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
+        PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        iconDispGxCol(mtx1, 0x10, 0x211, *(GXColor*)&dat_80421a74);
+        posLuigi = vec3_802ffd08;
+        posLuigi.x = (f32)(entry->field_0x18 + 0x10c);
+        posLuigi.y = (f32)(entry->field_0x1C - 0xc);
+        iconDispGx(&posLuigi, 0x10, 0x18b, 0.6f);
+    }
+
+    posMain = vec3_802ffd14;
+    posMain.x = select->field_0x14;
+    posMain.y = select->field_0x18;
+    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+
+    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->field_0x10 != 0) {
+            posUp = vec3_802ffd20;
+            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * 0.5f;
+            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+        }
+        if (select->field_0x10 != select->field_0x34 - 8) {
+            posDown = vec3_802ffd2c;
+            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * 0.5f;
+            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+        }
     }
 }
 

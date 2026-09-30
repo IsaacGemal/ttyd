@@ -769,3 +769,157 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     }
     return 1;
 }
+
+s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
+                       BattleWeapon* weapon, s32* out) {
+    CounterPreCheckWork* w = (CounterPreCheckWork*)work;
+
+    if (attacker == NULL) {
+        return 0;
+    }
+    w->field_0x28 = 0;
+
+    if ((part->counterAttributes & kCounterTopSpiky) && attacker->badgesEquipped.SpikeShield == 0 &&
+        !(weapon->counterResistanceFlags & 0x2)) {
+        w->field_0x20 = 0x2B;
+        w->field_0x24 = 0x12B;
+        w->field_0x28++;
+        w->field_0x2C = 0x1F;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+    } else if ((part->counterAttributes & kCounterPreemptiveFrontSpiky) &&
+               attacker->badgesEquipped.SpikeShield == 0 && !(weapon->counterResistanceFlags & 0x4)) {
+        w->field_0x20 = 0x2C;
+        w->field_0x24 = 0x12C;
+        w->field_0x28++;
+        w->field_0x2C = 0x20;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+    } else if ((part->counterAttributes & kCounterFrontSpiky) && attacker->badgesEquipped.SpikeShield == 0 &&
+               !(weapon->counterResistanceFlags & 0x8)) {
+        w->field_0x20 = 0x2D;
+        w->field_0x24 = 0x12D;
+        w->field_0x28++;
+        w->field_0x2C = 0x21;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+    } else if (((part->counterAttributes & kCounterFiery) || (part->counterAttributes & kCounterFieryStatus)) &&
+               attacker->badgesEquipped.IcePower == 0 && !(weapon->counterResistanceFlags & 0x10)) {
+        w->field_0x20 = 0x2E;
+        w->field_0x24 = 0x12E;
+        w->field_0x28++;
+        w->field_0x2C = 0x22;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+        if (part->counterAttributes & kCounterFieryStatus) {
+            w->field_0x8 = 1;
+        }
+    } else if (((part->counterAttributes & kCounterIcy) || (part->counterAttributes & kCounterIcyStatus)) &&
+               !(weapon->counterResistanceFlags & 0x20)) {
+        w->field_0x20 = 0x2F;
+        w->field_0x24 = 0x12F;
+        w->field_0x28++;
+        w->field_0x2C = 0x23;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+        if (part->counterAttributes & kCounterIcyStatus) {
+            w->field_0x14 = 1;
+        }
+    } else if (((part->counterAttributes & kCounterElectric) ||
+                (part->counterAttributes & kCounterElectricStatus)) &&
+               !(weapon->counterResistanceFlags & 0x1) &&
+               BtlUnit_CheckStatus(attacker, STATUS_ELECTRIC) == 0) {
+        w->field_0x20 = 0x30;
+        w->field_0x24 = 0x130;
+        w->field_0x28++;
+        w->field_0x2C = 0x24;
+        *out |= 0x100;
+        w->field_0x0 = 0;
+        if (part->counterAttributes & kCounterElectricStatus) {
+            w->field_0x10 = 1;
+        }
+    } else {
+        if ((part->counterAttributes & kCounterExplosive) && !(weapon->counterResistanceFlags & 0x80) &&
+            (weapon->element == 3 || weapon->element == 4 || weapon->element == 1 ||
+             ((weapon->special & 0x400) && BtlUnit_CheckStatus(attacker, STATUS_BURN) != 0))) {
+            w->field_0x20 = 0x31;
+            w->field_0x24 = 0x131;
+            w->field_0x28++;
+            *out |= 0x100;
+        }
+        if ((part->counterAttributes & kCounterVolatileExplosive) && !(weapon->counterResistanceFlags & 0x100)) {
+            w->field_0x20 = 0x32;
+            w->field_0x24 = 0x132;
+            w->field_0x28++;
+            *out |= 0x100;
+        }
+        if ((BtlUnit_CheckStatus(target, STATUS_ELECTRIC) != 0 ||
+             (part->counterAttributes & kCounterElectric) ||
+             (part->counterAttributes & kCounterElectricStatus)) &&
+            !(weapon->counterResistanceFlags & 0x1) &&
+            BtlUnit_CheckStatus(attacker, STATUS_ELECTRIC) == 0) {
+            w->field_0x20 = 0x34;
+            w->field_0x24 = 0x134;
+            w->field_0x28++;
+            *out |= 0x100;
+            if (part->counterAttributes & kCounterElectricStatus) {
+                w->field_0x10 = 1;
+            }
+        }
+        if (BtlUnit_CheckStatus(target, STATUS_PAYBACK) != 0 && !(weapon->counterResistanceFlags & 0x200)) {
+            w->field_0x20 = 0x35;
+            w->field_0x24 = 0x135;
+            *out |= 0x100;
+            w->field_0x4 = 1;
+        }
+        if (((part->counterAttributes & kCounterPoison) || (part->counterAttributes & kCounterPoisonStatus)) &&
+            !(weapon->counterResistanceFlags & 0x40)) {
+            w->field_0x20 = 0x33;
+            w->field_0x24 = 0x133;
+            *out |= 0x100;
+            w->field_0x4 = 1;
+            if (part->counterAttributes & kCounterPoisonStatus) {
+                w->field_0xC = 1;
+            }
+        }
+        if (BtlUnit_CheckStatus(target, STATUS_HOLD_FAST) != 0 && !(weapon->counterResistanceFlags & 0x400)) {
+            w->field_0x20 = 0x36;
+            w->field_0x24 = 0x136;
+            *out |= 0x100;
+            w->field_0x18 = 1;
+        }
+        if (target->badgesEquipped.ReturnPostage != 0 && !(weapon->counterResistanceFlags & 0x200)) {
+            w->field_0x20 = 0x35;
+            w->field_0x24 = 0x135;
+            *out |= 0x100;
+            w->field_0x1C = 1;
+        }
+    }
+
+    switch (w->field_0x20) {
+    case 0x2B:
+        return 8;
+    case 0x2C:
+        return 7;
+    case 0x2D:
+        return 9;
+    case 0x2E:
+        return 10;
+    case 0x2F:
+        return 11;
+    case 0x31:
+        return 12;
+    case 0x32:
+        return 13;
+    case 0x34:
+        return 14;
+    case 0x33:
+        return 15;
+    case 0x35:
+        return 16;
+    case 0x36:
+        return 17;
+    default:
+        return 0;
+    }
+}

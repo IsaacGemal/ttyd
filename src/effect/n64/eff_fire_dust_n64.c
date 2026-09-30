@@ -2,11 +2,18 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "eff/eff_n64.h"
+#include "eff/n64/eff_fire_dust_n64.h"
+#include "memory.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .rodata string used as the EffectEntry type name.
+const char str_802FA578[12] = "FireDustN64";
+
 // .sdata2 float constants (named after their original addresses).
+extern const f32 float_1_8041ee54;
+extern const f32 float_20_8041ee58;
 extern const f32 float_0p0056818_8041ee18;
 extern const f32 float_0p045455_8041ee1c;
 extern const f32 float_0_8041ee20;
@@ -75,8 +82,59 @@ static inline void effFireDustSetVtxColor(s32 r, s32 g, s32 b, u8 a) {
 }
 
 // NOTE: this file's functions are emitted in reverse source order. In the original the
-// order is main_dl, effFireDustDisp, effFireDustMain, effFireDustN64Entry, so the
-// not-yet-written Entry/Main belong above this definition and main_dl below it.
+// order is main_dl, effFireDustDisp, effFireDustMain, effFireDustN64Entry; Entry is here,
+// the not-yet-written Main belongs below it, and main_dl is last.
+
+EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, f32 a7, f32 a8) {
+    EffectEntry* effect;
+    effFireDustData* data;
+    effFireDustData* d;
+    s32 i;
+    f32 ratio;
+
+    effect = effEntry();
+    effect->type = str_802FA578;
+    effect->count = a2 + 2;
+    data = __memAlloc(3, (a2 + 2) * 0x6c);
+    effect->userdata = data;
+    effect->callback = effFireDustMain;
+    effect->flags |= 2;
+
+    data->type = type;
+    data->field_0x3C = 0;
+    if (a3 <= 0) {
+        data->field_0x38 = 1000;
+    } else {
+        data->field_0x38 = a3;
+    }
+    d = data + 1;
+    data->field_0x4C = 0xff;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->field_0x60 = float_1_8041ee54;
+    data->field_0x10 = a7;
+    data->field_0x14 = a8;
+    data->field_0x40 = 0xff;
+    data->field_0x44 = 0xff;
+    data->field_0x48 = 0xff;
+    data->field_0x50 = 0xff;
+    data->field_0x54 = 0xff;
+    data->field_0x58 = 0x7f;
+    data->field_0x5C = 0xff;
+
+    if (a3 < 0x14) {
+        ratio = float_20_8041ee58 / (f32)(a2 + 1);
+    } else {
+        ratio = (f32)a3 / (f32)(a2 + 1);
+    }
+
+    for (i = 1; i < a2 + 2; i++, d++) {
+        d->field_0x30 = (s32)(-(f32)i * ratio) - 1;
+    }
+
+    return effect;
+}
 
 void effFireDustDisp(CameraId camId, void* param) {
     effFireDustData* data;

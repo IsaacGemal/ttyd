@@ -2,15 +2,19 @@
 #include "driver/effdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/camdrv.h"
+#include "memory.h"
 #include "eff/eff_n64.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 
-// This unit's .sdata2 literals. Declared extern (like eff_kumokumo_n64.c): defining them
-// here makes MWCC rematerialise the load as an anonymous pool entry (@NNN) instead of
-// referencing the named symbol.
+// This unit's .sdata2 literals. float_0_8041f56c stays an extern (like eff_kumokumo_n64.c)
+// and is only ever read through the named symbol. float_1_8041f570 is *defined* here:
+// with no definition MWCC pools the `1.0f` as an anonymous .sdata2 entry instead of
+// referencing the named symbol, which costs one instruction of fuzzy match. Defining it
+// makes every `1.0f` in this TU reference the symbol.
 extern const f32 float_0p03125_8041f568;
 extern const f32 float_0_8041f56c;
+const f32 float_1_8041f570 = 1.0f;
 
 // Local vertex data (0x38 bytes); the original symbol is local to this unit's asm.
 static u32 size32x32_tex32x32_vtx[0x38 / 4] = {
@@ -25,6 +29,149 @@ GXColor unk_80423198;
 GXColor unk_8042319c;
 
 const Vec vec3_802faa50 = { 0.0f, 0.0f, 0.0f };
+const char str_802FAA5C[] = "KumokumoChipN64";
+
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 chip_fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			} else {
+				return FP_INFINITE;
+			}
+			break;
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			} else {
+				return FP_ZERO;
+			}
+			break;
+		default:
+			return FP_NORMAL;
+	}
+}
+
+#define fpclassify(x) chip_fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 chip_sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > 0.0f) {
+		f64 guess = __frsqrte(x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	} else if (x < 0.0) {
+		return NAN;
+	} else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
+
+// The original's reverse-source-order position puts this entry point first in the .c (rule 18).
+//
+// Remaining gap (99.93%, 5 instructions), all pooling artifacts, no wrong logic or
+// constants:
+//  * effKumokumoChipMain's `pos = (Vec){0,0,0}` makes MWCC emit a dead 12-byte anonymous
+//    zero Vec in .rodata at vec3+0x1c, so this function's pooled sqrtf doubles land at
+//    +0x28 instead of the original +0x20 (the four `lfd` offsets differ). Every source
+//    form that drops the anonymous Vec also drops Main to 97.83% (the scheduler hoists
+//    the vec3 load; only the compound literal reproduces Main's byte order), and Main
+//    must stay at 100%, so the offsets are left.
+//  * `if (dist != 0.0f)` emits `fcmpu cr0, f3, f7` where the original has
+//    `fcmpu cr0, f7, f3`. The pooled 0.0f itself resolves to float_0_8041f56c once
+//    float_1_8041f570 is defined (the .sdata2 layout lets objdiff name it), so only the
+//    operand order differs; writing `float_0_8041f56c` in the source swaps the operands
+//    right but moves the live zero from f3 to f4 and costs more overall.
+// NONMATCHING (99.93%): pool offsets + one swapped fcmpu operand, see the block above.
+EffectEntry* effKumokumoChipN64Entry(s32 type, f32 x, f32 y, f32 z, f32 x2, f32 y2, f32 z2, f32 spacing, f32 scale) {
+	EffectEntry* effect;
+	effKumokumoChipData* data;
+	f32 dx;
+	f32 dy;
+	f32 dz;
+	f32 dist;
+	s32 count;
+
+	effect = effEntry();
+	effect->type = str_802FAA5C;
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effKumokumoChipData));
+	effect->userdata = data;
+	effect->callback = effKumokumoChipMain;
+	effect->flags |= 2;
+	data->type = type;
+	data->timer = 0;
+
+	dx = x2 - x;
+	dy = y2 - y;
+	dz = z2 - z;
+	dist = dx * dx + dy * dy + dz * dz;
+	if (dist != 0.0f) {
+		dist = chip_sqrtf(dist);
+	}
+
+	count = (spacing > float_0_8041f56c) ? (s32)(dist / spacing) : 0;
+	if (count != 0) {
+		f32 inv = float_1_8041f570 / (f32)count;
+		data->xVel = dx * inv;
+		data->yVel = dy * inv;
+		data->zVel = dz * inv;
+	} else {
+		data->xVel = 0.0f;
+		data->yVel = 0.0f;
+		data->zVel = 0.0f;
+	}
+
+	if (count < 0) {
+		data->lifetime = 1000;
+	} else {
+		data->lifetime = count;
+	}
+
+	data->a = 0;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = scale;
+
+	switch (type) {
+		case 0:
+		case 2:
+			data->r = 0xd7;
+			data->g = 0xd7;
+			data->b = 0xb9;
+			data->r2 = 0xd7;
+			data->g2 = 0xc8;
+			data->b2 = 0x64;
+			data->a2 = 0xff;
+			break;
+		default:
+			data->r = 0xff;
+			data->g = 0xff;
+			data->b = 0xff;
+			data->r2 = 0xdc;
+			data->g2 = 0xf5;
+			data->b2 = 0xff;
+			data->a2 = 0xff;
+			break;
+	}
+	return effect;
+}
 
 void effKumokumoChipMain(EffectEntry* effect) {
 	effKumokumoChipData* data;

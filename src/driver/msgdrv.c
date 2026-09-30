@@ -3,6 +3,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
+#include "driver/npcdrv.h"
 #include "driver/windowdrv.h"
 #include "manager/dvdmgr.h"
 #include "manager/fontmgr.h"
@@ -16,6 +17,7 @@
 
 extern GlobalWork* gp;
 extern GXColor unk_80422fe4;
+extern f32 float_0p36_8041a6a0;
 
 typedef struct MsgLookupEntry {
 	u32 startaddr; //0x0
@@ -165,6 +167,214 @@ void msgLoad(const char* filename, s32 index) {
 	else {
 		entry->lookup = NULL;
 	}
+}
+
+// Append a value to the message history array at 0x7844, skipping duplicates of the last entry.
+static void msgHistory(smartEntry* smart, s32 value) {
+	MessageData* data = smart->address;
+
+	if (!(data->field_0x4 & 0x200) && data->field_0x7840 < 0x6e
+	    && (data->field_0x7840 == 0
+	        || ((s32*)((u8*)data + 0x7844))[data->field_0x7840 - 1] != value)) {
+		((s32*)((u8*)data + 0x7844))[data->field_0x7840++] = value;
+	}
+}
+
+s32 msgMain(smartEntry* smart) {
+	MessageData* data = smart->address;
+	MsgDataEntry* entry;
+	s32 i;
+	s32 time;
+	u32 mask;
+	u32 button;
+
+	msgSEflag = 0;
+
+	if (data->field_0x4 & 2) {
+		if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+			((void (*)(s32, smartEntry*))data->field_0x79FC)(0, smart);
+		}
+		data->field_0x4 &= ~2;
+		msgHistory(smart, 0);
+	}
+
+	if (data->field_0x24 > data->field_0x28) {
+		data->field_0x28 += float_0p36_8041a6a0 * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
+		if (!(data->field_0x4 & 0x80)) {
+			i = (((MessageData*)smart->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+			mask = i | 0x200;
+			button = keyGetButtonTrg(0);
+			if (button & mask) {
+				data->field_0x4 |= 4;
+			}
+		}
+		if (!(data->field_0x4 & 0x10) && (data->field_0x4 & 0x4)) {
+			data->field_0x28 += float_0p36_8041a6a0 * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
+		}
+		if (data->field_0x24 < data->field_0x28) {
+			data->field_0x28 = data->field_0x24;
+		}
+		data->field_0x30 = gp->renderTime;
+		return 3;
+	}
+
+	switch (*(u16*)((u8*)data + 0xa)) {
+	case 1:
+		return 2;
+	case 2:
+		*(u16*)((u8*)data + 0xc) = 1;
+		(*(u16*)((u8*)data + 0x8))++;
+		*(u16*)((u8*)data + 0xa) = 0;
+		psndSFXOn((const char*)0x2003D);
+		data->field_0x20 += 0x64;
+		if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+			((void (*)(s32, smartEntry*))data->field_0x79FC)(3, smart);
+		}
+		break;
+	default:
+		time = (s32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
+		if (!(data->field_0x4 & 0x80)) {
+			i = (((MessageData*)smart->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+			mask = i | 0x200;
+			button = keyGetButtonTrg(0);
+			if (button & mask) {
+				data->field_0x4 |= 4;
+			}
+		}
+		if (!(data->field_0x4 & 0x10) && (data->field_0x4 & 0x4)) {
+			time *= 0x64;
+		}
+		data->field_0x20 += time;
+		break;
+	}
+
+	data->field_0x30 = gp->renderTime;
+	entry = &data->entries[data->field_0x10];
+	i = data->field_0x10;
+	while (i < 0x500) {
+		if ((u32)entry->field_0xC > (u32)data->field_0x20) {
+			break;
+		}
+		switch (entry->glyph) {
+		case 0xFFFF:
+			if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+				((void (*)(s32, smartEntry*))data->field_0x79FC)(1, smart);
+			}
+			data->field_0x10 = i;
+			return 0;
+		case 0xFFFE:
+			if (*(s16*)((u8*)entry + 0x6) != *(u16*)((u8*)data + 0x8)) {
+				break;
+			}
+			*(u16*)((u8*)data + 0xa) = 1;
+			data->field_0x20 = entry->field_0xC;
+			data->field_0x4 &= ~4;
+			if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+				((void (*)(s32, smartEntry*))data->field_0x79FC)(2, smart);
+			}
+			break;
+		case 0xFFFD:
+			data->field_0x24 -= *(s16*)((u8*)entry + 0x8);
+			data->field_0x20 = entry->field_0xC;
+#ifdef MUST_MATCH
+			// The original does this append with byte-offset arithmetic (addi/lwzx/stwx); the
+			// array form used in msgHistory comes out as add/displacement here.
+			{
+				MessageData* d = ((MessageData*)smart->address);
+				s32 value = data->field_0x24;
+				if (!(d->field_0x4 & 0x200) && d->field_0x7840 < 0x6e
+				    && (d->field_0x7840 == 0
+				        || *(s32*)((u8*)d + 0x7840 + d->field_0x7840 * 4) != value)) {
+					*(s32*)((u8*)d + 0x7844 + d->field_0x7840++ * 4) = value;
+				}
+			}
+#else
+			msgHistory(smart, data->field_0x24);
+#endif
+			break;
+		case 0xFFFC:
+			data->field_0x10 = i + 1;
+			data->field_0x20 = entry->field_0xC;
+			data->field_0x4 &= ~4;
+			return 1;
+		case 0xFFFB:
+			if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+				((void (*)(s32, smartEntry*))data->field_0x79FC)(4, smart);
+			}
+			break;
+		case 0xFFFA:
+			data->field_0x7A28 = entry->field_0x0;
+			break;
+		case 0xFFF9:
+			data->field_0x7A2C = entry->field_0x0;
+			break;
+		case 0xFFF5:
+			if (entry->field_0x0) {
+				data->field_0x4 |= 0x80;
+				data->field_0x4 &= ~4;
+				data->field_0x20 = entry->field_0xC;
+			}
+			else {
+				data->field_0x4 &= ~0x80;
+			}
+			break;
+		case 0xFFF4:
+		case 0xFFF8:
+			break;
+		case 0xFFF3:
+			{
+				NpcEntry* npc = (NpcEntry*)entry->field_0x0;
+				if (npc == NULL) {
+					npc = npcNameToPtr(data->text);
+				}
+				animPoseSetPaperAnimGroup(npc->poseId, "p_b_st", TRUE);
+				animPosePaperPeraOn(npc->poseId);
+				((void (*)(s32, const char*, BOOL))animPoseSetPaperAnim)(npc->poseId, paperPoseTbl[entry->field_0xC], TRUE);
+			}
+			break;
+		case 0xFFF2:
+			{
+				NpcEntry* npc = (NpcEntry*)entry->field_0x0;
+				if (*(u16*)((u8*)data + 0xa) != 0) {
+					i--;
+				}
+				else {
+					if (npc == NULL) {
+						npc = npcNameToPtr(data->text);
+					}
+					animPoseSetPaperAnimGroup(npc->poseId, NULL, TRUE);
+				}
+			}
+			break;
+		default:
+			if ((void (*)(s32, smartEntry*))data->field_0x79FC) {
+				((void (*)(s32, smartEntry*))data->field_0x79FC)(5, smart);
+			}
+			if (entry->field_0x0 & 0x10) {
+				if (((MessageData*)smart->address)->window->type != 1 && !msgSEflag) {
+					psndSFXOnVol(0x20044, ((MessageData*)smart->address)->field_0x7A2C);
+					msgSEflag = 1;
+				}
+			}
+			else if (entry->field_0x0 & 0x8) {
+				if (((MessageData*)smart->address)->window->type != 3) {
+					((MessageData*)smart->address)->field_0x7A50 = 0xf;
+				}
+				if (((MessageData*)smart->address)->window->type != 1 && !msgSEflag) {
+					psndSFXOnVol(0x20044, ((MessageData*)smart->address)->field_0x7A2C);
+					msgSEflag = 1;
+				}
+			}
+			break;
+		}
+		i++;
+		entry++;
+	}
+	data->field_0x10 = i;
+	if (*(u16*)((u8*)data + 0xa) != 0) {
+		return 2;
+	}
+	return 3;
 }
 
 //s32 msgMain(void* somearray)

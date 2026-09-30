@@ -17,6 +17,18 @@ typedef struct effOpukuWcurtainData {
 	f32 field_0x2C[12];   // 0x2C
 	f32 field_0x5C[12];   // 0x5C
 } effOpukuWcurtainData;
+// One N64 effect vertex: s16 position + s16 texture coords + RGBA8 color (14 bytes).
+typedef struct OpukuWcurtainVtx {
+	s16 x;  // 0x0
+	s16 y;  // 0x2
+	s16 z;  // 0x4
+	s16 s;  // 0x6
+	s16 t;  // 0x8
+	u8 r;   // 0xA
+	u8 g;   // 0xB
+	u8 b;   // 0xC
+	u8 a;   // 0xD
+} OpukuWcurtainVtx;
 EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale);
 void effOpukuWcurtainMain(EffectEntry* effect);
 #include "driver/camdrv.h"

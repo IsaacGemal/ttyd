@@ -982,6 +982,153 @@ USER_FUNC(evt_npc_glide_position) {
 }
 
 #pragma dont_inline on
+USER_FUNC(evt_npc_homing_target) {
+    s32* args = event->args;
+    const char* npcName = (const char*)evtGetValue(event, args[0]);
+    const char* targetName = (const char*)evtGetValue(event, args[1]);
+    f32 moveTime = (f32)evtGetValue(event, args[2]) / 1000.0f;
+    f32 speed = evtGetFloat(event, args[3]);
+    f32 range = evtGetFloat(event, args[4]);
+    f32 turnRate = evtGetFloat(event, args[5]);
+    s32 flags = args[6];
+
+    NpcEntry* npc = evtNpcNameToPtr(event, npcName);
+    Vec diff;
+    f32 dist;
+    f32 targetDir;
+    f32 turn;
+    f32 angleDiff;
+    f32 dx;
+    f32 dz;
+    s32 stop;
+    s32 sfxFlag;
+
+    npc->jumpFlags |= 0x10;
+
+    if (isFirstCall) {
+        npc->field_188 = 0;
+        npc->field_108 = 0;
+
+        if (strcmp(targetName, "mario") == 0) {
+            event->userdata[0] = 0;
+            event->userdata[1] = (s32)marioGetPtr();
+            dx = ((MarioWork*)event->userdata[1])->position.x - npc->position.x;
+            dz = ((MarioWork*)event->userdata[1])->position.z - npc->position.z;
+        } else {
+            event->userdata[0] = 1;
+            event->userdata[1] = (s32)evtNpcNameToPtr(event, targetName);
+            dx = ((NpcEntry*)event->userdata[1])->position.x - npc->position.x;
+            dz = ((NpcEntry*)event->userdata[1])->position.z - npc->position.z;
+        }
+
+        npc->moveDir = angleABf(0.0f, 0.0f, dx, dz);
+        npc->moveSpeed = speed;
+        if (speed == 0.0f) {
+            return EVT_RETURN_DONE;
+        }
+        npc->moveTime = moveTime;
+
+        if ((npc->jumpFlags & 0x2) && npc->moveSpeed) {
+            if (npc != fbatGetPointer()->target || (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
+                npcTuningRy(npc, npc->moveDir);
+            }
+        }
+
+        npc->footstepAccum = 0.0f;
+        npc->footstepToggle = 1;
+        return EVT_RETURN_BLOCK;
+    }
+
+    dist = 1000.0f;
+    if (!(npc->jumpFlags & 0x1)) {
+        if (event->userdata[0] == 0) {
+            MarioWork* target = (MarioWork*)event->userdata[1];
+            npc->jumpTargetPos.x = target->position.x;
+            npc->jumpTargetPos.y = target->position.y;
+            npc->jumpTargetPos.z = target->position.z;
+        } else {
+            NpcEntry* target = (NpcEntry*)event->userdata[1];
+            npc->jumpTargetPos.x = target->position.x;
+            npc->jumpTargetPos.y = target->position.y;
+            npc->jumpTargetPos.z = target->position.z;
+        }
+        npc->jumpStartPos = npc->position;
+
+        VECSubtract(&npc->jumpTargetPos, &npc->jumpStartPos, &diff);
+        dist = sqrtf((diff.x * diff.x) + (diff.z * diff.z));
+
+        targetDir = angleABf(0.0f, 0.0f, diff.x, diff.z);
+        angleDiff = compAngle(npc->moveDir, targetDir);
+        if (fabsf(angleDiff) <= (turn = 60.0f * turnRate * npc->moveDt)) {
+            npc->moveDir = targetDir;
+        } else {
+            if (angleDiff > 0.0f) {
+                npc->moveDir += turn;
+            } else {
+                npc->moveDir -= turn;
+            }
+            npc->moveDir = reviseAngle(npc->moveDir);
+        }
+
+        if ((npc->jumpFlags & 0x2) && npc->moveSpeed) {
+            if (npc != fbatGetPointer()->target || (fbatGetPointer()->mode != 5 && fbatGetPointer()->mode != 6)) {
+                npcTuningRy(npc, npc->moveDir);
+            }
+        }
+    }
+
+    stop = 0;
+    VECSubtract(&npc->jumpTargetPos, &npc->position, &diff);
+    sqrtf((diff.x * diff.x) + (diff.z * diff.z));
+
+    if (npc->moveTime && npc->moveTime <= npc->field_1A0) {
+        stop = 1;
+    } else if (range > 0.0f && dist < range) {
+        stop = 1;
+    } else if ((flags & 0x4) && npc->field_2FC != 0) {
+        stop = 1;
+    }
+
+    if (stop) {
+        npc->moveSpeed = 0.0f;
+        return EVT_RETURN_YIELD;
+    }
+
+    {
+        f32 temp = (f32)sin(npc->moveDir * 6.2831855f / 360.0f);
+        npc->moveOffset.x += npc->moveDt * (npc->moveSpeed * temp);
+        temp = (f32)cos(npc->moveDir * 6.2831855f / 360.0f);
+        npc->moveOffset.z += npc->moveDt * (npc->moveSpeed * -temp);
+    }
+
+    sfxFlag = 0;
+    if (psndGetFlag() & 0x100) {
+        if (!(animPoseGetMaterialFlag(npc->poseId) & 0x1800)) {
+            sfxFlag = 0x10000;
+        }
+    }
+
+    if (npc->footstepAccum > (f32)npc->footstepStride / npc->moveSpeed) {
+        if (npc->footstepToggle != 0) {
+            if (npc->footstepSfxA != 0) {
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxA)), &npc->position, 0xff, 0xff, 0, 8);
+            }
+        } else {
+            if (npc->footstepSfxB != 0) {
+                psndSFXOnEx_3D((const char*)(sfxFlag | searchPSSFXList(npc->footstepSfxB)), &npc->position, 0xff, 0xff, 0, 8);
+            }
+        }
+        npc->footstepAccum = 0.0f;
+        npc->footstepToggle = (s8)(1 - npc->footstepToggle);
+    }
+
+    if (npc->footstepSfxB != 0 || npc->footstepToggle != 0) {
+        npc->footstepAccum += 1000.0f * npc->moveDt;
+    }
+
+    return EVT_RETURN_BLOCK;
+}
+
 NpcEntry* evtNpcNameToPtr(EventEntry* event, const char* name) {
     if (!strcmp(name, "me")) {
         return event->ownerNPC;
@@ -1811,6 +1958,7 @@ USER_FUNC(evt_npc_return_interrupt) {
     *(u32*)npc->field_140 |= 0x10000000;
     return EVT_RETURN_YIELD;
 }
+
 
 USER_FUNC(evt_npc_clear_paper) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);

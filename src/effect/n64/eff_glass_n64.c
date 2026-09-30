@@ -1,10 +1,25 @@
 #include "eff/n64/eff_glass_n64.h"
+#include "eff/eff_n64.h"
+#include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "memory.h"
 #include <stdlib.h>
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
 
 const char str_802FA710[12] = "GlassN64";
 const f64 double_to_int_802fa708 = 4503601774854144.0;
+
+// .data vertex arrays, local to this file.
+static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
+	0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
+};
+static u32 size48x48_tex32x32_vtx[0x48 / 4] = {
+	0xFFE00000, 0x00000000, 0x0000FFFF, 0xFF000000, 0xFFE00000, 0x04000000, 0xFFFFFF00,
+	0x00200000, 0x00000400, 0x0400FFFF, 0xFF000000, 0x00200000, 0x00000400, 0xFFFFFF00,
+	0x00000000, 0x00000000, 0x0000FFFF, 0xFFC80000,
+};
 
 EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
@@ -119,4 +134,121 @@ void effGlassMain(EffectEntry* effect) {
 #else
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effGlassDisp, effect);
 #endif
+}
+
+// NONMATCHING (96.71%): the instruction sequence is identical, but mwcc assigns different stack slots to
+// the int<->float conversion temps and the GXColor value/argument copies, and orders the PSMTXScale setup differently.
+void effGlassDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	s32 type;
+	effGlassData* data;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	GXColor color1;
+	GXColor color2;
+	GXColor color3;
+	Mtx trans;
+	Mtx scale;
+	Mtx rot;
+	Mtx viewMtx;
+	s32 frame;
+	s32 typeOffset;
+	s32 frameOffset;
+	s32 dataAlpha;
+	s32 tileAlpha;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	dataAlpha = data->alpha;
+	type = data->type;
+
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041f080 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(trans, rot, trans);
+	PSMTXConcat(trans, scale, trans);
+	PSMTXConcat(cam->view, trans, viewMtx);
+	PSMTXRotRad(rot, 'z', float_deg2rad_8041f080 * data->rot);
+	PSMTXConcat(viewMtx, rot, trans);
+	GXLoadPosMtxImm(trans, 0);
+	GXSetCurrentMtx(0);
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(0, 0, 0, 0xff);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xf, 0xf, 0xf, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetTevOrder(1, 1, 1, 0xff);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0, 8, 5, 0xf);
+	GXSetTevAlphaIn(1, 0, 4, 2, 7);
+	GXSetTevOrder(2, 0xff, 0xff, 0xff);
+	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 4, 2, 0, 0xf);
+	GXSetTevAlphaIn(2, 7, 1, 0, 7);
+	effGetTexObjN64(0x59, &texObj);
+	GXLoadTexObj(&texObj, 0);
+	GXLoadTexObj(&texObj, 1);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetTexCoordGen2(1, 1, 4, 0x21, 0, 0x7d);
+
+	type = type % 2;
+	frame = (s32)(float_4_8041f084 * data->angle);
+	tileAlpha = (s32)(float_256_8041f088 * (float_4_8041f084 * data->angle - (f32)((s32)data->angle * 4)));
+
+	typeOffset = type * 0x20;
+	frameOffset = frame * 0x20;
+	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)frameOffset, float_0_8041f094);
+	PSMTXConcat(scale, trans, scale);
+	GXLoadTexMtxImm(scale, 0x1e, 1);
+	PSMTXScale(scale, float_0p015625_8041f08c, float_0p0078125_8041f090, float_0_8041f094);
+	PSMTXTrans(trans, (f32)typeOffset, (f32)(frameOffset + 0x20), float_0_8041f094);
+	PSMTXConcat(scale, trans, scale);
+	GXLoadTexMtxImm(scale, 0x21, 1);
+
+	color1 = unk_80423120;
+	color1.r = data->field_0x18;
+	color1.g = data->field_0x1C;
+	color1.b = data->field_0x20;
+	color1.a = dataAlpha;
+	GXSetTevColor(1, color1);
+	color2 = unk_80423124;
+	color2.r = data->field_0x28;
+	color2.g = data->field_0x2C;
+	color2.b = data->field_0x30;
+	color2.a = tileAlpha;
+	GXSetTevColor(2, color2);
+	GXSetCullMode(0);
+	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
+
+	if (type == 1 && (s32)(float_4_8041f084 * data->angle) == 3) {
+		color3 = unk_80423128;
+		color3.r = data->field_0x18;
+		color3.g = data->field_0x1C;
+		color3.b = data->field_0x20;
+		color3.a = dataAlpha * tileAlpha / 255;
+		GXSetTevColor(1, color3);
+		GXSetNumChans(1);
+		GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+		GXSetNumTevStages(1);
+		GXSetTevOrder(0, 0xff, 0xff, 4);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 0xf, 0xf, 0xf, 2);
+		GXSetTevAlphaIn(0, 7, 1, 5, 7);
+		effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_vtx);
+		GXLoadPosMtxImm(viewMtx, 0);
+		GXSetCurrentMtx(0);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0xc);
+		tri2(0, 1, 4, 0, 1, 2, 4, 0);
+		tri2(0, 4, 3, 0, 4, 2, 3, 0);
+	}
 }

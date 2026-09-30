@@ -959,6 +959,7 @@ void DrawMainIcon(BattleMenuWork* window, void* table, Mtx* mtxA, Vec* vecB, f32
 }
 
 #pragma dont_inline reset
+
 void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 scale) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuDispEntry* entry = entryPtr;
@@ -1055,6 +1056,117 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     FontDrawColor(&color);
 #endif
     FontDrawStringCenterMtx(resultMtx, msg);
+}
+
+// Quad corner / texture-coordinate tables used by DrawMainIconCircle (0x80 each).
+typedef struct MainIconCirclePoint {
+    f32 x;
+    f32 y;
+} MainIconCirclePoint;
+
+typedef struct MainIconCircleTable {
+    MainIconCirclePoint v[4][4];
+} MainIconCircleTable;
+
+extern const MainIconCircleTable dat_802ef068;
+extern const MainIconCircleTable dat_802ef0e8;
+extern const GXColor dat_8041c124;
+extern const GXColor dat_8041c128;
+extern const GXColor dat_8041c12c;
+
+// Only the stack slots MWCC picks for the two GXColor arguments differ: our if-branch color is
+// built at 0x18 and copied to 0x10, with the tev temp at 0x14; the original builds at 0x10,
+// copies to 0x14 and has its tev temp at 0x18. Loops, tables, frame and registers all match.
+// NONMATCHING (99.97%): MWCC GXColor temp slots (0x10/0x14/0x18) permuted; see above.
+void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* pos, f32 scale) {
+    BattleMenuDispEntry* entry = entryPtr;
+    BattleWork* wp = _battleWorkPointer;
+    CameraEntry* cam;
+    MainIconCircleTable posTable;
+    MainIconCircleTable texCoord;
+    Mtx rotMtx;
+    Mtx scaleMtx;
+    Mtx transMtx;
+    Mtx resultMtx;
+    GXColor color;
+    GXTexObj texObj;
+    f32 radians;
+    f32 offset;
+    f32 shadowY;
+    f32 size;
+    u8 alpha;
+    u16 iconId;
+    s32 i;
+    s32 j;
+
+    cam = camGetPtr(8);
+    alpha = (u8)(0xC0 - (s32)(1.5f * pos->z));
+    btlDispGXInit2D();
+    GXSetTevColor(1, dat_8041c124);
+    GXSetNumTevStages(1);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xF, 0xA, 2, 0xF);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaIn(0, 7, 5, 4, 7);
+    GXSetTevOrder(0, 0, 0, 4);
+    size = 1.3f - 0.005f * pos->z;
+    PSMTXScale(scaleMtx, size, size, 1.0f);
+    radians = 0.017453292f * scale;
+    PSMTXRotRad(rotMtx, 'y', radians);
+    PSMTXConcat(*mtx, rotMtx, resultMtx);
+    PSMTXConcat(resultMtx, scaleMtx, resultMtx);
+    PSMTXConcat(cam->view, resultMtx, resultMtx);
+    GXLoadPosMtxImm(resultMtx, 0);
+    TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    if (scale >= 0.0f && scale <= 180.0f) {
+        offset = (4.0f - 8.0f * scale / 180.0f) / 1.3f;
+    }
+    if (scale >= 180.0f && scale <= 360.0f) {
+        offset = (-4.0f + 8.0f * (scale - 180.0f) / 180.0f) / 1.3f;
+    }
+    posTable = dat_802ef068;
+    texCoord = dat_802ef0e8;
+    shadowY = -3.0769231f;
+    for (i = 0; i < 4; i++) {
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        for (j = 0; j < 7; j += 2) {
+            btlDispGXPoint2D(offset + ((f32*)posTable.v[i])[j], shadowY + ((f32*)posTable.v[i])[j + 1], 0, 0, 0,
+                             0x80, ((f32*)texCoord.v[i])[j], ((f32*)texCoord.v[i])[j + 1]);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        for (j = 0; j < 7; j += 2) {
+            btlDispGXPoint2D(((f32*)posTable.v[i])[j], ((f32*)posTable.v[i])[j + 1], alpha, alpha, alpha, 0xFF,
+                             ((f32*)texCoord.v[i])[j], ((f32*)texCoord.v[i])[j + 1]);
+        }
+    }
+    PSMTXTrans(transMtx, 0.0f, 7.5f, 0.0f);
+    size = 0.66f * (1.3f - 0.005f * pos->z);
+    PSMTXScale(scaleMtx, size, size, 1.0f);
+    PSMTXRotRad(rotMtx, 'y', radians);
+    PSMTXIdentity(rotMtx);
+    PSMTXConcat(*mtx, rotMtx, resultMtx);
+    PSMTXConcat(resultMtx, scaleMtx, resultMtx);
+    PSMTXConcat(resultMtx, transMtx, resultMtx);
+    iconId = entry->field_0xC;
+    if (iconId == 0) {
+        iconId = 0x18B;
+    }
+    if (entry->field_0x4 == 1) {
+        color = dat_8041c128;
+        color.r = alpha;
+        color.g = alpha;
+        color.b = alpha;
+        iconDispGxCol(resultMtx, 0x10, iconId, color);
+    } else {
+        color = dat_8041c12c;
+        color.r = alpha;
+        color.g = alpha;
+        color.b = alpha;
+        iconDispGxCol(resultMtx, 0x30, iconId, color);
+    }
 }
 
 void GetRingOffset(f32* x, f32* y, f32 angle) {

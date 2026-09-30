@@ -19,6 +19,19 @@ char unk_803dfbf8[0x100];
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
 extern const char str_8041D578[];
+extern const char str_8041D630[];
+extern const char str_8041D638[];
+extern const char str_8041D5A8[];
+extern const char str_8041D5AC[];
+extern const char str_8041D5B0[];
+extern const char str_8041D5B4[];
+extern const char str_8041D5B8[];
+extern const char str_8041D5BC[];
+extern const char str_8041D5C0[];
+extern const char str_8041D5C4[];
+extern const char str_8041D5C8[];
+extern const char str_8041D5CC[];
+extern const f32 float_0_8041d634;
 const f64 double_to_int_802f5e78 = 4503601774854144.0;
 
 // .data table: one entry per window "link" (see linkDt in win_mario.s)
@@ -31,7 +44,7 @@ typedef struct LinkDt {
     u16 field_10;         // 0x10
     u16 field_12;         // 0x12
     const char* field_14; // 0x14
-    u32 field_18;         // 0x18, four 1-byte "next" indices
+    u8 field_18[4];       // 0x18, four 1-byte "next" indices
 } LinkDt;
 
 typedef struct SuperActionEntry {
@@ -41,11 +54,21 @@ typedef struct SuperActionEntry {
 
 extern LinkDt linkDt[];
 extern SuperActionEntry* superActionTable[];
-extern const char* hammer_pose[];
 extern const f32 float_neg280_8041d72c;
 extern const f32 float_120_8041d730;
 extern const f32 float_26_8041d734;
 extern const f32 float_0p89_8041d728;
+// .sdata2 anim names shared with winMarioInit
+const char str_8041D578[6] = "M_S_1";
+const char str_8041D580[4] = "S_1";
+const char str_8041D58C[4] = "R_1";
+const char str_8041D704[4] = "S_2";
+const char str_8041D708[4] = "S_3";
+const char str_8041D70C[4] = "S_4";
+const char str_8041D710[5] = "R_15";
+const char str_8041D718[5] = "R_17";
+const char str_8041D720[5] = "R_18";
+
 // .sdata lookup tables (window "help" message ids per upgrade level)
 const char* hammer_help[4] = { NULL, "msg_hammer_1", "msg_hammer_2", "msg_hammer_3" };
 const char* boots_help[4] = { NULL, "msg_boots_1", "msg_boots_2", "msg_boots_3" };
@@ -101,15 +124,222 @@ void winMarioMain2(WindowWork* work) {
     (void)work;
 }
 
-// NONMATCHING (0.00%): logic checked against the asm by hand (review 3); ours is 488 instructions to the
-// original's 505, the marioGetColor switches are laid out without an explicit `case 0`, the original's
-// literals pool into str_802F5650 (only complete once the whole unit exists) and its sda2 names are objects.
+// NONMATCHING (99.57%): tail `d`/linkDt base in r31 (target r30), tail `anim` in r30 (target r31);
+// MWCC coalesces the early/tail `anim`; the int->float magic is a local @442@ not double_to_int_802f5e78
+// (the latter resolves with the unit's full .rodata pool).
 s32 winMarioMain(WindowWork* work) {
-    const char* anim;
     LinkDt* d;
+    const char* anim;
     f32 f2;
 
-    if (WW_S32(work, 0x190) == 1) {
+    switch (WW_S32(work, 0x190)) {
+    case 0:
+        if (work->buttonTrg & 0x100) {
+            if (WW_S32(work, 0x160) == 0xc) {
+                WW_S32(work, 0x190) = 1;
+                WW_S32(work, 0x194) = 0;
+                psndSFXOn((const char*)0x20012);
+            }
+            goto tail;
+        }
+        if (work->buttonTrg & 0x200) {
+            psndSFXOn((const char*)0x20013);
+            if (work->flags & 0x2000) {
+                if (strcmp(str_8041D580, str_8041D580) == 0) {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D580;
+                        break;
+                    case 1:
+                        anim = str_8041D704;
+                        break;
+                    case 2:
+                        anim = str_8041D708;
+                        break;
+                    case 3:
+                        anim = str_8041D70C;
+                        break;
+                    }
+                } else {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D58C;
+                        break;
+                    case 1:
+                        anim = str_8041D710;
+                        break;
+                    case 2:
+                        anim = str_8041D718;
+                        break;
+                    case 3:
+                        anim = str_8041D720;
+                        break;
+                    }
+                }
+            } else {
+                anim = str_8041D578;
+            }
+            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+            return -1;
+        }
+        if (work->buttonTrg & 0x1000) {
+            return -2;
+        }
+
+#define MARIO_TRAVERSE(off)                                                                          \
+    do {                                                                                             \
+        d = &linkDt[WW_S32(work, 0x160)];                                                            \
+        WW_S32(work, 0x160) = d->field_18[off];                                                      \
+        d = &linkDt[WW_S32(work, 0x160)];                                                            \
+        while (1) {                                                                                  \
+            if (WW_S32(work, 0x160) == 0xb || WW_S32(work, 0x160) == 0xc) {                           \
+                if (WW_S32(work, 0x198) != 0) {                                                      \
+                    break;                                                                           \
+                }                                                                                    \
+            } else {                                                                                 \
+                if (d->field_10 == 0) {                                                              \
+                    break;                                                                           \
+                }                                                                                    \
+                if ((s32)pouchCheckItem(d->field_10) != 0) {                                         \
+                    break;                                                                           \
+                }                                                                                    \
+            }                                                                                        \
+            WW_S32(work, 0x160) = d->field_18[off];                                                  \
+            d = &linkDt[WW_S32(work, 0x160)];                                                        \
+        }                                                                                            \
+    } while (0)
+
+        if (work->dirRep & 0x1000) {
+            MARIO_TRAVERSE(0);
+            psndSFXOn((const char*)0x20005);
+            goto tail;
+        }
+        if (work->dirRep & 0x2000) {
+            MARIO_TRAVERSE(1);
+            psndSFXOn((const char*)0x20005);
+            goto tail;
+        }
+        if (work->dirRep & 0x4000) {
+            MARIO_TRAVERSE(2);
+            psndSFXOn((const char*)0x20005);
+            goto tail;
+        }
+        if (work->dirRep & 0x8000) {
+            MARIO_TRAVERSE(3);
+            psndSFXOn((const char*)0x20005);
+        }
+
+#undef MARIO_TRAVERSE
+
+    tail:
+        d = &linkDt[WW_S32(work, 0x160)];
+        WW_F32(work, 0x158) = (f32)d->field_0;
+        WW_F32(work, 0x15C) = (f32)d->field_2;
+
+        switch (WW_S32(work, 0x160)) {
+        case 2:
+            if (work->flags & 0x2000) {
+                if (strcmp(d->field_C, str_8041D580) == 0) {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D580;
+                        break;
+                    case 1:
+                        anim = str_8041D704;
+                        break;
+                    case 2:
+                        anim = str_8041D708;
+                        break;
+                    case 3:
+                        anim = str_8041D70C;
+                        break;
+                    }
+                } else {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D58C;
+                        break;
+                    case 1:
+                        anim = str_8041D710;
+                        break;
+                    case 2:
+                        anim = str_8041D718;
+                        break;
+                    case 3:
+                        anim = str_8041D720;
+                        break;
+                    }
+                }
+            } else {
+                anim = hammer_pose[pouchGetHammerLv()];
+            }
+
+            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+            if (WW_S32(work, 0x18C) == 0) {
+                if (animPoseGetLoopTimes(WW_S32(work, 0x188)) >= float_0p89_8041d728) {
+                    WW_S32(work, 0x18C) = 30;
+                }
+            } else {
+                WW_S32(work, 0x18C) -= 1;
+            }
+            if (work->flags & 0x2000) {
+                WW_S32(work, 0x18C) = 0;
+            }
+                    break;
+        default:
+            WW_S32(work, 0x18C) = 0;
+            if (work->flags & 0x2000) {
+                if (strcmp(d->field_C, str_8041D580) == 0) {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D580;
+                        break;
+                    case 1:
+                        anim = str_8041D704;
+                        break;
+                    case 2:
+                        anim = str_8041D708;
+                        break;
+                    case 3:
+                        anim = str_8041D70C;
+                        break;
+                    }
+                } else {
+                    switch (marioGetColor()) {
+                    case 0:
+                        anim = str_8041D58C;
+                        break;
+                    case 1:
+                        anim = str_8041D710;
+                        break;
+                    case 2:
+                        anim = str_8041D718;
+                        break;
+                    case 3:
+                        anim = str_8041D720;
+                        break;
+                    }
+                }
+            } else {
+                anim = d->field_4;
+            }
+            animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
+                    break;
+        }
+
+        switch (WW_S32(work, 0x160)) {
+        case 2:
+            winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
+            break;
+        case 3:
+            winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
+            break;
+        default:
+            winMsgEntry(work, 0, d->field_14, 0);
+            break;
+        }
+        break;
+    case 1:
         if (work->dirRep & 0x1000) {
             WW_S32(work, 0x194) -= 1;
             if (WW_S32(work, 0x194) < 0) {
@@ -130,199 +360,8 @@ s32 winMarioMain(WindowWork* work) {
         }
         WW_F32(work, 0x158) = float_neg280_8041d72c;
         f2 = (f32)WW_S32(work, 0x194);
-        WW_F32(work, 0x15C) = 10.0f + ((float_120_8041d730 - float_26_8041d734 * f2) - 12.0f);
+        WW_F32(work, 0x15C) = float_10_8041d61c + ((float_120_8041d730 - float_26_8041d734 * f2) - float_12_8041d670);
         winMsgEntry(work, 0, superActionTable[WW_S32(work, 0x194)]->field_C, 0);
-        return 0;
-    }
-    if (WW_S32(work, 0x190) != 0) {
-        return 0;
-    }
-
-    if (work->buttonTrg & 0x100) {
-        if (WW_S32(work, 0x160) == 0xc) {
-            WW_S32(work, 0x190) = 1;
-            WW_S32(work, 0x194) = 0;
-            psndSFXOn((const char*)0x20012);
-        }
-        goto tail;
-    }
-    if (work->buttonTrg & 0x200) {
-        psndSFXOn((const char*)0x20013);
-        if (work->flags & 0x2000) {
-            if (strcmp("S_1", "S_1") == 0) {
-                anim = "S_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "S_2";
-                    break;
-                case 2:
-                    anim = "S_3";
-                    break;
-                case 3:
-                    anim = "S_4";
-                    break;
-                }
-            } else {
-                anim = "R_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "R_15";
-                    break;
-                case 2:
-                    anim = "R_17";
-                    break;
-                case 3:
-                    anim = "R_18";
-                    break;
-                }
-            }
-        } else {
-            anim = "M_S_1";
-        }
-        animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
-        return -1;
-    }
-    if (work->buttonTrg & 0x1000) {
-        return -2;
-    }
-
-#define MARIO_TRAVERSE(off)                                                        \
-    do {                                                                           \
-        WW_S32(work, 0x160) = *(u8*)((u8*)&linkDt[WW_S32(work, 0x160)] + (0x18 + (off))); \
-        while (1) {                                                                \
-            d = &linkDt[WW_S32(work, 0x160)];                                      \
-            if (WW_S32(work, 0x160) == 0xb || WW_S32(work, 0x160) == 0xc) {        \
-                if (WW_S32(work, 0x198) != 0) {                                    \
-                    break;                                                         \
-                }                                                                  \
-            } else {                                                               \
-                if (d->field_10 == 0) {                                            \
-                    break;                                                         \
-                }                                                                  \
-                if (pouchCheckItem(d->field_10) != 0) {                            \
-                    break;                                                         \
-                }                                                                  \
-            }                                                                      \
-            WW_S32(work, 0x160) = *(u8*)((u8*)&linkDt[WW_S32(work, 0x160)] + (0x18 + (off))); \
-        }                                                                          \
-    } while (0)
-
-    if (work->dirRep & 0x1000) {
-        MARIO_TRAVERSE(0);
-        psndSFXOn((const char*)0x20005);
-        goto tail;
-    }
-    if (work->dirRep & 0x2000) {
-        MARIO_TRAVERSE(1);
-        psndSFXOn((const char*)0x20005);
-        goto tail;
-    }
-    if (work->dirRep & 0x4000) {
-        MARIO_TRAVERSE(2);
-        psndSFXOn((const char*)0x20005);
-        goto tail;
-    }
-    if (work->dirRep & 0x8000) {
-        MARIO_TRAVERSE(3);
-        psndSFXOn((const char*)0x20005);
-    }
-
-#undef MARIO_TRAVERSE
-
-tail:
-    d = &linkDt[WW_S32(work, 0x160)];
-    WW_F32(work, 0x158) = (f32)d->field_0;
-    WW_F32(work, 0x15C) = (f32)d->field_2;
-
-    if (WW_S32(work, 0x160) == 2) {
-        if (work->flags & 0x2000) {
-            if (strcmp(d->field_C, "S_1") == 0) {
-                anim = "S_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "S_2";
-                    break;
-                case 2:
-                    anim = "S_3";
-                    break;
-                case 3:
-                    anim = "S_4";
-                    break;
-                }
-            } else {
-                anim = "R_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "R_15";
-                    break;
-                case 2:
-                    anim = "R_17";
-                    break;
-                case 3:
-                    anim = "R_18";
-                    break;
-                }
-            }
-        } else {
-            anim = hammer_pose[pouchGetHammerLv()];
-        }
-
-        animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
-        if (WW_S32(work, 0x18C) == 0) {
-            if (animPoseGetLoopTimes(WW_S32(work, 0x188)) >= float_0p89_8041d728) {
-                WW_S32(work, 0x18C) = 30;
-            }
-        } else {
-            WW_S32(work, 0x18C) -= 1;
-        }
-        if (work->flags & 0x2000) {
-            WW_S32(work, 0x18C) = 0;
-        }
-    } else {
-        WW_S32(work, 0x18C) = 0;
-        if (work->flags & 0x2000) {
-            if (strcmp(d->field_C, "S_1") == 0) {
-                anim = "S_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "S_2";
-                    break;
-                case 2:
-                    anim = "S_3";
-                    break;
-                case 3:
-                    anim = "S_4";
-                    break;
-                }
-            } else {
-                anim = "R_1";
-                switch (marioGetColor()) {
-                case 1:
-                    anim = "R_15";
-                    break;
-                case 2:
-                    anim = "R_17";
-                    break;
-                case 3:
-                    anim = "R_18";
-                    break;
-                }
-            }
-        } else {
-            anim = d->field_4;
-        }
-        animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
-    }
-
-    switch (WW_S32(work, 0x160)) {
-    case 2:
-        winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
-        break;
-    case 3:
-        winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
-        break;
-    default:
-        winMsgEntry(work, 0, d->field_14, 0);
         break;
     }
     return 0;

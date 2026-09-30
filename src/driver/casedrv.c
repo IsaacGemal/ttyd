@@ -94,6 +94,31 @@ CaseEntry* caseCheckHitObj(void* obj) {
 	return NULL;
 }
 
+CaseEntry* caseCheckHitObj2(HitEntry* hit) {
+	CaseEntry* entry;
+	int i;
+
+	if (gp->inBattle != 0) {
+		return NULL;
+	}
+
+	for (i = 0, entry = wp->entries; i < wp->count; i++, entry++) {
+		if (!(entry->flags & 1)) {
+			continue;
+		}
+		if (entry->activeConditionId == 0x11) {
+			continue;
+		}
+		if ((u32)(entry->activeConditionId - 0x12) <= 1) {
+			continue;
+		}
+		if (entry->activeConditionId == 0xF && strcmp(hitGetName(hit), entry->hitObjName) == 0) {
+			return entry;
+		}
+	}
+	return NULL;
+}
+
 CaseEntry* caseIdToPtr(s32 caseId) {
 	CaseEntry* entry = &wp->entries[caseId];
 

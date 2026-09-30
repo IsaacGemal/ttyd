@@ -5,6 +5,7 @@
 #include "pmario_sound.h"
 #include "sound.h"
 #include "system.h"
+#include "win/win_main.h"
 #include <musyx/musyx.h>
 #include <string.h>
 #include "sequence/seq_title.h"
@@ -112,3 +113,27 @@ void titleMain(SequenceWork* work) {
 }
 
 #pragma dont_inline reset
+
+void disp1(CameraId cameraId, void* param) {
+	CameraEntry* camera = camGetPtr(CAMERA_2D);
+	f32 projBackup[GX_PROJECTION_SZ];
+	f32 viewportBackup[GX_VIEWPORT_SZ];
+	CameraEntry camBackup;
+
+	camBackup = *camGetPtr(cameraId);
+	*camGetPtr(cameraId) = *camera;
+
+	GXGetProjectionv(projBackup);
+	GXGetViewportv(viewportBackup);
+	GXSetProjection(camera->projection, camera->projType);
+	GXSetViewport(camera->viewport[0], camera->viewport[1], camera->viewport[2], camera->viewport[3],
+	              camera->viewport[4], camera->viewport[5]);
+
+	winTexInit(*wp2->texture->data);
+	winTexSet(7, (Vec){ 0.0f, 0.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+
+	*camGetPtr(cameraId) = camBackup;
+	GXSetProjectionv(projBackup);
+	GXSetViewport(viewportBackup[0], viewportBackup[1], viewportBackup[2], viewportBackup[3], viewportBackup[4],
+	              viewportBackup[5]);
+}

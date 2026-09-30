@@ -1,9 +1,13 @@
 #include "eff/n64/eff_magic_horao_n64.h"
 #include "driver/effdrv.h"
 #include "driver/dispdrv.h"
+#include "eff/eff_n64.h"
 #include "eff/n64/eff_hokori_n64.h"
 #include "memory.h"
 #include "system.h"
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <dolphin/os/OSCache.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -122,4 +126,185 @@ void effMagicHoraoMain(EffectEntry* effect) {
 		break;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMagicHoraoDisp, effect);
+}
+
+// .data vertex-layout descriptor, local to this file in the original.
+static u32 size64x64_tex64x64_vtx[14] = {
+    0xF3800000, 0x00000000, 0x00000000, 0x00FF0C80, 0x00000000, 0x08000000, 0x000000FF,
+    0x0C801900, 0x00000800, 0x08000000, 0x00FFF380, 0x19000000, 0x00000800, 0x000000FF,
+};
+
+// 0x1C-byte generated quad vertices (same layout the sibling n64 effects use).
+typedef struct MagicHoraoVtx {
+	s16 x;         // 0x00
+	s16 y;         // 0x02
+	s16 z;         // 0x04
+	s16 unk06;     // 0x06
+	s16 unk08;     // 0x08
+	s16 unk0A;     // 0x0A
+	s16 unk0C;     // 0x0C
+	s16 x2;        // 0x0E
+	s16 y2;        // 0x10
+	s16 z2;        // 0x12
+	s16 unk14;     // 0x14
+	s16 unk16;     // 0x16
+	s16 unk18;     // 0x18
+	s16 unk1A;     // 0x1A
+} MagicHoraoVtx;
+
+// .sdata2 / .sbss2 scratch colours the original builds its TEV colours from.
+extern GXColor dat_8041f750;
+extern GXColor unk_804231b8;
+extern const f32 float_0p01_8041f754;
+extern const f32 float_100_8041f758;
+extern const f32 float_6p2832_8041f75c;
+extern const f32 float_360_8041f760;
+extern const f32 float_225_8041f764;
+extern const f32 float_25_8041f768;
+extern const f32 float_0p015625_8041f76c;
+extern const f32 float_500_8041f774;
+extern const f32 float_200_8041f778;
+
+// All code, constants, control flow and the generated vertex data match. The remaining diffs are MWCC
+// register-allocation choices: the target keeps alpha in f31 (here f29), angleBase in r25 (here r29),
+// colorAlpha in r27 (here r26) and counter in r26 (here r25), and its loop keeps off1/off2/y/v/vp in
+// r28/r30/r29/r24/r31 where this build uses r28/r27/r26/r25/r30. The final draw loop also emits
+// `clrlwi` on the tri2 u16 arguments that the original does not.
+// NONMATCHING (95.51%): only the register names above differ.
+void effMagicHoraoDisp(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	effMagicHoraoData* data;
+	CameraEntry* cam;
+	MagicHoraoVtx* vtx;
+	MagicHoraoVtx* vp;
+	Mtx mtx1;
+	Mtx mtx2;
+	GXTexObj texObj;
+	GXColor color;
+	GXColor color2;
+	f32 angle;
+	f32 alpha;
+	s32 angleBase;
+	s32 counter;
+	s32 colorAlpha;
+	s32 off1;
+	s32 off2;
+	s32 y;
+	s16 v;
+	s32 i;
+	s32 j;
+
+	cam = camGetPtr(cameraId);
+	data = effect->userdata;
+	alpha = data->alpha;
+	angleBase = data->field_0x38;
+	colorAlpha = data->field_0x3C;
+	counter = data->field_0x44;
+
+	PSMTXScale(mtx2, float_0p01_8041f754, float_0p01_8041f754, float_0p01_8041f754);
+	PSMTXTrans(mtx1, float_100_8041f758 * data->x, float_100_8041f758 * data->y, float_100_8041f758 * data->z);
+	PSMTXConcat(mtx2, mtx1, mtx1);
+	PSMTXScale(mtx2, data->field_0x24, data->field_0x24, data->field_0x24);
+	PSMTXConcat(mtx1, mtx2, mtx1);
+	PSMTXConcat(cam->view, mtx1, mtx1);
+	GXLoadPosMtxImm(mtx1, 0);
+	GXSetCurrentMtx(0);
+
+	angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
+	color = dat_8041f750;
+	color.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	color.a = colorAlpha;
+	color.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	GXSetTevColor(1, color);
+
+	GXSetNumChans(0);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+	PSMTXScale(mtx2, float_0p015625_8041f76c, float_0p015625_8041f76c, float_0_8041f770);
+	GXLoadTexMtxImm(mtx2, 0x1E, 1);
+	effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
+
+	if (data->state == 1) {
+		GXSetNumTevStages(1);
+		GXSetTevOrder(0, 0, 0, 0xFF);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+		GXSetTevAlphaIn(0, 7, 4, 1, 7);
+		effGetTexObjN64(0x56, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		GXBegin(0x90, 0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+
+		color2 = unk_804231b8;
+		color2.a = ((0x1E - data->field_0x30) * 0xFF) / 0x1E;
+		GXSetTevColor(1, color2);
+
+		GXSetNumTevStages(1);
+		GXSetTevOrder(0, 0, 0, 0xFF);
+		GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+		GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+		GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+		GXSetTevAlphaIn(0, 7, 4, 1, 7);
+		effGetTexObjN64(0x57, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		GXBegin(0x90, 0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	} else {
+		if (data->state >= 1) {
+			GXSetNumTevStages(1);
+			GXSetTevOrder(0, 0, 0, 0xFF);
+			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+			GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+			GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+			GXSetTevAlphaIn(0, 7, 4, 1, 7);
+			effGetTexObjN64(0x57, &texObj);
+			GXLoadTexObj(&texObj, 0);
+		} else {
+			GXSetNumTevStages(1);
+			GXSetTevOrder(0, 0, 0, 0xFF);
+			GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+			GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+			GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+			GXSetTevAlphaIn(0, 7, 4, 1, 7);
+			effGetTexObjN64(0x56, &texObj);
+			GXLoadTexObj(&texObj, 0);
+		}
+
+		vtx = smartAlloc(0x1C0, 3)->address;
+		vp = vtx;
+		off1 = counter * 10;
+		off2 = off1;
+		y = 0;
+		v = 0;
+		for (i = 0; i < 16; i++) {
+			s32 a;
+			s32 b;
+
+			a = (s32)(float_500_8041f774 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760) * alpha);
+			b = (s32)(float_200_8041f778 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760) * alpha);
+			vp->x = a - 0xC80;
+			vp->x2 = a + 0xC80;
+			vp->y = b + y;
+			vp->y2 = b + y;
+			vp->z = 0;
+			vp->z2 = 0;
+			vp->unk06 = 0;
+			vp->unk08 = v;
+			vp->unk16 = v;
+			vp->unk14 = 0x800;
+			vp++;
+			off1 += 60;
+			off2 += 6;
+			y += 400;
+			v += 0x80;
+		}
+		DCFlushRange(vtx, 0x1C0);
+		GXInvalidateVtxCache();
+		effSetVtxDescN64((effVtxArray*)vtx);
+		for (i = 0, j = 0; i < 15; i++, j += 2) {
+			GXBegin(0x90, 0, 6);
+			tri2(j, j + 2, j + 1, j, j + 1, j + 2, j + 3, j);
+		}
+	}
 }

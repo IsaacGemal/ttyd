@@ -1,7 +1,9 @@
 #include "eff/n64/eff_magic1_n64.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
+#include "mario/mariost.h"
 #include <dolphin/mtx.h>
 
 // Local copy of the effect's per-instance data; the fields used by
@@ -71,6 +73,65 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
         break;
     }
     return effect;
+}
+
+void effMagic1Main(EffectEntry* effect) {
+    effMagic1Data* data = effect->userdata;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+       local before dispCalcZ; a single local folds the copy away (same idiom as
+       effAkariSflushMain/effGlassMain). */
+    Vec position;
+#endif
+    Vec disp = { 0 };
+    f32 order;
+    s32 type;
+
+    disp.x = data->field_0x10;
+    disp.y = data->field_0x14;
+    disp.z = data->field_0x18;
+#ifdef MUST_MATCH
+    position = disp;
+#endif
+
+    if ((u32)marioStGetSystemLevel() != 0) {
+#ifdef MUST_MATCH
+        order = dispCalcZ(&position);
+#else
+        order = dispCalcZ(&disp);
+#endif
+        dispEntry(CAMERA_3D, order, 2, (DispCallback)effMagic1Disp, effect);
+    } else {
+        if (effect->flags & 4) {
+            effect->flags &= ~4;
+            data->field_0x30 = 0;
+        }
+        data->field_0x30--;
+        data->field_0x2c++;
+        if (data->field_0x30 < 0) {
+            effDelete(effect);
+            return;
+        }
+        type = data->type;
+        if (type == 0 && data->field_0x30 == 0) {
+            EffectEntry* newEffect = effMagic1N64Entry(1, 0x30, data->x + data->field_0x10,
+                data->y + data->field_0x14, data->z + data->field_0x18, 0.0f, 0.0f, 0.0f);
+            ((effMagic1Data*)newEffect->userdata)->field_0x28 = data->field_0x28;
+        }
+        if (type == 1) {
+            data->field_0x1c *= float_0p83_8041f69c;
+            data->field_0x34 = (s32)((f32)data->field_0x34 * float_0p9_8041f6a0);
+        }
+        data->field_0x10 += data->field_0x1c;
+        data->field_0x14 += data->field_0x20;
+        data->field_0x18 += data->field_0x24;
+#ifdef MUST_MATCH
+        order = dispCalcZ(&position);
+#else
+        order = dispCalcZ(&disp);
+#endif
+        dispEntry(CAMERA_3D, order, 2, (DispCallback)effMagic1Disp, effect);
+    }
 }
 
 static void main_dl(EffectEntry* effect, Mtx mtx);

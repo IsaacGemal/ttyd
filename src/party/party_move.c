@@ -2249,3 +2249,202 @@ void partyFlyMain(PartyEntry* party) {
     }
     flyMain(party);
 }
+
+void walkMain(PartyEntry* party) {
+    PartyEntry* work = party;
+
+    switch (work->field_3B) {
+    case 0:
+        if (work->field_8 & 0x4) {
+            work->field_8 &= ~0x4;
+            partyChgPoseId(party, 1);
+            if (work->currentMemberId == 5) {
+                unk_801820d0(party);
+            }
+        }
+        switch (work->field_36) {
+        case 0:
+            party_motion_stay(party);
+            if (work->currentMemberId == 5) {
+                unk_8018206c(party);
+            }
+            break;
+        case 1:
+        case 2:
+        case 6:
+            if (work->field_36 == 3) {
+                party->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+                party->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+                party->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+            }
+            work->field_36 = 0;
+            work->field_8 |= 2;
+            break;
+        case 3:
+            party_motion_fall(party);
+            break;
+        }
+        work->field_FC = work->dir;
+        if (work->field_8 & 0x01000000) {
+            work->field_8 &= ~0x01000000;
+            {
+                Vec pos = party->position;
+                marioSetSplash(0, &pos);
+            }
+            work->field_4C = 0x14;
+        }
+        if (--work->field_4C < 0) {
+            work->field_4C = 0;
+        }
+        if (work->field_34 != 0x0D) {
+            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            }
+        }
+        break;
+    case 1:
+        if (work->field_8 & 0x4) {
+            work->field_8 &= ~0x4;
+        }
+        switch (work->field_36) {
+        case 0:
+            party_motion_stay(party);
+            break;
+        case 1:
+            if (work->field_32 == 0) {
+                party_motion_homing_walk(party);
+            } else {
+                party_motion_homing_fly(party);
+            }
+            break;
+        case 2:
+            party_motion_jump(party);
+            break;
+        case 3:
+            party_motion_fall(party);
+            break;
+        case 6:
+            party_motion_upstairs(party);
+            break;
+        case 7:
+            party_motion_damage(party);
+            break;
+        default:
+            break;
+        }
+        work->field_FC = work->dir;
+        if (work->field_8 & 0x01000000) {
+            work->field_8 &= ~0x01000000;
+            {
+                Vec pos = party->position;
+                marioSetSplash(0, &pos);
+            }
+            work->field_4C = 0x14;
+        }
+        if (--work->field_4C < 0) {
+            work->field_4C = 0;
+        }
+        if (work->field_34 != 0x0D) {
+            if (work->field_138 != NULL && (hitGetAttr((HitEntry*)work->field_138) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            } else if (work->field_12C != NULL && (hitGetAttr((HitEntry*)work->field_12C) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            } else if (work->field_140 != NULL && (hitGetAttr((HitEntry*)work->field_140) & 0x800)) {
+                partyChgRunMode(party, 0x0D);
+            }
+        }
+        break;
+    case 2:
+        if (work->field_8 & 0x4) {
+            work->field_8 &= ~0x4;
+        }
+        switch (work->field_36) {
+        case 0:
+        case 1:
+            if (work->field_32 == 0) {
+                party_motion_behind_mario(party);
+            } else {
+                party_motion_behind_mario_fly(party);
+            }
+            break;
+        case 2:
+            party_motion_jump2(party);
+            break;
+        case 3:
+            party_motion_fall(party);
+            break;
+        case 6:
+            party_motion_upstairs(party);
+            break;
+        case 7:
+            party_motion_damage(party);
+            break;
+        default:
+            break;
+        }
+        work->field_FC = work->dir;
+        break;
+    case 3:
+        if (work->field_8 & 0x4) {
+            work->field_8 &= ~0x4;
+        }
+        switch (work->field_36) {
+        case 0:
+        case 1:
+            party_motion_beside_mario(party);
+            break;
+        case 2:
+            party_motion_jump2(party);
+            break;
+        case 3:
+            party_motion_fall(party);
+            break;
+        case 6:
+            party_motion_upstairs(party);
+            break;
+        case 7:
+            party_motion_damage(party);
+            break;
+        default:
+            break;
+        }
+        work->field_FC = work->dir;
+        break;
+    case 6:
+        if (work->field_8 & 0x4) {
+            work->field_8 &= ~0x4;
+        }
+        switch (work->field_36) {
+        case 0:
+        case 1:
+            if (work->field_32 == 0) {
+                party_motion_behind_mario_continue(party);
+            } else {
+                party_motion_behind_mario_fly(party);
+            }
+            break;
+        case 2:
+            party_motion_jump2(party);
+            break;
+        case 3:
+            party_motion_fall(party);
+            break;
+        case 6:
+            party_motion_upstairs(party);
+            break;
+        case 7:
+            party_motion_damage(party);
+            break;
+        default:
+            break;
+        }
+        work->field_FC = work->dir;
+        break;
+    default:
+        break;
+    }
+}

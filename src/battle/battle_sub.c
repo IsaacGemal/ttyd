@@ -4,6 +4,11 @@
 
 extern BattleWork* _battleWorkPointer;
 
+// .sdata2 constants emitted by this unit
+extern const f32 float_neg800_8041c380;
+extern const f32 float_800_8041c384;
+extern const f32 float_40_8041c388;
+
 f32 sinfd(f32 deg) {
 	return (f32)sin(6.2831855f * deg / 360.0f);
 }
@@ -23,6 +28,24 @@ void btlsubResetMoveColorLvAll(BattleWork* work) {
 			unit->mMoveColorLv = 0xFF;
 		}
 	}
+}
+
+s32 BtlCompForwardLv(s32 direction, f32 dist) {
+	s32 lv = 0;
+	s32 result;
+
+	if (dist > float_neg800_8041c380) {
+		lv = (s32)((float_800_8041c384 + dist) / float_40_8041c388);
+		if (lv > 48) {
+			lv = 48;
+		}
+	}
+
+	result = 48 - lv;
+	if (direction >= 0) {
+		result = lv;
+	}
+	return result;
 }
 
 // NONMATCHING (70.53%): 7 instructions differ, 7 missing, 3 extra, plus register differences.
