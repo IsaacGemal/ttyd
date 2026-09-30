@@ -9,24 +9,27 @@
 #include "battle/battle_weapon_power.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
 #pragma force_active on
 extern s32 btldefaultevt_Dummy[];
 static USER_FUNC(krb_get_dir);
-static u32 regist_patakuri[6];
-static u32 parts_patakuri[19];
-static u32 pose_table_patakuri[38];
-static u32 data_table_patakuri[6];
+static BattleVulnerableStatus regist_patakuri;
+static BattleUnitKindPart parts_patakuri[1];
+static BattleDispPose pose_table_patakuri[19];
+static BattleDataEntry data_table_patakuri[3];
 static s32 init_event_patakuri[26];
 static s32 dmg_fall_event[107];
 static s32 patakuri_dmg_first_attack_pos[19];
 static s32 attack_event_patakuri[391];
 static s32 wait_event_patakuri[12];
-static u32 pose_table[40];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleDispPose pose_table[20];
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts[1];
 static s32 init_event[42];
 static s32 damage_event[10];
 static s32 attack_event[492];
@@ -51,82 +54,206 @@ extend_data(unit_patakuri_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000002, (u32)"btl_un_patakuri", 0x00020000, 0x01010700,
-    0x013C003C, 0x270F0017, 0x00190005, 0x00190000,
-    0x00000000, 0x41400000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41380000,
-    0x00000000, 0x00000000, 0x41380000, 0x41820000,
-    0x00000000, 0x00000000, 0x41400000, 0x00000000,
-    0x41B80000, 0x41C80000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_PATAKURI_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00040004,
-    (u32)&regist_patakuri, 0x01000000, (u32)&parts_patakuri, (u32)&init_event_patakuri,
-    (u32)&data_table_patakuri,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_PARAGOOMBA,             // mUnitType
+    "btl_un_patakuri",           // name
+    2,                           // maxHp
+    0,                           // maxFp
+    1,                           // mDangerHP
+    1,                           // mPerilHP
+    7,                           // mLevel
+    0,                           // mBonusExp
+    1,                           // bonusCoinRolls
+    60,                          // bonusCoinRate
+    0,                           // baseCoin
+    60,                          // field_0x13
+    9999,                        // field_0x14
+    23,                          // width
+    25,                          // height
+    { 5, 25 },                   // statusIconOffset
+    { 0.0f, 12.0f, 0.0f },       // centerOffset
+    { 0, 0 },                    // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },        // talkTogeBaseOffset
+    { 12.0f, 0.0f, -10.0f },     // field_0x3C
+    { 0.0f, 0.0f, 0.0f },        // burnFlameOffset
+    0.0f,                        // field_0x54
+    0.0f,                        // field_0x58
+    { 11.5f, 0.0f, 0.0f },       // bintaHitOffset
+    { 11.5f, 16.25f, 0.0f },     // kissHitOffset
+    { 0.0f, 12.0f, 0.0f },       // cutBaseOffset
+    23.0f,                       // cutWidth
+    25.0f,                       // cutHeight
+    0,                           // turnOrder
+    0,                           // turnOrderVariance
+    0,                           // swallowRate
+    2,                           // swallowAttribute
+    100,                         // field_0x8C
+    20,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },        // starPointDispOffset
+    "SFX_ENM_PATAKURI_DAMAGED1", // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",      // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
+    0x00040004,                  // attributeFlags
+    &regist_patakuri,            // vulnStatus
+    1,                           // numParts
+    parts_patakuri,              // mParts
+    init_event_patakuri,         // initEvtScript
+    data_table_patakuri,         // dataTable
 };
 
-// TODO: type
-static u32 defence_patakuri[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence_patakuri = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_patakuri_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist_patakuri = {
+    100, // sleepRate
+    110, // stopRate
+    120, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    110, // frightRate
+    110, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    150, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_patakuri_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleWeapon weapon_patakuri_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00005087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002000,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 regist_patakuri[6] = {
-    0x646E7864, 0x64646464, 0x64646464, 0x6464646E,
-    0x6E646464, 0x64960000,
+static BattleUnitKindPart parts_patakuri[1] = {
+    {
+        1,                      // partNum
+        "btl_un_patakuri",      // partName
+        "c_kuribo",             // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 0.0f, 22.0f, 0.0f },  // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f },  // hitCursorBaseOffset
+        20,                     // field_0x30
+        30,                     // field_0x32
+        255,                    // baseAlpha
+        &defence_patakuri,      // defense
+        &defence_patakuri_attr, // defenseAttr
+        0x00600809,             // attributes
+        0,                      // counterAttributes
+        pose_table_patakuri,    // poseTable
+    },
 };
 
-// TODO: type
-static u32 weapon_patakuri_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20000000, 0x00000302,
-    0x00000000, 0x00005087, 0x00000000, 0x80002000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleDispPose pose_table_patakuri[19] = {
+    { 0x01, "PTK_N_1" },
+    { 0x02, "PTK_Y_1" },
+    { 0x09, "PTK_Y_1" },
+    { 0x05, "PTK_K_1" },
+    { 0x04, "PTK_I_1" },
+    { 0x03, "PTK_I_1" },
+    { 0x1C, "PTK_S_1" },
+    { 0x1D, "PTK_Q_1" },
+    { 0x1E, "PTK_Q_1" },
+    { 0x1F, "PTK_S_1" },
+    { 0x27, "PTK_D_1" },
+    { 0x32, "PTK_A_1" },
+    { 0x2A, "PTK_R_1" },
+    { 0x29, "PTK_R_2" },
+    { 0x28, "PTK_W_1" },
+    { 0x38, "PTK_I_1" },
+    { 0x39, "PTK_I_1" },
+    { 0x41, "PTK_T_1" },
+    { 0x45, "PTK_S_1" },
 };
 
-// TODO: type
-static u32 parts_patakuri[19] = {
-    0x00000001, (u32)"btl_un_patakuri", (u32)"c_kuribo", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41B00000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence_patakuri, (u32)&defence_patakuri_attr,
-    0x00600809, 0x00000000, (u32)&pose_table_patakuri,
-};
-
-// TODO: type
-static u32 pose_table_patakuri[38] = {
-    0x00000001, (u32)"PTK_N_1", 0x00000002, (u32)"PTK_Y_1",
-    0x00000009, (u32)"PTK_Y_1", 0x00000005, (u32)"PTK_K_1",
-    0x00000004, (u32)"PTK_I_1", 0x00000003, (u32)"PTK_I_1",
-    0x0000001C, (u32)"PTK_S_1", 0x0000001D, (u32)"PTK_Q_1",
-    0x0000001E, (u32)"PTK_Q_1", 0x0000001F, (u32)"PTK_S_1",
-    0x00000027, (u32)"PTK_D_1", 0x00000032, (u32)"PTK_A_1",
-    0x0000002A, (u32)"PTK_R_1", 0x00000029, (u32)"PTK_R_2",
-    0x00000028, (u32)"PTK_W_1", 0x00000038, (u32)"PTK_I_1",
-    0x00000039, (u32)"PTK_I_1", 0x00000041, (u32)"PTK_T_1",
-    0x00000045, (u32)"PTK_S_1",
-};
-
-// TODO: type
-static u32 data_table_patakuri[6] = {
-    0x0000000E, (u32)&dmg_fall_event, 0x00000030, (u32)&patakuri_dmg_first_attack_pos,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table_patakuri[3] = {
+    { 0x0E, dmg_fall_event },
+    { 0x30, patakuri_dmg_first_attack_pos },
+    { 0x00, NULL },
 };
 
 // TODO: type
@@ -196,8 +323,8 @@ static EVT_BEGIN(attack_event_patakuri)
         RETURN
     END_IF
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_patakuri_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_patakuri_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_patakuri_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_patakuri_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -210,10 +337,10 @@ static EVT_BEGIN(attack_event_patakuri)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_patakuri_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_patakuri_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_patakuri_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_patakuri_attack))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 40)
     CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 50)
@@ -232,7 +359,7 @@ static EVT_BEGIN(attack_event_patakuri)
     CALL(btlevtcmd_SetMoveSpeed, -2, FLOAT(5.0f))
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_PATAKURI_MOVE2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     CALL(btlevtcmd_DivePosition, -2, LW(0), LW(1), LW(2), 0, 5, 4, 0, 0)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_patakuri_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_patakuri_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -273,8 +400,8 @@ static EVT_BEGIN(attack_event_patakuri)
     CALL(evt_btl_camera_shake_h, 0, 1, 1, 8, 0)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_patakuri_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_patakuri_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_patakuri_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_patakuri_attack), 256, LW(5))
     GOTO(98)
     LABEL(98)
     CALL(evt_btl_camera_set_mode, 0, 0)
@@ -297,64 +424,158 @@ static EVT_BEGIN(wait_event_patakuri)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 pose_table[40] = {
-    0x00000001, (u32)"KUR_N_1", 0x00000002, (u32)"KUR_Y_1",
-    0x00000009, (u32)"KUR_Y_1", 0x00000005, (u32)"KUR_K_1",
-    0x00000004, (u32)"KUR_I_1", 0x00000003, (u32)"KUR_I_1",
-    0x0000001C, (u32)"KUR_S_1", 0x0000001D, (u32)"KUR_Q_1",
-    0x0000001E, (u32)"KUR_Q_1", 0x0000001F, (u32)"KUR_S_1",
-    0x00000027, (u32)"KUR_D_1", 0x00000032, (u32)"KUR_A_1",
-    0x00000033, (u32)"KUR_A_2", 0x0000002A, (u32)"KUR_R_1",
-    0x00000029, (u32)"KUR_R_2", 0x00000028, (u32)"KUR_W_1",
-    0x00000038, (u32)"KUR_I_1", 0x00000039, (u32)"KUR_I_1",
-    0x00000041, (u32)"KUR_T_1", 0x00000045, (u32)"KUR_S_1",
+static BattleDispPose pose_table[20] = {
+    { 0x01, "KUR_N_1" },
+    { 0x02, "KUR_Y_1" },
+    { 0x09, "KUR_Y_1" },
+    { 0x05, "KUR_K_1" },
+    { 0x04, "KUR_I_1" },
+    { 0x03, "KUR_I_1" },
+    { 0x1C, "KUR_S_1" },
+    { 0x1D, "KUR_Q_1" },
+    { 0x1E, "KUR_Q_1" },
+    { 0x1F, "KUR_S_1" },
+    { 0x27, "KUR_D_1" },
+    { 0x32, "KUR_A_1" },
+    { 0x33, "KUR_A_2" },
+    { 0x2A, "KUR_R_1" },
+    { 0x29, "KUR_R_2" },
+    { 0x28, "KUR_W_1" },
+    { 0x38, "KUR_I_1" },
+    { 0x39, "KUR_I_1" },
+    { 0x41, "KUR_T_1" },
+    { 0x45, "KUR_S_1" },
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000030, (u32)btldefaultevt_Dummy, 0x00000000, 0x00000000,
+static BattleDataEntry data_table[2] = {
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    110, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    110, // frightRate
+    100, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    150, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_kuriboo",      // partName
+        "c_kuribo",            // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 22.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0,                     // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x646E6464, 0x64646464, 0x64646464, 0x6464646E,
-    0x64646464, 0x64960000,
-};
-
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_kuriboo", (u32)"c_kuribo", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41B00000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
-};
-
-// TODO: type
-static u32 weapon_kuriboo_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000001, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00005087, 0x00000000, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_kuriboo_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 1, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00005087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(init_event)
@@ -415,8 +636,8 @@ static EVT_BEGIN(attack_event)
         CALL(btlevtcmd_GetFirstAttackTarget, LW(3), LW(4))
     ELSE
         CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_kuriboo_attack))
-        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_kuriboo_attack), LW(3), LW(4))
+        CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_kuriboo_attack))
+        CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_kuriboo_attack), LW(3), LW(4))
     END_IF
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
@@ -437,10 +658,10 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_kuriboo_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_kuriboo_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_kuriboo_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_kuriboo_attack))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 100)
@@ -475,7 +696,7 @@ static EVT_BEGIN(attack_event)
     END_INLINE_EVENT
     CALL(btlevtcmd_GetHitPos, LW(3), LW(4), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 32, -1)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_kuriboo_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_kuriboo_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -514,8 +735,8 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
     CALL(evt_btl_camera_add_zoom, 0, -50)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_KURI_ATTACK1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_kuriboo_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_kuriboo_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_kuriboo_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_kuriboo_attack), 256, LW(5))
     CALL(btlevtcmd_SetRotate, -2, 0, 0, 0)
     SET_VALUE(LW(15), 69)
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, LW(15))

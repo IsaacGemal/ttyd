@@ -13,6 +13,9 @@
 #include "evt/evt_eff.h"
 #include "evt/evt_msg.h"
 #include "forcedata.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -21,10 +24,10 @@ static USER_FUNC(get_attacker);
 static u16 krb_comp_dir(f32 dx, f32 dz);
 static f32 SinTable[91];
 static USER_FUNC(krb_get_dir);
-static u32 regist[6];
-static u32 parts[19];
-static u32 pose_table[38];
-static u32 data_table[6];
+static BattleVulnerableStatus regist;
+static BattleUnitKindPart parts[1];
+static BattleDispPose pose_table[19];
+static BattleDataEntry data_table[3];
 static s32 init_event[42];
 static s32 dmg_avoid_counter_thorn_head_event[127];
 static s32 damage_event[10];
@@ -50,82 +53,206 @@ extend_data(unit_togekuri_1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 UNIT_DATA_SYM[49] = {
-    0x00000003, (u32)"btl_un_togekuri", 0x00020000, 0x01010800,
-    0x013C0046, 0x270F0017, 0x001E0005, 0x001E0000,
-    0x00000000, 0x41700000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41400000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41380000,
-    0x00000000, 0x00000000, 0x41380000, 0x41900000,
-    0x00000000, 0x00000000, 0x41700000, 0x00000000,
-    0x41B80000, 0x41F00000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_ENM_TOGEKURI_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00040000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind UNIT_DATA_SYM = {
+    UNIT_SPIKY_GOOMBA,           // mUnitType
+    "btl_un_togekuri",           // name
+    2,                           // maxHp
+    0,                           // maxFp
+    1,                           // mDangerHP
+    1,                           // mPerilHP
+    8,                           // mLevel
+    0,                           // mBonusExp
+    1,                           // bonusCoinRolls
+    60,                          // bonusCoinRate
+    0,                           // baseCoin
+    70,                          // field_0x13
+    9999,                        // field_0x14
+    23,                          // width
+    30,                          // height
+    { 5, 30 },                   // statusIconOffset
+    { 0.0f, 15.0f, 0.0f },       // centerOffset
+    { 0, 0 },                    // hpGaugeOffset
+    { 0.0f, 0.0f, 0.0f },        // talkTogeBaseOffset
+    { 12.0f, 0.0f, -10.0f },     // field_0x3C
+    { 0.0f, 0.0f, 0.0f },        // burnFlameOffset
+    0.0f,                        // field_0x54
+    0.0f,                        // field_0x58
+    { 11.5f, 0.0f, 0.0f },       // bintaHitOffset
+    { 11.5f, 18.0f, 0.0f },      // kissHitOffset
+    { 0.0f, 15.0f, 0.0f },       // cutBaseOffset
+    23.0f,                       // cutWidth
+    30.0f,                       // cutHeight
+    0,                           // turnOrder
+    0,                           // turnOrderVariance
+    0,                           // swallowRate
+    2,                           // swallowAttribute
+    100,                         // field_0x8C
+    20,                          // itemStealParam
+    { 0.0f, 0.0f, 0.0f },        // starPointDispOffset
+    "SFX_ENM_TOGEKURI_DAMAGED1", // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",      // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",       // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1",  // electricDamageSfxName
+    0x00040000,                  // attributeFlags
+    &regist,                     // vulnStatus
+    1,                           // numParts
+    parts,                       // mParts
+    init_event,                  // initEvtScript
+    data_table,                  // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    100, // sleepRate
+    110, // stopRate
+    100, // dizzyRate
+    100, // poisonRate
+    100, // confuseRate
+    100, // electricRate
+    100, // burnRate
+    100, // freezeRate
+    100, // hugeRate
+    100, // tinyRate
+    100, // attackUpRate
+    100, // attackDownRate
+    100, // defenseUpRate
+    100, // defenseDownRate
+    100, // allergicRate
+    110, // frightRate
+    110, // galeForceRate
+    100, // fastRate
+    100, // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    150, // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                     // partNum
+        "btl_un_togekuri",     // partName
+        "c_kuribo",            // modelName
+        { 0.0f, 0.0f, 0.0f },  // positionOffset
+        { 0.0f, 25.0f, 0.0f }, // hitBaseOffset
+        { 0.0f, 30.0f, 0.0f }, // hitCursorBaseOffset
+        20,                    // field_0x30
+        30,                    // field_0x32
+        255,                   // baseAlpha
+        &defence,              // defense
+        &defence_attr,         // defenseAttr
+        0x00000009,            // attributes
+        0x00000001,            // counterAttributes
+        pose_table,            // poseTable
+    },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x646E6464, 0x64646464, 0x64646464, 0x6464646E,
-    0x6E646464, 0x64960000,
+static BattleWeapon weapon_togekuri_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x20001000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00005087,                               // special
+    0,                                        // counterResistanceFlags
+    0x80002004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_togekuri", (u32)"c_kuribo", 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41C80000,
-    0x00000000, 0x00000000, 0x41F00000, 0x00000000,
-    0x0014001E, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000001, (u32)&pose_table,
+static BattleDispPose pose_table[19] = {
+    { 0x01, "TGK_N_1" },
+    { 0x02, "TGK_Y_1" },
+    { 0x09, "TGK_Y_1" },
+    { 0x05, "TGK_K_1" },
+    { 0x04, "TGK_I_1" },
+    { 0x03, "TGK_I_1" },
+    { 0x1C, "TGK_S_1" },
+    { 0x1D, "TGK_Q_1" },
+    { 0x1E, "TGK_Q_1" },
+    { 0x1F, "TGK_S_1" },
+    { 0x27, "TGK_D_1" },
+    { 0x32, "TGK_A_1" },
+    { 0x29, "TGK_R_2" },
+    { 0x2A, "TGK_R_1" },
+    { 0x28, "TGK_W_1" },
+    { 0x38, "TGK_I_1" },
+    { 0x39, "TGK_I_1" },
+    { 0x41, "TGK_T_1" },
+    { 0x45, "TGK_S_1" },
 };
 
-// TODO: type
-static u32 weapon_togekuri_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001000, 0x00000302,
-    0x00000000, 0x00005087, 0x00000000, 0x80002004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 pose_table[38] = {
-    0x00000001, (u32)"TGK_N_1", 0x00000002, (u32)"TGK_Y_1",
-    0x00000009, (u32)"TGK_Y_1", 0x00000005, (u32)"TGK_K_1",
-    0x00000004, (u32)"TGK_I_1", 0x00000003, (u32)"TGK_I_1",
-    0x0000001C, (u32)"TGK_S_1", 0x0000001D, (u32)"TGK_Q_1",
-    0x0000001E, (u32)"TGK_Q_1", 0x0000001F, (u32)"TGK_S_1",
-    0x00000027, (u32)"TGK_D_1", 0x00000032, (u32)"TGK_A_1",
-    0x00000029, (u32)"TGK_R_2", 0x0000002A, (u32)"TGK_R_1",
-    0x00000028, (u32)"TGK_W_1", 0x00000038, (u32)"TGK_I_1",
-    0x00000039, (u32)"TGK_I_1", 0x00000041, (u32)"TGK_T_1",
-    0x00000045, (u32)"TGK_S_1",
-};
-
-// TODO: type
-static u32 data_table[6] = {
-    0x00000025, (u32)&dmg_avoid_counter_thorn_head_event, 0x00000030, (u32)btldefaultevt_Dummy,
-    0x00000000, 0x00000000,
+static BattleDataEntry data_table[3] = {
+    { 0x25, dmg_avoid_counter_thorn_head_event },
+    { 0x30, btldefaultevt_Dummy },
+    { 0x00, NULL },
 };
 
 static EVT_BEGIN(init_event)
@@ -310,8 +437,8 @@ static EVT_BEGIN(attack_event)
     END_IF
     CALL(btlevtcmd_JumpSetting, -2, 20, FLOAT(0.0f), FLOAT(0.6f))
     CALL(btlevtcmd_GetEnemyBelong, -2, LW(0))
-    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(weapon_togekuri_attack))
-    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(weapon_togekuri_attack), LW(3), LW(4))
+    CALL(btlevtcmd_SamplingEnemy, -2, LW(0), PTR(&weapon_togekuri_attack))
+    CALL(btlevtcmd_ChoiceSamplingEnemy, PTR(&weapon_togekuri_attack), LW(3), LW(4))
     IF_INT_EQUAL(LW(3), -1)
         CALL(btlevtcmd_CheckToken, -2, 16, LW(0))
         IF_INT_NOT_EQUAL(LW(0), 0)
@@ -324,10 +451,10 @@ static EVT_BEGIN(attack_event)
     CALL(evt_btl_camera_set_homing_unit, 0, -2, LW(3))
     CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
     CALL(evt_btl_camera_set_zoom, 0, 250)
-    CALL(btlevtcmd_WeaponAftereffect, PTR(weapon_togekuri_attack))
+    CALL(btlevtcmd_WeaponAftereffect, PTR(&weapon_togekuri_attack))
     CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
     CALL(btlevtcmd_WaitGuardMove)
-    CALL(btlevtcmd_PayWeaponCost, -2, PTR(weapon_togekuri_attack))
+    CALL(btlevtcmd_PayWeaponCost, -2, PTR(&weapon_togekuri_attack))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 42)
     CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
     CALL(btlevtcmd_FaceDirectionAdd, LW(3), LW(0), 80)
@@ -365,7 +492,7 @@ static EVT_BEGIN(attack_event)
     ADD(LW(2), 2)
     SUBTRACT(LW(1), 4)
     CALL(btlevtcmd_JumpPosition, -2, LW(0), LW(1), LW(2), 28, -1)
-    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(weapon_togekuri_attack), 256, LW(5))
+    CALL(btlevtcmd_PreCheckDamage, -2, LW(3), LW(4), PTR(&weapon_togekuri_attack), 256, LW(5))
     SWITCH(LW(5))
         CASE_OR_EQUAL(4)
         GOTO(90)
@@ -426,8 +553,8 @@ static EVT_BEGIN(attack_event)
         WAIT_FRAMES(1)
     END_LOOP
     CALL(btlevtcmd_SetScale, -2, FLOAT(1.0f), FLOAT(1.0f), FLOAT(1.0f))
-    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(weapon_togekuri_attack))
-    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(weapon_togekuri_attack), 256, LW(5))
+    CALL(btlevtcmd_ResultACDefence, LW(3), PTR(&weapon_togekuri_attack))
+    CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_togekuri_attack), 256, LW(5))
     CALL(btlevtcmd_AnimeChangePoseType, -2, 1, 43)
     BEGIN_SIBLING_EVENT
         CALL(btlevtcmd_GetRotate, -2, EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, LW(6))

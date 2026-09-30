@@ -64,7 +64,7 @@ extern ItemDropData battle_item_yami_patakuri[10];
 extern ItemDropData battle_item_yami_togekuri[10];
 extern ItemDropData battle_item_yamitogedaruma[5];
 extern ItemDropData battle_item_zonbaba[1];
-extern s32 unit_badge_borodo[];
+extern BattleUnitKind unit_badge_borodo;
 extern BattleUnitKind unit_basabasa_chururu_15_data_62428;
 extern BattleUnitKind unit_basabasa_green;
 extern BattleUnitKind unit_bllizard_15_data_60E68;
@@ -89,8 +89,8 @@ extern BattleUnitKind unit_hyper_sinemon_15_data_2A3A8;
 extern BattleUnitKind unit_ice_pakkun_15_data_577D8;
 extern BattleUnitKind unit_jyugem_15_data_22B10;
 extern BattleUnitKind unit_karon_15_data_55368;
-extern s32 unit_mahorn[];
-extern s32 unit_mahorn_custom[];
+extern BattleUnitKind unit_mahorn;
+extern BattleUnitKind unit_mahorn_custom;
 extern BattleUnitKind unit_monochrome_kurokumorn_15_data_1E998;
 extern BattleUnitKind unit_monochrome_sinemon_15_data_191F8;
 extern BattleUnitKind unit_pakkun_flower_15_data_4C6D0;
@@ -112,7 +112,7 @@ extern BattleUnitKind unit_yami_kuriboo;
 extern BattleUnitKind unit_yami_noko;
 extern BattleUnitKind unit_yami_pata;
 extern BattleUnitKind unit_yami_patakuri;
-extern s32 unit_yami_togekuri[];
+extern BattleUnitKind unit_yami_togekuri;
 extern BattleUnitKind unit_yamitogedaruma;
 
 // clang-format off
@@ -509,16 +509,16 @@ BattleUnitSetup btlparty_jon_jon_11_05_off_3[4] = {
 BattleGroupSetup btlgrp_jon_jon_11_05_off_3 = { 4, btlparty_jon_jon_11_05_off_3, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_21_01_off_1[3] = {
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
 };
 
 BattleGroupSetup btlgrp_jon_jon_21_01_off_1 = { 3, btlparty_jon_jon_21_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_21_01_off_2[4] = {
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
     { &unit_bomhei_15_data_24850, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
     { &unit_borodo_15_data_211F8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
 };
@@ -526,8 +526,8 @@ BattleUnitSetup btlparty_jon_jon_21_01_off_2[4] = {
 BattleGroupSetup btlgrp_jon_jon_21_01_off_2 = { 4, btlparty_jon_jon_21_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_21_01_off_3[4] = {
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
     { &unit_teresa_15_data_25D30, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
     { &unit_teresa_15_data_25D30, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
 };
@@ -546,7 +546,7 @@ BattleGroupSetup btlgrp_jon_jon_21_02_off_1 = { 5, btlparty_jon_jon_21_02_off_1,
 
 BattleUnitSetup btlparty_jon_jon_21_02_off_2[2] = {
     { &unit_borodo_15_data_211F8, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_borodo },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
 };
 
 BattleGroupSetup btlgrp_jon_jon_21_02_off_2 = { 2, btlparty_jon_jon_21_02_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
@@ -572,7 +572,7 @@ BattleGroupSetup btlgrp_jon_jon_21_03_off_1 = { 4, btlparty_jon_jon_21_03_off_1,
 
 BattleUnitSetup btlparty_jon_jon_21_03_off_2[2] = {
     { &unit_jyugem_15_data_22B10, 1, 0x04000004, { 70.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_jyugem },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
 };
 
 BattleGroupSetup btlgrp_jon_jon_21_03_off_2 = { 2, btlparty_jon_jon_21_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
@@ -597,7 +597,7 @@ BattleGroupSetup btlgrp_jon_jon_21_04_off_1 = { 4, btlparty_jon_jon_21_04_off_1,
 
 BattleUnitSetup btlparty_jon_jon_21_04_off_2[3] = {
     { &unit_bomhei_15_data_24850, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
     { &unit_bomhei_15_data_24850, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bomhei },
 };
 
@@ -624,7 +624,7 @@ BattleGroupSetup btlgrp_jon_jon_21_05_off_1 = { 4, btlparty_jon_jon_21_05_off_1,
 BattleUnitSetup btlparty_jon_jon_21_05_off_2[3] = {
     { &unit_teresa_15_data_25D30, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
     { &unit_teresa_15_data_25D30, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_teresa },
-    { (struct BattleUnitKind*)unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
+    { &unit_yami_togekuri, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_yami_togekuri },
 };
 
 BattleGroupSetup btlgrp_jon_jon_21_05_off_2 = { 3, btlparty_jon_jon_21_05_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default2, 5 };
@@ -885,24 +885,24 @@ BattleUnitSetup btlparty_jon_jon_41_05_off_3[4] = {
 BattleGroupSetup btlgrp_jon_jon_41_05_off_3 = { 4, btlparty_jon_jon_41_05_off_3, 20, 20, 60, battle_heart_drop_param_default3, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_51_01_off_1[3] = {
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
 };
 
 BattleGroupSetup btlgrp_jon_jon_51_01_off_1 = { 3, btlparty_jon_jon_51_01_off_1, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_51_01_off_2[3] = {
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
     { &unit_bllizard_15_data_60E68, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_bllizard },
 };
 
 BattleGroupSetup btlgrp_jon_jon_51_01_off_2 = { 3, btlparty_jon_jon_51_01_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_51_01_off_3[3] = {
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
     { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
@@ -943,7 +943,7 @@ BattleGroupSetup btlgrp_jon_jon_51_03_off_1 = { 4, btlparty_jon_jon_51_03_off_1,
 
 BattleUnitSetup btlparty_jon_jon_51_03_off_2[3] = {
     { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
-    { (struct BattleUnitKind*)unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
+    { &unit_badge_borodo, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_badge_borodo },
     { (struct BattleUnitKind*)unit_purple_teresa_15_data_493B8, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_purple_teresa },
 };
 
@@ -1124,23 +1124,23 @@ BattleUnitSetup btlparty_jon_jon_61_05_off_3[2] = {
 BattleGroupSetup btlgrp_jon_jon_61_05_off_3 = { 2, btlparty_jon_jon_61_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_71_01_off_1[3] = {
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_01_off_1 = { 3, btlparty_jon_jon_71_01_off_1, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_jon_jon_71_01_off_2[3] = {
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
     { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_01_off_2 = { 3, btlparty_jon_jon_71_01_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default2, 5 };
 
 BattleUnitSetup btlparty_jon_jon_71_01_off_3[3] = {
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
     { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
     { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
 };
@@ -1166,7 +1166,7 @@ BattleGroupSetup btlgrp_jon_jon_71_02_off_2 = { 3, btlparty_jon_jon_71_02_off_2,
 BattleUnitSetup btlparty_jon_jon_71_02_off_3[3] = {
     { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
     { &unit_togenoko_ace_15_data_41A18, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_togenoko_ace },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_02_off_3 = { 3, btlparty_jon_jon_71_02_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default2, 5 };
@@ -1185,7 +1185,7 @@ BattleUnitSetup btlparty_jon_jon_71_03_off_2[4] = {
     { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 30.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
     { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
     { &unit_phantom_15_data_4AC38, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_phantom },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_03_off_2 = { 4, btlparty_jon_jon_71_03_off_2, 20, 20, 60, battle_heart_drop_param_default, battle_flower_drop_param_default3, 5 };
@@ -1211,8 +1211,8 @@ BattleGroupSetup btlgrp_jon_jon_71_04_off_1 = { 4, btlparty_jon_jon_71_04_off_1,
 BattleUnitSetup btlparty_jon_jon_71_04_off_2[4] = {
     { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
     { &unit_basabasa_chururu_15_data_62428, 1, 0x04000004, { 70.0f, 130.0f, 0.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_chururu },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_04_off_2 = { 4, btlparty_jon_jon_71_04_off_2, 20, 20, 60, battle_heart_drop_param_default2, battle_flower_drop_param_default, 5 };
@@ -1246,7 +1246,7 @@ BattleGroupSetup btlgrp_jon_jon_71_05_off_2 = { 3, btlparty_jon_jon_71_05_off_2,
 BattleUnitSetup btlparty_jon_jon_71_05_off_3[3] = {
     { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
     { &unit_wanwan_15_data_3F3F0, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_wanwan },
-    { (struct BattleUnitKind*)unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
+    { &unit_mahorn, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn },
 };
 
 BattleGroupSetup btlgrp_jon_jon_71_05_off_3 = { 3, btlparty_jon_jon_71_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
@@ -1380,17 +1380,17 @@ BattleUnitSetup btlparty_jon_jon_81_05_off_3[5] = {
 BattleGroupSetup btlgrp_jon_jon_81_05_off_3 = { 5, btlparty_jon_jon_81_05_off_3, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default, 5 };
 
 BattleUnitSetup btlparty_jon_jon_91_01_off_1[5] = {
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 10.0f, 0.0f, -20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 170.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
 };
 
 BattleGroupSetup btlgrp_jon_jon_91_01_off_1 = { 5, btlparty_jon_jon_91_01_off_1, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_jon_jon_91_01_off_2[3] = {
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
     { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 90.0f, 40.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
     { &unit_dokugassun_15_data_5CC90, 1, 0x04000004, { 130.0f, 40.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_dokugassun },
 };
@@ -1398,8 +1398,8 @@ BattleUnitSetup btlparty_jon_jon_91_01_off_2[3] = {
 BattleGroupSetup btlgrp_jon_jon_91_01_off_2 = { 3, btlparty_jon_jon_91_01_off_2, 20, 20, 60, battle_heart_drop_param_default4, battle_flower_drop_param_default4, 5 };
 
 BattleUnitSetup btlparty_jon_jon_91_01_off_3[3] = {
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
     { &unit_basabasa_green, 1, 0x04000004, { 130.0f, 130.0f, 10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
 };
 
@@ -1444,7 +1444,7 @@ BattleGroupSetup btlgrp_jon_jon_91_03_off_1 = { 4, btlparty_jon_jon_91_03_off_1,
 BattleUnitSetup btlparty_jon_jon_91_03_off_2[3] = {
     { &unit_giant_bomb, 1, 0x04000004, { 50.0f, 0.0f, -10.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
     { &unit_giant_bomb, 1, 0x04000004, { 90.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_giant_bomb },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 130.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
 };
 
 BattleGroupSetup btlgrp_jon_jon_91_03_off_2 = { 3, btlparty_jon_jon_91_03_off_2, 20, 20, 60, battle_heart_drop_param_default5, battle_flower_drop_param_default, 5 };
@@ -1478,7 +1478,7 @@ BattleGroupSetup btlgrp_jon_jon_91_04_off_2 = { 3, btlparty_jon_jon_91_04_off_2,
 
 BattleUnitSetup btlparty_jon_jon_91_04_off_3[4] = {
     { &unit_basabasa_green, 1, 0x04000004, { 30.0f, 130.0f, -10.0f }, 0, { 1, 0, 0, 0 }, battle_item_basabasa_green },
-    { (struct BattleUnitKind*)unit_mahorn_custom, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
+    { &unit_mahorn_custom, 1, 0x04000004, { 70.0f, 0.0f, 0.0f }, 0, { 0, 0, 0, 0 }, battle_item_mahorn_custom },
     { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 110.0f, 0.0f, 10.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
     { &unit_twinkling_pansy_15_data_40EC8, 1, 0x04000004, { 150.0f, 0.0f, 20.0f }, 0, { 0, 0, 0, 0 }, battle_item_twinkling_pansy },
 };
