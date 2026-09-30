@@ -16,7 +16,6 @@
 
 
 EVT_DEF(twoddisp_main_event);
-USER_FUNC(twoddisp_main);
 
 // FontDrawScale is defined in manager/fontmgr.c but not yet in fontmgr.h.
 
