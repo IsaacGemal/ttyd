@@ -108,20 +108,20 @@ void countDownMain(void) {
 	}
 }
 
-// NONMATCHING (94.13%): the two-digit tables and matrix order match; the register assignment of sec/ms and the two
+// NONMATCHING (94.42%): the two-digit tables and matrix order match; the register assignment of sec/ms and the two
 // white GXColor locals (stack slots 0x1c/0x20) differ, and the pool constants are anonymous.
 void countDownDisp(CameraId camId, void* param) {
-	CountdownWork* work = wp;
-	GXColor col0 = *(GXColor*)&dat_80420498;
 	GXColor colColon = *(GXColor*)&dat_80420498;
+	s32 sec;
+	s32 ms;
+	s32 i;
+	s32 digits[3];
+	Mtx mtx;
+	CountdownWork* work = wp;
+	Mtx scale;
+	GXColor col0 = *(GXColor*)&dat_80420498;
 	GXColor colDigit = *(GXColor*)&dat_80420498;
 	Mtx base;
-	Mtx scale;
-	Mtx mtx;
-	s32 digits[3];
-	s32 ms;
-	s32 sec;
-	s32 i;
 
 	ms = (s32)(work->limit - OSTicksToMilliseconds(work->elapsed));
 	if (work->flags & 4) {
