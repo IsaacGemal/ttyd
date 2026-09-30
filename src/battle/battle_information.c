@@ -60,8 +60,6 @@ HogTable N_item_hog_table = {
 
 // NONMATCHING (98.05%): the original hoists each drop-count load (lwz r26, 0x8(rp)) above the chance
 // comparison; MWCC 2.6 leaves it after the branch. No source form or pragma tried moves it.
-// This function only matches with size optimization: -O4,p unrolls its loops. The file is likely -O4,s.
-#pragma optimize_for_size on
 void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 	NpcBattleInfo* setup = info->setup;
 	BattleGroupSetup* group = setup->groupSetup;
@@ -214,4 +212,3 @@ void BattleInformationSetDropMaterial(FieldBattleInfo* info) {
 		}
 	}
 }
-#pragma optimize_for_size off

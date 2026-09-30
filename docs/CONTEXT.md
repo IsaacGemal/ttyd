@@ -2110,3 +2110,23 @@ sources) writes the same function in asm; hand-scheduled code with no compiler p
 proof. Game code (src/, rels/) was compiled C: asm there is always a paste. Reviews of any PR that needs
 `--allow-asm` should name, for each asm function, the source that shows it's asm in the original.
 (Also on this date: linked data passed 50%, 50.77% at 0e624af.)
+
+## Grind 11-12: -O4,s battle files, four more links, hw_dspctrl (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **The six optimize_for_size files** (battle_information, battle_message, battle_pad, battle_unit_event, battle_seq,
+  battle_damage) are built with per-Object `extra_cflags=["-O4,s"]`, like battle_detect and its neighbours; the
+  pragmas are gone. Every function scores the same or better (battle_pad 32 -> 73%, battle_unit_event 91 -> 99.75%).
+- **Linked:** eff_confetti, evt_env (autolink), seq_gameover (the evt data appended with dol_gen; `sys_00` and the
+  empty string must be defined/used where the original pools them: `""` is a sdata2 literal, not an object),
+  unit_object_switch (data appended with dol_gen; `_data` sits between damage_event and defence).
+- **hw_dspctrl `salBuildCommandList` 99.5%** (was 83.1): the retail mixer control is per-channel (0x1/0x2/0x4 L/R/S,
+  0x8 delta; 0x10/0x20/0x80 AuxA with 0x40/0x100 delta; 0x200/0x400/0x1000 AuxB with 0x800/0x2000 delta; 0x4000 for
+  the non-STD studio), the low-pass block is updated on changed bits 0x400/0x800, cycles use `dspMixerCyclesMain`
+  indexed three ways (+0x229 when the low-pass is on), and a compressor command (0x12 with `compressorTable`, 6720 B
+  of `.data`) follows the master-studio loop. What is left is register colouring: `endAddr` is r7 in the original
+  (r5 here) in every loop case, and the compType 6 loop-buffer end address associates `(len + base) - 1` differently.
+  A declaration-position search for `endAddr` changed nothing.
+- **Not fixed (wave 21 near-misses):** BattleInformationSetDropMaterial (the `i = field_0x8` load is scheduled into the
+  compare block in the original; hoisting it in the source did not do it), cylinderShadowDraw (GXColor temporaries
+  swap slots and the display-list calls end in a different branch shape), _lvup_spot_move (intplGetValue argument
+  scheduling, as before).

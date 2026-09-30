@@ -27,7 +27,6 @@ BOOL BattleCheckEndUnitInitEvent(BattleWork* wp) {
 
 // dont_inline keeps BattleRunHitEventDirect a real `bl` from BattleRunHitEvent as in retail.
 #pragma dont_inline on
-// NONMATCHING (77.84%): 1 instruction differs, 2 missing, 8 extra, plus register differences.
 s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
     EventEntry* evt;
     s32 id, newId;
@@ -68,8 +67,6 @@ s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
 }
 #pragma dont_inline reset
 
-// optimize_for_size: the original prologue/epilogue uses stmw/lmw (retail builds this file at -O4,s).
-#pragma optimize_for_size on
 s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     void* code;
     s32 id;
@@ -89,9 +86,8 @@ s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     }
     return id;
 }
-#pragma optimize_for_size off
 
-// NONMATCHING (81.22%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
+// NONMATCHING (99.72%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
     EventEntry* evt = NULL;
     s32 id = 0;
