@@ -1585,7 +1585,7 @@ config.libs = [
             Object(Matching, "eki.c"),
             Object(NonMatching, "eki_00.c"),
             Object(Matching, "eki_06.c"),
-            Object(NonMatching, "event/evt_lect_eki.c"),
+            Object(Matching, "event/evt_lect_eki.c"),
             Object(Matching, "data/battle/battle_database_eki.c"),
         ],
     ),
