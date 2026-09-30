@@ -135,8 +135,11 @@ size_t aramGetStreamBufferAddress(u8 id, size_t* len);
 void aramUploadData(void* mram, u32 aram, u32 len, u32 highPrio, void (*callback)(size_t),
                     u32 user);
 void aramFreeStreamBuffer(u8 id);
-void* aramStoreData(void* src, u32 len);
-void aramRemoveData(void* aram, u32 len);
+void* aramStoreData(void* src, u32 len, ARAMInfo* aramInfo);
+void aramRemoveData(void* aram, u32 len, ARAMInfo* aramInfo);
+u32 aramGetUserBytes(u32 total);
+u32 aramGetFirstUserAddress(void);
+ARAMInfo* dataARAMDefaultGetInfo(void);
 u8 aramAllocateStreamBuffer(u32 len);
 unsigned long aramGetZeroBuffer();
 void aramSetUploadCallback(ARAMUploadCallback callback, u32 chunckSize);
