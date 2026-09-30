@@ -2016,8 +2016,14 @@ static EVT_BEGIN(epilogue_evt)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.94%): only the scratch register chosen for `pos.x + 85.0f` differs
-// (original f0=85/f1=pos.x; recompiled f1=85/f0=pos.x, same fadds).
+#ifdef MUST_MATCH
+// Match-only: calling the sum through this inline makes MWCC keep 85.0f in f0 and pos.x in f1
+// (the plain `85.0f + pos.x` picks f1 for the constant). See #else for the natural form.
+static inline f32 fune_eff_add_x(f32 a, f32 b) {
+    return a + b;
+}
+#endif
+
 USER_FUNC(fune_eff) {
     Vec pos;
     EffectEntry* eff1;
@@ -2048,7 +2054,11 @@ USER_FUNC(fune_eff) {
         dist = 2.0f;
     }
     ((EffFunemizuData*)eff1->userdata)->field_0x44 = 3.0f;
+#ifdef MUST_MATCH
+    ((EffFunemizuData*)eff1->userdata)->x = fune_eff_add_x(pos.x, 85.0f);
+#else
     ((EffFunemizuData*)eff1->userdata)->x = 85.0f + pos.x;
+#endif
     ((EffFunemizuData*)eff1->userdata)->y = pos.y - 51.0f;
     ((EffFunemizuData*)eff1->userdata)->z = 30.0f + pos.z;
     ((EffFunemizuData*)eff1->userdata)->field_0x10 = dist;

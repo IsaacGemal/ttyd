@@ -1427,13 +1427,13 @@ config.libs = [
             Object(Matching, "mri_08.c"),
             Object(Matching, "mri_13.c"),
             Object(Matching, "mri_16.c"),
-            Object(NonMatching, "mri.c"),
+            Object(Matching, "mri.c"),
             Object(Matching, "mri_00.c"),
             Object(Matching, "mri_01.c"),
             Object(Matching, "mri_02.c"),
             Object(Matching, "mri_03.c"),
             Object(Matching, "mri_05.c"),
-            Object(NonMatching, "driver/punidrv.c"),
+            Object(Matching, "driver/punidrv.c"),
             Object(Matching, "unit/unit_boss_magnum_battender.c"),
             Object(NonMatching, "event/evt_lect_mri.c"),
             Object(Matching, "data/battle/battle_database_mri.c"),
@@ -1500,8 +1500,9 @@ config.libs = [
             Object(Matching, "gor_irai.c"),
             Object(NonMatching, "gor_10.c"),
             Object(NonMatching, "unit/unit_lecture_frankli_sac.c"),
-            Object(NonMatching, "event/evt_lect_gor.c"),
+            Object(Matching, "event/evt_lect_gor.c"),
             Object(Matching, "data/battle/battle_database_gor.c"),
+            Object(NonMatching, "event/evt_yuuranking.c", modules=["gor"]),
         ],
     ),
     Rel(
@@ -1533,6 +1534,7 @@ config.libs = [
             Object(Matching, "aji.c"),
             Object(NonMatching, "unit/unit_boss_magnum_battender_mkII.c"),
             Object(NonMatching, "unit/unit_barriern_custom.c"),
+            Object(NonMatching, "event/evt_shuryolight.c", modules=["aji"]),
         ],
     ),
     Rel(
@@ -1607,7 +1609,7 @@ config.libs = [
             Object(NonMatching, "gon_03.c"),
             Object(Matching, "gon_11.c"),
             Object(Matching, "unit/unit_boss_gonbaba.c"),
-            Object(NonMatching, "event/evt_lect_gon.c"),
+            Object(Matching, "event/evt_lect_gon.c"),
             Object(Matching, "data/battle/battle_database_gon.c"),
         ],
     ),
@@ -1629,6 +1631,7 @@ config.libs = [
             Object(Matching, "gra_00.c"),
             Object(Matching, "gra.c"),
             Object(Matching, "data/battle/battle_database_gra.c"),
+            Object(NonMatching, "event/evt_kagemario.c", modules=["gra"]),
         ],
     ),
     Rel(
@@ -1693,6 +1696,7 @@ config.libs = [
             Object(Matching, "unit/unit_faker_mario.c"),
             Object(Matching, "unit/unit_atmic_teresa.c"),
             Object(Matching, "data/battle/battle_database_jin.c"),
+            Object(NonMatching, "event/evt_kagemario.c", modules=["jin"]),
         ],
     ),
     Rel(
@@ -1784,6 +1788,7 @@ config.libs = [
             Object(NonMatching, "unit/unit_boss_black_peach.c"),
             Object(NonMatching, "unit/unit_boss_batten_leader.c"),
             Object(NonMatching, "unit/unit_boss_batten_satellite.c"),
+            Object(NonMatching, "event/evt_shuryolight.c", modules=["las"]),
         ],
     ),
     Rel(
@@ -1928,7 +1933,7 @@ config.libs = [
             Object(NonMatching, "tou.c"),
             Object(Matching, "tou_01.c"),
             Object(NonMatching, "tou_02.c"),
-            Object(NonMatching, "event/evt_lect_tou.c"),
+            Object(Matching, "event/evt_lect_tou.c"),
         ],
     ),
     Rel(
@@ -1946,7 +1951,7 @@ config.libs = [
             Object(Matching, "window/win_06.c"),
             Object(NonMatching, "window/win_04.c"),
             Object(Matching, "win.c"),
-            Object(NonMatching, "event/evt_lect_win.c"),
+            Object(Matching, "event/evt_lect_win.c"),
         ],
     ),
     Rel(
@@ -2113,6 +2118,7 @@ config.libs = [
             Object(NonMatching, "event/evt_yuutitle.c"),
             Object(NonMatching, "event/evt_yuucounter.c"),
             Object(NonMatching, "event/evt_yuunpc.c"),
+            Object(NonMatching, "event/evt_yuuranking.c", modules=["yuu"]),
         ],
     ),
     Rel(
@@ -2122,6 +2128,7 @@ config.libs = [
             Object(NonMatching, "usu_00.c"),
             Object(Matching, "usu_01.c"),
             Object(NonMatching, "event/evt_lect_usu.c"),
+            Object(NonMatching, "event/evt_kagemario.c", modules=["usu"]),
         ],
     ),
     Rel(

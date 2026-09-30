@@ -756,7 +756,6 @@ NanNpcEntry* random_choice_target(s32 type) {
     return &work->entries[index];
 }
 
-// NONMATCHING (99.34%): one lwz r5,0x6c is scheduled before the two lfs of the 2nd intplGetValue.
 void tobikakari_seq00(NanNpcEntry* entry) {
     void* dat = *(void**)((u8*)entry + 0xA0);
     s32 elapsed;
@@ -811,9 +810,23 @@ void tobikakari_seq00(NanNpcEntry* entry) {
     case 20:
         elapsed = ((s32)gp->renderTime - (s32)entry->field_0x50) / (OS_TIMER_CLOCK / 1000);
         if (elapsed < entry->field_0x6C) {
+            f32 sz, ez;
+            s32 steps;
             f32 t = (f32)elapsed / (f32)entry->field_0x6C;
             entry->position.x = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.x, entry->homePosition.x);
-            entry->position.z = intplGetValue(0, elapsed, entry->field_0x6C, entry->hoseiPosition.z, entry->homePosition.z);
+#ifdef MUST_MATCH
+            // MUST_MATCH: reading the second call's arguments into locals through volatile pointers stops the
+            // compiler hoisting the step-count lwz ahead of the two lfs, matching the original's schedule. The
+            // plain form (below) scores 99.34%.
+            sz = *(volatile f32*)&entry->hoseiPosition.z;
+            ez = *(volatile f32*)&entry->homePosition.z;
+            steps = *(volatile s32*)&entry->field_0x6C;
+#else
+            sz = entry->hoseiPosition.z;
+            ez = entry->homePosition.z;
+            steps = entry->field_0x6C;
+#endif
+            entry->position.z = intplGetValue(0, elapsed, steps, sz, ez);
             entry->position.y = t * (*(f32*)((u8*)entry + 0x78) * t + *(f32*)((u8*)entry + 0x7C)) + entry->hoseiPosition.y;
         } else {
             entry->position = entry->homePosition;

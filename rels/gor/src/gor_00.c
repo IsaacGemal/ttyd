@@ -5088,8 +5088,6 @@ USER_FUNC(gundan1000tai_totsuend) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.76%): `(randval + dist * half) * half` keeps half in f1 and the int->float
-// conversion in f0; the original has half in f0 and the conversion in f1
 void gundan1000tai_seq00(NanNpcEntry* entry) {
     marioGetPtr();
     switch (entry->field_0x68) {
@@ -5113,9 +5111,9 @@ void gundan1000tai_seq00(NanNpcEntry* entry) {
     case 2: {
         f32 dist = distABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
         f32 angle = angleABf(entry->position.x, entry->position.z, entry->hoseiPosition.x, entry->hoseiPosition.z);
-        f32 randval = (f32)(irand(0xB4) + 0xB4);
         f32 half = 0.5f;
-        f32 duration = sysFrame2SecFloat((randval + dist * half) * half);
+        f32 scaled = (f32)(irand(0xB4) + 0xB4) + dist * half;
+        f32 duration = sysFrame2SecFloat(scaled * half);
 
         entry->field_0x78 = duration;
         entry->field_0x7C = angle;

@@ -1720,8 +1720,6 @@ static void ext_shadow_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (95.8%): the `(f32)entry->field_0x18` double-to-float conversion feeding field_0x14 gets a different
-// temporary FP register (f3/f4/f5) and GPR constant order; all instructions are present otherwise.
 static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
                         f32 p5) {
     if (flag) {
@@ -1740,7 +1738,7 @@ static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 fla
         }
     }
     {
-        Vec pos = {0.0f, 0.0f, 0.0f};
+        Vec pos = vec3_rsh_00013d28;
 
         pos.x = x;
         pos.y = y;
@@ -1753,9 +1751,11 @@ static void moamoa_jump(ExtPose* pose, MoamoaEntry* entry, s32 field0x2, s32 fla
         f32 dy = entry->field_0x8.y - (*pose->matrix)[1][3];
         f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
         f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        s32 frames;
 
-        entry->field_0x18 = (s16)(d / entry->field_0x1C);
-        entry->field_0x14 = entry->field_0x20 * entry->field_0x18 * 0.5f + dy / entry->field_0x18;
+        frames = (s32)(d / entry->field_0x1C);
+        entry->field_0x18 = frames;
+        entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
         entry->field_0x2 = 3;
         entry->field_0x24 = field0x2;
         pose->field_0x4 = 180.0f + ang;

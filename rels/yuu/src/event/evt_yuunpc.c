@@ -1211,14 +1211,21 @@ void yuunpc_pose_minigame1_main(void) {
     }
 }
 
-// NONMATCHING (99.91%): logic and register allocation match; the only diff is the two
-// instructions forming `450.0f - pose->field_0x4` (f1/f2 swapped) plus sdata2 labels.
+// The `450.0f - pose->field_0x4` register allocation is only reproduced by loading the field
+// into angle first and subtracting it from the constant (MWCC puts the field in f2 and the
+// constant in f1, as the original does); the natural one-expression form lands in the other
+// registers. Everything else (logic, switch, calls) matches the original directly.
 f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
     f32 f31;
     YuunpcPoseEntry* pe = &yuunpc_wp->poseEntries[entry->field_54];
 
     if (!(pose->flags & 2)) {
+#ifdef MUST_MATCH
+        f32 angle = pose->field_0x4;
+        angle = 450.0f - angle;
+#else
         f32 angle = 450.0f - pose->field_0x4;
+#endif
         if (angle >= 360.0f) {
             angle -= 360.0f;
         }

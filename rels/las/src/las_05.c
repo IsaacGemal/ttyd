@@ -728,7 +728,6 @@ void calc_area(s32 index, f32 x, f32 z) {
     entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
 }
 
-// NONMATCHING (99.15%): 2 of 130 instructions differ: 1 missing, 1 with a different opcode
 s32 party_hit_check(f32 x, f32 z, f32* out) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     s32 result = 0;
@@ -747,10 +746,13 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
         {
             s32 status = nokonokoGetStatus(party);
 
-            if (status < 6) {
-                if (status >= 2) {
-                    isNokonoko = 1;
-                }
+            switch (status) {
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+                isNokonoko = 1;
+                break;
             }
         }
         if (isNokonoko && dx < party->field_F4 && dz < party->field_F4) {

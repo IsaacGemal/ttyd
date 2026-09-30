@@ -3605,10 +3605,19 @@ USER_FUNC(make_monitor) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.95%): the color temp and GXSetTevColor copy land at r1+0xc/r1+0x8, the original at r1+0x8/r1+0xc
+#ifdef MUST_MATCH
+// MUST_MATCH: retail builds the GXColor in one scratch slot and copies it to the argument slot; returning it
+// from an inline reproduces that instead of writing the channels in place.
+static inline GXColor monitorColor(u8 alpha) {
+    GXColor c = *(GXColor*)&dat_tou_00009c38;
+    c.a = alpha;
+    return c;
+}
+#endif
+
 void monitor_tev(void* param) {
     TevCallbackParam* p = param;
-    u32 color;
+    GXColor color;
 
     if (((GansWork*)gans_wp[0])->field_2C != 0) {
         GXSetTexCoordGen2(1, 1, 4, 0x3c, 0, 0x7d);
@@ -3626,12 +3635,12 @@ void monitor_tev(void* param) {
         GXSetTevAlphaIn(1, 7, 7, 7, 4);
         GXSetTevSwapMode(1, 0, 0);
 #ifdef MUST_MATCH
-        color = *(volatile u32*)&dat_tou_00009c38; // plain read constant-folds to `li -0x100`; original loads it
+        color = monitorColor(((GansWork*)gans_wp[0])->field_28);
 #else
-        color = dat_tou_00009c38;
+        color = *(GXColor*)&dat_tou_00009c38;
+        color.a = ((GansWork*)gans_wp[0])->field_28;
 #endif
-        ((u8*)&color)[3] = ((GansWork*)gans_wp[0])->field_28;
-        GXSetTevColor(1, *(GXColor*)&color);
+        GXSetTevColor(1, color);
         p->field_C = 2;
         p->field_14 = 2;
         p->field_10 = 2;

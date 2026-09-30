@@ -2793,8 +2793,19 @@ USER_FUNC(check_satellite) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.88%): `wp` gets r29 (reused for `unit`) instead of the original r26.
 USER_FUNC(battleGetBattenSatelliteInitPos) {
+    s32* args;
+    BattleUnit* unit;
+    s32 id;
+    s32 n;
+    s32 m;
+    s32 i;
+    s32 j;
+    s32 indexX;
+    s32 indexY;
+    s32 indexZ;
+    const Vec* p;
+    BattleWork* wp;
     static const Vec VecData[10] = {
         { 38.0f, 45.0f, 5.0f },
         { 38.0f, 45.0f, 5.0f },
@@ -2807,33 +2818,29 @@ USER_FUNC(battleGetBattenSatelliteInitPos) {
         { 38.0f, 7.0f, 5.0f },
         { -38.0f, 7.0f, 5.0f },
     };
-    s32* args = event->args;
-    BattleUnit* unit;
-    BattleWork* wp;
-    s32 a, c;
-    s32 i, j;
-    s32 arg0, arg3, arg4, arg5;
-    const Vec* data;
+
+    args = event->args;
     wp = _battleWorkPointer;
-    arg0 = evtGetValue(event, args[0]);
-    unit = BattleGetUnitPtr(wp, BattleTransID(event, arg0));
-    a = evtGetValue(event, args[1]);
-    c = evtGetValue(event, args[2]);
-    arg3 = args[3];
-    arg4 = args[4];
-    arg5 = args[5];
-    data = VecData;
-    for (i = 0; i < a; i++) {
+    id = evtGetValue(event, args[0]);
+    id = BattleTransID(event, id);
+    unit = BattleGetUnitPtr(wp, id);
+    n = evtGetValue(event, args[1]);
+    m = evtGetValue(event, args[2]);
+    indexX = args[3];
+    indexY = args[4];
+    indexZ = args[5];
+    p = VecData;
+    for (i = 0; i < n; i++) {
         for (j = 0; j < i; j++) {
-            data++;
+            p++;
         }
     }
-    for (i = 0; i < c; i++) {
-        data++;
+    for (j = 0; j < m; j++) {
+        p++;
     }
-    evtSetValue(event, arg3, (s32)(data->x * (f32)unit->faceDirection));
-    evtSetValue(event, arg4, (s32)data->y);
-    evtSetValue(event, arg5, (s32)data->z);
+    evtSetValue(event, indexX, (s32)(p->x * unit->faceDirection));
+    evtSetValue(event, indexY, (s32)p->y);
+    evtSetValue(event, indexZ, (s32)p->z);
     return EVT_RETURN_DONE;
 }
 

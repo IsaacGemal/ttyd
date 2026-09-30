@@ -72,10 +72,9 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.42%): 100/502 instructions differ only by register, 6 scheduled earlier and 6 later; MWCC keeps
-// `work` in r31 (target r24) and `time` in r21 (target r20), shifting every case loop, and ~14k
-// declaration-order/pragma/local-merge variants never reached the target allocation (same limit as
-// evt_yuutitle_disp_func).
+// NONMATCHING (96.65%): `work` still lands in r31 (target r24); the case loop's base/digit/skip registers
+// and the GXColor copy's scheduling follow from that. Writing case 0/1 in place (`seconds %= ...`) and case
+// 2 with a separate `rem` coalesces them like the target (`time` is now r20).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;
@@ -160,11 +159,10 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
 
     switch (work->mode) {
     case 0: {
-        s32 val0 = seconds;
-        digits[0] = val0 / 100;
-        val0 %= 100;
-        digits[1] = val0 / 10;
-        digits[2] = val0 % 10;
+        digits[0] = seconds / 100;
+        seconds %= 100;
+        digits[1] = seconds / 10;
+        digits[2] = seconds % 10;
 
         skip0 = 1;
         xoff0 = 0;
@@ -183,11 +181,10 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         break;
     }
     case 1: {
-        s32 val1 = seconds;
-        digits[0] = val1 / 60;
-        val1 %= 60;
-        digits[1] = val1 / 10;
-        digits[2] = val1 % 10;
+        digits[0] = seconds / 60;
+        seconds %= 60;
+        digits[1] = seconds / 10;
+        digits[2] = seconds % 10;
 
         xoff1 = 0;
         for (i1 = 0; i1 < 3; i1++) {
@@ -207,13 +204,13 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     }
     case 2: {
         s32 val2 = time + 1;
-        val2 %= 100000;
-        digits[0] = val2 / 1000;
-        val2 %= 1000;
-        digits[1] = val2 / 100;
-        val2 %= 100;
-        digits[2] = val2 / 10;
-        digits[3] = val2 % 10;
+        s32 rem = val2 % 100000;
+        digits[0] = rem / 1000;
+        rem %= 1000;
+        digits[1] = rem / 100;
+        rem %= 100;
+        digits[2] = rem / 10;
+        digits[3] = rem % 10;
 
         skip2 = 1;
         xoff2 = 0;

@@ -1541,15 +1541,13 @@ static void pose_init(void) {
     fan_wp->groupCount++;
 }
 
-// NONMATCHING (98.84%): only general-purpose register allocation differs (the original
-// keeps fan/pose/i in r24-r26).
 static void pose_main(void) {
-    ExtPose* pose = extGetPosePtr();
     s32 i;
+    ExtPose* pose = extGetPosePtr();
     FanPose* fan = fan_wp->poses;
 
     for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
-        PoseGroup* group = (PoseGroup*)((u8*)gp + 0xC + fan->groupIndex * 0x28);
+        PoseGroup* group = &fan_wp->groups[fan->groupIndex];
         f32 ratio = (f32)OSTicksToMilliseconds((u64)gp->renderTime - (u64)fan->time);
 
         ratio = (60.0f * ratio) / 1000.0f / group->scale;

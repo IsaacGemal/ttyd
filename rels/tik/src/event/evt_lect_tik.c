@@ -214,10 +214,9 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (98.96%): the loop count lands in r6; the original uses r7 (register allocation, bytes otherwise
-// equal).
 static USER_FUNC(lecture_button_rtn) {
     s32 i;
+    LectureButton* btn;
     s32 count;
 
     if (isFirstCall) {
@@ -231,7 +230,7 @@ static USER_FUNC(lecture_button_rtn) {
     }
     count = 0;
     for (i = 0; i < 2; i++) {
-        LectureButton* btn = &lbtn[i];
+        btn = &lbtn[i];
         switch (btn->seq) {
         case 0:
             btn->iconId = 0x68;

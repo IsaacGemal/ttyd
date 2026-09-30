@@ -463,11 +463,20 @@ USER_FUNC(bts_wariai_enzan_1f) {
     return EVT_RETURN_DONE;
 }
 
-// The original materialises both constant addresses for the intplGetValue operands
-// (lis/addi then lfs 0(rX)); MWCC folds the float_1 load into lfs float_1@l(rX), so one addi
-// is missing and the int temporaries load r5/r4 instead of r4/r5.  The `t` temporary keeps
-// the original's fmadds operand order, and the second decrement goes into a fresh `f2`.
-// NONMATCHING (93.98%): the intplGetValue constant operands are folded, not materialised.
+// intplGetValue's real prototype is (s32, s32, s32, f32, f32), which is ABI-identical to this
+// reordered form (r3, f1, f2, r4, r5).  The order makes MWCC materialise both pooled constant
+// addresses and load the int temporaries right-to-left, as the retail bytes do (cf.
+// teresa_intpl in unit_atmic_teresa.c).
+#ifdef MUST_MATCH
+static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(mode, start, end, step, steps);
+}
+#else
+static inline f32 bts_intpl(s32 mode, f32 start, f32 end, s32 step, s32 steps) {
+    return intplGetValue(mode, step, steps, start, end);
+}
+#endif
+
 USER_FUNC(bts_wariai_enzan_1f_intpl) {
     s32* args = event->args;
     f32 f28 = evtGetFloat(event, args[0]) - float_1_las_000192cc;
@@ -485,9 +494,9 @@ USER_FUNC(bts_wariai_enzan_1f_intpl) {
             evtSetFloat(event, dest, f31);
             return EVT_RETURN_DONE;
         }
-        v = float_1_las_000192cc - intplGetValue((s32)f2, (s32)(f29 - f28), (s32)f29, float_1_las_000192cc, zero_las_000192d4);
+        v = float_1_las_000192cc - bts_intpl((s32)f2, float_1_las_000192cc, zero_las_000192d4, (s32)(f29 - f28), (s32)f29);
     } else {
-        v = intplGetValue((s32)f1, (s32)(f29 - f28), (s32)f29, zero_las_000192d4, float_1_las_000192cc);
+        v = bts_intpl((s32)f1, zero_las_000192d4, float_1_las_000192cc, (s32)(f29 - f28), (s32)f29);
     }
     t = float_1_las_000192cc - v;
     evtSetFloat(event, dest, t * f31 + v * f30);

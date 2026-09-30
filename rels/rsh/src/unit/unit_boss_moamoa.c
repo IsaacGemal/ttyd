@@ -1068,8 +1068,6 @@ static u32 group_tbl[22] = {
     (u32)"c_n_moa_a", (u32)"S_2",
 };
 
-// NONMATCHING (99.89%): body exact apart from one strength-reduction register choice (the group-
-// count loop keeps its counter in r30 in the original, r29 here).
 USER_FUNC(moamoa_on) {
     s32 i;
     MoamoaWorkPose* pose;
@@ -1164,7 +1162,7 @@ USER_FUNC(moamoa_on) {
     }
 
     data = (MoamoaAnimData*)ext_moamoa_data;
-    i = 0;
+    j = 0;
     strcpy(name, "");
     strcpy(animName, "");
     wp->countB = -1;
@@ -1175,19 +1173,19 @@ USER_FUNC(moamoa_on) {
         }
         if (strcmp(data->name2, animName) != 0) {
             strcpy(animName, data->name2);
-            lastAnim = i;
+            lastAnim = j;
             wp->countB++;
         }
         strcpy(wp->anims[wp->countB].field_0x0, name);
         strcpy(wp->anims[wp->countB].field_0x10, animName);
         wp->anims[wp->countB].field_0x1C = lastAnim;
-        wp->anims[wp->countB].field_0x20 = i - lastAnim + 1;
+        wp->anims[wp->countB].field_0x20 = j - lastAnim + 1;
         if (pose->type >= 2 && pose->type != 0xA) {
             wp->anims[wp->countB].field_0x18 = 12.0f;
         } else {
             wp->anims[wp->countB].field_0x18 = data->frame;
         }
-        i++;
+        j++;
         data++;
     } while (data->name1 != NULL);
     wp->countB++;

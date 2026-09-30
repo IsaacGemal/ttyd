@@ -1093,7 +1093,6 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (99.64%): 0.125f / int-to-float temp register numbering in the non-first branch
 static USER_FUNC(evt_tou_print_ranking) {
     s32 i;
     s32 c;
@@ -1129,7 +1128,13 @@ static USER_FUNC(evt_tou_print_ranking) {
         psndSFXOn((const char*)5);
     }
     dwp->field_04 = (f32)(dwp->field_08 * 0xdc);
+#ifdef MUST_MATCH
+    // MUST_MATCH: retail folds this interpolation step to `* 0.125f`; the `+=` over `/ 8.0f` form is
+    // what makes MWCC keep 0.125 in f0 and the int-to-float temp in f2 (a literal `* 0.125f` swaps them).
+    dwp->field_00 += (dwp->field_04 - dwp->field_00) / 8.0f;
+#else
     dwp->field_00 = (dwp->field_04 - dwp->field_00) * 0.125f + dwp->field_00;
+#endif
     dispEntry((CameraId)8, 300.0f, 0, disp_proc, NULL);
     return EVT_RETURN_BLOCK;
 }

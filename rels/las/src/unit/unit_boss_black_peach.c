@@ -4799,7 +4799,9 @@ void hand_draw(void) {
     extLoadTextureExit();
 }
 
-// NONMATCHING (98.97%): 43 of 166 instructions differ in operands only (registers or offsets)
+// NONMATCHING (98.98%): instruction sequence and stack slots match; only the callee-saved register
+// colouring differs (target: elem=r24, i=r25, hp=r26, gp=r22, rt=r20/r21; ours: elem=r22, i=r21,
+// hp=r20, gp=r26, rt=r24/r25).  pose_main's identical loop body gets our colouring, not the target's.
 void hand_main(void) {
     ExtPose* pose;
     HandElem* elem;

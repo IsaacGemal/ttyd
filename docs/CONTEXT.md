@@ -2800,6 +2800,30 @@ Isaac approved running [decomp-permuter](https://github.com/simonlindholm/decomp
 - **`tools/perm_run.py QUEUE`** is the supervisor: queue of `UNIT FUNC` lines, `--minutes` (default 20) per function under `timeout -k 30`, `nice -n 15`, `--jobs` x `--threads` capped at 8, one process group per run, overdue runs killed from `ps -o etimes`, everything killed on exit/interrupt, whole supervisor stops above load 20 or below 100 GB free. One log line per run in `~/permuter/runs.log` (tab separated): `time  unit  func  base_score  best_score  runtime_s  exit_reason` (`zero`, `finished`, `timeout`, `killed-overdue`, `load`, `disk`, `prepare-failed`, `permuter-error`, `interrupted`; best = lowest `output-SCORE-N` directory, `-` = none). Results stay in `inputs/UNIT__FUNC/output-*/source.c` (the preprocessed, round-tripped C): nothing is applied to the repo automatically; a win is re-expressed by hand in the natural source form, under `MUST_MATCH` with the natural form in `#else` when it is weird.
 - Example line: `2026-09-30T13:54:01	koopa_motion	kpa_jump	25	-	60	timeout`. The scorer's base score for a function that is one register swap away is 25 (five register-allocation penalties).
 
+## Wave 32: REL near-misses, second pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Wave 30's recipe on every REL file whose closest open function is written and at 85%+ (58 files, 14 one function
+from complete; scratch/wave32). Launched 12:27 once the tower's Tailscale check was approved, 24 agents at a time,
+one hour each, claimed as wave32.
+
+**Result:** 40 of 58 target functions reached 100% in the workspaces and 51 improved, none lower; after the
+collection's checks, +38 functions (7,868 -> 7,906) and six more objects linked: mri.c, punidrv, evt_lect_gon,
+evt_lect_gor, evt_lect_tou, evt_lect_win (win after its named zero/0.5/-15/1 constants became literals and
+`/ 2.0f`, as for evt_lect_muj). Left out: end_unknown and yuu_03 (added `extern const f32 float_*` stand-ins and
+lowered .rodata), gon_03 (.rodata lower for +0.8%), eki_03 (a pragma for +0.14%). The review round also reverted
+poison_pakkun (its `start - start` departed from retail's zero load), yuu_00/usu_00 (comment-only) and
+unit_barriern_z (a guarded helper for +0.03%). Pragmas kept, each reset after its function: bom_01
+`opt_common_subs` (87% -> 99.66%), kpa `opt_propagation` (to 100%).
+
+**Review** (one fresh Claude; semdiff on main and wave32, all files rebuilt without MUST_MATCH): no wrong constant,
+flag, offset, signedness or return value in any target. Fixed: rsh_00's s16 `id` under MUST_MATCH (an extsh retail
+lacks; now s32 in both paths), battender's `extern Vec vec3_aji_0001621c` (a `(Vec){0,0,0}` literal matches), the
+gor lecture prototypes moved into rels/gor/include, las_29's needless MUST_MATCH guard, agent-note comments.
+Behaviour bugs on main this wave fixed: dmo_00 `demo_book` concatenated its matrices in the wrong order; mri.c
+`hakari_color` scored 100% with alpha 0 where retail's colour is 0x00FFFFFF; tou_02 `pose_main` indexed the group
+table off `gp` instead of `fan_wp->groups`. The lecture units declare iconDispGxAlpha with a u16 icon id in their
+own headers (the documented exception) and copy icondrv.h's iconFlagOn/iconFlagOff, since they can't include it.
+
 ## mri_puni: skeleton and plan (2026-09-30, Claude Opus 5.5 "TTYD Claude #2")
 
 mri_puni (188 functions, the largest REL unit) was upstream's partial file: typed pattern tables, the four .bss

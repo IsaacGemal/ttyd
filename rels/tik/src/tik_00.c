@@ -138,12 +138,18 @@ static USER_FUNC(setmertn) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (86.91%): 9 of 24 instructions differ: 6 with different operands, 1 replaced, 1 missing, 1 extra
-static USER_FUNC(ss_check) {
-    s32* args = event->args;
-    s32 value = ssf[0];
+#ifdef MUST_MATCH
+// Match-only: reading ssf through a volatile pointer inside an inline makes MWCC emit the target's
+// int->float register allocation (value in r5, conversion double address in r6, event->args in r4).
+static inline f32 ss_check_to_f(volatile s32* p) { return (f32)*p; }
+#endif
 
-    evtSetFloat(event, args[0], (f32)value);
+static USER_FUNC(ss_check) {
+#ifdef MUST_MATCH
+    evtSetFloat(event, event->args[0], ss_check_to_f(ssf));
+#else
+    evtSetFloat(event, event->args[0], ssf[0]);
+#endif
     return EVT_RETURN_DONE;
 }
 
