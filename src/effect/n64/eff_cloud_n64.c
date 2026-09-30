@@ -191,12 +191,16 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
+#ifdef MUST_MATCH
 	Vec position2;
+#endif
 	s32 type;
 	s32 counter;
 
 	position = makeVec(data->x, data->y, data->z);
+#ifdef MUST_MATCH
 	position2 = position;
+#endif
 	type = data->type;
 
 	if (effect->flags & 4) {
@@ -261,5 +265,9 @@ void effCloudMain(EffectEntry* effect) {
 		}
 	}
 
+#ifdef MUST_MATCH
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effCloudDisp, effect);
+#else
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
+#endif
 }

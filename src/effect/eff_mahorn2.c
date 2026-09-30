@@ -113,12 +113,6 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
     return effect;
 }
 
-// NONMATCHING (99.73%): all logic matches. The remaining difference is the stack slots of the
-// three Vec temporaries: retail puts the type-3 sum Vec at 0x8, targetDisp at 0x14 and disp at
-// 0x20; this build puts targetDisp at 0x8, disp at 0x14 and the sum Vec at 0x20, because the two
-// helper returns are allocated in the inlining pass before the case-3 local. Register allocation
-// and every instruction are otherwise identical. Without the helpers the register allocation is
-// wrong (99.63%); see #else for that natural form.
 #ifdef MUST_MATCH
 static inline Vec mahorn2MakeDisp(effMahorn2Data* data) {
     Vec v = vec3_80301948[0];
@@ -137,9 +131,10 @@ static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
 }
 #endif
 
-// NONMATCHING (99.73%): the three Vec temps' stack slots are rotated vs retail (disp 0x14,
-// targetDisp 0x8, case-3 sum Vec 0x20; retail: 0x20/0x14/0x8). Registers and instructions match;
-// the helpers above reproduce retail's register allocation, the plain #else form does not.
+// NONMATCHING (99.73%): all logic matches. The three Vec temps' stack slots are rotated vs retail
+// (retail: case-3 sum Vec 0x8, targetDisp 0x14, disp 0x20; here 0x20/0x8/0x14), because the two
+// helper returns are allocated in the inlining pass before the case-3 local. Registers and instructions
+// match; the helpers above reproduce retail's register allocation, and without them it is 99.63% (see #else).
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
@@ -209,12 +204,10 @@ void effMahorn2Main(EffectEntry* effect) {
             v.y = position.y + data->position.y;
             v.z = position.z + data->position.z;
             if (PSVECDistance(&target, &v) > hitDistance) {
-                f32 t;
                 angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.0f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
-                t = 4.0f - data->scale;
-                data->scale = t * 0.125f + data->scale;
+                data->scale = (4.0f - data->scale) * 0.125f + data->scale;
             }
             else {
                 data->scale = (0.0f - data->scale) * 0.125f + data->scale;

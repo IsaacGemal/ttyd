@@ -95,8 +95,7 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
     return entry;
 }
 
-// Matched (100%): `s32 odd` declared first plus the local `counter`/`angle2` reproduce the original's
-// register allocation. The clamp reads the 0.0f literal the original pools (not the named extern).
+// `s32 odd` declared first plus the local `counter`/`angle2` reproduce the original's register allocation. The clamp reads the 0.0f literal the original pools (not the named extern).
 void effChargeMain(EffectEntry* effect) {
     s32 odd;
     ChargeEffectData* data = effect->userdata;

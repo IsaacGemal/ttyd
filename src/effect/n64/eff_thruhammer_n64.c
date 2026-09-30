@@ -162,7 +162,7 @@ static inline void thruColor3(s32 reg, u32* base, u8 r, u8 g, u8 b) {
 }
 #endif
 
-// 100%: the four GXColors are built and passed inside the void inlines above, which makes
+// The four GXColors are built and passed inside the void inlines above, which makes
 // MWCC emit retail's per-call by-value slots (inline local just below the copy it passes).
 void effThruHammerDisp(CameraId camId, void* param) {
 	CameraEntry* cam = camGetPtr(camId);

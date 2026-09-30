@@ -95,7 +95,7 @@ void mot_jumpStand(void) {
         MarioWork* mario2;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->baseSpeed = MATCH_F32(float_0_8041abb8);
+        mario->baseSpeed = 0.0f;
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -105,7 +105,7 @@ void mot_jumpStand(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        MWF32(mario, 0x2B0) = MATCH_F32(float_0_8041abb8);
+        MWF32(mario, 0x2B0) = 0.0f;
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
     }
@@ -140,7 +140,7 @@ void mot_jumpStand(void) {
             if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
-            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
+            if (MWF32(mario, 0x7C) <= 0.0f) {
                 mario->currSubMotionId = 8;
             }
             break;
@@ -156,13 +156,13 @@ void mot_jumpStand(void) {
                 MWF32(mario, 0x7C) = diff * marioJumpStandData[8] + v;
             }
 #else
-            MWF32(mario, 0x7C) = (MATCH_F32(float_neg1_8041abf8) - MWF32(mario, 0x7C))
+            MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
                                      * marioJumpStandData[8]
                                  + MWF32(mario, 0x7C);
 #endif
             mario->position.y += MWF32(mario, 0x7C);
             MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
+            if (MWF32(mario, 0x7C) <= 0.0f) {
                 mario->currSubMotionId = 10;
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(str_802C5C70);
@@ -179,7 +179,7 @@ void mot_jumpStand(void) {
             break;
         case 10:
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
+            if (MWF32(mario, 0x7C) <= 0.0f) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(str_802C5C70);
                 }
@@ -196,7 +196,7 @@ void mot_jumpStand(void) {
             break;
         case 20:
             if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = MATCH_F32(float_0_8041abb8);
+                mario->baseSpeed = 0.0f;
                 mario->currSubMotionId = 0x1E;
             }
             break;

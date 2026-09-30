@@ -2785,3 +2785,7 @@ copied back, and 21 never started. After Isaac approved the check at 12:25 the r
 workspaces and the 21 relaunched (scratch/wave31/RECOVERY.md). **32 of 48 reached 100%, 14 improved, 2 unchanged,
 0 worse**, the best of the three near-miss waves. Fixed at collection: countdown and eff_mahorn2 had turned
 literals the unit pools into externs of constants it no longer pooled.
+countdown's MUST_MATCH build still names two pooled literals (`float_0_804204a0`, `float_300_804204bc`) as
+externs; they, like main's `dat_80420498`/`dat_8042049c`, are undefined in our object and will block linking until
+defined. The wave also fixed two bugs on main: recover_heart's `PSMTXTrans` tile offset is y, not x, and
+starstone's state updates run only in states 2-5.

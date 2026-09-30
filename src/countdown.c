@@ -71,8 +71,12 @@ void countDownSetRestartTime(s32 time) {
     wp->restartTime = time;
 }
 
+#ifdef MUST_MATCH
+// Undefined stand-ins for two pooled literals (0.0f and 300.0f) in this unit's .sdata2. Unless
+// the compiler cannot see the values, it will not load both float arguments before wp->counter.
 extern const f32 float_0_804204a0;
 extern const f32 float_300_804204bc;
+#endif
 
 void countDownMain(void) {
 	if (wp->flags & 1) {
@@ -80,9 +84,8 @@ void countDownMain(void) {
 		case 0:
 			if (++wp->counter < 30) {
 #ifdef MUST_MATCH
-				// MUST_MATCH: the volatile read of the start constant is CSEd with the real
-				// argument load; it forces MWCC to load both float arguments before wp->counter,
-				// which is where the original issues that load.
+				// MUST_MATCH: the comma expression (its volatile cast has no effect on an rvalue)
+				// orders the float constant loads before wp->counter, as in the original.
 				wp->dx = intplGetValue(0xB, ((volatile f32)float_300_804204bc, wp->counter), 30, float_300_804204bc, float_0_804204a0);
 #else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 300.0f, 0.0f);
@@ -101,6 +104,7 @@ void countDownMain(void) {
 		case 2:
 			if (++wp->counter < 30) {
 #ifdef MUST_MATCH
+				// 300.0f stays a literal so it remains in this unit's .sdata2 pool.
 				wp->dx = intplGetValue(0xB, ((volatile f32)float_0_804204a0, wp->counter), 30, float_0_804204a0, 300.0f);
 #else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 0.0f, 300.0f);

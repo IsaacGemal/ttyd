@@ -340,9 +340,14 @@ void BattleBreakSlot_Init(void) {
 
     memset(slot, 0, 0x134);
     slot->state = 0;
+#ifdef MUST_MATCH
     i = 0;
     reel = BattleBreakSlotReelGetPtr(0);
     for (; i < 3; i++) {
+#else
+    reel = BattleBreakSlotReelGetPtr(0);
+    for (i = 0; i < 3; i++) {
+#endif
         reel->type = i;
         reel->state = 0;
         reel++;

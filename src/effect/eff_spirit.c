@@ -77,6 +77,7 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     return entry;
 }
 
+#ifdef MUST_MATCH
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
     Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
     v.x = x;
@@ -84,6 +85,7 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     v.z = z;
     return v;
 }
+#endif
 
 // NONMATCHING (93.91%): the zero-vector copy is built with makeVec so the scheduler keeps the userdata
 // load ahead of it; the remaining diffs are intplGetValue argument order (the original loads the float
@@ -93,7 +95,14 @@ void effSpiritMain(EffectEntry* effect) {
     Vec position;
     Vec disp;
 
+#ifdef MUST_MATCH
     disp = makeVec(data->x, data->y, data->z);
+#else
+    disp = vec3_80301320;
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+#endif
     position = disp;
 
     if (effect->flags & 4) {

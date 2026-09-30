@@ -220,6 +220,8 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
 
+// Keep this the last function in the file: MWCC reads global_optimizer when the unit is finalized, so a
+// trailing `global_optimizer reset` drops the setting for this function too (95.5%).
 #pragma global_optimizer off // needed so MWCC keeps the loop-invariant tile-offset arithmetic inside the loop and emits the two independent life/10 and life%10 divisions (without it: 96.9%)
 // NONMATCHING (99.97%): only the .data base symbol (lbl_803A4A60 vs this build's local section symbol,
 // so seven tile-array addis read +0x38 instead of +0x40), the pooled int->float magic

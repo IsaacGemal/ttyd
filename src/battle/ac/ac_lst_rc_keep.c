@@ -325,7 +325,6 @@ void battleAcDelete_LstRcKeep(BattleWork* work) {
 // zero-extended u16 (see iconDispGxAlpha's `clrlwi r5, 16`), but this header declares its iconId `s16`,
 // so a plain call emits `extsh`. The function-pointer cast (same workaround as battle_menu_disp) makes
 // the call site zero-extend instead; it still compiles to a direct `bl iconDispGx`.
-// MATCHED (100%).
 static void actionCommandDisp(f32 x, f32 y, s32 type) {
     s32 off;
     s32 i;

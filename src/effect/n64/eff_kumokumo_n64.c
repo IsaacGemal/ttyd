@@ -60,7 +60,7 @@ const char str_802FAAB8[] = "KumokumoN64";
 
 // The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
 // double_to_int_802faaa0/double_to_int_mask_802faaa8/double_360_802faab0. The relocation names differ,
-// but the instruction bytes are identical (100%).
+// but the instruction bytes are identical.
 EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7) {
 	EffectEntry* effect;
 	effKumokumoData* data;

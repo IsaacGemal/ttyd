@@ -52,14 +52,8 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 const f64 double_to_int_803006d0 = 4503601774854144.0;
 const char str_80421F48[] = "Ibuki";
 
-// Every instruction matches except the callee-saved FPR numbers of the loop-invariant constants: the
-// target colors them f27=1.0, f28=0.0, f29=int->float magic, f30=6.2832, f31=360, while this MWCC colors
-// the two introduced only in the loop f27/f28 (the argument FPRs are not reused until later) and the
-// others f29/f30/f31. The folded int->float magic is also an anonymous @N instead of
-// double_to_int_803006d0, which objdiff does not score (the unit's pool is handled separately). From
-// 99.20%: stepped both loop counters in the header (`i++, elem++`) and wrote the 2*pi multiply as
-// `6.2832 * angle` (the target's operand order). Literals/named pool entries, declaration order, local
-// constant copies, -O4,s, optimize_for_size and GC 1.3-2.7 all left the coloring unchanged.
+// Only the callee-saved FPR numbers of the loop-invariant constants differ (the target uses
+// f27-f31 in a different order), and the int->float magic is an anonymous @N, not double_to_int_803006d0.
 // NONMATCHING (99.37%): FPR coloring only.
 EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	s32 wait;
