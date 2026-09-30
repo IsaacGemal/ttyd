@@ -330,9 +330,6 @@ void BattleBreakSlot_Main(void) {
 
 }
 
-// NONMATCHING (97.70%): everything matches except the two base-address relocations: the
-// original anchors the shared .rodata base on str_802FD6C0, this build labels the block
-// ...rodata.0 (identical offsets 0x64/0x84/0xa4).
 void BattleBreakSlot_Init(void) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
@@ -343,8 +340,9 @@ void BattleBreakSlot_Init(void) {
 
     memset(slot, 0, 0x134);
     slot->state = 0;
+    i = 0;
     reel = BattleBreakSlotReelGetPtr(0);
-    for (i = 0; i < 3; i++) {
+    for (; i < 3; i++) {
         reel->type = i;
         reel->state = 0;
         reel++;

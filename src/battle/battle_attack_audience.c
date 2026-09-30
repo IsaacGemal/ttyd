@@ -71,7 +71,6 @@ s32 _get_attack_aud_no(EventEntry* event) {
     return 2;
 }
 
-// NONMATCHING (99.74%): `args` is r31 here (r29 in the original, which reuses r29 for the &z pointer afterwards).
 s32 _attack_aud(EventEntry* event) {
     f32 z;
     f32 y;
@@ -80,9 +79,10 @@ s32 _attack_aud(EventEntry* event) {
     s32 memberId = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
 #ifdef MUST_MATCH
-    // these pointers give the original's frame (0x30) and r28-r31 save set
-    f32* py = &y;
-    f32* pz = &z;
+    // The `(0, &y)` comma initializers make MWCC keep py/pz in r30/r29 and args in r29 (the
+    // original's registers and 0x30 frame); the plain `&y`/`&z` under #else puts args in r31.
+    f32* py = (0, &y);
+    f32* pz = (0, &z);
 #else
 #define py (&y)
 #define pz (&z)

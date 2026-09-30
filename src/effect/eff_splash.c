@@ -229,7 +229,9 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (97.51%): 2 instructions differ, plus register differences.
+// NONMATCHING (98.00%): target instruction sequence, but integer register allocation
+// differs (mine data=r7/i=r8/counter=r4/trans=r6,r5 vs target data=r6/i=r7/counter=r8/
+// trans=r5,r4); zero-vec reloc is @159 not vec3_802fe728.
 void effSplashMain(EffectEntry* effect) {
 	SplashData* data = effect->userdata;
 	Vec position;
@@ -245,7 +247,7 @@ void effSplashMain(EffectEntry* effect) {
 
 	{
 	s32 i;
-	s32 counter;
+	u32 counter;
 
 	switch (type) {
 	case 0:
@@ -268,7 +270,13 @@ void effSplashMain(EffectEntry* effect) {
 	}
 
 	data++;
+#ifdef MUST_MATCH
+	// Match-only order: the target's register allocation depends on the increments
+	// being scheduled data first (see NONMATCHING note).
+	for (i = 1; i < effect->count; data++, i++) {
+#else
 	for (i = 1; i < effect->count; i++, data++) {
+#endif
 		if (data->field_0x28 != 0) {
 			data->field_0x28--;
 			continue;

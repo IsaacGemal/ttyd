@@ -103,9 +103,13 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// NONMATCHING (97.35%): all logic and GX calls match. We save f21-f31/r25-r31,
-// the original f19-f31/r26-r31 (frame 0x1c0 vs 0x1e0). The .sdata2 pool and mtx offsets
-// (0xb8/0x88/0x58) match.
+// All logic and GX calls match. The original keeps the second-quad base and the 0.5 factor live
+// across the outer loop, saving f19-f31/r26-r31 (frame 0x1e0). Every source shape tried leaves
+// MWCC commoning `base*0.5` against the already-live digit-base value, so ours drops base/f26
+// from the second quad and saves f21-f31 (frame 0x1c0). The MUST_MATCH width-slot reuse below forces
+// the allocator to keep the digit-base value in one more FPR, landing f20-f31 (frame 0x1d0) but not
+// the target's f19-f31. The .sdata2 pool and mtx offsets (0xb8/0x88/0x58) match.
+// NONMATCHING (97.78%): one FPR short (f19/f26); MWCC commons base*0.5 with the digit base.
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -218,10 +222,22 @@ void effPointGetDisp(CameraId camId, void* param) {
 		}
 
 		{
+#ifdef MUST_MATCH
+			// Reuse the digit-base slot for the width product: without it MWCC commons
+			// base*0.5 with f27 and drops two FPR saves (f19/f20).  Natural form under #else.
+			f27 = f24 * (f32)strlen(buf);
+			{
+				f32 t = f22 * f26 + f27;
+				t = ox + t;
+				t = f30 + t;
+				PSMTXTrans(mtxB8, t, nx, 0.0f);
+			}
+#else
 			f32 t = f22 * f26 + f24 * (f32)strlen(buf);
 			t = ox + t;
 			t = f30 + t;
 			PSMTXTrans(mtxB8, t, nx, 0.0f);
+#endif
 		}
 		PSMTXConcat(mtx58, mtxB8, mtxB8);
 		GXLoadPosMtxImm(mtxB8, 0);

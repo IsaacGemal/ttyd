@@ -30,9 +30,6 @@
 #include "seq/seq_battle.h"
 #include "system.h"
 
-// .rodata
-const Vec vec3_802c4820 = { -200.0f, 100.0f, 100.0f };
-
 // .sbss
 s32 debug_battle_flag;
 
@@ -321,8 +318,8 @@ BOOL battle_init(void) {
     return 0;
 }
 
-// NONMATCHING (96.30%): only the Vec copy schedule in craft->position =
-// vec3_802c4820 differs: MWCC stores through r3 before the mtx setup.
+// The compound literal is deliberate: assigning the named vec3_802c4820 global makes MWCC
+// fold craft to &craft->position (addi r31, r3, 0x24); the literal keeps the base as craft.
 void battle_exit(void) {
     LightEntry* craft;
     Mtx mtx;
@@ -361,7 +358,7 @@ void battle_exit(void) {
     psndClearFlag(0x80);
 
     craft = lightGetPaperCraft();
-    craft->position = vec3_802c4820;
+    craft->position = (Vec){ -200.0f, 100.0f, 100.0f };
     PSMTXScale(mtx, 3.0f, 3.0f, 3.0f);
     PSMTXMultVec(mtx, &craft->position, &craft->position);
 

@@ -268,9 +268,10 @@ s32 battleAcResult_GaugeTiming2(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (98.86%): under this file's current -O4,p, MWCC folds the disp pointer into work
-// (`mr r31, r4`, then 0x1f34(r31)..0x1f40(r31)); the original materialises it (`addi r31, r4, 0x1f20`).
-// Building this file with -O2,p instead makes the function 100% (verified); the source below is the natural one.
+// MATCHING. At this file's -O4,p, MWCC folds the disp pointer into work (`mr r31, r4`, then
+// 0x1f34(r31)..0x1f40(r31)); the original materialises it (`addi r31, r4, 0x1f20`). Compiling just this
+// function at -O2 (optimization_level 2) reproduces the original's materialised pointer.
+#pragma optimization_level 2
 void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
 	BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
 
@@ -302,6 +303,7 @@ void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
 	}
 }
 
+#pragma optimization_level reset
 void battleAcDelete_GaugeTiming2(BattleWork* work) {
 	if ((work->actionCommands.field_0x30 & 1) == 0) {
 		work->actionCommands.mAcState = 0x3EB;

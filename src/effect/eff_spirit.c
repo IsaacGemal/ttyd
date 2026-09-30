@@ -77,17 +77,23 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     return entry;
 }
 
-// NONMATCHING (92.55%): the s32->f32 conversions use this TU's anonymous pool copy of double_to_int instead of
-// the named symbol, and several intplGetValue argument loads are scheduled before the float constant loads.
+static inline Vec makeVec(f32 x, f32 y, f32 z) {
+    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+// NONMATCHING (93.91%): the zero-vector copy is built with makeVec so the scheduler keeps the userdata
+// load ahead of it; the remaining diffs are intplGetValue argument order (the original loads the float
+// args first and data->step/colorStep last) and the anonymous @NNN double_to_int reloc name.
 void effSpiritMain(EffectEntry* effect) {
     effSpiritData* data = effect->userdata;
     Vec position;
     Vec disp;
 
-    disp = vec3_80301320;
-    disp.x = data->x;
-    disp.y = data->y;
-    disp.z = data->z;
+    disp = makeVec(data->x, data->y, data->z);
     position = disp;
 
     if (effect->flags & 4) {

@@ -146,36 +146,37 @@ void battleAcDelete_PowerGaugeLv(BattleWork* work) {
     }
 }
 
-// NONMATCHING (98.86%): only `addi r31, r4, 0x1f20` differs; mwcc folds the disp pointer into
-// the BattleWork base (`mr r31, r4` + 0x1fxx offsets) instead of materialising it.
+// The `BattleActions*` intermediate is what makes MWCC materialise `disp` in r31
+// (`addi r31, r4, 0x1f20`) instead of folding it into the BattleWork base
+// (`mr r31, r4` + 0x1fxx offsets); the state is read through `ac` and folds back to r4.
 void battleAcDisp_PowerGaugeLv(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* ag = &work->actionCommands.dispParams;
-    s32 state = work->actionCommands.mAcState;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    s32 state = ac->mAcState;
 
     switch (state) {
     case 0x63:
-        ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_804215f0, float_30_804215f4);
         // fallthrough
     case 0x64:
     case 0x3e8:
     case 0x3ea:
-        actionCommandDisp(ag->iconX, ag->iconY);
-        if (ag->counter > 0) {
-            ag->counter--;
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter > 0) {
+            disp->counter--;
         }
         break;
     case 0x3eb:
     case 0x3ec:
-        if (ag->counter >= 0x28) {
-            ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
+        if (disp->counter >= 0x28) {
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_804215f4, float_neg300_804215f0);
         }
         else {
-            ag->iconX = float_30_804215f4;
+            disp->iconX = float_30_804215f4;
         }
-        actionCommandDisp(ag->iconX, ag->iconY);
-        if (ag->counter < 0x3c) {
-            ag->counter++;
+        actionCommandDisp(disp->iconX, disp->iconY);
+        if (disp->counter < 0x3c) {
+            disp->counter++;
         }
         break;
     }

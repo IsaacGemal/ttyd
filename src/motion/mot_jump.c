@@ -88,7 +88,6 @@ f32 marioGetJumpHeight(void) {
     return MWF32(mario, 0x2B8);
 }
 
-// NONMATCHING (99.44%): 2 instructions differ, plus register differences.
 void mot_jumpStand(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -96,7 +95,7 @@ void mot_jumpStand(void) {
         MarioWork* mario2;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->baseSpeed = 0.0f;
+        mario->baseSpeed = MATCH_F32(float_0_8041abb8);
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -106,7 +105,7 @@ void mot_jumpStand(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        MWF32(mario, 0x2B0) = 0.0f;
+        MWF32(mario, 0x2B0) = MATCH_F32(float_0_8041abb8);
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
     }
@@ -141,17 +140,29 @@ void mot_jumpStand(void) {
             if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 mario->currSubMotionId = 8;
             }
             break;
         case 8:
-            MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
+#ifdef MUST_MATCH
+            // MUST_MATCH: the separate locals pin MWCC's FPR allocation; the natural form below
+            // puts the fsubs result in f1 and the data[8] load in f2, which the original swaps.
+            {
+                f32 neg = MATCH_F32(float_neg1_8041abf8);
+                f32 v = MWF32(mario, 0x7C);
+                f32 diff = neg - v;
+
+                MWF32(mario, 0x7C) = diff * marioJumpStandData[8] + v;
+            }
+#else
+            MWF32(mario, 0x7C) = (MATCH_F32(float_neg1_8041abf8) - MWF32(mario, 0x7C))
                                      * marioJumpStandData[8]
                                  + MWF32(mario, 0x7C);
+#endif
             mario->position.y += MWF32(mario, 0x7C);
             MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 mario->currSubMotionId = 10;
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(str_802C5C70);
@@ -168,7 +179,7 @@ void mot_jumpStand(void) {
             break;
         case 10:
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
                     marioChgPose(str_802C5C70);
                 }
@@ -185,7 +196,7 @@ void mot_jumpStand(void) {
             break;
         case 20:
             if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = 0.0f;
+                mario->baseSpeed = MATCH_F32(float_0_8041abb8);
                 mario->currSubMotionId = 0x1E;
             }
             break;

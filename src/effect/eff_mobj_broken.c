@@ -10,6 +10,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include "math_ext.h"
+#include "matching.h"
 
 // .sdata2 / .rodata constants (defined by the original unit's data).
 extern const Vec vec3_802fe628;
@@ -48,13 +49,6 @@ const char str_80421104[] = "Z_2";
 const char str_80421108[] = "Z_1";
 const char str_802FE658[0xC] = "EFF_sango";
 const char str_802FE664[0xC] = "MObjBroken";
-
-// The volatile read only steers MWCC's scheduling of the polynomial seeds.
-#ifdef MUST_MATCH
-#define MATCH_RELOAD(x) (*(volatile f32*)&(x))
-#else
-#define MATCH_RELOAD(x) (x)
-#endif
 
 static void rendermodeFunc(s32 wXluStage) {
 	AnimationWork* wp = animGetPtr();
@@ -205,12 +199,9 @@ void effMObjBrokenDisp2(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (93.74%): frame 0xc0 vs 0xb0 (forcing the polynomial constants into live locals
-// hoists them like retail, and the `d` interpolation temp fixes the fmuls operand order, but
-// the compiler also keeps float_0p00761/float_0p03705 live so it saves one extra FPR), the
-// `disp` zero-init still fuses to lwzu instead of retail's three lwz + three stw, and the
-// `type == 7` pose block is laid out bne-first instead of retail's beq + jump, plus some
-// register numbering (effect r27 vs r28).
+// NONMATCHING (98.27%): accumulator seeds (MATCH_F32) land in f4/f3 and MWCC computes the
+// first fmsubs into a scratch register instead of accumulating in place; the release-loop counter
+// is r26 vs r29; both `type == 7` guards are bne-first vs retail's beq + b.
 void effMObjBrokenMain(EffectEntry* effect) {
 	MobjBrokenWork* data = effect->userdata;
 	Vec position;
@@ -220,9 +211,6 @@ void effMObjBrokenMain(EffectEntry* effect) {
 	s32 done = 0;
 	s32 i;
 	f32 d;
-	f32 k16605 = float_0p16605_80421110;
-	f32 k1 = float_1_80421100;
-	f32 k4967 = float_0p4967_80421124;
 
 	disp = vec3_802fe628;
 	disp.x = data->posX;
@@ -247,6 +235,17 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			return;
 		}
 	}
+	{
+	f32 kpi, k360, k2pi, k1, k16605, k4967, kneg100;
+
+	k2pi = float_6p2832_804210f4;
+	k360 = float_360_804210f8;
+	k16605 = float_0p16605_80421110;
+	k1 = float_1_80421100;
+	kpi = float_3p1416_80421114;
+	k4967 = float_0p4967_80421124;
+	kneg100 = float_neg100_80421138;
+
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		if (type == 7) {
@@ -256,79 +255,67 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			}
 		}
 		{
-			f32 angle = float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8;
-			f32 s = MATCH_RELOAD(float_0p00761_8042110c);
-			f32 t;
-			f32 t2;
+			f32 s = MATCH_F32(float_0p00761_8042110c);
+			f32 angle = k2pi * data->field_0x1C / k360;
 
-			if (angle <= float_3p1416_80421114) {
+			if (angle <= kpi) {
 				if (angle <= float_1p5708_80421118) {
-					t = angle;
+					s = s * (angle * angle) - k16605;
+					s = s * (angle * angle) + k1;
+					s = s * angle;
 				}
 				else {
-					t = float_1p5708_80421118 - (angle - float_1p5708_80421118);
+					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
+					s = s * (angle * angle) - k16605;
+					s = s * (angle * angle) + k1;
+					s = s * angle;
 				}
-				t2 = t * t;
-				s = s * t2 - k16605;
-				s = s * t2 + k1;
-				s = s * t;
 			}
 			else {
 				if (angle < float_4p7124_8042111c) {
-					t = angle - float_3p1416_80421114;
-					t2 = t * t;
-					s = s * t2 - k16605;
-					s = s * t2 + k1;
-					s = s * t;
+					angle = angle - kpi;
+					s = s * (angle * angle) - k16605;
+					s = s * (angle * angle) + k1;
+					s = s * angle;
 					s = -s;
 				}
 				else {
-					t = angle - float_4p7124_8042111c;
-					t = float_1p5708_80421118 - t;
-					t2 = t * t;
-					s = s * t2 - k16605;
-					s = s * t2 + k1;
-					s = s * t;
+					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
+					s = s * (angle * angle) - k16605;
+					s = s * (angle * angle) + k1;
+					s = s * angle;
 					s = -s;
 				}
 			}
 			data->posX = data->field_0x20 * s + data->posX;
 		}
 		{
-			f32 angle = float_6p2832_804210f4 * data->field_0x1C / float_360_804210f8;
-			f32 c = MATCH_RELOAD(float_0p03705_80421120);
-			f32 t;
-			f32 t2;
+			f32 angle = k2pi * data->field_0x1C / k360;
+			f32 c = MATCH_F32(float_0p03705_80421120);
 
-			if (angle <= float_3p1416_80421114) {
+			if (angle <= kpi) {
 				if (angle <= float_1p5708_80421118) {
-					t2 = angle * angle;
-					c = c * t2 - k4967;
-					c = c * t2 + k1;
+					c = c * (angle * angle) - k4967;
+					c = c * (angle * angle) + k1;
 				}
 				else {
-					t = angle - float_1p5708_80421118;
-					angle = float_1p5708_80421118 - t;
-					t2 = angle * angle;
-					c = c * t2 - k4967;
-					c = c * t2 + k1;
+					angle = float_1p5708_80421118 - (angle - float_1p5708_80421118);
+					c = c * (angle * angle) - k4967;
+					c = c * (angle * angle) + k1;
 					c = -c;
 				}
 			}
 			else {
 				if (angle < float_4p7124_8042111c) {
-					angle = angle - float_3p1416_80421114;
-					t2 = angle * angle;
-					c = c * t2 - k4967;
-					c = c * t2 + k1;
+					angle = angle - kpi;
+					c = c * (angle * angle) - k4967;
+					c = c * (angle * angle) + k1;
 					c = -c;
 				}
 				else {
-					t = angle - float_4p7124_8042111c;
-					angle = float_1p5708_80421118 - t;
-					t2 = angle * angle;
-					c = c * t2 - k4967;
-					c = c * t2 + k1;
+					angle = float_1p5708_80421118 - (angle - float_4p7124_8042111c);
+					c = c * (angle * angle) - k4967;
+					c = c * (angle * angle) + k1;
 				}
 			}
 			data->posZ = data->field_0x20 * -c + data->posZ;
@@ -343,9 +330,10 @@ void effMObjBrokenMain(EffectEntry* effect) {
 			d = float_720_80421130 - data->field_0x18;
 			data->field_0x18 = d * float_0p03125_80421134 + data->field_0x18;
 		}
-		if (data->posY < float_neg100_80421138) {
+		if (data->posY < kneg100) {
 			done++;
 		}
+	}
 	}
 	if (done >= effect->count - 1) {
 		data = effect->userdata;

@@ -404,9 +404,9 @@ EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, 
 	return entry;
 }
 
-// NONMATCHING (98.08%): instruction sequence matches; the remaining diffs are FPR/GPR allocation in
-// the scale interpolation (`(1.5f - scale) * 0.25f` picks f1/f0 vs f0/f1), the `scale * 1.0Xf`
-// operand order, and which registers feed the two (f32) conversions in the intplGetValue calls.
+// NONMATCHING (98.17%): instruction sequence matches; the remaining diffs are FPR/GPR allocation in
+// the scale interpolation (`(1.5f - scale) * 0.25f` picks f1/f0 vs f0/f1) and in the two (f32)
+// conversions feeding the intplGetValue calls. `*=` fixes the `fmuls` operand order.
 void effGonbabaBreathMain(EffectEntry* effect) {
 	effGonbabaBreathData* data = effect->userdata;
 	Vec position;
@@ -464,7 +464,7 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			if (data->scale < 1.4f) {
 				data->scale = ((1.5f - data->scale) * 0.25f) + data->scale;
 			} else {
-				data->scale = data->scale * 1.05f;
+				data->scale *= 1.05f;
 			}
 			data->velX *= 0.995f;
 			data->velY *= 1.05f;
@@ -483,7 +483,7 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			if (data->scale < 1.4f) {
 				data->scale = ((1.5f - data->scale) * 0.25f) + data->scale;
 			} else {
-				data->scale = data->scale * 1.03f;
+				data->scale *= 1.03f;
 			}
 			data->velX *= 0.995f;
 			data->velY *= 1.05f;
@@ -508,7 +508,7 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			if (data->scale < 1.4f) {
 				data->scale = ((1.5f - data->scale) * 0.125f) + data->scale;
 			} else {
-				data->scale = data->scale * 1.03f;
+				data->scale *= 1.03f;
 			}
 			data->velX *= 0.9f;
 			data->velY *= 0.9f;
@@ -530,7 +530,7 @@ void effGonbabaBreathMain(EffectEntry* effect) {
 			if (data->scale < 1.4f) {
 				data->scale = ((1.5f - data->scale) * 0.125f) + data->scale;
 			} else {
-				data->scale = data->scale * 1.03f;
+				data->scale *= 1.03f;
 			}
 			data->velX *= 0.9f;
 			data->velY *= 0.9f;

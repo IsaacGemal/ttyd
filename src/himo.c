@@ -164,15 +164,17 @@ void vivihimo(Mtx mtxA, Mtx mtxB, f32 phase, f32 spread, f32 offA, f32 offB) {
     }
 }
 
-// NONMATCHING (96.40%): int->float uses an anonymous @256 pool local instead of double_to_int_802f8080
-// (project-wide MWCC folded-pool issue); `a` is in f26 but inv/t/v0 are in f29/f28/f27 instead of f25/f24/f23,
-// shifting the loop constants; points/knots/tangents are scheduled after the tan calls. See REPORT.md.
+#pragma opt_common_subs off // CSE merges the repeated pool loads and picks a different FPR/pointer assignment
+
+// NONMATCHING (99.36%): logic matches; only register allocation differs — t/inv/v0 land in f28/f29/f27
+// instead of the target's f24/f25/f23 (rotating the loop pool constants), `i`/`mtx` are swapped
+// (r23/r26), and the int->float magic uses a local @-pool symbol. See REPORT.md.
 void vivihimoDisp(CameraId cameraId, void* data) {
     HimoWork* work = data;
     CameraEntry* cam;
-    Vec* points = work->points;
-    f32* knots = work->knots;
-    f32* tangents = work->tangents;
+    s32 points = (s32)work->points;
+    s32 knots = (s32)work->knots;
+    s32 tangents = (s32)work->tangents;
     Mtx mtxPrev;
     Mtx mtxCur;
     Mtx mtx;
@@ -212,7 +214,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 
     prev = &mtxPrev;
     cur = &mtxCur;
-    spline_getvalue((f32*)&prevPos, 4, (s32)points, (s32)knots, (s32)tangents, float_0_8041decc);
+    spline_getvalue((f32*)&prevPos, 4, points, knots, tangents, float_0_8041decc);
     mtx[0][0] = float_10_8041ded0 * (float_1_8041ded4 * work->mtx0[0][0] + float_0_8041decc * work->mtx1[0][0]);
     mtx[0][1] = float_1_8041ded4 * work->mtx0[0][1] + float_0_8041decc * work->mtx1[0][1];
     mtx[0][2] = float_1_8041ded4 * work->mtx0[0][2] + float_0_8041decc * work->mtx1[0][2];
@@ -229,7 +231,7 @@ void vivihimoDisp(CameraId cameraId, void* data) {
 
     mtxp = &mtx;
     for (i = 0; i < 15; i++) {
-        spline_getvalue((f32*)&pos, 4, (s32)points, (s32)knots, (s32)tangents, t);
+        spline_getvalue((f32*)&pos, 4, points, knots, tangents, t);
         GXLoadPosMtxImm(*prev, 0);
         s = float_1_8041ded4 - t;
         (*mtxp)[0][0] = float_10_8041ded0 * (s * work->mtx0[0][0] + t * work->mtx1[0][0]);
@@ -281,3 +283,5 @@ void vivihimoDisp(CameraId cameraId, void* data) {
         t = (f32)(i + 2) / float_15_8041dee4;
     }
 }
+
+#pragma opt_common_subs reset

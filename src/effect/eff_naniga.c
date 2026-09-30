@@ -103,9 +103,13 @@ void effNanigaDisp2(CameraId camId, void* param) {
 	animPoseDrawMtx(data->poseId, mtx, 3, float_0_80421b60, float_10_80421b64);
 }
 
-// NONMATCHING (99.48%): remaining diffs are the .sdata2 pool offsets of the literal single-precision
-// constants borrowed by Disp (float_0p5/float_0/float_1/float_0p9 and the compiler's double_to_int_mask
-// conversion constant) and one commutative `fmuls` operand order. All code structure/register choice matches.
+// The target loads the four single-precision literals (0.5/0.0/1.0/0.9) from the named .sdata2 objects, which
+// are the compiler's own pooled literal entries; referencing them by name makes MWCC keep them in callee-saved
+// FPRs (f26+), so the literals stay literal here and pool to anonymous @440-@443 slots at different offsets.
+// The two compiler-generated int<->float magic doubles also sit 8 bytes later in .rodata, because the target's
+// .rodata has two unreferenced zero Vec3 objects before them (a Main/Entry inlining difference).
+// NONMATCHING (99.75%): remaining diffs are only those pool addresses (plus one commutative `fmuls` operand);
+// everything else, including the FPR assignment, matches.
 void effNanigaDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effNanigaData* data = effect->userdata;
@@ -123,8 +127,8 @@ void effNanigaDisp(CameraId camId, void* param) {
 	u32 centerY;
 	u32 size;
 	f32 extent;
-	f32 halfSize;
 	f32 pos20;
+	f32 halfSize;
 	f32 savedScale;
 	s32 i;
 

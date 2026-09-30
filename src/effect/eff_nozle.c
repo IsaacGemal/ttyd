@@ -108,14 +108,12 @@ static u8 scale_dt[] = {
 	0x6F, 0x56, 0x6B, 0x53, 0x67, 0x51, 0x65, 0x50, 0x64, 0x00, 0x00,
 };
 
-// NONMATCHING (99.37%): the entry-table fill loop's counter is allocated to r6 instead of the
-// target's r8, and the int->float pool stores are scheduled in a different order.
 EffectEntry* effNozleEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 rotX, f32 rotY) {
 	EffectEntry* effect;
 	effNozleData* data;
+	effNozleEntryData* entry;
 	s32 i;
 	s32 dir;
-	effNozleEntryData* entry;
 	s32 count;
 
 	if (type == 1) {

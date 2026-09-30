@@ -52,8 +52,15 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 const f64 double_to_int_803006d0 = 4503601774854144.0;
 const char str_80421F48[] = "Ibuki";
 
-// NONMATCHING (99.20%): only the callee-saved FPR numbers of the loop-invariant constants differ and the
-// folded int->float magic is an anonymous @N instead of double_to_int_803006d0.
+// Every instruction matches except the callee-saved FPR numbers of the loop-invariant constants: the
+// target colors them f27=1.0, f28=0.0, f29=int->float magic, f30=6.2832, f31=360, while this MWCC colors
+// the two introduced only in the loop f27/f28 (the argument FPRs are not reused until later) and the
+// others f29/f30/f31. The folded int->float magic is also an anonymous @N instead of
+// double_to_int_803006d0, which objdiff does not score (the unit's pool is handled separately). From
+// 99.20%: stepped both loop counters in the header (`i++, elem++`) and wrote the 2*pi multiply as
+// `6.2832 * angle` (the target's operand order). Literals/named pool entries, declaration order, local
+// constant copies, -O4,s, optimize_for_size and GC 1.3-2.7 all left the coloring unchanged.
+// NONMATCHING (99.37%): FPR coloring only.
 EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	s32 wait;
 	EffectEntry* entry;
@@ -90,12 +97,16 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 	i = 1;
 	wait = 10;
 	elem = &data[i];
-	for (; i < entry->count; i++) {
+	for (; i < entry->count; i++, elem++) {
 		angle = (f32)(30 - irand(40));
 		elem->positionX = float_0_80421f08;
 		elem->positionY = (f32)irand(30);
 		elem->positionZ = float_0_80421f08;
+#ifdef MUST_MATCH
+		angle = float_6p2832_80421f40 * angle / float_360_80421f44;
+#else
 		angle = angle * float_6p2832_80421f40 / float_360_80421f44;
+#endif
 		elem->velocityX = (f32)cos(angle);
 		elem->velocityY = (f32)sin(angle);
 		elem->velocityZ = float_0_80421f08;
@@ -112,7 +123,6 @@ EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
 			elem->rotVelY = (f32)(irand(10) + 10);
 		}
 		wait += 10;
-		elem++;
 	}
 	return entry;
 }

@@ -30,7 +30,7 @@ extern const f32 float_0_804225b0;
 // (offset 0, 0xC, 0x18); MWCC here emits a separate base per `{ 0 }` literal, which changes
 // every GPR in the function. Declaring them as one array reproduces the shared base.
 #ifdef MUST_MATCH
-static const Vec vec3_zero[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
+static const Vec vec3_80301948[3] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
 #endif
 
 // NONMATCHING (97.30%): 1 instruction differs, 4 missing, 1 extra, plus register differences.
@@ -113,16 +113,40 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
     return effect;
 }
 
-// NONMATCHING (99.46%): all logic matches. Remaining: (1) the first zero-Vec copy picks scratch
-// registers r4/r3/r0 and r7/r6/r5 where retail uses r3/r0/r5 and r4/r3/r0; (2) three fneg/fsubs
-// results land in f0 where retail puts them in f1. Same values and opcodes.
+// NONMATCHING (99.73%): all logic matches. The remaining difference is the stack slots of the
+// three Vec temporaries: retail puts the type-3 sum Vec at 0x8, targetDisp at 0x14 and disp at
+// 0x20; this build puts targetDisp at 0x8, disp at 0x14 and the sum Vec at 0x20, because the two
+// helper returns are allocated in the inlining pass before the case-3 local. Register allocation
+// and every instruction are otherwise identical. Without the helpers the register allocation is
+// wrong (99.63%); see #else for that natural form.
+#ifdef MUST_MATCH
+static inline Vec mahorn2MakeDisp(effMahorn2Data* data) {
+    Vec v = vec3_80301948[0];
+    v.x = data->position.x;
+    v.y = data->position.y;
+    v.z = data->position.z;
+    return v;
+}
+
+static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
+    Vec v = vec3_80301948[1];
+    v.x = data->target.x;
+    v.y = data->target.y;
+    v.z = data->target.z;
+    return v;
+}
+#endif
+
+// NONMATCHING (99.73%): the three Vec temps' stack slots are rotated vs retail (disp 0x14,
+// targetDisp 0x8, case-3 sum Vec 0x20; retail: 0x20/0x14/0x8). Registers and instructions match;
+// the helpers above reproduce retail's register allocation, the plain #else form does not.
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
     Vec target;
 #ifdef MUST_MATCH
-    Vec disp = vec3_zero[0];
-    Vec targetDisp = vec3_zero[1];
+    Vec disp;
+    Vec targetDisp;
 #else
     Vec disp = { 0 };
     Vec targetDisp = { 0 };
@@ -133,6 +157,12 @@ void effMahorn2Main(EffectEntry* effect) {
     s32 i;
 
     data = effect->userdata;
+#ifdef MUST_MATCH
+    disp = mahorn2MakeDisp(data);
+    position = disp;
+    targetDisp = mahorn2MakeTarget(data);
+    target = targetDisp;
+#else
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
@@ -141,6 +171,7 @@ void effMahorn2Main(EffectEntry* effect) {
     targetDisp.y = data->target.y;
     targetDisp.z = data->target.z;
     target = targetDisp;
+#endif
     hitDistance = data->hitDistance;
     scale = data->scale;
 
@@ -169,7 +200,7 @@ void effMahorn2Main(EffectEntry* effect) {
             break;
         case 3: {
 #ifdef MUST_MATCH
-            Vec v = vec3_zero[2];
+            Vec v = vec3_80301948[2];
 #else
             Vec v = { 0 };
 #endif
@@ -178,10 +209,12 @@ void effMahorn2Main(EffectEntry* effect) {
             v.y = position.y + data->position.y;
             v.z = position.z + data->position.z;
             if (PSVECDistance(&target, &v) > hitDistance) {
+                f32 t;
                 angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.0f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
-                data->scale = (4.0f - data->scale) * 0.125f + data->scale;
+                t = 4.0f - data->scale;
+                data->scale = t * 0.125f + data->scale;
             }
             else {
                 data->scale = (0.0f - data->scale) * 0.125f + data->scale;

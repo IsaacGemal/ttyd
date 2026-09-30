@@ -95,9 +95,10 @@ EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
     return entry;
 }
 
-// NONMATCHING (97.17%): register allocation only. The s32->f32 conversion uses a TU-local pool copy of
-// double_to_int_802f8e70, which costs one register and shifts the trig/loop register sets.
+// Matched (100%): `s32 odd` declared first plus the local `counter`/`angle2` reproduce the original's
+// register allocation. The clamp reads the 0.0f literal the original pools (not the named extern).
 void effChargeMain(EffectEntry* effect) {
+    s32 odd;
     ChargeEffectData* data = effect->userdata;
     Vec position;
     Vec disp;
@@ -108,7 +109,6 @@ void effChargeMain(EffectEntry* effect) {
     f32 a1;
     f32 a2;
     f32 radius;
-    s32 odd;
     s32 i;
 
     disp = vec3_802f8e60;
@@ -125,22 +125,27 @@ void effChargeMain(EffectEntry* effect) {
         effDelete(effect);
         return;
     }
-    if (data->counter <= 0x14) {
-        data->alpha = data->counter * 12;
-    } else {
-        data->alpha = 0xff;
-    }
-    if (data->counter & 1) {
-        data->alpha /= 2;
+    {
+        s32 counter = data->counter;
+        if (counter <= 0x14) {
+            data->alpha = counter * 12;
+        } else {
+            data->alpha = 0xff;
+        }
+        if (counter & 1) {
+            data->alpha /= 2;
+        }
     }
     odd = data->counter & 1;
     data++;
     for (i = 1; i < effect->count; i++, data++) {
+        f32 angle2;
         radius = data->radius;
+        angle2 = data->angle2;
         a1 = float_6p2832_8041e30c * data->angle1 / float_360_8041e310;
         s1 = (f32)sin(a1);
         c1 = (f32)cos(a1);
-        a2 = float_6p2832_8041e30c * data->angle2 / float_360_8041e310;
+        a2 = float_6p2832_8041e30c * angle2 / float_360_8041e310;
         s2 = (f32)sin(a2);
         c2 = (f32)cos(a2);
         data->x = radius * s1 * c2;
@@ -152,10 +157,17 @@ void effChargeMain(EffectEntry* effect) {
         }
         data->scale = float_0p2_8041e318 + data->radius / float_80_8041e31c;
         data->radius -= (f32)((i & 3) * 2 + 2);
+#ifdef MUST_MATCH
+        if (data->radius < 0.0f) {
+            data->radius = 0.0f;
+            data->scale = 0.0f;
+        }
+#else
         if (data->radius < float_0_8041e2f0) {
             data->radius = float_0_8041e2f0;
             data->scale = float_0_8041e2f0;
         }
+#endif
         data->angle1 += (f32)(odd ? 5 : 2);
         data->angle2 += (f32)(odd ? 2 : 5);
     }

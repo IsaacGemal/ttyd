@@ -169,15 +169,16 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
     work->actionCommands.mAcState = 1003;
 }
 
-// NONMATCHING (96.88%): only the disp-parameter pointer differs. The original materialises it once
-// (`addi r4, r4, 0x1f20`) and then uses `0x20(r4)`; ours keeps the BattleWork base and folds it into
-// `0x1f40(r4)`. Functionally identical.
+// Deriving both the state and disp parameters from one BattleActions* (rather than straight from
+// the BattleWork*) is what makes MWCC materialise the disp base: `addi r4, r4, 0x1f20`, then 0x20(r4).
 void battleAcDisp_ButtonDown(CameraId camId, void* param) {
-    BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    s32 state = ac->mAcState;
+    BattleACDispParams* disp = &ac->dispParams;
     f32 x;
     f32 y;
 
-    switch (((BattleWork*)param)->actionCommands.mAcState) {
+    switch (state) {
         case 0:
         case 99:
             if (disp->counter > 0) {

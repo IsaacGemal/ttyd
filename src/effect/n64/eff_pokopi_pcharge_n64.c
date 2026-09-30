@@ -75,13 +75,11 @@ u32 size128x10_tex32x32_2_vtx[56] = {
 };
 
 
-// NONMATCHING (98.91%): 1 missing, 2 extra, plus register differences.
 EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32 b) {
-	s32 n;
 	EffectEntry* effect;
-	effPokopiPchargeData* data;
-	effPokopiPchargeData* root;
 	s32 count;
+	effPokopiPchargeData* root;
+	effPokopiPchargeData* data;
 	s32 i;
 	f32 angle;
 
@@ -89,36 +87,33 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 	count = n_data[a];
 	effect->type = "PokopiPchargeN64";
 	effect->count = count;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effPokopiPchargeData) * count);
-	effect->userdata = data;
+	root = __memAlloc(HEAP_EFFECT, sizeof(effPokopiPchargeData) * count);
+	effect->userdata = root;
 	effect->callback = effPokopiPchargeMain;
 	effect->flags |= 2;
-	root = data;
 
-	data->type = a;
-	data->timer = 0;
+	root->type = a;
+	root->timer = 0;
 	if (b <= 0) {
-		data->lifetime = 1000;
+		root->lifetime = 1000;
 	} else {
-		data->lifetime = b;
+		root->lifetime = b;
 	}
-	data->a = 0;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->scale = scale;
-	data->r = 0xff;
-	data->g = 0xff;
-	data->b = 0xff;
-	data->r2 = 0xff;
-	data->g2 = 0xf5;
-	data->b2 = 0;
-	data->field_0x44 = 1.0f;
-	data->field_0x38 = (f32)vx_data[a];
+	root->a = 0;
+	data = root + 1;
+	root->x = x;
+	root->y = y;
+	root->z = z;
+	root->scale = scale;
+	root->r = 0xff;
+	root->g = 0xff;
+	root->b = 0xff;
+	root->r2 = 0xff;
+	root->g2 = 0xf5;
+	root->b2 = 0;
+	root->field_0x44 = 1.0f;
+	root->field_0x38 = (f32)vx_data[a];
 	angle = (f32)(rand() % 360);
-	n = count - 1;
-
-	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		data->type = a % 3;
 		switch (a) {
@@ -195,7 +190,7 @@ EffectEntry* effPokopiPchargeN64Entry(f32 x, f32 y, f32 z, f32 scale, s32 a, s32
 		}
 		data->y = 0.0f;
 		data->z = 0.0f;
-		data->field_0x3C = angle + (f32)((i - 1) * 360 / n);
+		data->field_0x3C = angle + (f32)((i - 1) * 360 / (count - 1));
 	}
 	return effect;
 }

@@ -2776,3 +2776,12 @@ What we learned, for the autonomous flow:
 Waiting for Isaac: #57 (churantalar split), #60 (flag sweep, Codex-reviewed), #68 (nokotarou split + typed data +
 the 32-unit scan, Codex-reviewed), the decomp-permuter clone, and the Tailscale approval. Wave 31 (48 near-misses)
 and Claude #2's wave 32 (55 REL near-misses) resume once the tower answers.
+
+## Wave 31: near-misses, run across the Tailscale block (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 dol near-miss files (units with two or three open functions), launched 03:57 from main 41767bb. The
+tower's Tailscale SSH re-check blocked new ssh connections from ~04:15: 27 agents ran but their results couldn't be
+copied back, and 21 never started. After Isaac approved the check at 12:25 the results were copied from the tower
+workspaces and the 21 relaunched (scratch/wave31/RECOVERY.md). **32 of 48 reached 100%, 14 improved, 2 unchanged,
+0 worse**, the best of the three near-miss waves. Fixed at collection: countdown and eff_mahorn2 had turned
+literals the unit pools into externs of constants it no longer pooled.

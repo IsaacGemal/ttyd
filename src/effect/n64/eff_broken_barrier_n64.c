@@ -133,9 +133,17 @@ EffectEntry* effBrokenBarrierN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f
     return entry;
 }
 
-// NONMATCHING (99.95%): every instruction matches except the by-value GXSetTevColor
-// GXColor stack slots. The original keeps the named colour at r1+0x8 and its outgoing
-// copy at r1+0xC; mwcc builds them at r1+0xC and r1+0x8 (the same quirk main_dl has below).
+// Builds the particle colour from the shared zero colour; the inline forces mwcc to
+// keep the named GXColor at r1+0x8 and its outgoing copy at r1+0xC (the original order).
+static inline GXColor effBrokenBarrierMakeColor(u8 r, u8 g, u8 b, u8 a) {
+    GXColor c = unk_804230b8;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    return c;
+}
+
 void effBrokenBarrierDisp(CameraId camId, EffectEntry* effect) {
     effBrokenBarrierData* data;
     CameraEntry* camera;
@@ -153,11 +161,16 @@ void effBrokenBarrierDisp(CameraId camId, EffectEntry* effect) {
     PSMTXTrans(mtx, data->x, data->y, data->z);
     PSMTXScale(scale, data->field_0x60, data->field_0x60, data->field_0x60);
     PSMTXConcat(mtx, scale, work);
+#ifdef MUST_MATCH
+    color = effBrokenBarrierMakeColor(data->field_0x40, data->field_0x44, data->field_0x48,
+                                      data->field_0x5C);
+#else
     color = unk_804230b8;
     color.r = data->field_0x40;
     color.g = data->field_0x44;
     color.b = data->field_0x48;
     color.a = data->field_0x5C;
+#endif
     GXSetTevColor(GX_TEVREG1, color);
     effGetTexObjN64(0x20, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);

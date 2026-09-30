@@ -42,6 +42,27 @@ f32 kpaWidthDat[4] = {20.0f, 60.0f, 84.0f, 186.0f};
 f32 baseScaleTbl[4] = {0.3f, 1.0f, 1.4f, 3.1f};
 void* fireefp;
 const Vec vec3_802fc920 = {0.0f, 0.0f, 0.0f};
+#ifdef MUST_MATCH
+// Match-only rodata: these pool entries belong to the not-yet-written kpaFireAttack; kpaPreInit
+// addresses its map-name strings as offsets from vec3_802fc920, so its .rodata must hold them.
+const double double_to_int_802fc930 = 4503601774854144.0;
+const char str_802FC938[0xC] = "KPA_A_1A";
+const char str_802FC944[0xC] = "KPA2_A_1A";
+const char str_802FC950[0xC] = "KPA_A_1B";
+const char str_802FC95C[0xC] = "KPA2_A_1B";
+const char str_802FC968[0xC] = "KPA_A_1C";
+const char str_802FC974[0xC] = "KPA2_A_1C";
+const char str_802FC980[0xC] = "KPA_A_1D";
+const char str_802FC98C[0xC] = "KPA2_A_1D";
+const char str_802FC998[0x8] = "KPA_S_1";
+const char str_802FC9A0[0xC] = "KPA2_S_1";
+const char str_802FC9AC[0x8] = "KPA_W_1";
+const char str_802FC9B4[0xC] = "KPA2_W_1";
+const char str_802FC9C0[0x8] = "KPA_R_1";
+const char str_802FC9C8[0xC] = "KPA2_R_1";
+const char str_802FC9D4[0xC] = "KPA2_Z_2";
+#endif
+
 
 void kpaPauseSE2(void) {
     psndSFXOn((const char*)(kpaPauseSeTable[irand(0x1C)] | 0x20000));
@@ -317,6 +338,43 @@ void kpaFall(void) {
             marioLandOn();
         }
     }
+}
+
+// The five map-name strings are addressed as `addi r4, r31, off` off the vec3_802fc920 rodata base.
+// MWCC pools literals in emitted (reverse-source) first-use order, so kpaPreInit sits before
+// kpa_jumpNpc here: kpaFall/kpaGetBodyStatus emit kpa_03 first, then kpa_jumpNpc's M_J_1B/M_J_1C,
+// then kpaPreInit's kpa_02/kpa_04/kpa_05/kpa_06, matching the target .rodata. The kpaFireAttack
+// pool entries above must also be present (see the #ifdef MUST_MATCH block).
+void kpaPreInit(void) {
+    MarioWork* mp = marioGetPtr();
+
+    if (KPA(mp) == NULL) {
+        KPA(mp) = __memAlloc(0, 0x154);
+    }
+    memset(KPA(mp), 0, 0x154);
+    KPA(mp)->level = 1;
+    KPA(mp)->unkD0 = 1;
+    KPA(mp)->unkE0 = 0;
+    KPA(mp)->unkD8 = 1;
+    mp = marioGetPtr();
+    KPA(mp)->sfxId = -1;
+    mp = marioGetPtr();
+    if (strcmp(gp->currentMapName, "kpa_02") == 0
+        || strcmp(gp->currentMapName, "kpa_03") == 0
+        || strcmp(gp->currentMapName, "kpa_04") == 0
+        || strcmp(gp->currentMapName, "kpa_05") == 0
+        || strcmp(gp->currentMapName, "kpa_06") == 0) {
+        MW_U32(mp, 0x14) |= 1;
+    } else {
+        MW_U32(mp, 0x14) &= ~1;
+    }
+    mp = marioGetPtr();
+    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
+        MW_U32(mp, 0x14) |= 2;
+    } else {
+        MW_U32(mp, 0x14) &= ~2;
+    }
+    fireefp = NULL;
 }
 
 void kpa_jumpNpc(void) {
@@ -634,40 +692,6 @@ void kpaMain(void) {
     }
 }
 
-// NONMATCHING (99.94%): the five map-name strings are addressed as `addi r4, r31, off` off a common
-// vec3_802fc920 base; our .rodata pool puts them at different offsets because the original pool also
-// holds the KPA_* pose strings of the not-yet-written kpaFireAttack. No source difference remains.
-void kpaPreInit(void) {
-    MarioWork* mp = marioGetPtr();
-
-    if (KPA(mp) == NULL) {
-        KPA(mp) = __memAlloc(0, 0x154);
-    }
-    memset(KPA(mp), 0, 0x154);
-    KPA(mp)->level = 1;
-    KPA(mp)->unkD0 = 1;
-    KPA(mp)->unkE0 = 0;
-    KPA(mp)->unkD8 = 1;
-    mp = marioGetPtr();
-    KPA(mp)->sfxId = -1;
-    mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, "kpa_02") == 0
-        || strcmp(gp->currentMapName, "kpa_03") == 0
-        || strcmp(gp->currentMapName, "kpa_04") == 0
-        || strcmp(gp->currentMapName, "kpa_05") == 0
-        || strcmp(gp->currentMapName, "kpa_06") == 0) {
-        MW_U32(mp, 0x14) |= 1;
-    } else {
-        MW_U32(mp, 0x14) &= ~1;
-    }
-    mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
-        MW_U32(mp, 0x14) |= 2;
-    } else {
-        MW_U32(mp, 0x14) &= ~2;
-    }
-    fireefp = NULL;
-}
 
 s32 kpaCamFollow(void) {
     MarioWork* mp = marioGetPtr();

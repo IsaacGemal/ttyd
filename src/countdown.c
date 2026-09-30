@@ -71,13 +71,22 @@ void countDownSetRestartTime(s32 time) {
     wp->restartTime = time;
 }
 
-// NONMATCHING (97.12%): four loads of the intplGetValue arguments are ordered differently (the constants first, then wp->counter).
+extern const f32 float_0_804204a0;
+extern const f32 float_300_804204bc;
+
 void countDownMain(void) {
 	if (wp->flags & 1) {
 		switch (wp->state) {
 		case 0:
 			if (++wp->counter < 30) {
+#ifdef MUST_MATCH
+				// MUST_MATCH: the volatile read of the start constant is CSEd with the real
+				// argument load; it forces MWCC to load both float arguments before wp->counter,
+				// which is where the original issues that load.
+				wp->dx = intplGetValue(0xB, ((volatile f32)float_300_804204bc, wp->counter), 30, float_300_804204bc, float_0_804204a0);
+#else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 300.0f, 0.0f);
+#endif
 			} else {
 				wp->counter = 0;
 				wp->state++;
@@ -91,7 +100,11 @@ void countDownMain(void) {
 			break;
 		case 2:
 			if (++wp->counter < 30) {
+#ifdef MUST_MATCH
+				wp->dx = intplGetValue(0xB, ((volatile f32)float_0_804204a0, wp->counter), 30, float_0_804204a0, 300.0f);
+#else
 				wp->dx = intplGetValue(0xB, wp->counter, 30, 0.0f, 300.0f);
+#endif
 			} else {
 				wp->counter = 0;
 				wp->state++;
