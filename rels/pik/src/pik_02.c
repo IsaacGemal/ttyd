@@ -280,11 +280,10 @@ USER_FUNC(hoshi_r) {
 
 // `pragma opt_propagation off` is required or MWCC rematerialises the sin/cos coefficients per branch.
 // See evt_sub_get_coin / evt_item_get_important_item for the same FPR-colouring gap.
-// NONMATCHING (76.75%): giving the sin and cos polynomials separate accumulator locals (`sinv`,
-// `cosv`) instead of reusing `f4` puts the radian in f5 like retail, but the coefficient/accumulator
-// FPRs still differ (retail keeps 0.00761->f4, 0.16605->f3, 1.0->f2, 1.5708->f1) and retail copies
-// event->userdataf back through GPRs (lwz/stw) where ours stores with stfs.
 #pragma opt_propagation off
+// NONMATCHING (87.42%): the first-call block and the sin/cos accumulators now match retail
+// (0.00761->f4, pi->f1), but the radian still lands in f0 vs f5 and 0.16605/1.0 take f5/f3 vs
+// f3/f2. The `half` slot and the stack-spilled event->userdataf stores now match.
 USER_FUNC(hoshi_jump) {
     EffectEntry* entry = (EffectEntry*)event->lwData[10];
     effStarStoneData* data = entry->userdata;
@@ -293,12 +292,31 @@ USER_FUNC(hoshi_jump) {
     f32 ny = npc->position.y + 50.0f;
     f32 nz = npc->position.z;
     f32 f0, f1, f2, f3, f4, f5;
-    f32 sinv, cosv;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the int bit-cast stores below need a named temp; the natural #else form writes
+    // event->userdataf directly and has no temp.
+    f32 t;
+#endif
     volatile f32 v1;
     volatile f32 half;
     volatile f32 v0;
 
+#ifdef MUST_MATCH
+    // MUST_MATCH: retail scales by a volatile 0.5 `half` (so the divide reads the stack slot) and
+    // stores the three floats through int bit-casts (spill + lwz/stw); natural form is under #else.
+    half = 0.5f;
+#endif
     if (isFirstCall) {
+#ifdef MUST_MATCH
+        f32 d = distABf(nx, nz, data->field_0x8, data->field_0x10) / half;
+        f4 = ny - data->field_0xC;
+        f0 = f4 / d;
+        f2 = 0.1f * d;
+        t = f2 * 0.5f + f0;
+        event->userdata[0] = *(s32*)&d;
+        event->userdata[1] = *(s32*)&t;
+        event->userdata[2] = *(s32*)&half;
+#else
         f32 d = distABf(nx, nz, data->field_0x8, data->field_0x10) / 0.5f;
         f4 = ny - data->field_0xC;
         f0 = f4 / d;
@@ -306,6 +324,7 @@ USER_FUNC(hoshi_jump) {
         event->userdataf[0] = d;
         event->userdataf[1] = f2 * 0.5f + f0;
         event->userdataf[2] = 0.5f;
+#endif
         event->field_84 = 0;
     }
 
@@ -315,96 +334,96 @@ USER_FUNC(hoshi_jump) {
 
     f2 = 6.2831855f * angleABf(data->field_0x8, data->field_0x10, nx, nz);
     f5 = f2 / 360.0f;
-    sinv = 0.00761f;
+    f1 = 0.00761f;
     f3 = 0.16605f;
     f2 = 1.0f;
-    f1 = 3.1415927f;
-    if (f5 <= f1) {
-        f1 = 1.5707964f;
-        if (f5 <= f1) {
+    f4 = 3.1415927f;
+    if (f5 <= f4) {
+        f4 = 1.5707964f;
+        if (f5 <= f4) {
             f0 = f5 * f5;
-            sinv = sinv * f0 - f3;
-            sinv = sinv * f0 + f2;
-            sinv = sinv * f5;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = f1 * f5;
         } else {
-            f0 = f5 - f1;
-            f1 = f1 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - f3;
-            sinv = sinv * f0 + f2;
-            sinv = sinv * f1;
+            f0 = f5 - f4;
+            f4 = f4 - f0;
+            f0 = f4 * f4;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = f1 * f4;
         }
     } else {
         f0 = 4.712389f;
         if (f5 < f0) {
-            f1 = f5 - f1;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - f3;
-            sinv = sinv * f0 + f2;
-            sinv = sinv * f1;
-            sinv = -sinv;
+            f4 = f5 - f4;
+            f0 = f4 * f4;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = f1 * f4;
+            f1 = -f1;
         } else {
             f0 = f5 - f0;
-            f1 = 1.5707964f;
-            f1 = f1 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - f3;
-            sinv = sinv * f0 + f2;
-            sinv = sinv * f1;
-            sinv = -sinv;
+            f4 = 1.5707964f;
+            f4 = f4 - f0;
+            f0 = f4 * f4;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = f1 * f4;
+            f1 = -f1;
         }
     }
-    data->field_0x8 = half * sinv + data->field_0x8;
+    data->field_0x8 = half * f1 + data->field_0x8;
 
-    cosv = 0.03705f;
+    f1 = 0.03705f;
     f3 = 0.4967f;
     f2 = 1.0f;
-    f1 = 3.1415927f;
-    if (f5 <= f1) {
-        f1 = 1.5707964f;
-        if (f5 <= f1) {
+    f4 = 3.1415927f;
+    if (f5 <= f4) {
+        f4 = 1.5707964f;
+        if (f5 <= f4) {
             f0 = f5 * f5;
-            cosv = cosv * f0 - f3;
-            cosv = cosv * f0 + f2;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
         } else {
-            f0 = f5 - f1;
-            f0 = f1 - f0;
+            f0 = f5 - f4;
+            f0 = f4 - f0;
             f0 = f0 * f0;
-            cosv = cosv * f0 - f3;
-            cosv = cosv * f0 + f2;
-            cosv = -cosv;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = -f1;
         }
     } else {
         f0 = 4.712389f;
         if (f5 < f0) {
-            f0 = f5 - f1;
+            f0 = f5 - f4;
             f0 = f0 * f0;
-            cosv = cosv * f0 - f3;
-            cosv = cosv * f0 + f2;
-            cosv = -cosv;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
+            f1 = -f1;
         } else {
             f0 = f5 - f0;
-            f1 = 1.5707964f;
-            f0 = f1 - f0;
+            f4 = 1.5707964f;
+            f0 = f4 - f0;
             f0 = f0 * f0;
-            cosv = cosv * f0 - f3;
-            cosv = cosv * f0 + f2;
+            f1 = f1 * f0 - f3;
+            f1 = f1 * f0 + f2;
         }
     }
-    data->field_0x10 = -((half * cosv) - data->field_0x10);
-    data->field_0xC += v1;
+    data->field_0x10 = data->field_0x10 - half * f1;
+    data->field_0xC = data->field_0xC + v1;
 
     f1 = v0 - 1.0f;
     f2 = v1 - 0.1f;
-    if (f1 >= 0.0f) {
-        event->userdataf[0] = f1;
-        event->userdataf[1] = f2;
-        return EVT_RETURN_BLOCK;
+    if (f1 < 0.0f) {
+        data->field_0x8 = nx;
+        data->field_0xC = ny;
+        data->field_0x10 = nz;
+        return EVT_RETURN_DONE;
     }
-    data->field_0x8 = nx;
-    data->field_0xC = ny;
-    data->field_0x10 = nz;
-    return EVT_RETURN_DONE;
+    event->userdataf[0] = f1;
+    event->userdataf[1] = f2;
+    return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
 

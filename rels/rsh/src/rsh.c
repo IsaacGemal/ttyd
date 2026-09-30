@@ -1166,42 +1166,53 @@ USER_FUNC(img_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (70.45%): 184 of 316 instructions differ: 105 with different operands, 5 replaced, 42 missing, 32 extra
+// Data externs for this function's literals (see report).
+// NONMATCHING (83.86%): 316 instructions; the loop/branch layout and the coordinate math match. Left: `obj`/flag temp land r6/r5 (original r5/r6), so every flag access shifts; width/height and the two `width/2` halves get r20/r19/r21/r22 (original r21/r22/r19/r20); the int->float block feeding C_MTXLightFrustum is scheduled in a different order with a different stack-slot order; and MWCC emits the int->float magic as local @NNN@ doubles, matching the original's local `.rodata` offsets but not its symbol names.
 void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
-    MapObject* obj = param->obj;
-    s32 stage = param->field_C;
-    s32 texMap = param->field_10;
-    s32 texCoord = param->field_14;
-    s32 field18 = param->field_18;
+    MapObject* obj;
+    s32 stage;
+    s32 texMap;
+    s32 texCoord;
+    s32 field18;
     u16 x0, y0, x1, y1;
     s32 width, height;
-    u16 halfW, halfH;
     void* buf;
     GXTexObj texObj;
     Mtx frustumMtx;
-    CameraEntry* cam;
-    f32 near, top, bottom, left, right;
+    f32 near;
 
-    if (*(u32*)((u8*)obj + 0x0) & 0x20) {
-        for (obj = obj->parent; obj != NULL; obj = obj->parent) {
-            if (!(*(u32*)((u8*)obj + 0x0) & 0x10)) {
+    obj = param->obj;
+    stage = param->field_C;
+    texMap = param->field_10;
+    texCoord = param->field_14;
+    field18 = param->field_18;
+
+    if (*(u32*)obj->field_0x0 & 0x20) {
+        while ((obj = obj->parent) != NULL) {
+            if ((*(u32*)obj->field_0x0 & 0x10) == 0) {
                 continue;
             }
-            if (*(u32*)((u8*)obj + 0x0) & 0x20000000) {
-                break;
+            if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+                *(u32*)obj->field_0x0 |= 0x20000000;
+                return;
             }
-            *(u32*)((u8*)obj + 0x0) |= 0x20000000;
+            x0 = *(u16*)(obj->field_0xEC + 0);
+            y0 = *(u16*)(obj->field_0xEC + 2);
+            x1 = *(u16*)(obj->field_0xEC + 4);
+            y1 = *(u16*)(obj->field_0xEC + 6);
+            break;
+        }
+    }
+    else {
+        if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+            *(u32*)obj->field_0x0 |= 0x20000000;
             return;
         }
-    } else if (!(*(u32*)((u8*)obj + 0x0) & 0x20000000)) {
-        *(u32*)((u8*)obj + 0x0) |= 0x20000000;
-        return;
+        x0 = *(u16*)(obj->field_0xEC + 0);
+        y0 = *(u16*)(obj->field_0xEC + 2);
+        x1 = *(u16*)(obj->field_0xEC + 4);
+        y1 = *(u16*)(obj->field_0xEC + 6);
     }
-
-    x0 = *(u16*)((u8*)obj + 0xEC);
-    y0 = *(u16*)((u8*)obj + 0xEE);
-    x1 = *(u16*)((u8*)obj + 0xF0);
-    y1 = *(u16*)((u8*)obj + 0xF2);
 
     if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
         return;
@@ -1210,39 +1221,39 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
         return;
     }
 
-    x0 &= ~1;
-    y0 &= ~1;
-    x1 = x1 + (x1 & 1);
-    y1 = y1 + (y1 & 1);
+    x0 -= x0 & 1;
+    y0 -= y0 & 1;
+    x1 += x1 & 1;
+    y1 += y1 & 1;
     if (x1 > gp->fbWidth) {
         x1 = gp->fbWidth;
     }
     if (y1 > gp->efbHeight) {
         y1 = gp->efbHeight;
     }
+
     width = x1 - x0;
     height = y1 - y0;
-    halfW = width / 2;
-    halfH = height / 2;
 
-    buf = *(void**)smartAlloc(GXGetTexBufferSize(halfW, halfH, GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT);
-    GXSetTexCopySrc(x0, y0, width, height);
-    GXSetTexCopyDst(halfW, halfH, GX_TF_RGB5A3, GX_TRUE);
+    buf = smartAlloc(GXGetTexBufferSize((u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_FALSE, GX_FALSE), HEAP_EFFECT)->address;
+    GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
+    GXSetTexCopyDst((u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_TRUE);
     GXCopyTex(buf, GX_FALSE);
     GXInvalidateTexAll();
     GXPixModeSync();
     GXTexModeSync();
-    GXInitTexObj(&texObj, buf, halfW, halfH, GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObj(&texObj, buf, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB5A3, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    cam = camGetPtr(4);
-    near = (gp->efbHeight * 0.5f) /
-           (f32)tan(6.2831855f * (*(f32*)((u8*)cam + 0x38) * 0.5f) / 360.0f);
-    top = (f32)(gp->efbHeight / 2 - y1);
-    bottom = (f32)(gp->efbHeight / 2 - y0);
-    left = (f32)(gp->fbWidth / 2 - x0);
-    right = (f32)(gp->fbWidth / 2 - x1);
-    C_MTXLightFrustum(frustumMtx, top, bottom, left, right, near, 0.5f, 0.5f, 0.4f, 0.6f);
+    near = (f32)gp->efbHeight * 0.5f /
+           (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY * 0.5f) / 360.0f);
+    C_MTXLightFrustum(frustumMtx,
+        (f32)(gp->efbHeight / 2 - y1),
+        (f32)(gp->efbHeight / 2 - y0),
+        (f32)(x0 - gp->fbWidth / 2),
+        (f32)(x1 - gp->fbWidth / 2),
+        near,
+        0.5f, 0.5f, 0.4f, 0.6f);
     PSMTXConcat(frustumMtx, *(Mtx*)((u8*)camGetCurPtr() + 0x11C), frustumMtx);
     PSMTXConcat(frustumMtx, *(Mtx*)param->field_4, frustumMtx);
 
@@ -1256,10 +1267,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
     GXSetTevKColorSel(stage, GX_TEV_KCSEL_3_4);
-    param->field_C = stage + 1;
-    param->field_14 = texCoord + 1;
+    param->field_C = ++stage;
+    param->field_14 = ++texCoord;
     param->field_18 = field18;
-    param->field_10 = texMap + 1;
+    param->field_10 = ++texMap;
 }
 
 USER_FUNC(evt_rsh_get_rnd_npc) {
