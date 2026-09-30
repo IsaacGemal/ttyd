@@ -11,18 +11,20 @@
 
 extern ItemData itemDataTable[];
 
-// .rodata
-const f64 double_to_int_802eddc8 = 4503601774854144.0;
-
-// .sdata2
-const f32 float_1p5_8041bf08 = 1.5f;
-const f32 float_0p1_8041bf0c = 0.1f;
-const f32 float_0p4_8041bf10 = 0.4f;
-const f32 float_0p5_8041bf14 = 0.5f;
-const f32 float_2_8041bf18 = 2.0f;
-const f32 float_1_8041bf1c = 1.0f;
-const f32 float_0p05_8041bf20 = 0.05f;
-const f32 float_5_8041bf24 = 5.0f;
+// .rodata / .sdata2: the original defines these as global symbols, but MWCC folds a global const into an
+// anonymous pool copy while also emitting the global, so the pool would land at the wrong offsets. static
+// keeps only the pooled copy, at the original's offsets, where objdiff resolves it to the original symbol by
+// offset. No other unit references these symbols (checked in the asm). The int->float magic double
+// (double_to_int_802eddc8) is compiler-synthesised, so we don't declare it either and its pool entry lands at
+// .rodata offset 0 like the original's.
+static const f32 float_1p5_8041bf08 = 1.5f;
+static const f32 float_0p1_8041bf0c = 0.1f;
+static const f32 float_0p4_8041bf10 = 0.4f;
+static const f32 float_0p5_8041bf14 = 0.5f;
+static const f32 float_2_8041bf18 = 2.0f;
+static const f32 float_1_8041bf1c = 1.0f;
+static const f32 float_0p05_8041bf20 = 0.05f;
+static const f32 float_5_8041bf24 = 5.0f;
 
 typedef struct BattleSamplingEntry {
     s16 unitId;      // 0x0
@@ -46,7 +48,7 @@ typedef struct BattleSampling {
     BattleWeapon* weapon;          // 0x0
     BattleSamplingEntry entries[74]; // 0x4
     s8 count;                      // 0xA6C
-    u8 order[0xAB7 - 0xA6D];       // 0xA6D
+    s8 order[0xAB7 - 0xA6D];       // 0xA6D  (retail: lbz + extsb, so s8)
     s8 selectIdx;                  // 0xAB7
     s32 unitId;                    // 0xAB8
     s8 belong;                     // 0xABC
@@ -56,7 +58,7 @@ typedef struct BattleSampling {
     s8 attackDirection;            // 0xAC8
 } BattleSampling;
 
-// NONMATCHING (71.30%): logic follows the asm (checked in review); register allocation is globally shifted
+// NONMATCHING (72.20%): logic follows the asm (checked in review); register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
 void _btlSamplingEnemy(u8* sampling) {
     BattleWork* wp = _battleWorkPointer;
@@ -373,10 +375,10 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-// Remaining diffs: (1) the `e = order[n]` load uses r0 instead of r15 (lbzx r0; extsb r15,r0 vs
-// lbzx r15; extsb r15,r15); (2) f-register/stack-slot choices in the default itemDataTable FP block;
-// (3) sp_restored is s8 in ItemData.h so it emits `lbz; extsb.` where retail's `lbz; cmplwi` shows u8.
-// NONMATCHING (99.44%): logic, integer register allocation and switch order match; diffs listed above.
+// Remaining diff: the default itemDataTable FP block colours its three float temps f3/f4/f2
+// (magic/float_0p1/diff) where the original uses f4/f2/f3; the instruction sequence, stack slots and
+// every other block match. The `e = order[n]` load is fixed (order is s8).
+// NONMATCHING (99.93%): only the default block's f2/f3/f4 colouring differs.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;
@@ -405,7 +407,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     weights[(s8)s->order[0]] += 10;
 
     for (n = 0; n < s->count; n++) {
-        e = (s8)s->order[n];
+        e = s->order[n];
 
         unit = BattleGetUnitPtr(wp, s->entries[e].unitId);
         weights[e] += 100;
@@ -506,11 +508,12 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                     maxFp = BtlUnit_GetMaxFp(unit);
                     if (BtlUnit_GetFp(unit) < maxFp) {
                         s32 curFp;
+                        f32 fpDiff;
                         maxFp = BtlUnit_GetMaxFp(unit);
                         curFp = BtlUnit_GetFp(unit);
-                        weights[e] = (s32)((f32)weights[e] *
-                                           (float_1_8041bf1c +
-                                            float_0p1_8041bf0c * (f32)(maxFp - curFp)));
+                        fpDiff = (f32)(maxFp - curFp);
+                        weights[e] = (s32)((float_1_8041bf1c +
+                                            float_0p1_8041bf0c * fpDiff) * (f32)weights[e]);
                     } else {
                         if (itemDataTable[s->weapon->item].hp_restored == 0 &&
                             itemDataTable[s->weapon->item].sp_restored == 0) {

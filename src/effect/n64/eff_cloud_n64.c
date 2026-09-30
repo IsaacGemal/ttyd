@@ -187,13 +187,12 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 // the .rodata pool with vec3 then the compiler-generated double_to_int (its int->float magic,
 // used by its rand conversions). Without it MWCC pools this function's sqrtf doubles before
 // Main's own int->float conversion, so the conversion loads at 0x28(r31) instead of 0x10(r31)
-// and the three sqrtf doubles shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The other remaining
-// difference is one fcmpu operand order: `dist != 0.0f` makes MWCC emit `fcmpu cr0, f0, f4`
-// where the original has `f4, f0`. Using the `0.0f` literal in both the outer check and the
-// inlined sqrtf, plus declaring the two earlier .sdata2 floats so the pooled 0.0 lands at 0x8,
-// restores the original's FPR allocation in the ring-buffer block (px/py/pz f3/f4/f5, dist
-// accumulator f1, zero f0).
-// NONMATCHING (99.94%): pool order (needs effCloudDisp) and one fcmpu operand order.
+// and the three sqrtf doubles shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The outer
+// `if (dist)` (not `dist != 0.0f`) gets MWCC to emit the original's `fcmpu cr0, f4, f0`;
+// declaring the two earlier .sdata2 floats keeps the pooled 0.0 at 0x8, and together with the
+// literal `0.0f` in the inlined sqrtf restores the original's FPR allocation in the
+// ring-buffer block (px/py/pz f3/f4/f5, dist accumulator f1, zero f0).
+// NONMATCHING (99.98%): the .rodata pool order still needs effCloudDisp (5 lfd offsets).
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
@@ -264,7 +263,7 @@ void effCloudMain(EffectEntry* effect) {
 			data->field_0x140[index] = pz;
 			data->field_0x1B8[index] = counter;
 			dist = dx * dx + dy * dy + dz * dz;
-			if (dist != 0.0f) {
+			if (dist) {
 				dist = sqrtf(dist);
 			}
 			data->field_0x2AC[index] = len + dist;

@@ -175,20 +175,22 @@ s32 battleAcResult_MonosiriTarget(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// The `disp + 0x2C` derivation below is a match-only form: MWCC otherwise folds the work-area
-// pointer into work (every mt-> access becomes 0x1f4c(work)); deriving it from disp keeps two base
-// pointers live and gets closer to the original's r31=mt / r28=disp allocation.
-// NONMATCHING (99.01%): mt is still folded into disp (+0x2c offsets); the original keeps mt in r31.
+// The `ac` + `field_0x2BC[0]` access below is a match-only form: addressing the work area through
+// the header's named field, rather than casting `work + 0x1F4C`, is what makes MWCC keep two
+// separate base pointers (r31=mt, r28=disp) the way the original does. The natural form is under
+// #else. The `unit`/`part` declaration order also matters: MWCC assigns `part` to r26 and `unit`
+// to r27 only when `unit` is declared first.
 s32 battleAcMain_MonosiriTarget(BattleWork* work) {
 #ifdef MUST_MATCH
-	BattleACDispParams* disp = &work->actionCommands.dispParams;
-	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)disp + 0x2C);
+	BattleActions* ac = &work->actionCommands;
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)&ac->field_0x2BC[0];
+	BattleACDispParams* disp = &ac->dispParams;
 #else
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 #endif
-	BattleUnitPart* part;
 	BattleUnit* unit;
+	BattleUnitPart* part;
 	s32 autoCommand = 0;
 
 	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {

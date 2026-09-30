@@ -290,7 +290,10 @@ s32 _lvup_spot_move(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] < 4) ? 0 : 2;
 }
 
-// NONMATCHING (99.76%): same instructions; only register numbers or operands differ.
+// NONMATCHING (99.76%): every instruction matches; only the .rodata pool offsets differ (ours are 0xD8+,
+// the original's 0x1F0+). The pool literals land earlier in our object because this unit's .rodata still lacks
+// the data-table strings (nozzle/SFX/help) that precede them in the original, so no edit to this function can
+// move them: it needs the rest of the unit's data. Also the three sda21 colour words are anonymous here.
 s32 _lvup_select_object_init(EventEntry* event, BOOL isFirstCall) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
     PouchData* pouch = pouchGetPtr();

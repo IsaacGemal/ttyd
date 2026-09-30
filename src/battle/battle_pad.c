@@ -167,10 +167,10 @@ s32 BattlePadCheckRecordTrigger(s32 frame, s32 mask) {
 	return BattlePadMultiCheckRecordTrigger(0, frame, mask);
 }
 
-// NONMATCHING (98.75%): same instructions; only register numbers or operands differ.
 u32 BattlePadMultiCheckRecordTrigger(s32 chan, s32 frame, s32 mask) {
 	u32* history = _battleWorkPointer->padWork[chan].mButtonsPressedHistory;
-	return mask & history[frame];
+	u32 buttons = history[frame];
+	return buttons & mask;
 }
 
 // NONMATCHING (22.00%): 3 instructions differ, 6 missing.

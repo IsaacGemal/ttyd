@@ -1488,8 +1488,6 @@ s32 marioSlitChkWallAround(void) {
     return 1;
 }
 
-// NONMATCHING (99.35%): float_0/float_1000 are allocated f1/f0 instead of f0/f1,
-// so the `else` reuses f1 (stfs f1,0x1c8) where the original reloads float_0.
 void marioCheckWallShip(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
@@ -1501,7 +1499,7 @@ void marioCheckWallShip(f32 a, f32 b) {
     f32 mag;
     s32 r;
 
-    *(f32*)((u8*)wp + 0x210) = float_1000_8041a7a0;
+    *(f32*)&wp->field_0x1F0[0x20] = float_1000_8041a7a0;
     if (a != float_0_8041a7a4 && wp->airTimer == 0) {
         if (*(f32*)((u8*)wp + 0x1C8) < a) {
             *(f32*)((u8*)wp + 0x1C8) = a;
@@ -1518,7 +1516,13 @@ void marioCheckWallShip(f32 a, f32 b) {
             }
         }
     } else {
-        *(f32*)((u8*)wp + 0x1C8) = float_0_8041a7a4;
+#ifdef MUST_MATCH
+        // volatile forces a fresh float_0 load; without it MWCC CSEs the constant into
+        // f1, which also flips the float_0/float_1000 allocation at the top.
+        *(f32*)&wp->field_0x1C0[0x8] = *(volatile const f32*)&float_0_8041a7a4;
+#else
+        *(f32*)&wp->field_0x1C0[0x8] = float_0_8041a7a4;
+#endif
     }
 
     if (a != float_0_8041a7a4 && wp->airTimer == 0) {

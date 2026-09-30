@@ -136,13 +136,12 @@ s32 battleAcResult_RepeatedlyLv(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// NONMATCHING (98.78%): MWCC folds the disp pointer into the BattleWork base (`mr r31, r4`, offsets
-// 0x1f34..0x1f40) instead of `disp = param + 0x1F20` in r31 (`addi r31, r4, 0x1f20`, offsets 0x14..0x20).
 void battleAcDisp_RepeatedlyLv(CameraId camId, void* param) {
     BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* ag = &work->actionCommands.dispParams;
+    BattleActions* ac = &work->actionCommands;
+    BattleACDispParams* ag = &ac->dispParams;
 
-    switch (work->actionCommands.mAcState) {
+    switch (ac->mAcState) {
     case 0x63:
     case 0x64:
     case 0x3E8:

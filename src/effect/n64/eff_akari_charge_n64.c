@@ -130,7 +130,9 @@ typedef struct EffAkariChargeWork {
 	f32 field_0x38; //0x38
 	f32 field_0x3C; //0x3C
 	s32 field_0x40; //0x40
-	EffAkariChargeParticle particles[21]; //0x44
+	// Flexible array (sizeof(work) == 0x44): the disp function reuses the work pointer as the particle
+	// cursor, so `data++` must step one 0x44-byte particle, not the whole 0x5D8 allocation.
+	EffAkariChargeParticle particles[]; //0x44
 } EffAkariChargeWork;
 
 EffectEntry* effAkariChargeN64Entry(s32 type, s32 a2, f32 a3, f32 a4, f32 a5, f32 a6) {
@@ -324,11 +326,11 @@ static inline GXColor akariColorPart(s32 r, s32 g, s32 b, s32 a) {
 
 // Naming float_0_8041e8ac in the two integer-to-float PSMTXTrans calls would make mwcc hoist it into a fourth
 // fpr, which grows the frame and shifts every local, so they use 0.0f literals.
-// NONMATCHING (99.17%): only the loop-setup order of `li r29,1` (i) and `addi r30,r30,0x44`
-// (part = data->particles) differs, the same mwcc scheduler artifact eff_akari_pose_n64.c reports.
+// The original reuses the work pointer as the particle cursor (`data++` here and in the for-increment, as
+// effAkariPoseDisp does); because work ends in a flexible particle array, `data++` steps 0x44. A separate
+// `part = data->particles` pointer makes mwcc schedule the preheader `addi r30,r30,0x44` before `li r29,1`.
 void effAkariChargeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	EffAkariChargeParticle* part;
 	EffAkariChargeWork* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
@@ -397,8 +399,9 @@ void effAkariChargeDisp(CameraId camId, void* param) {
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size2x8_tex8x16_vtx);
 
-	i = 1;
-	for (part = data->particles; i < effect->count; i++, part++) {
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		EffAkariChargeParticle* part = (EffAkariChargeParticle*)data;
 		GXColor color2;
 #ifdef MUST_MATCH
 		color2 = akariColorPart(colR, colG, colB, (part->field_0x24 * field24) / 255);

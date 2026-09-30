@@ -75,10 +75,10 @@ void effKemuri8N64SetCamId(EffectEntry* entry, s32 camId) {
 	((effKemuri8Data*)entry->userdata)->camId = camId;
 }
 
-// NONMATCHING (99.18%): instruction sequence and integer registers match; the ten callee-saved FP
-// registers are rotated (original scale f31, constants f23-f30, params f26/f27/f22; ours scale f24,
-// constants f25-f31/f23, params f28/f23/f22). The compiler-generated int->double magic always takes
-// f31 here, where the original gives it f29 and puts the (loop-longest-lived) scale in f31.
+// Instruction stream, schedule and integer registers match. MWCC's ten callee-saved FP registers are
+// rotated: original scale f31, constants f23-f30, params f26/f27/f22; ours scale f24, constants
+// f25-f31/f23, params f28/f23/f22 (the int->float magic takes f31 here, f29 in the original).
+// NONMATCHING (99.18%): only the callee-saved FPR colouring differs.
 EffectEntry* effKemuri8N64Entry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* effect;
 	effKemuri8Particle* data;

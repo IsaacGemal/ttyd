@@ -18,6 +18,14 @@ extern const f32 float_16_804225a0;
 extern const f32 float_2_804225a4;
 extern const f32 float_8_804225a8;
 extern const f32 float_0p5_804225ac;
+extern const f32 float_0p0625_804225b4;
+extern const f32 float_3_804225b8;
+extern const f32 float_6p2832_804225bc;
+extern const f32 float_360_804225c0;
+extern const f32 float_4_804225c4;
+extern const f32 float_0p125_804225c8;
+extern const f32 float_0p88_804225cc;
+extern const f32 float_1_804225d0;
 #ifdef MUST_MATCH
 // MUST_MATCH: retail reloads float_0_804225b0 for every 0.0f FIFO write; a plain literal lets
 // MWCC pool it into an anonymous constant, so the extern is volatile to force the same reloads.
@@ -129,12 +137,21 @@ static inline Vec mahorn2MakeTarget(effMahorn2Data* data) {
     v.z = data->target.z;
     return v;
 }
+
+static inline BOOL mahorn2BeyondHitDistance(effMahorn2Data* data, Vec* position, Vec* target, f32 hitDistance) {
+    Vec v = vec3_80301948[2];
+    v.x = position->x + data->position.x;
+    v.y = position->y + data->position.y;
+    v.z = position->z + data->position.z;
+    return PSVECDistance(target, &v) > hitDistance;
+}
 #endif
 
-// NONMATCHING (99.73%): all logic matches. The three Vec temps' stack slots are rotated vs retail
-// (retail: case-3 sum Vec 0x8, targetDisp 0x14, disp 0x20; here 0x20/0x8/0x14), because the two
-// helper returns are allocated in the inlining pass before the case-3 local. Registers and instructions
-// match; the helpers above reproduce retail's register allocation, and without them it is 99.63% (see #else).
+// MUST_MATCH: the original has three Vec stack temps in the order disp 0x20, targetDisp 0x14,
+// case-3 sum 0x8. Building them inline (the #else path) lets MWCC coalesce the copy temps and
+// allocate the case-3 sum first (0x20); returning each from an inline makes them inlined temps
+// allocated in source order, which reproduces both the stack slots and the scratch registers.
+// The (C - v) * k + v blend needs `t` as a named temp, or the 4.0f/0.125f loads land f0/f1 swapped.
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
@@ -183,34 +200,40 @@ void effMahorn2Main(EffectEntry* effect) {
             if (data->alpha > 255) {
                 data->alpha = 255;
             }
-            data->scale = (0.0f - data->scale) * 0.0625f + data->scale;
+            data->scale = (0.0f - data->scale) * float_0p0625_804225b4 + data->scale;
             break;
         case 2:
             if (data->intplStep < 90) {
                 s32 step = data->intplStep + 1;
 
                 data->intplStep = step;
-                data->scale = intplGetValue(11, step, 45, 0.0f, 3.0f);
+                data->scale = intplGetValue(11, step, 45, float_0_804225b0, float_3_804225b8);
             }
             break;
         case 3: {
 #ifdef MUST_MATCH
-            Vec v = vec3_80301948[2];
+            if (mahorn2BeyondHitDistance(data, &position, &target, hitDistance)) {
 #else
             Vec v = { 0 };
-#endif
-
             v.x = position.x + data->position.x;
             v.y = position.y + data->position.y;
             v.z = position.z + data->position.z;
             if (PSVECDistance(&target, &v) > hitDistance) {
-                angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.0f;
+#endif
+                angle = float_6p2832_804225bc * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / float_360_804225c0;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
-                data->scale = (4.0f - data->scale) * 0.125f + data->scale;
+#ifdef MUST_MATCH
+                {
+                    f32 t = float_4_804225c4 - data->scale;
+                    data->scale = t * float_0p125_804225c8 + data->scale;
+                }
+#else
+                data->scale = (float_4_804225c4 - data->scale) * float_0p125_804225c8 + data->scale;
+#endif
             }
             else {
-                data->scale = (0.0f - data->scale) * 0.125f + data->scale;
+                data->scale = (0.0f - data->scale) * float_0p125_804225c8 + data->scale;
                 if (!((effMahorn2Data*)effect->userdata)->hasHit) {
                     ((effMahorn2Data*)effect->userdata)->hasHit = TRUE;
                     effHitEntry(0, 4, target.x, target.y, target.z, scale);
@@ -223,10 +246,10 @@ void effMahorn2Main(EffectEntry* effect) {
                 data->position.x += data->target.x;
                 data->position.y += data->target.y;
                 data->position.z += data->target.z;
-                data->target.x *= 0.88f;
-                data->target.y *= 0.88f;
-                data->target.z *= 0.88f;
-                data->scale = 1.0f;
+                data->target.x *= float_0p88_804225cc;
+                data->target.y *= float_0p88_804225cc;
+                data->target.z *= float_0p88_804225cc;
+                data->scale = float_1_804225d0;
                 data->alpha -= 4;
                 if (data->alpha < 0) {
                     data->alpha = 0;
@@ -389,3 +412,23 @@ void effMahorn2Disp(CameraId camId, void* param) {
         }
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8042259c = 0.017453292f;
+const f32 float_16_804225a0 = 16.0f;
+const f32 float_2_804225a4 = 2.0f;
+const f32 float_8_804225a8 = 8.0f;
+const f32 float_0p5_804225ac = 0.5f;
+#ifdef MUST_MATCH
+const volatile f32 float_0_804225b0 = 0.0f;
+#else
+const f32 float_0_804225b0 = 0.0f;
+#endif
+const f32 float_0p0625_804225b4 = 0.0625f;
+const f32 float_3_804225b8 = 3.0f;
+const f32 float_6p2832_804225bc = 6.2831855f;
+const f32 float_360_804225c0 = 360.0f;
+const f32 float_4_804225c4 = 4.0f;
+const f32 float_0p125_804225c8 = 0.125f;
+const f32 float_0p88_804225cc = 0.88f;
+const f32 float_1_804225d0 = 1.0f;

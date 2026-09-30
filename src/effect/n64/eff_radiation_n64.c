@@ -300,9 +300,14 @@ static inline GXColor radiationSetColor(s32 alpha, GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.74%): the original emits `li r6, 0x0` before `bl tri1` (a 4th argument);
-// include/eff/eff_n64.h declares tri1(u16,u16,u16) to match eff_n64.c's 3-arg definition
-// (tri1's body ignores r6), and fixing that needs the definition, outside this file.
+// The retail tri1 keeps a 4th, unused argument (eff_balloon_n64.s passes 0/1 there), but
+// include/eff/eff_n64.h and eff_n64.c's definition only declare 3. This caller passes 0.
+#ifdef MUST_MATCH
+static inline void tri1WithUnused(u16 x, u16 y, u16 z, s32 unused) {
+	((void (*)(u16, u16, u16, s32))tri1)(x, y, z, unused);
+}
+#endif
+
 void effRadiationDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffRadiationData* data;
@@ -448,7 +453,11 @@ void effRadiationDisp(CameraId camId, void* param) {
 			break;
 		default:
 			GXBegin(0x90, 0, 3);
+#ifdef MUST_MATCH
+			tri1WithUnused(0, 1, 2, 0);
+#else
 			tri1(0, 1, 2);
+#endif
 			break;
 		}
 	}

@@ -3059,6 +3059,18 @@ retail). Labels that blamed the wrong cause are rewritten.
 - **Definitions before the code fold, after the code do not.** `mot_dokan` defines its named floats before the code (function 100%, but a second copy of every literal lands in `.sdata2`); moving the definitions after the code gives the right pool (with the `M_Z_1` string defined after `float_0`) but `mot_dokan` drops to 99.52% (hoisted loads in other registers). `countdown`: the `dat_` colours must be `extern const u32` + defined after the code, the zero word in `.sbss` is a `u32` declared before `wp`; a literal 300.0f (the pool needs it after the 0.5) drops `countDownMain` to 97.81%.
 - Permuter wins: `checkOneRevolution` 100% (a pointer to the ring head taken before the loop, `MUST_MATCH`), `unk_8017599c` 99.96% (scale `pos.y` before `pos.x`).
 
+## Wave 39: near-misses 98.5-99.98% (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The next 48 closest dol near-misses outside the permuter's queues, 18:06-19:34, from main 157e3e2. **23 of 48 reached
+100%, 10 improved, 15 unchanged, 0 worse.** Fixed at collection: eff_mahorn2's externs for constants it pools itself;
+party_cloud's `pf ? -90 : 90` pooled -90 ahead of 90/270 (`pf != 0 ?` restores the order); mot_jump's new zero-Vec
+literal added a duplicate pool entry, so the file is back to main's version.
+Four rewrites fix behaviour bugs in main, each checked against the asm: camRoadMain's unk_1C8 store now runs every
+time (main did it only inside the unk_D0 > 1.0 clamp); hitCheckSphereFilter tests entries[0].count (main read the count
+through the moving entry pointer); effDamageStarDisp's else-quad texcoords are 2.0 (main had 1.0); effGetTexObj's id
+compare is signed (`cmpwi`, not `cmplwi`). Two agents read the tower's main checkout, and four touched
+/home/isaac/permuter (timestamp ran permuter.py). No third-party code came in.
+
 ## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 At Claude #1's suggestion, the DOL files its near-miss waves leave behind: every open function either untouched and
