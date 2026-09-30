@@ -72,7 +72,10 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.42%): 100/502 instructions differ only by register, 6 scheduled earlier and 6 later; MWCC keeps `work` in r31 (target r24) and `time` in r21 (target r20), shifting every case loop, and ~14k declaration-order/pragma/local-merge variants never reached the target allocation (same limit as evt_yuutitle_disp_func).
+// NONMATCHING (96.42%): 100/502 instructions differ only by register, 6 scheduled earlier and 6 later; MWCC keeps
+// `work` in r31 (target r24) and `time` in r21 (target r20), shifting every case loop, and ~14k
+// declaration-order/pragma/local-merge variants never reached the target allocation (same limit as
+// evt_yuutitle_disp_func).
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;

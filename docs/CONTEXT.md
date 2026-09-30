@@ -2669,3 +2669,31 @@ for Isaac); las_05 uses 25 more `float_*_las_*` externs nothing defines and tou.
 be .bss; data sections below 100% in evt_yuunpc (.rodata 35%), mri barriern and eki_00 weren't reviewed; unwritten:
 ext_moamoa_main in eki_00 and rsh_06 and two minigame4 functions in evt_yuunpc; the nine left-out units have work
 in scratch/wave27/<unit>/final.c worth salvaging function by function.
+
+## Wave 30: REL near-misses, one per file (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+Claude #1's wave 28 recipe applied to RELs, at its suggestion: one agent per REL file on the file's closest open
+function, the brief's "Code shapes that fixed near-misses", the file as it was in ./orig_file.c, never lower a
+score, bubblewrap /tmp, no network, a finisher continuation (launcher: scratch/wave30/launch.py, units from
+scratch/wave30/pick_units.py). Files with one to four open functions whose closest one is written and at 90%+,
+skipping everything #74 changed, mri_puni, the shared events and the old shared units (Claude #3's). 32 files,
+24 agents at a time, one hour each, 03:21-04:03, units claimed in tools/claims.py as wave30.
+
+**Result:** 20 of 32 target functions to 100%, 6 more improved, none lower, no header changes, no network.
+Linked: gor_irai, unit_atmic_teresa, moo_04, aji_13, muj.c, evt_lect_hei (+6 objects). evt_lect_muj is
+code-complete but uses named `zero_muj_*`/`float_0p5_muj_*` constants where retail pools anonymous literals, so it
+doesn't link. batten_satellite's small gain needed an `opt_propagation` pragma without reaching 100%: left out.
+Shapes that worked again: `/ 2.0f` instead of `* 0.5f` (register choice), a returning inline helper for a
+by-value GXColor (stack slot order), collapsing a two-step update into one expression, `opt_propagation off`
+around one function (mri.c). Two agents read files in the tower's ~/ttyd checkout despite the rule.
+
+**Review** (one fresh Claude; every target function compared with relocations resolved to their bytes, and all
+30 files built without MUST_MATCH). Fixed: rsh_00 `moamoa_init` scored 100% with `randf(-200, 600)` where retail's
+range is 600 wide (`randf(-200, 400)`; the wave had removed its label, so nothing flagged it); gon_03
+`senkaron_ext_main` passed -5 where retail's first jitter is `randf(5, 10)` (the same bug las_05 had in #74);
+tik's `lect_map_cam_chg_sub` is byte-identical to dou's, so dou's nine-line recursion replaces the agent's inline
+helper; sys.c `display` returns EVT_RETURN_BLOCK (retail `li r3, 0`, previously DONE: a behaviour change); stale
+hom_00 labels. Behaviour fixes the agents made: tik_00 `card_tev` issues its 12 GX calls inside the `if` (retail
+branches to the epilogue), and gor_irai's `irai_window_disp` colours had their bytes reversed (proven by the link).
+Follow-up: evt_lect_muj links only if its named constants become literals, but then `lect_itemget_kesan` drops to
+99.89% (two bytes at .text+0x521).

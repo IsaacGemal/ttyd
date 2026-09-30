@@ -249,7 +249,7 @@ void moamoa_init(void) {
         moamoa_pose_change(entry, "c_n_moa_a", "S_1");
 
         if (strncmp(gp->currentMapName, "rsh_00", 6) == 0) {
-            f32 a = randf(-200.0f, 600.0f);
+            f32 a = randf(-200.0f, 400.0f);
             f32 b;
             f32 c;
 

@@ -623,7 +623,7 @@ s32 tokei(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (0%): first draft, checking against the original.
+// NONMATCHING (97.62%): register allocation and scheduling differ.
 static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     MapObject* obj = mapGetMapObj("sun");
 
@@ -649,7 +649,7 @@ static s32 test_glare(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// NONMATCHING (0%): first draft, checking against the original.
+// NONMATCHING (98.81%): register allocation and scheduling differ.
 static void sun_tev(TevCallbackParam* param) {
     s32 field_C = param->field_C;
     s32 field_10 = param->field_10;

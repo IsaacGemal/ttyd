@@ -743,7 +743,7 @@ USER_FUNC(display) {
     if (work->state != 0) {
         dispEntry(5, zero_sys_00001ad8, 2, display_func, work);
     }
-    return 0;
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(start) {

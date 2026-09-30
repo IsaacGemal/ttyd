@@ -773,7 +773,7 @@ static void senkaron_ext_main(void) {
                                     f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
 
                                     senkaron[i].field_0x8 = 3.0f * dx / len - 1.0f;
-                                    senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                    senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                     senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                     senkaron[i].state = 0x61;
                                     {
@@ -790,7 +790,7 @@ static void senkaron_ext_main(void) {
                                 f32 len = (f32)sqrt(dx * dx + (mz - pz) * (mz - pz));
 
                                 senkaron[i].field_0x8 = 1.0f + 3.0f * dx / len;
-                                senkaron[i].field_0xC = randf(-5.0f, 10.0f);
+                                senkaron[i].field_0xC = randf(5.0f, 10.0f);
                                 senkaron[i].field_0x10 = randf(-5.0f, 10.0f);
                                 senkaron[i].state = 0x61;
                                 {
