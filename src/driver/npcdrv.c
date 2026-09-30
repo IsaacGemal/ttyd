@@ -2115,9 +2115,32 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
     return npc;
 }
 
-// NONMATCHING (99.97%): control flow and registers match; only the inline-sqrtf double pool
-// (`double_0p5_802c3138`/`double_3_802c3140`) resolves to a different address than the original.
+// Match-only sqrtf for _npcHitCheckSphere: the original reaches the shared sqrtf double pool
+// (0.5 / 3.0 / 0.0 at vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register, so reproduce
+// that access instead of letting the compiler emit its own .rodata pool (rule 7).
+#ifdef MUST_MATCH
+static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        f64 half = pool[0];
+        f64 three = pool[1];
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        return x * guess;
+    } else if (x < pool[2]) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+#endif
+
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
+#endif
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;
     f32 dz = z - entry->position.z;
@@ -2129,7 +2152,11 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
             dy = y - (entry->position.y + entry->height);
         }
     }
+#ifdef MUST_MATCH
+    *outDist = npcHitCheckSphere_sqrtf(dx * dx + dy * dy + dz * dz, pool);
+#else
     *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
+#endif
     if (*outDist < radius + entry->width * 0.5f) {
         return entry;
     }

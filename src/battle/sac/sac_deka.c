@@ -478,9 +478,13 @@ void main_enemy(void) {
 }
 
 // .text:0x11A0 | 0x80244198 | size: 0x404
-// NONMATCHING (99.82%): instruction sequence matches; the FP temporaries in the opening
-// velocity/clamp block are permuted (target f1=1.25, f0=250, f2=velocity; ours f0/f2/f1)
-// and the int->float magic is a local @587 instead of double_to_int_80300630 (folded pool).
+// The int->float magic this function loads is the compiler's own pool entry (an anonymous
+// @NNN local), not double_to_int_80300630; objdiff ignores that relocation, so the only real
+// differences were FPR allocation. Two pragmas fix them: with ordinary CSE the opening
+// velocity/clamp constants land swapped in f0/f1/f2, and with propagation on the final
+// mPosition.y/mHomePosition.y loads are scheduled in the other order.
+#pragma opt_common_subs off
+#pragma opt_propagation off
 void main_enemy_sub(BattleUnit* unit, s32* count) {
     DekaWork* p = get_ptr();
     DekaYukaMesh* mesh = p->matEntry->address;
@@ -508,13 +512,28 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 
         if (cx >= xj) {
             if (cx < xj + step) {
+#ifdef MUST_MATCH
+                // Match trick: the original factors the row base mesh + j*sizeof(Vec) once and
+                // reads disp/normal through fixed offsets. Under opt_common_subs off the named
+                // field form rematerialises both addresses into separate registers, so spell
+                // the base out. The #else form below is the natural one.
+                u8* row = (u8*)mesh + j * 12;
+                f32 d0y = *(f32*)(row + 0xC1C);
+                f32 d1y = *(f32*)(row + 0xC28);
+                f32 groundY = d0y + (cx - xj) / step * (d1y - d0y);
+#else
                 f32 groundY = mesh->disp[0][j].y + (cx - xj) / step * (mesh->disp[0][j + 1].y - mesh->disp[0][j].y);
+#endif
 
                 if (unit->mPosition.y < groundY) {
                     if ((unit->mAttributeFlags & kCeiling) && groundY < float_120_80421eb0) {
                         break;
                     }
+#ifdef MUST_MATCH
+                    if (*(f32*)(row + 0x1834) > float_0_80421e8c) {
+#else
                     if (mesh->normal[0][j].y > float_0_80421e8c) {
+#endif
                         BattleUnitPart* part;
                         s32 partId;
 
@@ -530,7 +549,7 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                             f32 half = float_0p5_80421e54;
                             unit->mRotation.z = float_0_80421e8c;
                             p->enemyUnk[*count] = float_0_80421e8c;
-                            p->enemyVel[*count].y += half * mesh->normal[0][j].y;
+                            p->enemyVel[*count].y += half * *(f32*)(row + 0x1834);
                         }
 #else
                         unit->mRotation.z = float_0_80421e8c;
@@ -565,6 +584,23 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     unit->mPosition.z += p->enemyVel[*count].z;
     unit->mRotation.z += p->enemyUnk[*count];
 
+#ifdef MUST_MATCH
+    // Match trick: separate locals make MWCC load mPosition.y before mHomePosition.y; the
+    // natural form below loads them in the other order. The body is otherwise identical.
+    {
+        f32 py = unit->mPosition.y;
+        f32 hy = unit->mHomePosition.y;
+
+        if (py < hy) {
+            unit->mPosition.y = hy;
+            p->enemyVel[*count].y = float_0_80421e8c;
+            if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+                unit->mRotation.z = float_0_80421e8c;
+                p->enemyUnk[*count] = float_0_80421e8c;
+            }
+        }
+    }
+#else
     if (unit->mPosition.y < unit->mHomePosition.y) {
         unit->mPosition.y = unit->mHomePosition.y;
         p->enemyVel[*count].y = float_0_80421e8c;
@@ -573,10 +609,13 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
             p->enemyUnk[*count] = float_0_80421e8c;
         }
     }
+#endif
 
     p->unitIds[*count] = BtlUnit_GetUnitId(unit);
     (*count)++;
 }
+#pragma opt_propagation reset
+#pragma opt_common_subs reset
 
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
 #pragma dont_inline reset

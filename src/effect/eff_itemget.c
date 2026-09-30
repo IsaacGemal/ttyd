@@ -377,9 +377,17 @@ void effItemGetDisp(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (99.90%): values match; only scheduling/allocation differs. The 21.333334/42.666668/2.0/0.5
-// .sdata2 pool entries are in the wrong first-use order; the -f/2.0f negate temp is f1 not f2 (42.666668
-// loads f2 not f1); the two GXSetChanMatColor temps land 8 bytes lower (0xc/0x8 vs 0x14/0xc).
+#ifdef MUST_MATCH
+// builds the colour in the same stack temp the original GXSetChanMatColor call used
+static inline GXColor itemColor1(u8 a, GXColor c) {
+	c.a = a;
+	return c;
+}
+
+#endif
+
+// NONMATCHING (99.91%): scheduling only. The 21.333334/42.666668/2.0/0.5 .sdata2 pool entries are in the
+// wrong first-use order, and the -f * 0.5f negate temp is f1 not f2 (42.666668 loads f2 not f1).
 void effItemUseDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -389,8 +397,6 @@ void effItemUseDisp(CameraId camId, void* param) {
 	Mtx mtx3;
 	Mtx mtx2;
 	Mtx mtx4;
-	GXColor color2;
-	GXColor color;
 	s32 i;
 	s32 j;
 	f32 f30;
@@ -430,17 +436,10 @@ void effItemUseDisp(CameraId camId, void* param) {
 		f32 f = 42.666668f;
 		f30 = -f;
 	}
-#ifdef MUST_MATCH
-	{
-		f32 f = 21.333334f;
-		f31 = -f / 2.0f;
-	}
-#else
 	{
 		f32 f = 21.333334f;
 		f31 = -f * 0.5f;
 	}
-#endif
 	f29 = 10.666667f;
 	i = 1;
 	data++;
@@ -451,17 +450,29 @@ void effItemUseDisp(CameraId camId, void* param) {
 				PSMTXRotRad(mtx2, 'z', data->field_0x30);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
-				color = unk_804232f8;
-				color.a = (data->field_0x34 * 64) / 255;
-				GXSetChanMatColor(4, color);
+#ifdef MUST_MATCH
+				GXSetChanMatColor(4, itemColor1((data->field_0x34 * 64) / 255, unk_804232f8));
+#else
+				{
+					GXColor color = unk_804232f8;
+					color.a = (data->field_0x34 * 64) / 255;
+					GXSetChanMatColor(4, color);
+				}
+#endif
 			} else {
 				PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
 				PSMTXRotRad(mtx2, 'z', data->field_0x30);
 				PSMTXConcat(mtx1, mtx2, mtx1);
 				PSMTXConcat(mtx4, mtx1, mtx1);
-				color2 = dat_80420ba0;
-				color2.a = (data->field_0x34 * 128) / 255;
-				GXSetChanMatColor(4, color2);
+#ifdef MUST_MATCH
+				GXSetChanMatColor(4, itemColor1((data->field_0x34 * 128) / 255, dat_80420ba0));
+#else
+				{
+					GXColor color2 = dat_80420ba0;
+					color2.a = (data->field_0x34 * 128) / 255;
+					GXSetChanMatColor(4, color2);
+				}
+#endif
 			}
 			GXLoadPosMtxImm(mtx1, 0);
 			GXSetCurrentMtx(0);

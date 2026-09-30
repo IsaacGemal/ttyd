@@ -182,8 +182,7 @@ USER_FUNC(evt_nannpc_set_size) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.84%): the elapsed division result stays in r24; the original materialises it
-// in r4 and copies it to r24 just before the first intplGetValue call.
+#pragma opt_common_subs off // needed: with CSE on the elapsed division result is coalesced into r24; off keeps it in r4
 USER_FUNC(evt_nannpc_jump_position) {
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
@@ -193,6 +192,11 @@ USER_FUNC(evt_nannpc_jump_position) {
     f32 targetZ = (f32)evtGetValue(event, args[3]);
     s32 duration = evtGetValue(event, args[4]);
     f32 arcHeight = (f32)evtGetValue(event, args[5]);
+#ifdef MUST_MATCH
+    // MUST_MATCH: the u32 temporary and assigning elapsed inside the first call keep the division
+    // result in r4 and its callee-saved copy in r24; the natural s32 form homes it in r24 throughout.
+    u32 rawElapsed;
+#endif
     s32 elapsed;
     f32 t;
 
@@ -205,10 +209,17 @@ USER_FUNC(evt_nannpc_jump_position) {
         event->userdataf[2] = (targetY - (f32)entry->field_0x6C) - event->userdataf[1];
     }
 
+#ifdef MUST_MATCH
+    rawElapsed = OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->field_0x50);
+    if ((s32)rawElapsed < duration) {
+        t = (f32)(s32)rawElapsed / (f32)duration;
+        entry->position.x = intplGetValue(0, elapsed = rawElapsed, duration, (f32)entry->field_0x68, targetX);
+#else
     elapsed = (s32)OSTicksToMilliseconds((OSTick)gp->renderTime - (OSTick)entry->field_0x50);
     if (elapsed < duration) {
         t = (f32)elapsed / (f32)duration;
         entry->position.x = intplGetValue(0, elapsed, duration, (f32)entry->field_0x68, targetX);
+#endif
         entry->position.z = intplGetValue(0, elapsed, duration, (f32)entry->field_0x70, targetZ);
         entry->position.y = (f32)entry->field_0x6C + t * ((event->userdataf[1] * t) + event->userdataf[2]);
         return EVT_RETURN_BLOCK;
@@ -218,6 +229,7 @@ USER_FUNC(evt_nannpc_jump_position) {
     entry->position.z = targetZ;
     return EVT_RETURN_DONE;
 }
+#pragma opt_common_subs reset
 
 USER_FUNC(evt_nannpc_move_position2) {
     OSTime time;

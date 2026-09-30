@@ -2511,22 +2511,20 @@ USER_FUNC(evt_npc_facedirection_add) {
     return EVT_RETURN_DONE;
 }
 
-// The final z result register differs. The original reuses rad's f27 (`fnmsubs f27, f29, f0, f31`),
-// MWCC here reuses s's f28 (`fnmsubs f28, ...`) followed by `fmr f1, f27` vs `fmr f1, f28`.
-// Declaring s, c, rad in that order gets the rad/s split right; the last dead-register choice is a
-// scheduler artifact. Logic is correct.
-// NONMATCHING (99.85%): dead-register choice for the final fnmsubs (f28 vs f27).
+// The original declares the rotation temporaries before the evtGetFloat results; that order makes
+// MWCC give the final z (`fnmsubs`) rad's f27 instead of s's f28. With the getFloat vars declared
+// first the function is 99.85%; reordering the declarations to s, c, rad, angle, dist, x, z matches.
 USER_FUNC(evt_npc_add_dirdist) {
     s32* args = event->args;
     s32 outX = args[0];
     s32 outZ = args[1];
+    f32 s;
+    f32 c;
+    f32 rad;
     f32 angle;
     f32 dist;
     f32 x;
     f32 z;
-    f32 s;
-    f32 c;
-    f32 rad;
     angle = evtGetFloat(event, args[2]);
     dist = evtGetFloat(event, args[3]);
     x = evtGetFloat(event, outX);

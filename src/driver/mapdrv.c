@@ -52,11 +52,11 @@ extern GXColor dat_80419820;
 extern GXColor unk_80422f8c;
 extern GXColor unk_80422f90;
 extern GXColor unk_80422f84;
-extern f32 float_0_80419850;
+const f32 float_0_80419850 = 0.0f;
 extern f32 float_1000_80419874;
 extern f32 float_10_80419864;
 extern f32 float_deg2rad_80419868;
-extern f32 float_1_80419860;
+const f32 float_1_80419860 = 1.0f;
 extern f32 float_2_80419858;
 extern f32 float_3_8041984c;
 extern f32 float_neg2_804198a0;
@@ -954,9 +954,11 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
-// NONMATCHING (99.94%): only the pool symbol names for the 1.0f/1000.0f literals and the
-// double_to_int constant differ (compiler emits local @nnnn entries instead of the named
-// .sdata2 symbols); schedule and all other instructions match.
+// the 1.0f/1000.0f literals must be the named .sdata2 externs, and float_0/float_1 must be
+// declared `const` (they are read-only in the original) so the compiler hoists both loads ahead of
+// the stores and assigns f1=float_0, f0=float_1. objdiff still prints an arg_mismatch for the
+// compiler-generated int->float `double_to_int` constant (local @nnnn vs the named .rodata symbol);
+// it is a relocation-only difference and does not affect the instruction score.
 void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	MapWork* wp;
 	MapEntry* entry;
@@ -1027,17 +1029,17 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 
 	*(OSTime*)(found8 + 0x8) = OSTicksToMilliseconds(time);
 	*(f32*)(found8 + 0x10) = float_0_80419850;
-	*(f32*)(found8 + 0x14) = 1.0f;
+	*(f32*)(found8 + 0x14) = float_1_80419860;
 	*(u16*)found |= 0x1;
 	if (a2 == 1) {
 		*(u16*)found |= 0x4;
 	}
 	if (a2 == 2) {
-		*(OSTime*)(found8 + 0x8) -= (u64)(1000.0f * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
+		*(OSTime*)(found8 + 0x8) -= (u64)(float_1000_80419874 * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
 	}
 }
 
-// NONMATCHING (94.21%): search-loop register permutation and the search branch shape
+// NONMATCHING (99.47%): search-loop register permutation and the search branch shape
 void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 	MapEntryAnimData* found = mapSearchAnmObj(animName);
 
@@ -1264,7 +1266,7 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (93.45%): first pass
+// NONMATCHING (94.26%): first pass
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;

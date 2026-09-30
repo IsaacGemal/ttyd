@@ -181,8 +181,8 @@ struct BattleWork {
     u8 field_16F1C[0x17140 - 0x16F1C];  // 0x16F1C
     BattleStageObject stageObjects[32]; // 0x17140
     u8 field_180C0[0x182B0 - 0x180C0];  // 0x180C0
-    BattleIcon icons[10];               // 0x182B0
-    u8 field_188C8[0x18FE0 - 0x188C8];  // 0x188C8
+    BattleIcon icons[16];               // 0x182B0
+    u8 field_18C70[0x18FE0 - 0x18C70];  // 0x18C70
     s8 alertTick;                       // 0x18FE0
     u8 field_18FE1[0x18FE4 - 0x18FE1];  // 0x18FE1
     StarPowerInfo impendingBonuses;     // 0x18FE4
