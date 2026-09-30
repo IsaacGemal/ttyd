@@ -497,7 +497,7 @@ config.libs = [
             Object(NonMatching, "effect/eff_updown.c"),
             Object(NonMatching, "effect/eff_charge.c"),
             Object(NonMatching, "effect/eff_toge_flush.c"),
-            Object(NonMatching, "effect/eff_ice.c"),
+            Object(Matching, "effect/eff_ice.c"),
             Object(Matching, "effect/eff_torch.c"),
             Object(NonMatching, "effect/eff_bomb.c"),
             Object(Matching, "effect/eff_ripple.c"),
