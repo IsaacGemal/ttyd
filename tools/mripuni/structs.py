@@ -5,8 +5,15 @@ fields with float use, f32/s32/s16 by access), existing names kept, padding in b
 import json
 a = json.load(open('tools/mripuni/access.json'))
 KEEP = {'W': {0x328: ('s32', 'unk328'), 0x444: ('BOOL', 'showPuniCounter'), 0x448: ('BOOL', 'unk448'),
-              0x44C: ('s32', 'puniCounterAlpha')},
-        'D': {0x4: ('s32', 'unk4'), 0xC: ('u16', 'unkC')}}
+              0x44C: ('s32', 'puniCounterAlpha'),
+              # from the functions written in wave 35: four PuniData pointers
+              0x364: ('struct PuniData*', 'field_0x364'), 0x368: ('struct PuniData*', 'field_0x368'),
+              0x36C: ('struct PuniData*', 'field_0x36C'), 0x370: ('struct PuniData*', 'field_0x370')},
+        'D': {0x4: ('s32', 'unk4'), 0xC: ('u16', 'unkC'),
+              # from the functions written in wave 35: hitCheckFilter results and a surface normal
+              0x210: ('struct HitEntry*', 'field_0x210'), 0x214: ('struct HitEntry*', 'field_0x214'),
+              0x560: ('Vec', 'field_0x560')}}
+WIDTH = lambda t: 12 if t == 'Vec' else 2 if t in ('s16', 'u16') else 1 if t in ('u8', 's8') else 4
 SIZE = {'W': 0x4D0, 'D': 0x5A8}
 VEC = {k: {int(o, 16) for o in a['vec'][k]} for k in 'WD'}
 
@@ -16,7 +23,7 @@ def fields(k):
     w4 = lambda q: q in acc and q not in KEEP[k] and max(int(x[0]) for x in acc[q]) == 4
     mixed = lambda q: any('f' in x for x in acc[q]) and any('i' in x for x in acc[q])
     # Vecs: first where a PSVEC call proves one, then non-overlapping triples copied as words and read as floats
-    vec = set()
+    vec = {o for o, (t, _) in KEEP[k].items() if t == 'Vec'}
     taken = lambda o: any(v <= o + 8 and o <= v + 8 for v in vec)
     for o in sorted(VEC[k]):
         if all(w4(o + d) or (o + d) not in acc for d in (0, 4, 8)) and not taken(o):
@@ -31,7 +38,7 @@ def fields(k):
         if any(v < o < v + 12 for v in vec):
             continue
         if o in KEEP[k]:
-            out[o] = (*KEEP[k][o], 4 if KEEP[k][o][0] in ('s32', 'BOOL') else 2)
+            out[o] = (*KEEP[k][o], WIDTH(KEEP[k][o][0]))
         elif o in vec:
             out[o] = ('Vec', f'field_0x{o:X}', 12)
         else:
