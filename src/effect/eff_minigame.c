@@ -137,8 +137,9 @@ static inline Vec initializeMiniGameVec(Vec* input) {
 	return temp;
 }
 
-// NONMATCHING (99.48%): the affine-scale branches (cases 1/4/21) hold the target constant in f3 or f2
-// instead of f4, so the fsubs/fmadds operands are swapped; otherwise identical.
+// The affine-scale updates are written as division by 4.0f / 2.0f rather than * 0.25f / * 0.5f:
+// the compiler folds both to the same multiply, but the division form keeps the product as the
+// first fmadd/fmuls operand, which is what the original does.
 void effMiniGameMain(EffectEntry* effect) {
 	effMiniGameWork* data = effect->userdata;
 	Vec disp = initializeMiniGameVec((Vec*)&data->field_0x04);
@@ -157,9 +158,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 1:
-			data->field_0x10 += (1.0f - data->field_0x10) * 0.25f;
-			data->field_0x14 += (1.0f - data->field_0x14) * 0.25f;
-			data->field_0x34 += (s32)((255 - data->field_0x34) * 0.25f);
+			data->field_0x10 += (1.0f - data->field_0x10) / 4.0f;
+			data->field_0x14 += (1.0f - data->field_0x14) / 4.0f;
+			data->field_0x34 += (s32)((255 - data->field_0x34) / 4.0f);
 			if (data->field_0x34 > 0xFA) {
 				data->field_0x34 = 0xFF;
 				data->field_0x30++;
@@ -177,9 +178,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 4:
-			data->field_0x10 = (10.0f - data->field_0x10) * 0.25f + data->field_0x10;
-			data->field_0x14 = (10.0f - data->field_0x14) * 0.25f + data->field_0x14;
-			data->field_0x34 += (s32)((f32)(-data->field_0x34) * 0.25f);
+			data->field_0x10 += (10.0f - data->field_0x10) / 4.0f;
+			data->field_0x14 += (10.0f - data->field_0x14) / 4.0f;
+			data->field_0x34 += (s32)((f32)(-data->field_0x34) / 4.0f);
 			if (data->field_0x34 < 5) {
 				data->field_0x34 = 0;
 				data->field_0x30++;
@@ -199,9 +200,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			data->field_0x04 += data->field_0x20;
 			data->field_0x20 -= data->field_0x24;
 			if (data->field_0x04 <
-				(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f * 0.5f) {
+				(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f / 2.0f) {
 				data->field_0x04 =
-					(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f * 0.5f;
+					(f32)(i - 1) * 26.0f - (f32)(effect->count - 1) * 26.0f / 2.0f;
 				data->field_0x28 = 0;
 				data->field_0x30++;
 			}
@@ -246,9 +247,9 @@ void effMiniGameMain(EffectEntry* effect) {
 			}
 			break;
 		case 21:
-			data->field_0x10 += (1.0f - data->field_0x10) * 0.25f;
-			data->field_0x14 += (1.0f - data->field_0x14) * 0.25f;
-			data->field_0x34 += (s32)((255 - data->field_0x34) * 0.25f);
+			data->field_0x10 += (1.0f - data->field_0x10) / 4.0f;
+			data->field_0x14 += (1.0f - data->field_0x14) / 4.0f;
+			data->field_0x34 += (s32)((255 - data->field_0x34) / 4.0f);
 			if (data->field_0x34 > 0xFA) {
 				data->field_0x34 = 0xFF;
 				data->field_0x30++;

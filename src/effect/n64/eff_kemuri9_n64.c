@@ -22,10 +22,10 @@ extern const f32 float_10_8041f4a4;
 extern const f32 float_6p2832_8041f4a8;
 extern const f32 float_360_8041f4ac;
 
-// .rodata constants (named after their original addresses in the asm).
-const Vec vec3_802fa998 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fa9a8 = 4503601774854144.0;
-const char str_802FA9B0[] = "Kemuri9N64";
+// .rodata: the zero Vec, the int->float conversion double and the "Kemuri9N64" string are all
+// compiler-generated pool entries (like effKemuri8's). Building them as compound/string literals
+// instead of named consts is what makes them land at the original addresses (0x802fa998, 0x802fa9a8,
+// 0x802fa9b0) and lets objdiff resolve the relocations.
 
 typedef struct effKemuri9Particle {
     u8 pad_00[4];                                // 0x00
@@ -66,7 +66,7 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
     f32 angle;
 
     effect = effEntry();
-    effect->type = str_802FA9B0;
+    effect->type = "Kemuri9N64";
     effect->count = count + 1;
     data = __memAlloc(HEAP_EFFECT, (count + 1) * 0x40);
     effect->userdata = data;
@@ -100,15 +100,21 @@ EffectEntry* effKemuri9N64Entry(s32 type, s32 count, s32 a2, f32 x, f32 y, f32 z
     return effect;
 }
 
-// NONMATCHING (90.94%): the instruction sequence is right (580 B, same opcodes); what differs is
-// register allocation and the folded int->float pool literal. The original loads the conversion
-// double through the named double_to_int_802fa9a8 (r4) and keeps data in r3; ours emits an
-// anonymous @193 literal and puts data in r8 (the vec3 copy's temps and the 0x4330 constant swap
-// r4/r5 for r3/r5). Same project-wide folded-pool issue as the other NONMATCHING int->float casts.
+// Build the zero position with the current data's coordinates; the compound literal reproduces
+// the original's zero-Vec pool entry (same shape as effKemuri10Main's initializeVec).
+static inline Vec kemuri9InitializeVec(effKemuri9Data* data) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = data->x;
+    temp.y = data->y;
+    temp.z = data->z;
+    return temp;
+}
+
+// Note: the loop advances the single `data` pointer (the header and a particle share the first
+// 0x1C bytes), which is what lets MWCC keep it in r3; `scale += (target - scale) * 0.1` is the
+// operand order that gives the original's f0/f1/f2 colouring.
 void effKemuri9Main(EffectEntry* effect) {
     effKemuri9Data* data;
-    effKemuri9Particle* p;
-    Vec position2;
     Vec position;
     s32 scale;
     s32 field30;
@@ -116,11 +122,7 @@ void effKemuri9Main(EffectEntry* effect) {
     s32 i;
 
     data = effect->userdata;
-    position = vec3_802fa998;
-    position.x = data->x;
-    position.y = data->y;
-    position.z = data->z;
-    position2 = position;
+    position = kemuri9InitializeVec(data);
 
     field30 = (s32)(float_16_8041f48c * (f32)data->field_0x38 / (f32)data->field_0x3C);
     field34 = (s32)(float_16_8041f48c * (f32)(data->field_0x38 + 1) / (f32)data->field_0x3C);
@@ -141,19 +143,18 @@ void effKemuri9Main(EffectEntry* effect) {
         return;
     }
 
-    data->scale = data->scale + float_0p1_8041f498 * (data->targetScale - data->scale);
+    data->scale += (data->targetScale - data->scale) * float_0p1_8041f498;
     scale = (s32)data->scale;
 
-    p = (effKemuri9Particle*)(data + 1);
-    for (i = 1; i < effect->count; i++, p++) {
-        p->field_0x14 += float_0p04_8041f49c;
-        p->field_0x14 *= float_0p9_8041f4a0;
-        p->x = (f32)scale * p->field_0x10;
-        p->y = p->y + p->field_0x14;
-        p->z = (f32)scale * p->field_0x18;
+    for (i = 1, data++; i < effect->count; i++, data++) {
+        data->field_0x14 += float_0p04_8041f49c;
+        data->field_0x14 *= float_0p9_8041f4a0;
+        data->x = (f32)scale * data->field_0x10;
+        data->y = data->y + data->field_0x14;
+        data->z = (f32)scale * data->field_0x18;
     }
 
-    dispEntry(4, dispCalcZ(&position2), 2, effKemuri9Disp, effect);
+    dispEntry(4, dispCalcZ(&position), 2, effKemuri9Disp, effect);
 }
 
 // NONMATCHING (88.47%): setup, GX state and TEV sequence match; the loop's float register allocation

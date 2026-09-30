@@ -268,13 +268,12 @@ s32 battleAcResult_GaugeTiming2(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (98.86%): under this file's current -O4,p, MWCC folds the disp pointer into work
-// (`mr r31, r4`, then 0x1f34(r31)..0x1f40(r31)); the original materialises it (`addi r31, r4, 0x1f20`).
-// Building this file with -O2,p instead makes the function 100% (verified); the source below is the natural one.
 void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
-	BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
+	BattleActions* ac = &((BattleWork*)param)->actionCommands;
+	BattleACDispParams* disp = &ac->dispParams;
+	s32 state = ac->mAcState;
 
-	switch (((BattleWork*)param)->actionCommands.mAcState) {
+	switch (state) {
 	case 0x63:
 		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421b38, float_30_80421b3c);
 		// fallthrough

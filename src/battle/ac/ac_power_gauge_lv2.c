@@ -230,13 +230,14 @@ s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// NONMATCHING (98.86%): mwcc folds `disp` into the `work` base and keeps work in r31; the original
-// materialises work+0x1F20 in r31 and accesses 0x14/0x18/0x20.
+// The original keeps disp (work+0x1F20) in r31 and reads mAcState once from work+0x1C9C.
+// Binding it through `ac`/`disp` and a local `state` is what makes mwcc materialise the disp base.
 void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    BattleACDispParams* disp = &ac->dispParams;
+    s32 state = ac->mAcState;
 
-    switch (work->actionCommands.mAcState) {
+    switch (state) {
         case 0x63:
             disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421c3c,
                                         float_30_80421c40);

@@ -58,8 +58,9 @@ u8 rz_tbl[32] = {
 const char str_802FAAB8[] = "KumokumoN64";
 
 
-// NONMATCHING (99.97%): the case-3 irand(360) result is kept in f30 where the original used f31, and the
-// int->float magic constants are anonymous where the original named them.
+// The int->float magic doubles pool as anonymous labels (@392/@393/@447); the target names them
+// double_to_int_802faaa0/double_to_int_mask_802faaa8/double_360_802faab0. The relocation names differ,
+// but the instruction bytes are identical.
 EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 scale, f32 a6, f32 a7) {
 	EffectEntry* effect;
 	effKumokumoData* data;
@@ -171,9 +172,8 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 				break;
 			case 3:
 				angle = (f32)irand(360);
-				radius = (f32)irand(200);
+				radius = float_200_8041f5c4 + (f32)irand(200);
 				angle = (float_6p2832_8041f5bc * angle) / float_360_8041f598;
-				radius = float_200_8041f5c4 + radius;
 				data->x = radius * (f32)sin((f64)angle);
 				data->y = radius * (f32)cos((f64)angle);
 				data->z = float_0_8041f594;

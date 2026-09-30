@@ -66,8 +66,11 @@ static inline GXColor effSandarsColorDisp2(u8 alpha) {
 }
 #endif
 
-// NONMATCHING (96.61%): the int->float magic is pooled as `@260` rather than `double_to_int_80300168`, and the
-// loop-invariant `float_0`/`float_0p2`/`float_51` land in f29/f27/f28 rather than retail's f27/f28/f29.
+// Under MUST_MATCH the zero literal stays `0.0f` rather than `float_0_80421bb0` on purpose: `zero` is volatile for
+// effSandarsDisp2, and the literal lets MWCC treat it as rematerializable, which lands the loop-invariant
+// loads in retail's f27/f28/f29 (f27=0, f28=float_0p2, f29=float_51). It pools as an anonymous @NNN@ whose
+// bytes equal float_0_80421bb0; the int->float magic likewise pools anonymously instead of
+// double_to_int_80300168. Both relocations score the same in objdiff.
 EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	EffectEntry* entry;
 	effSandarsData* data;
@@ -125,14 +128,23 @@ EffectEntry* effSandarsEntry(s32 type, f32 x, f32 y, f32 z, f32 a) {
 	}
 
 	angle = (float_6p2832_80421bc4 * a) / float_360_80421bc8;
+#ifdef MUST_MATCH
+	zero = 0.0f;
+#else
 	zero = float_0_80421bb0;
+#endif
 	data = &data[1];
 	for (i = 1; i < entry->count; i++, data++) {
 		data->x = (f32)(i * 10) * (f32)cos(angle);
 		data->y = (f32)(i * 10) * (f32)sin(angle);
 		data->z = zero;
+#ifdef MUST_MATCH
+		data->scaleRate = float_0p2_80421bcc * (f32)i;
+		data->scale = zero;
+#else
 		data->scale = zero;
 		data->scaleRate = float_0p2_80421bcc * (f32)i;
+#endif
 		data->alpha = (s32)(float_51_80421bd0 * (f32)i);
 		data->field_0x34 = (i - 1) * 5;
 		data->timer = 0;

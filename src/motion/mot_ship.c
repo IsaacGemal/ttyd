@@ -40,12 +40,26 @@ const char* paper_ship[4] = {
     "p_hune_v",
 };
 
-// NONMATCHING (99.87%): logic, stack layout and instruction selection all match (three
-// hitCheckFilter passes at angles 0/+90/-90, type from hitGetAttr bits
-// 0x4000/0x8000/0x10000/0x20000, interleaved snap-to-int stores). The only difference is
-// register allocation of the two callee-saved locals: the original keeps `hit` in r28 and
-// `type` in r29; this build swaps them (hit r29 / type r28). Declaration order experiments
-// (hit/type first, per-block scope, void* hit, if(type)) do not flip it.
+// Maps hitGetAttr's bits 0x4000/0x8000/0x10000/0x20000 to the harbor type. Keeping the
+// mapping in a single-exit inline (its locals `type`/`attr`, returning `type`) is what gives
+// the original's callee-saved allocation (hit r28 / type r29) in all three copies; inlining
+// the same if-else chain directly into checkHarbor swapped them from the middle copy on.
+
+static inline s32 checkHarborType(HitEntry* hit) {
+    s32 type = 0;
+    s32 attr = hitGetAttr(hit);
+    if (attr & 0x4000) {
+        type = 1;
+    } else if (attr & 0x8000) {
+        type = 2;
+    } else if (attr & 0x10000) {
+        type = 3;
+    } else if (attr & 0x20000) {
+        type = 4;
+    }
+    return type;
+}
+
 s32 checkHarbor(Vec* out) {
     MarioWork* mario = marioGetPtr();
     HitEntry* hit;
@@ -65,7 +79,6 @@ s32 checkHarbor(Vec* out) {
     Vec pos2;
     Vec pos3;
     s32 type;
-    s32 attr;
     f32 x;
     f32 y;
     f32 z;
@@ -78,17 +91,7 @@ s32 checkHarbor(Vec* out) {
     hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
                         0.0f);
     if (hit != NULL) {
-        type = 0;
-        attr = hitGetAttr(hit);
-        if (attr & 0x4000) {
-            type = 1;
-        } else if (attr & 0x8000) {
-            type = 2;
-        } else if (attr & 0x10000) {
-            type = 3;
-        } else if (attr & 0x20000) {
-            type = 4;
-        }
+        type = checkHarborType(hit);
         if (type != 0) {
             hitObjGetPos(hitGetName(hit), &pos1);
             rx = (f32)(s32)((100.0f * pos1.x + 0.5f) / 100.0f);
@@ -108,17 +111,7 @@ s32 checkHarbor(Vec* out) {
     hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
                         0.0f);
     if (hit != NULL) {
-        type = 0;
-        attr = hitGetAttr(hit);
-        if (attr & 0x4000) {
-            type = 1;
-        } else if (attr & 0x8000) {
-            type = 2;
-        } else if (attr & 0x10000) {
-            type = 3;
-        } else if (attr & 0x20000) {
-            type = 4;
-        }
+        type = checkHarborType(hit);
         if (type != 0) {
             hitObjGetPos(hitGetName(hit), &pos2);
             rx = (f32)(s32)((100.0f * pos2.x + 0.5f) / 100.0f);
@@ -138,17 +131,7 @@ s32 checkHarbor(Vec* out) {
     hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
                         0.0f);
     if (hit != NULL) {
-        type = 0;
-        attr = hitGetAttr(hit);
-        if (attr & 0x4000) {
-            type = 1;
-        } else if (attr & 0x8000) {
-            type = 2;
-        } else if (attr & 0x10000) {
-            type = 3;
-        } else if (attr & 0x20000) {
-            type = 4;
-        }
+        type = checkHarborType(hit);
         if (type != 0) {
             hitObjGetPos(hitGetName(hit), &pos3);
             rx = (f32)(s32)((100.0f * pos3.x + 0.5f) / 100.0f);

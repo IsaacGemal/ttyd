@@ -43,17 +43,20 @@ static inline s32 __fpclassifyf(f32 x) {
 #define fpclassify(x) __fpclassifyf(x)
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
-static inline f32 pt_sqrtf(f32 x) {
-	const f64 _half = .5;
-	const f64 _three = 3.0;
+// The sqrtf constants are named .rodata objects in the original; declaring them extern forces the
+// inlined Newton iterations to load the symbols instead of materialising fresh pool entries.
+extern const f64 double_0p5_802fb438;
+extern const f64 double_3_802fb440;
+extern const f64 double_0_802fb448;
 
+static inline f32 pt_sqrtf(f32 x) {
 	if (x > 0.0f) {
 		f64 guess = __frsqrte(x);
-		guess = _half * guess * (_three - guess * guess * x);
-		guess = _half * guess * (_three - guess * guess * x);
-		guess = _half * guess * (_three - guess * guess * x);
+		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
+		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
+		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
 		return x * guess;
-	} else if (x < 0.0) {
+	} else if (x < double_0_802fb448) {
 		return NAN;
 	} else if (isnan(x)) {
 		return NAN;
@@ -66,29 +69,35 @@ const Vec vec3_802fb400 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_mask_802fb410 = 4503599627370496.0;
 const f64 double_to_int_802fb418 = 4503601774854144.0;
 const char str_802FB420[] = "PokopiThunderN64";
+// Named in the original .rodata (see the .obj blocks).
+const f64 double_0p5_802fb438 = 0.5;
+const f64 double_3_802fb440 = 3.0;
+const f64 double_0_802fb448 = 0.0;
 const f32 float_0p5_8041fa54 = 0.5f;
 
-// Instruction sequence and data flow match, but three things still differ.
-// (1) MWCC assigns the three long-lived values the other way round in this TU: retail keeps
-// cameraId in r28, the effect in r29 and the rodata anchor in r30; here the effect takes r28, the
-// anchor r29 and cameraId r30. (2) The pooled sqrtf doubles land at 0x48/0x50/0x58 instead of
-// 0x38/0x40/0x48 because Main's own int->float and zero-Vec literals sit in front of them in
-// .rodata; retail's Main references the named vec3_802fb400/double_to_int_802fb418, so its pool
-// is compact. This resolves only once every function of the TU (Disp) is written and keeps the
-// named constants live. (3) The outer `fcmpu` operands are swapped, and the return-0 block is
-// laid out after the body instead of inline before the 0.005f multiply.
-// NONMATCHING (95.68%): register allocation and the pooled sqrtf double offsets still differ.
+// The named sqrtf doubles (0x38/0x40/0x48) sit where the original .rodata has them, and the
+// else-return-0 block is placed next to the sqrt result; together with a real zero variable (so
+// the outer fcmpu compares dist2 first, as retail does) that reproduces the original exactly.
 EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale) {
-	s32 cameraId;
 	EffectEntry* effect;
+	s32 cameraId;
 	EffPokopiThunderData* data;
 	f32 dx;
 	f32 dy;
 	f32 dz;
 	f32 dist2;
 
+#ifdef MUST_MATCH
+	/* MUST_MATCH: a named zero variable makes MWCC emit `fcmpu cr0, f4, f0` (dist2 first);
+	   a literal `0.0f` puts the constant first. */
+	f32 zero = 0.0f;
+#endif
+
 	effect = effEntry();
-	cameraId = (type >= 10) ? 8 : 4;
+	cameraId = 4;
+	if (type >= 10) {
+		cameraId = 8;
+	}
 	type %= 10;
 	effect->type = str_802FB420;
 	effect->count = 1;
@@ -99,10 +108,10 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 
 	data->type = type;
 	data->timer = 0;
-	if (lifetime > 0) {
-		data->lifetime = lifetime;
-	} else {
+	if (lifetime <= 0) {
 		data->lifetime = 1000;
+	} else {
+		data->lifetime = lifetime;
 	}
 	data->field_0x3C = 0xFF;
 
@@ -124,19 +133,24 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 	dy = y - endY;
 	dz = z - endZ;
 	dist2 = dx * dx + dy * dy + dz * dz;
+#ifdef MUST_MATCH
+	if (dist2 != zero) {
+#else
 	if (dist2 != 0.0f) {
+#endif
 		*(f32*)((u8*)data + 0x114) = pt_sqrtf(dist2);
-		*(f32*)((u8*)data + 0x114) = 0.005f * *(f32*)((u8*)data + 0x114);
-		*(s32*)((u8*)data + 0x30) = 0xFF;
-		*(s32*)((u8*)data + 0x34) = 0xDC;
-		*(s32*)((u8*)data + 0x38) = 0x14;
-		*(s32*)((u8*)data + 0x40) = 0xFF;
-		*(s32*)((u8*)data + 0x44) = 0xFF;
-		*(s32*)((u8*)data + 0x48) = 0xFF;
-		*(s32*)((u8*)data + 0x110) = rand() % 360;
-		return effect;
+	} else {
+		return NULL;
 	}
-	return NULL;
+	*(f32*)((u8*)data + 0x114) = 0.005f * *(f32*)((u8*)data + 0x114);
+	data->field_0x30 = 0xFF;
+	data->field_0x34 = 0xDC;
+	data->field_0x38 = 0x14;
+	data->field_0x40 = 0xFF;
+	data->field_0x44 = 0xFF;
+	data->field_0x48 = 0xFF;
+	*(s32*)((u8*)data + 0x110) = rand() % 360;
+	return effect;
 }
 
 void effPokopiThunderMain(EffectEntry* effect) {

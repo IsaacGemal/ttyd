@@ -42,20 +42,35 @@ void cloudGetAt(Vec* position) {
 }
 
 #define cloud ((PartyCloud*)party->useStruct)
-// NONMATCHING (97.65%): mode offset and direction swap callee-saved float registers (f31/f30 vs the
-// original's f30/f31); all instructions otherwise identical.
+#ifdef MUST_MATCH
+// Match-only: reading the mode through an inline gives the original's register allocation
+// (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
+static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
+    return *(s16*)((u8*)((PartyCloud*)party->useStruct) + 0x38);
+}
+#endif
+
 void getHitBreatheout2(PartyEntry* party, f32 angle) {
-    MarioWork* mario = party->playerPtr;
+    MarioWork* mario;
     HitEntry* hit;
     f32 sin2, cos2, sin1, cos1;
     f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+#ifdef MUST_MATCH
+    f32 dz, dx; // reversed declaration order puts dx/dz in the original's stack slots
+#else
     f32 dx, dz;
+#endif
     f32 f31;
     f32 dir;
     f32 f30;
     s16 mode;
 
+#ifdef MUST_MATCH
+    mode = getHitBreatheout2_mode(party);
+#else
     mode = *(s16*)((u8*)cloud + 0x38);
+#endif
+    mario = party->playerPtr;
     if (mode == 0) {
         f30 = 8.0f;
     } else if (mode == 1) {
@@ -98,7 +113,11 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
         }
     }
 
-    f31 = (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) ? 1.0f : -1.0f;
+    if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
+        f31 = 1.0f;
+    } else {
+        f31 = -1.0f;
+    }
 
     if (*(s32*)((u8*)cloud + 0x14) == 0) {
         *(f32*)((u8*)cloud + 0x10) += 1.0f;

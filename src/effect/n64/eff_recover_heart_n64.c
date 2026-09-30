@@ -220,17 +220,22 @@ void effRecoverHeartMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effRecoverHeartDisp, effect);
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs the tile-offset float-conversion loads and reorders them vs the target
-// NONMATCHING (96.91%): only the callee-saved register permutation and one hoisted tile-offset differ; full detail in REPORT.md.
+// Keep this the last function in the file: MWCC reads global_optimizer when the unit is finalized, so a
+// trailing `global_optimizer reset` drops the setting for this function too (95.5%).
+#pragma global_optimizer off // needed so MWCC keeps the loop-invariant tile-offset arithmetic inside the loop and emits the two independent life/10 and life%10 divisions (without it: 96.9%)
+// NONMATCHING (99.97%): only the .data base symbol (lbl_803A4A60 vs this build's local section symbol,
+// so seven tile-array addis read +0x38 instead of +0x40), the pooled int->float magic
+// (double_to_int_802fb4d8 vs a local @260) and the GXSetTevColor GXColor stack slot differ; see REPORT.md.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	s32 flag;
-	s32 type;
-	s32 life;
-	s32 i;
-	RecoverHeartData* data;
-	s32 quotient;
 	s32 unknown;
+	s32 remainder;
+	s32 quotient;
+	RecoverHeartData* data;
+	s32 i;
+	s32 life;
+	s32 type;
+	s32 flag;
 	CameraEntry* cam;
 	s32 stripe;
 	u32 texId;
@@ -261,6 +266,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	GXSetCullMode(0);
 
 	unknown = 0x160 - life * 32;
+	remainder = life % 10;
 	quotient = life / 10;
 
 	for (i = 1; i < effect->count; i++, data++) {
@@ -329,7 +335,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, (f32)unknown, float_0_8041fb10, float_0_8041fb10);
+				PSMTXTrans(trans, float_0_8041fb10, (f32)unknown, float_0_8041fb10);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -347,7 +353,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				effGetTexObjN64(0x53, &texObj);
 				GXLoadTexObj(&texObj, 0);
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, (f32)(0x160 - (life - quotient * 10) * 32), float_0_8041fb10, float_0_8041fb10);
+				PSMTXTrans(trans, float_0_8041fb10, (f32)(0x160 - remainder * 32), float_0_8041fb10);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -362,7 +368,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
 
 				PSMTXScale(scale, float_0p03125_8041fb0c, float_0p0026042_8041fb18, float_0_8041fb10);
-				PSMTXTrans(trans, (f32)(0x160 - stripe * 32), float_0_8041fb10, float_0_8041fb10);
+				PSMTXTrans(trans, float_0_8041fb10, (f32)(0x160 - stripe * 32), float_0_8041fb10);
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
@@ -383,4 +389,3 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		}
 	}
 }
-#pragma opt_common_subs reset

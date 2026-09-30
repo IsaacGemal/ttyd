@@ -175,11 +175,19 @@ s32 battleAcResult_MonosiriTarget(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// NONMATCHING (97.22%): only callee-saved register allocation and the trigger compare differ.
+// The `disp + 0x2C` derivation below is a match-only form: MWCC otherwise folds the work-area
+// pointer into work (every mt-> access becomes 0x1f4c(work)); deriving it from disp keeps two base
+// pointers live and gets closer to the original's r31=mt / r28=disp allocation.
+// NONMATCHING (99.01%): mt is still folded into disp (+0x2c offsets); the original keeps mt in r31.
 s32 battleAcMain_MonosiriTarget(BattleWork* work) {
-	BattleUnitPart* part;
+#ifdef MUST_MATCH
+	BattleACDispParams* disp = &work->actionCommands.dispParams;
+	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)disp + 0x2C);
+#else
 	MonosiriTargetWork* mt = (MonosiriTargetWork*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
+#endif
+	BattleUnitPart* part;
 	BattleUnit* unit;
 	s32 autoCommand = 0;
 

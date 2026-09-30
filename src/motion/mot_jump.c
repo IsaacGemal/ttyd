@@ -88,7 +88,6 @@ f32 marioGetJumpHeight(void) {
     return MWF32(mario, 0x2B8);
 }
 
-// NONMATCHING (99.44%): 2 instructions differ, plus register differences.
 void mot_jumpStand(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -146,9 +145,21 @@ void mot_jumpStand(void) {
             }
             break;
         case 8:
+#ifdef MUST_MATCH
+            // MUST_MATCH: the separate locals pin MWCC's FPR allocation; the natural form below
+            // puts the fsubs result in f1 and the data[8] load in f2, which the original swaps.
+            {
+                f32 neg = MATCH_F32(float_neg1_8041abf8);
+                f32 v = MWF32(mario, 0x7C);
+                f32 diff = neg - v;
+
+                MWF32(mario, 0x7C) = diff * marioJumpStandData[8] + v;
+            }
+#else
             MWF32(mario, 0x7C) = (float_neg1_8041abf8 - MWF32(mario, 0x7C))
                                      * marioJumpStandData[8]
                                  + MWF32(mario, 0x7C);
+#endif
             mario->position.y += MWF32(mario, 0x7C);
             MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
             if (MWF32(mario, 0x7C) <= 0.0f) {

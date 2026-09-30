@@ -173,37 +173,40 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	return effect;
 }
 
-// MWCC's float register colouring in the ring-buffer block and the anonymous rodata pool
-// order still differ: retail keeps the current position in f3/f4/f5 and the previous sample
-// in f0/f1/f2 (this build picks f5/f6/f7 and f1/f3/f4), and retail places double_to_int at
-// vec3+0x10 then the sqrtf doubles at +0x18/+0x20/+0x28, while this build places the sqrtf
-// doubles first and double_to_int last, so the pooled lfd offsets are shifted.
-// NONMATCHING (92.37%): see above; the double_to_int conversion constant is compiler-generated
-// and always allocated after the literal sqrtf doubles.
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// Pool order and one FP register. effCloudDisp is missing from this unit; it is emitted first
+// in the original and seeds the .rodata pool with vec3 then the compiler-generated
+// double_to_int. Without it MWCC pools this function's sqrtf doubles before the generated
+// conversion, so the conversion loads at 0x28(r31) instead of 0x10(r31) and the sqrtf doubles
+// shift from 0x18/0x20/0x28 to 0x10/0x18/0x20. The ring-buffer block also colours the current
+// position f2/f3/f4 where the target uses f3/f4/f5 (and dist f5 vs f4).
+// NONMATCHING (99.17%): the pool shift above, plus one FP register in the ring-buffer block.
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
+	Vec position;
+#ifdef MUST_MATCH
+	Vec position2;
+#endif
 	s32 type;
 	s32 counter;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
-	   local before dispCalcZ; a single local folds the copy away (same idiom as
-	   effGlassMain). */
-	Vec position;
-#endif
-	Vec disp = { 0 };
 
-	disp.x = data->x;
-	disp.y = data->y;
-	disp.z = data->z;
+	position = makeVec(data->x, data->y, data->z);
 #ifdef MUST_MATCH
-	position = disp;
+	position2 = position;
 #endif
+	type = data->type;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
 		data->lifetime = 16;
 	}
-	type = data->type;
 	if (data->lifetime < 1000) {
 		data->lifetime--;
 	}
@@ -237,25 +240,34 @@ void effCloudMain(EffectEntry* effect) {
 		if (px != ox || py != oy || pz != oz) {
 			f32 len = data->field_0x2AC[index];
 			f32 dist;
+			f32 dx;
+			f32 dy;
+			f32 dz;
 
 			data->field_0x2A8++;
 			if (data->field_0x2A8 >= 30) {
 				data->field_0x2A8 = 0;
 			}
 			index = data->field_0x2A8;
+			dx = px - ox;
+			dy = py - oy;
+			dz = pz - oz;
 			data->field_0x230[index] = 1;
 			data->field_0x50[index] = px;
 			data->field_0xC8[index] = py;
 			data->field_0x140[index] = pz;
 			data->field_0x1B8[index] = counter;
-			dist = sqrtf((px - ox) * (px - ox) + (py - oy) * (py - oy) + (pz - oz) * (pz - oz));
+			dist = dx * dx + dy * dy + dz * dz;
+			if (dist != float_0_8041eba0) {
+				dist = sqrtf(dist);
+			}
 			data->field_0x2AC[index] = len + dist;
 		}
 	}
 
 #ifdef MUST_MATCH
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effCloudDisp, effect);
 #else
-	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effCloudDisp, effect);
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effCloudDisp, effect);
 #endif
 }

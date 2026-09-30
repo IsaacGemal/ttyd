@@ -26,8 +26,6 @@ extern u8 diamond_7_color0_tbl[];
 const Vec vec3_802fdd50 = { 0.0f, 0.0f, 0.0f };
 const char str_802FDD5C[] = "SFX_EVT_STARSTONE_SHINE1";
 const char str_802FDD78[] = "SFX_EVT_STARSTONE_JUMP1";
-const f64 double_to_int_mask_802fdd90 = 4503599627370496.0;
-const char str_802FDD98[] = "StarStone";
 
 Vec edge_color[7] = {
 	{ 0.3310000002384186, 0.3149999976158142, 0.23199999332427979 },
@@ -114,7 +112,7 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	effStarStoneData* data;
 
 	entry = effEntry();
-	entry->type = str_802FDD98;
+	entry->type = "StarStone";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effStarStoneData) * entry->count);
 	entry->userdata = data;
@@ -172,8 +170,10 @@ EffectEntry* effStarStoneEntry(s32 idx, f32 x, f32 y, f32 z, f32 scale) {
 	return entry;
 }
 
-// NONMATCHING (98.94%): the u8->f32 magic double pools into an anonymous copy instead of the named
-// double_to_int_mask_802fdd90 (see evt_telop.c / ac_pendulum_crane_timing.c), plus two FP/branch-shape deltas.
+// `opt_common_subs off` required: with common-subexpression merging on, the two u8->f32 color
+// conversions and the field_0x24 update pick different FPRs than the original (the 2^52 mask and
+// the 255.0f divisor land in f3/f4 instead of f4/f3, the update's temporaries rotate).
+#pragma opt_common_subs off
 void effStarStoneMain(EffectEntry* effect) {
 	effStarStoneData* data = effect->userdata;
 	Vec position;
@@ -219,16 +219,19 @@ void effStarStoneMain(EffectEntry* effect) {
 
 	switch (data->field_0x3C) {
 	case 0:
-		if (type == 6) {
+		switch (type) {
+		case 6:
 			data->field_0x24 -= float_0p01_80420b58;
 			if (data->field_0x24 <= float_0_80420b54) {
 				data->field_0x24 += float_1_80420b5c;
 			}
-		} else {
+			break;
+		default:
 			data->field_0x24 += float_0p01_80420b58;
 			if (data->field_0x24 >= float_1_80420b5c) {
 				data->field_0x24 -= float_1_80420b5c;
 			}
+			break;
 		}
 		break;
 	case 1:
@@ -274,20 +277,19 @@ void effStarStoneMain(EffectEntry* effect) {
 			data->field_0xC += data->field_0x44;
 			data->field_0x44 -= data->field_0x40;
 		}
+		if (data->field_0x3C > 2) {
+			data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x4C -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x50 += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x54 += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
+			data->field_0x20 = data->field_0x20 + (float_90_80420b80 - data->field_0x20) / float_10_80420b64;
+		}
+		if (data->field_0x3C > 3) {
+			data->field_0x18 = data->field_0x18 + (float_neg90_80420b88 - data->field_0x18) / float_10_80420b64;
+		}
 		break;
 	default:
 		break;
-	}
-
-	if (data->field_0x3C > 2) {
-		data->field_0x48 -= (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x4C -= (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x50 += (f32)sin(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x54 += (f32)cos(float_6p2832_80420b7c * (float_90_80420b80 + camGetPtr(data->field_0x38)->viewYaw) / float_360_80420b84);
-		data->field_0x20 = data->field_0x20 + (float_90_80420b80 - data->field_0x20) / float_10_80420b64;
-	}
-	if (data->field_0x3C > 3) {
-		data->field_0x18 = data->field_0x18 + (float_neg90_80420b88 - data->field_0x18) / float_10_80420b64;
 	}
 
 	data->field_0x2C = data->field_0x2C + 1;
@@ -309,31 +311,36 @@ void effStarStoneMain(EffectEntry* effect) {
 			                       color_tbl[data->field_0x0][2] / float_255_80420b78);
 			effStardustN64SetDrawCam(entry, camId);
 		}
-	}
 
-	if (data->field_0x3C == 0) {
-		*(s32*)((u8*)data->field_0x34->userdata + 0x68) = camId;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x04) = data->field_0x8;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x08) = data->field_0xC - float_10_80420b64 * data->field_0x14;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = data->field_0x10;
-	} else {
-		*(f32*)((u8*)data->field_0x34->userdata + 0x04) = float_0_80420b54;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x08) = float_neg1000_80420b8c;
-		*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = float_0_80420b54;
-	}
+		if (data->field_0x3C == 0) {
+			*(s32*)((u8*)data->field_0x34->userdata + 0x68) = camId;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x04) = data->field_0x8;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x08) = data->field_0xC - float_10_80420b64 * data->field_0x14;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = data->field_0x10;
+		} else {
+			*(f32*)((u8*)data->field_0x34->userdata + 0x04) = float_0_80420b54;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x08) = float_neg1000_80420b8c;
+			*(f32*)((u8*)data->field_0x34->userdata + 0x0C) = float_0_80420b54;
+		}
 
-	if (data->field_0x3C < 3 && camId == CAMERA_3D) {
-		U_shadowSetMode(shadowEntry(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
+		if (data->field_0x3C < 3 && camId == CAMERA_3D) {
+			U_shadowSetMode(shadowEntry(data->field_0x8, data->field_0xC, data->field_0x10, float_8_80420b90 * data->field_0x14), data->field_0x5F);
+		}
 	}
 
 	if (!(data->field_0x4 & 0x20)) {
-		if (type == 0 || type == 6) {
+		switch (type) {
+		case 0:
+		case 6:
 			dispEntry(camId, dispCalcZ(&position), 2, effStarStoneDisp_1, effect);
-		} else {
+			break;
+		default:
 			dispEntry(camId, dispCalcZ(&position), 2, effStarStoneDisp_2, effect);
+			break;
 		}
 	}
 }
+#pragma opt_common_subs reset
 
 // NONMATCHING (95.83%): lbl_803AC080 address is re-materialised instead of kept live; GXColor
 // argument temporaries / local frame sit 4 bytes low; a few branch shapes differ.

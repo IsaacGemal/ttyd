@@ -321,9 +321,10 @@ void battleAcDelete_LstRcKeep(BattleWork* work) {
 }
 
 
-// The original emits `clrlwi r5, r0, 16` for `(s16)(i + 0x92)`; MWCC emits `extsh r5, r0` because
-// iconDispGx declares its iconId `s16`. The original argument is really `u16` (clrlwi r5, 16 in iconDispGxAlpha).
-// NONMATCHING (99.70%): one instruction differs (the `extsh` above).
+// The original emits `clrlwi r5, r0, 16` for the loop's icon id: the original iconDispGx reads a
+// zero-extended u16 (see iconDispGxAlpha's `clrlwi r5, 16`), but this header declares its iconId `s16`,
+// so a plain call emits `extsh`. The function-pointer cast (same workaround as battle_menu_disp) makes
+// the call site zero-extend instead; it still compiles to a direct `bl iconDispGx`.
 static void actionCommandDisp(f32 x, f32 y, s32 type) {
     s32 off;
     s32 i;
@@ -369,7 +370,12 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
             Vec v = vec3_802f953c;
             v.x = x + (f32)(off - 0x102);
             v.y = y;
+#ifdef MUST_MATCH
+            // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
+            ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041e5e0);
+#else
             iconDispGx(&v, 0x10, (s16)(i + 0x92), float_1_8041e5e0);
+#endif
         }
         else {
             Vec v = vec3_802f9548;

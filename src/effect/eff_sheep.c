@@ -33,8 +33,6 @@ f64 double_to_int_802ffa48 = 4503601774854144.0;
 const char str_80421950[] = "A_1";
 const char str_80421964[] = "sheep";
 
-// NONMATCHING (99.49%): only the float-register allocation in the `type != 0` block differs
-// (target divisor f2 / 0.2 f1 / 0.5 f0, here f1 / f0 / f2).
 EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	EffSheepWork* data;
@@ -75,7 +73,16 @@ EffectEntry* effSheepEntry(s32 type, f32 x, f32 y, f32 z) {
 		if (p->type != 0) {
 			p->field_0x14 = (s32)((f32)(irand(50) + 50) / p->field_0x2C);
 			p->field_0x1C = float_0p2_80421974;
+#ifdef MUST_MATCH
+			// MUST_MATCH: splitting the product into a local makes MWCC allocate the
+			// divisor/0.2/0.5 to f2/f1/f0 like the original instead of f1/f0/f2.
+			{
+				f32 v = p->field_0x1C * p->field_0x14;
+				p->field_0x18 = v * float_0p5_80421978;
+			}
+#else
 			p->field_0x18 = p->field_0x1C * p->field_0x14 * float_0p5_80421978;
+#endif
 		}
 		if (entry->count - 1 == i) {
 			p->z = float_0_80421948;

@@ -18,8 +18,15 @@
 #define M_VEC(m, off) (*(Vec*)((unsigned char*)(m) + (off)))
 
 // .rodata named constants, in the order they appear in the original.
-const Vec vec3_802f3d60 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3d6c = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Non-const arrays placed in .rodata: MWCC then copies them with the original's r3/r0 load split. A const
+// scalar pools differently (r0/r3), which _partyEntry's two copies at offset 0x70 are sensitive to.
+__declspec(section ".rodata") Vec vec3_802f3d60[] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_802f3d6c[] = { { 0.0f, 0.0f, 0.0f } };
+#else
+const Vec vec3_802f3d60[1] = { { 0.0f, 0.0f, 0.0f } };
+const Vec vec3_802f3d6c[1] = { { 0.0f, 0.0f, 0.0f } };
+#endif
 const Vec vec3_802f3d78 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3d84 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3d90 = { 0.0f, 0.0f, 0.0f };
@@ -55,10 +62,6 @@ const f32 float_180_8041cdb4 = 180.0f;
 const f32 float_120_8041cdb8 = 120.0f;
 const f32 float_neg120_8041cdbc = -120.0f;
 
-// The original allocates the first word of each 0x70 Vec copy to r3 (lwz r3; lwz r0; stw r3; stw r0; lwz r0;
-// stw r0); MWCC allocates it to r0 and hoists the third load. No expression shape tried changes this
-// (same scheduling artifact as mot_roll.c).
-// NONMATCHING (96.45%): only the two Vec copies at 0x70 differ.
 void _partyEntry(s32 arg) {
     MarioWork* mario;
     PartyEntry* party;
@@ -98,7 +101,7 @@ void _partyEntry(s32 arg) {
                     party = partyGetPtr(member);
                     partyChgRunMode(party, 0xA);
                     if (arg == 0) {
-                        M_VEC(party, 0x70) = vec3_802f3d60;
+                        M_VEC(party, 0x70) = vec3_802f3d60[0];
                     }
                     party->flags |= 0x04000000;
                     party->flags |= 0x02000000;
@@ -117,7 +120,7 @@ void _partyEntry(s32 arg) {
             party = partyGetPtr(mario->currPartySlotId[i]);
             partyChgRunMode(party, 0xA);
             if (arg == 0) {
-                M_VEC(party, 0x70) = vec3_802f3d6c;
+                M_VEC(party, 0x70) = vec3_802f3d6c[0];
             }
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
