@@ -149,7 +149,11 @@ EVT_BEGIN(kpa_read_mobj)
     RETURN
 EVT_END()
 
-const Vec vec3_kpa_000014a4 = {0.0f, 0.0f, 0.0f};
+// helper placed here so its (Vec){0,0,0} literal pools at the same .rodata offset
+// as the original's vec3_kpa_000014a4 (the scheduler then keeps the event->args load first)
+static inline void kpaZeroVec(Vec* v) {
+    *v = (Vec){ 0.0f, 0.0f, 0.0f };
+}
 
 EVT_BEGIN(kpa_coin_evt)
     CALL(kpa_add_coin, LW(0), LW(1), LW(2))
@@ -510,12 +514,13 @@ USER_FUNC(kpa_make_item_name) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.66%): the three vec3_kpa_000014a4 words are loaded before `event->args`
-// (r31) in ours; the original loads r31 first, then the three words. Pure scheduling.
+// The zero Vec comes from kpaZeroVec's anonymous (Vec){0,0,0} literal rather than a named
+// vec3_... object: the literal's pool entry is what keeps the event->args load ahead of the copy.
 USER_FUNC(kpa_add_coin) {
     s32* args = event->args;
-    Vec pos = vec3_kpa_000014a4;
+    Vec pos;
 
+    kpaZeroVec(&pos);
     pos.x = evtGetFloat(event, args[0]);
     pos.y = evtGetFloat(event, args[1]);
     pos.z = evtGetFloat(event, args[2]);

@@ -417,11 +417,11 @@ USER_FUNC(irai_start_func) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.6%): 4 of 51 instructions differ in operands only (registers or offsets)
 USER_FUNC(irai_cancel_func) {
     s32 i;
     s32* items;
     ItemType val = evtGetValue(event, event->args[0]) - 1;
+    ItemType item;
 
     for (i = (s32)0xF840709D; i <= (s32)0xF84070AD; i++) {
         swClear(i + EVTDAT_GSWF_BASE);
@@ -431,15 +431,20 @@ USER_FUNC(irai_cancel_func) {
     }
     items = irai_item_table[val];
 load:
-    val = *items;
-    if ((s32)val == -1) {
+    item = *items;
+    if ((s32)item == -1) {
         goto end;
     }
 loop:
-    if ((s32)pouchCheckItem(val) <= 0) {
+#ifdef MUST_MATCH
+    // Redundant self-cast: makes MWCC reuse item's callee-saved register for the
+    // u32 conversion at the pouchCheckItem call instead of emitting a copy.
+    item = (ItemType)item;
+#endif
+    if ((s32)pouchCheckItem(item) <= 0) {
         goto next;
     }
-    pouchRemoveItem(val);
+    pouchRemoveItem(item);
     goto loop;
 next:
     items++;
@@ -718,7 +723,7 @@ void irai_window_disp(CameraId cameraId, void* param) {
     f32 y;
 
     GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xA3, 0x2B}, -280.0f, 170.0f, 135.0f, 90.0f, 12.0f);
+    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -280.0f, 170.0f, 135.0f, 90.0f, 12.0f);
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);
@@ -728,8 +733,8 @@ void irai_window_disp(CameraId cameraId, void* param) {
     FontDrawString(msgSearch("irai_name2_win"), -270.0f, 127.0f);
     FontDrawEdgeOff();
     windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -129.0f, 170.0f, 410.0f, 340.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xA3, 0x2B}, -103.0f, 190.0f, 120.0f, 40.0f, 12.0f);
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xA3, 0x2B}, 91.0f, 190.0f, 120.0f, 40.0f, 12.0f);
+    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, -103.0f, 190.0f, 120.0f, 40.0f, 12.0f);
+    windowDispGX_Waku_col(0, (GXColor){0x2B, 0xA3, 0xFF, 0xFF}, 91.0f, 190.0f, 120.0f, 40.0f, 12.0f);
     FontDrawStart();
     FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     FontDrawScale(0.85f);
@@ -744,13 +749,13 @@ void irai_window_disp(CameraId cameraId, void* param) {
     GXGetScissor(&scissorX, &scissorY, &scissorW, &scissorH);
     GXSetScissor(0xAF, 0x62, 0x19A, 0x130);
     FontDrawStart();
-    FontDrawColor(&(GXColor){0xFF, 0, 0, 0});
+    FontDrawColor(&(GXColor){0, 0, 0, 0xFF});
     FontDrawScale(0.85f);
     for (i = 0; i < work->count; i++) {
         if (swGet(work->iraiId[i] + 0x14FE)) {
-            FontDrawColor(&(GXColor){0xFF, 0x80, 0x80, 0x80});
+            FontDrawColor(&(GXColor){0x80, 0x80, 0x80, 0xFF});
         } else {
-            FontDrawColor(&(GXColor){0xFF, 0, 0, 0});
+            FontDrawColor(&(GXColor){0, 0, 0, 0xFF});
         }
         if (work->iraiId[i] == swByteGet(0x58C)) {
             FontDrawColor(&(GXColor){0xFF, 0, 0, 0xFF});

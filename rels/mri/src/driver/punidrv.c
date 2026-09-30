@@ -223,12 +223,19 @@ void puniEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void)
     }
 }
 
-// NONMATCHING (90.97%): 110 of 200 instructions differ: 98 with different operands, 2 replaced, 5 missing, 5 extra
+// NONMATCHING (93.67%): 88 of 195 instructions differ, all GPR colouring and the scheduling it causes. The original
+// keeps `offset` in r29, wp in r28, ..., vi in r23 and the GX fifo base in r22; ours colours the pointer and
+// counters one register lower (vi r28, offset r22, fifo r31), so the GX vi+1/2/3 adds recompute instead of chaining.
 void puniMakeTexture(CameraId camId, void* param) {
     PuniDrvWork* wp = work;
     PuniTexture* tex = wp->textures;
     PuniTexInfo* info = param;
     s32 i;
+#ifdef MUST_MATCH
+    // The scale as a named local puts it in f30 and the int->float bias in f29, as the original does; the literal
+    // inline swaps the two FP registers.
+    f32 k = 0.34246576f;
+#endif
 
     anim_ext_tex_size = 0;
     for (i = 0; i < wp->texCount; i++) {
@@ -241,6 +248,20 @@ void puniMakeTexture(CameraId camId, void* param) {
 
         animPoseDisp_MakeExtTexture(info->unk0, info->unk8, info->unk4, &tex->texObj, tex, 5.84f, &out0, &out1,
                                     &out2, &out3);
+#ifdef MUST_MATCH
+        wp->vertices[idx++] = (f32)out0 * k;
+        wp->vertices[idx++] = (f32)(-out1) * k;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out2 * k;
+        wp->vertices[idx++] = (f32)(-out1) * k;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out2 * k;
+        wp->vertices[idx++] = (f32)(-out3) * k;
+        wp->vertices[idx++] = 0.0f;
+        wp->vertices[idx++] = (f32)out0 * k;
+        wp->vertices[idx++] = (f32)(-out3) * k;
+        wp->vertices[idx++] = 0.0f;
+#else
         wp->vertices[idx++] = (f32)out0 * 0.34246576f;
         wp->vertices[idx++] = (f32)(-out1) * 0.34246576f;
         wp->vertices[idx++] = 0.0f;
@@ -253,6 +274,7 @@ void puniMakeTexture(CameraId camId, void* param) {
         wp->vertices[idx++] = (f32)out0 * 0.34246576f;
         wp->vertices[idx++] = (f32)(-out3) * 0.34246576f;
         wp->vertices[idx++] = 0.0f;
+#endif
 
         GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
         GXBegin(0x80, 0, 4);

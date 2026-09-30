@@ -2024,8 +2024,12 @@ s32 calcPose(s32 a, s32 b, s32 c, s32 d) {
     return b + (v % (range * n)) / n;
 }
 
-// NONMATCHING (94.45%): the i<100 state==1 path in the original evaluates an extra `i % 10` branch that the
-// compiler dropped from this source, plus register-allocation differences; the rest matches.
+// The i<100 state==1 path in the original evaluates an extra dead `i % 10` test that the compiler drops from a
+// plain `if (i % 10 == 0) {}`. Writing it as the equivalent `i - i / 10 * 10 == 0` with a self-assign body keeps
+// the test. The 5 remaining instructions differ only in register allocation: the original keeps 10 in r0 and puts
+// the quotient in r4 / the calcPose remainder in r5, while this source lets the compiler reuse r0 for the
+// quotient and emit `mulli` (the rest of the function matches).
+// NONMATCHING (99.55%): only that register assignment differs.
 void kpaSen_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -2044,8 +2048,15 @@ void kpaSen_ext_main(void) {
         case 1:
             if (i < 100) {
                 pose->field_0x10 = calcPose(i, kpaSen[i].field_22, kpaSen[i].field_23, 1);
+#ifdef MUST_MATCH
+                // Match-only: the equivalent `i % 10 == 0` with an empty body is removed by the compiler.
+                if (i - i / 10 * 10 == 0) {
+                    kpaSen[i].field_18 = kpaSen[i].field_18;
+                }
+#else
                 if (i % 10 == 0) {
                 }
+#endif
             }
             else {
                 pose->field_0x10 = calcPose(i - 100, kpaSen[i].field_22, kpaSen[i].field_23, 1);

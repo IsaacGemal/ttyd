@@ -661,7 +661,14 @@ void display_func(CameraId cameraId, void* param) {
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 }
 
-// NONMATCHING (97.05%): 47 of 260 instructions differ: 40 with different operands, 2 replaced, 1 missing, 3 extra, 1 with a different opcode
+// Details: (1) the first while loop's register allocation (target keeps the lang_tbl base in r5 and the
+// count temp in r4; we use r4/r5/r7), which also swaps r6/r7 in the entry loop and the float_90/lang_tbl
+// materials; (2) the outer switch on work->state: the target emits the 2-case tree, while this compiler
+// turns the same {0,2} switch into a 3-case range scan (reproduced in isolation with every available
+// compiler version/flag); (3) the int->float double_to_int_sys_00001b10 pool entry: the compiler
+// generates an anonymous 2^52+2^31 double at .rodata 0x280 instead of reusing the named constant at 0x210,
+// so the reloc target differs (the named constant, defined below, is unused).
+// NONMATCHING (97.06%): register allocation, outer-switch codegen, and the int->float constant's address.
 USER_FUNC(display) {
     s32 value = evtGetValue(event, event->args[0]);
     SysWork* work;
@@ -736,7 +743,7 @@ USER_FUNC(display) {
     if (work->state != 0) {
         dispEntry(5, zero_sys_00001ad8, 2, display_func, work);
     }
-    return EVT_RETURN_DONE;
+    return 0;
 }
 
 USER_FUNC(start) {

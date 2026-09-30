@@ -138,16 +138,20 @@ void demo_cap(void) {
     }
 }
 
-// NONMATCHING (93%): GXColor now matches (compound literal) but the four vertex constants are
-// scheduled with different FPRs / pool loads than the original (ours `fmuls f3, f2, f0`, original
-// `fmuls f5, f0, f4`).
 void demo_desk(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(8);
     GXTexObj texObj;
     Mtx m1;
     Mtx m2;
+#ifdef MUST_MATCH
+    // MUST_MATCH: these temporaries pin MWCC's FPR assignment and commutative-operand order; the
+    // #else branch is the natural form and does not match.
     f32 w = 608.0f;
     f32 h = 480.0f;
+    f32 top = 240.0f;
+    f32 right = 304.0f;
+    f32 half = 0.5f;
+#endif
 
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(0.0f, 0.0f, 608.0f, 480.0f, 0.0f, 1.0f);
@@ -179,14 +183,25 @@ void demo_desk(CameraId cameraId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
     GXBegin(0x80, 0, 4);
-    GXPosition3f32(-w * 0.5f, 240.0f, 0.0f);
+#ifdef MUST_MATCH
+    GXPosition3f32(-w * half, top, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(right, top, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(right, -h * half, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-w * half, -h * half, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+#else
+    GXPosition3f32(-608.0f * 0.5f, 240.0f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(304.0f, 240.0f, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(304.0f, -h * 0.5f, 0.0f);
+    GXPosition3f32(304.0f, -480.0f * 0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(-w * 0.5f, -h * 0.5f, 0.0f);
+    GXPosition3f32(-608.0f * 0.5f, -480.0f * 0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
+#endif
 }
 
 // NONMATCHING (85.19%): GXColor now matches (compound literal); frame is 0x110 vs 0x130 (the original

@@ -1301,10 +1301,12 @@ u32 rose_table[120] = {
     0x433E0000, 0x43870000, 0x433E0000, 0xC3820000,
 };
 
-// NONMATCHING (99.91%): only the two negation temporaries differ. The original computes left/bottom as
+// NONMATCHING (99.92%): only the two negation temporaries differ. The original computes left/bottom as
 // `fneg f2,f0` (w) and `fneg f1,f1` (h) then `fmuls f29,f2,0.5` / `fmuls f28,f1,0.5`; MWCC 2.6 negates directly into
 // the persistent f29/f28 (`fneg f29,f0` / `fneg f28,f1` / `fmuls f29,f29,0.5`). Every source shape that forces a
-// separate temp (`-w * 0.5f`, `-w / 2.0f`, explicit intermediates) reorders the .rodata float pool and scores lower.
+// separate temp (`-w * 0.5f`, `-w / 2.0f`, explicit intermediates, an inline helper) either leaves the pool order
+// `101,0.5,92` instead of `101,92,0.5` (so the file would not link) or, when `bottom = -h` keeps the pool right,
+// assigns left to f31 instead of f29 and shifts top/right, scoring 99.73%. The baseline below is the best shape.
 void flower_disp(CameraId camera, void* param) {
     CameraEntry* cam = camGetPtr(camera);
     FlowerData* data = (FlowerData*)param;

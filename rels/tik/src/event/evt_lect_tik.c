@@ -339,7 +339,65 @@ static USER_FUNC(lecture_button_set_pos) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.39%): lvl2's second value lands in r30; the original keeps it in r29 (register allocation).
+static inline void lect_map_cam_chg_sub_next(MapObject* a, s32 b) {
+    MapObject* lvl3;
+    MapObject* lvl2;
+    MapObject* lvl1;
+
+    lvl3 = a->next;
+    if (lvl3 != NULL) {
+        MAPOBJ_FLAG(lvl3) = b;
+        lvl2 = lvl3->child;
+        if (lvl2 != NULL) {
+            MAPOBJ_FLAG(lvl2) = b;
+            lvl1 = lvl2->child;
+            if (lvl1 != NULL) {
+                MAPOBJ_FLAG(lvl1) = b;
+                if (lvl1->child != NULL) {
+                    lect_map_cam_chg_sub(lvl1->child, b, 1);
+                }
+                if (lvl1->next != NULL) {
+                    lect_map_cam_chg_sub(lvl1->next, b, 1);
+                }
+            }
+            lvl2 = lvl2->next;
+            if (lvl2 != NULL) {
+                MAPOBJ_FLAG(lvl2) = b;
+                if (lvl2->child != NULL) {
+                    lect_map_cam_chg_sub(lvl2->child, b, 1);
+                }
+                if (lvl2->next != NULL) {
+                    lect_map_cam_chg_sub(lvl2->next, b, 1);
+                }
+            }
+        }
+        lvl3 = lvl3->next;
+        if (lvl3 != NULL) {
+            MAPOBJ_FLAG(lvl3) = b;
+            lvl2 = lvl3->child;
+            if (lvl2 != NULL) {
+                MAPOBJ_FLAG(lvl2) = b;
+                if (lvl2->child != NULL) {
+                    lect_map_cam_chg_sub(lvl2->child, b, 1);
+                }
+                if (lvl2->next != NULL) {
+                    lect_map_cam_chg_sub(lvl2->next, b, 1);
+                }
+            }
+            lvl3 = lvl3->next;
+            if (lvl3 != NULL) {
+                MAPOBJ_FLAG(lvl3) = b;
+                if (lvl3->child != NULL) {
+                    lect_map_cam_chg_sub(lvl3->child, b, 1);
+                }
+                if (lvl3->next != NULL) {
+                    lect_map_cam_chg_sub(lvl3->next, b, 1);
+                }
+            }
+        }
+    }
+}
+
 static void lect_map_cam_chg_sub(MapObject* a, s32 b, s32 c) {
     MapObject* lvl3;
     MapObject* lvl2;
@@ -373,6 +431,34 @@ static void lect_map_cam_chg_sub(MapObject* a, s32 b, s32 c) {
                 }
             }
         }
+        // MUST_MATCH: walking the sibling subtree through lvl2/lvl3 (instead of lvl3/lvl2 as written
+        // naturally above) is what makes MWCC keep the values in the original's r28/r29.
+#ifdef MUST_MATCH
+        lvl2 = lvl1->next;
+        if (lvl2 != NULL) {
+            MAPOBJ_FLAG(lvl2) = b;
+            lvl3 = lvl2->child;
+            if (lvl3 != NULL) {
+                MAPOBJ_FLAG(lvl3) = b;
+                if (lvl3->child != NULL) {
+                    lect_map_cam_chg_sub(lvl3->child, b, 1);
+                }
+                if (lvl3->next != NULL) {
+                    lect_map_cam_chg_sub(lvl3->next, b, 1);
+                }
+            }
+            lvl2 = lvl2->next;
+            if (lvl2 != NULL) {
+                MAPOBJ_FLAG(lvl2) = b;
+                if (lvl2->child != NULL) {
+                    lect_map_cam_chg_sub(lvl2->child, b, 1);
+                }
+                if (lvl2->next != NULL) {
+                    lect_map_cam_chg_sub(lvl2->next, b, 1);
+                }
+            }
+        }
+#else
         lvl3 = lvl1->next;
         if (lvl3 != NULL) {
             MAPOBJ_FLAG(lvl3) = b;
@@ -397,60 +483,10 @@ static void lect_map_cam_chg_sub(MapObject* a, s32 b, s32 c) {
                 }
             }
         }
+#endif
     }
     if (c != 0) {
-        lvl3 = a->next;
-        if (lvl3 != NULL) {
-            MAPOBJ_FLAG(lvl3) = b;
-            lvl2 = lvl3->child;
-            if (lvl2 != NULL) {
-                MAPOBJ_FLAG(lvl2) = b;
-                lvl1 = lvl2->child;
-                if (lvl1 != NULL) {
-                    MAPOBJ_FLAG(lvl1) = b;
-                    if (lvl1->child != NULL) {
-                        lect_map_cam_chg_sub(lvl1->child, b, 1);
-                    }
-                    if (lvl1->next != NULL) {
-                        lect_map_cam_chg_sub(lvl1->next, b, 1);
-                    }
-                }
-                lvl2 = lvl2->next;
-                if (lvl2 != NULL) {
-                    MAPOBJ_FLAG(lvl2) = b;
-                    if (lvl2->child != NULL) {
-                        lect_map_cam_chg_sub(lvl2->child, b, 1);
-                    }
-                    if (lvl2->next != NULL) {
-                        lect_map_cam_chg_sub(lvl2->next, b, 1);
-                    }
-                }
-            }
-            lvl3 = lvl3->next;
-            if (lvl3 != NULL) {
-                MAPOBJ_FLAG(lvl3) = b;
-                lvl2 = lvl3->child;
-                if (lvl2 != NULL) {
-                    MAPOBJ_FLAG(lvl2) = b;
-                    if (lvl2->child != NULL) {
-                        lect_map_cam_chg_sub(lvl2->child, b, 1);
-                    }
-                    if (lvl2->next != NULL) {
-                        lect_map_cam_chg_sub(lvl2->next, b, 1);
-                    }
-                }
-                lvl3 = lvl3->next;
-                if (lvl3 != NULL) {
-                    MAPOBJ_FLAG(lvl3) = b;
-                    if (lvl3->child != NULL) {
-                        lect_map_cam_chg_sub(lvl3->child, b, 1);
-                    }
-                    if (lvl3->next != NULL) {
-                        lect_map_cam_chg_sub(lvl3->next, b, 1);
-                    }
-                }
-            }
-        }
+        lect_map_cam_chg_sub_next(a, b);
     }
 }
 

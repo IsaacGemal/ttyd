@@ -36,7 +36,15 @@ const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 // two `(1.0f - t)` uses are merged and MWCC puts `1.0f`/`wp->field_18` in different FP
 // registers, which changes the whole block.  Same reason as evt_badgeshop.c/evt_sub.c.
 #pragma opt_common_subs off
-// NONMATCHING (95.65%): only FP scratch allocation differs: the `0.8f * t + 0.2f` fmadds writes f0 where the original writes f1 (products then swap f0/f1) and the tail schedules the `msg` load one instruction early.  Same MWCC allocator limitation as shadowdrv.c:cylinder.
+// NONMATCHING (95.66%): only MWCC's encoding/allocation of the FMA block differs.  For `x = x * const` this
+// compiler forces the constant into FRA (`fmuls fD, const, x`); the original keeps the product in FRA
+// (`fmuls fD, x, const`).  A `x *= const` compound assignment does emit `fmuls fD, x, const`, so rewriting
+// halfWidth as `halfWidth = scale * w; halfWidth *= 0.5f;` fixes the operand order but puts both the product and
+// the result in f30, where the original has the product in scratch f1 and the result in f30.  The same
+// allocator choice swaps the `0.8f * t + 0.2f` fmadds destination (ours f0, target f1) and its dependent
+// fmuls/fmadds.  The tail also hoists `lwz r3, wp->msg` one instruction early.  Tried: every statement/temporary
+// order, MATCH_F32, pointer/inline lerp, register/volatile, all opt_* pragmas, and GC/1.3.2r..3.0a5; the target
+// object's allocation is not reproduced by any available MWCC build.  Same class as shadowdrv.c:cylinder.
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;

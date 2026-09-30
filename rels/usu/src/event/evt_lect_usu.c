@@ -338,19 +338,26 @@ static USER_FUNC(lecture_button_seq_wait) {
     return (btn->seq != seq) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.62%): 11 of 51 instructions differ in operands only (registers or offsets)
 static USER_FUNC(lecture_button_set_pos) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
-    Vec pos = {0.0f, 0.0f, 0.0f};
+    Vec pos = vec3_usu_0000644c;
 
     pos.x = x;
     pos.y = y;
     pos.z = z;
+#ifdef MUST_MATCH
+    // Split out so the pointer is computed after the temp is built: matches the original's register allocation.
+    {
+        LectureButton* btn = &lbtn[idx];
+        btn->position = pos;
+    }
+#else
     lbtn[idx].position = pos;
+#endif
     return EVT_RETURN_DONE;
 }
 
