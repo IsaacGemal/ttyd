@@ -241,8 +241,23 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	return TRUE;
 }
 
+extern Vec vec3_80301278;
+extern Vec vec3_80301284;
+extern Vec vec3_80301290;
+extern Vec vec3_8030129c;
+extern Vec vec3_803012a8;
+extern Vec vec3_803012b4;
+// MUST_MATCH: the original reaches these six Vecs as offsets from vec3_803011e8.
+#ifdef MUST_MATCH
+#define BIRI_VEC(k, sym) vec[k]
+#else
+#define BIRI_VEC(k, sym) (sym)
+#endif
+
 BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
+#ifdef MUST_MATCH
 	Vec* vec = vec3_803011e8;
+#endif
 	s32 type = disp->id;
 	s32 turnCount;
 	s8 turns;
@@ -260,7 +275,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		return FALSE;
 	}
 
-	*(Vec*)((u8*)entry + 0xC) = vec[12];
+	*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(12, vec3_80301278);
 
 	switch (*counter) {
 	case 0:
@@ -268,7 +283,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		*duration = irand(6) + 4;
 		// fallthrough
 	case 1:
-		*(Vec*)((u8*)entry + 0xC) = vec[13];
+		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(13, vec3_80301284);
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*counter = *counter + 1;
@@ -276,7 +291,7 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 		}
 		break;
 	case 2:
-		*(Vec*)((u8*)entry + 0xC) = vec[14];
+		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(14, vec3_80301290);
 		*duration = *duration - 1;
 		if (*duration < 0) {
 			*duration = irand(6) + 4;
@@ -301,10 +316,10 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #endif
 	*(s32*)((u8*)entry + 0x4) = turnCount;
 	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)((u8*)entry + 0x18) = vec[15];
-	*(Vec*)((u8*)entry + 0x24) = vec[16];
+	*(Vec*)((u8*)entry + 0x18) = BIRI_VEC(15, vec3_8030129c);
+	*(Vec*)((u8*)entry + 0x24) = BIRI_VEC(16, vec3_803012a8);
 	*(s32*)((u8*)entry + 0x3C) = dat_804221fc;
 	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = vec[17];
+	*(Vec*)((u8*)entry + 0x30) = BIRI_VEC(17, vec3_803012b4);
 	return TRUE;
 }

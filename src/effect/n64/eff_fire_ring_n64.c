@@ -6,23 +6,7 @@
 
 #include "math_ext.h"
 
-// .sdata2 float constants (named after their original addresses).
-extern const f32 float_0_8041ee6c;
-extern const f32 float_neg1p1_8041ee84;
-extern const f32 float_0p4_8041ee88;
-extern const f32 float_1_8041ee8c;
-extern const f32 float_0p1_8041ee90;
-extern const f32 float_0p015873_8041ee68;
-extern const f32 float_0p032258_8041ee70;
-
 // .sdata2 TEV colour initialisers (global in the original, no header declares them).
-extern GXColor dat_8041ee60;
-extern GXColor dat_8041ee64;
-
-const Vec vec3_802fa588 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fa598 = 4503601774854144.0;
-
-const char str_802FA5A0[12] = "FireRingN64";
 
 // .data vertex array, local to this unit in the original.
 static u32 stg__s_v[0x348 / 4] = {
@@ -111,7 +95,7 @@ EffectEntry* effFireRingN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	effFireRingData* data;
 
 	entry = effEntry();
-	entry->type = str_802FA5A0;
+	entry->type = "FireRingN64";
 	entry->count = 32;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFireRingData) * 32);
 	entry->userdata = data;
@@ -124,16 +108,16 @@ EffectEntry* effFireRingN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	data->alpha = 0xff;
 	data->life = life;
 	data->counter = 0;
-	data->rotX = float_0_8041ee6c;
-	data->rotY = float_0_8041ee6c;
-	data->rotZ = float_0_8041ee6c;
-	data->rotW = float_0_8041ee6c;
-	data->rotSpeedX = float_neg1p1_8041ee84;
-	data->rotSpeedY = float_0_8041ee6c;
-	data->rotSpeedZ = float_0p4_8041ee88;
-	data->rotSpeedW = float_1_8041ee8c;
-	data->angle = float_0_8041ee6c;
-	data->angleSpeed = float_0p1_8041ee90 * scale;
+	data->rotX = 0.0f;
+	data->rotY = 0.0f;
+	data->rotZ = 0.0f;
+	data->rotW = 0.0f;
+	data->rotSpeedX = -1.1f;
+	data->rotSpeedY = 0.0f;
+	data->rotSpeedZ = 0.4f;
+	data->rotSpeedW = 1.0f;
+	data->angle = 0.0f;
+	data->angleSpeed = 0.1f * scale;
 	data->colorR = 0xff;
 	data->colorG = 0xff;
 	data->colorB = 0x40;
@@ -149,7 +133,7 @@ void effFireRingMain(EffectEntry* effect) {
 	   effFlameMain / effGlassMain). */
 	Vec position;
 #endif
-	Vec disp = vec3_802fa588;
+	Vec disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	s32 life;
 	s32 counter;
 	f32 max;
@@ -175,10 +159,10 @@ void effFireRingMain(EffectEntry* effect) {
 	counter = data->counter;
 	if (counter & 1) {
 		r = effTblRandN64(0x168, counter);
-		angle = float_6p2832_8041ee74 * (f32)r / float_360_8041ee78;
+		angle = 6.2831855f * (f32)r / 360.0f;
 		sin(angle);
 		cos(angle);
-		effFireDustN64Entry(0, 10, 20, data->x, data->y, data->z, (f32)(counter * 8), float_10_8041ee7c);
+		effFireDustN64Entry(0, 10, 20, data->x, data->y, data->z, (f32)(counter * 8), 10.0f);
 	}
 
 	data->angle += data->angleSpeed;
@@ -204,17 +188,17 @@ void effFireRingMain(EffectEntry* effect) {
 	if (data->rotW > max) {
 		data->rotW -= max;
 	}
-	if (data->rotX < float_0_8041ee6c) {
-		data->rotX += float_128_8041ee80;
+	if (data->rotX < 0.0f) {
+		data->rotX += 128.0f;
 	}
-	if (data->rotY < float_0_8041ee6c) {
-		data->rotY += float_128_8041ee80;
+	if (data->rotY < 0.0f) {
+		data->rotY += 128.0f;
 	}
-	if (data->rotZ < float_0_8041ee6c) {
-		data->rotZ += float_128_8041ee80;
+	if (data->rotZ < 0.0f) {
+		data->rotZ += 128.0f;
 	}
-	if (data->rotW < float_0_8041ee6c) {
-		data->rotW += float_128_8041ee80;
+	if (data->rotW < 0.0f) {
+		data->rotW += 128.0f;
 	}
 
 #ifdef MUST_MATCH
@@ -225,13 +209,13 @@ void effFireRingMain(EffectEntry* effect) {
 }
 
 static inline void effFireRingSetColor0(s32 alpha) {
-	GXColor color = dat_8041ee60;
+	GXColor color = (GXColor){ 0xFF, 0xB3, 0x1E, 0x00 };
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
 static inline void effFireRingSetColor1(effFireRingData* data) {
-	GXColor color = dat_8041ee64;
+	GXColor color = (GXColor){ 0x00, 0x00, 0x00, 0x80 };
 	color.r = data->colorR;
 	color.g = data->colorG;
 	color.b = data->colorB;
@@ -249,13 +233,13 @@ void effFireRingDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 
-	PSMTXScale(scale, float_0p015873_8041ee68, float_0p015873_8041ee68, float_0_8041ee6c);
-	PSMTXTrans(trans, data->rotX, data->rotY, float_0_8041ee6c);
+	PSMTXScale(scale, 0.015873017f, 0.015873017f, 0.0f);
+	PSMTXTrans(trans, data->rotX, data->rotY, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
 
-	PSMTXScale(scale, float_0p032258_8041ee70, float_0p032258_8041ee70, float_0_8041ee6c);
-	PSMTXTrans(trans, data->rotZ, data->rotW, float_0_8041ee6c);
+	PSMTXScale(scale, 0.032258064f, 0.032258064f, 0.0f);
+	PSMTXTrans(trans, data->rotZ, data->rotW, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
 

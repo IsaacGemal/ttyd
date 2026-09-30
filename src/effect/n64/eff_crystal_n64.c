@@ -9,7 +9,6 @@
 #include <dolphin/mtx.h>
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
-GXColor unk_804230d0;
 
 // .data vertex arrays, referenced by effCrystalDisp.
 u32 size108x108_tex32x32_vtx[0x38 / 4] = {
@@ -158,7 +157,14 @@ void effCrystalMain(EffectEntry* effect) {
 		data->field_0x20 = 70;
 		data->field_0x24 = 180;
 		data->field_0x28 = 120;
+#ifdef MUST_MATCH
+		{
+			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
+			data->field_0x2C = 190 + (s32)(10.0f * t);
+		}
+#else
 		data->field_0x2C = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+#endif
 		data->field_0x2C = data->field_0x2C * alpha / 255;
 		break;
 	case 1:
@@ -172,7 +178,14 @@ void effCrystalMain(EffectEntry* effect) {
 		data->field_0x20 = 170;
 		data->field_0x24 = 40;
 		data->field_0x28 = 110;
+#ifdef MUST_MATCH
+		{
+			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
+			data->field_0x2C = 190 + (s32)(10.0f * t);
+		}
+#else
 		data->field_0x2C = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+#endif
 		data->field_0x2C = data->field_0x2C * alpha / 255;
 		break;
 	case 3:
@@ -186,7 +199,14 @@ void effCrystalMain(EffectEntry* effect) {
 		data->field_0x20 = 235;
 		data->field_0x24 = 235;
 		data->field_0x28 = 200;
+#ifdef MUST_MATCH
+		{
+			f32 t = (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f);
+			data->field_0x2C = 215 + (s32)(15.0f * t);
+		}
+#else
 		data->field_0x2C = 215 + (s32)(15.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+#endif
 		data->field_0x2C = data->field_0x2C * alpha / 255;
 		break;
 	case 5:
@@ -247,7 +267,7 @@ void effCrystalMain(EffectEntry* effect) {
 
 // Helper keeps the GXColor build in a separate local (r1+0x8 → arg r1+0xc), as the original does.
 static inline void crystalSetColor(EffCrystalData* data, s32 alpha) {
-	GXColor color = unk_804230d0;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->field_0x20;
 	color.g = data->field_0x24;
 	color.b = data->field_0x28;

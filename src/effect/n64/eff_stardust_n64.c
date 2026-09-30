@@ -53,9 +53,10 @@ extern const f32 float_0p9_8041ff28;
 // opt_common_subs on breaks the two fmadds contractions in the particle update; the original still
 // has them, so keep common subexpression merging off for this function.
 #pragma opt_common_subs off
-// NONMATCHING (98.67%): the int->float conversion of `i & 3` in the type-0 random branch uses the
-// general `xoris` + double_to_int_802fb788 path in the original, but MWCC proves `i & 3` is in
-// [0,3] and emits the cheaper double_to_int_mask_802fb780 path, dragging 19 register diffs.
+// NONMATCHING (98.67%): the original converts `i & 3` in the type-0 random branch with the signed
+// `clrlwi` + `xoris` + double_to_int_802fb788 path. The `(f32)(u32)(i & 3)` cast in this C picks the
+// unsigned double_to_int_mask_802fb780 path, but dropping it scores lower (95.92%), so it stays as a
+// matching choice; `i & 3` is never negative, so behaviour is the same. 19 register diffs follow.
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
 #ifdef MUST_MATCH

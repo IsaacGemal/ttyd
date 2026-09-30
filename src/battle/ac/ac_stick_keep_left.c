@@ -38,8 +38,9 @@ typedef struct StickKeepLeftWork {
 // with -O4,s; without this pragma MWCC emits separate stw/lwz for r23-r31.
 #pragma optimize_for_size on
 // NONMATCHING (98.29%): string pointers copied through a `mr`; case 0x3EB empty loop lacks the second
-// bound check (`blt` + `cmpwi r3, 0`); ok_frame index gets an `extsb` because battle_ac.h says the
-// callee returns `s8` while its definition is `u8` (`lbz r3, 0x1cbd(r3)`).
+// bound check (`blt` + `cmpwi r3, 0`); ok_frame index gets an extra `extsb` after the call to
+// BattleActionCommandGetDifficulty (header and definition both return `s8`, so the cause is not the
+// callee's type; the original's bare `lbz` is how an s8 return compiles).
 s32 battleAcMain_StickKeepLeft(BattleWork* work) {
     const char* piName;
     const char* poneName;

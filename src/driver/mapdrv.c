@@ -248,9 +248,11 @@ void mapObjClearOffScreen(const char* name) {
 	*(u32*)obj->field_0x0 &= ~0x80;
 }
 
-// NONMATCHING (97.86%): offscreenNameToId result goes r3->r4 directly; target uses r0
 void mapGrpSetOffScreen(const char* name, const char* offName) {
-	_setOffScrnId(mapGetMapObjSub(name), offscreenNameToId(offName), 0);
+	MapObject* obj = mapGetMapObjSub(name);
+	s32 id = offscreenNameToId(offName);
+
+	_setOffScrnId(obj, id, 0);
 }
 
 void mapObjSetOffScreen(const char* name, const char* offName) {
@@ -897,9 +899,6 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	return NULL;
 
-
-
-
 }
 
 //recursively inlined
@@ -929,7 +928,6 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	memset(wp->entries[index].objects, 0, size);
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
-
 
 // NONMATCHING (0.70%): only the opening/loop skeleton is present
 void makeDisplayList(BOOL group) {
@@ -1155,7 +1153,6 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 			break;
 		}
 	}
-
 
 }
 
@@ -1823,11 +1820,6 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 }
 
-
-
-
-
-
 static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 	BOOL recalc;
 
@@ -2024,10 +2016,6 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
     }
     return 0;
 }
-
-
-
-
 
 // NONMATCHING (0.28%): only a stub is present
 void mapSetMaterialLight(s32 flags, Vec position) {

@@ -15,20 +15,20 @@ extern const f32 float_6_80421b44;
 extern const f32 float_100_80421b14;
 extern const s32 dat_80421ad8;
 
-// Read-only block shared by the action-command functions: the ten zero Vecs the
-// original unit emitted, followed by the two float-conversion doubles.
-typedef struct GaugeTiming2RoData {
-	Vec vec[10];            // 0x00
-	f64 double_6;           // 0x78
-	f64 double_to_int;      // 0x80
-	f64 double_to_int_mask; // 0x88
-} GaugeTiming2RoData;
-
-const GaugeTiming2RoData gaugeTiming2RoData = {
-	{ {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f},
-	  {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f} },
-	6.0, 4503601774854144.0, 4503599627370496.0
-};
+// .rodata objects of this unit: ten zero Vecs, then the float-conversion doubles.
+const Vec vec3_802fffe0 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fffec = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ffff8 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300004 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300010 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_8030001c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300028 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300034 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_80300040 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_8030004c = { 0.0f, 0.0f, 0.0f };
+const f64 double_6_80300058 = 6.0;
+const f64 double_to_int_80300060 = 4503601774854144.0;
+const f64 double_to_int_mask_80300068 = 4503599627370496.0;
 
 // GaugeTiming2's per-battle action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct GaugeTiming2Work {
@@ -54,11 +54,10 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// NONMATCHING (91.27%): logic and .rodata layout match; MWCC's register allocator assigns work/disp to
-// r23/r22 instead of r25/r23, materialises an extra base for rd, and pool-emits the s32->f32 conversion
-// constant at .rodata 0xC8 instead of reusing double_to_int at 0x80. Byte size (1628) matches.
+// NONMATCHING (91.25%): logic matches; MWCC's register allocator assigns work/disp to r23/r22
+// instead of r25/r23, and pool-emits the s32->f32 conversion constant at .rodata 0xC8 instead of
+// reusing double_to_int at 0x80. Byte size (1628) matches.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
-	const GaugeTiming2RoData* rd = &gaugeTiming2RoData;
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
 	BattleUnit* unit = work->actionCommands.mAcUnit;
@@ -162,7 +161,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 			const char* pone = str_80300084;
 			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
 				if (dec->state[i] == 0) {
-					if (__fabs(dec->progress - dec->value[i]) <= rd->double_6) {
+					if (__fabs(dec->progress - dec->value[i]) <= double_6_80300058) {
 						dec->field_0x10 = 1;
 						if (dec->sound[i] == -1) {
 							dec->sound[i] = psndSFXOn(pone);
@@ -175,7 +174,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		if (autoFlag) {
 			s32 found = 0;
 			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
-				if (dec->state[i] == 0 && __fabs(dec->progress - dec->value[i]) <= rd->double_6) {
+				if (dec->state[i] == 0 && __fabs(dec->progress - dec->value[i]) <= double_6_80300058) {
 					found = 1;
 					break;
 				}
@@ -196,7 +195,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 					continue;
 				}
 				diff = __fabs(dec->progress - dec->value[i]);
-				if (diff <= rd->double_6) {
+				if (diff <= double_6_80300058) {
 					if (autoFlag == 0 && dec->flag[i] != 0) {
 						dec->state[i] = -1;
 						psndSFXOn(ng2);

@@ -298,7 +298,7 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     if (part->attributes & 0x20000000) {
         return 0;
     }
-    if (attacker != 0 && ((u32)weapon->special & 1) && attacker->badgesEquipped.AllOrNothing) {
+    if (attacker != 0 && (weapon->special & 1) && attacker->badgesEquipped.AllOrNothing) {
         if (!(wp->actionCommands.result & 0x2)) {
             return 0;
         }

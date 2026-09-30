@@ -2386,9 +2386,48 @@ read other agents' workspaces; the next launcher runs each agent under bubblewra
 
 46 files (the smallest untouched function up to 2 KB in each file not held by Claude #3), 23:40-00:27, launched from
 82c6f01 (wave 24 before its review fixes) and collected onto main b22654f with scratch/wave24/collect.py: 46 merged
-cleanly. **32 at 100%, 14 at 90-99%.** Fixed at collection: battle_mario.c's `extern s32 weaponGetPowerTatsumaki[]`
+cleanly. **31 at 100%, 15 at 90-99%.** Fixed at collection: battle_mario.c's `extern s32 weaponGetPowerTatsumaki[]`
 stand-in clashed with the prototype an agent added to battle_weapon_power.h, so it includes the header now; six
 units whose data got worse were fixed the same way as wave 24 (literals where main names nothing, named externs
 where it does, definitions in pool order). seq_title's L_titleInit drops to 91.55%: its 100% needed the strings
-read as offsets past vec3_802c11a0. Follow-up: evt_mobj.c is written in the asm's order, not rule 18's reverse.
+read as offsets past vec3_802c11a0. Review (Claude + Codex) fixes: eff_ripple's dat_8041fb98 was byte-reversed (white with alpha 0, not cyan);
+effFireDustMain's discarded rand() was MUST_MATCH-only, which shifts every later random number in other builds;
+ac_gauge_timing2 names its 13 rodata symbols instead of an invented struct; mobj_lock is back in its rule-18 place
+(evt_mobj .sdata2 30.29 -> 29.81, accepted); sac_deka, eff_syuryou and battle_status_icon's biribiri keep their
+offsets-past-a-symbol reads only under MUST_MATCH, with the named symbols under #else, because the named form
+costs a 100% function in each. Follow-up: evt_mobj.c is mostly written in the asm's order, not rule 18's reverse.
 The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only functions over 1 KB left.
+
+## Grind 21 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3"): pool-literal finisher, near-miss sweep
+
+- **Units whose code was 100% but that failed at link** (undefined extern `.sdata2` constants) link once the constants are
+  literals in the code, so the compiler builds the pool in first-use order: `float_*` externs become `1.0f`-style literals, the
+  named `double_to_int_*`, `vec3_*` (zero vectors: `(Vec){ 0, 0, 0 }`) and `str_*` definitions go away, a `dat_*` colour
+  becomes `(GXColor){ r, g, b, a }`, and a zero `.sbss2` scratch `GXColor` (`unk_*`) becomes `(GXColor){ 0, 0, 0, 0 }`
+  (the compiler pools zero colour literals into `.sbss2`). `MATCH_F32` / volatile wrappers around the constants go too. The
+  same trick, applied by a script over the unit, linked: eff_miss_star, eff_treasure_map, eff_laser, eff_dogabon_attack_n64,
+  eff_coin_n64, eff_fire_ring_n64, eff_guruguru_n64, eff_rothammer_success_n64, eff_holography_n64, eff_freeze_n64,
+  battle_message, eff_torch. Vertex tables the unit owns (`.data`) come from `tools/dol_gen.py`; a `u32` table where the code
+  indexes a byte array needs `(u8*)` in the pointer arithmetic (holography: `ach_01_v + i * 0x134`).
+- **Still open in that class**: eff_ice, eff_mizutama, eff_machinegun, eff_bush, eff_crystal, eff_kemuri4/6/7, eff_onpu,
+  eff_packn_bfire, eff_rubble, eff_snowman, eff_ice_n64, evt_snd (each needs its own `.data`/`lbl_` object or has a
+  pool-order or size mismatch), and hw_aramdma.
+- **hw_aramdma `.bss` order** (parked): the target has `aramQueueLo` then `aramQueueHi`; ours emits Hi first whatever the
+  declaration order. Tried: swapping the two declarations, swapping the two stores in the inline `aramQueueInit`, taking
+  `&aramQueueHi` first, one wrapper struct holding both (changes the addressing: +8 bytes of `.text`), `__declspec(section
+  ".bss")` (does not compile). Nothing moved Lo first.
+- **Near-miss list**: `effKemuri2Main` (the `userdata` pointer lands in r31 instead of r7), `itemDelete` /
+  `btlUnitItemDisp2` / `kpa_fall_80213C38` (the target lays `if (x >= a && x < b)` as `bge X; b Y` with the then-block after
+  the `b`; no source form found), `lightGetNearObj` (`cmplwi` on the tail-loop count, casts made it worse), `sndCheckEmitter`
+  (reads `flags` at 0xc where our `SND_EMITTER` has it at 0x10; library version difference), iconDispGx `s16`→`u16` (changes
+  the dol checksum). Matches: effFallDispInseki (`rad` temp under `MUST_MATCH`), mario_kemuri_landon (`!x` keeps the compare
+  order), mapGrpSetOffScreen (locals instead of a nested call), evt_nannpc_move_position2 (declaration order).
+
+- **Pool-literal finisher, second round** (2026-09-30): eff_snowman_n64, eff_onpu_n64, eff_kemuri6_n64, eff_crystal_n64 and
+  eff_rubble_n64 link. A `lbl_*` `.data` pair another unit reaches (`{ -1.0f, 1.0f }` in snowman and onpu) is a
+  `__declspec(section ".data") f32 lbl_...[2]` defined after the unit's other `.data`. The pool order follows first use, and a
+  `C * sin(x)` / `(f32)i * 0.8f` written with a temp (`f32 t = (f32)sin(x); ... C * t`, `f32 k = 0.8f;`, under `MUST_MATCH`)
+  swaps two adjacent pool entries. Left open with one to sixteen differing words: eff_kemuri4 (compare operands of `a5 != 0.0f`
+  keep their register order), eff_kemuri7 (the `field_0x60 == 0.0f` load order), eff_ice_n64 (one `fmuls` operand order),
+  eff_packn_bfire (FP register allocation once the volatile constants become literals), eff_bush (Disp frame size),
+  eff_ice/eff_mizutama/eff_machinegun/evt_snd (event-script data or `.data` objects not written).

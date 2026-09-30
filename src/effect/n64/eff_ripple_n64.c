@@ -227,7 +227,7 @@ void effRippleN64SetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 	data->field_0x30 = rz;
 }
 
-const GXColor dat_8041fb98 = { 0x00, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041fb98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const f32 float_0p0625_8041fb9c = 0.0625f;
 const f32 float_0_8041fba0 = 0.0f;
 const f32 float_0p03125_8041fba4 = 0.03125f;

@@ -210,11 +210,8 @@ void effFireDustMain(EffectEntry* effect) {
         }
         if (data->field_0x30 == 0) {
             angle = (f32)(rand() % 360);
-#ifdef MUST_MATCH
-            /* MUST_MATCH: the original discards a rand() result here before scaling the
-               angle; the RNG state feeds later particles, so it is not removable. */
+            /* The original discards a rand() result here; the RNG state feeds later particles. */
             (void)rand();
-#endif
             angle = float_6p2832_8041ee30 * angle / float_360_8041ee34;
             data->x = radius * (f32)sin(angle);
             data->y = (f32)(rand() % ival) - half;

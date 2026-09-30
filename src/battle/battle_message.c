@@ -8,9 +8,6 @@
 #include "data/item_data.h"
 #include <stdio.h>
 
-f32 float_900_8041e850 = 900.0f;
-const GXColor dat_8041e840 = {0xFF, 0xFF, 0xFF, 0xFF};
-
 // The original saves r25-r31 with stmw/lmw (size-oriented prologue); battle_message.c wants -O4,s.
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
 USER_FUNC(btlevtcmd_AnnounceMessage) {
@@ -48,7 +45,7 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
             }
         }
     }
-    dispEntry(CAMERA_2D, float_900_8041e850, 1, _disp, NULL);
+    dispEntry(CAMERA_2D, 900.0f, 1, _disp, NULL);
     event->userdata[0]--;
     return event->userdata[0] <= 0;
 }
@@ -65,7 +62,7 @@ void _disp(CameraId cameraId, void* param) {
     u16 width = FontGetMessageWidthLine((const char*)(base - 0x737c), &lines);
 
     lines++;
-    color = *(GXColor*)&dat_8041e840;
+    color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     fx -= (f32)(width / 2);
     // The original passes the GXColor by value, and the header's by-value prototype copies it to a stack temp
     // as usual. Calling through a by-pointer prototype is ABI-identical (the struct is passed by reference) but
