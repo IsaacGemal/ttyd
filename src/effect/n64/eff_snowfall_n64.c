@@ -9,15 +9,17 @@
 #include <dolphin/os.h>
 #include <stdlib.h>
 
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423268;
+
+
 // .rodata
-extern const char str_802FB674[];
-extern const f64 double_to_int_802fb680;
 
 // .data vertex array (32 vertices, 14 bytes each)
 extern effVtxArray eff_snowfall_v[];
 
 // .sbss2 scratch GXColor the blend path builds its TEV colour from
-extern GXColor unk_80423268;
 
 // .sdata2
 extern const f32 float_0p03125_8041fd14;
@@ -101,7 +103,7 @@ EffectEntry* effSnowfallN64Entry(s32 type, s32 count) {
 
 	effect = effEntry();
 	num = count + 1;
-	effect->type = str_802FB674;
+	effect->type = "SnowfallN64";
 	effect->count = num;
 	data = __memAlloc(HEAP_EFFECT, num * sizeof(effSnowfallData));
 	effect->userdata = data;
@@ -301,3 +303,17 @@ void effSnowfallDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const GXColor dat_8041fd10 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const f32 float_0p03125_8041fd14 = 0.03125f;
+const f32 float_0_8041fd18 = 0.0f;
+const f32 float_2_8041fd1c = 2.0f;
+const f32 float_deg2rad_8041fd20 = 0.017453292f;
+const f32 float_166_8041fd24 = 166.0f;
+const f32 float_1000_8041fd28 = 1000.0f;
+const f32 float_0p05_8041fd2c = 0.05f;
+const f32 float_10_8041fd30 = 10.0f;
+const f32 float_neg1p2_8041fd34 = -1.2f;
+const f32 float_0p01_8041fd38 = 0.01f;
+const f32 float_0p5_8041fd3c = 0.5f;
