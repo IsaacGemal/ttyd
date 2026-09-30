@@ -60,7 +60,7 @@ void vsFreeBuffer(u8 bufferIndex) {
 
 u32 vsSampleStartNotify(
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
-    unsigned long voice
+    unsigned long voiceId
 #else
     unsigned char voice
 #endif
@@ -68,6 +68,9 @@ u32 vsSampleStartNotify(
   u8 sb;       // r29
   u8 i;        // r28
   size_t addr; // r27
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+  u8 voice = voiceId;
+#endif
 
   for (i = 0; i < vs.numBuffers; ++i) {
     if (vs.streamBuffer[i].state != 0 && vs.streamBuffer[i].voice == voice) {
@@ -81,14 +84,33 @@ u32 vsSampleStartNotify(
     hwSetVirtualSampleLoopBuffer(voice, (void*)addr, vs.bufferLength);
     vs.streamBuffer[sb].info.smpID = hwGetSampleID(voice);
     vs.streamBuffer[sb].info.instID = vsNewInstanceID();
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+    vs.streamBuffer[sb].info.data.start.vid = vidGetPublicId(voiceId);
+    if (vs.streamBuffer[sb].info.data.start.vid != 0xFFFFFFFF) {
+      vs.streamBuffer[sb].info.data.start.seqInstance =
+          seqGetInstanceForVoice(vs.streamBuffer[sb].info.data.start.vid);
+    } else {
+      vs.streamBuffer[sb].info.data.start.seqInstance = 0xFFFFFFFF;
+    }
+    vs.streamBuffer[sb].info.data.start.extraData = hwGetSampleExtraData(voice);
+#endif
     vs.streamBuffer[sb].smpType = hwGetSampleType(voice);
     vs.streamBuffer[sb].voice = voice;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+    if (vs.callback != NULL && vs.callback(0, &vs.streamBuffer[sb].info) == 0) {
+      return (vs.streamBuffer[sb].info.instID << 8) | voice;
+    }
+    hwSetVirtualSampleLoopBuffer(voice, 0, 0);
+    vs.streamBuffer[sb].state = 0;
+    vs.voices[vs.streamBuffer[sb].voice] = 0xFF;
+#else
     if (vs.callback != NULL) {
       vs.callback(0, &vs.streamBuffer[sb].info);
 
       return (vs.streamBuffer[sb].info.instID << 8) | voice;
     }
     hwSetVirtualSampleLoopBuffer(voice, 0, 0);
+#endif
   } else {
     hwSetVirtualSampleLoopBuffer(voice, 0, 0);
   }
@@ -131,6 +153,18 @@ void vsUpdateBuffer(struct VS_BUFFER* sb, unsigned long cpos) {
         sb->last = (sb->last + len) % vs.bufferLength;
       }
     } break;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+    case 6: {
+      u32 off = sb->last * 2;
+      sb->info.data.update.off1 = off;
+      sb->info.data.update.len1 = cpos - sb->last;
+      sb->info.data.update.off2 = 0;
+      sb->info.data.update.len2 = 0;
+      if ((len = vs.callback(1, &sb->info)) != 0) {
+        sb->last = (sb->last + len) % vs.bufferLength;
+      }
+    } break;
+#endif
     default:
       break;
     }
@@ -146,6 +180,18 @@ void vsUpdateBuffer(struct VS_BUFFER* sb, unsigned long cpos) {
         sb->last = (sb->last + len) % vs.bufferLength;
       }
     } break;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+    case 6: {
+      u32 off = sb->last * 2;
+      sb->info.data.update.off1 = off;
+      sb->info.data.update.len1 = vs.bufferLength - sb->last;
+      sb->info.data.update.off2 = 0;
+      sb->info.data.update.len2 = 0;
+      if ((len = vs.callback(1, &sb->info)) != 0) {
+        sb->last = (sb->last + len) % vs.bufferLength;
+      }
+    } break;
+#endif
     default:
       break;
     }
@@ -161,6 +207,18 @@ void vsUpdateBuffer(struct VS_BUFFER* sb, unsigned long cpos) {
         sb->last = (sb->last + len) % vs.bufferLength;
       }
     } break;
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
+    case 6: {
+      u32 off = sb->last * 2;
+      sb->info.data.update.off1 = off;
+      sb->info.data.update.len1 = vs.bufferLength - sb->last;
+      sb->info.data.update.off2 = 0;
+      sb->info.data.update.len2 = cpos;
+      if ((len = vs.callback(1, &sb->info)) != 0) {
+        sb->last = (sb->last + len) % vs.bufferLength;
+      }
+    } break;
+#endif
     default:
       break;
     }

@@ -2142,3 +2142,21 @@ updates the master list's root too; `vidMakeNew` restarts the list walk when a f
 node (`goto retry` to the start of the walk; the compiler reuses the `vidRoot` it already loaded). The new code
 is gated like upstream: the split at MusyX >= 2.0.1 (Peek at 2.0.3), vidGetPublicId, the restart and the master-list
 root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, untested (the project builds 2.0.3).
+
+## Grind 14: HARDWARE linked, aram/vsamples ported to the 2.0.2 API (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **HARDWARE.C linked.** Three functions the source lacked: `hwGetSampleExtraData`, `hwSetFilter` (filter on/coefs and
+  changed bits 0xC00/0x800/0x400) and `hwLowPassFrqToCoef` (needs `musyx/snd.h`, or `sndCos` is an implicit int
+  function; the constant is exactly 2*pi = 6.2831855f, and the clamp is one nested ternary). `hwRemoveSample`'s
+  `aramInfo` parameter was live: `aramRemoveData(data, len, aramInfo)`.
+- **hw_aramdma** (MusyX >= 2.0.2): `aramStoreData`/`aramRemoveData` take the `ARAMInfo*` (no `aramWrite` global; the stream
+  buffer allocator reads `dataARAMDefaultGetInfo()->aramWrite`), `aramGetUserBytes` and `aramGetFirstUserAddress` are new,
+  `aramInit` uses the physical allocator. The older API stays under `#else`. `aramStoreData` is 94.1%: the register
+  numbering of its two inlined `aramUploadData` copies is off by one (the queue base is r22 in the loop copy in the
+  original), so hw_aramdma stays NonMatching.
+- **synth_vsamples**: `SND_VIRTUALSAMPLE_INFO` has 8 reserved bytes after `instID` and the union grows a `start` member
+  (vid, seqInstance, extraData), so `VS_BUFFER` is 0x2C; compType 6 (16-bit PCM, `off1 = last * 2`) in
+  `vsUpdateBuffer`; `vsSampleStartNotify` fills the start info and frees the buffer when the callback returns non-zero.
+  StartNotify is 95.6% (the u8 copy of `voice` is r27 in the original).
+- **snd3d** (not started): 0/12 functions match; the emitter/room structs are another MusyX revision (flags at 0xC, no
+  room/door roots).

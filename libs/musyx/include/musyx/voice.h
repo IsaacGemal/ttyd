@@ -151,7 +151,7 @@ typedef struct VSampleInfo {
 } VSampleInfo;
 
 typedef struct VS_BUFFER {
-  // total size: 0x24
+  // total size: 0x24 (0x2C from MusyX 2.0.2)
   u8 state;                    // offset 0x0, size 0x1
   u8 hwId;                     // offset 0x1, size 0x1
   u8 smpType;                  // offset 0x2, size 0x1
