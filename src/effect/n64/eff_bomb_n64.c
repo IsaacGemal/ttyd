@@ -197,25 +197,8 @@ static void effBombMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-// Returning each GXColor from an inline makes MWCC build it in a return temporary and copy it to the
-// by-value argument slot. With both calls this reproduces the original's 0x10/0x14 (first call) and
-// 0x8/0xc (second) layout, except for the two slots noted below.
-static inline GXColor bombColor1(u8 a) {
-	GXColor c = dat_8041e9d0;
-	c.a = a;
-	return c;
-}
-
-static inline GXColor bombColor2(u8 b, u8 a) {
-	GXColor c = dat_8041e9d4;
-	c.b = b;
-	c.a = a;
-	return c;
-}
-
-// Helper added for this match: calling GXSetTevColor inside each inline places the colour build word
-// and its by-value argument copy in the original's slots (color1 0x10/0x14, color2 0x8/0xc). The
-// return-inline pair above leaves color1's copy and color2's build word swapped (the old 99.77%).
+// Calling GXSetTevColor inside each inline places the colour build word and its by-value argument copy
+// in the original's slots (color1 0x10/0x14, color2 0x8/0xc).
 static inline void bombSetColor1(u8 a) {
 	GXColor c = dat_8041e9d0;
 	c.a = a;

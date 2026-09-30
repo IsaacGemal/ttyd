@@ -45,6 +45,155 @@ GXColor unk_804232f0;
 GXColor unk_804232f4;
 GXColor unk_804232f8;
 
+EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
+	EffectEntry* entry;
+	effItemGetData* data;
+	effItemGetData* ptr;
+	s32 count;
+	s32 i;
+
+	entry = effEntry();
+	count = 1;
+	if (id == 0 || id == 3 || id == 9) {
+		count = 8;
+	} else if (id == 10) {
+		count = 6;
+	}
+	entry->type = str_802FDDE0;
+	entry->count = count;
+	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effItemGetData));
+	entry->userdata = data;
+	entry->callback = effItemGetMain;
+	entry->flags |= 2;
+	data->field_0x0 = id;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->field_0x10 = 0.0f;
+	data->field_0x14 = (f32)size_tbl[data->field_0x0] / 10.0f * 0.75f;
+	data->field_0x1C = 0;
+	data->field_0x20 = 0;
+	data->field_0x38 = 4;
+	data->field_0x34 = 0xFF;
+	data->field_0x18 = 1000;
+	ptr = data + 1;
+	for (i = 1; i < entry->count; i++, ptr++) {
+		ptr->position.x = 0.0f;
+		ptr->position.y = 0.0f;
+		ptr->position.z = 0.0f;
+		if (id == 10) {
+			f32 c;
+			ptr->field_0x30 = 1.0471976f + 6.2831855f * (i - 1) / 6.0f;
+			ptr->field_0x24 = 5.0f * (f32)sin(ptr->field_0x30);
+			c = (f32)cos(ptr->field_0x30);
+			ptr->field_0x28 = -c * 5.0f;
+			ptr->field_0x2C = 0.0f;
+		} else {
+			ptr->field_0x30 = 6.2831855f * (i - 1) / (entry->count - 1);
+			ptr->field_0x24 = (f32)sin(ptr->field_0x30);
+			ptr->field_0x28 = -(f32)cos(ptr->field_0x30);
+			ptr->field_0x2C = 0.0f;
+		}
+		ptr->field_0x34 = 0;
+		ptr->field_0x1C = 0;
+	}
+	return entry;
+}
+
+// Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
+inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+void effItemGetMain(EffectEntry* effect) {
+	effItemGetData* data = effect->userdata;
+	Vec disp;
+	s32 zeroCount = 0;
+	s32 id;
+	s32 camera;
+	s32 i;
+
+	disp = initializeVec(&data->position);
+
+	camera = data->field_0x38;
+	id = data->field_0x0;
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->field_0x18 = 16;
+	}
+	if (data->field_0x18 < 1000) {
+		data->field_0x18--;
+	}
+	if (data->field_0x18 < 16) {
+		data->field_0x34 = data->field_0x18 << 4;
+	}
+	if (data->field_0x18 < 0) {
+		effDelete(effect);
+		return;
+	}
+	data->field_0x1C++;
+	if ((u32)data->field_0x1C < 12) {
+		data->field_0x10 = (f32)scale_data[data->field_0x1C] / 100.0f;
+	}
+	if (data->field_0x1C > 1000) {
+		data->field_0x1C = 1000;
+	}
+	switch (data->field_0x20) {
+	case 0:
+		break;
+	case 1:
+		if (data->field_0x10 < 100.0f) {
+			data->field_0x10 *= 1.1f;
+		}
+		break;
+	case 2:
+		data->field_0x10 *= 0.9f;
+		break;
+	}
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		data->field_0x1C++;
+		if (data->field_0x1C < 16) {
+			data->field_0x34 += 16;
+			if (data->field_0x34 > 0xFF) {
+				data->field_0x34 = 0xFF;
+			}
+		} else {
+			data->field_0x34 -= 8;
+			if (data->field_0x34 < 0) {
+				data->field_0x34 = 0;
+			}
+		}
+		if (data->field_0x1C > 1000) {
+			data->field_0x1C = 1000;
+		}
+		if (data->field_0x34 == 0) {
+			zeroCount++;
+		} else {
+			data->position.x += data->field_0x24;
+			data->position.y += data->field_0x28;
+			data->position.z += data->field_0x2C;
+			if (id == 10) {
+				data->field_0x24 *= 0.9f;
+				data->field_0x28 *= 0.9f;
+				data->field_0x2C *= 0.9f;
+			}
+		}
+	}
+	if (id == 10) {
+		if (zeroCount >= effect->count - 1) {
+			effDelete(effect);
+			return;
+		}
+		dispEntry(camera, dispCalcZ(&disp), 2, effItemUseDisp, effect);
+	} else {
+		dispEntry(camera, dispCalcZ(&disp), 2, effItemGetDisp, effect);
+	}
+}
 
 // NONMATCHING (99.68%): MWCC reuses f29 (dead scale) for the cos result instead of f31, and
 // the GXSetChanMatColor temporaries sit at different stack offsets.
@@ -226,156 +375,6 @@ void effItemGetDisp(CameraId camId, void* param) {
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 	}
-}
-
-// Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
-inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
-
-void effItemGetMain(EffectEntry* effect) {
-	effItemGetData* data = effect->userdata;
-	Vec disp;
-	s32 zeroCount = 0;
-	s32 id;
-	s32 camera;
-	s32 i;
-
-	disp = initializeVec(&data->position);
-
-	camera = data->field_0x38;
-	id = data->field_0x0;
-	if (effect->flags & 4) {
-		effect->flags &= ~4;
-		data->field_0x18 = 16;
-	}
-	if (data->field_0x18 < 1000) {
-		data->field_0x18--;
-	}
-	if (data->field_0x18 < 16) {
-		data->field_0x34 = data->field_0x18 << 4;
-	}
-	if (data->field_0x18 < 0) {
-		effDelete(effect);
-		return;
-	}
-	data->field_0x1C++;
-	if ((u32)data->field_0x1C < 12) {
-		data->field_0x10 = (f32)scale_data[data->field_0x1C] / 100.0f;
-	}
-	if (data->field_0x1C > 1000) {
-		data->field_0x1C = 1000;
-	}
-	switch (data->field_0x20) {
-	case 0:
-		break;
-	case 1:
-		if (data->field_0x10 < 100.0f) {
-			data->field_0x10 *= 1.1f;
-		}
-		break;
-	case 2:
-		data->field_0x10 *= 0.9f;
-		break;
-	}
-	data++;
-	for (i = 1; i < effect->count; i++, data++) {
-		data->field_0x1C++;
-		if (data->field_0x1C < 16) {
-			data->field_0x34 += 16;
-			if (data->field_0x34 > 0xFF) {
-				data->field_0x34 = 0xFF;
-			}
-		} else {
-			data->field_0x34 -= 8;
-			if (data->field_0x34 < 0) {
-				data->field_0x34 = 0;
-			}
-		}
-		if (data->field_0x1C > 1000) {
-			data->field_0x1C = 1000;
-		}
-		if (data->field_0x34 == 0) {
-			zeroCount++;
-		} else {
-			data->position.x += data->field_0x24;
-			data->position.y += data->field_0x28;
-			data->position.z += data->field_0x2C;
-			if (id == 10) {
-				data->field_0x24 *= 0.9f;
-				data->field_0x28 *= 0.9f;
-				data->field_0x2C *= 0.9f;
-			}
-		}
-	}
-	if (id == 10) {
-		if (zeroCount >= effect->count - 1) {
-			effDelete(effect);
-			return;
-		}
-		dispEntry(camera, dispCalcZ(&disp), 2, effItemUseDisp, effect);
-	} else {
-		dispEntry(camera, dispCalcZ(&disp), 2, effItemGetDisp, effect);
-	}
-}
-
-EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
-	EffectEntry* entry;
-	effItemGetData* data;
-	effItemGetData* ptr;
-	s32 count;
-	s32 i;
-
-	entry = effEntry();
-	count = 1;
-	if (id == 0 || id == 3 || id == 9) {
-		count = 8;
-	} else if (id == 10) {
-		count = 6;
-	}
-	entry->type = str_802FDDE0;
-	entry->count = count;
-	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effItemGetData));
-	entry->userdata = data;
-	entry->callback = effItemGetMain;
-	entry->flags |= 2;
-	data->field_0x0 = id;
-	data->position.x = x;
-	data->position.y = y;
-	data->position.z = z;
-	data->field_0x10 = 0.0f;
-	data->field_0x14 = (f32)size_tbl[data->field_0x0] / 10.0f * 0.75f;
-	data->field_0x1C = 0;
-	data->field_0x20 = 0;
-	data->field_0x38 = 4;
-	data->field_0x34 = 0xFF;
-	data->field_0x18 = 1000;
-	ptr = data + 1;
-	for (i = 1; i < entry->count; i++, ptr++) {
-		ptr->position.x = 0.0f;
-		ptr->position.y = 0.0f;
-		ptr->position.z = 0.0f;
-		if (id == 10) {
-			f32 c;
-			ptr->field_0x30 = 1.0471976f + 6.2831855f * (i - 1) / 6.0f;
-			ptr->field_0x24 = 5.0f * (f32)sin(ptr->field_0x30);
-			c = (f32)cos(ptr->field_0x30);
-			ptr->field_0x28 = -c * 5.0f;
-			ptr->field_0x2C = 0.0f;
-		} else {
-			ptr->field_0x30 = 6.2831855f * (i - 1) / (entry->count - 1);
-			ptr->field_0x24 = (f32)sin(ptr->field_0x30);
-			ptr->field_0x28 = -(f32)cos(ptr->field_0x30);
-			ptr->field_0x2C = 0.0f;
-		}
-		ptr->field_0x34 = 0;
-		ptr->field_0x1C = 0;
-	}
-	return entry;
 }
 
 // NONMATCHING (99.90%): values match; only scheduling/allocation differs. The 21.333334/42.666668/2.0/0.5

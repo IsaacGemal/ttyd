@@ -10,7 +10,6 @@
 #include <stdlib.h>
 
 // .rodata
-extern const Vec vec3_802fb668;
 extern const char str_802FB674[];
 extern const f64 double_to_int_802fb680;
 

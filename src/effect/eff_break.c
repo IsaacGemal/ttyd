@@ -228,4 +228,4 @@ void effBreakDisp(CameraId cameraId, void* param) {
     }
 }
 
-#pragma opt_common_subs on
+#pragma opt_common_subs reset

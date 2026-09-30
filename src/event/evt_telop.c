@@ -326,3 +326,5 @@ void telop(CameraId cameraId, void* param) {
         FontDrawStringMtx(fontTrans, msg);
     }
 }
+
+#pragma opt_common_subs reset

@@ -175,8 +175,9 @@ EffectEntry* effReleaseN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32
     return effect;
 }
 
-// Match-only helper: builds the initial Vec from an anonymous zero literal so the
-// compiler schedules the loads the way the original does (see the prologue).
+#ifdef MUST_MATCH
+// Builds the initial Vec from an anonymous zero literal so the compiler schedules the loads the way the
+// original does (see the prologue).
 static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
     temp.x = x;
@@ -184,6 +185,7 @@ static inline Vec releaseMakeVec(f32 x, f32 y, f32 z) {
     temp.z = z;
     return temp;
 }
+#endif
 
 #pragma opt_common_subs off // without it MWCC CSEs the 0.01*t/0.3*idx product across the conversion and picks different FPRs (94.0%)
 // Only the case-100 `field_0x74 < 30` block's scratch registers differ: the 0x4330/index pair uses
@@ -198,7 +200,13 @@ void effReleaseMain(EffectEntry* effect) {
     s32 type;
     s32 i;
 
+#ifdef MUST_MATCH
     position = releaseMakeVec(data->x, data->y, data->z);
+#else
+    position.x = data->x;
+    position.y = data->y;
+    position.z = data->z;
+#endif
     position2 = position;
     type = data->field_0x4;
 

@@ -186,11 +186,9 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
 // +0xbc0). Same final addresses. Root cause, confirmed over the built objects: MWCC puts a symbol+offset into
 // an @ha/@l addend only for a LOCAL symbol defined in the unit; an extern/UND symbol always gets addend 0 and
 // the constant moves into the following addi immediate. attack_audience_event is in unit_party_chuchurina.c
-// (and there is no symbol at the 0x803848D8 base), so no C form can emit the addend. Tried: pointer/struct/
-// u8*/u32/array/union/const-pointer base forms, lbl_803848DC-4 and lbl_803848E8-0x10 (both fold the offset),
-// optimization_level 1-4, opt_propagation/opt_common_subs/global_optimizer/peephole/opt_dead_assignments
-// off, and GC/1.3-3.0. unit_party_christine.c has the identical shape and the same 99.98%; the only matching
-// siblings (clauda/vivian/chuchurina/nokotarou/yoshi) have a lbl_XXXX symbol sitting exactly on the base.
+// (and there is no symbol at the 0x803848D8 base), so no C form can emit the addend.
+// unit_party_christine.c has the identical shape and the same 99.98%; the only matching siblings
+// (clauda/vivian/chuchurina/nokotarou/yoshi) have a lbl_XXXX symbol sitting exactly on the base.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
     u8* weaponBase = attack_audience_event_803845A8 + 0x330;

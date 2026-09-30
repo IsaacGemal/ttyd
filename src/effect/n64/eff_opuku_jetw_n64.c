@@ -105,9 +105,6 @@ GXColor unk_804231c8;
 GXColor unk_804231cc;
 GXColor unk_804231d0;
 
-// The previous unit's last .data object; the original reaches this unit's .data through it as an
-// offset base (see the eff_release_n64/eff_hokori_n64 pattern). Declared in eff_opuku_jetw_n64.h.
-
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -177,15 +174,14 @@ void effOpukuJetwMain(EffectEntry* effect) {
 }
 
 // The frame size (0x180), the Mtx slots (work/rot/scale/trans at 0x40/0x70/0xa0/0xd0), the switch layout and
-// the loop's `rowOffset += columns, j++` bottom test all match; what is left is register allocation. mwcc puts
-// the `.data` base `lbl_803A33D8` in r31 (original r20) and the cached data fields in r18-r26 (original
-// r25-r28), so the whole callee-saved assignment is rotated. That pressure spills `half` to 0x130 (original
+// the loop's `rowOffset += columns, j++` bottom test all match; what is left is register allocation. mwcc
+// puts the cached data fields in r18-r26 (original r25-r28), so the whole callee-saved assignment is rotated. That pressure spills `half` to 0x130 (original
 // keeps it in r14) and makes the inner pointer emit `(rowOffset + col) * 10` (add/mulli) where the original
 // emits `rowOffset * 10` then `+ col * 10` (the `&table[rowOffset] + col` shape); writing that shape in C makes
 // this compiler spill more, so the additive-index form is kept. The three GXColor call temporaries also land
 // at 0x8/0x10/0x18 rather than the original 0x8/0xc/0x10. All candidate compilers (GC/1.3..GC/2.7) generate
 // identical code; GC/3.0 is worse.
-// NONMATCHING (92.77%)
+// NONMATCHING (92.76%)
 void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx trans;
     s32 half;
@@ -200,7 +196,6 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     effOpukuJetwPoint* colPtr;
     Mtx scale;
     s32 lifetime;
-    u8* dataBase;
     s32 field18;
     s32 rowOffset;
     Mtx rot;
@@ -214,9 +209,6 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     Mtx work;
     GXTexObj texObj;
 
-#ifdef MUST_MATCH
-    dataBase = (u8*)lbl_803A33D8;
-#endif
     effect = param;
     cam = camGetPtr(camId);
     data = effect->userdata;
@@ -229,20 +221,12 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
 
     switch (data->type) {
         case 0:
-#ifdef MUST_MATCH
-            table = (effOpukuJetwPoint*)(dataBase + 0x40);
-#else
             table = (effOpukuJetwPoint*)adata;
-#endif
             columns = 20;
             rows = 3;
             break;
         default:
-#ifdef MUST_MATCH
-            table = (effOpukuJetwPoint*)(dataBase + 0x298);
-#else
             table = (effOpukuJetwPoint*)a2data;
-#endif
             columns = 11;
             rows = 3;
             break;
@@ -295,11 +279,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
         }
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
-#ifdef MUST_MATCH
-        effSetVtxDescN64((effVtxArray*)(dataBase + 0x3e4));
-#else
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
-#endif
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
@@ -334,11 +314,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
                 color.a = (field24 * colPtr->field_0x8) >> 8;
                 GXSetTevColor(GX_TEVREG0, color);
             }
-#ifdef MUST_MATCH
-            effSetVtxDescN64((effVtxArray*)(dataBase + 0x3e4));
-#else
             effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
-#endif
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }

@@ -80,7 +80,7 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     return effect;
 }
 
-// Matched: the type==1 block's FP register allocation (retail keeps the counter fold in f2,
+// The type==1 block's FP register allocation (retail keeps the counter fold in f2,
 // float_0p4953 in f3, the float_4*counter product in f7 and the counter*4 conversion in f4)
 // only comes out when the product assignment is folded into the field_0x40 multiply's first
 // operand; assigning f7 on its own line rotates them to f3/f2/f4/f3. The pool double is placed

@@ -250,7 +250,7 @@ s32 battleAcResult_TimingWide(BattleWork* work) {
 
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
-// MATCHING. Holding the work-area pointer in `ac` (rather than spelling out work->actionCommands) makes MWCC
+// Holding the work-area pointer in `ac` (rather than spelling out work->actionCommands) makes MWCC
 // keep dec, disp and AutoCommand in r31/r29/r28 exactly as the original does. The inner switch's cases are
 // written 5,0,1,2,3 so the compiler lays the bodies out in the original's order.
 s32 battleAcMain_TimingWide(BattleWork* work) {

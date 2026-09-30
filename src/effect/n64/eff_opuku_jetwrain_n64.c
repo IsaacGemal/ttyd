@@ -271,9 +271,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	C_MTXLookAt(lookAtMtx, &eye, &up, &target);
 	GXLoadPosMtxImm(lookAtMtx, 0);
 	GXSetCurrentMtx(0);
-#ifndef MUST_MATCH
-	vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
-#endif
 	for (i = 0; i < 12; i++) {
 		outerEdge = 0;
 		if (i == 0) {
@@ -342,9 +339,6 @@ void effOpukuJetwrainDisp(CameraId camId, void* param) {
 			}
 
 			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
-#ifdef MUST_MATCH
-			vtx = (effOpukuJetwrainVtx*)opuku_jetwrain_vtx;
-#endif
 			vtx[base + 0].x = x << 2;
 			vtx[base + 0].y = (s8)data->field_0x23[j][i] + fieldBase;
 			vtx[base + 1].x = (jPos + x2 + 0x10) << 2;

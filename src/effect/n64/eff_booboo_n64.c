@@ -651,10 +651,6 @@ static inline GXColor boobooColor(u8 v) {
 // separate .r/.g/.b statements fixed the by-value store order (99.30% -> 99.42%). Using `param` directly
 // instead of a local `effect` fixes effect/camera (r29/r28) but swaps the word/byte induction pointers
 // (word r27, byte r26) and scores 99.29%, below the original, so it is not used.
-// Tried without result: all 120/720 local declaration orders, explicit byte/word pointer locals,
-// equivalent address-expression forms, GXColor inline shapes, and optimizer pragmas -- all either
-// leave word/byte swapped or change codegen. The allocation appears to depend on mwcc's internal
-// vreg numbering; every source shape tested reproduces byte-before-word.
 // NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
 void effBoobooDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

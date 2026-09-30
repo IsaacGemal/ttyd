@@ -125,7 +125,7 @@ static GXColor color_tbl[10] = {
 };
 
 
-// Matched 100%: routing both by-value GXColor calls through the MUST_MATCH void helpers below
+// Routing both by-value GXColor calls through the MUST_MATCH void helpers below
 // makes MWCC build the colour in stack slot 0x10 and copy it to the argument temp at 0x14
 // (retail's layout); the plain form put them the other way round (0x14/0x10).
 #ifdef MUST_MATCH

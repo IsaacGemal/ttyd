@@ -46,8 +46,6 @@ u32 vtx_data[3][2] = {
 	{ (u32)vtx3, 0x38 },
 };
 
-// .sbss frame counter and the running alpha shared with effFireworksMain's fade.
-
 // .sdata2 constants (named after their original addresses in the asm).
 extern const f32 float_6p2832_8041ef28;
 extern const f32 float_360_8041ef2c;
@@ -376,9 +374,9 @@ void effFireworksDisp(CameraId camId, void* param) {
 			if ((rand() % 17) < 6) {
 				continue;
 			}
-			s2 = ((s8*)vp)[2];
 			s0 = ((s8*)vp)[0];
 			s1 = ((s8*)vp)[1];
+			s2 = ((s8*)vp)[2];
 			px = baseX + radius * ((f32)s0 * cosA + (f32)s2 * sinA);
 			py = baseY + (f32)s1 * radius;
 			pz = baseZ + radius * ((f32)(-s0) * sinA + (f32)s2 * cosA);

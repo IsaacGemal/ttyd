@@ -142,11 +142,7 @@ static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
 // the 2*dir velocities also land in the opposite f23-f25 order, and the int->float conversion's
 // integer temps and stack slots differ too (original r7/r6/r5 at 0x5c/0x10/0x14/0x18, this build
 // r6/r5/r0). The .rodata+0 zero Vec resolves to the section symbol instead of vec3_802fa250.
-// Tried to break the tie: permuting the function's leading declarations (tools/perm_decls.py), naming the
-// accelerations/velocities or float_0/deg2rad as locals, reordering the acc/vel/data statements, a named
-// (volatile and plain) vec3_802fa250, opt_lifetimes/global_optimizer/optimize_for_size/schedule pragmas and
-// the direct zero-literal Vec form; none beat 98.45%.
-// NONMATCHING (98.45%): see above and REPORT.md.
+// NONMATCHING (98.45%): see above.
 #pragma opt_common_subs off // without it MWCC CSEs the float_0/float_1 pool loads and the first mag/sqrt block shifts
 EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
 	EffectEntry* effect;
