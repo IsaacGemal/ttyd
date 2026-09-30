@@ -129,6 +129,23 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.
 - A caller that uses a returned value without `extsh`/`clrlwi` treats it as a full `int`.
 
+## Code shapes that fixed near-misses
+
+When the instructions match but the stack slots, register allocation or scheduling differ, try these first (each
+is written under `#ifdef MUST_MATCH`, with the natural form under `#else`):
+- **A `GXColor` passed by value lands in the wrong stack slot** (`color = <global>; color.a = a;`): build it in a
+  `static inline GXColor f(u8 a) { GXColor c = <global>; c.a = a; return c; }` and write `color = f(a);`
+  (effBattenDisp2, effButterflyDisp, effStardust2Disp). It doesn't help when a function passes several colours.
+- **A `Vec` temp copied from a named zero vector schedules too early** (`position = vec3_...;` at the top of
+  `effXxxMain`): build it from a literal in an inline (`makeVec(0, 0, 0)`), placed above the unit's other rodata.
+  Only where the unit's `.rodata` score doesn't drop; CI checks it.
+- **A blend `(C - v) * k + v` computes in the wrong order**: `f32 t = C - v; v = t * k + v;` (eff_mahorn).
+- **A loop stepping two pointers increments in the wrong order**: put both in the header, in the target's
+  order (`i++, data++`).
+- **Action-command display functions (`battleAcDisp_*`) reload the work pointer**: take the pointer once,
+  `BattleActions* ac = &((BattleWork*)param)->actionCommands;` (GaugeTiming, PowerGauge, Repeatedly and StickKeepLeft
+  match with it; LstRcKeep and TimingWide use it and still differ elsewhere).
+
 ## Partial functions
 
 A function you write or change that doesn't reach 100% needs a comment directly above it:
