@@ -2431,3 +2431,16 @@ The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only fu
   keep their register order), eff_kemuri7 (the `field_0x60 == 0.0f` load order), eff_ice_n64 (one `fmuls` operand order),
   eff_packn_bfire (FP register allocation once the volatile constants become literals), eff_bush (Disp frame size),
   eff_ice/eff_mizutama/eff_machinegun/evt_snd (event-script data or `.data` objects not written).
+
+## Grind 22 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Function order**: a unit whose functions are all 100% but whose text differs everywhere (hundreds of words) has its
+  functions in the wrong source order. The source lists them in reverse address order (eff_bush_n64 had Disp before Main;
+  the target's address order is Disp, Main, Entry, so the source is Entry, Main, Disp). eff_bush_n64 links with that plus the
+  `f32 k = 0.8f;` int->float temp under `MUST_MATCH`.
+- **Tools** (new): `tools/pool_literals.py UNIT` (extern pool constants to literals), `tools/pool_data.py UNIT` (the unit's
+  own `.data`/`.sbss` objects), `tools/pool_compare.py UNIT [section]` (pool entries in order, target vs ours, floats as
+  hex; a swapped adjacent pair means the two constants are first used in the other order). A `.bss`/`.sbss` object's order
+  follows its first reference in code emission order (functions are emitted in reverse source order), not declaration order.
+- **What did not work** (so nobody repeats it): operand-order and declaration-order searches over the eleven remaining
+  units of the class (kemuri4/7, ice_n64, packn_bfire) and over 130 near-miss functions moved one score by 0.2 points.
