@@ -3,8 +3,15 @@
 #include "eff/eff_n64.h"
 #include <dolphin/mtx.h>
 
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 // .rodata
-const Vec vec3_802fb340 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_mask_802fb350 = 4503599627370496.0;
 
 // .sdata2
@@ -59,9 +66,6 @@ static u8 color_rotation_data[36] = {
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
 
-// NONMATCHING (97.06%): all opcodes/operands match; only mwcc register allocation differs:
-// the first vec3 word load is scheduled before the userdata load, the particle counter reload
-// goes into r6 and is moved to r8, and the u8->float block rotates f1/f2/f0.
 void effPeachDustMain(EffectEntry* effect) {
 	PeachDustParticle* data;
 	Vec position2;
@@ -71,10 +75,7 @@ void effPeachDustMain(EffectEntry* effect) {
 	s32 active;
 
 	data = effect->userdata;
-	position = vec3_802fb340;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
+	position = makeVec(data->x, data->y, data->z);
 	position2 = position;
 	data->life--;
 	data->counter++;
@@ -93,8 +94,8 @@ void effPeachDustMain(EffectEntry* effect) {
 		else {
 			data->counter++;
 			colorIndex = data->counter;
-			if (data->counter - 1 < 25) {
-				data->scale = (f32)scale_data[data->counter - 1] * float_0p01_8041f968 * float_0p4_8041f964;
+			if (colorIndex - 1 < 25) {
+				data->scale = float_0p01_8041f968 * (f32)scale_data[colorIndex - 1] * float_0p4_8041f964;
 			}
 			else {
 				f32 k = float_0p1_8041f96c;

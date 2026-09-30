@@ -132,8 +132,6 @@ static inline void effPokopiPipoSetColor(effPokopiPipoData* data, s32 a) {
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
-// NONMATCHING (99.93%): one `fmuls` differs -- the target computes `f0 * f1` (deg2rad *
-// -viewYaw) where MWCC emits `f1 * f0`; loads, fneg and all other instructions match.
 void effPokopiPipoDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effPokopiPipoData* data;
@@ -156,7 +154,12 @@ void effPokopiPipoDisp(CameraId camId, void* param) {
 	scaleXZ = float_0p71429_8041f9e8 * data->field_0x40;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
 	camera3d = camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+	angle = -camera3d->viewYaw;
+	angle = float_deg2rad_8041f9ec * angle;
+#else
 	angle = -camera3d->viewYaw * float_deg2rad_8041f9ec;
+#endif
 	PSMTXRotRad(rot, 'y', angle);
 	PSMTXScale(scale, scaleXZ * data->field_0x58, scaleXZ * data->field_0x5C, scaleXZ);
 	PSMTXConcat(mtx, rot, mtx);

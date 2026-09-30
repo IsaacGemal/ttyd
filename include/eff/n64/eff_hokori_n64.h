@@ -25,7 +25,6 @@ typedef struct effHokoriData {
 	s32 field_0x40; // 0x40
 	s32 field_0x44; // 0x44
 } effHokoriData;
-extern const Vec vec3_802fa7a8;
 // Owned by this unit's .sdata2; declared extern so the float codegen keeps loading them
 // from the named symbols instead of pooling anonymous copies.
 extern const f32 float_0p9_8041f118;

@@ -87,10 +87,8 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 // The GXColor for GXSetTevColor is built at 0x8(r1) by the original and copied to
 // 0xc(r1); mwcc here builds it at 0xc(r1) and copies to 0x8(r1). mwcc also pools a
 // duplicate of double_to_int_802fb278 in .rodata, so PSMTXTrans's f64 conversion
-// loads it via vec3_802fb248+0x50 instead of +0x30. Finally, tri2 is declared with
-// u16 parameters (include/eff/eff_n64.h), so the call truncates each argument with
-// clrlwi; the original passes them untruncated, i.e. the real prototype is s32/int.
-// NONMATCHING (96.95%): codegen-only differences (see above).
+// loads it via vec3_802fb248+0x50 instead of +0x30.
+// NONMATCHING (98.93%): codegen-only differences (see above).
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;

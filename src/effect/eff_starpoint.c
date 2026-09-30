@@ -77,12 +77,11 @@ void effStarPointDisp(CameraId camId, void* param) {
     PSMTXConcat(mtx, rot, mtx);
 
     data++;
-    for (i = 1; i < effect->count; i++) {
+    for (i = 1; i < effect->count; i++, data++) {
         if (data->field_0x2C != 0) {
             PSMTXTrans(elemMtx, data->position.x, data->position.y, data->position.z);
             PSMTXConcat(mtx, elemMtx, elemMtx);
             iconDispGx2(elemMtx, 0, 0x18C);
         }
-        data++;
     }
 }

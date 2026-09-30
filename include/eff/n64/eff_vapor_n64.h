@@ -28,7 +28,6 @@ typedef struct effVaporN64Data {
 void effVaporDisp(CameraId cameraId, void* param);
 // Owned by this unit's .rodata/.sdata2; declared extern so the codegen keeps loading them
 // from the named symbols instead of pooling anonymous copies.
-extern const Vec vec3_802fb8e8;
 extern const f32 float_0p5_804200dc;
 extern const f32 float_0p02_80420100;
 extern const f32 float_neg1p5_80420104;
