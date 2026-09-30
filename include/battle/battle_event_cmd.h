@@ -316,3 +316,8 @@ USER_FUNC(btlevtcmd_ac_timing_flag_onoff);
 USER_FUNC(btlevtcmd_ac_timing_get_success_frame);
 USER_FUNC(btlevtcmd_ftof);
 USER_FUNC(btlevtcmd_ftomsec);
+USER_FUNC(btlevtcmd_CommandFlyItem);
+USER_FUNC(btlevtcmd_CommandGetWeaponItemId);
+USER_FUNC(btlevtcmd_ConsumeItem);
+USER_FUNC(btlevtcmd_GetConsumeItem);
+USER_FUNC(btlevtcmd_GetItemRecoverParam);
