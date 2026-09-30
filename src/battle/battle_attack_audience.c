@@ -194,13 +194,14 @@ s32 _check_aud_item_type(EventEntry* event) {
 
 // NONMATCHING (99.51%): identical except the address-taken locals are allocated in reverse stack order
 // (ours memberId@0x14..z@0x8, original memberId@0x8..z@0x14).
+// NONMATCHING (99.74%): `args` is r31 here (r29 in the original, which reuses r29 for the &z pointer afterwards).
 s32 _attack_aud(EventEntry* event) {
+    f32 z;
+    f32 y;
+    f32 x;
     s32* args = event->args;
     s32 memberId = evtGetValue(event, args[0]);
     s32 type = evtGetValue(event, args[1]);
-    f32 x;
-    f32 y;
-    f32 z;
 #ifdef MUST_MATCH
     // these pointers give the original's frame (0x30) and r28-r31 save set
     f32* py = &y;
