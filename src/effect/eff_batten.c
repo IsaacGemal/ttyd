@@ -18,7 +18,8 @@ const char str_802FFA6C[] = "EFF_batten_rocket";
 extern u32 str_80421980;
 extern const u32 dat_80421984;
 extern const f32 float_deg2rad_80421988;
-
+extern const f32 float_0_8042198c;
+extern const f32 float_2_80421990;
 extern const f32 float_32_80421994;
 extern const f32 float_0p5_80421998;
 extern const f32 float_16_8042199c;
@@ -38,10 +39,6 @@ static inline GXColor battenColor(u8 alpha) {
 #endif
 
 void effBattenDisp2(CameraId camId, void* param) {
-	// Read as plain constants here: this function's calls already force reloads, and volatile would
-	// change its schedule (see effBattenDisp).
-	extern const f32 float_0_8042198c;
-	extern const f32 float_2_80421990;
 	EffectEntry* effect = param;
 	BattenData* data = effect->userdata;
 	Mtx mtx;

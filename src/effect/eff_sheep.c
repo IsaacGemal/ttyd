@@ -219,7 +219,7 @@ void effSheepMain(EffectEntry* effect) {
 	}
 }
 
-// 100%: `data++; for (i = 1; i < effect->count; i++, data++)` (the effStarPointDisp shape)
+// `data++; for (i = 1; i < effect->count; i++, data++)` (the effStarPointDisp shape)
 // makes MWCC schedule the preheader as `li r30,1` then `addi r31,r31,0x34`, matching the original;
 // with a separate pointer (`p = &data[1]; while (...)`) the scheduler emits the addi first.
 void effSheepDisp(CameraId camId, void* param) {

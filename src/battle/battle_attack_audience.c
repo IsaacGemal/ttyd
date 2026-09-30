@@ -157,7 +157,7 @@ s32 _get_present_target_id(EventEntry* event) {
     return 2;
 }
 
-// Matched. Two match-only shapes steer MWCC's register allocation: the colour is loaded into the local
+// Two match-only shapes steer MWCC's register allocation: the colour is loaded into the local
 // before the int->float conversion (so the conversion magic lands in r6 and the colour in r7, the
 // reverse of the by-value form), and the call goes through a by-pointer prototype, which is the real
 // ABI (GXColor is passed by reference) and the same trick battle_message.c's _disp uses. objdiff still

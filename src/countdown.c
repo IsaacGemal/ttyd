@@ -128,7 +128,7 @@ void countDownMain(void) {
 	}
 }
 
-// Matched. The MUST_MATCH body reproduces the original's stack layout: retail keeps three copies of the white
+// The MUST_MATCH body reproduces the original's stack layout: retail keeps three copies of the white
 // colour (one never read) at 0x8/0x20/0x1c, and the `flags`/`msRaw` locals and `sec %= 100` shape the register
 // allocation. The #else body is the same function written naturally.
 void countDownDisp(CameraId camId, void* param) {

@@ -94,7 +94,7 @@ static inline Vec getStageClearCamPos(void) {
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
 // NONMATCHING (94.35%): the anonymous int-to-double pool double (0x4330000080000000) makes Disp's base+offset
 // `lfd`s point at 0x58/0x68 instead of 0x38/0x30 and colours the r/f registers differently; frame, Vec copies,
-// matrices and GX state match. See REPORT.md for the full diff.
+// matrices and GX state match.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;

@@ -62,7 +62,7 @@ static void actionCommandDisp(f32 x, f32 y);
 // temporaries) and the pooled s32->f32 conversion double: MWCC emits a local literal at .rodata 0xD0
 // instead of the named double_to_int_80300060 at 0x80. That literal is shared with the original's
 // actionCommandDisp, which this unit does not define (0%, `*UND*`), so the conversion can't land at
-// 0x80 until actionCommandDisp is written; see REPORT.md.
+// 0x80 until actionCommandDisp is written.
 // NONMATCHING (96.47%): register allocation and the pooled int->float conversion double differ.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);

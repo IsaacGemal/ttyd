@@ -174,7 +174,7 @@ void effSandarsMain(EffectEntry* effect) {
 
 #ifdef MUST_MATCH
 	/* MUST_MATCH: the zero literal (not the named vec3_80300138) keeps MWCC from hoisting the vec3 copy before
-	   the userdata load; it pools at the same address as the named vector. */
+	   the userdata load. It does not pool with the named vector: it adds a duplicate 12-byte Vec in .rodata. */
 	disp = (Vec){ 0.0f, 0.0f, 0.0f };
 	disp.x = data->x;
 	disp.y = data->y;

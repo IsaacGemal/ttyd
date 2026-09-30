@@ -36,11 +36,6 @@ void arcDelete(s32 id) {
 }
 
 
-// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
-void arcEntry(s32 id, void* data, u32 size) {
-
-}
-
 void* arcOpen(const char* filename, void** addr, u32* length) {
 	ARCFileInfo info;
 #ifdef MUST_MATCH
@@ -83,4 +78,9 @@ void* arcOpen(const char* filename, void** addr, u32* length) {
 		*length = 0;
 	}
 	return NULL;
+}
+
+// NONMATCHING (4.76%): empty placeholder, not decompiled yet.
+void arcEntry(s32 id, void* data, u32 size) {
+
 }

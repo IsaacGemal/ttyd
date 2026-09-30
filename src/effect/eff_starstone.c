@@ -356,8 +356,8 @@ void effStarStoneDisp_2(CameraId camId, void* param) {
 	GXTexObj texObj;
 	GXColor color;
 	s32 i;
-	u8* sz;
 	void** dl;
+	u8* sz;
 
 	mapSetMaterialFog();
 	GXSetArray(0xb, color_tbl[data->field_0x0], 4);

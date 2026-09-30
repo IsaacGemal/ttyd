@@ -40,17 +40,6 @@ typedef struct Blob60 {
 	char b[0x60];
 } Blob60;
 
-typedef struct Blob3 {
-	u16 a;
-	u8 b;
-} Blob3;
-
-typedef struct Blob9 {
-	u32 a;
-	u32 b;
-	u8 c;
-} Blob9;
-
 typedef struct Vec3 {
 	Vec v[3];
 } Vec3;
@@ -134,7 +123,7 @@ s32 evt_batstage_return_aud_dark_base(EventEntry* event, BOOL isFirstCall) {
 }
 
 #pragma opt_dead_assignments off // keep the original's r16/r17 assignment in the setup copy block
-// NONMATCHING (95.42%): the four Vec3 copies, the mode switch and the whole light loop match; only the
+// NONMATCHING (91.85%): the four Vec3 copies, the mode switch and the whole light loop match; only the
 // load/register schedule of the copy block differs (original spills pos.x, unitOff1.z/2.y/2.z, all of
 // up and color word0 to 0x108+, ours spills a different subset and starts r18.. at 0x6c not 0x64).
 s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
@@ -159,8 +148,9 @@ s32 evt_batstage_light_set_player_on(EventEntry* event, BOOL isFirstCall) {
 	*(Vec3*)target = *(const Vec3*)dat_802f337c;
 	*(Vec3*)unitOff = *(const Vec3*)dat_802f33a0;
 	*(Vec3*)up = *(const Vec3*)dat_802f33c4;
-	*(Blob3*)enabled = *(const Blob3*)unk_80423030;
-	*(Blob9*)color = *(const Blob9*)dat_802f33e8;
+	*(u16*)enabled = *(const u16*)unk_80423030;
+	enabled[2] = unk_80423030[2];
+	memcpy(color, dat_802f33e8, sizeof(color));
 
 	switch (mode) {
 	case 1:

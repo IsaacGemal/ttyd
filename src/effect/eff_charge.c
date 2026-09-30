@@ -140,17 +140,10 @@ void effChargeMain(EffectEntry* effect) {
         }
         data->scale = 0.2f + data->radius / 80.f;
         data->radius -= (f32)((i & 3) * 2 + 2);
-#ifdef MUST_MATCH
         if (data->radius < 0.0f) {
             data->radius = 0.0f;
             data->scale = 0.0f;
         }
-#else
-        if (data->radius < 0.0f) {
-            data->radius = 0.0f;
-            data->scale = 0.0f;
-        }
-#endif
         data->angle1 += (f32)(odd ? 5 : 2);
         data->angle2 += (f32)(odd ? 2 : 5);
     }

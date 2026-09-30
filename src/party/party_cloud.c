@@ -438,7 +438,7 @@ void N__cloud_use(PartyEntry* party) {
 #undef cloud
 #undef MOVE_TO_MARIO
 
-// NONMATCHING (98.65%): two diffs remain. (1) The original spells the `mot == 2` guard as
+// Two diffs remain in cloud_use. (1) The original spells the `mot == 2` guard as
 // `if (mot == 2) return;` but MWCC keeps the then-block out of line (`bne body; b end`); we emit the
 // merged `beq end`, one instruction shorter. (2) The move-to-mario flag lands in r4 where the original
 // uses r0, so the two position loads pick r3/r0 instead of r4/r3. opt_common_subs off is required:

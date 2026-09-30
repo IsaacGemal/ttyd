@@ -24,10 +24,27 @@ const f32 float_1_8041bf1c = 1.0f;
 const f32 float_0p05_8041bf20 = 0.05f;
 const f32 float_5_8041bf24 = 5.0f;
 
+typedef struct BattleSamplingEntry {
+    s16 unitId;      // 0x0
+    s16 partId;      // 0x2
+    s16 x;           // 0x4
+    s16 y;           // 0x6
+    s16 z;           // 0x8
+    u8 pad_0xA[2];   // 0xA
+    s32 field_0xC;   // 0xC
+    s32 field_0x10;  // 0x10
+    s32 field_0x14;  // 0x14
+    s32 field_0x18;  // 0x18
+    u8 field_0x1C;   // 0x1C
+    u8 field_0x1D;   // 0x1D
+    u8 pad_0x1E[2];  // 0x1E
+    s32 field_0x20;  // 0x20
+} BattleSamplingEntry;
+
 // Sampling work block lives inside BattleWork at offset 0x428 (wp->field_428).
 typedef struct BattleSampling {
     BattleWeapon* weapon;          // 0x0
-    u8 entries[0xA6C - 0x4];       // 0x4, 74 entries of 0x24 bytes
+    BattleSamplingEntry entries[74]; // 0x4
     s8 count;                      // 0xA6C
     u8 order[0xAB7 - 0xA6D];       // 0xA6D
     s8 selectIdx;                  // 0xAB7
@@ -379,8 +396,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
 
     baseUnit = BattleGetUnitPtr(wp, s->unitId);
     n = (s8)s->order[0];
-    *outId = ((BattleSamplingEntryBase*)(sampling + n * 0x24))->e.unitId;
-    *outPartId = ((BattleSamplingEntryBase*)(sampling + n * 0x24))->e.partId;
+    *outId = s->entries[n].unitId;
+    *outPartId = s->entries[n].partId;
 
     for (i = 0; i < 74; i++) {
         weights[i] = 0;
@@ -390,7 +407,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
     for (n = 0; n < s->count; n++) {
         e = (s8)s->order[n];
 
-        unit = BattleGetUnitPtr(wp, ((BattleSamplingEntryBase*)(sampling + e * 0x24))->e.unitId);
+        unit = BattleGetUnitPtr(wp, s->entries[e].unitId);
         weights[e] += 100;
         if ((flags & 0x1) && unit->currentKind == 0xDE) {
             weights[e] = (s32)((f32)weights[e] * float_1p5_8041bf08);
@@ -479,7 +496,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                     }
                     break;
                 case 0x0:
-                    break;                default: {
+                    break;
+                default: {
                     s32 maxFp;
 
                     if (itemDataTable[s->weapon->item].fp_restored == 0) {
@@ -515,8 +533,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 bestWeight = weights[i];
             }
         }
-        *outId = ((BattleSamplingEntryBase*)(sampling + best * 0x24))->e.unitId;
-        *outPartId = ((BattleSamplingEntryBase*)(sampling + best * 0x24))->e.partId;
+        *outId = s->entries[best].unitId;
+        *outPartId = s->entries[best].partId;
     } else {
         s32 sum = 0;
         s32 pick;
@@ -531,8 +549,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                 break;
             }
         }
-        *outId = ((BattleSamplingEntryBase*)(sampling + i * 0x24))->e.unitId;
-        *outPartId = ((BattleSamplingEntryBase*)(sampling + i * 0x24))->e.partId;
+        *outId = s->entries[i].unitId;
+        *outPartId = s->entries[i].partId;
     }
 }
 

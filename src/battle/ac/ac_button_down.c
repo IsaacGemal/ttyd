@@ -175,6 +175,8 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         }
     }
 }
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 #pragma optimize_for_size reset
 
 void battleAcDelete_ButtonDown(BattleWork* work) {

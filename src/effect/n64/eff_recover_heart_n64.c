@@ -44,6 +44,9 @@ extern u32 unk_80423238;
 // is used here.
 #ifdef MUST_MATCH
 extern u32 lbl_803A4A60[];
+#define VTX(off, name) ((effVtxArray*)(dataBase + (off)))
+#else
+#define VTX(off, name) ((effVtxArray*)(name))
 #endif
 
 // .data
@@ -346,7 +349,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
-			effSetVtxDescN64((effVtxArray*)(dataBase + 0x40));
+			effSetVtxDescN64(VTX(0x40, size32x32_tex32x32_heart_vtx));
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
@@ -368,9 +371,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0xb0));
+					effSetVtxDescN64(VTX(0xb0, size24x24_tex32x32_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0x158));
+					effSetVtxDescN64(VTX(0x158, size24x24_tex32x32_flower_vtx));
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -386,9 +389,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0x120));
+					effSetVtxDescN64(VTX(0x120, size16x24_tex32x32_r_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0x1c8));
+					effSetVtxDescN64(VTX(0x1c8, size16x24_tex32x32_r_flower_vtx));
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -401,9 +404,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0xe8));
+					effSetVtxDescN64(VTX(0xe8, size16x24_tex32x32_l_heart_vtx));
 				} else {
-					effSetVtxDescN64((effVtxArray*)(dataBase + 0x190));
+					effSetVtxDescN64(VTX(0x190, size16x24_tex32x32_l_flower_vtx));
 				}
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -412,7 +415,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			effSetVtxDescN64((effVtxArray*)(dataBase + 0x78));
+			effSetVtxDescN64(VTX(0x78, size16x16_tex32x32_heart_vtx));
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}

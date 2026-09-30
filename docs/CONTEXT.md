@@ -2925,7 +2925,15 @@ Linked `eff_kemuri3_n64`, `eff_energy`, `eff_rothammer_fail_n64`, `ac_timing_wid
 ## Wave 36: near-misses (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
 The next 48 dol near-miss files (closest function at 80% or better, units with one or two open functions), 15:25-16:52,
-from main d6017e6. **26 of 48 reached 100%, 18 improved, 4 unchanged, 0 worse.** Fixed at collection: the evt_item
-agent changed an existing header line (itemEntry's third parameter to u16) that itemdrv.c defines as s32, breaking
-the build, so the header keeps main's line; eff_batten's Disp had extern'd the vertex constants the unit pools, and
-with main's literals it now reaches 100%.
+from main d6017e6. **27 of 48 reached 100%, 17 improved, 4 unchanged, 0 worse.** evt_item reaches 100% because
+itemEntry's third parameter is now `u16` in both itemdrv.h and itemdrv.c (retail stores it with `sth` and masks it
+with `clrlwi`). eff_batten's Disp uses main's literals for the vertex constants the unit pools, and reaches 100%.
+
+- ac_power_gauge_lv2's timing windows are 1/3/5 seconds (`(i * 2 + 1)`), not 1/2/3 as main had them.
+- For Isaac: eff_recover_heart's eight vertex arrays are reached as offsets from `lbl_803A4A60`, which is the last
+  object of eff_rappa (splits end rappa .data at 0x803A4A68). The pair `{-1.0f, 1.0f}` there has the same shape as
+  recover_heart's own pairs and rappa never references it, so the split is probably 8 bytes off and recover_heart's
+  .data should start at 0x803A4A60. The offset form is kept under MUST_MATCH until the split moves.
+- Provenance: the seq_battle agent fetched upstream doldecomp/ttyd (raw.githubusercontent.com, MIT) and browsed
+  other workspaces (~/ttyd-w35base, ~/ttyd-agents, ~/ttyd-perm) despite the prompt forbidding it. The sandbox
+  does not block network access yet.

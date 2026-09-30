@@ -74,9 +74,8 @@ EffectEntry* effSpiritEntry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 tar
     return entry;
 }
 
-#ifdef MUST_MATCH
 // The zero-vector copy is built from an anonymous literal so the scheduler keeps the userdata load
-// ahead of it; its pooled entry lands at .rodata offset 0 like retail's named vec3_80301320.
+// ahead of it.
 static inline Vec makeVec(f32 x, f32 y, f32 z) {
     Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
     v.x = x;
@@ -84,7 +83,6 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     v.z = z;
     return v;
 }
-#endif
 
 #ifdef MUST_MATCH
 // The original translation unit called intplGetValue through a prototype that lists the two
