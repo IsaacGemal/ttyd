@@ -4,7 +4,7 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
