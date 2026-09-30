@@ -7,9 +7,6 @@
 #include <dolphin/mtx.h>
 
 // .rodata constants (named after their original addresses in the asm).
-const Vec vec3_802fb688 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_mask_802fb698 = 4503599627370496.0;
-const f64 double_to_int_802fb6a0 = 4503601774854144.0;
 
 // .sdata/.data animation tables (bytes in the original's order).
 s8 jump_hscale_data[20] = {
@@ -34,6 +31,7 @@ s8 jump2_ry_data[76] = {
 	0x28, 0x29, 0x29, 0x28, 0x26, 0x21, 0x1C, 0x16, 0x10, 0x0A, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
+__declspec(section ".data") f32 lbl_803A5C90[2] = { -1.0f, 1.0f };
 
 EffectEntry* effSnowmanN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -86,14 +84,13 @@ void effSnowmanMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	s32 frame;
 #endif
-	f32 temp;
 	f32 speed;
 #ifdef MUST_MATCH
 	f32 field3c;
 #endif
 
 	data = effect->userdata;
-	position = vec3_802fb688;
+	position = (Vec){ 0.0f, 0.0f, 0.0f };
 	position.x = data->x;
 	position.y = data->y;
 	position.z = data->z;
@@ -239,8 +236,8 @@ void effSnowmanMain(EffectEntry* effect) {
 #else
 	if ((data->field_0x14 & 7) == 1) {
 #endif
-		temp = data->y + data->field_0x34 + (f32)(rand() % 100) + 50.0f;
-		effVaporN64Entry(2, 0x28, data->x + data->field_0x30 + (f32)(rand() % 60) - 30.0f, temp,
+		effVaporN64Entry(2, 0x28, data->x + data->field_0x30 + (f32)(rand() % 60) - 30.0f,
+		                 data->y + data->field_0x34 + (f32)(rand() % 100) + 50.0f,
 		                 data->z + data->field_0x38, 4.0f);
 		effSnowDustN64Entry(1, data->x + data->field_0x30, 10.0f + (data->y + data->field_0x34),
 		                    60.0f + (data->z + data->field_0x38), 10, 30, 60.0f, 100.0f, 2.0f);
