@@ -134,13 +134,6 @@ void unk_80130374(void) {
     }
 }
 
-// Testing `currMotionId == {2,1,0,13}` emits four separate `cmplwi ... beq`
-// compares in the reference. Writing the source as `2 || 1 || 0 || 13` makes mwcc
-// merge the adjacent `==1 || ==0` pair into `cmplwi 1; ble`, so the order is
-// written `2 || 1 || 13 || 0` to keep them apart. The compare chain is then the
-// same four tests, but the last two come out `13` then `0` instead of `0` then
-// `13` (both branch to the same target).
-// NONMATCHING (99.98%): last two compare operands swapped.
 void mario_kemuri_landon(void) {
     MarioWork* mario = marioGetPtr();
     s32 waterKind = 0;
@@ -160,7 +153,12 @@ void mario_kemuri_landon(void) {
         cnt492 = 10;
     }
 
-    if (mario->currMotionId == 2 || mario->currMotionId == 1 || mario->currMotionId == 13 || mario->currMotionId == 0) {
+    #ifdef MUST_MATCH
+    // `== 0` next to `== 1` merges into `cmplwi 1; ble`, and after `13` swaps the last two tests; `!x` keeps the order.
+    if (mario->currMotionId == 2 || mario->currMotionId == 1 || !mario->currMotionId || mario->currMotionId == 13) {
+#else
+    if (mario->currMotionId == 2 || mario->currMotionId == 1 || mario->currMotionId == 0 || mario->currMotionId == 13) {
+#endif
         if (mario->currMotionId == 13) {
             cnt491 = 0;
         }

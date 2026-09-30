@@ -1,6 +1,9 @@
 #include "eff/n64/eff_peach_dust_n64.h"
 #include "driver/dispdrv.h"
 #include "eff/eff_n64.h"
+#include "memory.h"
+#include <stdlib.h>
+#include "math_ext.h"
 #include <dolphin/mtx.h>
 
 inline Vec makeVec(f32 x, f32 y, f32 z) {
@@ -14,6 +17,12 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 // .rodata
 const f64 double_to_int_mask_802fb350 = 4503599627370496.0;
 
+// .rodata effect type name.
+const char str_802FB358[16] = "PeachDustN64";
+
+// .rodata int->float conversion bias.
+const f64 double_to_int_802fb368 = 4503601774854144.0;
+
 // .sdata2
 extern const f32 float_0p01_8041f968;
 extern const f32 float_0p4_8041f964;
@@ -24,9 +33,25 @@ extern const f32 float_0_8041f954;
 extern const f32 float_deg2rad_8041f958;
 extern const f32 float_1p4_8041f95c;
 extern const f32 float_0p7_8041f960;
+extern const f32 float_6p2832_8041f970;
+extern const f32 float_360_8041f974;
+extern const f32 float_0p04_8041f978;
+extern const f32 float_0p001_8041f97c;
 
 // .sdata2 word constant the original copies before filling the RGB fields.
 const GXColor dat_8041f948 = { 0, 0, 0, 0xFF };
+
+// .data per-type 16x16 particle placement grid; '.' marks an empty cell. Indexed as
+// data[type*0x100 + (0xF - row)*0x10 + col].
+s8 data[0x300] =
+	".......+..............@.#...........$%&.*=..........-...;>.........,'....)!.......~~......{....."
+	"..~~......]@@^....~/........(_......#:<.....+.......[}|.....+.......1.......23......45.....677.."
+	"....8......7.......90......7.......a22b...c...........deee............f++++..........ff....+...."
+	"....ff......+........+......+.......+.......ff......+........+...f++.........+..ff...........+f."
+	".+............+.ff............+..+............+..f+.f+++f.....+....+f..+......+.......+.......+."
+	"......+.......+........+++++++f.....gh............+g.ggg..........g...hh..........g....g........"
+	"..hh..hh.hh.......g..hg+ghgg......hghg.g...g.......hggg.....+.....g+.h......g....g..........g..."
+	".g..........g.....g.........g.....g.........hgg...g...........g...g.........hg.....gggggggggh...";
 
 // .data vertex strip; 0x38-byte slices are passed to effSetVtxDescN64.
 static u32 size8x8_tex22x22_vtx[0x70] = {
@@ -65,6 +90,73 @@ static u8 color_rotation_data[36] = {
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
+
+EffectEntry* effPeachDustN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a4, f32 a5) {
+	s8* table;
+	EffectEntry* effect;
+	PeachDustParticle* work;
+	PeachDustParticle* particle;
+	s32 count;
+	s32 j;
+	s32 i;
+	f32 angle;
+	f32 rad;
+	f32 radius;
+
+	effect = effEntry();
+	effect->type = str_802FB358;
+	effect->count = 0x65;
+	work = __memAlloc(HEAP_EFFECT, 0x115C);
+	effect->userdata = work;
+	effect->callback = effPeachDustMain;
+	work->x = x;
+	work->y = y;
+	work->z = z;
+	work->counter = 0;
+	work->field_0x00 = type;
+	work->life = 0x50;
+	angle = float_6p2832_8041f970 * a5;
+	table = &data[type * 0x100];
+	count = 1;
+	particle = work + 1;
+	for (i = 0; i < 0x10; i++) {
+		for (j = 0; j < 0x10; j++) {
+			if (table[(0xF - i) * 0x10 + j] == '.') {
+				continue;
+			}
+			radius = (f32)((j - 8) * 2) + float_0p1_8041f96c * (f32)(rand() % 20 - 10);
+			rad = angle / float_360_8041f974;
+			particle->x = radius * (f32)cos(rad);
+			particle->y = (f32)(i * 2) + float_0p1_8041f96c * (f32)(rand() % 20 - 10);
+			particle->z = radius * (f32)sin(rad);
+			particle->vx = float_0p04_8041f978 * particle->x;
+			particle->vy = float_0p04_8041f978 * particle->y;
+			particle->gravity = float_0p001_8041f97c * (f32)(rand() % 10);
+			particle->life = rand() % 7 + 0x1E;
+			particle->counter = 0;
+			particle++;
+			count++;
+			if (count >= 0x65) {
+				break;
+			}
+		}
+		if (count >= 0x65) {
+			break;
+		}
+	}
+	for (; count < 0x65; count++, particle++) {
+		particle->scale = float_0_8041f954;
+		particle->gravity = float_0_8041f954;
+		particle->vy = float_0_8041f954;
+		particle->vx = float_0_8041f954;
+		particle->z = float_0_8041f954;
+		particle->y = float_0_8041f954;
+		particle->x = float_0_8041f954;
+		particle->life = -1;
+		particle->counter = 0;
+	}
+	return effect;
+}
 
 void effPeachDustMain(EffectEntry* effect) {
 	PeachDustParticle* data;

@@ -1,7 +1,16 @@
 #include "battle/ac/ac_timing_a.h"
+#include "driver/camdrv.h"
+#include "driver/icondrv.h"
 #include "system.h"
 
 static void actionCommandDisp(f32 x, f32 y);
+
+// .rodata vectors and .sdata2 constants actionCommandDisp reads.
+extern const Vec vec3_802efbc8;
+extern const Vec vec3_802efbd4;
+extern const f32 float_neg200_8041c428;
+extern const f32 float_50_8041c42c;
+extern const f32 float_1_8041c430;
 
 // TimingA's action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct AcTimingADecWork {
@@ -106,4 +115,34 @@ void battleAcDisp_TimingA(CameraId camId, void* param) {
 void battleAcDelete_TimingA(BattleWork* work) {
 	work->actionCommands.mAcState = 1000;
 }
+
+// optimize_for_size: the original actionCommandDisp prologue uses stmw/lmw.
+// dont_inline: the original keeps actionCommandDisp as its own local function (callers emit `bl`).
+#pragma optimize_for_size on
+#pragma dont_inline on
+static void actionCommandDisp(f32 x, f32 y) {
+	BattleWork* work = _battleWorkPointer;
+	BattleActions* ac = &work->actionCommands;
+	BattleACDispParams* disp = &ac->dispParams;
+	AcTimingADecWork* dec = (AcTimingADecWork*)&ac->field_0x2BC[0];
+
+	camGetPtr(CAMERA_2D);
+
+	if (dec->flags & 1) {
+		Vec v = vec3_802efbc8;
+		v.x = float_neg200_8041c428 + x;
+		v.y = float_50_8041c42c + y;
+		iconDispGx(&v, 0x10, 0x65, float_1_8041c430);
+	}
+	else {
+		Vec v = vec3_802efbd4;
+		v.x = float_neg200_8041c428 + x;
+		v.y = float_50_8041c42c + y;
+		iconDispGx(&v, 0x10, 0x64, float_1_8041c430);
+	}
+
+	(*(s32*)&disp->field_0x0[0])++;
+}
+#pragma dont_inline reset
+#pragma optimize_for_size reset
 

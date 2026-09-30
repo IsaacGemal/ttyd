@@ -23,6 +23,28 @@ extern GlobalWork* gp;
 // .rodata constants referenced by this file's original.
 extern const Vec vec3_802c3d10;
 extern const Vec vec3_802c3d1c;
+extern const Vec vec3_802c3cc8;
+extern const Vec vec3_802c3cd4;
+extern const f32 float_0_8041a0c8;
+extern const f32 float_0p5_8041a100;
+extern const f32 float_2p5_8041a0e8;
+extern const f32 float_deg2rad_8041a0dc;
+extern const f32 float_10_8041a0cc;
+extern char str_8041A0E0[8];
+extern char str_8041A104[8];
+extern char str_8041A10C[8];
+
+// .data joint templates used by mobjHitEntry to build the embedded hit joints.
+extern MapFileJoint cubeDJ;
+extern MapFileJoint headDJ;
+extern MapFileJoint frontDJ;
+extern MapFileJoint front2DJ;
+
+#ifdef MUST_MATCH
+// MUST_MATCH: the original reaches the joint templates through the .data section base symbol (the
+// compiler-generated negone_one pair); this local is the same anchor at the same section offset.
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+#endif
 
 //.sbss
 BOOL koopaRunFlag;
@@ -174,14 +196,151 @@ void mobjReset(BOOL inBattle) {
     koopaRunFlag = FALSE;
 }
 
-// void mobjHitEntry(MapObjectEntry* entry, s32 type) {
-//     AnimationPoseData* pose;
-//     Vec bboxMin, bboxMax;
+// NONMATCHING (99.89%): only the f-register choice in the scale2.x/scale2.z computation differs
+// (the original holds bboxMax in f2 and scale in f1; ours holds bboxMax in f1 and scale in f2).
+void mobjHitEntry(MapObjectEntry* entry, s32 type) {
+    AnimationPoseData* animData;
+    Vec bboxMin;
+    Vec bboxMax;
+    Vec position;
+    Vec minTmp;
+    Vec maxTmp;
+    Mtx mtx;
+    s32 i;
+#ifdef MUST_MATCH
+    u8* base = (u8*)negone_one_374;
+#endif
 
-//     pose = animPoseGetAnimBaseDataPtr(entry->poseId);
-//     bboxMin = pose->bboxMin;
-//     bboxMax = pose->bboxMax;
-// }
+    animData = animPoseGetAnimBaseDataPtr(entry->poseId);
+    minTmp = vec3_802c3cc8;
+    minTmp.x = animData->bboxMin.x;
+    minTmp.y = animData->bboxMin.y;
+    minTmp.z = animData->bboxMin.z;
+    bboxMin = minTmp;
+    maxTmp = vec3_802c3cd4;
+    maxTmp.x = animData->bboxMax.x;
+    maxTmp.y = animData->bboxMax.y;
+    maxTmp.z = animData->bboxMax.z;
+    bboxMax = maxTmp;
+
+    for (i = 0; i < 2; i++) {
+        if (entry->hitObj[i].hitObject != NULL)
+            hitDelete(entry->hitObj[i].name);
+    }
+
+    PSVECAdd(&bboxMax, &bboxMin, &entry->translation);
+    PSVECScale(&entry->translation, &entry->translation, float_0p5_8041a100);
+    PSVECScale(&entry->translation, &entry->translation, 10.0f);
+    entry->translation.y = float_0_8041a0c8;
+    entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
+    entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+
+    if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
+        entry->translation.z = float_0_8041a0c8;
+        entry->scale2.z = float_10_8041a0cc * (float_2p5_8041a0e8 * entry->scale.z);
+    }
+
+    switch (type) {
+        case 0: {
+            Mtx zrot;
+            Mtx yrot;
+            Mtx xrot;
+            Mtx scale;
+            Mtx trans;
+
+            PSVECAdd(&entry->position, &entry->translation, &position);
+            MTXTrans(trans, position.x, position.y, position.z);
+            MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
+            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
+            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
+            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXConcat(trans, zrot, trans);
+            MTXConcat(trans, yrot, trans);
+            MTXConcat(trans, xrot, trans);
+            MTXConcat(trans, scale, mtx);
+#ifdef MUST_MATCH
+            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x16a4), 0x68);
+#else
+            memcpy(&entry->hitObj[0].unk4[8], &cubeDJ, 0x68);
+#endif
+            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcat(entry->hitObj[0].name, entry->name);
+            ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
+            entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
+            entry->hitObj[0].hitObject->mapObj = (MapObject*)entry;
+            break;
+        }
+        case 1: {
+            Mtx zrot;
+            Mtx yrot;
+            Mtx xrot;
+            Mtx scale;
+            Mtx trans;
+
+            PSVECAdd(&entry->position, &entry->translation, &position);
+            MTXTrans(trans, position.x, position.y, position.z);
+            MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
+            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
+            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
+            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXConcat(trans, zrot, trans);
+            MTXConcat(trans, yrot, trans);
+            MTXConcat(trans, xrot, trans);
+            MTXConcat(trans, scale, mtx);
+#ifdef MUST_MATCH
+            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x1758), 0x68);
+#else
+            memcpy(&entry->hitObj[0].unk4[8], &headDJ, 0x68);
+#endif
+            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcat(entry->hitObj[0].name, entry->name);
+            ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
+            entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
+            entry->hitObj[0].hitObject->mapObj = (MapObject*)entry;
+            break;
+        }
+        case 2: {
+            Mtx zrot;
+            Mtx yrot;
+            Mtx xrot;
+            Mtx scale;
+            Mtx trans;
+
+            PSVECAdd(&entry->position, &entry->translation, &position);
+            MTXTrans(trans, position.x, position.y, position.z);
+            MTXScale(scale, entry->scale2.x, entry->scale2.y, entry->scale2.z);
+            MTXRotRad(xrot, 'x', (float_deg2rad_8041a0dc * entry->rotation.x));
+            MTXRotRad(yrot, 'y', (float_deg2rad_8041a0dc * entry->rotation.y));
+            MTXRotRad(zrot, 'z', (float_deg2rad_8041a0dc * entry->rotation.z));
+            MTXConcat(trans, zrot, trans);
+            MTXConcat(trans, yrot, trans);
+            MTXConcat(trans, xrot, trans);
+            MTXConcat(trans, scale, mtx);
+#ifdef MUST_MATCH
+            memcpy(&entry->hitObj[0].unk4[8], (MapFileJoint*)(base + 0x180c), 0x68);
+#else
+            memcpy(&entry->hitObj[0].unk4[8], &frontDJ, 0x68);
+#endif
+            strcpy(entry->hitObj[0].name, str_8041A104);
+            strcat(entry->hitObj[0].name, entry->name);
+            ((MapFileJoint*)&entry->hitObj[0].unk4[8])->name = entry->hitObj[0].name;
+            entry->hitObj[0].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[0].unk4[8], mtx);
+            entry->hitObj[0].hitObject->mapObj = (MapObject*)entry;
+#ifdef MUST_MATCH
+            memcpy(&entry->hitObj[1].unk4[8], (MapFileJoint*)(base + 0x18c0), 0x68);
+#else
+            memcpy(&entry->hitObj[1].unk4[8], &front2DJ, 0x68);
+#endif
+            strcpy(entry->hitObj[1].name, str_8041A10C);
+            strcat(entry->hitObj[1].name, entry->name);
+            ((MapFileJoint*)&entry->hitObj[1].unk4[8])->name = entry->hitObj[1].name;
+            entry->hitObj[1].hitObject = hitEntryMOBJ((MapFileJoint*)&entry->hitObj[1].unk4[8], mtx);
+            entry->hitObj[1].hitObject->mapObj = (MapObject*)entry;
+            break;
+        }
+    }
+}
 
 // NONMATCHING (99.90%): same instructions; only register numbers or operands differ.
 s32 mobjEntry(const char* name, const char* animPoseName) {

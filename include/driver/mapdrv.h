@@ -6,6 +6,9 @@ typedef struct TEXPalette TEXPalette;
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 
+extern s32 culling[];
+extern u32 attr_fmt[];
+
 typedef struct DisplayList {
     u32 offset;      // 0x00 - Offset to vertex data
     u32 vertexCount; // 0x04 - Number of vertices

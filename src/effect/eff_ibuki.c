@@ -52,6 +52,178 @@ u32 ibuki_color0_tbl[4] = { 0xFFFFFF00, 0xFFFFFF66, 0xFFFFFF4C, 0xFFFFFF7F };
 const f64 double_to_int_803006d0 = 4503601774854144.0;
 const char str_80421F48[] = "Ibuki";
 
+// NONMATCHING (99.20%): only the callee-saved FPR numbers of the loop-invariant constants differ and the
+// folded int->float magic is an anonymous @N instead of double_to_int_803006d0.
+EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
+	s32 wait;
+	EffectEntry* entry;
+	effIbukiData* data;
+	effIbukiData* elem;
+	s32 i;
+	f32 angle;
+
+	entry = effEntry();
+	entry->type = str_80421F48;
+	entry->count = 0x21;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effIbukiData) * 0x21);
+	entry->userdata = data;
+	entry->callback = effIbukiMain;
+	entry->flags |= 2;
+	data->type = type;
+	data->positionX = x;
+	data->positionY = y;
+	data->positionZ = z;
+	if (lifetime <= 0) {
+		data->lifetime = 1000;
+	} else {
+		data->lifetime = lifetime;
+	}
+	data->counter = 0;
+	data->scale = float_1_80421f30;
+	data->alpha = 0;
+	data->alpha2 = 0;
+	data->texU0 = float_0_80421f08;
+	data->texV0 = float_0_80421f08;
+	data->texU1 = float_0_80421f08;
+	data->field_0x4C = float_0_80421f08;
+
+	i = 1;
+	wait = 10;
+	elem = &data[i];
+	for (; i < entry->count; i++) {
+		angle = (f32)(30 - irand(40));
+		elem->positionX = float_0_80421f08;
+		elem->positionY = (f32)irand(30);
+		elem->positionZ = float_0_80421f08;
+		angle = angle * float_6p2832_80421f40 / float_360_80421f44;
+		elem->velocityX = (f32)cos(angle);
+		elem->velocityY = (f32)sin(angle);
+		elem->velocityZ = float_0_80421f08;
+		elem->scale = float_1_80421f30;
+		elem->alpha = 0;
+		elem->wait = wait;
+		elem->rotX = float_0_80421f08;
+		elem->rotY = float_0_80421f08;
+		if (irand(1000) < 500) {
+			elem->rotVelX = (f32)(irand(10) + 10);
+			elem->rotVelY = float_0_80421f08;
+		} else {
+			elem->rotVelX = float_0_80421f08;
+			elem->rotVelY = (f32)(irand(10) + 10);
+		}
+		wait += 10;
+		elem++;
+	}
+	return entry;
+}
+
+// NONMATCHING (98.89%): logic matches; data/elem sit in r31 instead of r30, the deg2rad multiply and the
+// 1.0+rand/10 scale use a different FPR order, folded int->float magic is an @N.
+void effIbukiMain(EffectEntry* effect) {
+	s32 wait;
+	effIbukiData* data;
+	effIbukiData* elem;
+	Vec dispPos;
+	Vec vaporPos;
+	Vec pos;
+	Mtx mtx;
+	CameraEntry* camera;
+	s32 i;
+	f32 angle;
+
+	data = effect->userdata;
+	pos = vec3_803006c0;
+	pos.x = data->positionX;
+	pos.y = data->positionY;
+	pos.z = data->positionZ;
+	dispPos = pos;
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->lifetime = 0x10;
+	}
+	if (data->lifetime < 1000) {
+		data->lifetime--;
+	}
+	if (data->lifetime < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (data->counter < 0x10) {
+		data->alpha = data->counter * 0x10 + 0xf;
+	}
+	if (data->lifetime < 0x10) {
+		data->alpha = data->lifetime * 0x10;
+	}
+	if (data->counter >= 0x3c && data->counter < 0x5c) {
+		data->alpha2 = (data->counter - 0x3c) * 8 + 7;
+	}
+	data->counter++;
+	data->texU0 += float_neg0p0125_80421f24;
+	data->texV0 += float_0p0125_80421f28;
+	data->texU1 += float_neg0p0125_80421f24;
+	data->field_0x4C = float_0_80421f08;
+	if (data->counter > 0x78 && data->counter % 16 == 0) {
+		vaporPos.x = data->positionX + (f32)irand(300);
+		vaporPos.y = float_30_80421f2c + (data->positionY + (f32)irand(100));
+		vaporPos.z = data->positionZ;
+		camera = camGetPtr(CAMERA_3D);
+		PSMTXRotRad(mtx, 'y', float_deg2rad_80421f10 * -camera->viewYaw);
+		PSMTXMultVec(mtx, &vaporPos, &vaporPos);
+		angle = (f32)irand(10);
+		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, float_1_80421f30 + angle / float_10_80421f34);
+	}
+
+	i = 1;
+	wait = 10;
+	elem = &data[1];
+	for (; i < effect->count; i++) {
+		if (elem->wait != 0) {
+			elem->wait--;
+		} else {
+			elem->positionX += elem->velocityX;
+			elem->positionY += elem->velocityY;
+			elem->positionZ += elem->velocityZ;
+			elem->rotX += elem->rotVelX;
+			elem->rotY += elem->rotVelY;
+			elem->velocityX *= float_1p01_80421f38;
+			elem->velocityY *= float_1p01_80421f38;
+			elem->velocityZ *= float_1p01_80421f38;
+			elem->rotVelX *= float_1p01_80421f38;
+			elem->rotVelY *= float_1p01_80421f38;
+			elem->alpha += 5;
+			if (elem->alpha > 0xff) {
+				elem->alpha = 0xff;
+			}
+			if (elem->positionX > float_300_80421f3c) {
+				angle = (f32)(30 - irand(40));
+				elem->positionX = float_0_80421f08;
+				elem->positionY = (f32)irand(30);
+				elem->positionZ = float_0_80421f08;
+				angle = angle * float_6p2832_80421f40 / float_360_80421f44;
+				elem->velocityX = (f32)cos(angle);
+				elem->velocityY = (f32)sin(angle);
+				elem->velocityZ = float_0_80421f08;
+				elem->scale = float_1_80421f30;
+				elem->alpha = 0;
+				elem->wait = wait;
+				elem->rotX = float_0_80421f08;
+				elem->rotY = float_0_80421f08;
+				if (irand(1000) < 500) {
+					elem->rotVelX = (f32)(irand(10) + 10);
+					elem->rotVelY = float_0_80421f08;
+				} else {
+					elem->rotVelX = float_0_80421f08;
+					elem->rotVelY = (f32)(irand(10) + 10);
+				}
+			}
+		}
+		wait += 10;
+		elem++;
+	}
+	dispEntry(CAMERA_3D, dispCalcZ(&dispPos), 2, effIbukiDisp, effect);
+}
+
 // NONMATCHING (95.27%): whole body present; callee-saved register allocation differs (fewer regs, 0x120
 // frame vs 0x130), float constants land in a different FPR order, folded int->float magic is an @N.
 void effIbukiDisp(CameraId cameraId, void* param) {
@@ -197,176 +369,4 @@ void effIbukiDisp(CameraId cameraId, void* param) {
 		}
 		elem++;
 	}
-}
-
-// NONMATCHING (98.89%): logic matches; data/elem sit in r31 instead of r30, the deg2rad multiply and the
-// 1.0+rand/10 scale use a different FPR order, folded int->float magic is an @N.
-void effIbukiMain(EffectEntry* effect) {
-	s32 wait;
-	effIbukiData* data;
-	effIbukiData* elem;
-	Vec dispPos;
-	Vec vaporPos;
-	Vec pos;
-	Mtx mtx;
-	CameraEntry* camera;
-	s32 i;
-	f32 angle;
-
-	data = effect->userdata;
-	pos = vec3_803006c0;
-	pos.x = data->positionX;
-	pos.y = data->positionY;
-	pos.z = data->positionZ;
-	dispPos = pos;
-
-	if (effect->flags & 4) {
-		effect->flags &= ~4;
-		data->lifetime = 0x10;
-	}
-	if (data->lifetime < 1000) {
-		data->lifetime--;
-	}
-	if (data->lifetime < 0) {
-		effDelete(effect);
-		return;
-	}
-	if (data->counter < 0x10) {
-		data->alpha = data->counter * 0x10 + 0xf;
-	}
-	if (data->lifetime < 0x10) {
-		data->alpha = data->lifetime * 0x10;
-	}
-	if (data->counter >= 0x3c && data->counter < 0x5c) {
-		data->alpha2 = (data->counter - 0x3c) * 8 + 7;
-	}
-	data->counter++;
-	data->texU0 += float_neg0p0125_80421f24;
-	data->texV0 += float_0p0125_80421f28;
-	data->texU1 += float_neg0p0125_80421f24;
-	data->field_0x4C = float_0_80421f08;
-	if (data->counter > 0x78 && data->counter % 16 == 0) {
-		vaporPos.x = data->positionX + (f32)irand(300);
-		vaporPos.y = float_30_80421f2c + (data->positionY + (f32)irand(100));
-		vaporPos.z = data->positionZ;
-		camera = camGetPtr(CAMERA_3D);
-		PSMTXRotRad(mtx, 'y', float_deg2rad_80421f10 * -camera->viewYaw);
-		PSMTXMultVec(mtx, &vaporPos, &vaporPos);
-		angle = (f32)irand(10);
-		effVaporN64Entry(2, 0x1e, vaporPos.x, vaporPos.y, vaporPos.z, float_1_80421f30 + angle / float_10_80421f34);
-	}
-
-	i = 1;
-	wait = 10;
-	elem = &data[1];
-	for (; i < effect->count; i++) {
-		if (elem->wait != 0) {
-			elem->wait--;
-		} else {
-			elem->positionX += elem->velocityX;
-			elem->positionY += elem->velocityY;
-			elem->positionZ += elem->velocityZ;
-			elem->rotX += elem->rotVelX;
-			elem->rotY += elem->rotVelY;
-			elem->velocityX *= float_1p01_80421f38;
-			elem->velocityY *= float_1p01_80421f38;
-			elem->velocityZ *= float_1p01_80421f38;
-			elem->rotVelX *= float_1p01_80421f38;
-			elem->rotVelY *= float_1p01_80421f38;
-			elem->alpha += 5;
-			if (elem->alpha > 0xff) {
-				elem->alpha = 0xff;
-			}
-			if (elem->positionX > float_300_80421f3c) {
-				angle = (f32)(30 - irand(40));
-				elem->positionX = float_0_80421f08;
-				elem->positionY = (f32)irand(30);
-				elem->positionZ = float_0_80421f08;
-				angle = angle * float_6p2832_80421f40 / float_360_80421f44;
-				elem->velocityX = (f32)cos(angle);
-				elem->velocityY = (f32)sin(angle);
-				elem->velocityZ = float_0_80421f08;
-				elem->scale = float_1_80421f30;
-				elem->alpha = 0;
-				elem->wait = wait;
-				elem->rotX = float_0_80421f08;
-				elem->rotY = float_0_80421f08;
-				if (irand(1000) < 500) {
-					elem->rotVelX = (f32)(irand(10) + 10);
-					elem->rotVelY = float_0_80421f08;
-				} else {
-					elem->rotVelX = float_0_80421f08;
-					elem->rotVelY = (f32)(irand(10) + 10);
-				}
-			}
-		}
-		wait += 10;
-		elem++;
-	}
-	dispEntry(CAMERA_3D, dispCalcZ(&dispPos), 2, effIbukiDisp, effect);
-}
-
-// NONMATCHING (99.20%): only the callee-saved FPR numbers of the loop-invariant constants differ and the
-// folded int->float magic is an anonymous @N instead of double_to_int_803006d0.
-EffectEntry* effIbukiEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z) {
-	s32 wait;
-	EffectEntry* entry;
-	effIbukiData* data;
-	effIbukiData* elem;
-	s32 i;
-	f32 angle;
-
-	entry = effEntry();
-	entry->type = str_80421F48;
-	entry->count = 0x21;
-	data = __memAlloc(HEAP_EFFECT, sizeof(effIbukiData) * 0x21);
-	entry->userdata = data;
-	entry->callback = effIbukiMain;
-	entry->flags |= 2;
-	data->type = type;
-	data->positionX = x;
-	data->positionY = y;
-	data->positionZ = z;
-	if (lifetime <= 0) {
-		data->lifetime = 1000;
-	} else {
-		data->lifetime = lifetime;
-	}
-	data->counter = 0;
-	data->scale = float_1_80421f30;
-	data->alpha = 0;
-	data->alpha2 = 0;
-	data->texU0 = float_0_80421f08;
-	data->texV0 = float_0_80421f08;
-	data->texU1 = float_0_80421f08;
-	data->field_0x4C = float_0_80421f08;
-
-	i = 1;
-	wait = 10;
-	elem = &data[i];
-	for (; i < entry->count; i++) {
-		angle = (f32)(30 - irand(40));
-		elem->positionX = float_0_80421f08;
-		elem->positionY = (f32)irand(30);
-		elem->positionZ = float_0_80421f08;
-		angle = angle * float_6p2832_80421f40 / float_360_80421f44;
-		elem->velocityX = (f32)cos(angle);
-		elem->velocityY = (f32)sin(angle);
-		elem->velocityZ = float_0_80421f08;
-		elem->scale = float_1_80421f30;
-		elem->alpha = 0;
-		elem->wait = wait;
-		elem->rotX = float_0_80421f08;
-		elem->rotY = float_0_80421f08;
-		if (irand(1000) < 500) {
-			elem->rotVelX = (f32)(irand(10) + 10);
-			elem->rotVelY = float_0_80421f08;
-		} else {
-			elem->rotVelX = float_0_80421f08;
-			elem->rotVelY = (f32)(irand(10) + 10);
-		}
-		wait += 10;
-		elem++;
-	}
-	return entry;
 }

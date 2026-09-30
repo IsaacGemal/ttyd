@@ -10,8 +10,20 @@
 #include "driver/fadedrv.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "math_ext.h"
 
 extern GlobalWork* gp;
+extern const f32 float_1000_8041e540;
+extern const f32 float_127_8041e544;
+extern const f32 float_18p85_8041e548;
+extern const f32 float_0p015625_8041e54c;
+extern const f32 float_10_8041e524;
+extern const f32 float_0p6_8041e550;
+extern const f32 float_128_8041e554;
+extern const f32 float_6p2832_8041e558;
+extern const f32 float_360_8041e55c;
+extern const f32 float_0p5_8041e538;
+extern const f32 float_0_8041e53c;
 
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -925,9 +937,172 @@ void envDisp_Blur(void) {
 }
 
 
+// The map-object flag tests and the texture loop match; what still differs is global register allocation.
+// The target keeps the map object in r3 and its flags in r4 (mine swaps them), so the bbox lands
+// in r21-r18 (mine r24-r21) and the loop counters/base/fp constants shift by a few registers
+// (i: r23/r19, j: r22/r18, base r24/r20). The entry block also lays out the wrong way (target:
+// `beq F4; b E4`, mine: `bne E4` + fall-through); constant-pool symbols show as @NNN.
+// NONMATCHING (91.19%): register allocation / block layout only.
+void envSetWater(s32 arg0, void* arg1) {
+    EnvironmentYami* yami = (EnvironmentYami*)arg0;
+    MapObject* obj;
+    s32 tevStage;
+    s32 texMap;
+    s32 texCoord;
+    s32 unk18;
+    s32 x0, y0, x1, y1;
+    s32 width, height;
+    u32 size;
+    void* capture;
+    u8* water;
+    GXTexObj captureObj;
+    GXTexObj waterObj;
+    Vec pos;
+    Mtx mtx;
+    f32 indMtx[2][3];
+    f32 dist;
+    f32 scale;
+    s32 i, j;
 
+    obj = (MapObject*)yami->unk0;
+    tevStage = yami->tevStage;
+    texMap = yami->texMap;
+    texCoord = yami->texCoord;
+    unk18 = yami->unk18;
 
+    if ((*(u32*)obj->field_0x0 & 0x20) == 0) {
+        if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+            *(u32*)obj->field_0x0 |= 0x20000000;
+            return;
+        }
+    }
+    else {
+        while (TRUE) {
+            obj = obj->parent;
+            if (obj == NULL) {
+                break;
+            }
+            if ((*(u32*)obj->field_0x0 & 0x10) == 0) {
+                continue;
+            }
+            if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
+                *(u32*)obj->field_0x0 |= 0x20000000;
+                return;
+            }
+            break;
+        }
+    }
 
+    x0 = *(u16*)(obj->field_0xEC + 0);
+    y0 = *(u16*)(obj->field_0xEC + 2);
+    x1 = *(u16*)(obj->field_0xEC + 4);
+    y1 = *(u16*)(obj->field_0xEC + 6);
+
+    if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
+        return;
+    }
+    if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
+        return;
+    }
+
+    x0 -= x0 & 1;
+    y0 -= y0 & 1;
+    x1 += x1 & 1;
+    y1 += y1 & 1;
+    if (x0 < 0) {
+        x0 = 0;
+    }
+    if (y0 < 0) {
+        y0 = 0;
+    }
+    if (x1 > gp->fbWidth) {
+        x1 = gp->fbWidth;
+    }
+    if (y1 > gp->efbHeight) {
+        y1 = gp->efbHeight;
+    }
+
+    width = x1 - x0;
+    height = y1 - y0;
+
+    size = GXGetTexBufferSize((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_FALSE, 0);
+    capture = smartAlloc(size, HEAP_EFFECT)->address;
+    GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
+    GXSetTexCopyDst((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_TRUE);
+    GXCopyTex(capture, GX_FALSE);
+    GXPixModeSync();
+    GXTexModeSync();
+    GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    PSMTXMultVec(yami->unk4, (Vec*)(((MapObject*)yami->unk0)->field_0xC + 4), &pos);
+    scale = float_1000_8041e540 / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
+    if (scale < float_0_8041e53c) {
+        scale = float_0_8041e53c;
+    }
+    if (scale > float_127_8041e544) {
+        scale = float_127_8041e544;
+    }
+
+    size = GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0);
+    water = smartAlloc(size, HEAP_EFFECT)->address;
+
+    for (i = 0; i < 0x40; i++) {
+        for (j = 0; j < 0x40; j++) {
+            f32 s = (f32)sin(float_18p85_8041e548 * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
+            s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
+            u8* p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
+
+            p[0] = v;
+            p[1] = 0x80;
+        }
+    }
+
+    DCFlushRange(water, 0x2000);
+    GXInitTexObj(&waterObj, water, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    GXInitTexObjLOD(&waterObj, GX_LINEAR, GX_LINEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    dist = (f32)gp->efbHeight * float_0p5_8041e538 / (f32)tan(float_6p2832_8041e558 * (camGetPtr(CAMERA_3D)->fovY * float_0p5_8041e538) / float_360_8041e55c);
+    C_MTXLightFrustum(mtx,
+        (f32)(gp->efbHeight / 2 - y1),
+        (f32)(gp->efbHeight / 2 - y0),
+        (f32)(x0 - gp->fbWidth / 2),
+        (f32)(x1 - gp->fbWidth / 2),
+        dist,
+        float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538);
+    PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap], GX_MTX3x4);
+    GXLoadTexObj(&captureObj, texMap);
+    GXLoadTexObj(&waterObj, texMap + 1);
+    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    indMtx[0][0] = float_0p5_8041e538;
+    indMtx[0][1] = float_0_8041e53c;
+    indMtx[0][2] = float_0_8041e53c;
+    indMtx[1][0] = float_0_8041e53c;
+    indMtx[1][1] = float_0p5_8041e538;
+    indMtx[1][2] = float_0_8041e53c;
+    GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
+    GXSetIndTexOrder(unk18, texCoord, texMap + 1);
+    GXSetIndTexCoordScale(unk18, GX_ITS_1, GX_ITS_1);
+    GXSetTevIndWarp(tevStage, unk18, GX_TRUE, GX_FALSE, GX_ITM_0);
+
+    tevStage += 1;
+    texCoord += 1;
+    yami->tevStage = tevStage;
+    unk18 += 1;
+    texMap += 2;
+    yami->texCoord = texCoord;
+    yami->unk18 = unk18;
+    yami->texMap = texMap;
+}
 
 // NONMATCHING (88.71%): full logic; callee-saved locals land in r25-r31 instead of the original r24-r30 and a few scheduler moves differ.
 void envSetYami(EnvironmentYami* yami) {

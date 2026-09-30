@@ -7,7 +7,60 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
-const Vec vec3_802fb5a0 = { 0.0f, 0.0f, 0.0f };
+u32 stg_hahen_v[204] = {
+    0x00030003, 0xFFFD0000, 0x00003232, 0x32FFFFFD,
+    0xFFFDFFFD, 0xFDBD0000, 0x323232FF, 0xFFFD0003,
+    0x0003FEDE, 0xFE0A3232, 0x32FF0003, 0x00030003,
+    0x006AFE74, 0x323232FF, 0x00030003, 0xFFFD0000,
+    0x00003232, 0x32FF0003, 0xFFFDFFFD, 0xFC000000,
+    0xE0E0E0FF, 0x0003FFFD, 0x0003FC00, 0xFE66E0E0,
+    0xE0FFFFFD, 0xFFFD0003, 0xFD9AFE66, 0xE0E0E0FF,
+    0xFFFDFFFD, 0xFFFDFD9A, 0x0000E0E0, 0xE0FF0003,
+    0x0003FFFD, 0xFC9B0000, 0x323232FF, 0x0003FFFD,
+    0xFFFDFB79, 0x01223232, 0x32FFFFFD, 0xFFFDFFFD,
+    0xFA580000, 0x323232FF, 0x00030003, 0xFFFDFD9A,
+    0xFA66A0A0, 0xA0FF0003, 0x00030003, 0xFD9AFC00,
+    0xA0A0A0FF, 0x0003FFFD, 0x0003FC00, 0xFC00A0A0,
+    0xA0FF0003, 0xFFFDFFFD, 0xFC00FA66, 0xA0A0A0FF,
+    0xFFFDFFFD, 0xFFFDFC0A, 0xF9243232, 0x32FFFFFD,
+    0xFFFD0003, 0xFD96F98E, 0x323232FF, 0xFFFD0003,
+    0x0003FD2C, 0xFB1A3232, 0x32FFFFFD, 0x00030003,
+    0x0000FA66, 0xC8C8C8FF, 0xFFFDFFFD, 0x00030000,
+    0xFC00C8C8, 0xC8FF0003, 0xFFFD0003, 0xFE66FC00,
+    0xC8C8C8FF, 0x00030003, 0x0003FE66, 0xFA66C8C8,
+    0xC8FFFFFC, 0x0000FFFC, 0x022201DE, 0xFFFFFFFF,
+    0xFFFC0000, 0x00040222, 0x0400FFFF, 0xFFFFFFFC,
+    0x0001FFFF, 0x022202BC, 0xFFFFFFFF, 0x00040000,
+    0x00010000, 0x0333FFFF, 0xFFFF0004, 0x0000FFFC,
+    0x000001DE, 0xFFFFFFFF, 0x00020003, 0x0002FEEB,
+    0xFEC33232, 0x32FFFFFD, 0x0000FFFB, 0x00000000,
+    0x323232FF, 0xFFFB0000, 0x0003FE80, 0x00003232,
+    0x32FF0002, 0x00030002, 0x00000000, 0x323232FF,
+    0xFFFB0000, 0x0003FEB1, 0x00003232, 0x32FF0002,
+    0x00000005, 0xFFCDFF48, 0x8E8E8EFF, 0x00020003,
+    0x0002FD6B, 0xFE0B3232, 0x32FF0002, 0x00000005,
+    0xFDF9FD8D, 0x8E8E8EFF, 0x00040000, 0xFFFFFE12,
+    0xFEB28C8C, 0x8CFF0002, 0x00030002, 0xFCC30000,
+    0x323232FF, 0x00040000, 0xFFFFFD6B, 0xFF598C8C,
+    0x8CFF0000, 0x0000FFFA, 0xFE610000, 0x323232FF,
+    0x00020003, 0x0002FCC3, 0x00003232, 0x32FF0000,
+    0x0000FFFA, 0xFE610000, 0x323232FF, 0xFFFD0000,
+    0xFFFBFE4E, 0x00923232, 0x32FF0000, 0x0000FFFA,
+    0x00000000, 0x787878FF, 0x00040000, 0xFFFFFF09,
+    0xFF59EAEA, 0xEAFFFFFF, 0xFFFDFFFF, 0xFFE9FEE6,
+    0x8C8C8CFF, 0x00040000, 0xFFFF0000, 0x0000EAEA,
+    0xEAFF0002, 0x00000005, 0xFEDA0000, 0xDCDCDCFF,
+    0xFFFFFFFD, 0xFFFFFFB3, 0xFF108C8C, 0x8CFF0002,
+    0x00000005, 0xFEBC0000, 0xDCDCDCFF, 0xFFFB0000,
+    0x0003FF7F, 0xFEEA3E3E, 0x3EFFFFFF, 0xFFFDFFFF,
+    0x00000000, 0x8C8C8CFF, 0xFFFB0000, 0x0003FF16,
+    0xFED03E3E, 0x3EFFFFFD, 0x0000FFFB, 0x00000000,
+    0x323232FF, 0xFFFFFFFD, 0xFFFFFEF3, 0x00008C8C,
+    0x8CFFFFFD, 0x0000FFFB, 0xFFCCFF76, 0x323232FF,
+    0x00000000, 0xFFFA0000, 0x00007878, 0x78FFFFFF,
+    0xFFFDFFFF, 0xFEE60000, 0x8C8C8CFF, 0x00000000,
+};
+
 
 typedef struct effRubbleData {
 	s32 type;        // 0x00
@@ -32,29 +85,19 @@ typedef struct effRubbleData {
 	s32 field_0x4C;  // 0x4C
 } effRubbleData;
 
-extern const f32 float_0p8_8041fc38;
-extern const f32 float_0_8041fc3c;
-extern const f32 float_20_8041fc40;
-extern const f32 float_neg20_8041fc44;
-extern const f32 float_2_8041fc48;
-extern const f32 float_deg2rad_8041fc34;
-extern const u32 dat_8041fc30;
-extern u8 stg_hahen_v[];
 
 static inline void rubbleSetColor(s32 a) {
-	GXColor color = *(GXColor*)&dat_8041fc30;
+	GXColor color = (GXColor){ 0xD7, 0xD7, 0x6E, 0x00 };
 	color.a = a;
 	GXSetTevColor(GX_TEVREG0, color);
 }
-const f64 double_to_int_802fb5b0 = 4503601774854144.0;
-const char str_802FB5B8[] = "RubbleN64";
 
 EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
 	EffectEntry* effect;
 	effRubbleData* data;
 
 	effect = effEntry();
-	effect->type = str_802FB5B8;
+	effect->type = "RubbleN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effRubbleData));
 	effect->userdata = data;
@@ -68,16 +111,16 @@ EffectEntry* effRubbleN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, 
 	data->field_0x20 = a7;
 	data->field_0x48 = life;
 	data->field_0x4C = 0;
-	data->field_0x14 = float_0_8041fc3c;
-	data->field_0x1C = float_0_8041fc3c;
-	data->field_0x24 = float_0_8041fc3c;
+	data->field_0x14 = 0.0f;
+	data->field_0x1C = 0.0f;
+	data->field_0x24 = 0.0f;
 	data->field_0x28 = (f32)(rand() % 360);
 	data->field_0x2C = (f32)(rand() % 360);
-	data->field_0x30 = float_0_8041fc3c;
-	data->field_0x38 = float_20_8041fc40;
-	data->field_0x34 = float_neg20_8041fc44;
+	data->field_0x30 = 0.0f;
+	data->field_0x38 = 20.f;
+	data->field_0x34 = -20.f;
 	data->field_0x44 = 0xFF;
-	data->field_0x3C = float_2_8041fc48 * a8;
+	data->field_0x3C = 2.0f * a8;
 	data->field_0x40 = 0;
 	return effect;
 }
@@ -114,7 +157,14 @@ void effRubbleMain(EffectEntry* effect) {
 		}
 	}
 	if (life < 10) {
-		data->field_0x44 = (s32)((f32)data->field_0x44 * float_0p8_8041fc38);
+		#ifdef MUST_MATCH
+	{
+		f32 k = 0.8f;
+		data->field_0x44 = (s32)((f32)data->field_0x44 * k);
+	}
+#else
+		data->field_0x44 = (s32)((f32)data->field_0x44 * 0.8f);
+#endif
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position2), 2, effRubbleDisp, effect);
 }
@@ -134,11 +184,11 @@ void effRubbleDisp(CameraId cameraId, void* param) {
 	alpha = data->field_0x44;
 
 	PSMTXTrans(trans, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'x', float_deg2rad_8041fc34 * data->field_0x24);
+	PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x24);
 	PSMTXConcat(trans, rot, trans);
-	PSMTXRotRad(rot, 'y', float_deg2rad_8041fc34 * data->field_0x2C);
+	PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x2C);
 	PSMTXConcat(trans, rot, trans);
-	PSMTXRotRad(rot, 'z', float_deg2rad_8041fc34 * data->field_0x28);
+	PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x28);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXScale(scale, data->field_0x3C, data->field_0x3C, data->field_0x3C);
 	PSMTXConcat(trans, scale, trans);

@@ -57,140 +57,6 @@ char* ac_lstrckeep_iconname[4] = {(char*)str_802F94E0, (char*)str_802F94E8, (cha
 static void actionCommandDisp(f32 x, f32 y, s32 type);
 
 
-// The original emits `clrlwi r5, r0, 16` for `(s16)(i + 0x92)`; MWCC emits `extsh r5, r0` because
-// iconDispGx declares its iconId `s16`. The original argument is really `u16` (clrlwi r5, 16 in iconDispGxAlpha).
-// NONMATCHING (99.70%): one instruction differs (the `extsh` above).
-static void actionCommandDisp(f32 x, f32 y, s32 type) {
-    s32 off;
-    s32 i;
-
-    camGetPtr(CAMERA_2D);
-
-    if (type < 3) {
-        Vec v = vec3_802f9500;
-        v.x = float_neg168_8041e5d8 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(&v, 0x10, 0x71, float_1_8041e5e0);
-    }
-    else {
-        Vec v = vec3_802f950c;
-        v.x = float_neg168_8041e5d8 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(&v, 0x10, 0x70, float_1_8041e5e0);
-    }
-
-    if (type < 3) {
-        Vec v = vec3_802f9518;
-        v.x = float_neg232_8041e5e4 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(&v, 0x10, 0x78, float_1_8041e5e0);
-    }
-    else {
-        Vec v = vec3_802f9524;
-        v.x = float_neg232_8041e5e4 + x;
-        v.y = float_70_8041e5dc + y;
-        iconDispGx(&v, 0x10, 0x79, float_1_8041e5e0);
-    }
-
-    {
-        Vec v = vec3_802f9530;
-        v.x = float_neg200_8041e5e8 + x;
-        y = float_25_8041e5ec + y;
-        v.y = y;
-        iconDispGx(&v, 0x10, 0x8E, float_1_8041e5e0);
-    }
-
-    for (i = 0, off = 0; i < 3; i++, off += 0x21) {
-        if (i <= type) {
-            Vec v = vec3_802f953c;
-            v.x = x + (f32)(off - 0x102);
-            v.y = y;
-            iconDispGx(&v, 0x10, (s16)(i + 0x92), float_1_8041e5e0);
-        }
-        else {
-            Vec v = vec3_802f9548;
-            v.x = x + (f32)(off - 0x102);
-            v.y = y;
-            iconDispGx(&v, 0x10, 0x91, float_0p5_8041e5f0);
-        }
-    }
-
-    if (type < 3) {
-        Vec v = vec3_802f9554;
-        v.x = float_neg151_8041e5f4 + x;
-        v.y = y;
-        iconDispGx(&v, 0x10, 0x91, float_1_8041e5e0);
-    }
-    else {
-        Vec v = vec3_802f9560;
-        v.x = float_neg151_8041e5f4 + x;
-        v.y = y;
-        iconDispGx(&v, 0x10, 0x95, float_1_8041e5e0);
-    }
-}
-
-void battleAcDelete_LstRcKeep(BattleWork* work) {
-    work->actionCommands.mAcState = 0x3ED;
-}
-
-// The original materialises `disp = param + 0x1F20` in r31 (`addi r31, r4, 0x1f20`) and
-// `dec = param + 0x1F4C` in r3, then uses `0x14/0x18/0x20/0x24(r31)` and `0x4(r3)`; MWCC keeps `param` in
-// r31 and folds disp/dec into `0x1f34..0x1f50(r31)`.
-// NONMATCHING (98.01%): disp/dec base pointers folded into `param`; same wall ac_timing_wide hit.
-void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
-    BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
-    s32 state = ((BattleWork*)param)->actionCommands.mAcState;
-
-    switch (state) {
-    case 0x63:
-    case 0x64:
-    case 0x3E8:
-        *(s32*)&disp->field_0x24[0] = -1;
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
-                                    float_30_8041e5fc);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (disp->counter > 0) {
-            disp->counter--;
-        }
-        break;
-    case 0x3E9:
-        *(s32*)&disp->field_0x24[0] = ((LstRcKeepWork*)((u8*)param + 0x1F4C))->field_0x04 - 1;
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
-                                    float_30_8041e5fc);
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (disp->counter > 0) {
-            disp->counter--;
-        }
-        break;
-    case 0x3EA:
-    case 0x3EB:
-    case 0x3EC:
-        actionCommandDisp(float_30_8041e5fc, float_0_8041e600, *(s32*)&disp->field_0x24[0]);
-        break;
-    case 0x3ED:
-    case 0x3EE:
-        if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041e5fc,
-                                        float_neg300_8041e5f8);
-        }
-        else {
-            disp->iconX = float_30_8041e5fc;
-        }
-        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
-        if (disp->counter < 0x3C) {
-            disp->counter++;
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-s32 battleAcResult_LstRcKeep(BattleWork* work) {
-    return work->actionCommands.result;
-}
-
-
 // `BattleActionCommandGetDifficulty` is declared `s8`, so MWCC emits `extsb r0, r3` before the `slwi`
 // table index; the original callee is `lbz r3, 0x1cbd(r3); blr` (zero-extending) and the caller does
 // `slwi r0, r3, 2` with no extension, i.e. the return is really `u8`.
@@ -391,4 +257,138 @@ s32 battleAcMain_LstRcKeep(BattleWork* work) {
     }
 
     return 1;
+}
+
+s32 battleAcResult_LstRcKeep(BattleWork* work) {
+    return work->actionCommands.result;
+}
+
+// The original materialises `disp = param + 0x1F20` in r31 (`addi r31, r4, 0x1f20`) and
+// `dec = param + 0x1F4C` in r3, then uses `0x14/0x18/0x20/0x24(r31)` and `0x4(r3)`; MWCC keeps `param` in
+// r31 and folds disp/dec into `0x1f34..0x1f50(r31)`.
+// NONMATCHING (98.01%): disp/dec base pointers folded into `param`; same wall ac_timing_wide hit.
+void battleAcDisp_LstRcKeep(CameraId camId, void* param) {
+    BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
+    s32 state = ((BattleWork*)param)->actionCommands.mAcState;
+
+    switch (state) {
+    case 0x63:
+    case 0x64:
+    case 0x3E8:
+        *(s32*)&disp->field_0x24[0] = -1;
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
+                                    float_30_8041e5fc);
+        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        if (disp->counter > 0) {
+            disp->counter--;
+        }
+        break;
+    case 0x3E9:
+        *(s32*)&disp->field_0x24[0] = ((LstRcKeepWork*)((u8*)param + 0x1F4C))->field_0x04 - 1;
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041e5f8,
+                                    float_30_8041e5fc);
+        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        if (disp->counter > 0) {
+            disp->counter--;
+        }
+        break;
+    case 0x3EA:
+    case 0x3EB:
+    case 0x3EC:
+        actionCommandDisp(float_30_8041e5fc, float_0_8041e600, *(s32*)&disp->field_0x24[0]);
+        break;
+    case 0x3ED:
+    case 0x3EE:
+        if (disp->counter >= 0x28) {
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041e5fc,
+                                        float_neg300_8041e5f8);
+        }
+        else {
+            disp->iconX = float_30_8041e5fc;
+        }
+        actionCommandDisp(disp->iconX, disp->iconY, *(s32*)&disp->field_0x24[0]);
+        if (disp->counter < 0x3C) {
+            disp->counter++;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void battleAcDelete_LstRcKeep(BattleWork* work) {
+    work->actionCommands.mAcState = 0x3ED;
+}
+
+
+// The original emits `clrlwi r5, r0, 16` for `(s16)(i + 0x92)`; MWCC emits `extsh r5, r0` because
+// iconDispGx declares its iconId `s16`. The original argument is really `u16` (clrlwi r5, 16 in iconDispGxAlpha).
+// NONMATCHING (99.70%): one instruction differs (the `extsh` above).
+static void actionCommandDisp(f32 x, f32 y, s32 type) {
+    s32 off;
+    s32 i;
+
+    camGetPtr(CAMERA_2D);
+
+    if (type < 3) {
+        Vec v = vec3_802f9500;
+        v.x = float_neg168_8041e5d8 + x;
+        v.y = float_70_8041e5dc + y;
+        iconDispGx(&v, 0x10, 0x71, float_1_8041e5e0);
+    }
+    else {
+        Vec v = vec3_802f950c;
+        v.x = float_neg168_8041e5d8 + x;
+        v.y = float_70_8041e5dc + y;
+        iconDispGx(&v, 0x10, 0x70, float_1_8041e5e0);
+    }
+
+    if (type < 3) {
+        Vec v = vec3_802f9518;
+        v.x = float_neg232_8041e5e4 + x;
+        v.y = float_70_8041e5dc + y;
+        iconDispGx(&v, 0x10, 0x78, float_1_8041e5e0);
+    }
+    else {
+        Vec v = vec3_802f9524;
+        v.x = float_neg232_8041e5e4 + x;
+        v.y = float_70_8041e5dc + y;
+        iconDispGx(&v, 0x10, 0x79, float_1_8041e5e0);
+    }
+
+    {
+        Vec v = vec3_802f9530;
+        v.x = float_neg200_8041e5e8 + x;
+        y = float_25_8041e5ec + y;
+        v.y = y;
+        iconDispGx(&v, 0x10, 0x8E, float_1_8041e5e0);
+    }
+
+    for (i = 0, off = 0; i < 3; i++, off += 0x21) {
+        if (i <= type) {
+            Vec v = vec3_802f953c;
+            v.x = x + (f32)(off - 0x102);
+            v.y = y;
+            iconDispGx(&v, 0x10, (s16)(i + 0x92), float_1_8041e5e0);
+        }
+        else {
+            Vec v = vec3_802f9548;
+            v.x = x + (f32)(off - 0x102);
+            v.y = y;
+            iconDispGx(&v, 0x10, 0x91, float_0p5_8041e5f0);
+        }
+    }
+
+    if (type < 3) {
+        Vec v = vec3_802f9554;
+        v.x = float_neg151_8041e5f4 + x;
+        v.y = y;
+        iconDispGx(&v, 0x10, 0x91, float_1_8041e5e0);
+    }
+    else {
+        Vec v = vec3_802f9560;
+        v.x = float_neg151_8041e5f4 + x;
+        v.y = y;
+        iconDispGx(&v, 0x10, 0x95, float_1_8041e5e0);
+    }
 }

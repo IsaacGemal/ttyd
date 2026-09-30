@@ -2,15 +2,13 @@
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
 
+#include <stdlib.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const Vec vec3_802fb370 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fb380 = 4503601774854144.0;
 
-GXColor unk_80423200;
-GXColor unk_80423204;
 
 static u32 size16x16_tex16x16_vtx[0xE0 / 4] = {
 	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008,
@@ -30,6 +28,58 @@ static u32 size16x16_tex16x16_vtx[0xE0 / 4] = {
 	0x00000200, 0x08000000, 0x00FFFFF8, 0x00080000,
 	0x00000800, 0x000000FF,
 };
+
+EffectEntry* effPikkyoloN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
+	EffectEntry* entry;
+	effPikkyoloN64Data* data;
+	s32 i;
+
+	entry = effEntry();
+	entry->type = "PikkyoloN64";
+	entry->count = 6;
+	data = __memAlloc(HEAP_EFFECT, sizeof(effPikkyoloN64Data) * 6);
+	entry->userdata = data;
+	entry->callback = effPikkyoloMain;
+	entry->flags |= 2;
+	data->field_0x0 = type;
+	data->timer = 0;
+	if (life <= 0) {
+		data->lifetime = 1000;
+	} else {
+		data->lifetime = life;
+	}
+	data->a = 0xff;
+
+	for (i = 0; i < entry->count; i++, data++) {
+		data->position.x = x;
+		data->position.y = y;
+		data->position.z = z;
+		data->velocityX = 0.5f * (f32)(rand() % 11 - 5);
+		data->velocityY = 0.8f * (f32)(rand() % 6 + 1);
+		data->velocityZ = 0.5f * (f32)(rand() % 10 - 5);
+		data->scale = scale;
+		data->r = data->r2 = rand() % 256;
+		data->g = data->g2 = rand() % (0xff - data->r2);
+		data->b = data->b2 = 0xff - data->r2 - data->g2;
+		data->r += 0xa8;
+		data->g += 0xa8;
+		data->b += 0xa8;
+		if (data->r > 0xff) {
+			data->r = 0xff;
+		}
+		if (data->g > 0xff) {
+			data->g = 0xff;
+		}
+		if (data->b > 0xff) {
+			data->b = 0xff;
+		}
+		data->r2 *= 0.6f;
+		data->g2 *= 0.6f;
+		data->b2 *= 0.6f;
+		data->angle = (f32)(rand() % 360);
+	}
+	return entry;
+}
 
 void effPikkyoloMain(EffectEntry* effect) {
 	Vec position;
@@ -74,7 +124,7 @@ void effPikkyoloMain(EffectEntry* effect) {
 }
 
 static inline void effPikkyoloSetColor1(effPikkyoloN64Data* data, s32 alpha) {
-	GXColor color = unk_80423200;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->r;
 	color.g = data->g;
 	color.b = data->b;
@@ -83,7 +133,7 @@ static inline void effPikkyoloSetColor1(effPikkyoloN64Data* data, s32 alpha) {
 }
 
 static inline void effPikkyoloSetColor2(effPikkyoloN64Data* data) {
-	GXColor color = unk_80423204;
+	GXColor color = (GXColor){ 0, 0, 0, 0 };
 	color.r = data->r2;
 	color.g = data->g2;
 	color.b = data->b2;

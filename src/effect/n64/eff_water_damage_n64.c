@@ -49,259 +49,6 @@ u32 unk_803a8a00[0x20] = {
 	0x8D7A0A92, 0xF5F5F5EC, 0xADFA098B, 0xF555FD25, 0xE77E135A, 0xA0035555, 0xADFA09CE, 0x25D5F5F5
 };
 
-// NONMATCHING (99.72%): switch chain, MTXDegToRad and loop-index register allocation differ.
-void effWaterDamageDisp2(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	CameraEntry* cam = camGetPtr(camId);
-	effWaterDamageData* data = effect->userdata;
-	CameraEntry* cam3d;
-	Mtx mtx;
-	Mtx scale;
-	Mtx rot;
-	Mtx viewMtx;
-	GXTexObj texObj;
-	GXColor color;
-	s32 alpha;
-	s32 x;
-	s32 y;
-	s32 i;
-
-	x = (s32)data->position.x;
-	y = (s32)data->position.y;
-	alpha = data->field_0x30;
-
-	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-	GXSetZCompLoc(GX_TRUE);
-	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-
-	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
-	cam3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
-	PSMTXScale(scale, data->scale, data->scale, data->scale);
-	PSMTXConcat(mtx, scale, mtx);
-	PSMTXConcat(mtx, rot, mtx);
-	PSMTXConcat(cam->view, mtx, viewMtx);
-
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-
-	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
-	color.a = alpha * data->field_0x30 / 255;
-	GXSetChanMatColor(4, color);
-
-	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 8, 15, 15, 10);
-	GXSetTevAlphaIn(0, 7, 5, 4, 7);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
-	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
-	GXLoadTexMtxImm(scale, 30, 1);
-	effGetTexObjN64(0x89, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetCullMode(GX_CULL_NONE);
-	GXSetCurrentMtx(GX_PNMTX0);
-
-	for (i = 1, data++; i < effect->count; i++, data++) {
-		s32 kind;
-
-		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-		PSMTXScale(scale, data->scale, data->scale, data->scale);
-		PSMTXConcat(mtx, scale, mtx);
-		PSMTXConcat(viewMtx, mtx, mtx);
-		GXLoadPosMtxImm(mtx, GX_PNMTX0);
-		kind = ((gp->retraceCount >> 1) + i) & 3;
-		switch (kind) {
-		case 0:
-		case 2:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
-			break;
-		case 1:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
-			break;
-		case 3:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
-			break;
-		}
-		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-		tri2(0, 1, 2, 0, 0, 2, 3, 0);
-	}
-}
-
-// NONMATCHING (96.10%): 3 instructions differ, 4 missing, 5 extra, plus register differences.
-void effWaterDamageDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	CameraEntry* cam = camGetPtr(camId);
-	effWaterDamageData* data = effect->userdata;
-	CameraEntry* cam3d;
-	Mtx mtx;
-	Mtx scale;
-	Mtx rot;
-	Mtx viewMtx;
-	GXTexObj texObj;
-	GXColor color;
-	GXColor color2;
-	s32 alpha;
-	s32 x;
-	s32 y;
-	s32 i;
-
-	x = (s32)data->position.x;
-	y = (s32)data->position.y;
-	alpha = data->field_0x30;
-
-	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-	GXSetZCompLoc(GX_TRUE);
-	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-
-	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
-	cam3d = camGetPtr(CAMERA_3D);
-	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
-	PSMTXScale(scale, data->scale, data->scale, data->scale);
-	PSMTXConcat(mtx, scale, mtx);
-	PSMTXConcat(mtx, rot, mtx);
-	PSMTXConcat(cam->view, mtx, viewMtx);
-
-	GXSetNumChans(0);
-	GXSetNumTevStages(3);
-
-	GXSetTevOrder(0, 0, 0, 255);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 15, 15, 15, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-
-	GXSetTevOrder(1, 1, 1, 255);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 15, 2, 8, 4);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-
-	GXSetTevOrder(2, 0, 0, 255);
-	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(2, 0, 12, 8, 15);
-	GXSetTevAlphaIn(2, 7, 7, 7, 0);
-
-	GXSetNumTexGens(2);
-	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
-	GXSetTexCoordGen2(1, 1, 4, 33, 0, 125);
-	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
-	GXLoadTexMtxImm(scale, 30, 1);
-	effGetTexObjN64(0x89, &texObj);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetCullMode(GX_CULL_NONE);
-	GXInitTexObj(&texObj, unk_803a8a00, 0x10, 0x10, 0xE, 0, 0, 0);
-	GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
-	GXLoadTexObj(&texObj, GX_TEXMAP1);
-
-	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
-	color2 = (GXColor){ 0x00, 0x20, 0x20, 0x00 };
-
-	for (i = 1, data++; i < effect->count; i++, data++) {
-		s32 kind;
-
-		PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
-		GXLoadTexMtxImm(scale, 33, 1);
-		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-		PSMTXScale(scale, data->scale, data->scale, data->scale);
-		PSMTXConcat(mtx, scale, mtx);
-		PSMTXConcat(viewMtx, mtx, mtx);
-		GXLoadPosMtxImm(mtx, GX_PNMTX0);
-		GXSetCurrentMtx(GX_PNMTX0);
-
-		color.a = alpha * data->field_0x30 / 255;
-		GXSetTevColor(GX_TEVREG0, color);
-		GXSetTevColor(GX_TEVREG1, color2);
-
-		kind = ((gp->retraceCount >> 1) + i) & 3;
-		switch (kind) {
-		case 0:
-		case 2:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
-			break;
-		case 1:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
-			break;
-		case 3:
-			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
-			break;
-		}
-		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
-		tri2(0, 1, 2, 0, 0, 2, 3, 0);
-	}
-}
-
-//local helpers
-static inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
-
-
-void effWaterDamageMain(EffectEntry* effect) {
-	effWaterDamageData* data = effect->userdata;
-	Vec disp;
-	s32 i;
-	s32 type;
-	s32 isBig;
-
-	disp = initializeVec(&data->position);
-	type = data->type;
-	isBig = data->field_0x38;
-
-	if (effect->flags & 4) {
-		effect->flags &= ~4;
-		data->field_0x1C = 0x10;
-	}
-	if (data->field_0x1C < 0x3E8) {
-		data->field_0x1C--;
-	}
-	data->field_0x20++;
-	if (data->field_0x1C < 0) {
-		effDelete(effect);
-		return;
-	}
-	if (data->field_0x1C < 4) {
-		data->field_0x30 = data->field_0x1C << 6;
-	}
-
-	for (i = 1, data++; i < effect->count; i++, data++) {
-		data->position.x += data->velocity.x;
-		data->position.y += data->velocity.y;
-		data->position.z += data->velocity.z;
-		data->field_0x30 *= 0.98f;
-		if (type == 2) {
-			data->velocity.y += -0.8f;
-		}
-		data->velocity.y += -0.1f;
-		data->velocity.x *= 0.98f;
-		data->velocity.y *= 0.98f;
-		data->velocity.z *= 0.98f;
-		if (type == 3) {
-			data->scale *= 1.2f;
-		}
-		else {
-			data->scale *= 0.9f;
-		}
-	}
-	if (isBig == 0) {
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effWaterDamageDisp, effect);
-	}
-	else {
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effWaterDamageDisp2, effect);
-	}
-}
-
-
 // NONMATCHING (99.81%): case 7 float register allocation of the cos/velocity block differs.
 EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -427,4 +174,257 @@ EffectEntry* effWaterDamageN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32
 		data->field_0x30 = 255;
 	}
 	return effect;
+}
+
+void effWaterDamageMain(EffectEntry* effect) {
+	effWaterDamageData* data = effect->userdata;
+	Vec disp;
+	s32 i;
+	s32 type;
+	s32 isBig;
+
+	disp = initializeVec(&data->position);
+	type = data->type;
+	isBig = data->field_0x38;
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->field_0x1C = 0x10;
+	}
+	if (data->field_0x1C < 0x3E8) {
+		data->field_0x1C--;
+	}
+	data->field_0x20++;
+	if (data->field_0x1C < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (data->field_0x1C < 4) {
+		data->field_0x30 = data->field_0x1C << 6;
+	}
+
+	for (i = 1, data++; i < effect->count; i++, data++) {
+		data->position.x += data->velocity.x;
+		data->position.y += data->velocity.y;
+		data->position.z += data->velocity.z;
+		data->field_0x30 *= 0.98f;
+		if (type == 2) {
+			data->velocity.y += -0.8f;
+		}
+		data->velocity.y += -0.1f;
+		data->velocity.x *= 0.98f;
+		data->velocity.y *= 0.98f;
+		data->velocity.z *= 0.98f;
+		if (type == 3) {
+			data->scale *= 1.2f;
+		}
+		else {
+			data->scale *= 0.9f;
+		}
+	}
+	if (isBig == 0) {
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effWaterDamageDisp, effect);
+	}
+	else {
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 8, effWaterDamageDisp2, effect);
+	}
+}
+
+//local helpers
+static inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+
+// NONMATCHING (96.10%): 3 instructions differ, 4 missing, 5 extra, plus register differences.
+void effWaterDamageDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam = camGetPtr(camId);
+	effWaterDamageData* data = effect->userdata;
+	CameraEntry* cam3d;
+	Mtx mtx;
+	Mtx scale;
+	Mtx rot;
+	Mtx viewMtx;
+	GXTexObj texObj;
+	GXColor color;
+	GXColor color2;
+	s32 alpha;
+	s32 x;
+	s32 y;
+	s32 i;
+
+	x = (s32)data->position.x;
+	y = (s32)data->position.y;
+	alpha = data->field_0x30;
+
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+
+	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
+	cam3d = camGetPtr(CAMERA_3D);
+	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtx, scale, mtx);
+	PSMTXConcat(mtx, rot, mtx);
+	PSMTXConcat(cam->view, mtx, viewMtx);
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(3);
+
+	GXSetTevOrder(0, 0, 0, 255);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 15, 15, 15, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+
+	GXSetTevOrder(1, 1, 1, 255);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 15, 2, 8, 4);
+	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+
+	GXSetTevOrder(2, 0, 0, 255);
+	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(2, 0, 12, 8, 15);
+	GXSetTevAlphaIn(2, 7, 7, 7, 0);
+
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+	GXSetTexCoordGen2(1, 1, 4, 33, 0, 125);
+	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
+	GXLoadTexMtxImm(scale, 30, 1);
+	effGetTexObjN64(0x89, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXInitTexObj(&texObj, unk_803a8a00, 0x10, 0x10, 0xE, 0, 0, 0);
+	GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
+
+	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
+	color2 = (GXColor){ 0x00, 0x20, 0x20, 0x00 };
+
+	for (i = 1, data++; i < effect->count; i++, data++) {
+		s32 kind;
+
+		PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
+		GXLoadTexMtxImm(scale, 33, 1);
+		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(scale, data->scale, data->scale, data->scale);
+		PSMTXConcat(mtx, scale, mtx);
+		PSMTXConcat(viewMtx, mtx, mtx);
+		GXLoadPosMtxImm(mtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+
+		color.a = alpha * data->field_0x30 / 255;
+		GXSetTevColor(GX_TEVREG0, color);
+		GXSetTevColor(GX_TEVREG1, color2);
+
+		kind = ((gp->retraceCount >> 1) + i) & 3;
+		switch (kind) {
+		case 0:
+		case 2:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
+			break;
+		case 1:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
+			break;
+		case 3:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
+			break;
+		}
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	}
+}
+
+
+// NONMATCHING (99.72%): switch chain, MTXDegToRad and loop-index register allocation differ.
+void effWaterDamageDisp2(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* cam = camGetPtr(camId);
+	effWaterDamageData* data = effect->userdata;
+	CameraEntry* cam3d;
+	Mtx mtx;
+	Mtx scale;
+	Mtx rot;
+	Mtx viewMtx;
+	GXTexObj texObj;
+	GXColor color;
+	s32 alpha;
+	s32 x;
+	s32 y;
+	s32 i;
+
+	x = (s32)data->position.x;
+	y = (s32)data->position.y;
+	alpha = data->field_0x30;
+
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+
+	PSMTXTrans(mtx, (f32)x, (f32)y, data->position.z);
+	cam3d = camGetPtr(CAMERA_3D);
+	PSMTXRotRad(rot, 'y', MTXDegToRad(-cam3d->viewYaw));
+	PSMTXScale(scale, data->scale, data->scale, data->scale);
+	PSMTXConcat(mtx, scale, mtx);
+	PSMTXConcat(mtx, rot, mtx);
+	PSMTXConcat(cam->view, mtx, viewMtx);
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+
+	color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
+	color.a = alpha * data->field_0x30 / 255;
+	GXSetChanMatColor(4, color);
+
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 8, 15, 15, 10);
+	GXSetTevAlphaIn(0, 7, 5, 4, 7);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 30, 0, 125);
+	PSMTXScale(scale, 0.0625f, 0.0625f, 0.0f);
+	GXLoadTexMtxImm(scale, 30, 1);
+	effGetTexObjN64(0x89, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXSetCurrentMtx(GX_PNMTX0);
+
+	for (i = 1, data++; i < effect->count; i++, data++) {
+		s32 kind;
+
+		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(scale, data->scale, data->scale, data->scale);
+		PSMTXConcat(mtx, scale, mtx);
+		PSMTXConcat(viewMtx, mtx, mtx);
+		GXLoadPosMtxImm(mtx, GX_PNMTX0);
+		kind = ((gp->retraceCount >> 1) + i) & 3;
+		switch (kind) {
+		case 0:
+		case 2:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_0_vtx);
+			break;
+		case 1:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_1_vtx);
+			break;
+		case 3:
+			effSetVtxDescN64((effVtxArray*)size8x8_tex16x16_2_vtx);
+			break;
+		}
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	}
 }

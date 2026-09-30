@@ -141,4 +141,5 @@ s32 psndENV_LPF(s32 id, s32 freq);
 void psndSFX_dist(s32 id, u16 dist);
 BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d);
 extern PaperSoundBGM psbgm[2];
+extern SoundEnvList psenvlist[];
 void psndENV_stop(u32 id);

@@ -56,160 +56,6 @@ typedef struct PowerGaugeLv2DecWork {
 
 static void actionCommandDisp(f32, f32);
 
-// NONMATCHING (84.40%): the frame/layout now match, but the Vec BaseRemat, the integer register
-// allocation in the two threshold loops, and the icon argument setup still differ.
-static void actionCommandDisp(f32 x, f32 y) {
-    BattleActions* ac = (BattleActions*)((u8*)_battleWorkPointer + 0x1C90);
-    const Vec* vec = vec3_803001c0;
-    f32 f31;
-    f32 f30;
-    f32 ratio;
-    s32 thresholds[4];
-    s32 i;
-    s32 count;
-    s32 icon0;
-    s32 icon1;
-
-    camGetPtr(CAMERA_2D);
-
-    f31 = float_neg200_80421c24 + x;
-    f30 = float_25_80421c28 + y;
-
-    {
-        Vec pos = vec[0];
-        pos.x = f31;
-        pos.y = f30;
-        iconDispGx(&pos, 0x10, 0x8C, float_1_80421c2c);
-    }
-
-    {
-        s32 flags = 0;
-
-        ratio = *(f32*)((u8*)ac + 0x2C4) / float_100_80421c30;
-        if (ratio > float_1_80421c2c) {
-            ratio = float_1_80421c2c;
-        }
-        *(f32*)((u8*)ac + 0x2B8) = ratio;
-
-        if (*(s32*)((u8*)ac + 0x2D4) != 0) {
-            ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + ((u8*)ac)[0x2A1]);
-            ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + ((u8*)ac)[0x2A2]);
-
-            if (ratio >= float_1_80421c2c) {
-                flags |= 1;
-            }
-            if (((u8*)ac)[0x29D] <= 0x80 && (s8)((u8*)ac)[0x2A1] < 0) {
-                ((s8*)ac)[0x2A2] = 0x10;
-                ((s8*)ac)[0x2A1] = 0x10;
-            }
-            if (((u8*)ac)[0x29D] >= 0xF5 && (s8)((u8*)ac)[0x2A1] > 0) {
-                ((s8*)ac)[0x2A2] = -0x10;
-                ((s8*)ac)[0x2A1] = -0x10;
-            }
-        }
-
-        for (i = 0; i < 4; i++) {
-            thresholds[i] = 100;
-        }
-        count = 0;
-        for (i = 0; i < 4; i++) {
-            thresholds[i] = *(s32*)((u8*)ac + 0x78 + i * 4);
-            if (i != 0 && (thresholds[i] - thresholds[i - 1]) <= 0) {
-                break;
-            }
-            count++;
-        }
-
-        BattleAcDrawGauge((s32)x, (s32)y, 0xB2, count, thresholds[0], thresholds[1], thresholds[2], flags,
-                          *(f32*)((u8*)ac + 0x2B8));
-    }
-
-    icon1 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 1);
-    icon0 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 0);
-
-    switch (ac->mAcState) {
-        case 0x63:
-        case 0x64:
-        case 0x3EA:
-        case 0x3EB:
-        case 0x3EC:
-        {
-            Vec pos = vec[1];
-            pos.x = f31;
-            pos.y = float_70_80421c34 + y;
-            iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
-            break;
-        }
-        case 0x3E8:
-            if (*(s32*)((u8*)ac + 0x2D8) != 0) {
-                Vec pos = vec[2];
-                pos.x = f31;
-                pos.y = float_70_80421c34 + y;
-                iconDispGx(&pos, 0x10, icon1, float_1_80421c2c);
-            }
-            else {
-                Vec pos = vec[3];
-                pos.x = f31;
-                pos.y = float_70_80421c34 + y;
-                iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
-            }
-            break;
-    }
-
-    {
-        Vec pos = vec[4];
-        pos.x = float_120_80421c38 + f31;
-        pos.y = f30;
-        iconDispGx(&pos, 0x10, *(s32*)((u8*)ac + 0x2D8) != 0 ? 0x95 : 0x91, float_1_80421c2c);
-    }
-}
-
-void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
-    if (!(work->actionCommands.field_0x30 & 1)) {
-        work->actionCommands.mAcState = 0x3EB;
-    }
-}
-
-// NONMATCHING (98.86%): mwcc folds `disp` into the `work` base and keeps work in r31; the original
-// materialises work+0x1F20 in r31 and accesses 0x14/0x18/0x20.
-void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
-    BattleWork* work = (BattleWork*)param;
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
-
-    switch (work->actionCommands.mAcState) {
-        case 0x63:
-            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421c3c,
-                                        float_30_80421c40);
-            // fallthrough
-        case 0x64:
-        case 0x3E8:
-        case 0x3EA:
-            actionCommandDisp(disp->iconX, disp->iconY);
-            if (disp->counter > 0) {
-                disp->counter--;
-            }
-            break;
-        case 0x3EB:
-        case 0x3EC:
-            if (disp->counter >= 0x28) {
-                disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80421c40,
-                                            float_neg300_80421c3c);
-            }
-            else {
-                disp->iconX = float_30_80421c40;
-            }
-            actionCommandDisp(disp->iconX, disp->iconY);
-            if (disp->counter < 0x3C) {
-                disp->counter++;
-            }
-            break;
-    }
-}
-
-s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
-    return work->actionCommands.result;
-}
-
 // NONMATCHING (98.44%): `BattleActionCommandGetDifficulty` returns s8 in the header, so the
 // assignment emits `extsb r31, r3`; the original references the named double_to_int_80300200
 // instead of an anonymous @NNN; and a few scheduler/register choices differ.
@@ -378,6 +224,160 @@ s32 battleAcMain_PowerGaugeLv2(BattleWork* work) {
     }
 
     return 1;
+}
+
+s32 battleAcResult_PowerGaugeLv2(BattleWork* work) {
+    return work->actionCommands.result;
+}
+
+// NONMATCHING (98.86%): mwcc folds `disp` into the `work` base and keeps work in r31; the original
+// materialises work+0x1F20 in r31 and accesses 0x14/0x18/0x20.
+void battleAcDisp_PowerGaugeLv2(CameraId camId, void* param) {
+    BattleWork* work = (BattleWork*)param;
+    BattleACDispParams* disp = &work->actionCommands.dispParams;
+
+    switch (work->actionCommands.mAcState) {
+        case 0x63:
+            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421c3c,
+                                        float_30_80421c40);
+            // fallthrough
+        case 0x64:
+        case 0x3E8:
+        case 0x3EA:
+            actionCommandDisp(disp->iconX, disp->iconY);
+            if (disp->counter > 0) {
+                disp->counter--;
+            }
+            break;
+        case 0x3EB:
+        case 0x3EC:
+            if (disp->counter >= 0x28) {
+                disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80421c40,
+                                            float_neg300_80421c3c);
+            }
+            else {
+                disp->iconX = float_30_80421c40;
+            }
+            actionCommandDisp(disp->iconX, disp->iconY);
+            if (disp->counter < 0x3C) {
+                disp->counter++;
+            }
+            break;
+    }
+}
+
+void battleAcDelete_PowerGaugeLv2(BattleWork* work) {
+    if (!(work->actionCommands.field_0x30 & 1)) {
+        work->actionCommands.mAcState = 0x3EB;
+    }
+}
+
+// NONMATCHING (84.40%): the frame/layout now match, but the Vec BaseRemat, the integer register
+// allocation in the two threshold loops, and the icon argument setup still differ.
+static void actionCommandDisp(f32 x, f32 y) {
+    BattleActions* ac = (BattleActions*)((u8*)_battleWorkPointer + 0x1C90);
+    const Vec* vec = vec3_803001c0;
+    f32 f31;
+    f32 f30;
+    f32 ratio;
+    s32 thresholds[4];
+    s32 i;
+    s32 count;
+    s32 icon0;
+    s32 icon1;
+
+    camGetPtr(CAMERA_2D);
+
+    f31 = float_neg200_80421c24 + x;
+    f30 = float_25_80421c28 + y;
+
+    {
+        Vec pos = vec[0];
+        pos.x = f31;
+        pos.y = f30;
+        iconDispGx(&pos, 0x10, 0x8C, float_1_80421c2c);
+    }
+
+    {
+        s32 flags = 0;
+
+        ratio = *(f32*)((u8*)ac + 0x2C4) / float_100_80421c30;
+        if (ratio > float_1_80421c2c) {
+            ratio = float_1_80421c2c;
+        }
+        *(f32*)((u8*)ac + 0x2B8) = ratio;
+
+        if (*(s32*)((u8*)ac + 0x2D4) != 0) {
+            ((u8*)ac)[0x29D] = (u8)(((u8*)ac)[0x29D] + ((u8*)ac)[0x2A1]);
+            ((u8*)ac)[0x29E] = (u8)(((u8*)ac)[0x29E] + ((u8*)ac)[0x2A2]);
+
+            if (ratio >= float_1_80421c2c) {
+                flags |= 1;
+            }
+            if (((u8*)ac)[0x29D] <= 0x80 && (s8)((u8*)ac)[0x2A1] < 0) {
+                ((s8*)ac)[0x2A2] = 0x10;
+                ((s8*)ac)[0x2A1] = 0x10;
+            }
+            if (((u8*)ac)[0x29D] >= 0xF5 && (s8)((u8*)ac)[0x2A1] > 0) {
+                ((s8*)ac)[0x2A2] = -0x10;
+                ((s8*)ac)[0x2A1] = -0x10;
+            }
+        }
+
+        for (i = 0; i < 4; i++) {
+            thresholds[i] = 100;
+        }
+        count = 0;
+        for (i = 0; i < 4; i++) {
+            thresholds[i] = *(s32*)((u8*)ac + 0x78 + i * 4);
+            if (i != 0 && (thresholds[i] - thresholds[i - 1]) <= 0) {
+                break;
+            }
+            count++;
+        }
+
+        BattleAcDrawGauge((s32)x, (s32)y, 0xB2, count, thresholds[0], thresholds[1], thresholds[2], flags,
+                          *(f32*)((u8*)ac + 0x2B8));
+    }
+
+    icon1 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 1);
+    icon0 = BattleACGetButtonIcon(*(s32*)((u8*)ac + 0x2C8), 0);
+
+    switch (ac->mAcState) {
+        case 0x63:
+        case 0x64:
+        case 0x3EA:
+        case 0x3EB:
+        case 0x3EC:
+        {
+            Vec pos = vec[1];
+            pos.x = f31;
+            pos.y = float_70_80421c34 + y;
+            iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
+            break;
+        }
+        case 0x3E8:
+            if (*(s32*)((u8*)ac + 0x2D8) != 0) {
+                Vec pos = vec[2];
+                pos.x = f31;
+                pos.y = float_70_80421c34 + y;
+                iconDispGx(&pos, 0x10, icon1, float_1_80421c2c);
+            }
+            else {
+                Vec pos = vec[3];
+                pos.x = f31;
+                pos.y = float_70_80421c34 + y;
+                iconDispGx(&pos, 0x10, icon0, float_1_80421c2c);
+            }
+            break;
+    }
+
+    {
+        Vec pos = vec[4];
+        pos.x = float_120_80421c38 + f31;
+        pos.y = f30;
+        iconDispGx(&pos, 0x10, *(s32*)((u8*)ac + 0x2D8) != 0 ? 0x95 : 0x91, float_1_80421c2c);
+    }
 }
 
 // --- .sdata2 definitions ---

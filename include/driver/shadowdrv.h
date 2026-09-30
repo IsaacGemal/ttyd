@@ -69,4 +69,5 @@ void shadowSetVolumeDecay(s32 id, f32 x, f32 y, f32 z);
 void shadowSetCamId(s32 id, s32 camId);
 void shadowFlagOn(s32 id, u16 flag);
 void cylinderShadowDraw(CameraId camId, void* param);
+void shadowCharShadowDisp_Projection(CameraId camId, void* param);
 void shadowSetCollision(s32 id, BOOL value);

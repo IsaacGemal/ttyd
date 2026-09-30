@@ -6,6 +6,12 @@ typedef struct HitEntry HitEntry;
 
 #include <dolphin/types.h>
 
+extern const f32 float_18p5_8041a7ec;
+extern const f32 float_0p265_8041a7f4;
+extern const f64 double_0p5_802c5928;
+extern const f64 double_3_802c5930;
+extern const f64 double_0_802c5938;
+
 struct HitEntry;
 
 BOOL marioChkBero(struct HitEntry* hit);
@@ -30,6 +36,7 @@ void* marioHitCheck2(Vec* a, Vec* b, Vec* c, Vec* d, f32* e);
 void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a);
 HitEntry* marioHitCheckVec(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 HitEntry* marioSearchUnder(void);
+HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle);
 void clear_hitobj_ride(void);
 void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist);
 HitEntry* marioHitCheck(f32* outX, f32* outY, f32* outZ, f32* distance, f32* outNX, f32* outNY, f32* outNZ, f32 x, f32 y, f32 z, f32 nx, f32 ny, f32 nz);

@@ -46,6 +46,243 @@ s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
     return 0;
 }
 
+// NONMATCHING (98.87%): MWCC puts flags2 in r27 / defenseAttr in r31, the original the reverse (plus one `mr`
+// and `neg` vs `mulli ... -1`); 120 declaration orders and several splits/pragmas do not move the pair.
+s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon,
+                          s32* damageCode, s32 flags) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 damage;
+    s32 defense;
+    s32 flags2;
+    s32 defenseAttr;
+    u8 element;
+    s32 result;
+    s8 turns;
+    s8 strength;
+
+    if (unit2->mTokenFlags & 2) {
+        flags |= 0x1000;
+    }
+    element = weapon->element;
+    if (unit1 != 0 && (weapon->special & 0x400) && BtlUnit_CheckStatus(unit1, STATUS_BURN)) {
+        element = 1;
+    }
+    flags2 = flags | 0x1e;
+    *damageCode = flags2;
+    if (weapon->hpDamageFn == 0) {
+        return 0;
+    }
+    if (part->attributes & kUnk_ImmuneToDamageOrStatus) {
+        return 0;
+    }
+    if (unit1 != 0 && ((u32)weapon->special & 1) && unit1->badgesEquipped.AllOrNothing != 0) {
+        if (!(wp->actionCommands.result & 2) && !(flags & 0x20000)) {
+            return 0;
+        }
+    }
+    damage = weapon->hpDamageWork[0];
+    if (weapon->hpDamageFn != 0) {
+        damage = ((s32(*)(BattleUnit*, BattleWeapon*, BattleUnit*, BattleUnitPart*))weapon->hpDamageFn)(
+            unit1, weapon, unit2, part);
+    }
+    if (wp->field_18FE1[0] == 1 && (weapon->special & 2)) {
+        damage += 3;
+    }
+    if ((u32)weapon->special & 1) {
+        u8 allOrNothing = unit1->badgesEquipped.AllOrNothing;
+
+        damage += unit1->badgesEquipped.PowerPlus;
+        damage += unit1->badgesEquipped.PUpDDown;
+        if (allOrNothing != 0) {
+            if ((wp->actionCommands.result & 2) || (flags & 0x20000)) {
+                damage += allOrNothing;
+            } else {
+                damage = 0;
+                goto calculate_defense;
+            }
+        }
+        if (unit1->currentHp <= unit1->mKindParams->mPerilHP) {
+            if (unit1->badgesEquipped.MegaRush != 0) {
+                damage += unit1->badgesEquipped.MegaRush * 5;
+            }
+        }
+        if (unit1->currentHp <= unit1->mKindParams->mDangerHP) {
+            if (unit1->badgesEquipped.PowerRush != 0) {
+                damage += unit1->badgesEquipped.PowerRush * 2;
+            }
+        }
+        if (unit1->badgesEquipped.IcePower != 0 && (part->attributes & kWeakToIcePower)) {
+            damage += unit1->badgesEquipped.IcePower;
+        }
+    }
+    if (weapon->special & 4) {
+        if (BtlUnit_CheckStatus(unit1, STATUS_CHARGE)) {
+            BtlUnit_GetStatus(unit1, STATUS_CHARGE, &turns, &strength);
+            damage += strength;
+            if (damage < 0) {
+                damage = 0;
+            }
+        }
+        unit1->mTokenFlags |= kChargeExpended;
+    }
+    if ((weapon->special & 2) && BtlUnit_CheckStatus(unit1, STATUS_HUGE)) {
+        BtlUnit_GetStatus(unit1, STATUS_HUGE, &turns, &strength);
+        damage += strength;
+        if (damage < 0) {
+            damage = 0;
+        }
+    }
+    if ((weapon->special & 2) && BtlUnit_CheckStatus(unit1, STATUS_ATTACK_UP)) {
+        BtlUnit_GetStatus(unit1, STATUS_ATTACK_UP, &turns, &strength);
+        damage += strength;
+        if (damage < 0) {
+            damage = 0;
+        }
+    }
+    if ((u32)weapon->special & 1) {
+        damage -= unit1->badgesEquipped.PDownDUp;
+    }
+    if (((u32)weapon->special & 1) && unit1->badgesEquipped.HpDrain != 0) {
+        damage -= unit1->badgesEquipped.HpDrain;
+    }
+    if (((u32)weapon->special & 1) && unit1->badgesEquipped.FpDrain != 0) {
+        damage -= unit1->badgesEquipped.FpDrain;
+    }
+    if ((weapon->special & 2) && BtlUnit_CheckStatus(unit1, STATUS_TINY)) {
+        BtlUnit_GetStatus(unit1, STATUS_TINY, &turns, &strength);
+        damage += strength;
+        if (damage < 0) {
+            damage = 0;
+        }
+    }
+    if ((weapon->special & 2) && BtlUnit_CheckStatus(unit1, STATUS_ATTACK_DOWN)) {
+        BtlUnit_GetStatus(unit1, STATUS_ATTACK_DOWN, &turns, &strength);
+        damage += strength;
+        if (damage < 0) {
+            damage = 0;
+        }
+    }
+    if (damage < 0) {
+        damage = 0;
+    }
+calculate_defense:
+    defense = (s8)part->defense->defenses[element];
+    defenseAttr = (s8)part->defenseAttr->defenseAttrs[element];
+    switch (element) {
+    case 1:
+        *damageCode = flags | 0x18;
+        break;
+    case 2:
+        *damageCode = flags | 0x1a;
+        break;
+    case 4:
+        *damageCode = flags | 0x1b;
+        break;
+    case 3:
+        *damageCode = flags | 0x19;
+        break;
+    case 0:
+        *damageCode = flags | 0x17;
+        break;
+    }
+    if (defenseAttr != 3) {
+        if (unit2->badgesEquipped.DefendPlus != 0) {
+            defense += unit2->badgesEquipped.DefendPlus;
+        }
+        if (unit2->badgesEquipped.DamageDodge != 0 && (flags & 0x40000)) {
+            defense += unit2->badgesEquipped.DamageDodge;
+        }
+        if (BtlUnit_CheckStatusFlag(unit2, 0x01000000)) {
+            defense += 1;
+        }
+        if (BtlUnit_CheckStatus(unit2, STATUS_DEFENSE_UP)) {
+            BtlUnit_GetStatus(unit2, STATUS_DEFENSE_UP, &turns, &strength);
+            defense += strength;
+        }
+        if (BtlUnit_CheckStatus(unit2, STATUS_DEFENSE_DOWN)) {
+            BtlUnit_GetStatus(unit2, STATUS_DEFENSE_DOWN, &turns, &strength);
+            defense += strength;
+            if (defense < 0) {
+                defense = 0;
+            }
+        }
+        if (wp->field_18FE1[0] == 2 && unit2->currentKind == 0xde) {
+            defense += 3;
+        }
+        if (part->attributes & 0x20) {
+            defense += unit2->work[1];
+            if (defense < 0) {
+                defense = 0;
+            }
+        }
+        if ((weapon->special & 0x40) && defense > 0) {
+            defense = 0;
+        }
+    }
+    result = damage - defense;
+    if (defenseAttr == 3) {
+        result = damage;
+    }
+    result += unit2->badgesEquipped.PUpDDown;
+    if (result > 0) {
+        if (weapon->special & 0x10) {
+            result -= unit2->hpDamageCount;
+            if (result <= 0) {
+                result = 1;
+            }
+        }
+        if (weapon->special & 0x20) {
+            result -= *(s32*)unit1->field_0x27C;
+            if (result <= 0) {
+                result = 1;
+            }
+        }
+    }
+    if (flags & 0x40000) {
+        result -= 1;
+    }
+    if (element == 1 && unit2->badgesEquipped.IcePower != 0) {
+        result -= unit2->badgesEquipped.IcePower;
+    }
+    result -= unit2->badgesEquipped.PDownDUp;
+    if (unit2->badgesEquipped.DoublePain != 0) {
+        result *= unit2->badgesEquipped.DoublePain + 1;
+    }
+    if (unit2->badgesEquipped.LastStand != 0 && unit2->currentHp <= unit2->mKindParams->mDangerHP) {
+        s32 divisor = unit2->badgesEquipped.LastStand + 1;
+
+        result = (result + divisor - 1) / divisor;
+    }
+    switch (defenseAttr) {
+    case 1:
+        result += 1;
+        break;
+    case 2:
+        result = 0;
+        break;
+    case 4:
+        if (!(flags & 0x80000000)) {
+            result = 0;
+        }
+        break;
+    }
+    if (result < 0) {
+        result = 0;
+    }
+    if (defenseAttr == 3) {
+        *damageCode |= 0x2000;
+        return result * -1;
+    }
+    if (result <= 0) {
+        *damageCode = flags2;
+        return 0;
+    }
+    if ((flags & 0x100) && ((weapon->special & 0x8000) || !(unit2->mAttributeFlags & 0x100))) {
+        *damageCode |= 0x10000;
+    }
+    return result;
+}
+
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
                             BattleWeapon* weapon, s32* damageCode, s32 flags) {
     s32 damage = 0;

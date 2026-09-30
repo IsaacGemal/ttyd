@@ -21,6 +21,7 @@ extern void psndSFX_vol(s32 id, s32 vol);
 extern BattleWork* _battleWorkPointer;
 extern u32 _enemy_can_use_item_table[];
 
+const f32 float_0_8041c3bc = 0.0f;
 const f32 float_1_8041c3c0 = 1.0f;
 f32 float_1p1_8041c3cc = 1.1f;
 f32 float_1p3_8041c3d0 = 1.3f;
@@ -251,6 +252,46 @@ void BtlUnit_HpGaugeInit(BattleUnit* unit) {
     } else {
         gauge->field_6 = 0x14;
         gauge->field_A = gauge->field_6 + 0x1E;
+    }
+}
+
+void BtlUnit_HpGaugeMain(BattleUnit* unit) {
+    HpGaugeLocal* gauge = (HpGaugeLocal*)&unit->hpGauge;
+    f32 ratio;
+    s32 maxHp;
+
+    if (gauge->field_4 > 0) {
+        gauge->field_4--;
+        if (gauge->field_4 <= 0) {
+            gauge->field_C = gauge->field_10;
+            ratio = (f32)unit->currentHp / (f32)unit->maxHp;
+            gauge->field_18 = ratio;
+            gauge->field_14 = ratio;
+        } else {
+            switch ((s32)gauge->field_0) {
+            case 1:
+                gauge->field_14 = (f32)unit->currentHp / (f32)unit->maxHp;
+                gauge->field_18 = (f32)(gauge->field_C - gauge->field_10) *
+                    intplGetValue(2, gauge->field_4, gauge->field_6, float_0_8041c3bc, float_1_8041c3c0) /
+                    (f32)unit->maxHp + gauge->field_14;
+                break;
+            default:
+                gauge->field_18 = float_0_8041c3bc;
+                maxHp = unit->maxHp;
+                gauge->field_14 = (f32)unit->currentHp / (f32)maxHp +
+                    (f32)(gauge->field_C - gauge->field_10) *
+                    intplGetValue(0, gauge->field_4, gauge->field_6, float_0_8041c3bc, float_1_8041c3c0) /
+                    (f32)maxHp;
+                break;
+            }
+        }
+    }
+    if (gauge->field_8 > 0) {
+        gauge->field_8--;
+    }
+    if ((unit->flags & 1) && gauge->field_8 <= 0 && (gauge->field_2 & 1)) {
+        unit->flags &= ~1;
+        gauge->field_2 &= ~1;
     }
 }
 

@@ -8,6 +8,17 @@ extern BattleWork* _battleWorkPointer;
 extern const f32 float_neg800_8041c380;
 extern const f32 float_800_8041c384;
 extern const f32 float_40_8041c388;
+#ifdef MUST_MATCH
+// volatile: forces atan2f_safety to reload the constants where the original does; without it the
+// register allocator keeps them live and picks different registers (89%).
+extern const volatile f32 float_0_8041c398;
+extern const volatile f32 float_0p0001_8041c3b0;
+extern const volatile f64 double_0p0001_802efab0;
+#else
+extern const f32 float_0_8041c398;
+extern const f32 float_0p0001_8041c3b0;
+extern const f64 double_0p0001_802efab0;
+#endif
 
 f32 sinfd(f32 deg) {
 	return (f32)sin(6.2831855f * deg / 360.0f);
@@ -15,6 +26,20 @@ f32 sinfd(f32 deg) {
 
 f32 cosfd(f32 angle) {
 	return (f32)cos(6.2831855f * angle / 360.0f);
+}
+
+f32 atan2f_safety(f32 y, f32 x) {
+	f32 a;
+
+	a = (x >= float_0_8041c398) ? x : -x;
+	if (a < double_0p0001_802efab0) {
+		x = float_0p0001_8041c3b0;
+	}
+	a = (y >= float_0_8041c398) ? y : -y;
+	if (a < double_0p0001_802efab0) {
+		y = float_0p0001_8041c3b0;
+	}
+	return (f32)atan2(y, x);
 }
 
 // NONMATCHING (57.38%): 1 instruction differs, 2 missing, 6 extra, plus register differences.
@@ -28,6 +53,16 @@ void btlsubResetMoveColorLvAll(BattleWork* work) {
 			unit->mMoveColorLv = 0xFF;
 		}
 	}
+}
+
+// NONMATCHING (80.67%): the original is built -O4,s (stmw r30, separate fmuls/fadds); at -O4,s this scores 91.51%.
+void btlMovePos(f32* x, f32* z, f32 speed, f32 angle) {
+	f32 rad = 6.2831855f * angle / 360.0f;
+	f32 s = (f32)sin(rad);
+	f32 c = (f32)cos(rad);
+
+	*x += speed * s;
+	*z += -speed * c;
 }
 
 s32 BtlCompForwardLv(s32 direction, f32 dist) {

@@ -32,3 +32,18 @@ extern const f32 float_0p5_804200dc;
 extern const f32 float_0p02_80420100;
 extern const f32 float_neg1p5_80420104;
 extern const f32 float_1_80420108;
+
+// effVaporDisp's .sdata2/.rodata/.sbss2 data.
+extern const f32 float_deg2rad_804200d8;
+extern const f32 float_0p01_804200e0;
+extern const f32 float_0_804200e4;
+extern const f32 float_5_804200e8;
+extern const f32 float_0p0039062_804200ec;
+extern const f32 float_256_804200f0;
+extern const f32 float_0p032258_804200f4;
+extern const f32 float_0p007874_804200f8;
+extern const f32 float_32_804200fc;
+extern const f64 double_to_int_802fb8f8;
+extern const f64 double_to_int_mask_802fb900;
+extern GXColor unk_804232b8;
+extern GXColor unk_804232bc;

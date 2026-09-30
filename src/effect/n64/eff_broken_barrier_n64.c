@@ -1,6 +1,8 @@
 #include "driver/effdrv.h"
 #include "driver/camdrv.h"
 #include "eff/eff_n64.h"
+#include "eff/n64/eff_broken_barrier_n64.h"
+#include "memory.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -13,10 +15,18 @@ const f32 float_0p045455_8041eac4 = 0.045454547f;
 const f32 float_0_8041eac8 = 0.0f;
 const f32 float_2p0944_8041eacc = 2.0943952f;
 const f32 float_neg2p0944_8041ead0 = -2.0943952f;
+const f32 float_30_8041eb08 = 30.0f;
+const f32 float_0p33333_8041eb0c = 0.33333334f;
+const f32 float_60_8041eb10 = 60.0f;
 
 // .rodata constants (named after their original addresses).
+const Vec vec3_802fa328 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fa334 = { 0.4f, 0.0f, 0.8f };
 const f64 double_to_int_802fa340 = 4503601774854144.0;
+const f64 double_0p5_802fa348 = 0.5;
+const f64 double_3_802fa350 = 3.0;
+const f64 double_0_802fa358 = 0.0;
+const char str_802FA360[] = "BrokenBarrierN64";
 
 // .sbss2 zero GXColor the original copies before filling its fields.
 extern GXColor unk_804230bc;
@@ -48,14 +58,17 @@ static u32 size8x8_tex22x22_vtx[0x70] = {
 // Layout of one BrokenBarrierN64 particle; the base element (index 0) also
 // carries the shared colour whose bytes main_dl caches before the loop.
 typedef struct effBrokenBarrierData {
-    u8 pad_00[0x4];   // 0x0
+    s32 type;         // 0x0
     f32 x;            // 0x4
     f32 y;            // 0x8
     f32 z;            // 0xC
-    u8 pad_10[0x20];  // 0x10
+    f32 field_0x10;   // 0x10
+    f32 field_0x14;   // 0x14
+    u8 pad_18[0x18];  // 0x18
     s32 field_0x30;   // 0x30
     f32 field_0x34;   // 0x34
-    u8 pad_38[0x8];   // 0x38
+    s32 life;         // 0x38
+    s32 field_0x3c;   // 0x3C
     u32 field_0x40;   // 0x40
     u32 field_0x44;   // 0x44
     u32 field_0x48;   // 0x48
@@ -72,6 +85,53 @@ typedef struct effBrokenBarrierData {
 GXColor unk_804230b8;
 
 static void main_dl(EffectEntry* effect, Mtx matrix);
+
+EffectEntry* effBrokenBarrierN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
+    EffectEntry* entry;
+    effBrokenBarrierData* data;
+    effBrokenBarrierData* d;
+    f32 f6;
+    s32 i;
+
+    entry = effEntry();
+    entry->type = str_802FA360;
+    entry->count = 0x3D;
+    data = __memAlloc(HEAP_EFFECT, 0x19BC);
+    entry->userdata = data;
+    entry->callback = effBrokenBarrierMain;
+    entry->flags |= 2;
+    data->type = type;
+    data->field_0x3c = 0;
+    if (life <= 0) {
+        data->life = 1000;
+    } else {
+        data->life = life;
+    }
+    d = data + 1;
+    data->field_0x4C = 0xff;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->field_0x60 = scale;
+    data->field_0x10 = float_30_8041eb08;
+    data->field_0x14 = float_30_8041eb08;
+    data->field_0x40 = 0xff;
+    data->field_0x44 = 0xff;
+    data->field_0x48 = 0xff;
+    data->field_0x50 = 0xd7;
+    data->field_0x54 = 0xff;
+    data->field_0x58 = 0xeb;
+    data->field_0x5C = 0xff;
+    if (life < 20) {
+        f6 = float_0p33333_8041eb0c;
+    } else {
+        f6 = (f32)life / float_60_8041eb10;
+    }
+    for (i = 1; i < 61; i++, d++) {
+        d->field_0x30 = (s32)(-(f32)i * f6) - 1;
+    }
+    return entry;
+}
 
 // NONMATCHING (99.95%): every instruction matches except the by-value GXSetTevColor
 // GXColor stack slots. The original keeps the named colour at r1+0x8 and its outgoing

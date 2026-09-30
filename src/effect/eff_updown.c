@@ -39,6 +39,138 @@ extern const f32 float_100_8041e2dc;
 extern const f32 float_0p25_8041e2e0;
 extern const f32 float_0p1_8041e2e4;
 
+// .text:0x81C | 0x8018E348 | size: 0x100
+EffectEntry* effUpdownEntry(s32 type, f32 x, f32 y, f32 z, s32 field18, s32 lifetime) {
+	EffectEntry* entry;
+	EffUpdownWork* work;
+
+	entry = effEntry();
+	entry->type = str_802F8E58;
+	entry->count = 1;
+	work = __memAlloc(HEAP_EFFECT, 0x28);
+	entry->userdata = work;
+	entry->callback = effUpdownMain;
+	entry->flags |= 2;
+	work->type = type;
+	work->x = x;
+	work->y = y;
+	work->z = z;
+	work->scaleY = float_1_8041e2b4;
+	work->scaleX = float_1_8041e2b4;
+	work->field18 = field18;
+	work->lifetime = lifetime;
+	work->frame = 0;
+	work->alpha = 0xFF;
+	return entry;
+}
+
+// .text:0x45C | 0x8018DF88 | size: 0x1E8
+// MUST_MATCH: MWCC coalesces a single `a = alpha` with the parameter, shifting every color register;
+// re-materializing it at each case entry reproduces the original r28.
+#ifdef MUST_MATCH
+#define POLY_ALPHA a
+#else
+#define POLY_ALPHA alpha
+#endif
+// .text:0x644 | 0x8018E170 | size: 0x1D8
+// NONMATCHING (90.17%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
+void effUpdownMain(EffectEntry* effect) {
+	EffUpdownWork* work = effect->userdata;
+	s32 type;
+	s32 renderMode;
+	Vec pos;
+
+	type = work->type;
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		work->lifetime = 16;
+	}
+	if (work->lifetime < 1000) {
+		work->lifetime--;
+	}
+	if (work->lifetime < 0) {
+		effDelete(effect);
+		return;
+	}
+	if (work->lifetime < 16) {
+		work->alpha = work->lifetime * 16;
+	}
+	if (type == 0 || type == 1) {
+		if (work->frame < 15) {
+			work->scaleX = (f32)scale_data[work->frame * 2] / float_100_8041e2dc;
+			work->scaleY = (f32)scale_data[work->frame * 2 + 1] / float_100_8041e2dc;
+		} else {
+			work->scaleY = float_1_8041e2b4 -
+						   float_0p1_8041e2e4 * (f32)sin((f32)(s32)(work->frame - 15) * float_0p25_8041e2e0);
+			work->scaleX = float_1_8041e2b4;
+		}
+	}
+	work->frame++;
+	pos = vec3_802f8e38;
+	pos.x = work->x;
+	pos.y = work->y;
+	pos.z = work->z;
+	renderMode = 1;
+	if (work->alpha != 0xFF) {
+		renderMode = 2;
+	}
+	dispEntry(CAMERA_3D, dispCalcZ(&pos), renderMode, effUpdownDisp, effect);
+}
+
+static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
+	u8 r1, g1, b1;
+#ifdef MUST_MATCH
+	u8 a;
+#endif
+	u8 r2, g2, b2;
+
+	switch (type) {
+	case 0:
+#ifdef MUST_MATCH
+		a = alpha;
+#endif
+		r1 = g1 = b1 = 0xFF;
+		r2 = g2 = b2 = 0xFF;
+		break;
+	case 1:
+#ifdef MUST_MATCH
+		a = alpha;
+#endif
+		r1 = 0xE9;
+		g1 = 0x4A;
+		b1 = 0x3F;
+		r2 = 0xFE;
+		g2 = 0xE6;
+		b2 = 0x3E;
+		break;
+	case 2:
+#ifdef MUST_MATCH
+		a = alpha;
+#endif
+		r1 = 0x3F;
+		g1 = 0x3F;
+		b1 = 0xE9;
+		r2 = 0x74;
+		g2 = 0xC9;
+		b2 = 0xFF;
+		break;
+	}
+
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(x, y, float_0_8041e2c8);
+	GXColor4u8(r1, g1, b1, POLY_ALPHA);
+	GXTexCoord2f32(float_0_8041e2c8, float_0_8041e2c8);
+	GXPosition3f32(x + w, y, float_0_8041e2c8);
+	GXColor4u8(r1, g1, b1, POLY_ALPHA);
+	GXTexCoord2f32(u, float_0_8041e2c8);
+	GXPosition3f32(x + w, y - h, float_0_8041e2c8);
+	GXColor4u8(r2, g2, b2, POLY_ALPHA);
+	GXTexCoord2f32(u, v);
+	GXPosition3f32(x, y - h, float_0_8041e2c8);
+	GXColor4u8(r2, g2, b2, POLY_ALPHA);
+	GXTexCoord2f32(float_0_8041e2c8, v);
+}
+
 // .text:0x0 | 0x8018DB2C | size: 0x45C
 // NONMATCHING (99.53%): same instructions; only register numbers or operands differ.
 void effUpdownDisp(CameraId cameraId, void* param) {
@@ -135,136 +267,4 @@ void effUpdownDisp(CameraId cameraId, void* param) {
 	GXLoadPosMtxImm(mtxA, GX_PNMTX0);
 	polygon(0, alpha, float_neg8_8041e2d0, float_16_8041e2d4, float_16_8041e2d4, float_16_8041e2d4,
 			float_1_8041e2b4, float_1_8041e2b4);
-}
-
-// .text:0x45C | 0x8018DF88 | size: 0x1E8
-// MUST_MATCH: MWCC coalesces a single `a = alpha` with the parameter, shifting every color register;
-// re-materializing it at each case entry reproduces the original r28.
-#ifdef MUST_MATCH
-#define POLY_ALPHA a
-#else
-#define POLY_ALPHA alpha
-#endif
-static void polygon(s32 type, s32 alpha, f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
-	u8 r1, g1, b1;
-#ifdef MUST_MATCH
-	u8 a;
-#endif
-	u8 r2, g2, b2;
-
-	switch (type) {
-	case 0:
-#ifdef MUST_MATCH
-		a = alpha;
-#endif
-		r1 = g1 = b1 = 0xFF;
-		r2 = g2 = b2 = 0xFF;
-		break;
-	case 1:
-#ifdef MUST_MATCH
-		a = alpha;
-#endif
-		r1 = 0xE9;
-		g1 = 0x4A;
-		b1 = 0x3F;
-		r2 = 0xFE;
-		g2 = 0xE6;
-		b2 = 0x3E;
-		break;
-	case 2:
-#ifdef MUST_MATCH
-		a = alpha;
-#endif
-		r1 = 0x3F;
-		g1 = 0x3F;
-		b1 = 0xE9;
-		r2 = 0x74;
-		g2 = 0xC9;
-		b2 = 0xFF;
-		break;
-	}
-
-	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(x, y, float_0_8041e2c8);
-	GXColor4u8(r1, g1, b1, POLY_ALPHA);
-	GXTexCoord2f32(float_0_8041e2c8, float_0_8041e2c8);
-	GXPosition3f32(x + w, y, float_0_8041e2c8);
-	GXColor4u8(r1, g1, b1, POLY_ALPHA);
-	GXTexCoord2f32(u, float_0_8041e2c8);
-	GXPosition3f32(x + w, y - h, float_0_8041e2c8);
-	GXColor4u8(r2, g2, b2, POLY_ALPHA);
-	GXTexCoord2f32(u, v);
-	GXPosition3f32(x, y - h, float_0_8041e2c8);
-	GXColor4u8(r2, g2, b2, POLY_ALPHA);
-	GXTexCoord2f32(float_0_8041e2c8, v);
-}
-
-// .text:0x644 | 0x8018E170 | size: 0x1D8
-// NONMATCHING (90.17%): 3 instructions differ, 6 missing, 4 extra, plus register differences.
-void effUpdownMain(EffectEntry* effect) {
-	EffUpdownWork* work = effect->userdata;
-	s32 type;
-	s32 renderMode;
-	Vec pos;
-
-	type = work->type;
-	if (effect->flags & 4) {
-		effect->flags &= ~4;
-		work->lifetime = 16;
-	}
-	if (work->lifetime < 1000) {
-		work->lifetime--;
-	}
-	if (work->lifetime < 0) {
-		effDelete(effect);
-		return;
-	}
-	if (work->lifetime < 16) {
-		work->alpha = work->lifetime * 16;
-	}
-	if (type == 0 || type == 1) {
-		if (work->frame < 15) {
-			work->scaleX = (f32)scale_data[work->frame * 2] / float_100_8041e2dc;
-			work->scaleY = (f32)scale_data[work->frame * 2 + 1] / float_100_8041e2dc;
-		} else {
-			work->scaleY = float_1_8041e2b4 -
-						   float_0p1_8041e2e4 * (f32)sin((f32)(s32)(work->frame - 15) * float_0p25_8041e2e0);
-			work->scaleX = float_1_8041e2b4;
-		}
-	}
-	work->frame++;
-	pos = vec3_802f8e38;
-	pos.x = work->x;
-	pos.y = work->y;
-	pos.z = work->z;
-	renderMode = 1;
-	if (work->alpha != 0xFF) {
-		renderMode = 2;
-	}
-	dispEntry(CAMERA_3D, dispCalcZ(&pos), renderMode, effUpdownDisp, effect);
-}
-
-// .text:0x81C | 0x8018E348 | size: 0x100
-EffectEntry* effUpdownEntry(s32 type, f32 x, f32 y, f32 z, s32 field18, s32 lifetime) {
-	EffectEntry* entry;
-	EffUpdownWork* work;
-
-	entry = effEntry();
-	entry->type = str_802F8E58;
-	entry->count = 1;
-	work = __memAlloc(HEAP_EFFECT, 0x28);
-	entry->userdata = work;
-	entry->callback = effUpdownMain;
-	entry->flags |= 2;
-	work->type = type;
-	work->x = x;
-	work->y = y;
-	work->z = z;
-	work->scaleY = float_1_8041e2b4;
-	work->scaleX = float_1_8041e2b4;
-	work->field18 = field18;
-	work->lifetime = lifetime;
-	work->frame = 0;
-	work->alpha = 0xFF;
-	return entry;
 }

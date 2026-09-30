@@ -97,7 +97,6 @@ static inline NanNpcEntry* nannpcFind(const char* name) {
     return NULL;
 }
 
-
 USER_FUNC(evt_nannpcwork_flag_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -220,13 +219,11 @@ USER_FUNC(evt_nannpc_jump_position) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.35%): args/work/i callee-saved registers are permuted (orig args=r28, work=r29,
-// i=r30; ours args=r30, work=r28, i=r29).
 USER_FUNC(evt_nannpc_move_position2) {
+    OSTime time;
     s32* args = event->args;
     s32 id = evtGetValue(event, args[0]);
     NanNpcEntry* entry = nannpcFind((const char*)id);
-    OSTime time;
     Vec target;
     Vec delta;
     Vec move;

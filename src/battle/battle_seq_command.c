@@ -22,8 +22,14 @@
 #include <string.h>
 #include <stdio.h>
 #include "battle/battle_database_common.h"
+#include "battle/battle_actrecord.h"
+#include "battle/battle_attack_audience.h"
+#include "battle/battle_event_default.h"
 
 extern ItemData itemDataTable[];
+
+// Battle weapon data used by _btlcmd_SetAttackEvent; not declared in any header.
+extern BattleWeapon ItemWeaponData_Naniga_Okorukana;
 
 
 //TODO: move into battle/seq/?
@@ -1070,6 +1076,220 @@ void _commandRestoreRec(void) {
 	} else if (*(s32*)&wp->commandMenu.unk540[0x14] == wp->commandMenu.unk0) {
 		*(s32*)&wp->commandMenu.unk540[0x14] = 0;
 		wp->commandMenu.unk540[0x18] = 0;
+	}
+}
+
+void _btlcmd_SetAttackEvent(BattleUnit* unit, BattleCommand* cmd) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	s32 command = *(s32*)&cmd->unk540[0];
+
+	if (cmd->unk540[0x11]) {
+		unit->moveState = 0;
+		*(s32*)unit->field_0x29C = (s32)btldefaultevt_Wait;
+		*(s32*)unit->field_0x2A8 = 1;
+		return;
+	}
+
+	switch (command) {
+	case 5:
+		switch (*(s32*)&cmd->unk540[8]) {
+		case 6:
+			*(s32*)unit->field_0x2A8 = 1;
+			if (unit->currentKind == 0xDE) {
+				*(s32*)unit->field_0x29C = (s32)btldefaultevt_Defend;
+			} else {
+				*(s32*)unit->field_0x29C = (s32)btldefaultevt_DefendParty;
+			}
+			break;
+		case 5:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_Appeal;
+			*(s32*)unit->field_0x2A8 = 1;
+			if (unit->currentKind == 0xDE) {
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
+			}
+			break;
+		case 7:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_Wait;
+			*(s32*)unit->field_0x2A8 = 1;
+			if (unit->currentKind == 0xDE) {
+				BtlActRec_AddCount((u8*)wp + 0x16F2D);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F2E);
+			}
+			break;
+		case 3:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_Escape;
+			*(s32*)unit->field_0x2A8 = 1;
+			if (unit->currentKind == 0xDE) {
+				BtlActRec_AddCount((u8*)wp + 0x16F37);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F38);
+			}
+			break;
+		case 1:
+			*(s32*)unit->field_0x2A8 = 0;
+			if (unit->currentKind == 0xDE) {
+				*(s32*)unit->field_0x29C = (s32)badgeWeapon_Charge.mAttackEvtScript;
+				BtlActRec_AddCount((u8*)wp + 0x16F33);
+			} else {
+				*(s32*)unit->field_0x29C = (s32)badgeWeapon_ChargeP.mAttackEvtScript;
+				BtlActRec_AddCount((u8*)wp + 0x16F34);
+			}
+			break;
+		case 2:
+			*(s32*)unit->field_0x2A8 = 0;
+			if (unit->currentKind == 0xDE) {
+				*(s32*)unit->field_0x29C = (s32)badgeWeapon_SuperCharge.mAttackEvtScript;
+				BtlActRec_AddCount((u8*)wp + 0x16F35);
+			} else {
+				*(s32*)unit->field_0x29C = (s32)badgeWeapon_SuperChargeP.mAttackEvtScript;
+				BtlActRec_AddCount((u8*)wp + 0x16F36);
+			}
+			break;
+		case 0:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_ChangeParty;
+			*(s32*)unit->field_0x2A8 = 1;
+			cmd->cursor[1].field_0 = 0;
+			if (wp->badgeEquippedFlags & 1) {
+				unit->moveState = 3;
+			}
+			if (unit->currentKind == 0xDE) {
+				BtlActRec_AddCount((u8*)wp + 0x16F29);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F2A);
+			}
+			break;
+		case 4:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_ProtectPartner;
+			*(s32*)unit->field_0x2A8 = 1;
+			break;
+		case 8:
+			*(s32*)unit->field_0x29C = (s32)BtlUnit_GetData(unit, 2);
+			*(s32*)unit->field_0x2A8 = 3;
+			break;
+		default:
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_Wait;
+			*(s32*)unit->field_0x2A8 = 1;
+			break;
+		}
+		break;
+	case 0:
+	case 1:
+	case 2:
+	case 4:
+	case 6: {
+		BattleCursor* cursor;
+		BattleWeapon* weapon;
+
+		_btlcmd_GetCursorPtr(cmd, command, &cursor);
+		weapon = wcmd->mWeaponTable[cursor->field_0].mWeaponParams;
+		*(s32*)unit->field_0x29C = (s32)weapon->mAttackEvtScript;
+		*(s32*)unit->field_0x2A8 = 0;
+		if (*(u32*)unit->field_0x29C == 0) {
+			*(s32*)unit->field_0x29C = (s32)btldefaultevt_Wait;
+		}
+
+		switch (command) {
+		case 0:
+			BtlActRec_AddCount((u8*)wp + 0x16F1C);
+			break;
+		case 1:
+			BtlActRec_AddCount((u8*)wp + 0x16F1D);
+			break;
+		case 4:
+			if (_check_weapon_type_attack(weapon)) {
+				BtlActRec_AddCount((u8*)wp + 0x16F1E);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F1F);
+			}
+			break;
+		case 2:
+			if ((s32)weapon != (s32)&ItemWeaponData_Naniga_Okorukana) {
+				if (unit->currentKind == 0xDE) {
+					if (_check_weapon_type_attack(weapon)) {
+						BtlActRec_AddCount((u8*)wp + 0x16F25);
+					} else {
+						BtlActRec_AddCount((u8*)wp + 0x16F26);
+					}
+				} else {
+					if (_check_weapon_type_attack(weapon)) {
+						BtlActRec_AddCount((u8*)wp + 0x16F27);
+					} else {
+						BtlActRec_AddCount((u8*)wp + 0x16F28);
+					}
+				}
+			}
+			break;
+		case 6:
+			if (_check_weapon_type_attack(weapon)) {
+				BtlActRec_AddCount((u8*)wp + 0x16F39);
+			} else {
+				BtlActRec_AddCount((u8*)wp + 0x16F3A);
+			}
+			break;
+		}
+		break;
+	}
+	case 9:
+		unit->moveState = 1;
+		*(s32*)unit->field_0x29C = (s32)btldefaultevt_ChangePosition;
+		*(s32*)unit->field_0x2A8 = 7;
+		break;
+	case 11:
+		switch ((s8)unit->moveState) {
+		case 6:
+			unit->moveState = 5;
+			break;
+		case 7:
+			unit->moveState = 6;
+			break;
+		case 9:
+			unit->moveState = 8;
+			break;
+		default:
+			unit->moveState = 4;
+			break;
+		}
+		*(s32*)unit->field_0x29C = (s32)btlataudGetAttackEventPtr(unit->unitId);
+		*(s32*)unit->field_0x2A8 = 3;
+		if (unit->currentKind == 0xDE) {
+			BtlActRec_AddCount((u8*)wp + 0x16F2B);
+		} else {
+			BtlActRec_AddCount((u8*)wp + 0x16F2C);
+		}
+		if (*(u32*)&wp->field_19064[0x1C] & 1) {
+			msgWindow_Continue(*(s32*)&wp->field_19064[0x20]);
+		}
+		break;
+	case 12:
+		switch ((s8)unit->moveState) {
+		case 6:
+			unit->moveState = 5;
+			break;
+		case 7:
+			unit->moveState = 6;
+			break;
+		case 9:
+			unit->moveState = 8;
+			break;
+		default:
+			unit->moveState = 4;
+			break;
+		}
+		*(s32*)unit->field_0x29C = (s32)btlataudGetMoveEventPtr(unit->unitId);
+		*(s32*)unit->field_0x2A8 = 3;
+		break;
+	case 13:
+		*(s32*)unit->field_0x29C = (s32)btldefaultevt_LectureEnd;
+		*(s32*)unit->field_0x2A8 = 3;
+		break;
+	default:
+		*(s32*)unit->field_0x29C = (s32)btldefaultevt_Wait;
+		*(s32*)unit->field_0x2A8 = 0;
+		break;
 	}
 }
 

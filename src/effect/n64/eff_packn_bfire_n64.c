@@ -18,8 +18,10 @@ extern const f32 float_128_8041f8f8;
 extern const f32 float_deg2rad_8041f8fc;
 extern const f32 float_0p0039062_8041f904;
 extern const f32 float_0p015625_8041f908;
-extern GXColor unk_804231f8;
-extern GXColor unk_804231fc;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804231fc;
+__declspec(section ".sdata") GXColor unk_804231f8;
 
 // .data vertex block (local symbol in the original object).
 static u32 size64x64_tex32x32_vtx[14] = {
@@ -45,10 +47,8 @@ extern const f32 float_3_8041f938;
 extern const f32 float_2_8041f93c;
 extern const f32 float_neg45_8041f940;
 
-extern const char str_802FB324[];
 
 // Compiler-pooled int->double bias, named after its original address.
-const f64 double_to_int_802fb338 = 4503601774854144.0;
 
 typedef struct effPacknBfireData {
 	s32 type;       // 0x00
@@ -93,7 +93,7 @@ EffectEntry* effPacknBfireN64Entry(s32 type, s32 a1, s32 a2, f32 x, f32 y, f32 z
 
 	effect = effEntry();
 	count = (type == 2) ? 8 : 1;
-	effect->type = str_802FB324;
+	effect->type = "PacknBfireN64";
 	effect->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * sizeof(effPacknBfireData));
 	effect->userdata = data;
@@ -397,3 +397,28 @@ void effPacknBfireDisp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p03125_8041f8e8 = 0.03125f;
+const f32 float_0_8041f8ec = 0.0f;
+const f32 float_6p2832_8041f8f0 = 6.2831855f;
+const f32 float_360_8041f8f4 = 360.0f;
+const f32 float_128_8041f8f8 = 128.0f;
+const f32 float_deg2rad_8041f8fc = 0.017453292f;
+const f32 float_1_8041f900 = 1.0f;
+const f32 float_0p0039062_8041f904 = 0.00390625f;
+const f32 float_0p015625_8041f908 = 0.015625f;
+const f32 float_0p97_8041f90c = 0.97f;
+const f32 float_0p02_8041f910 = 0.02f;
+const f32 float_0p05_8041f914 = 0.05f;
+const f32 float_0p1_8041f918 = 0.1f;
+const f32 float_0p9_8041f91c = 0.9f;
+const f32 float_0p2_8041f920 = 0.2f;
+const f32 float_neg0p6_8041f924 = -0.6f;
+const f32 float_0p07_8041f928 = 0.07f;
+const f32 float_0p3_8041f92c = 0.3f;
+const f32 float_neg10_8041f930 = -10.0f;
+const f32 float_5_8041f934 = 5.0f;
+const f32 float_3_8041f938 = 3.0f;
+const f32 float_2_8041f93c = 2.0f;
+const f32 float_neg45_8041f940 = -45.0f;

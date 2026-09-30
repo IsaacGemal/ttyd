@@ -8,8 +8,14 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+#include <stdlib.h>
+#include "math_ext.h"
+
+// .rodata: zero Vec copied into the local position before the particle fields are set.
+const Vec vec3_802fa560 = { 0.0f, 0.0f, 0.0f };
+
+
 // .rodata string used as the EffectEntry type name.
-const char str_802FA578[12] = "FireDustN64";
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_1_8041ee54;
@@ -21,10 +27,25 @@ extern const f32 float_2p0944_8041ee24;
 extern const f32 float_neg2p0944_8041ee28;
 extern const f32 float_255_8041ee10;
 extern const f32 float_deg2rad_8041ee14;
+extern const f32 float_0p5_8041ee2c;
+extern const f32 float_6p2832_8041ee30;
+extern const f32 float_360_8041ee34;
+extern const f32 float_15_8041ee38;
+extern const f32 float_0p4_8041ee3c;
+extern const f32 float_2_8041ee40;
+extern const f32 float_4_8041ee44;
+extern const f32 float_0p2_8041ee48;
+extern const f32 float_0p6_8041ee4c;
+extern const f32 float_0p04_8041ee50;
+
+// .data particle scale table indexed by the per-particle frame counter (defined below).
+static f32 scale_data[20];
 
 // .sbss2 zero GXColor scratch the original builds the TEV color from.
-extern GXColor unk_804230f8;
-extern GXColor unk_804230fc;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804230fc;
+__declspec(section ".sdata") GXColor unk_804230f8;
 
 // Local to this unit in the original (`.fn main_dl, local`); defined further down.
 static void main_dl(EffectEntry* effect, Mtx matrix);
@@ -93,7 +114,7 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, 
     f32 ratio;
 
     effect = effEntry();
-    effect->type = str_802FA578;
+    effect->type = "FireDustN64";
     effect->count = a2 + 2;
     data = __memAlloc(3, (a2 + 2) * 0x6c);
     effect->userdata = data;
@@ -134,6 +155,94 @@ EffectEntry* effFireDustN64Entry(s32 type, s32 a2, s32 a3, f32 x, f32 y, f32 z, 
     }
 
     return effect;
+}
+
+void effFireDustMain(EffectEntry* effect) {
+    s32 ival;
+    effFireDustData* data;
+    s32 i;
+#ifdef MUST_MATCH
+    /* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second
+       local before dispCalcZ; a single local folds the copy away. */
+    Vec position;
+#endif
+    Vec disp = vec3_802fa560;
+    f32 half;
+    f32 radius;
+    f32 angle;
+
+    data = effect->userdata;
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+#ifdef MUST_MATCH
+    position = disp;
+#endif
+
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->field_0x38 = 16;
+    }
+    if (data->field_0x38 < 1000) {
+        data->field_0x38--;
+    }
+    data->field_0x3C++;
+    if (data->field_0x38 < 0) {
+        effDelete(effect);
+        return;
+    }
+    if (data->field_0x38 < 8) {
+        data->field_0x4C = data->field_0x38 << 5;
+    }
+
+    i = 1;
+    radius = data->field_0x10;
+    ival = (s32)data->field_0x14;
+    half = float_0p5_8041ee2c * data->field_0x14;
+    data++;
+    for (; i < effect->count; i++, data++) {
+        data->field_0x30++;
+        if (data->field_0x30 >= 20) {
+            data->field_0x30 = 0;
+        }
+        if (data->field_0x30 < 0) {
+            continue;
+        }
+        if (data->field_0x30 == 0) {
+            angle = (f32)(rand() % 360);
+            /* The original discards a rand() result here; the RNG state feeds later particles. */
+            (void)rand();
+            angle = float_6p2832_8041ee30 * angle / float_360_8041ee34;
+            data->x = radius * (f32)sin(angle);
+            data->y = (f32)(rand() % ival) - half;
+            data->z = radius * (f32)cos(angle);
+            data->field_0x18 = float_15_8041ee38 * (f32)sin(angle);
+            data->field_0x1C = float_0p4_8041ee3c * data->y;
+            data->field_0x20 = float_15_8041ee38 * (f32)cos(angle);
+            data->field_0x24 = float_0p5_8041ee2c * data->field_0x18;
+            data->field_0x28 = float_0p5_8041ee2c * data->field_0x1C;
+            data->field_0x2C = float_0p5_8041ee2c * data->field_0x20;
+            data->field_0x64 = (f32)(rand() % 15);
+            data->field_0x68 = (f32)(rand() % 15);
+            data->field_0x34 = float_0_8041ee20;
+            data->field_0x4C = 0xff;
+        }
+        data->field_0x60 = float_2_8041ee40 * scale_data[data->field_0x30];
+        data->field_0x34 += float_4_8041ee44;
+        data->x += data->field_0x18;
+        data->y += data->field_0x1C;
+        data->z += data->field_0x20;
+        data->field_0x64 += float_0p2_8041ee48;
+        data->field_0x68 += float_0p6_8041ee4c;
+        data->field_0x18 += float_0p04_8041ee50 * (data->field_0x24 - data->field_0x18);
+        data->field_0x1C += float_0p04_8041ee50 * (data->field_0x28 - data->field_0x1C);
+        data->field_0x20 += float_0p04_8041ee50 * (data->field_0x2C - data->field_0x20);
+    }
+#ifdef MUST_MATCH
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effFireDustDisp, effect);
+#else
+    dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effFireDustDisp, effect);
+#endif
 }
 
 void effFireDustDisp(CameraId camId, void* param) {
@@ -185,6 +294,12 @@ void effFireDustDisp(CameraId camId, void* param) {
     PSMTXConcat(cam->view, dispMtx, dispMtx);
     main_dl(effect, dispMtx);
 }
+
+// .data particle scale table indexed by the per-particle frame counter.
+static f32 scale_data[20] = {
+    0.2f, 0.4f, 0.8f, 1.3f, 1.5f, 1.3f, 0.9f, 0.6f, 0.4f, 0.3f,
+    0.2f, 0.4f, 0.8f, 1.3f, 1.5f, 1.3f, 0.9f, 0.6f, 0.4f, 0.3f,
+};
 
 // .data vertex strip; the original is a raw 0x1C0-byte object and main_dl
 // passes 0x38-byte slices of it to effSetVtxDescN64.
@@ -270,3 +385,24 @@ static void main_dl(EffectEntry* effect, Mtx matrix) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_255_8041ee10 = 255.0f;
+const f32 float_deg2rad_8041ee14 = 0.017453292f;
+const f32 float_0p0056818_8041ee18 = 0.0056818184f;
+const f32 float_0p045455_8041ee1c = 0.045454547f;
+const f32 float_0_8041ee20 = 0.0f;
+const f32 float_2p0944_8041ee24 = 2.0943952f;
+const f32 float_neg2p0944_8041ee28 = -2.0943952f;
+const f32 float_0p5_8041ee2c = 0.5f;
+const f32 float_6p2832_8041ee30 = 6.2831855f;
+const f32 float_360_8041ee34 = 360.0f;
+const f32 float_15_8041ee38 = 15.0f;
+const f32 float_0p4_8041ee3c = 0.4f;
+const f32 float_2_8041ee40 = 2.0f;
+const f32 float_4_8041ee44 = 4.0f;
+const f32 float_0p2_8041ee48 = 0.2f;
+const f32 float_0p6_8041ee4c = 0.6f;
+const f32 float_0p04_8041ee50 = 0.04f;
+const f32 float_1_8041ee54 = 1.0f;
+const f32 float_20_8041ee58 = 20.0f;

@@ -1,14 +1,17 @@
 #include "eff/n64/eff_butterfly_n64.h"
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "memory.h"
+#include "system.h"
+#include "math_ext.h"
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include <stdlib.h>
 
 // .rodata
-const f64 double_to_int_802fa3a8 = 4503601774854144.0;
-const char str_802FA3C8[] = "ButterflyN64";
+const Vec vec3_802fa398 = { 0.0f, 0.0f, 0.0f };
 
 // .sdata2
 extern const u32 dat_8041eb68;
@@ -20,6 +23,9 @@ extern const f32 float_0p015625_8041eb7c;
 extern const f32 float_0_8041eb80;
 extern const f32 float_50_8041eb90;
 extern const f32 float_30_8041eb94;
+extern const f32 float_6p2832_8041eb84;
+extern const f32 float_360_8041eb88;
+extern const f32 float_1_8041eb8c;
 
 // .data / .sdata
 extern u8 but_02_v[];
@@ -44,6 +50,7 @@ typedef struct effButterflyData {
     s32 field_0x30; // 0x30
     f32 field_0x34; // 0x34
     f32 field_0x38; // 0x38
+    Vec velocity;   // 0x3C
 } effButterflyData;
 
 EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
@@ -51,7 +58,7 @@ EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
     effButterflyData* data;
 
     effect = effEntry();
-    effect->type = str_802FA3C8;
+    effect->type = "ButterflyN64";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, 0x48);
     effect->userdata = data;
@@ -73,6 +80,138 @@ EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
     data->field_0x38 = float_30_8041eb94;
     return effect;
 }
+
+// Inlined MetroWerks sqrtf (same shape as eff_sstar_n64.c / eff_blow_n64.c).
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 butterflyFpClassify(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+    case 0x7F800000:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return FP_NAN;
+        }
+        return FP_INFINITE;
+    case 0:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return FP_SUBNORMAL;
+        }
+        return FP_ZERO;
+    default:
+        return FP_NORMAL;
+    }
+}
+
+static inline f32 butterflySqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > float_0_8041eb80) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (butterflyFpClassify(x) == FP_NAN) {
+        return NAN;
+    }
+    return x;
+}
+
+static inline Vec butterflyMakeVec(f32 x, f32 y, f32 z) {
+    Vec temp = vec3_802fa398;
+    temp.x = x;
+    temp.y = y;
+    temp.z = z;
+    return temp;
+}
+
+// opt_common_subs off required: with CSE on MWCC reuses the float_0_8041eb80 result
+// register for the later sqrtf `x > 0.0f` test (f2 cached vs the target's fresh f0).
+#pragma opt_common_subs off
+// NONMATCHING (99.89%): every instruction matches except the position x/z registers in the two
+// delta computations and the fallback (the target loads data->position.x into f3 and .z into f5;
+// this build assigns them the other way round).
+void effButterflyMain(EffectEntry* effect) {
+    effButterflyData* data = effect->userdata;
+    Vec position;
+    Vec position2;
+    f32 angle;
+    f32 targetX;
+    f32 targetY;
+    f32 targetZ;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 mag;
+
+    position = butterflyMakeVec(data->position.x, data->position.y, data->position.z);
+    position2 = position;
+    if (effect->flags & 4) {
+        effect->flags &= ~4;
+        data->field_0x4 = 0x384;
+    }
+    if (data->field_0x4 < 1000) {
+        data->field_0x4--;
+    }
+    data->field_0x8++;
+    if (data->field_0x4 < 0) {
+        effDelete(effect);
+        return;
+    }
+    if (data->field_0x4 < 0x10) {
+        data->field_0x24 = data->field_0x4 << 4;
+    }
+    data->field_0x30--;
+    if (data->field_0x30 <= 0) {
+        angle = float_6p2832_8041eb84 * (f32)(rand() % 360) / float_360_8041eb88;
+        targetX = data->field_0x34 * (f32)sin(angle) + data->field_0x18.x;
+        targetY = data->field_0x18.y + (f32)(rand() % (s32)data->field_0x38);
+        targetZ = data->field_0x34 * (f32)cos(angle) + data->field_0x18.z;
+        data->field_0x30 = rand() % 100 + 10;
+        dx = targetX - data->position.x;
+        dy = targetY - data->position.y;
+        dz = targetZ - data->position.z;
+        if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
+            dx = data->field_0x18.x - data->position.x;
+            dy = data->field_0x18.y - data->position.y;
+            dz = data->field_0x18.z - data->position.z;
+            if (float_0_8041eb80 == dx && float_0_8041eb80 == dy && float_0_8041eb80 == dz) {
+                dx = float_1_8041eb8c;
+                dy = float_0_8041eb80;
+                dz = float_0_8041eb80;
+            }
+        }
+        mag = dx * dx + dy * dy + dz * dz;
+        if (mag != float_0_8041eb80) {
+            mag = float_1_8041eb8c / butterflySqrtf(mag);
+        }
+        dx *= mag;
+        dy *= mag;
+        dz *= mag;
+        data->velocity.x = dx;
+        data->velocity.y = dy;
+        data->velocity.z = dz;
+        data->field_0x28 = angleABf(float_0_8041eb80, float_0_8041eb80, -data->velocity.x, data->velocity.z);
+    }
+    data->field_0x2C += 3;
+    if (data->field_0x2C >= 0x1E) {
+        data->field_0x2C -= 0x1E;
+    }
+    data->position.x += data->velocity.x;
+    data->position.y += data->velocity.y;
+    data->position.z += data->velocity.z;
+    dispEntry(CAMERA_3D, dispCalcZ(&position2), 1, effButterflyDisp, effect);
+}
+#pragma opt_common_subs reset
 
 #ifdef MUST_MATCH
 static inline GXColor butterflyColor(u8 v) {

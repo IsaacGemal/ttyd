@@ -2,7 +2,10 @@
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
 #include <dolphin/mtx.h>
+#include <stdlib.h>
+#include "matching.h"
 
 typedef struct StarPointData {
     s32 type;       // 0x00
@@ -20,6 +23,139 @@ typedef struct StarPointData {
 
 extern const f32 float_deg2rad_804209c8;
 extern const f32 float_0_804209cc;
+extern const f32 float_6p2832_804209d0;
+extern const f32 float_360_804209d4;
+extern const f32 float_0p00761_804209d8;
+extern const f32 float_0p16605_804209dc;
+extern const f32 float_1_804209e0;
+extern const f32 float_3p1416_804209e4;
+extern const f32 float_1p5708_804209e8;
+extern const f32 float_4p7124_804209ec;
+extern const f32 float_2_804209f0;
+extern const f32 float_0p03705_804209f4;
+extern const f32 float_0p4967_804209f8;
+extern const f32 float_14_804209fc;
+const f64 double_to_int_802fdbf8 = 4503601774854144.0;
+const char str_802FDBEC[] = "StarPoint";
+
+// NONMATCHING (95.09%): logic matches; the int->float f64 is an anonymous @285 rather than
+// double_to_int_802fdbf8 (and lands in f22 vs f26), shifting the hoisted sdata2 registers. The
+// MATCH_F32 read of float_0p00761 also costs a temp (f4) where the target keeps rad in f3.
+EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
+    s32 lowAlpha;
+    EffectEntry* entry;
+    StarPointData* data;
+    s32 i;
+    f32 sinv, cosv, f0, f1;
+    f32 cTwo, cPi, c360, c6, c0;
+
+    entry = effEntry();
+    entry->type = str_802FDBEC;
+    entry->count = count + 1;
+    data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(StarPointData));
+    entry->userdata = data;
+    entry->callback = effStarPointMain;
+    data->type = type;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->field_0x04 = 60;
+    data->field_0x08 = 0;
+
+    cTwo = float_2_804209f0;
+    cPi = float_3p1416_804209e4;
+    c360 = float_360_804209d4;
+    c6 = float_6p2832_804209d0;
+    c0 = float_0_804209cc;
+
+    lowAlpha = 4;
+    i = 1;
+    data = &data[1];
+    for (; i < entry->count; i++, data++) {
+        s32 angle = rand() % 360;
+        f32 rad = (c6 * (f32)angle) / c360;
+        const f32 cOne = float_1_804209e0;
+        f32 cSin1 = float_0p16605_804209dc;
+        f32 cCos1 = float_0p4967_804209f8;
+        f32 c14 = float_14_804209fc;
+
+        data->position.x = c0;
+        data->position.y = c0;
+        data->position.z = c0;
+
+        // sin approximation
+        sinv = MATCH_F32(float_0p00761_804209d8);
+        if (rad <= cPi) {
+            if (rad <= float_1p5708_804209e8) {
+                f0 = rad * rad;
+                sinv = sinv * f0 - cSin1;
+                sinv = sinv * f0 + cOne;
+                sinv = sinv * rad;
+            } else {
+                f0 = rad - float_1p5708_804209e8;
+                f1 = float_1p5708_804209e8 - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - cSin1;
+                sinv = sinv * f0 + cOne;
+                sinv = sinv * f1;
+            }
+        } else if (rad < float_4p7124_804209ec) {
+            f1 = rad - cPi;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - cSin1;
+            sinv = sinv * f0 + cOne;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        } else {
+            f0 = rad - float_4p7124_804209ec;
+            f1 = float_1p5708_804209e8 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - cSin1;
+            sinv = sinv * f0 + cOne;
+            sinv = sinv * f1;
+            sinv = -sinv;
+        }
+        data->field_0x18 = cTwo * sinv;
+
+        // cos approximation
+        cosv = MATCH_F32(float_0p03705_804209f4);
+        if (rad <= cPi) {
+            if (rad <= float_1p5708_804209e8) {
+                f0 = rad * rad;
+                cosv = cosv * f0 - cCos1;
+                cosv = cosv * f0 + cOne;
+            } else {
+                f0 = rad - float_1p5708_804209e8;
+                f0 = float_1p5708_804209e8 - f0;
+                f0 = f0 * f0;
+                cosv = cosv * f0 - cCos1;
+                cosv = cosv * f0 + cOne;
+                cosv = -cosv;
+            }
+        } else if (rad < float_4p7124_804209ec) {
+            f0 = rad - cPi;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - cCos1;
+            cosv = cosv * f0 + cOne;
+            cosv = -cosv;
+        } else {
+            f0 = rad - float_4p7124_804209ec;
+            f0 = float_1p5708_804209e8 - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - cCos1;
+            cosv = cosv * f0 + cOne;
+        }
+        data->field_0x1C = cTwo * cosv;
+
+        data->field_0x20 = c14;
+        data->field_0x24 = cTwo;
+        data->field_0x2C = 0;
+        data->field_0x30 = lowAlpha;
+        lowAlpha += 3;
+    }
+
+    return entry;
+}
 
 void effStarPointMain(EffectEntry* effect) {
     Vec position;

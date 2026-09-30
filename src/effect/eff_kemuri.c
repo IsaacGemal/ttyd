@@ -1,8 +1,11 @@
 #include "eff/eff_kemuri.h"
 #include "driver/dispdrv.h"
+#include "driver/mapdrv.h"
 #include "math_ext.h"
 #include "memory.h"
 #include "system.h"
+
+#include <dolphin/gx.h>
 
 typedef struct effKemuriData {
 	s32 field_0x0; //0x0
@@ -35,6 +38,31 @@ extern const f32 float_5_8041c718;
 extern const f32 float_0p7_8041c71c;
 extern const f32 float_neg20_8041c720;
 extern const char str_802F3120[];
+extern const f32 float_12_8041c688;
+extern const f32 float_8_8041c68c;
+extern const f32 float_12p8_8041c690;
+extern const f32 float_20_8041c694;
+extern const f32 float_160_8041c698;
+extern const f32 float_180_8041c69c;
+extern const f32 float_340_8041c6a0;
+extern const f32 float_deg2rad_8041c6a4;
+extern const f32 float_0p17453_8041c6a8;
+extern const f32 float_neg1_8041c6ac;
+extern const f32 float_10_8041c6b4;
+extern const f32 float_neg6_8041c6b8;
+extern const f32 float_neg10_8041c6c0;
+extern const f32 float_6_8041c6c4;
+extern const f32 float_neg4_8041c6c8;
+extern const f32 float_0p5_8041c6cc;
+extern const f32 float_4_8041c6d0;
+extern const f32 float_6p4_8041c6d4;
+extern const GXColor unk_80423010;
+extern const GXColor unk_80423014;
+extern const GXColor dat_8041c680;
+extern const GXColor dat_8041c684;
+
+// .rodata conversion constant used by the int -> float casts.
+const f64 double_to_int_802f3110 = 4503601774854144.0;
 
 // local per the original: .fn effKemuri2Disp, local
 static void effKemuri2Disp(CameraId camId, void* param);
@@ -213,4 +241,151 @@ static void effKemuri2Main(EffectEntry* effect) {
 // NONMATCHING (0.25%): 399 missing.
 void effKemuriDisp(CameraId camId, void* param) {
 	EffectEntry* entry = param;
+}
+
+// Draws a Kemuri2 puff as two camera-facing textured quads. Setup order, constants and stack layout
+// match; only the callee-saved FPR numbering (our -6.4/-8/-12 land in f26/f24/f25 instead of retail
+// f24/f25/f26, shifting 20/double/deg2rad/180/6.4 up one), the four by-value GXColor argument copies
+// (they sit below their variable instead of above) and the local @284/@285 pool symbols for 0.0/1.0
+// (retail float_0_8041c6bc/float_1_8041c6b0) differ.
+// NONMATCHING (99.67%): see the five lines above.
+static void effKemuri2Disp(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	effKemuri2Data* data = effect->userdata;
+	CameraEntry* camera;
+	GXTexObj texobj;
+	Mtx transMtx;
+	Mtx rotMtx;
+	Mtx rotMtx2;
+	Mtx scaleMtx;
+	Mtx outMtx;
+	Mtx tmpMtx;
+	s32 i;
+
+	camera = camGetPtr(cameraId);
+
+	GXSetNumChans(0);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetBlendMode(1, 4, 5, 0);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetZMode(1, 3, 0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 2, 8, 0xF);
+	GXSetTevAlphaIn(0, 7, 1, 4, 7);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetCullMode(0);
+	mapSetMaterialFog();
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+	for (i = 0; i < 2; i++) {
+		const f32 negSize2 = -float_12p8_8041c690;
+		const f32 negSizeX = -float_12_8041c688;
+		const f32 negSizeY = -float_8_8041c68c;
+
+		if ((data->field_0x78 > float_20_8041c694 && data->field_0x78 < float_160_8041c698) ||
+		    (data->field_0x78 > float_180_8041c69c && data->field_0x78 < float_340_8041c6a0)) {
+			PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
+			PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
+			PSMTXRotRad(rotMtx2, 'z', float_0p17453_8041c6a8);
+			PSMTXScale(scaleMtx, data->field_0x70, data->field_0x70, data->field_0x70);
+			PSMTXConcat(transMtx, rotMtx, outMtx);
+			if (data->field_0x78 < float_180_8041c69c) {
+				PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
+				PSMTXConcat(outMtx, tmpMtx, outMtx);
+			}
+			PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, 0.0f);
+			PSMTXConcat(outMtx, tmpMtx, outMtx);
+			PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
+			PSMTXConcat(outMtx, tmpMtx, outMtx);
+			PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, 0.0f);
+			PSMTXConcat(outMtx, tmpMtx, outMtx);
+			PSMTXConcat(outMtx, rotMtx2, outMtx);
+			PSMTXConcat(outMtx, scaleMtx, outMtx);
+			PSMTXConcat(camera->view, outMtx, outMtx);
+			PSMTXTrans(transMtx, float_6_8041c6c4, float_neg4_8041c6c8, 0.0f);
+			PSMTXConcat(outMtx, transMtx, outMtx);
+			GXLoadPosMtxImm(outMtx, 0);
+			GXSetCurrentMtx(0);
+			effGetTexObj(0xD, &texobj);
+			GXLoadTexObj(&texobj, 0);
+			if (i == 0) {
+				GXColor color = unk_80423010;
+
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
+			} else {
+				GXColor color = dat_8041c680;
+
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
+			}
+			GXBegin(0x80, 0, 4);
+			GXPosition3f32(negSizeX * float_0p5_8041c6cc, float_4_8041c6d0, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(float_6_8041c6c4, float_4_8041c6d0, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(float_6_8041c6c4, negSizeY * float_0p5_8041c6cc, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(negSizeX * float_0p5_8041c6cc, negSizeY * float_0p5_8041c6cc, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+		}
+
+		PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
+		PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
+		PSMTXRotRad(rotMtx2, 'z', float_deg2rad_8041c6a4 * data->field_0x68);
+		PSMTXScale(scaleMtx, data->field_0x70, data->field_0x70, data->field_0x70);
+		PSMTXConcat(transMtx, rotMtx, outMtx);
+		if (data->field_0x78 < float_180_8041c69c) {
+			PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
+			PSMTXConcat(outMtx, tmpMtx, outMtx);
+		}
+		PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, 0.0f);
+		PSMTXConcat(outMtx, tmpMtx, outMtx);
+		PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
+		PSMTXConcat(outMtx, tmpMtx, outMtx);
+		PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, 0.0f);
+		PSMTXConcat(outMtx, tmpMtx, outMtx);
+		PSMTXConcat(outMtx, rotMtx2, outMtx);
+		PSMTXConcat(outMtx, scaleMtx, outMtx);
+		PSMTXConcat(camera->view, outMtx, outMtx);
+		GXLoadPosMtxImm(outMtx, 0);
+		GXSetCurrentMtx(0);
+		if (i == 0) {
+			effGetTexObj(0xC, &texobj);
+			GXLoadTexObj(&texobj, 0);
+			{
+				GXColor color = unk_80423014;
+
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
+			}
+		} else {
+			effGetTexObj(0xB, &texobj);
+			GXLoadTexObj(&texobj, 0);
+			{
+				GXColor color = dat_8041c684;
+
+				color.a = data->alpha;
+				GXSetTevColor(GX_TEVREG0, color);
+			}
+		}
+		GXBegin(0x80, 0, 4);
+		GXPosition3f32(negSize2 * float_0p5_8041c6cc, float_6p4_8041c6d4, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(float_6p4_8041c6d4, negSize2 * float_0p5_8041c6cc, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(negSize2 * float_0p5_8041c6cc, negSize2 * float_0p5_8041c6cc, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
+	}
 }

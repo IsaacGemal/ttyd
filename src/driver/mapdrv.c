@@ -248,9 +248,11 @@ void mapObjClearOffScreen(const char* name) {
 	*(u32*)obj->field_0x0 &= ~0x80;
 }
 
-// NONMATCHING (97.86%): offscreenNameToId result goes r3->r4 directly; target uses r0
 void mapGrpSetOffScreen(const char* name, const char* offName) {
-	_setOffScrnId(mapGetMapObjSub(name), offscreenNameToId(offName), 0);
+	MapObject* obj = mapGetMapObjSub(name);
+	s32 id = offscreenNameToId(offName);
+
+	_setOffScrnId(obj, id, 0);
 }
 
 void mapObjSetOffScreen(const char* name, const char* offName) {
@@ -897,9 +899,6 @@ void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table) {
 MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	return NULL;
 
-
-
-
 }
 
 //recursively inlined
@@ -929,7 +928,6 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 	memset(wp->entries[index].objects, 0, size);
 	return mapEntrySub(joint, NULL, mtx, TRUE, index);
 }
-
 
 // NONMATCHING (0.70%): only the opening/loop skeleton is present
 void makeDisplayList(BOOL group) {
@@ -1155,7 +1153,6 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 			break;
 		}
 	}
-
 
 }
 
@@ -1823,11 +1820,6 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 }
 
-
-
-
-
-
 static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 	BOOL recalc;
 
@@ -2025,10 +2017,6 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
     return 0;
 }
 
-
-
-
-
 // NONMATCHING (0.28%): only a stub is present
 void mapSetMaterialLight(s32 flags, Vec position) {
 
@@ -2128,6 +2116,112 @@ void mapSetMaterialFog(void) {
 	}
 	else {
 		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419820);
+	}
+}
+
+// vertex layout of an unpacked display list (stride 0x18)
+typedef struct MapVtx {
+	u32 field_0x0;   // 0x0
+	s16 x;           // 0x4
+	s16 y;           // 0x6
+	s16 z;           // 0x8
+	s16 field_0xA;   // 0xA
+	s16 tex[8];      // 0xC
+} MapVtx;
+
+// per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
+typedef struct MapVtxFmt {
+	u8 field_0x0[0x44]; // 0x0
+	u32 field_0x44;     // 0x44
+	u32 field_0x48[8];  // 0x48
+} MapVtxFmt;
+
+// NONMATCHING (94.84%): semantically identical; only MWCC register colouring of wp/nrm/pos differs
+// (target r31/r30/r29 vs ours r29/r31/r30) plus the two instruction forms that implies.
+void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
+	MapWork* wp = &mapWork[activeGroup];
+	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
+	void* pos = (void*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+	s32 texCount = ((u32*)mesh->vcdTableOffset)[5];
+	s32 i;
+	s32 j;
+
+	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
+
+	if (!(wp->entries[*(s16*)(obj->field_0xDC + 2)].flags & 0x8000)) {
+		GXClearVtxDesc();
+		GXSetVtxAttrFmtv(GX_VTXFMT0, (const GXVtxAttrFmtList*)attr_fmt);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		GXSetArray(GX_VA_POS, pos, 0xc);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+		GXSetArray(GX_VA_NRM, nrm, 0xc);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+		GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3] + 4), 4);
+
+		for (i = 0; i < texCount; i++) {
+			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 8);
+		}
+
+		{
+			u8* dp = (u8*)mesh;
+
+			for (i = 0; i < mesh->displayListCount; i++) {
+				MapVtx* v = (MapVtx*)*(u32*)(dp + 0x10);
+
+				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
+				for (j = 0; j < (s32)v->field_0x0; j++) {
+					s32 k;
+
+					GXWGFifo.s16 = v->x;
+					GXWGFifo.s16 = v->y;
+					GXWGFifo.s16 = v->z;
+					for (k = 0; k < texCount; k++) {
+						s16 t = v->tex[k];
+						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
+					}
+					v = (MapVtx*)((u8*)v + 0x18);
+				}
+				dp += 4;
+			}
+		}
+	}
+	else {
+		u32 mask = mesh->elementMask;
+		MapVtxFmt* fmt;
+
+		GXClearVtxDesc();
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
+		GXSetArray(GX_VA_POS, pos, 6);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nrm, 3);
+
+		for (i = 0; i < 2; i++) {
+			if (!(mask & (1 << (i + 2)))) break;
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+			GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3 + i] + 4), 4);
+		}
+
+		for (i = 0; i < 8; i++) {
+			if (!(mask & (1 << (i + 4)))) break;
+			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+			fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
+			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
+		}
+
+		{
+			u8* dp = (u8*)mesh;
+
+			for (i = 0; i < mesh->displayListCount; i++) {
+				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
+				dp += 8;
+			}
+		}
 	}
 }
 

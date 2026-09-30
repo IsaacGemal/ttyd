@@ -1,5 +1,6 @@
 #include "battle/battle_status_icon.h"
 #include "battle/battle.h"
+#include "system.h"
 #include <string.h>
 
 extern BattleWork* _battleWorkPointer;
@@ -69,6 +70,7 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 // Icon parameter table base; fields accessed at +0x60..+0x8C are Vec entries 8..11.
 extern Vec vec3_803011e8[];
 // -1 sentinel written to entry+0x3C.
+extern s32 dat_804221fc;
 extern s32 dat_804221f8;
 extern s32 dat_804221f4;
 extern s32 dat_804221f0;
@@ -236,5 +238,88 @@ BOOL _bsi_allergy(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIc
 	if (*counter & 0x10) {
 		*(s32*)((u8*)entry + 0x40) |= 2;
 	}
+	return TRUE;
+}
+
+extern Vec vec3_80301278;
+extern Vec vec3_80301284;
+extern Vec vec3_80301290;
+extern Vec vec3_8030129c;
+extern Vec vec3_803012a8;
+extern Vec vec3_803012b4;
+// MUST_MATCH: the original reaches these six Vecs as offsets from vec3_803011e8.
+#ifdef MUST_MATCH
+#define BIRI_VEC(k, sym) vec[k]
+#else
+#define BIRI_VEC(k, sym) (sym)
+#endif
+
+BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
+#ifdef MUST_MATCH
+	Vec* vec = vec3_803011e8;
+#endif
+	s32 type = disp->id;
+	s32 turnCount;
+	s8 turns;
+	s8 strength;
+	s16* counter = (s16*)(unit->mStatusIconWork.field_0x796 + 6); //per-status animation state
+	s16* duration = (s16*)(unit->mStatusIconWork.field_0x796 + 8); //frames left in the state
+
+#ifdef MUST_MATCH
+	if (!((BOOL(*)(BattleUnit*, s8))BtlUnit_CheckStatus)(unit, type)) {
+#else
+	if (!BtlUnit_CheckStatus(unit, type)) {
+#endif
+		*counter = 0;
+		*duration = 0;
+		return FALSE;
+	}
+
+	*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(12, vec3_80301278);
+
+	switch (*counter) {
+	case 0:
+		*counter = *counter + 1;
+		*duration = irand(6) + 4;
+		// fallthrough
+	case 1:
+		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(13, vec3_80301284);
+		*duration = *duration - 1;
+		if (*duration < 0) {
+			*counter = *counter + 1;
+			*duration = irand(100) + 30;
+		}
+		break;
+	case 2:
+		*(Vec*)((u8*)entry + 0xC) = BIRI_VEC(14, vec3_80301290);
+		*duration = *duration - 1;
+		if (*duration < 0) {
+			*duration = irand(6) + 4;
+			*counter = 1;
+		}
+		break;
+	}
+
+#ifdef MUST_MATCH
+	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
+#else
+	BtlUnit_GetStatus(unit, type, &turns, &strength);
+#endif
+	*(s32*)((u8*)entry + 0x0) = type;
+#ifdef MUST_MATCH
+	turnCount = -turns;
+	if (turns >= 0) {
+		turnCount = turns;
+	}
+#else
+	turnCount = turns < 0 ? -turns : turns;
+#endif
+	*(s32*)((u8*)entry + 0x4) = turnCount;
+	*(s32*)((u8*)entry + 0x8) = disp->something;
+	*(Vec*)((u8*)entry + 0x18) = BIRI_VEC(15, vec3_8030129c);
+	*(Vec*)((u8*)entry + 0x24) = BIRI_VEC(16, vec3_803012a8);
+	*(s32*)((u8*)entry + 0x3C) = dat_804221fc;
+	*(s32*)((u8*)entry + 0x40) = disp->something2;
+	*(Vec*)((u8*)entry + 0x30) = BIRI_VEC(17, vec3_803012b4);
 	return TRUE;
 }

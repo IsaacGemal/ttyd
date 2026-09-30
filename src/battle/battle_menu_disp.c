@@ -19,6 +19,13 @@ extern ItemData itemDataTable[];
 extern const GXColor dat_8041c118;
 extern const GXColor dat_8041c11c;
 extern const GXColor dat_8041c120;
+extern const f32 float_neg200_8041c17c;
+extern const f32 float_neg100_8041c180;
+extern const f32 float_neg60_8041c16c;
+extern const f32 float_55_8041c170;
+extern const f32 float_neg40_8041c184;
+extern const f32 float_3p1416_8041c14c;
+extern const f32 float_0p1_8041c174;
 
 
 // Layout of the battle menu scratch buffer allocated by
@@ -592,6 +599,219 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
         for (i = 0; i < 7; i++) {
             window->field_0xC0[i] = 0x14;
             window->field_0xDC[i] = 0;
+        }
+    }
+}
+
+// Only register allocation / instruction scheduling differ:
+//  - Top of function: MWCC coalesces the min(cursor->unk8, 6) temp and the value
+//    passed to DrawSubMenuCommonProcessSub1 into one register (r6); the original
+//    keeps the temp in r3, copies it to r6, keeps the saved field_4 in r4 (copy r5)
+//    and field_0 in r7. Ours uses r3/r5 and r4 instead.
+//  - The two intplGetValue calls in the first loop (case 0 and case 0xA) evaluate
+//    their args in a different order: the original loads the `start` float before
+//    the `currStep` word, ours does the reverse.
+// NONMATCHING (97.71%): see the register/scheduling details above.
+void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* scales, Mtx* mtxC) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
+    BattleCursor* cursor = window->cursor;
+    BattleCursor* mainCursor;
+    s32 maxCount;
+    s32 idx;
+    s32 i;
+    s32 field0;
+    f32 ringX;
+    f32 ringY;
+    f32 angle;
+    f32 scale;
+    Mtx transMtx;
+    Mtx scaleMtx;
+
+    if (BattleGetUnitPtr(wp, wp->activeUnitId)->currentKind == 0xDE) {
+        mainCursor = (BattleCursor*)((u8*)wp + 0x1bb4);
+    } else {
+        mainCursor = (BattleCursor*)((u8*)wp + 0x1bc0);
+    }
+    maxCount = cursor->unk8 < 6 ? cursor->unk8 : 6;
+    idx = cursor->field_4;
+    field0 = cursor->field_0;
+    if (field0 <= cursor->field_4) {
+        cursor->field_4 = field0 - 1;
+    } else if (field0 >= cursor->field_4 + maxCount - 1) {
+        cursor->field_4 = field0 - maxCount + 2;
+    }
+    if (cursor->field_4 < 0) {
+        cursor->field_4 = 0;
+    }
+    if (cursor->field_4 >= cursor->unk8 - maxCount) {
+        cursor->field_4 = cursor->unk8 - maxCount;
+    }
+
+    *outX = float_neg200_8041c17c;
+    *outY = float_neg100_8041c180;
+
+    {
+    s32 type = window->field_0xC;
+    switch (type) {
+    case 0:
+        window->field_0x14 = 1;
+        window->field_0x98 = (f32)cursor->field_4;
+        {
+            s32 c1 = 0;
+            for (i = 0; i < mainCursor->unk8; i++) {
+                if (window->field_0x34[i] == 1 || window->field_0x34[i] == 0xB) {
+                    c1++;
+                }
+            }
+            {
+                s32 c2;
+                for (i = 0, c2 = 0; i < 7; i++) {
+                    if (window->field_0xC0[i] == 2) {
+                        c2++;
+                    }
+                }
+                if (c1 == mainCursor->unk8 && c2 == 7) {
+                    window->field_0xC = 2;
+                }
+            }
+        }
+        DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
+        break;
+    case 2:
+        window->field_0x14 = 1;
+        window->field_0x98 = (f32)cursor->field_4;
+        DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
+        break;
+    case 0xA:
+    case 0x14:
+    case 0x1E:
+    case 0x28:
+        if (type == 0xA || type == 0x14) {
+            window->field_0x14 = 1;
+        }
+        {
+            s32 c2 = 0;
+            for (i = 0; i < 7; i++) {
+                if (window->field_0xC0[i] == 2) {
+                    c2++;
+                }
+            }
+            if (c2 == 7) {
+                window->field_0xC = 2;
+                window->field_0x98 = (f32)cursor->field_4;
+            }
+        }
+        DrawSubMenuCommonProcessSub1(window, cursor, idx, maxCount);
+        break;
+    }
+    }
+
+    window->field_0x1C = 0;
+    for (i = 0; i < mainCursor->unk8; i++) {
+        switch (window->field_0x34[i]) {
+        case 0:
+            window->field_0x20[i] |= 1;
+            window->field_0x20[i] |= 2;
+            GetRingCenter(&vecB[i]);
+            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, vecB[i].x, float_neg60_8041c16c);
+            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, vecB[i].y, float_55_8041c170);
+            PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
+            scales[i] = intplGetValue(0, window->field_0x48[i], 12, 0.0f, 360.0f);
+            if (scales[i] > 360.0f) {
+                scales[i] -= 360.0f;
+            }
+            if (window->field_0x48[i] >= 3) {
+                window->field_0x1C = 1;
+            }
+            window->field_0x48[i]++;
+            if (window->field_0x48[i] > 12) {
+                window->field_0x34[i] = 1;
+            }
+            break;
+        case 1:
+            window->field_0x20[i] |= 1;
+            window->field_0x20[i] |= 2;
+            PSMTXTrans(mtxA[i], float_neg40_8041c184, float_55_8041c170, 0.0f);
+            scales[i] = 360.0f;
+            window->field_0x1C = 1;
+            break;
+        case 0xA:
+            window->field_0x20[i] |= 1;
+            window->field_0x20[i] &= ~2;
+            angle = float_3p1416_8041c14c * kakutable[mainCursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            GetRingCenter(&vecB[i]);
+            GetRingOffset(&ringX, &ringY, angle);
+            vecB[i].x += ringX;
+            vecB[i].y += ringY;
+            vecB[i].z = ringY;
+            scale = 1.0f - float_0p1_8041c174 * (f32)window->field_0x48[i];
+            if (scale <= 0.0f) {
+                window->field_0x34[i] = 0xB;
+            }
+            PSMTXScale(scaleMtx, scale, scale, 1.0f);
+            PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
+            PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
+            scales[i] = 0.0f;
+            window->field_0x48[i]++;
+            break;
+        case 0xB:
+            window->field_0x20[i] &= ~1;
+            break;
+        }
+    }
+
+    for (i = 0; i < 7; i++) {
+        s32 state = window->field_0xC0[i];
+        switch (state) {
+        case 0:
+            window->field_0xA4[i] &= ~1;
+            window->field_0x114[i] = 0xFF;
+            break;
+        case 1:
+            window->field_0xA4[i] &= ~1;
+            window->field_0x114[i] = 0xFF;
+            if (window->field_0xDC[i] >= 0 && i != 6) {
+                f32 rad = intplGetValue(0, window->field_0xDC[i], 12, 90.0f, 0.0f);
+                window->field_0xA4[i] |= 1;
+                PSMTXRotRad(mtxC[i], 'y', 0.017453292f * rad);
+            }
+            window->field_0xDC[i]++;
+            if (window->field_0xDC[i] > 12) {
+                window->field_0xC0[i] = 2;
+            }
+            break;
+        case 2:
+            window->field_0x114[i] = 0xFF;
+            if (i != 6) {
+                window->field_0xA4[i] |= 1;
+                PSMTXIdentity(mtxC[i]);
+            } else {
+                window->field_0xA4[i] &= ~1;
+            }
+            break;
+        case 0xA:
+        case 0x14:
+        case 0x1E:
+        case 0x28:
+            {
+                s32 steps;
+                if (state == 0xA || state == 0x14) {
+                    steps = 12;
+                }
+                if (state == 0x1E || state == 0x28) {
+                    steps = (cursor->unk8 - 6) / 2 + 12;
+                }
+                window->field_0xA4[i] |= 1;
+                PSMTXIdentity(mtxC[i]);
+                window->field_0x98 = intplGetValue(4, window->field_0xDC[i], steps, window->field_0x9C, window->field_0xA0);
+                window->field_0xDC[i]++;
+                if (window->field_0xDC[i] > steps) {
+                    window->field_0xC0[i] = 2;
+                    window->field_0xDC[i] = 0;
+                }
+            }
+            break;
         }
     }
 }
@@ -1170,6 +1390,9 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     }
 }
 
+// The original emits real `bl GetRingOffset`/`bl GetRingCenter` calls from
+// DrawSubMenuCommonProcess (and DrawMainMenu), so keep them out of line.
+#pragma dont_inline on
 void GetRingOffset(f32* x, f32* y, f32 angle) {
     f32 a = 4.712389f - angle;
     f32 c = 80.0f * (f32)cos(a);
@@ -1188,3 +1411,4 @@ void GetRingCenter(Vec* out) {
         out->x = -180.0f;
     }
 }
+#pragma dont_inline reset

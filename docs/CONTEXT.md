@@ -2381,3 +2381,166 @@ copied), from Rainchus/ttyd-decomp-us and Peeeech/TTYDRelDecomp (no license), an
 (GPL-3.0), mostly without saying so in REPORT.md; the yoshi agent disclosed taking a function signature from the
 GPL project. A per-agent TMPDIR didn't keep agents out of /tmp (31 still wrote there by absolute path), and some
 read other agents' workspaces; the next launcher runs each agent under bubblewrap with its own /tmp.
+
+## Wave 25: the next untouched function per dol file (2026-09-29/30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+46 files (the smallest untouched function up to 2 KB in each file not held by Claude #3), 23:40-00:27, launched from
+82c6f01 (wave 24 before its review fixes) and collected onto main b22654f with scratch/wave24/collect.py: 46 merged
+cleanly. **31 at 100%, 15 at 90-99%.** Fixed at collection: battle_mario.c's `extern s32 weaponGetPowerTatsumaki[]`
+stand-in clashed with the prototype an agent added to battle_weapon_power.h, so it includes the header now; six
+units whose data got worse were fixed the same way as wave 24 (literals where main names nothing, named externs
+where it does, definitions in pool order). seq_title's L_titleInit drops to 91.55%: its 100% needed the strings
+read as offsets past vec3_802c11a0. Review (Claude + Codex) fixes: eff_ripple's dat_8041fb98 was byte-reversed (white with alpha 0, not cyan);
+effFireDustMain's discarded rand() was MUST_MATCH-only, which shifts every later random number in other builds;
+ac_gauge_timing2 names its 13 rodata symbols instead of an invented struct; mobj_lock is back in its rule-18 place
+(evt_mobj .sdata2 30.29 -> 29.81, accepted); sac_deka, eff_syuryou and battle_status_icon's biribiri keep their
+offsets-past-a-symbol reads only under MUST_MATCH, with the named symbols under #else, because the named form
+costs a 100% function in each. Follow-up: evt_mobj.c is mostly written in the asm's order, not rule 18's reverse.
+The dol's cheap pool is nearly used up: after wave 26, 75 dol files have only functions over 1 KB left.
+
+## Grind 21 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3"): pool-literal finisher, near-miss sweep
+
+- **Units whose code was 100% but that failed at link** (undefined extern `.sdata2` constants) link once the constants are
+  literals in the code, so the compiler builds the pool in first-use order: `float_*` externs become `1.0f`-style literals, the
+  named `double_to_int_*`, `vec3_*` (zero vectors: `(Vec){ 0, 0, 0 }`) and `str_*` definitions go away, a `dat_*` colour
+  becomes `(GXColor){ r, g, b, a }`, and a zero `.sbss2` scratch `GXColor` (`unk_*`) becomes `(GXColor){ 0, 0, 0, 0 }`
+  (the compiler pools zero colour literals into `.sbss2`). `MATCH_F32` / volatile wrappers around the constants go too. The
+  same trick, applied by a script over the unit, linked: eff_miss_star, eff_treasure_map, eff_laser, eff_dogabon_attack_n64,
+  eff_coin_n64, eff_fire_ring_n64, eff_guruguru_n64, eff_rothammer_success_n64, eff_holography_n64, eff_freeze_n64,
+  battle_message, eff_torch. Vertex tables the unit owns (`.data`) come from `tools/dol_gen.py`; a `u32` table where the code
+  indexes a byte array needs `(u8*)` in the pointer arithmetic (holography: `ach_01_v + i * 0x134`).
+- **Still open in that class**: eff_ice, eff_mizutama, eff_machinegun, eff_bush, eff_crystal, eff_kemuri4/6/7, eff_onpu,
+  eff_packn_bfire, eff_rubble, eff_snowman, eff_ice_n64, evt_snd (each needs its own `.data`/`lbl_` object or has a
+  pool-order or size mismatch), and hw_aramdma.
+- **hw_aramdma `.bss` order** (parked): the target has `aramQueueLo` then `aramQueueHi`; ours emits Hi first whatever the
+  declaration order. Tried: swapping the two declarations, swapping the two stores in the inline `aramQueueInit`, taking
+  `&aramQueueHi` first, one wrapper struct holding both (changes the addressing: +8 bytes of `.text`), `__declspec(section
+  ".bss")` (does not compile). Nothing moved Lo first.
+- **Near-miss list**: `effKemuri2Main` (the `userdata` pointer lands in r31 instead of r7), `itemDelete` /
+  `btlUnitItemDisp2` / `kpa_fall_80213C38` (the target lays `if (x >= a && x < b)` as `bge X; b Y` with the then-block after
+  the `b`; no source form found), `lightGetNearObj` (`cmplwi` on the tail-loop count, casts made it worse), `sndCheckEmitter`
+  (reads `flags` at 0xc where our `SND_EMITTER` has it at 0x10; library version difference), iconDispGx `s16`→`u16` (changes
+  the dol checksum). Matches: effFallDispInseki (`rad` temp under `MUST_MATCH`), mario_kemuri_landon (`!x` keeps the compare
+  order), mapGrpSetOffScreen (locals instead of a nested call), evt_nannpc_move_position2 (declaration order).
+
+- **Pool-literal finisher, second round** (2026-09-30): eff_snowman_n64, eff_onpu_n64, eff_kemuri6_n64, eff_crystal_n64 and
+  eff_rubble_n64 link. A `lbl_*` `.data` pair another unit reaches (`{ -1.0f, 1.0f }` in snowman and onpu) is a
+  `__declspec(section ".data") f32 lbl_...[2]` defined after the unit's other `.data`. The pool order follows first use, and a
+  `C * sin(x)` / `(f32)i * 0.8f` written with a temp (`f32 t = (f32)sin(x); ... C * t`, `f32 k = 0.8f;`, under `MUST_MATCH`)
+  swaps two adjacent pool entries. Left open with one to sixteen differing words: eff_kemuri4 (compare operands of `a5 != 0.0f`
+  keep their register order), eff_kemuri7 (the `field_0x60 == 0.0f` load order), eff_ice_n64 (one `fmuls` operand order),
+  eff_packn_bfire (FP register allocation once the volatile constants become literals), eff_bush (Disp frame size),
+  eff_ice/eff_mizutama/eff_machinegun/evt_snd (event-script data or `.data` objects not written).
+
+## Grind 22 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Function order**: a unit whose functions are all 100% but whose text differs everywhere (hundreds of words) has its
+  functions in the wrong source order. The source lists them in reverse address order (eff_bush_n64 had Disp before Main;
+  the target's address order is Disp, Main, Entry, so the source is Entry, Main, Disp). eff_bush_n64 links with that plus the
+  `f32 k = 0.8f;` int->float temp under `MUST_MATCH`.
+- **Tools** (new): `tools/pool_literals.py UNIT` (extern pool constants to literals), `tools/pool_data.py UNIT` (the unit's
+  own `.data`/`.sbss` objects), `tools/pool_compare.py UNIT [section]` (pool entries in order, target vs ours, floats as
+  hex; a swapped adjacent pair means the two constants are first used in the other order). A `.bss`/`.sbss` object's order
+  follows its first reference in code emission order (functions are emitted in reverse source order), not declaration order.
+- **What did not work** (so nobody repeats it): operand-order and declaration-order searches over the eleven remaining
+  units of the class (kemuri4/7, ice_n64, packn_bfire) and over 130 near-miss functions moved one score by 0.2 points.
+
+## Wave 26: sandboxed agents, no network (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+The smallest untouched function up to 2 KB in each of 46 dol files (median 1.1 KB; 30 over 1 KB), 60 minutes each,
+00:30-01:20, from main b22654f. First wave with the hardened launcher: each agent ran under bubblewrap with its own
+/tmp, the prompt forbade network use, and an agent that stopped without REPORT.md or `check.py --final` got one short
+continuation (3 did). Result: zero web fetches, every agent left a report. **20 at 100%, 22 at 90-99%, 4 at 50-89%**
+(the size-routing finding holds: Flash does worse above 1 KB). All 46 merged cleanly; fixed at collection: agents had
+quietly edited existing code (animdrv's `!= 0` dropped from two 100% functions, a changed mobjCalcMtx expression, a
+new `dont_inline` pragma) and envdrv/shadowdrv literals added pool entries where main names the constants.
+After this wave the cheap dol pool is 16 small functions; 75 dol files have only functions over 1 KB left.
+
+## Grind 24 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Function-order sweep**: `tools/fn_order.py UNIT [--write]` compares a unit's target `.text` symbol order with the source
+  and moves each function (with its comment lines) into the slot that emits the target order (source lists functions from
+  the highest target address to the lowest). 147 units had a different order; of the 60 that are complete (every target
+  function written), 36 could be reordered with no function scoring lower and the built order now equals the target's.
+  Left alone: units that then fail to build because a `static` function is called before it is defined (would need a
+  forward declaration), units where a function score drops (the reorder changes what `-inline auto,deferred` inlines:
+  ac_monosiri_target, battle_status_effect, eff_particle, evt_item, koopa_motion), and two where `.sdata2` got worse
+  (eff_mobj_broken, evt_shop). The reorder changes pool first-use order, so the section scores of 21 units improve.
+- **eff_itemget**: reordering alone brings its `.sdata2` pool to four differing words (the -21.333334 / 42.666668 / 2.0 / 0.5
+  first-use order in effItemUseDisp) but the two GXColor stack slots (black and white temp, inline or local) and the FP
+  register naming of the `-f * 0.5f` init were not solved, so it is not in this change.
+
+## Grind 25 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **eff_n64 links**: the five functions that were unwritten (`tri2`, `effGetTexObjN64`, `effGetSetN64`, `effSetVtxDescN64`,
+  `effTexSetupN64`) and the unit's `.data` tables (`eff_set_n64`, `_rand_table`) came from the dead `src/effect/eff_n64.c`,
+  which is deleted. Two things fixed the last words: the polarity of the two `if` tests (`if (!loaded) { ... } else { ... }`
+  as the target lays them) and the function-local `dummy`, which the target has in `.sdata` at a 32-byte offset. That takes
+  `static u8 dummy ATTRIBUTE_ALIGN(32) = 0;` under `#pragma explicit_zero_data on` (the same idiom as `effGetTexObj` in
+  effdrv.c): without the pragma a zero initialiser goes to `.sbss`.
+- **Matches by shape**: chuchurina `mono_off`, `mono_capture`, `_make_madowase_weapon`, `_get_itemsteal_param`, yoshi
+  `_wait_yoshig_run`, `_check_swallow_attribute` (100%). `_check_swallow_attribute` needed only a declaration-order search
+  (`tools/perm_decls.py`, plain declaration lines with the assignments after them). `_get_binta_hit_position` and
+  `_get_nomikomi_hit_position` are the same function in two units; both stop at 92 to 93% on callee-saved register
+  assignment (event/args/work), decls searched with 150 shuffles.
+- **battle_sub**: `btlMovePos` written (80.67%). The original is built `-O4,s`; a flag sweep gives 91.51% for it and 89.05%
+  for `btlsubResetMoveColorLvAll`. The flag change is in its own PR.
+- **Flag sweep over every unit with a function below 100%** (295 units, `--quick`: -O4,p / -O4,s, pragmas kept or dropped):
+  only -O4,s helps, in battle_sub, battle_status_icon (BattleStatusIconMain 86.59 -> 88.55), party_kuribo (7.49 -> 7.66) and
+  eff_kemuri1_n64 (17.27 -> 17.88), besides the fourteen files of the earlier sweep. No unit prefers -O4,p over its
+  current flags.
+
+## Grind 26 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **`__makeTechMenuFunc`** written for yoshi, chuchurina (100%) and nokotarou (100%; its first two entries carry the icon as a
+  compile-time constant, `TECH_MENU_ENTRY_ICON`, because those weapons are defined in that unit's own `.data`; the other two
+  read it from memory). Same MUST_MATCH base-register trick as clauda/vivian/sanders/christine.
+- **Header note**: `BattleActions.mAcDifficulty` is declared `s8` (battle_ac.h:41) but the asm reads it with `lbz` (zero-extend):
+  `_get_itemsteal_param` and ac_lst_rc_keep want it as `u8`. `_get_itemsteal_param` casts at the use.
+- yoshi `yoshi_original_color_anim_set` (98.4%): six strings through one base register and a seven-entry jump table (`case 6:`
+  falling into `default:` is what gives the table its seventh slot).
+
+## Grind 27 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Six more units link**: eff_syuryou, eff_hokori_n64, eff_kemuri2_n64, eff_pikkyolo_n64, eff_pokopi_pipo_n64, evt_snd.
+- **Data the unit only reaches through a base symbol is dropped by the linker** unless it is force-kept. eff_syuryou reaches its
+  two `.rodata` strings as offsets from the vec3 anchor, and eff_hokori's `.data` (float pairs and vertex arrays) is reached
+  through the previous unit's last object `lbl_8039D5D0`; with both compiled, all functions and all section scores were 100%
+  yet the dol lost the bytes (hokori's 224-byte `.data`, syuryou's 32 bytes of `.rodata`/`.sdata2` shifted everything after).
+  `#pragma force_active on` / `reset` around the definitions keeps them. The symptom to look for: every section 100%, autolink
+  says checksum mismatch, and the dol's section sizes are short by the size of the unit's own data.
+- The float pairs before the vertex arrays (`{ -1.0f, 1.0f }`) need `__declspec(section ".data")`, else 8-byte objects go to `.sdata`.
+- **Converting `extern const f32` to literals moves FP loads** (pool_literals.py): hokori `effHokoriMain` and pokopi_pipo's
+  `-1.0f` multiply came out at 99.1 to 99.7% until the constant went through a `f32 k = ...;` temp under `MUST_MATCH` (natural
+  expression under `#else`), the same trick as the int-to-float `k` in bush. fire_dust (`main_dl`, zero GXColor literal
+  schedules the load of the magic double differently) and kemuri10 (`fcmpu` operand order, `Disp` frame 0x10 larger) stay
+  unconverted.
+- evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
+  at link. They were not in the unit's target, so they are gone.
+
+## Grind 29 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Seven more units link**: eff_ice_n64, eff_kemuri4_n64, eff_kemuri7_n64, eff_kemuri10_n64, eff_fire_dust_n64,
+  eff_packn_bfire_n64, eff_mahorn. Their functions were 100% since the earlier waves; what was left was the pool and data.
+- **`tools/pool_define.py UNIT`** (new): defines the `extern const f32/f64/u32/GXColor/Vec NAME;` pool constants from the
+  disassembly, in the original address order, *after the code that loads them*. This is the safe alternative to
+  `pool_literals.py` (which replaces the names by literals and moved the FP loads of functions that were 100%): the code keeps
+  loading the same named objects, so no function changes, and the unit's `.sdata2` becomes 100%. Defined before the code the
+  compiler folds the values (`x * 0.03125f` becomes a constant) and the functions drop; a non-const `__declspec(section
+  ".sdata2")` definition changes the code as well. `tools/pool_data.py` does the vertex tables (`.data`) first.
+- **Other pool pitfalls seen while doing it**: (a) `#include <math.h>` pulls in the `fake_tgmath.h` `sqrt` inline whose
+  function-local `static const double _half/_three` are emitted into `.rodata` (two extra doubles and a shifted unit): use
+  `#include "math_ext.h"` (only the prototypes) as eff_kemuri2 does. (b) The int-to-float magic double
+  (`double_to_int_XXXXXXXX`, 0x4330000080000000) is the compiler's own pool entry: an extern *and* a definition of it
+  duplicates it; leave it out (pool_define skips it). (c) A string that is a named `const char[]` object is placed before the
+  compiler's pooled constants; the target has the pooled double first, so use the literal (`effect->type = "FireDustN64";`).
+  (d) A leftover literal (`ptr->z = 10.0f;` where retail loads `float_10_...`) pools a second copy: use the named constant.
+  (e) A 0.0f the retail loop loads through the name of a `volatile`-declared pool object (eff_mahorn): read it once into a local
+  under MUST_MATCH.
+- **`.sbss2` zero GXColor objects**: `#pragma section ".sdata" ".sbss2"` then `__declspec(section ".sdata") GXColor unk_...;`
+  (the eff_queen2 idiom). They are placed in the *reverse* of their declaration order, so declare the higher address first
+  (fire_dust: `unk_804230fc` then `unk_804230f8`); with the wrong order the code loads the neighbouring object and the dol
+  differs by two bytes at the two `lwz ...@sda21` sites.
+- kemuri7 `effKemuri7Disp`: `if (data->field_0x60 == 0.0f)` with the pool constant loaded before the field needs
+  `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
+  code is unchanged and none of it is needed.

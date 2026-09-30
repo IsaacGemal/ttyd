@@ -83,6 +83,288 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
+// NONMATCHING (92.83%): float registers shifted by one (mine f25-f28 for x/y/z/scale
+// vs target f26-f29), num/radial register swap (mine num=r28/radial=r27 vs target
+// num=r27/radial=r28), and the callback setup uses addi r0 vs addi r4.
+EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
+	EffectEntry* entry;
+	SplashData* data;
+	SplashData* ptr;
+	s32 num;
+	s32 radial;
+	s32 i;
+
+	entry = effEntry();
+	num = 0;
+	radial = 0;
+
+	switch (type) {
+	case 0:
+	case 1:
+		num = 2;
+		radial = 10;
+		break;
+	case 2:
+		num = 1;
+		radial = 10;
+		break;
+	case 3:
+		num = 6;
+		radial = 0;
+		scale *= 0.5f;
+		effWaterDamageN64Entry(2, 0x3C, x, y, z, 1.0f);
+		break;
+	case 4:
+		num = 2;
+		radial = 10;
+		break;
+	}
+
+	entry->type = "splash";
+	entry->count = num + radial + 1;
+	data = __memAlloc(HEAP_EFFECT, sizeof(SplashData) * entry->count);
+	entry->userdata = data;
+	entry->callback = effSplashMain;
+	data->type = type;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->scaleZ = scale;
+	data->scaleY = scale;
+	data->scaleX = scale;
+	data->counter = 0;
+	data->field_0x38 = 0;
+
+	ptr = data + 1;
+	for (i = 1; i <= num; i++, ptr++) {
+		ptr->position.z = 0.0f;
+		ptr->position.y = 0.0f;
+		ptr->position.x = 0.0f;
+		ptr->offsetX = 0.0f;
+		ptr->offsetY = 0.0f;
+		ptr->field_0x28 = 0;
+		ptr->scaleZ = 1.0f;
+		ptr->scaleY = 1.0f;
+		ptr->scaleX = 1.0f;
+
+		switch (type) {
+		case 0:
+			if (i == 1) {
+				ptr->velocity = 5.0f;
+				ptr->decel = 0.4f;
+				ptr->scaleZ = 0.7f;
+				ptr->scaleY = 0.7f;
+				ptr->scaleX = 0.7f;
+			} else {
+				ptr->velocity = 4.0f;
+				ptr->decel = 0.4f;
+			}
+			break;
+		case 1:
+			if (i == 1) {
+				ptr->velocity = 7.0f;
+				ptr->decel = 0.4f;
+			} else {
+				ptr->velocity = 4.0f;
+				ptr->decel = 0.4f;
+			}
+			break;
+		case 2:
+			ptr->velocity = 2.0f;
+			ptr->decel = 0.1f;
+			break;
+		case 3:
+			ptr->velocity = 0.0f;
+			ptr->decel = 0.0f;
+			switch (i - 1) {
+			case 0:
+			case 1:
+				ptr->position.z = 0.0f;
+				break;
+			case 2:
+			case 3:
+				ptr->position.z = 10.0f;
+				break;
+			case 4:
+			case 5:
+				ptr->position.z = 20.0f;
+				break;
+			}
+			break;
+		case 4:
+			if (i == 1) {
+				ptr->velocity = 4.0f;
+				ptr->decel = 0.48f;
+			} else {
+				ptr->velocity = 3.6f;
+				ptr->decel = 0.8f;
+			}
+			ptr->scaleZ = 0.01f;
+			break;
+		}
+	}
+
+	for (i = num + 1; i < entry->count; i++, ptr++) {
+		f32 angle = 6.2831855f * (f32)irand(360) / 360.0f;
+		f32 radius = (f32)irand(5);
+		ptr->offsetX = radius * (f32)sin(angle);
+		ptr->offsetY = radius * (f32)cos(angle);
+		ptr->position.x = 2.0f * ptr->offsetX;
+		ptr->position.y = 0.0f;
+		ptr->position.z = 2.0f * ptr->offsetY;
+		ptr->velocity = 10.0f;
+		ptr->decel = 1.0f;
+		ptr->field_0x28 = irand(10);
+		ptr->scaleZ = 0.5f;
+		ptr->scaleY = 0.5f;
+		ptr->scaleX = 0.5f;
+	}
+
+	if (type == 2) {
+		f32 spawnAngle = 6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
+		effKemuTestEntry(6, x + scale * (-30.0f * (f32)sin(spawnAngle)), y + 5.0f * scale,
+		                 z + scale * (30.0f * (f32)cos(spawnAngle)), scale);
+	}
+
+	return entry;
+}
+
+// NONMATCHING (97.51%): 2 instructions differ, plus register differences.
+void effSplashMain(EffectEntry* effect) {
+	SplashData* data = effect->userdata;
+	Vec position;
+	s32 type;
+
+	position = initializeVec(&data->position);
+	type = data->type;
+
+	if (data->field_0x38 == 0) {
+		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effSplashGetCol, effect);
+		return;
+	}
+
+	{
+	s32 i;
+	s32 counter;
+
+	switch (type) {
+	case 0:
+	case 1:
+		i = 30;
+		break;
+	case 2:
+	case 4:
+		i = 60;
+		break;
+	case 3:
+		i = 71;
+		break;
+	}
+
+	counter = data->counter++;
+	if (data->counter > i) {
+		effDelete(effect);
+		return;
+	}
+
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->field_0x28 != 0) {
+			data->field_0x28--;
+			continue;
+		}
+
+		data->position.x += data->offsetX;
+		data->position.z += data->offsetY;
+		data->position.y += data->velocity;
+		data->velocity -= data->decel;
+
+		switch (type) {
+		case 1:
+			if (i == 1 && data->velocity < 0.0f) {
+				data->scaleX *= 0.95f;
+				data->scaleY *= 0.95f;
+				data->scaleZ *= 0.95f;
+			}
+			break;
+		case 3:
+			if (i < 7) {
+				if (counter < 0x3D) {
+					data->scaleY = (f32)geso_scale_dt[counter] / 96.0f;
+				}
+				if (counter < 0x47) {
+					data->position.x = (f32)(geso_trans_dt[counter * 2] + 40) * 0.125f * 10.0f;
+					data->position.y = (f32)(geso_trans_dt[counter * 2 + 1] - 12) * 0.125f * 10.0f;
+				}
+			}
+			break;
+		}
+
+		switch (i - 1) {
+		case 0:
+		case 1:
+			data->position.x *= 0.3f;
+			data->position.y *= 0.5f;
+			data->scaleY *= 0.6f;
+			break;
+		case 2:
+		case 3:
+			data->position.x *= 0.9f;
+			break;
+		case 4:
+		case 5:
+			data->position.x *= 1.3f;
+			data->position.y *= 0.3f;
+			data->scaleY *= 0.6f;
+			break;
+		}
+
+		switch (i - 1) {
+		case 1:
+		case 3:
+		case 5:
+			data->scaleX = -1.0f;
+			data->position.x *= -1.0f;
+			break;
+		}
+	}
+
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effSplashDisp, effect);
+	}
+}
+
+void effSplashGetCol(enum CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	SplashData* data = effect->userdata;
+	CameraEntry* cam;
+	f32 projection[7];
+	f32 viewport[6];
+	f32 screenX;
+	f32 screenY;
+	f32 screenZ;
+	u32 color;
+	u32 palette;
+
+	cam = camGetPtr(camId);
+	GXSetProjection(cam->projection, cam->projType);
+	GXGetProjectionv(projection);
+	GXGetViewportv(viewport);
+	GXProject(data->position.x, data->position.y, data->position.z, cam->view, projection, viewport, &screenX, &screenY, &screenZ);
+	if (screenX > 0.0f && screenX < 608.0f && screenY > 0.0f && screenY < 480.0f) {
+		sysWaitDrawSync();
+		GXPeekARGB((u16)screenX, (u16)screenY, &color);
+		data->color.r = ((u8*)&color)[1];
+		data->color.g = ((u8*)&color)[2];
+		data->color.b = ((u8*)&color)[3];
+		data->color.a = 0xFF;
+	}
+	data->field_0x38 = 1;
+	palette = unk_80224298();
+	data->color.r = ((u8*)&palette)[0];
+	data->color.g = ((u8*)&palette)[1];
+	data->color.b = ((u8*)&palette)[2];
+}
+
 // NONMATCHING (65.05%): 13 instructions differ, 150 missing, 109 extra, plus register differences.
 void effSplashDisp(enum CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -345,288 +627,6 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		GXColor4u8((u8)(s32)(255.0f * mulR), (u8)(s32)(255.0f * mulG), (u8)(s32)(255.0f * mulB), 0xFF);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
-}
-
-void effSplashGetCol(enum CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	SplashData* data = effect->userdata;
-	CameraEntry* cam;
-	f32 projection[7];
-	f32 viewport[6];
-	f32 screenX;
-	f32 screenY;
-	f32 screenZ;
-	u32 color;
-	u32 palette;
-
-	cam = camGetPtr(camId);
-	GXSetProjection(cam->projection, cam->projType);
-	GXGetProjectionv(projection);
-	GXGetViewportv(viewport);
-	GXProject(data->position.x, data->position.y, data->position.z, cam->view, projection, viewport, &screenX, &screenY, &screenZ);
-	if (screenX > 0.0f && screenX < 608.0f && screenY > 0.0f && screenY < 480.0f) {
-		sysWaitDrawSync();
-		GXPeekARGB((u16)screenX, (u16)screenY, &color);
-		data->color.r = ((u8*)&color)[1];
-		data->color.g = ((u8*)&color)[2];
-		data->color.b = ((u8*)&color)[3];
-		data->color.a = 0xFF;
-	}
-	data->field_0x38 = 1;
-	palette = unk_80224298();
-	data->color.r = ((u8*)&palette)[0];
-	data->color.g = ((u8*)&palette)[1];
-	data->color.b = ((u8*)&palette)[2];
-}
-
-// NONMATCHING (97.51%): 2 instructions differ, plus register differences.
-void effSplashMain(EffectEntry* effect) {
-	SplashData* data = effect->userdata;
-	Vec position;
-	s32 type;
-
-	position = initializeVec(&data->position);
-	type = data->type;
-
-	if (data->field_0x38 == 0) {
-		dispEntry(CAMERA_3D, dispCalcZ(&position), 8, effSplashGetCol, effect);
-		return;
-	}
-
-	{
-	s32 i;
-	s32 counter;
-
-	switch (type) {
-	case 0:
-	case 1:
-		i = 30;
-		break;
-	case 2:
-	case 4:
-		i = 60;
-		break;
-	case 3:
-		i = 71;
-		break;
-	}
-
-	counter = data->counter++;
-	if (data->counter > i) {
-		effDelete(effect);
-		return;
-	}
-
-	data++;
-	for (i = 1; i < effect->count; i++, data++) {
-		if (data->field_0x28 != 0) {
-			data->field_0x28--;
-			continue;
-		}
-
-		data->position.x += data->offsetX;
-		data->position.z += data->offsetY;
-		data->position.y += data->velocity;
-		data->velocity -= data->decel;
-
-		switch (type) {
-		case 1:
-			if (i == 1 && data->velocity < 0.0f) {
-				data->scaleX *= 0.95f;
-				data->scaleY *= 0.95f;
-				data->scaleZ *= 0.95f;
-			}
-			break;
-		case 3:
-			if (i < 7) {
-				if (counter < 0x3D) {
-					data->scaleY = (f32)geso_scale_dt[counter] / 96.0f;
-				}
-				if (counter < 0x47) {
-					data->position.x = (f32)(geso_trans_dt[counter * 2] + 40) * 0.125f * 10.0f;
-					data->position.y = (f32)(geso_trans_dt[counter * 2 + 1] - 12) * 0.125f * 10.0f;
-				}
-			}
-			break;
-		}
-
-		switch (i - 1) {
-		case 0:
-		case 1:
-			data->position.x *= 0.3f;
-			data->position.y *= 0.5f;
-			data->scaleY *= 0.6f;
-			break;
-		case 2:
-		case 3:
-			data->position.x *= 0.9f;
-			break;
-		case 4:
-		case 5:
-			data->position.x *= 1.3f;
-			data->position.y *= 0.3f;
-			data->scaleY *= 0.6f;
-			break;
-		}
-
-		switch (i - 1) {
-		case 1:
-		case 3:
-		case 5:
-			data->scaleX = -1.0f;
-			data->position.x *= -1.0f;
-			break;
-		}
-	}
-
-	dispEntry(CAMERA_3D, dispCalcZ(&position), 1, effSplashDisp, effect);
-	}
-}
-
-// NONMATCHING (92.83%): float registers shifted by one (mine f25-f28 for x/y/z/scale
-// vs target f26-f29), num/radial register swap (mine num=r28/radial=r27 vs target
-// num=r27/radial=r28), and the callback setup uses addi r0 vs addi r4.
-EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
-	EffectEntry* entry;
-	SplashData* data;
-	SplashData* ptr;
-	s32 num;
-	s32 radial;
-	s32 i;
-
-	entry = effEntry();
-	num = 0;
-	radial = 0;
-
-	switch (type) {
-	case 0:
-	case 1:
-		num = 2;
-		radial = 10;
-		break;
-	case 2:
-		num = 1;
-		radial = 10;
-		break;
-	case 3:
-		num = 6;
-		radial = 0;
-		scale *= 0.5f;
-		effWaterDamageN64Entry(2, 0x3C, x, y, z, 1.0f);
-		break;
-	case 4:
-		num = 2;
-		radial = 10;
-		break;
-	}
-
-	entry->type = "splash";
-	entry->count = num + radial + 1;
-	data = __memAlloc(HEAP_EFFECT, sizeof(SplashData) * entry->count);
-	entry->userdata = data;
-	entry->callback = effSplashMain;
-	data->type = type;
-	data->position.x = x;
-	data->position.y = y;
-	data->position.z = z;
-	data->scaleZ = scale;
-	data->scaleY = scale;
-	data->scaleX = scale;
-	data->counter = 0;
-	data->field_0x38 = 0;
-
-	ptr = data + 1;
-	for (i = 1; i <= num; i++, ptr++) {
-		ptr->position.z = 0.0f;
-		ptr->position.y = 0.0f;
-		ptr->position.x = 0.0f;
-		ptr->offsetX = 0.0f;
-		ptr->offsetY = 0.0f;
-		ptr->field_0x28 = 0;
-		ptr->scaleZ = 1.0f;
-		ptr->scaleY = 1.0f;
-		ptr->scaleX = 1.0f;
-
-		switch (type) {
-		case 0:
-			if (i == 1) {
-				ptr->velocity = 5.0f;
-				ptr->decel = 0.4f;
-				ptr->scaleZ = 0.7f;
-				ptr->scaleY = 0.7f;
-				ptr->scaleX = 0.7f;
-			} else {
-				ptr->velocity = 4.0f;
-				ptr->decel = 0.4f;
-			}
-			break;
-		case 1:
-			if (i == 1) {
-				ptr->velocity = 7.0f;
-				ptr->decel = 0.4f;
-			} else {
-				ptr->velocity = 4.0f;
-				ptr->decel = 0.4f;
-			}
-			break;
-		case 2:
-			ptr->velocity = 2.0f;
-			ptr->decel = 0.1f;
-			break;
-		case 3:
-			ptr->velocity = 0.0f;
-			ptr->decel = 0.0f;
-			switch (i - 1) {
-			case 0:
-			case 1:
-				ptr->position.z = 0.0f;
-				break;
-			case 2:
-			case 3:
-				ptr->position.z = 10.0f;
-				break;
-			case 4:
-			case 5:
-				ptr->position.z = 20.0f;
-				break;
-			}
-			break;
-		case 4:
-			if (i == 1) {
-				ptr->velocity = 4.0f;
-				ptr->decel = 0.48f;
-			} else {
-				ptr->velocity = 3.6f;
-				ptr->decel = 0.8f;
-			}
-			ptr->scaleZ = 0.01f;
-			break;
-		}
-	}
-
-	for (i = num + 1; i < entry->count; i++, ptr++) {
-		f32 angle = 6.2831855f * (f32)irand(360) / 360.0f;
-		f32 radius = (f32)irand(5);
-		ptr->offsetX = radius * (f32)sin(angle);
-		ptr->offsetY = radius * (f32)cos(angle);
-		ptr->position.x = 2.0f * ptr->offsetX;
-		ptr->position.y = 0.0f;
-		ptr->position.z = 2.0f * ptr->offsetY;
-		ptr->velocity = 10.0f;
-		ptr->decel = 1.0f;
-		ptr->field_0x28 = irand(10);
-		ptr->scaleZ = 0.5f;
-		ptr->scaleY = 0.5f;
-		ptr->scaleX = 0.5f;
-	}
-
-	if (type == 2) {
-		f32 spawnAngle = 6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
-		effKemuTestEntry(6, x + scale * (-30.0f * (f32)sin(spawnAngle)), y + 5.0f * scale,
-		                 z + scale * (30.0f * (f32)cos(spawnAngle)), scale);
-	}
-
-	return entry;
 }
 
 

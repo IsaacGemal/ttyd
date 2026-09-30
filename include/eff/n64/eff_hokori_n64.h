@@ -35,5 +35,13 @@ typedef struct effHokoriData {
 // from the named symbols instead of pooling anonymous copies.
 extern const f32 float_0p9_8041f118;
 extern const f32 float_0p005_8041f11c;
+extern const f32 float_0p03125_8041f108;
+extern const f32 float_0p010417_8041f10c;
+extern const f32 float_deg2rad_8041f114;
+// .data base the retail effHokoriDisp reaches its vertex arrays from; it is
+// defined in another unit and only its address is used here.
+#ifdef MUST_MATCH
+extern u32 lbl_8039D5D0[];
+#endif
 void effHokoriMain(EffectEntry* effect);
 void effHokoriDisp(CameraId cameraId, void* param);

@@ -31,6 +31,137 @@ extern const f32 float_80_8041e31c;
 extern const f32 float_9_8041e320;
 extern const f32 float_30_8041e324;
 
+// NONMATCHING (80.49%): the s32->f32 conversion pool symbol plus the schedule/register allocation of the
+// particle-init loop (frame 0x80 vs 0x70, extra conversion spills, A/B interleave order).
+EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
+    EffectEntry* entry;
+    ChargeEffectData* data;
+    ChargeEffectData* elem;
+    s32 i;
+
+    entry = effEntry();
+    entry->type = str_802F8E78;
+    entry->count = 0x1f;
+    data = __memAlloc(HEAP_EFFECT, 0x8b8);
+    entry->userdata = data;
+    entry->callback = effChargeMain;
+    data->type = type;
+    data->counter = 0;
+    data->timer = a2;
+    data->alpha = 0;
+    data->x = x;
+    data->y = y;
+    data->z = z;
+    data->scale = scale;
+
+    switch (type) {
+    case 0:
+        data->colorR = 0xff;
+        data->colorG = 0;
+        data->colorB = 0xff;
+        data->field_0x3C = 0xff;
+        data->field_0x40 = 0xff;
+        data->field_0x44 = 0xff;
+        break;
+    case 1:
+        data->colorR = 0xff;
+        data->colorG = 0x14;
+        data->colorB = 0x21;
+        data->field_0x3C = 0x32;
+        data->field_0x40 = 0x14;
+        data->field_0x44 = 0x0a;
+        break;
+    default:
+        data->colorR = 0;
+        data->colorG = 0;
+        data->colorB = 0;
+        data->field_0x3C = 0xff;
+        data->field_0x40 = 0xff;
+        data->field_0x44 = 0xff;
+        break;
+    }
+
+    for (i = 1; i < 0x1f; i += 2) {
+        elem = &data[i];
+        elem[0].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)(i - 1)) / float_30_8041e324;
+        elem[0].angle2 = float_0_8041e2f0;
+        elem[0].radius = (f32)((i - 1) * 100 / 30);
+        elem[0].field_0x00 = 0;
+        elem[1].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)i) / float_30_8041e324;
+        elem[1].angle2 = float_0_8041e2f0;
+        elem[1].radius = (f32)(i * 100 / 30);
+        elem[1].field_0x00 = 0;
+    }
+    return entry;
+}
+
+// NONMATCHING (97.17%): register allocation only. The s32->f32 conversion uses a TU-local pool copy of
+// double_to_int_802f8e70, which costs one register and shifts the trig/loop register sets.
+void effChargeMain(EffectEntry* effect) {
+    ChargeEffectData* data = effect->userdata;
+    Vec position;
+    Vec disp;
+    f32 s1;
+    f32 c1;
+    f32 s2;
+    f32 c2;
+    f32 a1;
+    f32 a2;
+    f32 radius;
+    s32 odd;
+    s32 i;
+
+    disp = vec3_802f8e60;
+    disp.x = data->x;
+    disp.y = data->y;
+    disp.z = data->z;
+    position = disp;
+
+    if (data->timer < 1000) {
+        data->timer--;
+    }
+    data->counter++;
+    if (data->timer < 0) {
+        effDelete(effect);
+        return;
+    }
+    if (data->counter <= 0x14) {
+        data->alpha = data->counter * 12;
+    } else {
+        data->alpha = 0xff;
+    }
+    if (data->counter & 1) {
+        data->alpha /= 2;
+    }
+    odd = data->counter & 1;
+    data++;
+    for (i = 1; i < effect->count; i++, data++) {
+        radius = data->radius;
+        a1 = float_6p2832_8041e30c * data->angle1 / float_360_8041e310;
+        s1 = (f32)sin(a1);
+        c1 = (f32)cos(a1);
+        a2 = float_6p2832_8041e30c * data->angle2 / float_360_8041e310;
+        s2 = (f32)sin(a2);
+        c2 = (f32)cos(a2);
+        data->x = radius * s1 * c2;
+        data->y = radius * c1 * c2;
+        data->z = radius * s2;
+        data->alpha = (s32)(float_100_8041e314 - data->radius) * 510 / 100;
+        if (data->alpha > 0xff) {
+            data->alpha = 0xff;
+        }
+        data->scale = float_0p2_8041e318 + data->radius / float_80_8041e31c;
+        data->radius -= (f32)((i & 3) * 2 + 2);
+        if (data->radius < float_0_8041e2f0) {
+            data->radius = float_0_8041e2f0;
+            data->scale = float_0_8041e2f0;
+        }
+        data->angle1 += (f32)(odd ? 5 : 2);
+        data->angle2 += (f32)(odd ? 2 : 5);
+    }
+    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
+}
+
 // NONMATCHING (88.56%): the GXColor args are built one slot above the outgoing copy (target builds below and
 // copies up), and the GXPosition3f32/GXTexCoord2f32 blocks CSE the vertex constants into f1-f4 instead of
 // reloading each into f0 per store; one `fmuls` operand order also differs.
@@ -136,135 +267,4 @@ void effChargeDisp(CameraId cameraId, void* param) {
             GXTexCoord2f32(float_0_8041e2f0, float_1_8041e2e8);
         }
     }
-}
-
-// NONMATCHING (97.17%): register allocation only. The s32->f32 conversion uses a TU-local pool copy of
-// double_to_int_802f8e70, which costs one register and shifts the trig/loop register sets.
-void effChargeMain(EffectEntry* effect) {
-    ChargeEffectData* data = effect->userdata;
-    Vec position;
-    Vec disp;
-    f32 s1;
-    f32 c1;
-    f32 s2;
-    f32 c2;
-    f32 a1;
-    f32 a2;
-    f32 radius;
-    s32 odd;
-    s32 i;
-
-    disp = vec3_802f8e60;
-    disp.x = data->x;
-    disp.y = data->y;
-    disp.z = data->z;
-    position = disp;
-
-    if (data->timer < 1000) {
-        data->timer--;
-    }
-    data->counter++;
-    if (data->timer < 0) {
-        effDelete(effect);
-        return;
-    }
-    if (data->counter <= 0x14) {
-        data->alpha = data->counter * 12;
-    } else {
-        data->alpha = 0xff;
-    }
-    if (data->counter & 1) {
-        data->alpha /= 2;
-    }
-    odd = data->counter & 1;
-    data++;
-    for (i = 1; i < effect->count; i++, data++) {
-        radius = data->radius;
-        a1 = float_6p2832_8041e30c * data->angle1 / float_360_8041e310;
-        s1 = (f32)sin(a1);
-        c1 = (f32)cos(a1);
-        a2 = float_6p2832_8041e30c * data->angle2 / float_360_8041e310;
-        s2 = (f32)sin(a2);
-        c2 = (f32)cos(a2);
-        data->x = radius * s1 * c2;
-        data->y = radius * c1 * c2;
-        data->z = radius * s2;
-        data->alpha = (s32)(float_100_8041e314 - data->radius) * 510 / 100;
-        if (data->alpha > 0xff) {
-            data->alpha = 0xff;
-        }
-        data->scale = float_0p2_8041e318 + data->radius / float_80_8041e31c;
-        data->radius -= (f32)((i & 3) * 2 + 2);
-        if (data->radius < float_0_8041e2f0) {
-            data->radius = float_0_8041e2f0;
-            data->scale = float_0_8041e2f0;
-        }
-        data->angle1 += (f32)(odd ? 5 : 2);
-        data->angle2 += (f32)(odd ? 2 : 5);
-    }
-    dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effChargeDisp, effect);
-}
-
-// NONMATCHING (80.49%): the s32->f32 conversion pool symbol plus the schedule/register allocation of the
-// particle-init loop (frame 0x80 vs 0x70, extra conversion spills, A/B interleave order).
-EffectEntry* effChargeEntry(s32 type, s32 a2, f32 x, f32 y, f32 z, f32 scale) {
-    EffectEntry* entry;
-    ChargeEffectData* data;
-    ChargeEffectData* elem;
-    s32 i;
-
-    entry = effEntry();
-    entry->type = str_802F8E78;
-    entry->count = 0x1f;
-    data = __memAlloc(HEAP_EFFECT, 0x8b8);
-    entry->userdata = data;
-    entry->callback = effChargeMain;
-    data->type = type;
-    data->counter = 0;
-    data->timer = a2;
-    data->alpha = 0;
-    data->x = x;
-    data->y = y;
-    data->z = z;
-    data->scale = scale;
-
-    switch (type) {
-    case 0:
-        data->colorR = 0xff;
-        data->colorG = 0;
-        data->colorB = 0xff;
-        data->field_0x3C = 0xff;
-        data->field_0x40 = 0xff;
-        data->field_0x44 = 0xff;
-        break;
-    case 1:
-        data->colorR = 0xff;
-        data->colorG = 0x14;
-        data->colorB = 0x21;
-        data->field_0x3C = 0x32;
-        data->field_0x40 = 0x14;
-        data->field_0x44 = 0x0a;
-        break;
-    default:
-        data->colorR = 0;
-        data->colorG = 0;
-        data->colorB = 0;
-        data->field_0x3C = 0xff;
-        data->field_0x40 = 0xff;
-        data->field_0x44 = 0xff;
-        break;
-    }
-
-    for (i = 1; i < 0x1f; i += 2) {
-        elem = &data[i];
-        elem[0].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)(i - 1)) / float_30_8041e324;
-        elem[0].angle2 = float_0_8041e2f0;
-        elem[0].radius = (f32)((i - 1) * 100 / 30);
-        elem[0].field_0x00 = 0;
-        elem[1].angle1 = float_9_8041e320 * (float_360_8041e310 * (f32)i) / float_30_8041e324;
-        elem[1].angle2 = float_0_8041e2f0;
-        elem[1].radius = (f32)(i * 100 / 30);
-        elem[1].field_0x00 = 0;
-    }
-    return entry;
 }

@@ -55,6 +55,85 @@ const f32 float_180_8041cdb4 = 180.0f;
 const f32 float_120_8041cdb8 = 120.0f;
 const f32 float_neg120_8041cdbc = -120.0f;
 
+// The original allocates the first word of each 0x70 Vec copy to r3 (lwz r3; lwz r0; stw r3; stw r0; lwz r0;
+// stw r0); MWCC allocates it to r0 and hoists the third load. No expression shape tried changes this
+// (same scheduling artifact as mot_roll.c).
+// NONMATCHING (96.45%): only the two Vec copies at 0x70 differ.
+void _partyEntry(s32 arg) {
+    MarioWork* mario;
+    PartyEntry* party;
+    s32 i;
+    s32 count;
+    s32 member;
+    f32 angle;
+    f32 px;
+    f32 py;
+    f32 pz;
+
+    mario = marioGetPtr();
+    if (mario->flags & 0x02000000) {
+        return;
+    }
+    count = 0;
+    if (partyGetPtr(mario->currPartySlotId[0]) != NULL) {
+        count = 1;
+    }
+    if (partyGetPtr(mario->currPartySlotId[1]) != NULL) {
+        count++;
+    }
+    for (i = 0; i < 2; i++) {
+        if (mario->currPartySlotId[i] < 0) {
+            member = mario->prevPartyMemberId[i];
+            px = mario->position.x;
+            py = mario->position.y;
+            pz = mario->position.z;
+            if (member != 0) {
+                if (i == 0) {
+                    member = partyEntryPos(member, px, py, pz);
+                } else {
+                    member = partyEntry2Pos(member, px, py, pz);
+                }
+                if (member >= 0) {
+                    mario->currPartySlotId[i] = member;
+                    party = partyGetPtr(member);
+                    partyChgRunMode(party, 0xA);
+                    if (arg == 0) {
+                        M_VEC(party, 0x70) = vec3_802f3d60;
+                    }
+                    party->flags |= 0x04000000;
+                    party->flags |= 0x02000000;
+                    if (count == 1) {
+                        angle = MATCH_F32(float_180_8041cdb4);
+                    } else {
+                        angle = MATCH_F32(float_120_8041cdb8);
+                    }
+                    party->flags2 &= ~1;
+                    party->field_110 = revise360(mario->unk1A8 + angle);
+                    party->field_10C = mario->unk1A8;
+                    party->field_FC = M_F32(mario, 0x19C);
+                }
+            }
+        } else {
+            party = partyGetPtr(mario->currPartySlotId[i]);
+            partyChgRunMode(party, 0xA);
+            if (arg == 0) {
+                M_VEC(party, 0x70) = vec3_802f3d6c;
+            }
+            party->flags |= 0x04000000;
+            party->flags |= 0x02000000;
+            if (count == 1) {
+                angle = MATCH_F32(float_180_8041cdb4);
+            } else {
+                angle = MATCH_F32(float_neg120_8041cdbc);
+            }
+            party->flags2 &= ~1;
+            party->field_110 = revise360(mario->unk1A8 + angle);
+            party->field_10C = mario->unk1A8;
+            party->field_FC = M_F32(mario, 0x19C);
+        }
+    }
+}
+
 // The original emits clean load/load/store/store/load/store per Vec copy; MWCC here hoists the third
 // word load ahead of the second store (same artifact as mot_roll/mot_damage, see mot_roll.c note). The
 // float mismatches are anonymous @NNN .sdata2 slots because the constants are const-defined in this TU;
@@ -339,84 +418,5 @@ void mot_dokan(void) {
         break;
     default:
         break;
-    }
-}
-
-// The original allocates the first word of each 0x70 Vec copy to r3 (lwz r3; lwz r0; stw r3; stw r0; lwz r0;
-// stw r0); MWCC allocates it to r0 and hoists the third load. No expression shape tried changes this
-// (same scheduling artifact as mot_roll.c).
-// NONMATCHING (96.45%): only the two Vec copies at 0x70 differ.
-void _partyEntry(s32 arg) {
-    MarioWork* mario;
-    PartyEntry* party;
-    s32 i;
-    s32 count;
-    s32 member;
-    f32 angle;
-    f32 px;
-    f32 py;
-    f32 pz;
-
-    mario = marioGetPtr();
-    if (mario->flags & 0x02000000) {
-        return;
-    }
-    count = 0;
-    if (partyGetPtr(mario->currPartySlotId[0]) != NULL) {
-        count = 1;
-    }
-    if (partyGetPtr(mario->currPartySlotId[1]) != NULL) {
-        count++;
-    }
-    for (i = 0; i < 2; i++) {
-        if (mario->currPartySlotId[i] < 0) {
-            member = mario->prevPartyMemberId[i];
-            px = mario->position.x;
-            py = mario->position.y;
-            pz = mario->position.z;
-            if (member != 0) {
-                if (i == 0) {
-                    member = partyEntryPos(member, px, py, pz);
-                } else {
-                    member = partyEntry2Pos(member, px, py, pz);
-                }
-                if (member >= 0) {
-                    mario->currPartySlotId[i] = member;
-                    party = partyGetPtr(member);
-                    partyChgRunMode(party, 0xA);
-                    if (arg == 0) {
-                        M_VEC(party, 0x70) = vec3_802f3d60;
-                    }
-                    party->flags |= 0x04000000;
-                    party->flags |= 0x02000000;
-                    if (count == 1) {
-                        angle = MATCH_F32(float_180_8041cdb4);
-                    } else {
-                        angle = MATCH_F32(float_120_8041cdb8);
-                    }
-                    party->flags2 &= ~1;
-                    party->field_110 = revise360(mario->unk1A8 + angle);
-                    party->field_10C = mario->unk1A8;
-                    party->field_FC = M_F32(mario, 0x19C);
-                }
-            }
-        } else {
-            party = partyGetPtr(mario->currPartySlotId[i]);
-            partyChgRunMode(party, 0xA);
-            if (arg == 0) {
-                M_VEC(party, 0x70) = vec3_802f3d6c;
-            }
-            party->flags |= 0x04000000;
-            party->flags |= 0x02000000;
-            if (count == 1) {
-                angle = MATCH_F32(float_180_8041cdb4);
-            } else {
-                angle = MATCH_F32(float_neg120_8041cdbc);
-            }
-            party->flags2 &= ~1;
-            party->field_110 = revise360(mario->unk1A8 + angle);
-            party->field_10C = mario->unk1A8;
-            party->field_FC = M_F32(mario, 0x19C);
-        }
     }
 }

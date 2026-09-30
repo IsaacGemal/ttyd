@@ -1,5 +1,6 @@
 #include "eff/n64/eff_opuku_jetwrain_n64.h"
 #include "eff/eff_n64.h"
+#include "math_ext.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
@@ -25,6 +26,15 @@ const f32 float_608_8041f7e0 = 608.0f;
 const f32 float_1_8041f7e4 = 1.0f;
 const f32 float_32768_8041f7e8 = 32768.0f;
 const f32 float_0p0039062_8041f7ec = 0.00390625f;
+const f32 float_255_8041f7f0 = 255.0f;
+const f32 float_6p2832_8041f7f4 = 6.2831855f;
+const f32 float_360_8041f7f8 = 360.0f;
+const f32 float_neg64_8041f7fc = -64.0f;
+const f32 float_4_8041f800 = 4.0f;
+const f32 float_0p5_8041f804 = 0.5f;
+const f32 float_0p7_8041f808 = 0.7f;
+const f32 float_0p98_8041f80c = 0.98f;
+const f32 float_0p02_8041f810 = 0.02f;
 
 // .data vertex array, modified in place by effOpukuJetwrainDisp.
 u32 opuku_jetwrain_vtx[56] = {
@@ -80,6 +90,84 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 		}
 	}
 	return effect;
+}
+
+static inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+// The first loop's callee-saved allocation is shifted one register down: mwcc puts counter in r26
+// (original r28) and the 0x4330 double-magic temp in r24 (original r25), so stmw/lmw saves r24..r31
+// instead of r25..r31; effect/data/lifetime are correct. That also renames every scratch register in
+// all three loops. In the second loop the byte loads are scheduled in a different order and the
+// constants land in other FPRs (mine f1/f6/f0/f5/f4, original f3/f1/f2/f0/f6).
+// NONMATCHING (92.87%): codegen-only register/scheduling differences; arithmetic and structure match.
+void effOpukuJetwrainMain(EffectEntry* effect) {
+	s32 lifetime;
+	effOpukuJetwrainData* data = effect->userdata;
+	Vec position = initializeVec((Vec*)&data->x);
+	s32 counter;
+	s32 alpha;
+	f32 scale;
+	s32 i;
+	s32 j;
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->lifetime = 0x20;
+	}
+	if (data->lifetime < 1000) {
+		data->lifetime--;
+	}
+	data->field_0x14++;
+	lifetime = data->lifetime;
+	if (lifetime < 0) {
+		effDelete(effect);
+		return;
+	}
+	counter = data->field_0x14;
+	alpha = 0xff;
+	if (lifetime < 0x20) {
+		alpha = lifetime * 8;
+	}
+	if (counter < 0x10) {
+		alpha = counter * 16 + 15;
+	}
+	data->field_0x1F = alpha;
+	scale = (f32)alpha / float_255_8041f7f0;
+
+	for (i = 1; i < 18; i++) {
+		data->field_0x23[i][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - i) * -20) / float_360_8041f7f8)));
+	}
+
+	for (j = 1; j < 18; j++) {
+		for (i = 1; i < 12; i++) {
+			f32 center = (f32)(s8)data->field_0x23[j][i];
+			f32 corners = (f32)(s8)data->field_0x23[j - 1][i - 1] + (f32)(s8)data->field_0x23[j - 1][i + 1] + (f32)(s8)data->field_0x23[j + 1][i - 1] + (f32)(s8)data->field_0x23[j + 1][i + 1];
+			f32 edges = (f32)(s8)data->field_0x23[j - 1][i] + (f32)(s8)data->field_0x23[j][i - 1] + (f32)(s8)data->field_0x23[j][i + 1] + (f32)(s8)data->field_0x23[j + 1][i];
+			f32 v = (f32)data->field_0x11A[j][i];
+			f32 t = float_0p5_8041f804 * corners;
+			t = t + (edges - float_4_8041f800 * center);
+			t = t - float_0p7_8041f808 * (float_4_8041f800 * center);
+			data->field_0x11A[j][i] = (s16)(v + t);
+			data->field_0x11A[j][i] *= float_0p98_8041f80c;
+			if (lifetime < 0x20) {
+				data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] * scale);
+			}
+		}
+	}
+
+	for (j = 1; j < 18; j++) {
+		for (i = 1; i < 12; i++) {
+			data->field_0x23[j][i] = (s8)((f32)(s8)data->field_0x23[j][i] + float_0p02_8041f810 * (f32)data->field_0x11A[j][i]);
+		}
+	}
+
+	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effOpukuJetwrainDisp, effect);
 }
 
 // Loop register allocation doesn't line up: iPos/fieldBase are swapped (r24/r26)

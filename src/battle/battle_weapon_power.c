@@ -118,3 +118,12 @@ u32 weaponGetFPPowerFPHalf(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* 
     }
     return unit2->currentFp / 2;
 }
+
+u32 weaponGetPowerTatsumaki(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2, BattleUnitPart* part) {
+    u32 power;
+
+    BattleGetMarioPtr(_battleWorkPointer);
+    power = weapon->hpDamageWork[0];
+    power += weapon->hpDamageWork[1] * pouchEquipCheckBadge(0xF3);
+    return power;
+}
