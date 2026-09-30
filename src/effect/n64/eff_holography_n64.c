@@ -1068,15 +1068,10 @@ u32 ach_01_v[4235] = {
     0xFFFA0000, 0x04000400, 0x000078FF,
 };
 
-// .sdata2
-
-// .data
-// .sdata
 u8 xlu_data[16] = {
 	0xFF, 0xFF, 0xDC, 0xBE, 0xA0, 0x78, 0x50, 0x28,
 	0x00, 0x00, 0x28, 0x50, 0x78, 0xA0, 0xBE, 0xDC,
 };
-// .sbss2
 
 EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -1100,7 +1095,7 @@ EffectEntry* effHolographyN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->field_0x28 = 0.100000001f * scale;
+	data->field_0x28 = 0.1f * scale;
 	data->field_0x18 = 70;
 	data->field_0x1C = 180;
 	data->field_0x20 = 120;
@@ -1184,7 +1179,7 @@ void effHolographyDisp(CameraId camId, void* param) {
 	alphaBase = data->field_0x24;
 
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rotMtx, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXScale(scaleMtx, -data->field_0x28, data->field_0x28, data->field_0x28);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -1225,7 +1220,7 @@ void effHolographyDisp(CameraId camId, void* param) {
 	effHolographySetColor2(frame);
 
 	for (i = 0; i < 10; i++) {
-		alpha = alphaBase * (1.0f - 0.100000001f * i) * 2.0f;
+		alpha = alphaBase * (1.0f - 0.1f * i) * 2.0f;
 		if (alpha > 255.0f) {
 			alpha = 255.0f;
 		}

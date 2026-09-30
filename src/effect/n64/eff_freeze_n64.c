@@ -13,7 +13,6 @@
 
 // .sdata2 constants shared with the rest of the unit.
 
-// .rodata
 // Pooled double the compiler reuses for the u32->f32 conversion in effFreezeMain.
 
 EffectEntry* effFreezeN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {

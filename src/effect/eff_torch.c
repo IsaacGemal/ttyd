@@ -137,10 +137,6 @@ u32 torch_obj22t_texture[252] = {
     0x88779CCC, 0x68889ACC, 0x567999BC, 0x5567A99B,
 };
 
-// .sdata2
-
-// .sdata2 constants this unit references by name in retail
-
 // .sdata2 / .rodata symbols effTorchDisp needs (data lives in the original unit)
 
 EffectEntry* effTorchEntry(s32 id, f32 x, f32 y, f32 z, f32 scale) {
@@ -188,7 +184,7 @@ void effTorchDisp(CameraId cameraId, void* param) {
 
 	camView = camGetPtr(cameraId);
 	PSMTXTrans(mtxPos, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * 0.0174532924f);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(cameraId)->viewYaw * 0.017453292f);
 	s = *(f32*)((u8*)data + 0x10);
 	PSMTXScale(mtxScale, s * *(f32*)((u8*)data + 0x14), s * *(f32*)((u8*)data + 0x18), s);
 	PSMTXConcat(mtxPos, mtxRot, mtxView);

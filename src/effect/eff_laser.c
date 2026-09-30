@@ -6,8 +6,6 @@
 #include "memory.h"
 #include "system.h"
 
-const GXColor dat_804223a0 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const u32 dat_804223a4 = 0xFFFFFF00;
 
 EffectEntry* effLaserEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -80,7 +78,7 @@ void effLaserMain(EffectEntry* effect) {
 		break;
 	case 2:
 		if (fadeIsFinish()) {
-			fadeEntry(0x10, 0x64, *(GXColor*)&dat_804223a0);
+			fadeEntry(0x10, 0x64, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 			animPoseSetAnim(data->animId, "A_1", TRUE);
 			animPoseSetLocalTimeRate(data->animId, 0.5f);
 			data->state++;
@@ -99,7 +97,7 @@ void effLaserMain(EffectEntry* effect) {
 }
 
 static inline void laserSetColor(effLaserData* data) {
-	GXColor color = *(GXColor*)&dat_804223a4;
+	GXColor color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
 	color.a = data->alpha;
 	animPoseSetMaterialEvtColor(data->animId, color);
 }
@@ -114,7 +112,7 @@ void effLaserDisp(CameraId camId, void* param) {
 	if (data->animId != -1) {
 		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
 		PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
-		PSMTXRotRad(rotMtx, 'y', 0.0174532924f * -camGetPtr(camId)->viewYaw);
+		PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 		PSMTXConcat(mtx, rotMtx, mtx);
 		PSMTXConcat(mtx, scaleMtx, mtx);
 		animPoseSetMaterialFlagOn(data->animId, 0x40);

@@ -63,7 +63,6 @@ static s8 y_data[28] = {
     1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 0, 0, 0,
 };
 
-
 // .data vertex array for the 12x12 textured quad.
 u32 size12x12_tex32x32_vtx[14] = {
     0xFFFAFFFA, 0x00000000, 0x00000000, 0x00FF0006, 0xFFFA0000, 0x04000000, 0x000000FF,
@@ -71,7 +70,6 @@ u32 size12x12_tex32x32_vtx[14] = {
 };
 
 // .rodata zero vector and the two int->float conversion doubles (named so the pool matches).
-
 
 EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 scale) {
     EffectEntry* effect;
@@ -106,7 +104,7 @@ EffectEntry* effDogabonAttackN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, 
     data->field_0x20 = 0x78;
 
     for (i = 0; i < 25; i++) {
-        angle = (f32)(i * 1080 / 25) * 6.28318548f / 360.0f;
+        angle = (f32)(i * 1080 / 25) * 6.2831855f / 360.0f;
         s = (f32)sin(angle);
         c = (f32)cos(angle);
         r = rand();
@@ -170,7 +168,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
     for (i = 0; i < 25; i++) {
         f32 scale;
 
-        scale = 0.00999999978f * (f32)scale_data[index];
+        scale = 0.01f * (f32)scale_data[index];
         data->field_0x414[i] = scale;
         data->field_0x3B0[i] = 2.0f - scale;
 
@@ -188,7 +186,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             } else {
                 f32 s;
                 data->field_0x6D0[i] = 1;
-                s = 0.00999999978f * (f32)scale_data_2[data->field_0x734[i]];
+                s = 0.01f * (f32)scale_data_2[data->field_0x734[i]];
                 data->field_0x414[i] = s;
                 data->field_0x3B0[i] = s;
                 data->field_0x734[i]++;
@@ -196,7 +194,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 1:
             {
-                f32 s = 0.00999999978f * (f32)scale_data_2[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)scale_data_2[data->field_0x734[i]];
                 data->field_0x414[i] = s;
                 data->field_0x3B0[i] = s;
                 data->field_0x734[i]++;
@@ -212,7 +210,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 20:
             {
-                f32 s = 0.00999999978f * (f32)move_data_hazure[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)move_data_hazure[data->field_0x734[i]];
                 data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
                 data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
                 data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
@@ -230,7 +228,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 2:
             {
-                f32 s = 0.00999999978f * (f32)move_data_1[data->field_0x734[i]];
+                f32 s = 0.01f * (f32)move_data_1[data->field_0x734[i]];
                 data->field_0x2C[i] = (data->field_0x284[i] - x0) * s + x0;
                 data->field_0x90[i] = (data->field_0x2E8[i] - y0) * s + y0;
                 data->field_0xF4[i] = (data->field_0x34C[i] - z0) * s + z0;
@@ -276,15 +274,15 @@ void effDogabonAttackMain(EffectEntry* effect) {
             break;
         case 4:
             {
-                f32 t = 0.00999999978f * (f32)move_data_2[data->field_0x734[i]];
+                f32 t = 0.01f * (f32)move_data_2[data->field_0x734[i]];
                 f32 sinAng;
                 f32 ang;
                 f32 cosAng;
                 f32 factor;
-                f32 cosVal = (f32)cos(6.28318548f * (f32)(i * 180 / 25) / 360.0f);
+                f32 cosVal = (f32)cos(6.2831855f * (f32)(i * 180 / 25) / 360.0f);
                 f32 amp = 0.5f * (1080.0f * (1.0f - t));
 
-                ang = 6.28318548f
+                ang = 6.2831855f
                     * ((f32)(i * 1080 / 25) + amp * cosVal)
                     / 360.0f;
                 sinAng = (f32)sin(ang);
@@ -307,16 +305,16 @@ void effDogabonAttackMain(EffectEntry* effect) {
             data->field_0x2C[i] += data->field_0x540[i];
             data->field_0x90[i] += data->field_0x5A4[i];
             data->field_0xF4[i] += data->field_0x608[i];
-            data->field_0x540[i] *= 0.99000001f;
-            data->field_0x5A4[i] *= 0.99000001f;
-            data->field_0x608[i] *= 0.99000001f;
-            data->field_0x5A4[i] += -0.100000001f;
+            data->field_0x540[i] *= 0.99f;
+            data->field_0x5A4[i] *= 0.99f;
+            data->field_0x608[i] *= 0.99f;
+            data->field_0x5A4[i] += -0.1f;
             data->field_0x734[i]++;
             if (data->field_0x734[i] > 16) {
                 data->field_0x734[i] = 0;
                 data->field_0x6D0[i] = 6;
             }
-            data->field_0x478[i] *= 0.899999976f;
+            data->field_0x478[i] *= 0.9f;
             break;
         case 6:
             {
@@ -327,7 +325,7 @@ void effDogabonAttackMain(EffectEntry* effect) {
                 f32 y;
                 f32 z;
 
-                PSMTXRotRad(rotMtx, 'y', 0.0174532924f * data->field_0x4DC[i]);
+                PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->field_0x4DC[i]);
                 PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
                 PSMTXConcat(rotMtx, transMtx, transMtx);
                 x = data->x + transMtx[0][3];
@@ -396,12 +394,12 @@ void effDogabonAttackDisp(CameraId camId, void* param) {
         if (data->field_0x6D0[i] == 0 || data->field_0x6D0[i] == 7) {
             continue;
         }
-        PSMTXRotRad(rotMtx, 'y', 0.0174532924f * data->field_0x4DC[i]);
+        PSMTXRotRad(rotMtx, 'y', 0.017453292f * data->field_0x4DC[i]);
         PSMTXTrans(transMtx, data->field_0x2C[i], data->field_0x90[i], data->field_0xF4[i]);
         PSMTXConcat(rotMtx, transMtx, transMtx);
-        PSMTXRotRad(rotMtx, 'y', 0.0174532924f * -data->field_0x4DC[i]);
+        PSMTXRotRad(rotMtx, 'y', 0.017453292f * -data->field_0x4DC[i]);
         PSMTXConcat(transMtx, transMtx, transMtx);
-        PSMTXRotRad(rotMtx, 'z', 0.0174532924f * data->field_0x478[i]);
+        PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x478[i]);
         PSMTXConcat(transMtx, rotMtx, transMtx);
         PSMTXScale(scaleMtx, data->field_0x3B0[i], data->field_0x414[i], 1.0f);
         PSMTXConcat(transMtx, scaleMtx, transMtx);

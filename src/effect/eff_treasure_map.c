@@ -6,7 +6,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 
-
 EffectEntry* effTreasureMapEntry(s32 type, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
 	EffTreasureMapData* data;
@@ -90,11 +89,11 @@ void effTreasureMapDisp(CameraId camId, void* param) {
 		return;
 	}
 	for (i = 0; i < 2; i++) {
-		baseScale = 1.10000002f * data->scale;
+		baseScale = 1.1f * data->scale;
 		if (i == 0) {
 			PSMTXTrans(trans, data->x, data->y, data->z);
-			PSMTXScale(scale, 1.05999994f * baseScale, 1.05999994f * baseScale, 1.05999994f * baseScale);
-			PSMTXRotRad(rot, 'y', 0.0174532924f * data->angle);
+			PSMTXScale(scale, 1.06f * baseScale, 1.06f * baseScale, 1.06f * baseScale);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->angle);
 			PSMTXConcat(trans, scale, mtx);
 			PSMTXConcat(mtx, rot, mtx);
 			animPoseSetMaterialFlagOn(data->animId, 0x40);
@@ -103,7 +102,7 @@ void effTreasureMapDisp(CameraId camId, void* param) {
 		else {
 			PSMTXTrans(trans, data->x, data->y, data->z);
 			PSMTXScale(scale, baseScale, baseScale, baseScale);
-			PSMTXRotRad(rot, 'y', 0.0174532924f * data->angle);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->angle);
 			PSMTXConcat(trans, scale, mtx);
 			PSMTXConcat(mtx, rot, mtx);
 			animPoseSetMaterialFlagOn(data->animId, 0x40);

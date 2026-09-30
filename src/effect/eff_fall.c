@@ -7,7 +7,6 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 
-
 extern const f32 float_deg2rad_80420f70;
 extern const f32 float_6p2832_80420fa4;
 extern const f32 float_360_80420fa8;

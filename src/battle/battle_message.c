@@ -8,7 +8,6 @@
 #include "data/item_data.h"
 #include <stdio.h>
 
-
 // The original saves r25-r31 with stmw/lmw (size-oriented prologue); battle_message.c wants -O4,s.
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
 USER_FUNC(btlevtcmd_AnnounceMessage) {

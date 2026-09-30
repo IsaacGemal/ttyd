@@ -26,9 +26,6 @@ typedef struct effCoinN64Spawn {
 	s32 scale; // 0x10
 } effCoinN64Spawn;
 
-
-// .sdata2 constants of this unit, referenced by effCoinDisp (names from the original).
-
 static effCoinN64Spawn _data[4] = {
 	{ 2, 0, 0, 0, 100 },
 	{ 4, 4, -2, 0, 100 },
@@ -71,7 +68,7 @@ EffectEntry* effCoinN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 		p->position.z = (f32)src->z;
 		p->anim = -1;
 		p->timer = src->timer;
-		p->field_0x1C = scale * (f32)src->scale * 0.00999999978f;
+		p->field_0x1C = scale * (f32)src->scale * 0.01f;
 	}
 	return effect;
 }
@@ -136,7 +133,7 @@ void effCoinDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	PSMTXTrans(mtx0, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(mtx1, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(mtx1, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtx0, mtx1, mtx2);
 	GXSetNumChans(0);
 	GXSetNumTevStages(1);
@@ -168,7 +165,7 @@ void effCoinDisp(CameraId camId, void* param) {
 		PSMTXConcat(cam->view, mtx0, mtx0);
 		GXLoadPosMtxImm(mtx0, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
-		PSMTXScale(scaleMtx, 0.03125f, 0.00625000009f, 0.0f);
+		PSMTXScale(scaleMtx, 0.03125f, 0.00625f, 0.0f);
 		PSMTXTrans(mtx0, 0.0f, 32.0f * (f32)(4 - (data->anim >> 1)), 0.0f);
 		PSMTXConcat(scaleMtx, mtx0, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
