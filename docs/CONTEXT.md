@@ -2555,3 +2555,21 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - icondrv `iconNumberDispGx`/`iconNumberDispGx3D` written (92%): digits by `/` and `%` (the target keeps a separate quotient
   for the `%`, so `rem % 100000` then `rem /= ...` is not the same as subtracting `q * 100000`), the top digit tested
   against the original number, six digits shown as five; return type is `s32` (the header said `f32`; every caller ignores it).
+
+## Grind 31 (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **Parallel declaration-order search** (`tools/perm_batch.py MIN MAX`, `tools/perm_apply.py`): for every partial function in a
+  score band it compiles up to 70 orderings of the leading local declarations (single moves plus shuffles; initialised
+  declarations are allowed, a variant that no longer compiles is skipped) from scratch copies, scores only that function with
+  objdiff, and records the best; the applier rewrites the declarations, rebuilds the unit, keeps the change only if nothing in
+  the unit dropped and updates the NONMATCHING comments. About one function in ten of the 97-100% band gained: five went to
+  100% (BattleAudienceSoundWhistleKind, btlevtcmd_GetHitPos/SetPos/SetRotate/SetBaseRotate) and four improved (sac_muki
+  end_muki, eff_kemuri11 Disp, eff_pokopi_pcharge Entry, evt_badgeshop badgeShop_set). A companion search that swaps the operands
+  of one commutative operator or comparison at a time found only 0.02 to 0.2 point gains and the three 100% results the
+  declaration search had already found: not worth running again.
+- `tools/finish_unit.py UNIT`: pool_data, math_ext, pool_define, literal strings, the `.sbss2` idiom and autolink in one
+  command, keeping a step only if no function or section drops; it links eff_kemuri4 from its pre-fix source.
+- Written: `btlevtcmd_MarioJumpPosition` (96.7%), `btlevtcmd_DivePosition` (94.7%), `btlevtcmd_DivePartsPosition` (93.5%; the
+  part offsets are the unit's minus 0xC8), countdown `Start` (100%), `SaveReStart` (100%; 64-bit locals in the order the target
+  multiplies them), `Main` (97.1%) and `Disp` (94.4%; `GSW(0)` is 0xF5DE0180, the flag tests are `& 4` in Disp and `& 8` in
+  Main). `GSW(n)` in evt_cmd.h is `n - 170000000`, so the target constant is `GSW(0)`.
