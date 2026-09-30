@@ -38,14 +38,6 @@
 
 #pragma pool_data off
 
-// These pooled constants live in the REL's generated auto_* rodata objects, not in this unit.
-extern const f32 zero_eki_0000a6b4;
-extern const f32 float_neg1000_eki_0000a6b8;
-extern const u32 zero_eki_0000a6bc;
-extern const f32 float_neg15_eki_0000a6c0;
-extern const f32 float_1_eki_0000a6c4;
-extern const f64 double_to_int_eki_0000a6c8;
-
 // Forward declarations for the unit's .bss objects (defined near the end, at their original .bss position).
 static OSTime wwstart;
 static s32 x_flag_data[2];
@@ -216,10 +208,10 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
             switch (btn->iconId) {
             case 0x75: case 0x76: case 0x77: case 0x78: case 0x79:
             case 0x7A: case 0x7B: case 0x7C: case 0x7D:
-                yOff = float_neg15_eki_0000a6c0;
+                yOff = -15.0f;
                 break;
             default:
-                yOff = zero_eki_0000a6b4;
+                yOff = 0.0f;
                 break;
             }
             pos = p->position;
@@ -227,9 +219,9 @@ static void lecture_button_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
             // iconDispGxAlpha's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
             ((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x50, (u16)btn->iconId, (u8)btn->alpha,
-                                                                 float_1_eki_0000a6c4);
+                                                                 1.0f);
 #else
-            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, float_1_eki_0000a6c4);
+            iconDispGxAlpha(&pos, 0x50, btn->iconId, btn->alpha, 1.0f);
 #endif
         }
     }
@@ -278,7 +270,7 @@ static USER_FUNC(lecture_button_rtn) {
     if (count >= 2) {
         return EVT_RETURN_DONE;
     }
-    dispEntry(CAMERA_2D, zero_eki_0000a6b4, 1, lecture_button_disp, NULL);
+    dispEntry(CAMERA_2D, 0.0f, 1, lecture_button_disp, NULL);
     return EVT_RETURN_BLOCK;
 }
 
@@ -541,7 +533,7 @@ static USER_FUNC(lect_mobj_hit_nasi) {
     }
     for (i = 0; i < 2; i++) {
         if (obj->hitObj[i].name != NULL &&
-            strcmp(obj->hitObj[i].name, (const char*)&zero_eki_0000a6bc) != 0) {
+            strcmp(obj->hitObj[i].name, "") != 0) {
             hitGrpFlagOn(obj->hitObj[i].name, 1);
         }
     }
@@ -569,7 +561,7 @@ static USER_FUNC(juyoitem_gogo) {
     ItemEntry* item = (ItemEntry*)event->lwData[8];
 
     iconFlagOff(item->name, 0x200);
-    itemSetPosition(item, zero_eki_0000a6b4, float_neg1000_eki_0000a6b8, zero_eki_0000a6b4);
+    itemSetPosition(item, 0.0f, -1000.0f, 0.0f);
     marioChgStayMotion();
     marioStSystemLevel(0);
     return EVT_RETURN_DONE;
