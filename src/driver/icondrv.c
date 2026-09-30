@@ -73,6 +73,10 @@ inline IconEntry* iconGetEntry(const char* name) {
     return NULL;
 }
 
+static inline IconFrame* iconFramesOf(IconBinaryEntry* e) {
+    return (IconFrame*)e;
+}
+
 static void _callback_tpl(s32 error, DVDFileInfo* info) {
     void* userData = info->cb.userData;
 
@@ -361,10 +365,11 @@ void iconDisp(CameraId camId, void* param) {
     iconGX(mtx, entry);
 }
 
-// NONMATCHING (96.60%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
+// NONMATCHING (98.56%): `data` is in r3 vs r4 in retail; all loop temps shift by one register.
 // dont_inline keeps iconDispGxAlpha out of iconDispGx (retail emits a real `bl`).
 #pragma dont_inline on
 void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) {
+    IconFrame* frames;
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -404,16 +409,17 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
         s32 rest;
         int i;
 
+        frames = iconFramesOf(data);
         for (i = 0; i < data->numIcons; i++) {
-            total += ((IconFrame*)data)[i + 2].frameDelay;
+            total += frames[i + 2].frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < ((IconFrame*)data)[i + 2].frameDelay) {
-                entryp->tplId = ((IconFrame*)data)[i + 2].tplId;
+            if (rest < frames[i + 2].frameDelay) {
+                entryp->tplId = frames[i + 2].tplId;
                 break;
             }
-            rest -= ((IconFrame*)data)[i + 2].frameDelay;
+            rest -= frames[i + 2].frameDelay;
         }
     }
     iconGX(mtx, entryp);
@@ -425,8 +431,9 @@ void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// NONMATCHING (93.48%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (96.00%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
+    IconFrame* frames;
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -457,24 +464,26 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
         s32 rest;
         int i;
 
+        frames = iconFramesOf(data);
         for (i = 0; i < data->numIcons; i++) {
-            total += ((IconFrame*)data)[i + 2].frameDelay;
+            total += frames[i + 2].frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < ((IconFrame*)data)[i + 2].frameDelay) {
-                entryp->tplId = ((IconFrame*)data)[i + 2].tplId;
+            if (rest < frames[i + 2].frameDelay) {
+                entryp->tplId = frames[i + 2].tplId;
                 break;
             }
-            rest -= ((IconFrame*)data)[i + 2].frameDelay;
+            rest -= frames[i + 2].frameDelay;
         }
     }
     PSMTXConcat(camera->view, mtx, view);
     iconGX(view, entryp);
 }
 
-// NONMATCHING (92.88%): register allocation of data/loop temps and the branch layout differ.
+// NONMATCHING (95.50%): register allocation of data/loop temps and the branch layout differ.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
+    IconFrame* frames;
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -505,26 +514,27 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
         s32 rest;
         int i;
 
+        frames = iconFramesOf(data);
         for (i = 0; i < data->numIcons; i++) {
-            total += ((IconFrame*)data)[i + 2].frameDelay;
+            total += frames[i + 2].frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < ((IconFrame*)data)[i + 2].frameDelay) {
-                entryp->tplId = ((IconFrame*)data)[i + 2].tplId;
+            if (rest < frames[i + 2].frameDelay) {
+                entryp->tplId = frames[i + 2].tplId;
                 break;
             }
-            rest -= ((IconFrame*)data)[i + 2].frameDelay;
+            rest -= frames[i + 2].frameDelay;
         }
     }
     PSMTXConcat(camera->view, pos, view);
     iconGX(view, entryp);
 }
 
-// NONMATCHING (97.54%): `data` lands in r7 in ours vs r4 in retail (the loop temps shift by
-// three registers); the `dummy$651` shown as `dummy_tex` is a local 1-byte .sdata object.
+// The frame table is reached through a typed accessor: a cast at each use moves `data` into another register.
 void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
     u16 tplId;
+    IconFrame* frames;
     IconBinaryEntry* data;
 
     if (!icon_tpl_ok || !icon_bin_ok) {
@@ -545,16 +555,17 @@ void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
         s32 rest;
         int i;
 
+        frames = iconFramesOf(data);
         for (i = 0; i < data->numIcons; i++) {
-            total += ((IconFrame*)data)[i + 2].frameDelay;
+            total += frames[i + 2].frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
         for (i = 0; i < data->numIcons; i++) {
-            if (rest < ((IconFrame*)data)[i + 2].frameDelay) {
-                tplId = ((IconFrame*)data)[i + 2].tplId;
+            if (rest < frames[i + 2].frameDelay) {
+                tplId = frames[i + 2].tplId;
                 break;
             }
-            rest -= ((IconFrame*)data)[i + 2].frameDelay;
+            rest -= frames[i + 2].frameDelay;
         }
     }
     TEXGetGXTexObjFromPalette(icon_tpl, texObj, tplId);
