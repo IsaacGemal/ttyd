@@ -74,9 +74,16 @@ EffectEntry* effButterflyN64Entry(s32 a, f32 x, f32 y, f32 z) {
     return effect;
 }
 
-// NONMATCHING (99.96%): the GXColor local and by-value argument stack slots
-// are swapped (original builds at r1+0x8 and copies to r1+0xC), and the
-// int->float magic is an anonymous @166, not double_to_int_802fa3a8.
+#ifdef MUST_MATCH
+static inline GXColor butterflyColor(u8 v) {
+    GXColor c = *(GXColor*)&dat_8041eb68;
+    c.r = v;
+    c.g = v;
+    c.b = v;
+    return c;
+}
+#endif
+
 void effButterflyDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     CameraEntry* cam;
@@ -104,10 +111,14 @@ void effButterflyDisp(CameraId camId, void* param) {
     GXLoadPosMtxImm(trans, 0);
     GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+    color = butterflyColor(alpha);
+#else
     color = *(GXColor*)&dat_8041eb68;
     color.r = alpha;
     color.g = alpha;
     color.b = alpha;
+#endif
     GXSetTevColor(1, color);
     GXSetNumChans(0);
     GXSetNumTevStages(1);
