@@ -2745,7 +2745,7 @@ changes for him. Three Claude sessions ran: #1 orchestrated (waves 24-26, 28, 29
 #2 ran the REL waves (22, 27, 30, the wave 27 salvage), #3 finished units and near-misses. A 45-minute timer was the
 heartbeat.
 
-**Result: 5,888 -> 7,836 matched functions; code linked 20.2% -> 23.7%; data linked 52% -> 62.7%; 27 PRs merged
+**Result: 5,888 -> 7,836 matched functions; code linked 17.6% -> 23.7%; data linked 52% -> 62.7%; 27 PRs merged
 after 03:30 alone.** The biggest single jumps were wave 22 (+1,490 REL functions) and wave 27 (+173); the most
 efficient per agent were the near-miss waves 28 and 29 (29/48 and 25/48 to 100%, none worse).
 
