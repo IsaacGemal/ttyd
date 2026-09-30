@@ -131,20 +131,21 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 
 ## Code shapes that fixed near-misses
 
-When the instructions match but the stack slots, register allocation or scheduling differ, try these first (each
-is written under `#ifdef MUST_MATCH`, with the natural form under `#else`):
-- **A `GXColor` passed by value lands in the wrong stack slot** (`color = <global>; color.a = a;`): build it in a
-  `static inline GXColor f(u8 a) { GXColor c = <global>; c.a = a; return c; }` and write `color = f(a);`
-  (effBattenDisp2, effButterflyDisp, effStardust2Disp). It doesn't help when a function passes several colours.
+When the instructions match but the stack slots, register allocation or scheduling differ, try these first:
+- **A `GXColor` passed by value lands in the wrong stack slot** (`color = *(GXColor*)&dat_...;` followed by setting
+  some channels): move the build into an inline that returns the colour, setting the same channels the original
+  sets, e.g. `static inline GXColor f(u8 a) { GXColor c = *(GXColor*)&dat_...; c.a = a; return c; }` and
+  `color = f(a);` (effBattenDisp2; effButterflyDisp and effStardust2Disp set .r/.g/.b instead). Keep the inline and
+  the call under `#ifdef MUST_MATCH`, with the plain assignment under `#else` (rule 7). It doesn't help when a
+  function passes several colours by value.
 - **A `Vec` temp copied from a named zero vector schedules too early** (`position = vec3_...;` at the top of
-  `effXxxMain`): build it from a literal in an inline (`makeVec(0, 0, 0)`), placed above the unit's other rodata.
-  Only where the unit's `.rodata` score doesn't drop; CI checks it.
-- **A blend `(C - v) * k + v` computes in the wrong order**: `f32 t = C - v; v = t * k + v;` (eff_mahorn).
-- **A loop stepping two pointers increments in the wrong order**: put both in the header, in the target's
-  order (`i++, data++`).
-- **Action-command display functions (`battleAcDisp_*`) reload the work pointer**: take the pointer once,
-  `BattleActions* ac = &((BattleWork*)param)->actionCommands;` (GaugeTiming, PowerGauge, Repeatedly and StickKeepLeft
-  match with it; LstRcKeep and TimingWide use it and still differ elsewhere).
+  `effXxxMain`): build it from a literal in an inline, `makeVec(0, 0, 0)` (eff_vapor_n64), placed above the unit's
+  other rodata. The anonymous literal is deliberate here: it replaces the named zero vector only where the unit's
+  `.rodata` score doesn't drop (CI checks that).
+- **A blend `(C - v) * k + v` computes in the wrong order**: `f32 t = C - v; v = t * k + v;` under
+  `#ifdef MUST_MATCH` (eff_mahorn).
+- **A loop stepping two pointers increments in the wrong order**: put both in the loop header, in the target's
+  order (`i++, data++`; eff_starpoint).
 
 ## Partial functions
 
