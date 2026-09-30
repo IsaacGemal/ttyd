@@ -2517,3 +2517,13 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
   unconverted.
 - evt_snd.c carried two dead stubs (`evt_snd_bgmon`, `evt_snd_sfxon_3d`) that party_motion.c defines for real: multiply-defined
   at link. They were not in the unit's target, so they are gone.
+
+- **unit_party_nokotarou links** (19 KB of `.data`): `tools/dol_gen.py UNIT --append SRC > new.c` writes the unit's event scripts and tables
+  (it prints the merged file: redirect it; the header declarations it adds to `include/` clash with other files' local
+  `extern s32 X[]` stand-ins, so revert `include/battle/*` and declare the four handlers as local array externs). Three fixes
+  after that: `$` in a local's name (`negone_one$374`) becomes `_374`; the data needs `#pragma force_active on/off`; and
+  `__makeTechMenuFunc` keeps the `lbl_8038BEB8` anchor under MUST_MATCH (the anchor is the label 8 bytes before the unit's
+  `.data`, so compiling the weapons in the same TU changes the `lis/addi` immediates by 8 unless the code uses the extern).
+- eff_machinegun links: the `-16.0f` fold (`x0 = -32.0f * 0.5f` computed at compile time) is avoided with `f32 f = 32.0f;
+  f32 h = 0.5f; x0 = -f * h;` under MUST_MATCH. eff_mizutama has the same fold but the target also re-multiplies `sz * 0.5f` in
+  the loop (loop-invariant hoisting differs), left open at 95.6%.
