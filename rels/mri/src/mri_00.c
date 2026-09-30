@@ -721,7 +721,7 @@ static USER_FUNC(evt_cloud_main) {
         // fallthrough
     case 3:
         img = imgNameToPtr(cp->imgName, inBattle);
-        img->field_0x108 = (s32)"A_1";
+        img->animName = "A_1";
         (*(OSTime*)&img->field_0x10C[4]) = animTimeGetTime(inBattle);
         img->flags &= ~2;
         cp->field_0x198 = 0x1E;
@@ -763,7 +763,7 @@ static USER_FUNC(evt_cloud_main) {
             evtEntry(cp->field_0x194, 0, 0);
         }
         img = imgNameToPtr(cp->imgName, inBattle);
-        img->field_0x108 = (s32)"A_2";
+        img->animName = "A_2";
         (*(OSTime*)&img->field_0x10C[4]) = animTimeGetTime(inBattle);
         cp->field_0x198 = 0x3C;
         cp->mode++;

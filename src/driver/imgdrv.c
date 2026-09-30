@@ -148,7 +148,7 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	entry->type = type;
 	strcpy(entry->name, name);
 	entry->poseId = -1;
-	entry->field_0x108 = 0;
+	entry->animName = NULL;
 	entry->field_0xE4 = 0;
 	entry->field_0xE6 = 0;
 	entry->field_0xE8 = 0.0f;
