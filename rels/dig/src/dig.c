@@ -1,6 +1,8 @@
 #include "dig.h"
+#include "data/mapdata.h"
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
+#include "rel/dig/dig_00.h"
 
 #pragma pool_data off
 
@@ -29,12 +31,25 @@ extend_data(10,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// TODO: write _unresolved (global, 0x4 bytes) here:
-// its asm is in build/G8MJ01/dig/asm/dig.s; this is where the original has it, just before the first script that uses it
+void _prolog(void) {
+    voidfunctionptr* ctor;
 
-// TODO: write _epilog (global, 0x50 bytes) here:
-// its asm is in build/G8MJ01/dig/asm/dig.s; this is where the original has it, just before the first script that uses it
+    for (ctor = _ctors; *ctor != NULL; ctor++) {
+        (*ctor)();
+    }
+    relSetEvtAddr("dig_00", dig_00_init_evt);
+    dig_thpInit();
+}
 
-// TODO: write _prolog (global, 0x64 bytes) here:
-// its asm is in build/G8MJ01/dig/asm/dig.s; this is where the original has it, just before the first script that uses it
+void _epilog(void) {
+    voidfunctionptr* dtor;
+
+    for (dtor = _dtors; *dtor != NULL; dtor++) {
+        (*dtor)();
+    }
+    dig_thpStop();
+}
+
+void _unresolved(void) {
+}
 // clang-format on

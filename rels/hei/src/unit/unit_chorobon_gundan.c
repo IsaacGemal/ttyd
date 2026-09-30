@@ -26,16 +26,15 @@
 
 #pragma force_active on
 
-Vec vec3[8] = {
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 200.0f, 200.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-};
+// The vector pool is read-only (it lands in .rodata, after the data-initializer strings); defined below.
+extern Vec vec3_0;
+extern Vec vec3_1;
+extern Vec vec3_2;
+extern Vec vec3_3;
+extern Vec vec3_4;
+extern Vec vec3_5;
+extern Vec vec3_6;
+extern Vec vec3_7;
 
 static BattleVulnerableStatus regist;
 static BattleDataEntry data_table[2];
@@ -319,7 +318,7 @@ void chorogun_ext_init(void) {
         pose->field_0x4 = 90.0f;
         chorogun[i].flags = 0;
         chorogun[i].state = 0;
-        chorogun[i].position = vec3[0];
+        chorogun[i].position = vec3_0;
         if (i == 0) {
             chorogun[i].timer = 0x16;
         } else {
@@ -373,8 +372,9 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// NONMATCHING (87.01%): full state machine matches structurally; register allocation and pool slots differ.
+// NONMATCHING (97.84%): full state machine matches structurally; register allocation and pool slots differ.
 void chorogun_ext_main(void) {
+    BattleWork* wp = _battleWorkPointer;
     BattleUnit* unit = chorogun_get_ptr();
     ExtPose* pose = extGetPosePtr();
     s32 i;
@@ -409,7 +409,7 @@ void chorogun_ext_main(void) {
                     entry->state = 2;
                     entry->timer = 0;
                     if (i == 0) {
-                        Vec pos = vec3[1];
+                        Vec pos = vec3_1;
 
                         BtlUnit_snd_se_pos(unit, "SFX_BOSS_TEAM_CHORO_FALL2", 0x7F, 0, &pos);
                     }
@@ -418,7 +418,7 @@ void chorogun_ext_main(void) {
             case 2:
                 if ((*pose->matrix)[1][3] <= 0.0f) {
                     if (i % 100 == 0) {
-                        Vec pos = vec3[2];
+                        Vec pos = vec3_2;
 
                         pos.x = (*pose->matrix)[0][3];
                         pos.y = (*pose->matrix)[1][3];
@@ -434,12 +434,12 @@ void chorogun_ext_main(void) {
                 if ((*pose->matrix)[1][3] > 0.0f) {
                     entry->position.y += -0.5f;
                 } else {
-                    f32 dx = entry->target.x - (*pose->matrix)[0][3];
                     f32 dz = entry->target.z - (*pose->matrix)[2][3];
+                    f32 dx = entry->target.x - (*pose->matrix)[0][3];
                     f32 dist = (f32)sqrt(dz * dz + dx * dx);
 
                     if (i % 100 == 0) {
-                        Vec pos = vec3[3];
+                        Vec pos = vec3_3;
 
                         pos.x = (*pose->matrix)[0][3];
                         pos.y = (*pose->matrix)[1][3];
@@ -467,9 +467,9 @@ void chorogun_ext_main(void) {
                 entry->state = 0x15;
                 break;
             case 0x15: {
-                f32 tx = intplGetValue(0, entry->timer, 1000, entry->target.x, unit->mHomePosition.x) +
+                f32 tx = intplGetValue(0, alive, 1000, entry->target.x, unit->mHomePosition.x) +
                          (unit->mPosition.x - unit->mHomePosition.x);
-                f32 tz = intplGetValue(0, entry->timer, 1000, entry->target.z, unit->mHomePosition.z) +
+                f32 tz = intplGetValue(0, alive, 1000, entry->target.z, unit->mHomePosition.z) +
                          (unit->mPosition.z - unit->mHomePosition.z);
 
                 if ((*pose->matrix)[1][3] <= unit->mPosition.y) {
@@ -478,7 +478,7 @@ void chorogun_ext_main(void) {
                     f32 dist = (f32)sqrt(dz * dz + dx * dx);
 
                     if (i % 100 == 0) {
-                        Vec pos = vec3[4];
+                        Vec pos = vec3_4;
 
                         pos.x = (*pose->matrix)[0][3];
                         pos.y = (*pose->matrix)[1][3];
@@ -496,16 +496,19 @@ void chorogun_ext_main(void) {
                 break;
             }
             case 0x1E: {
-                BattleUnit* target = BattleGetUnitPtr(_battleWorkPointer, chorogun_targetId);
+                BattleUnit* target;
                 f32 x;
                 f32 y;
                 f32 z;
 
                 entry->state = 0x1F;
                 entry->timer = 0;
+                target = BattleGetUnitPtr(wp, chorogun_targetId);
                 BtlUnit_GetPos(target, &x, &y, &z);
-                entry->targetX = x + (50.0f * (f32)rand() / 32767.0f - 25.0f);
-                entry->targetZ = z + (50.0f * (f32)rand() / 32767.0f - 25.0f);
+                x += 50.0f * (f32)rand() / 32767.0f - 25.0f;
+                entry->targetX = x;
+                z += 50.0f * (f32)rand() / 32767.0f - 25.0f;
+                entry->targetZ = z;
                 // fallthrough
             }
             case 0x1F:
@@ -515,7 +518,7 @@ void chorogun_ext_main(void) {
                     f32 dist = (f32)sqrt(dz * dz + dx * dx);
 
                     if (i % 100 == 0) {
-                        Vec pos = vec3[5];
+                        Vec pos = vec3_5;
 
                         pos.x = (*pose->matrix)[0][3];
                         pos.y = (*pose->matrix)[1][3];
@@ -556,8 +559,8 @@ void chorogun_ext_main(void) {
                 break;
             case 0x2E:
                 entry->state = 0x2F;
-                entry->position.y = 6.0f;
                 entry->timer = 0;
+                entry->position.y = 6.0f;
                 if ((*pose->matrix)[1][3] <= 0.0f) {
                     (*pose->matrix)[1][3] = 0.1f;
                 }
@@ -575,9 +578,9 @@ void chorogun_ext_main(void) {
                 break;
             case 0x30:
                 entry->state = 0x31;
+                entry->timer = 0;
                 entry->position.x = -4.0f;
                 entry->position.y = 10.0f;
-                entry->timer = 0;
                 if ((*pose->matrix)[1][3] <= 0.0f) {
                     (*pose->matrix)[1][3] = 0.1f;
                 }
@@ -602,7 +605,7 @@ void chorogun_ext_main(void) {
             case 0x3D:
                 if ((*pose->matrix)[1][3] <= 0.0f) {
                     if (i % 100 == 0) {
-                        Vec pos = vec3[6];
+                        Vec pos = vec3_6;
 
                         pos.x = (*pose->matrix)[0][3];
                         pos.y = (*pose->matrix)[1][3];
@@ -661,7 +664,7 @@ USER_FUNC(chorogun_set_target_id) {
 // NONMATCHING (94.9%): `li r0,0x2` is scheduled one slot later than the target.
 USER_FUNC(chorogun_appear) {
     s32 i;
-    u32 count;
+    s32 count;
 
     if (isFirstCall) {
         for (i = 0; i < extGetPoseNum(); i++) {
@@ -677,7 +680,10 @@ USER_FUNC(chorogun_appear) {
             count++;
         }
     }
-    return count == extGetPoseNum() ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
+    if (count == extGetPoseNum()) {
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
 }
 
 USER_FUNC(chorogun_approach_target) {
@@ -813,23 +819,27 @@ static ChorogunExtEntry chorogun_ext_entry_data[21] = {
 };
 
 
-// NONMATCHING (75.12%): callee-saved register assignment and the read-only float/vec pool differ.
+// NONMATCHING (99.84%): callee-saved register assignment and the read-only float/vec pool differ.
 USER_FUNC(chorogun_dive_target) {
     s32 ids[1000];
+    s32 i;
+    s32 count = 0;
+    s32* args = event->args;
     ExtPose* pose;
+    s32 idx;
     ExtPose* sel;
+    ChorogunEntry* entry;
     BattleUnit* unit;
+    s32 delay;
     f32 x;
-    f32 y;
-    f32 z;
+    f32 tz;
+    f32 delayF;
     f32 px;
     f32 pz;
-    f32 delayF;
-    s32 delay;
-    s32 count = 0;
-    s32 i;
-    s32 idx;
-    s32* args = event->args;
+    f32 d2;
+    f32 y;
+    f32 t;
+    f32 z;
 
     delay = evtGetValue(event, args[0]);
     delayF = (f32)delay;
@@ -841,20 +851,24 @@ USER_FUNC(chorogun_dive_target) {
         }
     }
     idx = ids[irand(count)];
-    sel = &pose[idx];
-    chorogun[idx].state = 0x2D;
-    chorogun[idx].timer = delay;
+    entry = &chorogun[idx];
+    entry->state = 0x2D;
+    entry->timer = delay;
     unit = BattleGetUnitPtr(_battleWorkPointer, chorogun_targetId);
     BtlUnit_GetPos(unit, &x, &y, &z);
+    sel = &pose[idx];
     px = (*sel->matrix)[0][3];
     pz = (*sel->matrix)[2][3];
-    chorogun[idx].position.x = (x - px) / delayF;
-    chorogun[idx].position.y = (2.0f * (y - pz) - (-0.5f * delayF * delayF)) / (2.0f * delayF);
-    chorogun[idx].position.z = (z - pz) / delayF;
+    t = y - pz;
+    d2 = 2.0f * delayF;
+    tz = z - pz;
+    entry->position.x = (x - px) / delayF;
+    entry->position.y = (2.0f * t - (-0.5f * delayF * delayF)) / d2;
+    entry->position.z = tz / delayF;
     evtSetValue(event, args[1], idx);
     unit = chorogun_get_ptr();
     {
-        Vec pos = { 0.0f, 0.0f, 0.0f };
+        Vec pos = vec3_7;
 
         pos.x = (*sel->matrix)[0][3];
         pos.y = (*sel->matrix)[1][3];
@@ -879,9 +893,18 @@ EVT_BEGIN(chorogun_entry)
     RETURN
 EVT_END()
 
+ChorogunEntry* chorogun;
+
 s32 chorogun_targetId;
 
-ChorogunEntry* chorogun;
+__declspec(section ".rodata") Vec vec3_0 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_1 = { 0.0f, 200.0f, 200.0f };
+__declspec(section ".rodata") Vec vec3_2 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_3 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_4 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_5 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_6 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_7 = { 0.0f, 0.0f, 0.0f };
 
 USER_FUNC(chorogun_counterd) {
     s32 id = evtGetValue(event, event->args[0]);
@@ -938,12 +961,21 @@ found:
         }
         dx = unit->mHomePosition.x - (*pose->matrix)[0][3];
         dz = unit->mHomePosition.z - (*pose->matrix)[2][3];
-        dist2 = dz * dz + dx * dx;
-        if (count < 50 || dist2 <= 2500.0f) {
-            dists[count] = dist2;
-            indices[count] = j;
-            count++;
+        dist2 = dx * dx + dz * dz;
+        if (count < 50) {
+            goto count_store;
         }
+        if (!(dist2 <= 2500.0f)) {
+            continue;
+        }
+        dists[count] = dist2;
+        indices[count] = j;
+        count++;
+        continue;
+count_store:
+        dists[count] = dist2;
+        indices[count] = j;
+        count++;
     }
     for (i = 0; i < count - 1; i++) {
         for (j = 1; j < count; j++) {
@@ -960,8 +992,10 @@ found:
     }
     num = count < 50 ? count : 50;
     for (i = 0; i < num; i++) {
-        chorogun[indices[i]].flags &= ~1;
-        chorogun[indices[i]].state = 0x3C;
+        ChorogunEntry* entry = &chorogun[indices[i]];
+
+        entry->flags &= ~1;
+        entry->state = 0x3C;
     }
     return EVT_RETURN_DONE;
 }

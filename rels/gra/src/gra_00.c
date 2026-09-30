@@ -54,7 +54,6 @@ extend_data(2,
      f64, _three, 3,
      f64, _half, 0.5)
 
-// NONMATCHING (98.78%): 18 of 103 instructions differ in operands only (registers or offsets)
 USER_FUNC(camera_yure) {
     s32 count;
     CameraEntry* cam;
@@ -62,6 +61,9 @@ USER_FUNC(camera_yure) {
     Vec vec;
     f32 s;
     f32 scale;
+#ifdef MUST_MATCH
+    s32 diff;
+#endif
 
     count = evtGetValue(event, event->args[0]);
     cam = camGetPtr(CAMERA_3D);
@@ -69,8 +71,15 @@ USER_FUNC(camera_yure) {
         event->userdata[0] = 0;
         event->userdata[1] = count;
     }
-    s = (f32)sin(18.849556f * (f32)event->userdata[0] / (f32)event->userdata[1]) * 0.1f;
-    scale = (f32)(event->userdata[1] - event->userdata[0]) * s / (f32)event->userdata[1];
+    s = (f32)sin(18.849556f * (f32)event->userdata[0] / (f32)event->userdata[1]);
+#ifdef MUST_MATCH
+    // MUST_MATCH: a named temp for the difference is the only shape that keeps u0 out of r3,
+    // which is reserved for &cam->cameraAt below; inlined, MWCC picks r3 and the schedule shifts.
+    diff = event->userdata[1] - event->userdata[0];
+    scale = (f32)diff * (0.1f * s) / (f32)event->userdata[1];
+#else
+    scale = (f32)(event->userdata[1] - event->userdata[0]) * s * 0.1f / (f32)event->userdata[1];
+#endif
     PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &vec);
     PSVECScale(&vec, &vec, scale);
     cam->viewOffset.x = vec.x;
@@ -143,8 +152,6 @@ EVT_BEGIN(evt_nameent)
     CALL(evt_cam_letter_box_disable, 0)
     RETURN
 EVT_END()
-
-// TODO: write cam_r at the end of the file (deferred-inline order puts it first in .text)
 
 static USER_FUNC(zoom) {
     s32* args = event->args;

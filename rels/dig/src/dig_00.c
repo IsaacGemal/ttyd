@@ -11,6 +11,7 @@
 #include "sdk/DEMOInit.h"
 #include "seq/seq_demo.h"
 #include <stdlib.h>
+#include "math_ext.h"
 #include "manager/fontmgr.h"
 #include "evt/evt_mario.h"
 #include "evt/evt_party.h"
@@ -22,6 +23,7 @@
 static USER_FUNC(z);  // local to this file in the original
 // #include <stdlib.h>
 
+#pragma force_active on
 #pragma pool_data off
 
 
@@ -43,6 +45,8 @@ extend_data(1,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 // clang-format on
+
+const GXColor dat_dig_000006e0 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 typedef struct DigestWork {
     s32 frameNumber; // 0x0
@@ -352,12 +356,14 @@ void movie_draw(CameraId cameraId, void* param) {
     u32 width, height;
     u32 type;
     const char* string;
+    GXColor color;
 
     EXIGetType(0, 2, &type);
     if (type == EXI_IS_VIEWER) {
         string = "ここにムービーがながれます";
         FontDrawStart();
-        FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+        color = *(GXColor*)&dat_dig_000006e0;
+        FontDrawColor(&color);
         FontDrawString(string, (f32)(-FontGetMessageWidth(string) / 2), 0.0f);
         wp->frameNumber++;
     } else {
@@ -403,20 +409,8 @@ USER_FUNC(gravity_scale) {
 
 USER_FUNC(evt_action_sub) {
     s32* args = event->args;
-    AnimTblUnknown* anim;
-
-    rand();
-
-    do {
-        anim = &anim_tbl[rand() % 48u];
-    } while (evtNpcNameToPtr_NoAssert(event, anim->field_0) != NULL);
-    
-}
-/*
-USER_FUNC(evt_action_sub) {
-    s32* args = event->args;
     s32 index;
-    AnimTblUnknown* entry;
+    s32* pFlags;
     s32 flags;
     s32 numAnims;
     s32 sel;
@@ -428,21 +422,22 @@ USER_FUNC(evt_action_sub) {
     rand();
 
     do {
-        entry = &anim_tbl[rand() % 48u];
-    } while (evtNpcNameToPtr_NoAssert(event, entry->field_0) != NULL);
+        index = rand() % 48u;
+    } while (evtNpcNameToPtr_NoAssert(event, anim_tbl[index].field_0) != NULL);
 
-    flags = entry->field_4;
+    pFlags = &anim_tbl[index].field_4;
+    flags = *pFlags;
     numAnims = 0;
     for (i = 0; i < 6; i++) {
-        if (flags & (1 << i)) {
+        if ((1 << i) & flags) {
             numAnims++;
         }
     }
-    entry->field_4 = flags;
+    *pFlags = flags;
 
     sel = rand() % numAnims;
     for (i = 0; i < 6; i++) {
-        if (entry->field_4 & (1 << i)) {
+        if ((1 << i) & *pFlags) {
             if (--sel < 0) {
                 break;
             }
@@ -450,7 +445,7 @@ USER_FUNC(evt_action_sub) {
     }
     mask = 1 << i;
 
-    name = entry->field_0;
+    name = anim_tbl[index].field_0;
     EXIGetType(0, 2, &type);
     if (type != 0x05070000) {
         NpcTribeInfo* tribe = npcGetTribe(name);
@@ -461,12 +456,13 @@ USER_FUNC(evt_action_sub) {
         evtSetValue(event, *args++, (s32)"にせマリオ２");
     }
     evtSetValue(event, *args++, mask);
-    evtSetValue(event, *args++, entry->field_8);
+    evtSetValue(event, *args++, anim_tbl[index].field_8);
 
     return EVT_RETURN_DONE;
 }
-*/
 
 static USER_FUNC(z) {
+    f32 t = (f32)tan(0.21816612780094147);
+    event->lwData[0] = FLOAT(240.0f / t);
     return EVT_RETURN_DONE;
 }

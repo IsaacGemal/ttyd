@@ -1,4 +1,5 @@
 #include "mri_13.h"
+#include "driver/hitdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"
 #include "evt/evt_case.h"
@@ -14,6 +15,8 @@
 #include "evt/evt_snd.h"
 #include "evt/evt_sub.h"
 #include "forcedata.h"
+#include "manager/evtmgr_cmd.h"
+#include "mri_puni.h"
 #include "party/party_motion.h"
 
 #pragma pool_data off
@@ -23,7 +26,6 @@ extern s32 evt_puni_flag_onoff[];
 extern s32 evt_puni_get_flag[];
 extern s32 evt_puni_get_mode[];
 extern s32 evt_puni_get_position[];
-extern s32 evt_puni_mem_init[];
 extern s32 evt_puni_set_anim[];
 extern s32 evt_puni_set_hamari[];
 extern s32 evt_puni_set_mode[];
@@ -261,11 +263,44 @@ static EVT_BEGIN(yuka_check)
     RETURN
 EVT_END()
 
-// TODO: write yuka_fall_check (global, 0x134 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_13.s; this is where the original has it, just before the first script that uses it
+USER_FUNC(yuka_fall_check) {
+    s32 i;
+    u8* p;
+    f32 distance;
+    Vec normal;
+    Vec fall;
+    Vec pos;
+    Vec hitPos;
+    Vec hitNormal;
 
-// TODO: write evt_puni_force_pose (global, 0x74 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/mri_13.s; this is where the original has it, just before the first script that uses it
+    for (i = 1; i < 103; i++) {
+        p = (u8*)&puniGetPunidat()[i];
+        if (*(s32*)(p + 0x4) & 0x400) {
+            normal = (Vec){ 0.0f, -1.0f, 0.0f };
+            fall = (Vec){ 0.0f, -3.0f, 0.0f };
+            distance = 3.0f;
+            pos = *(Vec*)(p + 0x12C);
+
+            if (hitCheckFilter(NULL, &hitPos.x, &hitPos.y, &hitPos.z, &distance, &hitNormal.x, &hitNormal.y,
+                               &hitNormal.z, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z)) {
+                *(Vec*)(p + 0x12C) = hitPos;
+            } else {
+                PSVECAdd((Vec*)(p + 0x12C), &fall, (Vec*)(p + 0x12C));
+            }
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_puni_force_pose) {
+    u8* p = (u8*)&puniGetPunidat()[evtGetValue(event, event->args[0])];
+
+    *(f32*)(p + 0x188) = 0.0f;
+    *(f32*)(p + 0x184) = 0.0f;
+    *(f32*)(p + 0x148) = 0.0f;
+    *(Vec*)(p + 0x15C) = (Vec){ 0.0f, 0.0f, 0.0f };
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(yuka_event)
     LOOP(0)
@@ -398,15 +433,14 @@ static EVT_BEGIN(evt_f1_ueki_01)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 ueki_access_data[28] = {
-    0x00000001, (u32)"A_f2_ueki02", (u32)"S_f2_ueki02", 0x00000000,
-    0x00000001, (u32)"A_f2_ueki03", (u32)"S_f2_ueki03", 0x00000000,
-    0x00000001, (u32)"A_f2_ueki04", (u32)"S_f2_ueki04", 0x00000000,
-    0x00000001, (u32)"A_f1_ueki01", (u32)"S_f1_ueki01", (u32)&evt_f1_ueki_01,
-    0x00000001, (u32)"A_f1_ueki02", (u32)"S_f1_ueki02", 0x00000000,
-    0x00000001, (u32)"A_f1_ueki03", (u32)"S_f1_ueki03", 0x00000000,
-    0x00000004, 0x00000000, 0x00000000, 0x00000000,
+static KusaAccessEntry ueki_access_data[7] = {
+    {1, "A_f2_ueki02", "S_f2_ueki02", NULL},
+    {1, "A_f2_ueki03", "S_f2_ueki03", NULL},
+    {1, "A_f2_ueki04", "S_f2_ueki04", NULL},
+    {1, "A_f1_ueki01", "S_f1_ueki01", evt_f1_ueki_01},
+    {1, "A_f1_ueki02", "S_f1_ueki02", NULL},
+    {1, "A_f1_ueki03", "S_f1_ueki03", NULL},
+    {4, NULL, NULL, NULL},
 };
 
 EVT_BEGIN(mri_13_init_evt)

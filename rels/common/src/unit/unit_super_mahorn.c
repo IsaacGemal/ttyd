@@ -11,6 +11,15 @@
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_database_common.h"
+#include "battle/battle.h"
+#include "battle/battle_status_effect.h"
+#include "battle/battle_sub.h"
+#include "eff/eff_mahorn2.h"
+#include "manager/evtmgr_cmd.h"
+#include "memory.h"
+#include "system.h"
+#include <string.h>
+
 
 #pragma pool_data off
 
@@ -22,7 +31,7 @@ static USER_FUNC(mahorn_shuffle);
 static USER_FUNC(mahorn_get_bunsin);
 static USER_FUNC(set_hand_dest);
 static USER_FUNC(hand_ctrl);
-static void hand_end(void);  // TODO: real signature
+static USER_FUNC(hand_end);
 static USER_FUNC(hand_init);
 static USER_FUNC(mahorn_get_live_num);
 static BattleVulnerableStatus regist;
@@ -934,11 +943,281 @@ static BattleUnitSetup entry_mahorn[1] = {
     { &unit_super_mahorn_bunsin, 1, 0x04000004, { -1000.0f, -1000.0f, -1000.0f }, 0, { 0, 0, 0, 0 }, NULL },
 };
 
-// TODO: write mahorn_get_bunsin (static, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(mahorn_get_live_num) {
+    s32 i;
+    s32* args = event->args;
+    s32 count = 0;
+    BattleWork* work = _battleWorkPointer;
 
-// TODO: write mahorn_get_live_num (static, 0x94 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
+    for (i = 0; i < 64; i++) {
+        BattleUnit* unit = work->units[i];
+        if (unit != NULL && unit->mAlliance == 1 && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
+            count++;
+        }
+    }
+    evtSetValue(event, args[0], count);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(hand_init) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    f32 x, y, z;
+    s32 partNum;
+    s32 index;
+    s32 id;
+
+    id = evtGetValue(event, *args++);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    BtlUnit_GetPos(unit, &x, &y, &z);
+    index = 0;
+    for (partNum = 2; partNum <= 5; partNum++, index++) {
+        Vec* dest;
+        BtlUnit_SetAnim(BtlUnit_GetPartsPtr(unit, partNum), "MAH_Z_2");
+        dest = (Vec*)__memAlloc(HEAP_BATTLE, sizeof(Vec));
+        unit->work[index] = (s32)dest;
+        dest->x = 0.0f;
+        dest->y = 0.0f;
+        dest->z = 0.0f;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(hand_end) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+    BattleUnit* unit;
+    s32 i;
+    s32 index;
+    s32 id;
+
+    id = evtGetValue(event, *args++);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    index = 0;
+    for (i = 2; i <= 5; i++, index++) {
+        void* ptr = (void*)unit->work[index];
+        if (ptr != NULL) {
+            BattleFree(ptr);
+            unit->work[index] = 0;
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(hand_ctrl) {
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    s8 turns;
+    s8 strength;
+    s32 partNum;
+    s32 index;
+    s32 id;
+
+    id = evtGetValue(event, *args++);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, id));
+    if (unit == NULL)
+        return EVT_RETURN_BLOCK;
+    BtlUnit_GetStatus(unit, STATUS_STOP, &turns, &strength);
+    if (turns > 0)
+        return EVT_RETURN_DONE;
+    BtlUnit_GetStatus(unit, STATUS_FREEZE, &turns, &strength);
+    if (turns > 0)
+        return EVT_RETURN_DONE;
+    BtlUnit_GetStatus(unit, STATUS_SLEEP, &turns, &strength);
+    if (turns > 0)
+        return EVT_RETURN_DONE;
+    index = 0;
+    for (partNum = 2; partNum <= 5; partNum++, index++) {
+        BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, partNum);
+        Vec* dest = (Vec*)unit->work[index];
+        f32 px = part->mPositionOffset.x * part->mBaseScale.x;
+        f32 py = part->mPositionOffset.y * part->mBaseScale.y;
+        f32 pz = part->mPositionOffset.z * part->mBaseScale.z;
+        f32 dx = dest->x - px;
+        f32 dy = dest->y - py;
+        f32 dz = dest->z - pz;
+        px = px + dx / 10.0f;
+        py = py + dy / 10.0f;
+        pz = pz + dz / 10.0f;
+        part->mPositionOffset.x = px;
+        part->mPositionOffset.y = py;
+        part->mPositionOffset.z = pz;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(set_hand_dest) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnit* unit;
+    s32* args = event->args;
+    s32 unitId;
+    s32 partNum;
+    s32 index;
+    f32 x, y, z;
+    Vec* dest;
+
+    unitId = evtGetValue(event, args[0]);
+    partNum = evtGetValue(event, args[1]);
+    x = evtGetFloat(event, args[2]);
+    y = evtGetFloat(event, args[3]);
+    z = evtGetFloat(event, args[4]);
+    unit = BattleGetUnitPtr(wp, BattleTransID(event, unitId));
+    if (unit == NULL)
+        return EVT_RETURN_BLOCK;
+    index = partNum - 2;
+    dest = (Vec*)unit->work[index];
+    if (BtlUnit_CheckStatus(unit, STATUS_HUGE)) {
+        dest->x = 1.25f * -x;
+        dest->y = 1.25f * y;
+        dest->z = 1.25f * z;
+    } else if (BtlUnit_CheckStatus(unit, STATUS_TINY)) {
+        dest->x = 0.75f * -x;
+        dest->y = 0.75f * y;
+        dest->z = 0.75f * z;
+    } else {
+        dest->x = -x;
+        dest->y = y;
+        dest->z = z;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(mahorn_get_bunsin) {
+    s32 found[4];
+    s32 i;
+    s32 j;
+    s32* args = event->args;
+    BattleWork* wp = _battleWorkPointer;
+    s32 count = 0;
+
+    for (i = 0; i < 64; i++) {
+        BattleUnit* unit = wp->units[i];
+        if (unit != NULL
+            && (unit->currentKind == UNIT_DARK_WIZZERD_CLONE || unit->currentKind == UNIT_ELITE_WIZZERD_CLONE)) {
+            found[count++] = i;
+        }
+    }
+    for (j = 0; j < 4; j++) {
+        if (j < count)
+            evtSetValue(event, *args++, found[j]);
+        else
+            evtSetValue(event, *args++, -1);
+    }
+    evtSetValue(event, *args++, count);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(mahorn_shuffle) {
+    BattleWork* work = _battleWorkPointer;
+    BattleUnit* units[6];
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < 64; i++) {
+        units[count] = work->units[i];
+        if (units[count] != NULL && (units[count]->currentKind == 0x80 ||
+                                     units[count]->currentKind == 0x81 ||
+                                     units[count]->currentKind == 0xA9 ||
+                                     units[count]->currentKind == 0xAA)) {
+            count++;
+        }
+    }
+    for (i = 0; i < 10; i++) {
+        s32 a = irand(count);
+        s32 b = irand(count);
+        BattleUnit* unitA = units[a];
+        BattleUnit* unitB = units[b];
+        f32 tmp;
+
+        tmp = unitA->mPosition.x;
+        unitA->mPosition.x = unitB->mPosition.x;
+        unitB->mPosition.x = tmp;
+        tmp = unitA->mHomePosition.x;
+        unitA->mHomePosition.x = unitB->mHomePosition.x;
+        unitB->mHomePosition.x = tmp;
+        tmp = unitA->mPosition.z;
+        unitA->mPosition.z = unitB->mPosition.z;
+        unitB->mPosition.z = tmp;
+        tmp = unitA->mHomePosition.z;
+        unitA->mHomePosition.z = unitB->mHomePosition.z;
+        unitB->mHomePosition.z = tmp;
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(mahorn_copy_status) {
+    s32* args = event->args;
+    BattleUnit* unit1;
+    BattleUnit* unit2;
+    s32 id1;
+    s32 id2;
+    BattleWork* wp;
+    f32 ratio;
+
+    id1 = evtGetValue(event, args[0]);
+    id2 = evtGetValue(event, args[1]);
+    wp = _battleWorkPointer;
+    unit1 = BattleGetUnitPtr(wp, id1);
+    unit2 = BattleGetUnitPtr(wp, id2);
+    unit2->currentHp = unit1->currentHp;
+    memcpy(&unit2->mSleepTurns, &unit1->mSleepTurns, 0x1E);
+    unit2->hpGauge.field_0xC = unit2->currentHp;
+    unit2->hpGauge.field_0x10 = unit2->currentHp;
+    ratio = (f32)unit2->currentHp / (f32)unit2->maxHp;
+    unit2->hpGauge.field_0x18 = ratio;
+    unit2->hpGauge.field_0x14 = ratio;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(eff_magic) {
+    s32* args = event->args;
+    BattleUnit* unit;
+    f32 posX, posY, posZ;
+    f32 dstX;
+    f32 radius;
+    s32 count;
+    s32 id;
+    double tmp;
+
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    dstX = evtGetFloat(event, args[1]);
+    evtGetFloat(event, args[2]);
+    evtGetFloat(event, args[3]);
+    count = evtGetValue(event, args[4]);
+    BtlUnit_GetPos(unit, &posX, &posY, &posZ);
+    posX += unit->mSizeMultiplier * unit->faceDirection;
+    posY += 18.0f * unit->mSizeMultiplier;
+    posZ += 5.0f;
+    tmp = __fabs((dstX - posX) / (f32)count);
+    radius = (f32)tmp;
+    unit->work[7] = (s32)effMahorn2Entry(FALSE, posX, posY, posZ, dstX, posY, posZ, unit->mSizeMultiplier, radius);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(eff_magic_get_posX) {
+    s32* args = event->args;
+    BattleUnit* unit;
+    EffectEntry* effect;
+    effMahorn2Data* data;
+    s32 i;
+
+    s32 id = BattleTransID(event, evtGetValue(event, *args++));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    effect = (EffectEntry*)unit->work[7];
+    data = (effMahorn2Data*)effect->userdata;
+    for (i = 0; i < effect->count; i++, data++) {
+        if (data->type == 3) {
+            evtSetFloat(event, *args++, data->position.x);
+            break;
+        }
+    }
+    if (i == effect->count)
+        evtSetFloat(event, *args++, 0.0f);
+    return EVT_RETURN_DONE;
+}
 
 static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_check_battleflag, LW(0), 2)
@@ -1081,11 +1360,7 @@ static BattleDataEntry data_table_bunsin[3] = {
     { 0x00, NULL },
 };
 
-// TODO: write set_hand_dest (static, 0x170 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write hand_init (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -1168,8 +1443,6 @@ static EVT_BEGIN(alpha_up_event)
     RETURN
 EVT_END()
 
-// TODO: write hand_ctrl (static, 0x184 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(hand_ctrl_event)
     LABEL(0)
@@ -1477,8 +1750,6 @@ static EVT_BEGIN(start_avoid)
     RETURN
 EVT_END()
 
-// TODO: write eff_magic_get_posX (static, 0xcc bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(attack_enemy_common_event)
     CALL(btlevtcmd_WeaponAftereffect, LW(9))
@@ -1751,8 +2022,6 @@ static EVT_BEGIN(attack_enemy_common_event_sub2)
     RETURN
 EVT_END()
 
-// TODO: write eff_magic (static, 0x168 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(attack_enemy_common_event_sub_no_hit)
     IF_INT_EQUAL(LW(15), -1)
@@ -1982,8 +2251,6 @@ static EVT_BEGIN(recover_magic_event)
     RETURN
 EVT_END()
 
-// TODO: write mahorn_shuffle (static, 0x10c bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(bunsin_event)
     SET_VALUE(LW(3), -2)
@@ -2038,8 +2305,6 @@ static EVT_BEGIN(bunsin_event)
     RETURN
 EVT_END()
 
-// TODO: write mahorn_copy_status (static, 0xf0 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(spawn_event)
     CALL(btlevtcmd_SpawnUnit, LW(3), PTR(entry_mahorn), 0)
@@ -2188,6 +2453,4 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-// TODO: write hand_end (static, 0x94 bytes) here:
-// its asm is in build/G8MJ01/jon/asm/unit/unit_super_mahorn.s; this is where the original has it, just before the first script that uses it
 // clang-format on

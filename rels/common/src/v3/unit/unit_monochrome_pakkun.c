@@ -1,3 +1,7 @@
+#include "battle/battle.h"
+#include "battle/battle_sub.h"
+#include "manager/evtmgr_cmd.h"
+#include "system.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/battle_event_default.h"
@@ -10,6 +14,10 @@
 #include "battle/battle_disp.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_database_common.h"
+
+// This mri copy of the unit was compiled without deferred inlining (functions in source
+// order); configure.py builds the common source copy deferred, so turn deferral off here.
+#pragma defer_codegen off
 
 #pragma pool_data off
 
@@ -303,8 +311,82 @@ static BattleDataEntry data_table[15] = {
     { 0x00, NULL },
 };
 
-// TODO: write shadow_scale_memory (static, 0x78 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_monochrome_pakkun.s; this is where the original has it, just before the first script that uses it
+static USER_FUNC(pakkun_ceil_exist) {
+    s32* args;
+
+    args = event->args;
+    if (*(u8*)((u8*)_battleWorkPointer + 0x180DC) & 0x20) {
+        evtSetValue(event, args[0], 0);
+    } else {
+        evtSetValue(event, args[0], 1);
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(shadow_scale_memory) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    unit->work[0] = (s32)part->field_0x78;
+    return EVT_RETURN_DONE;
+}
+
+// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
+// double and rematerialises the 0.0f load, so the argument setup is not the original's.
+#pragma opt_propagation off
+// NONMATCHING (86.75%): the instruction set is identical; MWCC schedules the int-arg setup
+// (`lis zero`, `xoris`, `stw`, `li r3`, `li r5`) around the two lfd/lfs loads in a different
+// order than the original (it fills the lfd delay slots with the li's, ours with the other load).
+static USER_FUNC(shadow_scale_small) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+    f32 start;
+    f32 end;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    if (isFirstCall) {
+        unit->work[1] = 0;
+    }
+    start = (f32)unit->work[0];
+    end = 0.0f;
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+    if (unit->work[1] >= 15) {
+        return EVT_RETURN_DONE;
+    }
+    unit->work[1]++;
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(shadow_scale_return) {
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    s32 id;
+    f32 start;
+    f32 end;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    if (isFirstCall) {
+        unit->work[1] = 0;
+    }
+    start = 0.0f;
+    end = (f32)unit->work[0];
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
+    if (unit->work[1] >= 15) {
+        return EVT_RETURN_DONE;
+    }
+    unit->work[1]++;
+    return EVT_RETURN_BLOCK;
+}
+#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
@@ -360,12 +442,6 @@ static EVT_BEGIN(counter_damage_event)
     RETURN
 EVT_END()
 
-// TODO: write shadow_scale_small (static, 0xe0 bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_monochrome_pakkun.s; this is where the original has it, just before the first script that uses it
-
-// TODO: write shadow_scale_return (static, 0xdc bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_monochrome_pakkun.s; this is where the original has it, just before the first script that uses it
-
 static EVT_BEGIN(ceil_fall_ready_event)
     CALL(btlevtcmd_SetEventCeilFall, -2, 0)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_ENM_PAKKUN_MOVE1"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
@@ -399,9 +475,6 @@ static EVT_BEGIN(ceil_fall_ready_event)
     CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("PKF_S_1"))
     RETURN
 EVT_END()
-
-// TODO: write pakkun_ceil_exist (static, 0x5c bytes) here:
-// its asm is in build/G8MJ01/mri/asm/unit/unit_monochrome_pakkun.s; this is where the original has it, just before the first script that uses it
 
 static EVT_BEGIN(return_event)
     CALL(evt_btl_camera_set_mode, 0, 0)
