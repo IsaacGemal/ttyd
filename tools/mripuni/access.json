@@ -1,0 +1,594 @@
+{
+ "W": {
+  "0x0": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_puni_get_systemmode"
+   ]
+  },
+  "0x328": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "elder_talk_sub_punicheck"
+   ]
+  },
+  "0x340": {
+   "kinds": {
+    "4i": 8
+   },
+   "fns": [
+    "puniModeSearch"
+   ]
+  },
+  "0x344": {
+   "kinds": {
+    "4i": 5
+   },
+   "fns": [
+    "puniModeFall",
+    "puniModePrehagure",
+    "puniModeRecover",
+    "puniPositionRecover"
+   ]
+  },
+  "0x348": {
+   "kinds": {
+    "4i": 5
+   },
+   "fns": [
+    "puniModeFall",
+    "puniModePrehagure",
+    "puniModeRecover",
+    "puniPositionRecover"
+   ]
+  },
+  "0x34c": {
+   "kinds": {
+    "4i": 5
+   },
+   "fns": [
+    "puniModeFall",
+    "puniModePrehagure",
+    "puniModeRecover",
+    "puniPositionRecover"
+   ]
+  },
+  "0x43c": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_end"
+   ]
+  },
+  "0x44c": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniCountDisp"
+   ]
+  },
+  "0x45c": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniSound"
+   ]
+  },
+  "0x460": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniSound"
+   ]
+  },
+  "0x468": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniSound"
+   ]
+  },
+  "0x470": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniSound"
+   ]
+  },
+  "0x474": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "puniSound"
+   ]
+  },
+  "0x47c": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x480": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x484": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x488": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x48c": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x490": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x494": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x4b0": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x4b4": {
+   "kinds": {
+    "4f": 1
+   },
+   "fns": [
+    "evt_mri_puni_win_attack"
+   ]
+  },
+  "0x4c0": {
+   "kinds": {
+    "4i": 2
+   },
+   "fns": [
+    "puniModeDamage"
+   ]
+  },
+  "0x4c4": {
+   "kinds": {
+    "4i": 2
+   },
+   "fns": [
+    "puniModeDamage"
+   ]
+  }
+ },
+ "D": {
+  "0x4": {
+   "kinds": {
+    "4i": 30
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "evt_mri_toge_make_retsu",
+    "evt_mri_toge_retsu_stop",
+    "evt_puni_flag_onoff"
+   ]
+  },
+  "0xc": {
+   "kinds": {
+    "2i": 2,
+    "2u": 3
+   },
+   "fns": [
+    "evt_puni_get_mode",
+    "evt_puni_set_mode",
+    "puni_parent",
+    "searchBattleMikata"
+   ]
+  },
+  "0xe": {
+   "kinds": {
+    "2i": 1
+   },
+   "fns": [
+    "evt_puni_set_mode"
+   ]
+  },
+  "0x114": {
+   "kinds": {
+    "2i": 3
+   },
+   "fns": [
+    "evt_puni_set_mode",
+    "puni_away",
+    "puni_parent"
+   ]
+  },
+  "0x116": {
+   "kinds": {
+    "2s": 3
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "puni_get_id",
+    "togeMakeRetsu"
+   ]
+  },
+  "0x118": {
+   "kinds": {
+    "2i": 6,
+    "2s": 2
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "evt_mri_toge_make_retsu",
+    "puniModeParentpre",
+    "puni_parent"
+   ]
+  },
+  "0x11a": {
+   "kinds": {
+    "2i": 3,
+    "2s": 4
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "evt_mri_toge_make_retsu",
+    "puniModeParentpre",
+    "searchParent"
+   ]
+  },
+  "0x11c": {
+   "kinds": {
+    "2i": 7,
+    "2u": 2
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_mri_toge_retsu_stop",
+    "evt_puni_get_anim",
+    "evt_puni_korokoro"
+   ]
+  },
+  "0x11e": {
+   "kinds": {
+    "2i": 3
+   },
+   "fns": [
+    "evt_puni_set_anim",
+    "evt_puni_set_mode",
+    "puni_parent"
+   ]
+  },
+  "0x12c": {
+   "kinds": {
+    "4f": 10,
+    "4i": 9
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_puni_get_position",
+    "evt_puni_jump_position",
+    "evt_puni_move_position"
+   ]
+  },
+  "0x130": {
+   "kinds": {
+    "4f": 10,
+    "4i": 9
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_puni_get_position",
+    "evt_puni_jump_position",
+    "evt_puni_move_position"
+   ]
+  },
+  "0x134": {
+   "kinds": {
+    "4f": 9,
+    "4i": 9
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_puni_get_position",
+    "evt_puni_jump_position",
+    "evt_puni_move_position"
+   ]
+  },
+  "0x138": {
+   "kinds": {
+    "4i": 4
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2",
+    "evt_puni_set_position"
+   ]
+  },
+  "0x13c": {
+   "kinds": {
+    "4i": 4
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2",
+    "evt_puni_set_position"
+   ]
+  },
+  "0x140": {
+   "kinds": {
+    "4i": 4
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2",
+    "evt_puni_set_position"
+   ]
+  },
+  "0x148": {
+   "kinds": {
+    "4f": 3
+   },
+   "fns": [
+    "evt_puni_force_pose",
+    "evt_puni_korokoro"
+   ]
+  },
+  "0x15c": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_puni_force_pose"
+   ]
+  },
+  "0x160": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_puni_force_pose"
+   ]
+  },
+  "0x164": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_puni_force_pose"
+   ]
+  },
+  "0x180": {
+   "kinds": {
+    "4f": 2
+   },
+   "fns": [
+    "evt_puni_get_dir",
+    "evt_puni_set_dir"
+   ]
+  },
+  "0x184": {
+   "kinds": {
+    "4f": 4
+   },
+   "fns": [
+    "evt_puni_force_pose",
+    "evt_puni_korokoro"
+   ]
+  },
+  "0x188": {
+   "kinds": {
+    "4f": 3
+   },
+   "fns": [
+    "evt_puni_force_pose",
+    "evt_puni_korokoro"
+   ]
+  },
+  "0x1c8": {
+   "kinds": {
+    "4i": 1
+   },
+   "fns": [
+    "evt_puni_jump_position"
+   ]
+  },
+  "0x1cc": {
+   "kinds": {
+    "4i": 2
+   },
+   "fns": [
+    "evt_puni_jump_position"
+   ]
+  },
+  "0x1d0": {
+   "kinds": {
+    "4i": 4
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "evt_mri_toge_make_retsu",
+    "togeMakeRetsu"
+   ]
+  },
+  "0x1d4": {
+   "kinds": {
+    "4i": 8
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "puniModeParentpre",
+    "searchParent"
+   ]
+  },
+  "0x1d8": {
+   "kinds": {
+    "4i": 6
+   },
+   "fns": [
+    "PuniDokuritsu",
+    "puniModeParentpre",
+    "searchParent"
+   ]
+  },
+  "0x1e4": {
+   "kinds": {
+    "4i": 2
+   },
+   "fns": [
+    "puni_parent"
+   ]
+  },
+  "0x1ec": {
+   "kinds": {
+    "4f": 3
+   },
+   "fns": [
+    "evt_puni_jump_position"
+   ]
+  },
+  "0x1f0": {
+   "kinds": {
+    "4f": 2
+   },
+   "fns": [
+    "evt_puni_jump_position"
+   ]
+  },
+  "0x1f8": {
+   "kinds": {
+    "4i": 3,
+    "4f": 2
+   },
+   "fns": [
+    "evt_puni_jump_position",
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x1fc": {
+   "kinds": {
+    "4i": 3,
+    "4f": 2
+   },
+   "fns": [
+    "evt_puni_jump_position",
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x200": {
+   "kinds": {
+    "4i": 3,
+    "4f": 2
+   },
+   "fns": [
+    "evt_puni_jump_position",
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x204": {
+   "kinds": {
+    "4f": 3,
+    "4i": 2
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x208": {
+   "kinds": {
+    "4f": 2,
+    "4i": 2
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x20c": {
+   "kinds": {
+    "4f": 3,
+    "4i": 2
+   },
+   "fns": [
+    "evt_puni_move_position",
+    "evt_puni_move_position2"
+   ]
+  },
+  "0x218": {
+   "kinds": {
+    "4i": 4
+   },
+   "fns": [
+    "evt_puni_set_mode",
+    "evt_puni_setsudan"
+   ]
+  },
+  "0x56c": {
+   "kinds": {
+    "4i": 7
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_mri_toge_retsu_stop",
+    "puni_parent",
+    "togeMakeRetsu"
+   ]
+  },
+  "0x570": {
+   "kinds": {
+    "4i": 7
+   },
+   "fns": [
+    "evt_mri_toge_make_retsu",
+    "evt_mri_toge_retsu_stop",
+    "puni_parent",
+    "togeMakeRetsu"
+   ]
+  }
+ }
+}

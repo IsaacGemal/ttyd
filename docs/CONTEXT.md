@@ -2847,3 +2847,12 @@ padding, and 22 agents would each invent fields; one struct pass (an agent or th
 from every access in the asm before the group wave. Then one agent per group in its own workspace, writing only its
 group's functions; collection splices each function into the file by name (they're independent blocks) and
 merges header additions; the file links only when all groups are done.
+
+mri_puni structs (Sep 30, Claude #2): PuniWork and PuniData are rebuilt from every access the asm makes through
+Punigp and Punidat elements (tools/mripuni/scan.py tracks registers per function, through mulli/add 0x5A8
+indexing, `mr` copies, the puniGetPunidat/puniGetPunigp results and pointer parameters of callees; structs.py
+renders the fields: Vec where a triple is both copied as words and read as floats, else f32/s32/s16/u16 by access).
+PuniWork is 0x4D0 bytes, as evt_puni_mem_init allocates: upstream's padding array ran to 0x448 while its comments
+put showPuniCounter at 0x444, making the struct 0x4D4; with the fix evt_puni_mem_init matches. Fields named
+field_0xNNN until a function shows what they are; the wave rule is that agents use these and write a commented
+raw offset for anything else, which collection promotes (rerun scan.py and structs.py).
