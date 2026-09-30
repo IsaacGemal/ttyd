@@ -7,6 +7,7 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+const char str_802FA710[12] = "GlassN64";
 const f64 double_to_int_802fa708 = 4503601774854144.0;
 
 // .data vertex arrays, local to this file.
@@ -25,7 +26,7 @@ EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale
 	effGlassData* data;
 
 	entry = effEntry();
-	entry->type = "GlassN64";
+	entry->type = str_802FA710;
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x5C);
 	entry->userdata = data;

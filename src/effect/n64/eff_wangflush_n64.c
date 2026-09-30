@@ -4,12 +4,7 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
-#include "math_ext.h"
-
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_804232c0;
-
+#include <math.h>
 
 extern const f32 float_deg2rad_80420114;
 extern const f32 float_0p03125_80420118;
@@ -118,6 +113,7 @@ void effWangFlushMain(EffectEntry* effect) {
 #endif
 }
 
+GXColor unk_804232c0;
 
 static u8 color_rotation_data[24] = {
 	0xFF, 0xFF, 0x52, 0xFF, 0xFF, 0x52, 0xB5, 0x94, 0x00, 0xB5, 0x94, 0x00,
@@ -216,17 +212,3 @@ void effWangFlushDisp(CameraId camId, void* param) {
 		tri2(0, 1, 2, 0, 0, 2, 3, 0);
 	}
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_deg2rad_80420114 = 0.017453292f;
-const f32 float_0p03125_80420118 = 0.03125f;
-const f32 float_0_8042011c = 0.0f;
-const f32 float_0p5_80420120 = 0.5f;
-const f32 float_0p78_80420124 = 0.78f;
-const f32 float_0p29_80420128 = 0.29f;
-const f32 float_0p93_8042012c = 0.93f;
-const f32 float_6p2832_80420130 = 6.2831855f;
-const f32 float_360_80420134 = 360.0f;
-const f32 float_0p9_80420138 = 0.9f;
-const f32 float_144_8042013c = 144.0f;
-const f32 float_64_80420140 = 64.0f;

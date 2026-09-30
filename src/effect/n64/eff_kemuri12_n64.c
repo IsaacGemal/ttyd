@@ -4,12 +4,6 @@
 #include "memory.h"
 #include "system.h"
 
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
-#pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80423194;
-__declspec(section ".sdata") GXColor unk_80423190;
-
-
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -24,6 +18,8 @@ const f32 float_32_8041f560 = 32.0f;
 const f32 float_8_8041f564 = 8.0f;
 
 // .sbss2 zero GXColor scratch objects the original builds its TEV colors from.
+GXColor unk_80423190;
+GXColor unk_80423194;
 
 // .rodata constants (named after their original addresses).
 const Vec vec3_802faa28 = { 0.0f, 0.0f, 0.0f };
@@ -276,6 +272,3 @@ void effKemuri12Disp(CameraId camId, void* param) {
         break;
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0_8041f55c = 0.0f;
