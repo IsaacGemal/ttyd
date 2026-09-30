@@ -83,8 +83,8 @@ if FINAL:
     sys.path.insert(0, "tools")
     import local_prototypes
     exc = [e for e in json.load(open("tools/local_prototype_exceptions.json")) if e["path"] in (src, "*")]
-    # libraries (libs/) keep their own declarations; the header rule is for game code
-    protos = local_prototypes.check_sources({src: open(src).read()}, exc) if src.startswith("src/") else []
+    # libraries (libs/) keep their own declarations; the header rule is for game code, in the dol and the RELs
+    protos = local_prototypes.check_sources({src: open(src).read()}, exc) if src.startswith(("src/", "rels/")) else []
     for p in protos:
         if "exception must match" in p:
             todo.append("PROTOTYPE  " + p + "  -> a documented exception no longer matches your file; restore that"
@@ -103,7 +103,7 @@ if FINAL:
     print("UNLABELLED: add `// NONMATCHING (NN%): what differs` above it. OFFSET: use the header's field if it has one.\n"
           "EXTERN/STRUCT: a function or struct declared locally should come from its header if one declares it (data\n"
           "externs such as float constants are fine). PRAGMA: give it a reason or remove it.")
-    sys.exit(1 if lint.returncode or protos else 0)
+    sys.exit(1 if lint.returncode or protos or (linked is not None and not linked.startswith("LINKED")) else 0)
 if len(sys.argv) == 2:
     rows = sorted(fns.values(), key=lambda f: (f.get("fuzzy_match_percent", 0) >= 100, int(f["size"])))
     done = sum(1 for f in rows if f.get("fuzzy_match_percent", 0) >= 100)

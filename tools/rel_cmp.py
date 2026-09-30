@@ -21,18 +21,18 @@ def load(path):
             for j in range(s[5]//12):
                 off,info,add=struct.unpack('>IIi',d[s[4]+j*12:s[4]+j*12+12]); n,val,shn=syms[info>>8]
                 tsec=names[shn] if shn<len(names) else '?'
-                r[off]=(n,tsec,val+add)
+                r[off]=(n,tsec,val+add,info&0xff)
             rel[names[s[7]]]=r
     return body,rel
 A,AR=load(f'build/G8MJ01/{MOD}/obj/{UNIT}.o'); import json
 _u=next((u for u in json.load(open('objdiff.json'))['units'] if u['name']==f'{MOD}/{UNIT}'),None)
 B,BR=load(_u['base_path'] if _u else f'build/G8MJ01/src/{UNIT}.o')
 def target(r,body):
-    n,tsec,off=r
-    if tsec=='.rodata' and body.get('.rodata') and body['.rodata'][0] is not None:
-        b=body['.rodata'][0][off:]; return ('str',b[:b.index(b'\0')] if b'\0' in b else b)
-    if tsec in('.data','.bss','.text'): return ('local',tsec,off)
-    return ('sym',n)
+    # the relocation's kind and where it points: a section of this object plus offset (the sections' bytes are
+    # compared separately, so equal offsets mean equal targets), or an external symbol plus addend
+    n,tsec,off,typ=r
+    if tsec in('.data','.bss','.text','.rodata'): return ('local',tsec,off,typ)
+    return ('sym',n,off,typ)
 bad=[]
 for sec in ('.text','.data','.rodata','.bss'):
     a=A.get(sec,(None,0)); b=B.get(sec,(None,0))
@@ -62,11 +62,17 @@ def force_active(path):
         if info&0xf!=2: continue   # functions only
         e=cm[4]+0x2c+8*j
         nm=d[ss[4]+n:d.index(b'\0',ss[4]+n)].decode('latin1')
-        out[nm]=bool(struct.unpack('>H',d[e+4:e+6])[0]&8)
+        out[nm]=(bool(struct.unpack('>H',d[e+4:e+6])[0]&8), info>>4==0, val)
     return out
 _orig=f'build/G8MJ01/{MOD}/obj/{UNIT}.o'; _ours=_u['base_path'] if _u else f'build/G8MJ01/src/{UNIT}.o'
 _fa,_fb=force_active(_orig),force_active(_ours)
+# only a static function nothing references gets dead-stripped (globals are kept by the ldscript's FORCEACTIVE list),
+# so the flag matters only there; references are relocations to the function's name or to its .text offset
+_refs={t[0] for r in BR.values() for t in r.values()}|{('.text',t[2]) for r in BR.values() for t in r.values() if t[1]=='.text'}
+def _unreferenced_static(nm):
+    fa,local,addr=_fb.get(nm,(True,False,0))
+    return local and nm not in _refs and ('.text',addr) not in _refs
 for nm in sorted(_fa):
-    if _fa[nm] and not _fb.get(nm,True): bad.append(f'function {nm} lacks the force-active flag (write `#pragma force_active on` and do not end the file with `off`)')
+    if _fa[nm][0] and nm in _fb and not _fb[nm][0] and _unreferenced_static(nm): bad.append(f'function {nm} lacks the force-active flag (write `#pragma force_active on` and do not end the file with `off`)')
 print('OK' if not bad else '\n'.join(bad[:12]))
 sys.exit(1 if bad else 0)

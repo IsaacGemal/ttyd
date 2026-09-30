@@ -51,5 +51,6 @@ try:
     print(f"LINKED: {mod}.rel matches its checksum with {unit}.c linked")
     linked = True
 finally:
-    if not linked and orig_state == "Matching":
-        set_state("Matching")
+    # any failure or interruption: put the unit back exactly as it was before the check
+    if not linked:
+        set_state(orig_state)
