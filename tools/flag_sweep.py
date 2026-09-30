@@ -73,6 +73,20 @@ srcdir = os.path.dirname(src)
 work = tempfile.mkdtemp(prefix="flag_sweep_")
 
 
+def function_bytes(path):
+    """{function: its machine code} from the object's .text, to tell 'same score' from 'same code'."""
+    from elftools.elf.elffile import ELFFile
+    with open(path, "rb") as f:
+        e = ELFFile(f)
+        text_sec = e.get_section_by_name(".text")
+        data = text_sec.data() if text_sec else b""
+        out = {}
+        for sym in e.get_section_by_name(".symtab").iter_symbols():
+            if sym["st_info"]["type"] == "STT_FUNC" and sym["st_size"] and e.get_section(sym["st_shndx"]).name == ".text":
+                out[sym.name] = data[sym["st_value"]:sym["st_value"] + sym["st_size"]]
+        return out
+
+
 def build(v):
     name, opt, inl, keep = v
     idx = variants.index(v)
@@ -84,18 +98,15 @@ def build(v):
     if inl:
         flags = set_flag(flags, "-inline", inl)
     source = src
-    tmp = None
     if not keep:
-        tmp = os.path.join(srcdir, f"_sweep{idx}_{os.path.basename(src)}")
+        # the pragma-free copy lives in this variant's scratch dir; `-i` keeps the file's own relative includes working
+        source = os.path.join(outdir, os.path.basename(src))
         stripped = re.sub(r"^\s*#pragma\s+optimize_for_size.*$", "", text, flags=re.M)
-        open(tmp, "w").write(stripped)
-        source = tmp
+        with open(source, "w") as f:
+            f.write(stripped)
+        flags += f" -i {srcdir}"
     cmd = f"build/tools/wibo build/tools/sjiswrap.exe build/compilers/GC/2.6/mwcceppc.exe {flags} -c {source} -o {outdir}"
-    try:
-        r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    finally:
-        if tmp:
-            os.remove(tmp)
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     obj = os.path.join(outdir, os.path.splitext(os.path.basename(source))[0] + ".o")
     if r.returncode or not os.path.exists(obj):
         return name, None
@@ -107,7 +118,8 @@ def build(v):
     if rr.returncode:
         return name, None
     u = json.loads(rr.stdout)["units"][0]
-    return name, {f["name"]: (f.get("fuzzy_match_percent", 0.0), int(f["size"])) for f in u.get("functions", [])}
+    code = function_bytes(obj)
+    return name, {f["name"]: (f.get("fuzzy_match_percent", 0.0), int(f["size"]), code.get(f["name"])) for f in u.get("functions", [])}
 
 
 with cf.ThreadPoolExecutor(max_workers=6) as ex:
@@ -121,22 +133,34 @@ fns = sorted(today, key=lambda f: -today[f][1])
 
 
 def weighted(r):
-    return sum(p * s for p, s in r.values()) / sum(s for _, s in r.values())
+    return sum(p * s for p, s, _ in r.values()) / sum(s for _, s, _ in r.values())
 
 
 print(f"{unit_path}: {len(fns)} functions, {len(names)} variants built (pragmas in file: {has_pragma})")
+print("  (same code = the function's machine code is byte-identical to today's; instructions equal, relocation targets not compared)")
 for n in names:
     r = results[n]
     drops = [f for f in fns if f in r and r[f][0] < today[f][0] - 1e-9]
     gains = [f for f in fns if f in r and r[f][0] > today[f][0] + 1e-9]
+    same = sum(1 for f in fns if f in r and r[f][2] == today[f][2])
     full = sum(1 for f in r if r[f][0] >= 100)
-    print(f"  {n:34s} 100%: {full:3d}  weighted {weighted(r):6.2f}  gains {len(gains):3d}  drops {len(drops):3d}")
-safe = [n for n in names if n != "today" and all(results[n].get(f, (0,))[0] >= today[f][0] - 1e-9 for f in fns)]
-print("no-drop variants:", ", ".join(safe) or "none")
+    print(f"  {n:34s} 100%: {full:3d}  weighted {weighted(r):6.2f}  gains {len(gains):3d}  drops {len(drops):3d}  same code {same:3d}/{len(fns)}")
+
+
+def lost_exact(n):
+    return [f for f in fns if today[f][0] >= 100 and (f not in results[n] or results[n][f][0] < 100)]
+
+
+safe = [n for n in names if n != "today" and not lost_exact(n)
+        and all(results[n].get(f, (0,))[0] >= today[f][0] - 1e-9 for f in fns)]
+print("no-drop variants (every function at 100% today is still 100%, no partial scores lower):", ", ".join(safe) or "none")
 for n in safe:
     gains = [f for f in fns if results[n][f][0] > today[f][0] + 1e-9]
+    changed = [f for f in fns if results[n][f][2] != today[f][2] and f not in gains]
     if gains:
         print(f"  {n}: " + ", ".join(f"{f} {today[f][0]:.2f}->{results[n][f][0]:.2f}" for f in gains))
+    if changed:
+        print(f"  {n}: different code at the same score: " + ", ".join(changed))
 if out_json:
     json.dump({"unit": unit_path, "results": results}, open(out_json, "w"))
 subprocess.run(["trash", work])
