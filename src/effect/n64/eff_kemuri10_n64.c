@@ -33,7 +33,6 @@ typedef struct effKemuri10Data {
 } effKemuri10Data;
 
 // .rodata vector the original copies before filling in the particle position.
-const Vec vec3_802fa9c0 = { 0.0f, 0.0f, 0.0f };
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_0_8041f4b8;
@@ -207,6 +206,14 @@ EffectEntry* effKemuri10N64Entry(s32 a1, f32 x, f32 y, f32 z, f32 dirX, f32 dirY
 // NONMATCHING (97.02%): only the prologue's load order differs. MWCC hoists the
 // three vec3_802fa9c0 loads above the r30/r31 saves; the original issues the
 // data-pointer load (lwz r4, 0xc(r3)) first, then the vec3 loads.
+inline Vec initializeVec(Vec* input) {
+    Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+    temp.x = input->x;
+    temp.y = input->y;
+    temp.z = input->z;
+    return temp;
+}
+
 void effKemuri10Main(EffectEntry* effect) {
     effKemuri10Data* data;
     Vec position2;
@@ -216,10 +223,7 @@ void effKemuri10Main(EffectEntry* effect) {
     s32 i;
 
     data = effect->userdata;
-    position = vec3_802fa9c0;
-    position.x = data->position.x;
-    position.y = data->position.y;
-    position.z = data->position.z;
+    position = initializeVec(&data->position);
     position2 = position;
     camera = data->field_0x6C;
     data->field_0x5C--;

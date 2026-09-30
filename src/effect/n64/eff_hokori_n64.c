@@ -75,6 +75,14 @@ EffectEntry* effHokoriN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 // anonymous local while the target names it double_to_int_802fa7b8, and a scheduler swap
 // at the top: the userdata load lands after the vec3_802fa7a8 loads.
 // NONMATCHING (98.16%): see above.
+inline Vec makeVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
 void effHokoriMain(EffectEntry* effect) {
 	effHokoriData* data;
 	Vec position2;
@@ -83,10 +91,7 @@ void effHokoriMain(EffectEntry* effect) {
 	s32 i;
 
 	data = effect->userdata;
-	position = vec3_802fa7a8;
-	position.x = data->x;
-	position.y = data->y;
-	position.z = data->z;
+	position = makeVec(data->x, data->y, data->z);
 	position2 = position;
 	data->life--;
 	if (data->life < 0) {
