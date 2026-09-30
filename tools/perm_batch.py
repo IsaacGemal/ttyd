@@ -33,6 +33,8 @@ for u in report["units"]:
         p=f.get("fuzzy_match_percent",0)
         if lo<=p<hi and (n,f["name"]) not in done: cands.append((p,n,f["name"]))
 cands.sort(reverse=True)
+if os.environ.get("PB_ONLY"):  # "unit:func,unit:func": search exactly these (baseline measured from the current source)
+    cands=[(None,x.split(":")[0],x.split(":")[1]) for x in os.environ["PB_ONLY"].split(",")]
 print(len(cands),"candidates",flush=True)
 def flags_for(unit):
     m=re.search(rf"^build (build/G8MJ01/src/{re.escape(unit)}\.o): mwcc_sjis\w* \$\n.*?\n  cflags = (.*?)\n  basedir",ninja,re.M|re.S)
@@ -71,8 +73,10 @@ for base,unit,func in cands:
     if count>=limit: break
     text=open(f"src/{unit}.c").read()
     fd=find_decls(text,func); flags=flags_for(unit)
-    if not fd or not flags or len(fd[1])<2 or len(fd[1])>9: continue
+    if not fd or not flags or len(fd[1])<2 or len(fd[1])>14: continue
     pos,decls,tail=fd; head=text[:pos]
+    if base is None:
+        base=score_variant(unit,func,text,flags,0)
     orders=[]
     n=len(decls)
     for i in range(n):

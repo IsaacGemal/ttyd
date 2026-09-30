@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Finish a code-complete dol unit's data so that it links: the mechanical steps of the pool-finisher method.
 
-    python3 tools/finish_unit.py UNIT          e.g. effect/n64/eff_kemuri4_n64
+    python3 tools/finish_unit.py UNIT [--data-only]        e.g. effect/n64/eff_kemuri4_n64
 
-UNIT must have every function at 100%. The tool tries, in order, keeping a step only if no function drops below 100% and no
+UNIT must have every function at 100%, or pass --data-only: then any unit is accepted, a step is kept when no function scores
+lower than it did before and no section score falls, and the link is not attempted (the point is the unit's data sections). The tool tries, in order, keeping a step only if no function drops below 100% and no
 section score falls:
   1. tools/pool_data.py     vertex tables of the unit's own .data
   2. math.h -> math_ext.h   (math.h's sqrt inline emits two extra doubles into .rodata)
@@ -21,6 +22,7 @@ import sys
 import tempfile
 
 unit = sys.argv[1]
+DATA_ONLY = "--data-only" in sys.argv
 src = f"src/{unit}.c"
 project = json.load(open("objdiff.json"))
 entry = next(e for e in project["units"] if e["name"] == "MarioSt/" + unit)
@@ -51,7 +53,8 @@ if not ok:
     sys.exit(f"{unit} does not build")
 worst = min(fns.values()) if fns else 0
 print(f"{unit}: {len(fns)} functions, worst {worst:.2f}%; sections {summary(secs)}")
-if worst < 100:
+base_fns = dict(fns)
+if worst < 100 and not DATA_ONLY:
     sys.exit("not every function is at 100%: nothing to finish yet")
 todo = []
 
@@ -69,7 +72,8 @@ def step(name, fn):
         print(f"  {name}: nothing to do")
         return
     f2, s2, ok2 = measure()
-    good = ok2 and min(f2.values()) >= 100 and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
+    fn_ok = all(f2.get(k, 0) >= v - 1e-9 for k, v in base_fns.items()) if DATA_ONLY else min(f2.values()) >= 100
+    good = ok2 and fn_ok and all(s2.get(k, 0) >= v - 1e-9 for k, v in before_secs.items())
     if good:
         fns, secs = f2, s2
         print(f"  {name}: kept; sections {summary(secs)}")
@@ -129,6 +133,9 @@ if secs.get(".rodata", 100) < 100:
     step("literal strings", literal_strings)
 if secs.get(".sbss2", 100) < 100:
     step("sbss2 idiom", sbss2)
+if DATA_ONLY:
+    print("done; sections", summary(secs))
+    sys.exit(0)
 r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
 tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
 print("  autolink:", " / ".join(tail))
