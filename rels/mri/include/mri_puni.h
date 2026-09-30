@@ -218,7 +218,7 @@ void qrndseed(s32 seed);
 s32 qrnd(s32 max);
 void puniDeleteEffect(PuniData* puni);
 void _daime_change(PuniData* puni);
-void PuniSakanobori(PuniData* puni);
+struct PuniData* PuniSakanobori(struct PuniData* puni);
 void PuniChildHagure(PuniData* puni);
 s32 searchParent(PuniData* puni);
 s32 searchMario(PuniData* puni);

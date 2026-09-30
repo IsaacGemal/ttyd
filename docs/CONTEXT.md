@@ -2977,3 +2977,26 @@ have agent files in scratch to finish from.
 
 - `BattleStatusChangeMsgMain` 97.43 -> 99.03: `(char)*pri != -1` in the priority loop moves the walking pointer to r4 (still `extsb` + `cmpwi -1`; MUST_MATCH only, natural `*pri != -1` in `#else`).
 - `perm_run.py`: a `base.c.manual` in an input directory replaces the generated `base.c` after every prepare, for hand-written `PERM_GENERAL` searches. `eff_break` Disp was searched over named vs `MATCH_F32` at all 10 zero-constant sites (exhaustive, 174 s): no combination improves the base (the frame stays 0x10 larger), so the pool/schedule conflict there has no cheap answer. `eff_snowfall` `cam_clip_chk`: an inline `x * float_0p5` helper for the `cz` line reaches 99.92 (permuter score 15); parked. `nameEntOn`/`winBadgeMain2`/`marioSetJumpPara` end in `permuter-error` (the round trip does not compile).
+
+## Wave 38: mri_puni's last 69 functions; two restarts (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+mri_puni's 69 open functions (9 unwritten, 60 partial) in 18 size-balanced groups, one agent each on the corrected
+structs, plus yuu's evt_yuuranking and unit_boss_gundan_zako_group2 restarted from their earlier agents' files
+(scratch/wave38). 20 agents, 17:17-18:01. Collection spliced by name as in wave 35, a group's version replacing the
+tree's only where it differs from the base (scratch/wave38/splice.py); the helpers groups changed or added came
+along; three named retail constants became literals (scratch/wave38/literalize2.py, which infers each type from the
+asm and works for any REL unit). PuniData 0x1C8 is `OSTime modeStartTime` (structs.py override): a mode's start
+time, written by puniModeWater, the fall modes and puniModeEnter.
+
+**Result:** mri_puni 119 -> 144 of 188 functions at 100%, every function written (.text 97.7%); yuu evt_yuuranking
+7 of 9 with its .data at 100% (wave 35's attempt had lowered it); gundan_zako_group2 reached .text 99.4% but its
+data still drops while shake_ceil (a work-pointer materialisation) and zakogun_ext_main2 differ: left out again.
+8,122 -> 8,154 functions.
+
+**Review** (fresh Claude): puniMoveLimitedNormal only ran its wall test with flag 0x1000 set, where retail always
+calls hitCheckFilter (a puni walked through walls; the line predates the wave); PuniSakanobori returns the root it
+walks to (wave 35's review item, unfixed until now); puniModeRecover/Fall's jitter is `puniRandf(0, 2) - 1`, which
+rounds twice as retail does instead of one fused multiply-subtract. puniModeAway and puniFukki are wrapped in
+`#pragma push / dont_inline on / pop`: retail calls puniModeAway_sub and puniDeleteEffect with bl, and MWCC would
+inline them (42% -> 99.9%, 97.4%; the one exception to "no pragma without a match", since it states a fact about
+retail). Labels that blamed the wrong cause are rewritten.

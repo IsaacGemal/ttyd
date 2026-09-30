@@ -231,11 +231,6 @@ EVT_END()
 
 static YuuRankingWork* _wp;
 
-// TODO: snd_id$716 is a static local of a function: move it inside that function as
-// `static` with this data (it's here at its place in .data)
-// static u32 snd_id$716[1] = {
-//     0x00000000,
-// };
 USER_FUNC(yuuranking_get_monte_31_text_51C0) {
     evtSetValue(event, event->args[0], _wp->monte);
     return EVT_RETURN_DONE;

@@ -2158,14 +2158,13 @@ void PuniDokuritsu(PuniData* puni) {
         }
     }
 }
+PuniData* PuniSakanobori(PuniData* puni) {
+    PuniData* next;
 
-// NONMATCHING (80.83%): the loop shape and the `b`-to-condition match. The target
-// loads the next link into r0 and copies it to r3 (`lwz r0` + `mr r3,r0`); this
-// compiler folds the copy and loads straight into r3.
-void PuniSakanobori(PuniData* puni) {
-    while (puni != NULL) {
-        puni = (PuniData*)puni->field_0x1D0;
+    while ((next = (PuniData*)puni->field_0x1D0) != NULL) {
+        puni = next;
     }
+    return puni;
 }
 
 // NONMATCHING (97.87%): the inlined recursion's register colouring is one register lower (we use r27-r31,
@@ -2524,8 +2523,7 @@ void puniMoveDecel(PuniData* puni) {
     }
 }
 
-// NONMATCHING (84.71%): the frame is 0x20 smaller (the target keeps temp Vecs for `up = ...` and for
-// the PSVECNormalize destination), which shifts every local slot; the logic matches.
+// NONMATCHING (86.92%): register allocation and scheduling differ.
 void puniMoveLimitedNormal(PuniData* puni) {
     f32 mag = PSVECMag(&puni->field_0x15C);
     Vec up;
@@ -2554,11 +2552,9 @@ void puniMoveLimitedNormal(PuniData* puni) {
     puni->field_0x214 = 0;
     puni->field_0x210 = 0;
     dist = mag;
-    if (puni->unk4 & 0x1000) {
-        puni->field_0x210 =
-            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
-                                up.z, dir.x, dir.y, dir.z);
-    }
+    puni->field_0x210 =
+        hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up.x, up.y,
+                            up.z, dir.x, dir.y, dir.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
     } else if (Punigp->unk328 != 0x12) {
@@ -3124,9 +3120,9 @@ void puniModeChangeFallCheck(void) {
     }
 }
 
-// NONMATCHING (94.61%): interleaving the declarations made the loop counters/pointers match
-// the original's descending pairs (i1/p1 r31/r30 ... i5/p5 r21/r22); `puni` is still r21 vs
-// r29, and the unkC = 1 stores reuse the next loop counter in the original.
+// NONMATCHING (97.34%): register allocation and scheduling differ.
+#pragma push
+#pragma dont_inline on
 void puniFukki(PuniData* puni) {
     s32 i1;
     PuniData* p1;
@@ -3193,6 +3189,7 @@ void puniFukki(PuniData* puni) {
         }
     }
 }
+#pragma pop
 
 // NONMATCHING (97.3%): the original emits an extra unreachable `b` before the case 2 body
 // (as if case 1 existed) and allocates the loop i/pointer in r30/r29-r31 instead of r27/r28.
@@ -3867,8 +3864,9 @@ s32 puniModeAway_sub(PuniData* punidat) {
     return 0;
 }
 
-// NONMATCHING (42.4%): only the `pos.y += 1.0f` add differs: the target loads the 1.0 constant into f1
-// and pos.y into f0, we do the reverse (fadds f3, f1, f0 either way). Logic and layout match.
+// NONMATCHING (99.93%): register allocation and scheduling differ.
+#pragma push
+#pragma dont_inline on
 void puniModeAway(PuniData* punidat) {
     f32 hitNZ;
     f32 hitNY;
@@ -3934,6 +3932,7 @@ void puniModeAway(PuniData* punidat) {
         break;
     }
 }
+#pragma pop
 
 // NONMATCHING (98.87%): `found = (best < 1e+06f) ? found : NULL;` reproduces the target's
 // `fcmpo; bge true; b` layout but leaves one extra `mr r0, r30` (the target keeps the value in r30).
@@ -4207,7 +4206,7 @@ void puniModeEscape(PuniData* punidat) {
 // The rand() jitter block still differs: MWCC contracts `r * 2.0f - 1.0f` into `fmsubs` instead of
 // the original `fmadds(r*2 + 0)` + `fsubs(1)` (the source `+ 0.0f` is folded away), `field_0xE = unkC`
 // is scheduled one instruction early, and the first loop leaves one extra `mr r0,r30`.
-// NONMATCHING (95.1%)
+// NONMATCHING (96.85%): register allocation and scheduling differ.
 void puniModeRecover(PuniData* punidat) {
     s32 i;
     PuniData* p;
@@ -4261,9 +4260,9 @@ void puniModeRecover(PuniData* punidat) {
             *(Vec*)&punidat->field_0x590 = punidat->field_0x12C;
             *(Vec*)&punidat->field_0x12C = Punigp->field_0x344;
             punidat->field_0x12C.x +=
-                ((f32)rand() / 32767.0f * 2.0f + 0.0f) - 1.0f;
+                puniRandf(0.0f, 2.0f) - 1.0f;
             punidat->field_0x12C.z +=
-                ((f32)rand() / 32767.0f * 2.0f + 0.0f) - 1.0f;
+                puniRandf(0.0f, 2.0f) - 1.0f;
             *(Vec*)&punidat->field_0x138 = punidat->field_0x12C;
             *(Vec*)((u8*)punidat + 0x59C) = punidat->field_0x12C;  // PuniData 0x59C
         }
@@ -4535,9 +4534,7 @@ void puniModeWind(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (95.66%): the two random offsets `(f32)rand()/32767.0f*2.0f+0.0f-1.0f` are contracted
-// by MWCC 2.6 into one `fmsubs` (2r-1); the target emits `fmadds` (2r+0) then `fsubs` (-1). Everything
-// else, including the call to puniMoveAtari (kept real by the dont_inline above), matches.
+// NONMATCHING (97.98%): register allocation and scheduling differ.
 void puniModeFall(PuniData* punidat) {
     PuniFallTarget* targets = (PuniFallTarget*)((u8*)Punigp + 0x374);
     PuniFallActor* actor210;
@@ -4639,11 +4636,9 @@ void puniModeFall(PuniData* punidat) {
                 *(Vec*)((u8*)punidat + 0x590) = punidat->field_0x12C;
                 punidat->field_0x12C = *(Vec*)&Punigp->field_0x344;
                 punidat->field_0x12C.x +=
-                    (f32)rand() / 32767.0f * 2.0f + 0.0f -
-                    1.0f;
+                    puniRandf(0.0f, 2.0f) - 1.0f;
                 punidat->field_0x12C.z +=
-                    (f32)rand() / 32767.0f * 2.0f + 0.0f -
-                    1.0f;
+                    puniRandf(0.0f, 2.0f) - 1.0f;
                 *(Vec*)&punidat->field_0x138 = punidat->field_0x12C;
                 *(Vec*)((u8*)punidat + 0x59C) = punidat->field_0x12C;
                 *(s32*)((u8*)punidat + 0x1E0) = 0x10;
@@ -5301,7 +5296,7 @@ void puniModeEnter(PuniData* puni) {
 
     switch (*(u16*)(p + 0x114)) {
         case 0:
-            *(OSTime*)(p + 0x1C8) = gp->renderTime;
+            puni->modeStartTime = gp->renderTime;
             *(s32*)(p + 0x128) = 200;
             if ((*(u32*)((u8*)Punigp + 0x324) & 8) && !(*(u32*)((u8*)Punigp + 0x324) & 0x10)) {
                 *(s32*)(p + 0x128) = 700;
@@ -5318,7 +5313,7 @@ void puniModeEnter(PuniData* puni) {
         case 1:
             bus = __OSBusClock;
             ticksPerMs = (bus >> 2) / 1000;
-            elapsed = (s32)(((u32)gp->renderTime - *(u32*)(p + 0x1CC)) / ticksPerMs);
+            elapsed = (s32)(((u32)gp->renderTime - (u32)puni->modeStartTime) / ticksPerMs);
             if (elapsed > *(s32*)(p + 0x128)) {
                 *(u16*)(p + 0x114) = 2;
             }
@@ -6977,7 +6972,6 @@ USER_FUNC(evt_puni_main) {
     puniMain();
     return 0;
 }
-
 f32 puni_init_posy(f32 y) {
     f32 d = __fabs(y - Punigp->field_0x32C);
     f32 r = Punigp->field_0x32C;
