@@ -120,9 +120,6 @@ static inline void flareSetColor2(s32 r, s32 g, s32 b, s32 a) {
 	GXSetTevColor(1, color);
 }
 
-// NONMATCHING (96.73%): the four tri2 arguments differ. include/eff/eff_n64.h declares tri2's parameters as
-// u16, so the compiler zero-extends each `idx0 + k` with an extra clrlwi; the original passes them without
-// truncation, i.e. its prototype was int/s32. That one header line (u16 -> s32) makes this 100.00%.
 void effThunderflareDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam;

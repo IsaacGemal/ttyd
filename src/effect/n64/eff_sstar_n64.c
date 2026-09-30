@@ -114,7 +114,7 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// NONMATCHING (73.40%): control flow/constants/GX state match, but MWCC picks a different
+// NONMATCHING (74.16%): control flow/constants/GX state match, but MWCC picks a different
 // register allocation and a shorter saved-register frame (0x1a0 vs 0x1c0), shifting all stack
 // offsets by -0x18, and lowers the vertex s16->f32 reads via lha/fctiwz instead of psq_l.
 void effSstarDisp(CameraId camId, void* param) {

@@ -7,9 +7,8 @@
 #include <math.h>
 
 // .rodata: scratch vector the original zeroes before filling in the effect position.
-const Vec vec3_802fa720 = { 0.0f, 0.0f, 0.0f };
 
-// Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
+// Inline copy of system.c's helper: zero-fill a Vec from a literal, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };

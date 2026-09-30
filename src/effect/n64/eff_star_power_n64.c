@@ -26,9 +26,8 @@ extern const f32 float_2p044_8041fe78;
 extern const f32 float_0p7_8041fe7c;
 extern const f32 float_0p3_8041fe80;
 
-const Vec vec3_802fb718 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb728 = 4503601774854144.0;
-// Inline copy of the file-local helper: zero-fill a Vec from the rodata constant, then
+// Inline copy of the file-local helper: zero-fill a Vec from a literal, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
     Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -77,10 +76,7 @@ EffectEntry* effStarPowerN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 
     return effect;
 }
 
-// The int->float conversions fold to an anonymous @216 local in our object (the original uses the
-// global double_to_int_802fb728; project-wide folded-pool issue, cf. eff_rappa/win_log), MWCC hoists
-// two vec3_802fb718 words into the prologue saves, and a few f-register choices differ.
-// NONMATCHING (98.55%): those two compiler behaviours plus the FP allocation.
+// NONMATCHING (99.86%): the int->float conversions pool as an anonymous local, and a few f-register choices differ.
 void effStarPowerMain(EffectEntry* effect) {
     EffStarPowerData* data = effect->userdata;
     Vec position = initializeVec((Vec*)&data->x);

@@ -42,9 +42,6 @@ EffectEntry* effVaporN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 // data->field_0x3c in the y integration below (f0/f1 swapped vs the target's f2/f1).
 #pragma opt_common_subs off
 
-// NONMATCHING (97.58%): only the top-of-function scheduler swap differs; the original
-// loads effect->userdata (r6) before the three vec3_802fb8e8 words, MWCC here hoists
-// the two independent vec loads first. Same issue as effHokoriMain.
 inline Vec makeVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;

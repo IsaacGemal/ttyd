@@ -8,7 +8,6 @@
 #include <math.h>
 
 // .rodata
-const Vec vec3_802fb2c0 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb2d0 = 4503601774854144.0;
 const char str_802FB2D8[] = "OpukuWgunN64";
 

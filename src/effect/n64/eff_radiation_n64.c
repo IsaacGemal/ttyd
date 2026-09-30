@@ -5,7 +5,6 @@
 #include "memory.h"
 
 // Zero vector the original loads before filling in the per-effect position.
-const Vec vec3_802fb478 = { 0.0f, 0.0f, 0.0f };
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
@@ -112,11 +111,8 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	return effect;
 }
 
-// The prologue schedules the vec3_802fb478 loads before `data = effect->userdata` (the
-// original loads data first), and MWCC folds the default loop's fourth table load
-// (`r_data[row + 2]` after two `++row`) into `lwz 0x8(base)` where the original re-derives
-// the index (`addi row, row, 2`), the same fold already documented on effRadiationN64Entry.
-// NONMATCHING (97.07%): prologue scheduling and the folded r_data[row+2] load.
+// NONMATCHING (99.37%): MWCC folds the default loop's fourth table load (`r_data[row + 2]` after two `++row`) into
+// `lwz 0x8(base)` where the original re-derives the index (`addi row, row, 2`).
 void effRadiationMain(EffectEntry* effect) {
 	s32 n1;
 	s32 n2;

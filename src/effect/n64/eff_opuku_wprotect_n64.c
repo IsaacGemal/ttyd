@@ -26,10 +26,9 @@ extern const f32 float_0p97_8041f8e0;
 extern const f32 float_480_8041f8e4;
 
 // .rodata scratch vector the original zeroes before filling in the effect position.
-const Vec vec3_802fb2e8 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fb2f8 = 4503601774854144.0;
 
-// Inline copy of system.c's helper: zero-fill a Vec from the rodata constant, then
+// Inline copy of system.c's helper: zero-fill a Vec from a literal, then
 // overwrite it with the supplied position; the temporary is returned by value.
 inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };

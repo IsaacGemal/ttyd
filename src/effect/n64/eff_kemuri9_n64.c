@@ -15,7 +15,6 @@ extern const f32 float_6p2832_8041f4a8;
 extern const f32 float_360_8041f4ac;
 
 // .rodata constants (named after their original addresses in the asm).
-const Vec vec3_802fa998 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_802fa9a8 = 4503601774854144.0;
 const char str_802FA9B0[] = "Kemuri9N64";
 

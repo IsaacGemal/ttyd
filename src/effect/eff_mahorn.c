@@ -98,10 +98,14 @@ void effMahornMain(EffectEntry* effect) {
                 scale = (f32)scale_dt2[(u32)data->counter % 21] / float_100_80422260;
             }
             data->scale = scale;
+#ifdef MUST_MATCH
             {
                 f32 t = float_20_80422264 - data->field_0x14;
                 data->field_0x14 = t * float_0p125_80422268 + data->field_0x14;
             }
+#else
+            data->field_0x14 = (float_20_80422264 - data->field_0x14) * float_0p125_80422268 + data->field_0x14;
+#endif
             data->alpha += -data->alpha / 64;
         }
     }

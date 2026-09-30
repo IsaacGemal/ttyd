@@ -4,7 +4,6 @@
 #include <dolphin/mtx.h>
 
 // .rodata
-const Vec vec3_802fb340 = { 0.0f, 0.0f, 0.0f };
 const f64 double_to_int_mask_802fb350 = 4503599627370496.0;
 
 // .sdata2
@@ -59,9 +58,6 @@ static u8 color_rotation_data[36] = {
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
 
-// NONMATCHING (97.06%): all opcodes/operands match; only mwcc register allocation differs:
-// the first vec3 word load is scheduled before the userdata load, the particle counter reload
-// goes into r6 and is moved to r8, and the u8->float block rotates f1/f2/f0.
 inline Vec makeVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
 	temp.x = x;
