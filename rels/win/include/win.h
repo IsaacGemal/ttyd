@@ -7,7 +7,7 @@ typedef void (*voidfunctionptr)(void);
 
 extern voidfunctionptr _ctors[];
 extern voidfunctionptr _dtors[];
-extern BattleSetupData btlsetup_win_tbl[];
+extern BattleSetupData btlsetup_win_tbl[9];
 extern u32 btl_win_setup_no_tbl[];
 
 void _unresolved(void);

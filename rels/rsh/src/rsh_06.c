@@ -198,7 +198,6 @@ static u32 ext_moamoa_data[213] = {
     0x00000000,
 };
 
-// TODO: type
 static MoamoaGroup group_tbl[11] = {
     {"c_n_moa_a", "S_1"}, {"c_n_moa_b", "S_1"}, {"c_kinodebu", "G_1"}, {"c_puku_c", "U_1"},
     {"c_powan", "O_1"},   {"c_smoko", "T_2"},   {"c_rose", "G_1"},     {"c_papab", "G_1"},

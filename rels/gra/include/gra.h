@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "driver/npcdrv.h"
 
 void _unresolved(void);
 void _epilog(void);
@@ -22,5 +23,5 @@ extern voidfunctionptr _dtors[];
 
 // Battle setup tables for this area, defined by the generated
 // data/battle/battle_database_gra.c.
-extern u8 btlsetup_gra_tbl[];
+extern BattleSetupData btlsetup_gra_tbl[14];
 extern u8 btl_gra_setup_no_tbl[];

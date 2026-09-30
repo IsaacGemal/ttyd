@@ -2,8 +2,9 @@
 
 #include "evt/evt_cmd.h"
 #include "memory.h"
+#include "driver/npcdrv.h"
 
-extern BattleSetupData btlsetup_jon_tbl[];
+extern BattleSetupData btlsetup_jon_tbl[53];
 extern u32 btl_jon_setup_no_tbl[];
 
 void iri_12_msgcb(s32 type, smartEntry* smart);
