@@ -4578,7 +4578,7 @@ void puniModeWater(PuniData* punidat) {
         case 2: {
             Vec dir;
             f32 f0;
-            *(OSTime*)&punidat->field_0x1C8 = gp->renderTime;
+            punidat->modeStartTime = gp->renderTime;
             punidat->field_0x1F8 = punidat->field_0x12C;
             punidat->field_0x1EC = -80.0f;
             f0 = *(f32*)((u8*)punidat + 0x154) - punidat->field_0x1F8.y;
@@ -4596,7 +4596,7 @@ void puniModeWater(PuniData* punidat) {
         }
         case 3: {
             u32 divisor = (__OSBusClock >> 2) / 1000;
-            u32 step = (u32)(*(s32*)((u8*)gp + 0x3C) - punidat->field_0x1CC) / divisor;
+            u32 step = (u32)((u32)gp->renderTime - (u32)punidat->modeStartTime) / divisor;
             if ((s32)step < 0x12C) {
                 f32 t = (f32)(s32)step / 300.0f;
                 f32 y;
@@ -7712,13 +7712,13 @@ USER_FUNC(evt_puni_jump_position) {
     if (isFirstCall) {
         f32 a = -4.0f * g;
 
-        *(OSTime*)&punidat->field_0x1C8 = gp->renderTime;
+        punidat->modeStartTime = gp->renderTime;
         punidat->field_0x1F8 = punidat->field_0x12C;
         punidat->field_0x1EC = a;
         punidat->field_0x1F0 = (ty - punidat->field_0x1F8.y) - punidat->field_0x1EC;
         psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", &punidat->field_0x12C);
     }
-    elapsed = ((u32)gp->renderTime - (u32)*(OSTime*)&punidat->field_0x1C8) / ((__OSBusClock / 4) / 1000);
+    elapsed = ((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000);
     if (elapsed < duration) {
         f32 ratio = (f32)elapsed / (f32)duration;
 

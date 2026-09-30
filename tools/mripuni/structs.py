@@ -12,8 +12,10 @@ KEEP = {'W': {0x328: ('s32', 'unk328'), 0x444: ('BOOL', 'showPuniCounter'), 0x44
         'D': {0x4: ('s32', 'unk4'), 0xC: ('u16', 'unkC'),
               # from the functions written in wave 35: hitCheckFilter results and a surface normal
               0x210: ('struct HitEntry*', 'field_0x210'), 0x214: ('struct HitEntry*', 'field_0x214'),
-              0x560: ('Vec', 'field_0x560')}}
-WIDTH = lambda t: 12 if t == 'Vec' else 2 if t in ('s16', 'u16') else 1 if t in ('u8', 's8') else 4
+              0x560: ('Vec', 'field_0x560'),
+              # a mode's start time (OSTime, both words), as puniModeWater and the fall modes use it
+              0x1C8: ('OSTime', 'modeStartTime')}}
+WIDTH = lambda t: 12 if t == 'Vec' else 8 if t in ('OSTime', 'f64') else 2 if t in ('s16', 'u16') else 1 if t in ('u8', 's8') else 4
 SIZE = {'W': 0x4D0, 'D': 0x5A8}
 VEC = {k: {int(o, 16) for o in a['vec'][k]} for k in 'WD'}
 
@@ -36,6 +38,8 @@ def fields(k):
     out = {}
     for o in sorted(set(acc) | set(KEEP[k])):
         if any(v < o < v + 12 for v in vec):
+            continue
+        if any(q < o < q + WIDTH(t) for q, (t, _) in KEEP[k].items()):
             continue
         if o in KEEP[k]:
             out[o] = (*KEEP[k][o], WIDTH(KEEP[k][o][0]))

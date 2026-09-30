@@ -109,8 +109,7 @@ typedef struct PuniData {
     s32 field_0x1BC;                    // 0x1BC
     f32 field_0x1C0;                    // 0x1C0
     u8 unk1C4[0x1C8 - 0x1C4];           // 0x1C4
-    s32 field_0x1C8;                    // 0x1C8
-    s32 field_0x1CC;                    // 0x1CC
+    OSTime modeStartTime;               // 0x1C8
     s32 field_0x1D0;                    // 0x1D0
     s32 field_0x1D4;                    // 0x1D4
     s32 field_0x1D8;                    // 0x1D8
