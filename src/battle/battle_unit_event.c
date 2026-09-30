@@ -69,7 +69,6 @@ s32 BattleRunHitEventDirect(BattleUnit* unit, s32 damageCode, void* code) {
 #pragma dont_inline reset
 
 // optimize_for_size: the original prologue/epilogue uses stmw/lmw (retail builds this file at -O4,s).
-#pragma optimize_for_size on
 s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     void* code;
     s32 id;
@@ -89,7 +88,6 @@ s32 BattleRunHitEvent(BattleUnit* unit, s32 damageCode) {
     }
     return id;
 }
-#pragma optimize_for_size off
 
 // NONMATCHING (81.22%): 3 instructions differ, 2 missing, 4 extra, plus register differences.
 s32 BattleRunPhaseEvent(BattleUnit* unit, BOOL isUnison) {
