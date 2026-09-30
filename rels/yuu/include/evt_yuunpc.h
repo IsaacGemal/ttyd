@@ -3,11 +3,12 @@
 #include "evt/evt_cmd.h"
 #include "driver/camdrv.h"
 #include "driver/extdrv.h"
+#include "driver/npcdrv.h"
 #include <dolphin/mtx.h>
 
 // YuunpcEntry: one per NPC entry in YuunpcWp.entries (stride 0x70).
 typedef struct YuunpcEntry {
-    u8 pad_00[2];     //0x0
+    u16 field_0;      //0x0
     u16 flags;        //0x2
     u8 pad_04[0x18];  //0x4
     f32 field_1C;     //0x1C
@@ -15,7 +16,16 @@ typedef struct YuunpcEntry {
     f32 field_24;     //0x24
     f32 field_28;     //0x28
     f32 field_2C;     //0x2C
-    u8 pad_30[0x40];  //0x30
+    u8 pad_30[0x24];  //0x30
+    s16 field_54;     //0x54
+    s16 field_56;     //0x56
+    s16 field_58;     //0x58
+    s16 field_5A;     //0x5A
+    s16 field_5C;     //0x5C
+    u8 pad_5E[2];     //0x5E
+    NpcEntry* npc;    //0x60
+    f32 field_64;     //0x64
+    u64 field_68;     //0x68
 } YuunpcEntry;
 
 typedef struct YuunpcPoseEntry {
@@ -56,12 +66,9 @@ typedef struct YuunpcMapWork {
     u8 pad_00[0xC];  //0x0
     Vec field_0C;    //0xC
     Vec field_18;    //0x18
-    f32 field_24;    //0x24
-    f32 field_28;    //0x28
-    f32 field_2C;    //0x2C
-    f32 field_30;    //0x30
-    u8 pad_34[8];    //0x34
-    f32 field_3C;    //0x3C
+    Vec field_24;    //0x24  position
+    Vec field_30;    //0x30  velocity
+    f32 field_3C;    //0x3C  velocity scale
     f32 field_40;    //0x40
     u8 pad_44[4];    //0x44
     f32 field_48;    //0x48
@@ -89,17 +96,17 @@ void yuunpc_wp_flag_on(u16 mask);
 void errper_set_rtn(ErrPer* p);
 s32 goalincheck(YuunpcMapWork* p);
 s32 fallcheck(YuunpcMapWork* p);
-void hitcheck(void);  // TODO: real signature
+s32 hitcheck(YuunpcMapWork* p);
 void yuunpc_pose_minigame3_main(void);
 void ext_yuunpc_minigame3_init(void);  // TODO: real signature
 void yuunpc_pose_minigame2_main(void);
 void ext_yuunpc_minigame2_init(void);  // TODO: real signature
 void yuunpc_pose_minigame1_main(void);
 void ext_yuunpc_minigame1_init(void);  // TODO: real signature
-void yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry);
+f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry);
 void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value);
-void yuunpc_pose_change2(void);  // TODO: real signature
-void yuunpc_pose_change(void);  // TODO: real signature
+void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim, f32 a);
+void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b);
 s32 yuunpc_pose_check(const char* name, const char* anim);
 void yuunpc_pose_init(YuunpcPoseArg* arg);
 void yuunpc_maphit_init(void);

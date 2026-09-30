@@ -45,5 +45,5 @@ EVT_DEF(las_27_init_evt);
 EVT_DEF(las_28_init_evt);
 EVT_DEF(las_29_init_evt);
 EVT_DEF(las_30_init_evt);
-extern BattleSetupData btlsetup_las_tbl[];
+extern BattleSetupData btlsetup_las_tbl[61];
 extern u32 btl_las_setup_no_tbl[];

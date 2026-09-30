@@ -131,20 +131,19 @@ static EVT_BEGIN(mario_fly)
     RETURN
 EVT_END()
 
-// NONMATCHING (98.88%): float constant load order differs.
 static USER_FUNC(mario_kirimomi) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(0);
 
-    *(f32*)((u8*)mario + 0xB4) = *(f32*)((u8*)mario + 0x1B8) * 0.5f;
+    *(f32*)((u8*)mario + 0xB4) = mario->wPlayerCollisionBox.y / 2.0f;
     *(f32*)((u8*)mario + 0xC4) -= 10.0f;
     *(f32*)((u8*)mario + 0xC4) = (f32)fmod(*(f32*)((u8*)mario + 0xC4), 360.0);
 
     if (party != NULL) {
         if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
-            *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)party + 0xF0) * 0.5f;
+            *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)party + 0xF0) / 2.0f;
         } else {
-            *(f32*)((u8*)party + 0x8C) = (*(f32*)((u8*)party + 0xF0) - 10.0f) * 0.5f;
+            *(f32*)((u8*)party + 0x8C) = (*(f32*)((u8*)party + 0xF0) - 10.0f) / 2.0f;
         }
         *(f32*)((u8*)party + 0x8C) *= party->field_70.y;
         *(f32*)((u8*)party + 0x6C) -= 10.0f;
@@ -152,9 +151,9 @@ static USER_FUNC(mario_kirimomi) {
     }
     return EVT_RETURN_BLOCK;
 }
-// NONMATCHING (83.17%): see the ledger (wave 17 leftovers).
 static USER_FUNC(z) {
-    event->lwData[0] = (s32)(1024.0f * ((240.0f / (f32)tan(0.21816612780094147)) * 0.5f)) - EVTDAT_FLOAT_BASE;
+    f32 a = (f32)tan(0.21816612780094147);
+    event->lwData[0] = FLOAT(240.0f / a / 2);
     return EVT_RETURN_DONE;
 }
 

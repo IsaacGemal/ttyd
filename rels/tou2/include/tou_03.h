@@ -1,6 +1,7 @@
 #pragma once
 
 #include "evt/evt_cmd.h"
+#include "eff/eff_mahojin.h"
 
 USER_FUNC(gans_white_off);
 USER_FUNC(gans_white_on);
@@ -13,7 +14,7 @@ USER_FUNC(confupose);
 USER_FUNC(snd_sfx_stop);
 USER_FUNC(burst_chain);
 USER_FUNC(tribe_chk);
-void screen_tev(void);  // TODO: real signature
+void screen_tev(TevCallbackParam* param);
 // This unit has its own copy of GXSetTexCoordGen; the SDK header declares it.
 USER_FUNC(screen_init);
 void ext_kyaku_dispent(void);  // TODO: real signature

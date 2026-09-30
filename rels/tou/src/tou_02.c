@@ -23,11 +23,13 @@
 #include "driver/dispdrv.h"
 #include "driver/extdrv.h"
 #include "driver/camdrv.h"
+#include "driver/hitdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "mario/mariost.h"
 #include "mario/mario.h"
 #include "party.h"
 #include "party/party_cloud.h"
+#include "pmario_sound.h"
 #include "memory.h"
 #include "system.h"
 #include <stdlib.h>
@@ -40,11 +42,15 @@
 
 #pragma force_active on
 extern s32 evt_tou_get_ranking_27_text_1ED4[];
+u8 psndSFX_get_vol(s32 id);
+void psndSFX_vol(s32 id, u8 vol);
 
 static f32 randf(f32 min, f32 max);
 static void pose_change(FanPose* pose, const char* name, const char* motion);
 static void pose_main(void);
 static void pose_init(void);
+static inline f32 fanSinf(f32 rad);
+static inline f32 fanCosf(f32 rad);
 
 // clang-format off
 extend_data(12,
@@ -740,7 +746,7 @@ static EVT_BEGIN(init_champ)
     RETURN
 EVT_END()
 
-// TODO: type
+// 13 (x,z) coordinate pairs read by READ_INT2; no matching struct in include/.
 u32 move_pos[26] = {
     0x00000000, 0x00000000, 0xFFFFFF9C, 0xFFFFFFBA,
     0xFFFFFF1F, 0x00000032, 0xFFFFFF1A, 0x00000087,
@@ -936,106 +942,24 @@ EVT_BEGIN(talk_borodo)
     RETURN
 EVT_END()
 
-// TODO: type
-static u32 npcEnt[391] = {
-    (u32)"ガードマン１", 0x40080600, 0x00000000, (u32)&init_gard1,
-    0x00000000, (u32)&talk_gard1, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"ガードマン２",
-    0x40080600, 0x00000000, (u32)&init_gard2, 0x00000000,
-    (u32)&talk_gard2, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"マダム", 0x40080600,
-    0x00000000, (u32)&init_madam, 0x00000000, (u32)&talk_madam,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"レポーター", 0x40080600, 0x00000000,
-    (u32)&init_repo, 0x00000000, (u32)&talk_repo, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"カメラマン１", 0x40080600, 0x00000000, (u32)&init_cam1,
-    0x00000000, (u32)&talk_cam1, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"カメラマン２",
-    0x40080600, 0x00000000, (u32)&init_cam2, 0x00000000,
-    (u32)&talk_cam2, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"キノピオ４", 0x40080600,
-    0x00000000, (u32)&init_kino4, (u32)&reg_kino4, (u32)&talk_kino4,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"キノピオ５", 0x40080600, 0x00000000,
-    (u32)&init_kino5, 0x00000000, (u32)&talk_kino5, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"キノピコ", 0x40080600, 0x00000000, (u32)&init_kinopiko,
-    0x00000000, (u32)&talk_kinopiko, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"バッジ屋",
-    0x40080600, 0x00000000, (u32)&init_chu, 0x00000000,
-    (u32)&talk_chu, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"チャンピョン", 0x40080600,
-    0x00000000, (u32)&init_champ, 0x00000000, (u32)&talk_champ,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"キノシコワ", 0x40080600, 0x00000000,
-    (u32)&init_shikowa, 0x00000000, (u32)&talk_shikowa, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    (u32)"ウラノコ", 0x40080600, 0x00000000, (u32)&init_uranoko,
-    0x00000000, (u32)&talk_uranoko, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"アイアンＡ",
-    0x40080600, 0x00000000, (u32)&init_ironA, 0x00000000,
-    (u32)&talk_ironA, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, (u32)"アイアンＢ", 0x40080600,
-    0x00000000, (u32)&init_ironB, 0x00000000, (u32)&talk_ironB,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, (u32)"ボロドー", 0x40080600, 0x00000000,
-    (u32)&init_borodo, 0x00000000, (u32)&talk_borodo, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000,
+static NpcSetupInfo npcEnt[17] = {
+    { "ガードマン１", 0x40080600, 0, &init_gard1, NULL, &talk_gard1, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "ガードマン２", 0x40080600, 0, &init_gard2, NULL, &talk_gard2, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "マダム", 0x40080600, 0, &init_madam, NULL, &talk_madam, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "レポーター", 0x40080600, 0, &init_repo, NULL, &talk_repo, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "カメラマン１", 0x40080600, 0, &init_cam1, NULL, &talk_cam1, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "カメラマン２", 0x40080600, 0, &init_cam2, NULL, &talk_cam2, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "キノピオ４", 0x40080600, 0, &init_kino4, &reg_kino4, &talk_kino4, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "キノピオ５", 0x40080600, 0, &init_kino5, NULL, &talk_kino5, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "キノピコ", 0x40080600, 0, &init_kinopiko, NULL, &talk_kinopiko, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "バッジ屋", 0x40080600, 0, &init_chu, NULL, &talk_chu, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "チャンピョン", 0x40080600, 0, &init_champ, NULL, &talk_champ, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "キノシコワ", 0x40080600, 0, &init_shikowa, NULL, &talk_shikowa, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "ウラノコ", 0x40080600, 0, &init_uranoko, NULL, &talk_uranoko, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "アイアンＡ", 0x40080600, 0, &init_ironA, NULL, &talk_ironA, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "アイアンＢ", 0x40080600, 0, &init_ironB, NULL, &talk_ironB, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { "ボロドー", 0x40080600, 0, &init_borodo, NULL, &talk_borodo, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
+    { 0, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0 },
 };
 
 EVT_BEGIN(evt_tougi2)
@@ -1139,29 +1063,35 @@ EVT_BEGIN(evt_tougi2)
     RETURN
 EVT_END()
 
-// TODO: type
-u32 ext_fan_data[84] = {
-    (u32)"c_kinopio", (u32)"KNP_W_1", 0x40000000, (u32)"c_kinopio",
-    (u32)"KNP_W_1", 0x40C00000, (u32)"c_kinopio", (u32)"KNP_W_1",
-    0x41200000, (u32)"c_kinopio", (u32)"KNP_W_1", 0x41600000,
-    (u32)"c_kinopio", (u32)"KNP_W_1", 0x41900000, (u32)"c_kinopio",
-    (u32)"KNP_W_1", 0x41B00000, (u32)"c_kinopio", (u32)"KNP_W_1",
-    0x41D00000, (u32)"c_kinopio", (u32)"KNP_W_1", 0x41F00000,
-    (u32)"c_kinopio", (u32)"KNP_W_1", 0x42080000, (u32)"c_kinopiko",
-    (u32)"KNF_W_1", 0x40000000, (u32)"c_kinopiko", (u32)"KNF_W_1",
-    0x40C00000, (u32)"c_kinopiko", (u32)"KNF_W_1", 0x41200000,
-    (u32)"c_kinopiko", (u32)"KNF_W_1", 0x41600000, (u32)"c_kinopiko",
-    (u32)"KNF_W_1", 0x41900000, (u32)"c_kinopiko", (u32)"KNF_W_1",
-    0x41B00000, (u32)"c_kinopiko", (u32)"KNF_W_1", 0x41D00000,
-    (u32)"c_kinopiko", (u32)"KNF_W_1", 0x41F00000, (u32)"c_kinopiko",
-    (u32)"KNF_W_1", 0x42080000, (u32)"c_kinopiko", (u32)"KNF_W_1",
-    0x42180000, (u32)"c_jugemu", (u32)"JGM_W_1", 0x00000000,
-    (u32)"c_jugemu", (u32)"JGM_W_1", 0x40800000, (u32)"c_jugemu",
-    (u32)"JGM_W_1", 0x41000000, (u32)"c_jugemu", (u32)"JGM_W_1",
-    0x41400000, (u32)"c_jugemu", (u32)"JGM_W_1", 0x41800000,
-    (u32)"c_jugemu", (u32)"JGM_W_1", 0x41A00000, (u32)"c_jugemu",
-    (u32)"JGM_W_1", 0x41C00000, (u32)"c_jugemu", (u32)"JGM_W_1",
-    0x41E00000, 0x00000000, 0x00000000, 0x00000000,
+ExtFanData ext_fan_data[28] = {
+    { "c_kinopio", "KNP_W_1", 2.0f },
+    { "c_kinopio", "KNP_W_1", 6.0f },
+    { "c_kinopio", "KNP_W_1", 10.0f },
+    { "c_kinopio", "KNP_W_1", 14.0f },
+    { "c_kinopio", "KNP_W_1", 18.0f },
+    { "c_kinopio", "KNP_W_1", 22.0f },
+    { "c_kinopio", "KNP_W_1", 26.0f },
+    { "c_kinopio", "KNP_W_1", 30.0f },
+    { "c_kinopio", "KNP_W_1", 34.0f },
+    { "c_kinopiko", "KNF_W_1", 2.0f },
+    { "c_kinopiko", "KNF_W_1", 6.0f },
+    { "c_kinopiko", "KNF_W_1", 10.0f },
+    { "c_kinopiko", "KNF_W_1", 14.0f },
+    { "c_kinopiko", "KNF_W_1", 18.0f },
+    { "c_kinopiko", "KNF_W_1", 22.0f },
+    { "c_kinopiko", "KNF_W_1", 26.0f },
+    { "c_kinopiko", "KNF_W_1", 30.0f },
+    { "c_kinopiko", "KNF_W_1", 34.0f },
+    { "c_kinopiko", "KNF_W_1", 38.0f },
+    { "c_jugemu", "JGM_W_1", 0.0f },
+    { "c_jugemu", "JGM_W_1", 4.0f },
+    { "c_jugemu", "JGM_W_1", 8.0f },
+    { "c_jugemu", "JGM_W_1", 12.0f },
+    { "c_jugemu", "JGM_W_1", 16.0f },
+    { "c_jugemu", "JGM_W_1", 20.0f },
+    { "c_jugemu", "JGM_W_1", 24.0f },
+    { "c_jugemu", "JGM_W_1", 28.0f },
+    { 0x00000000, 0x00000000, 0.0f },
 };
 
 EVT_BEGIN(mario_momikucha_msg)
@@ -1203,11 +1133,6 @@ EVT_BEGIN(mario_momikucha_msg)
     END_LOOP
     RETURN
 EVT_END()
-
-// TODO: write ext_fan_main (global, 0xfcc bytes) here:
-
-// TODO: write ext_fan_init (global, 0x670 bytes) here:
-// its asm is in build/G8MJ01/tou/asm/tou_02.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_momikucha)
     SET_VALUE(LF(0), 0)
@@ -1582,17 +1507,14 @@ EVT_BEGIN(tou_02_init_evt)
     RETURN
 EVT_END()
 
-// TODO: type
 ExtFanWork* fan_wp;
 
-// NONMATCHING (98.53%): the body is structurally identical but the stack frame is 0x30
-// instead of 0x60 (the original reserves extra space for the name buffer).
 static void pose_init(void) {
     ExtFanData* data = (ExtFanData*)ext_fan_data;
-    char name[0x10];
-    char motion[0x8];
-    s32 start = 0;
+    char name[0x20];
+    char motion[0x20];
     s32 i = 0;
+    s32 start;
 
     strcpy(name, "");
     strcpy(motion, "");
@@ -1619,12 +1541,12 @@ static void pose_init(void) {
     fan_wp->groupCount++;
 }
 
-// NONMATCHING (98.63%): only general-purpose register allocation differs (the original
+// NONMATCHING (98.84%): only general-purpose register allocation differs (the original
 // keeps fan/pose/i in r24-r26).
 static void pose_main(void) {
     ExtPose* pose = extGetPosePtr();
-    FanPose* fan = fan_wp->poses;
     s32 i;
+    FanPose* fan = fan_wp->poses;
 
     for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
         PoseGroup* group = (PoseGroup*)((u8*)gp + 0xC + fan->groupIndex * 0x28);
@@ -1659,7 +1581,63 @@ static f32 randf(f32 min, f32 max) {
     return r * (max - min) + min;
 }
 
-// TODO: write ext_fan_init (global, 0x670 bytes) here
+// NONMATCHING (90.94%): written from the asm; the inlined pose_init/pose_change leave a
+// 0x110-byte frame instead of 0x100 and the general-purpose registers are allocated differently.
+void ext_fan_init(void) {
+    s32 i;
+    ExtPose* pose;
+    FanPose* fan;
+
+    fan_wp = _mapAlloc(0x51C);
+    memset(fan_wp, 0, 0x51C);
+    fan_wp->poseNum = extGetPoseNum();
+    fan_wp->poses = _mapAlloc(fan_wp->poseNum * 0x48);
+    memset(fan_wp->poses, 0, fan_wp->poseNum * 0x48);
+    pose_init();
+    pose = extGetPosePtr();
+    fan = fan_wp->poses;
+    for (i = 0; i < fan_wp->poseNum; i++, pose++, fan++) {
+        Vec pos;
+        Vec vel;
+        s32 type;
+
+        pose->flags |= 7;
+        PSMTXIdentity(*pose->matrix);
+        (*pose->matrix)[0][3] = 0.0f;
+        (*pose->matrix)[1][3] = 0.0f;
+        (*pose->matrix)[2][3] = 0.0f;
+        pose->field_0x4 = randf(0.0f, 360.0f);
+        type = irand(1000) % 3;
+        switch (type) {
+        case 0:
+            pose_change(fan, "c_kinopio", "KNP_W_1");
+            break;
+        case 1:
+            pose_change(fan, "c_kinopiko", "KNF_W_1");
+            break;
+        default:
+            pose_change(fan, "c_jugemu", "JGM_W_1");
+            break;
+        }
+        fan->field_0x2 = 0;
+        pos.x = randf(-100.0f, 100.0f);
+        pos.y = 0.0f;
+        pos.z = randf(-100.0f, 100.0f);
+        fan->position = pos;
+        vel.x = 0.0f;
+        vel.y = 0.0f;
+        vel.z = 0.0f;
+        fan->velocity = vel;
+    }
+    {
+        Vec pos;
+        pos.x = 0.0f;
+        pos.y = 0.0f;
+        pos.z = 0.0f;
+        fan_wp->sfxId = psndSFXOn_3D("SFX_STG3_AUDIENCE_FAN1", &pos);
+        fan_wp->volume = psndSFX_get_vol(fan_wp->sfxId);
+    }
+}
 
 void fan_disp(void) {
     extLoadRenderMode();
@@ -1670,7 +1648,267 @@ void fan_disp(void) {
     extLoadTextureExit();
 }
 
-// TODO: write ext_fan_main (global, 0xfcc bytes) here
+// NONMATCHING (85.65%): written from the asm; the check_hammer dispatch order and the
+// register allocation of the case 1/2 trig blocks still differ.
+#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
+void ext_fan_main(void) {
+    MarioWork* mario = marioGetPtr();
+    FanPose* fan;
+    ExtPose* pose;
+    Vec d;
+    Vec vec = { 0.0f, 0.0f, 0.0f };
+    s32 i;
+    s32 j;
+
+    if (mario->currMotionId == 0x12) {
+        fan_wp->field_0x50C++;
+    } else {
+        fan_wp->field_0x50C = 0;
+    }
+
+    if (evtGetValue(NULL, GF(10))) {
+        pose = extGetPosePtr();
+        fan = fan_wp->poses;
+        i = fan_wp->poseNum;
+        while (i > 0) {
+            if (fan->field_0x2 == 0) {
+                fan->position = mario->position;
+                vec = fan->position;
+                pose->flags &= ~1;
+                fan->flags |= 1;
+                break;
+            }
+            fan++;
+            pose++;
+            i--;
+        }
+    } else {
+        s32 found = 0;
+        pose = extGetPosePtr();
+        fan = fan_wp->poses;
+        for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
+            if (fan->field_0x2 != 0) {
+                continue;
+            }
+            if (found == 0) {
+                found = 1;
+                fan->position = mario->position;
+                pose->flags &= ~1;
+                fan->flags |= 1;
+            } else {
+                NpcEntry* npc = npcNameToPtr("\x83\x60\x83\x83\x83\x93\x83\x73\x83\x87\x83\x93");
+                fan->position = npc->position;
+                vec = fan->position;
+                pose->flags &= ~1;
+                fan->flags |= 1;
+                break;
+            }
+        }
+    }
+
+    fan = fan_wp->poses;
+    for (i = 0; i < fan_wp->poseNum; i++, fan++) {
+        if (fan->field_0x2 != 0) {
+            continue;
+        }
+        PSVECSubtract(&vec, &fan->position, &d);
+        if (PSVECMag(&d) != 0.0f) {
+            PSVECNormalize(&d, &d);
+            d.y = 0.0f;
+            PSVECScale(&d, &d, 0.1f);
+            PSVECAdd(&fan->velocity, &d, &fan->velocity);
+        }
+    }
+
+    fan = fan_wp->poses;
+    for (i = 0; i < fan_wp->poseNum; i++, fan++) {
+        if (fan->field_0x2 != 0) {
+            continue;
+        }
+        {
+            FanPose* other = fan_wp->poses;
+            for (j = 0; j < fan_wp->poseNum; j++, other++) {
+                if (other->field_0x2 != 0) {
+                    continue;
+                }
+                if (i == j) {
+                    continue;
+                }
+                if (PSVECSquareDistance(&fan->position, &other->position) < 900.0f) {
+                    PSVECSubtract(&fan->position, &other->position, &d);
+                    d.y = 0.0f;
+                    PSVECNormalize(&d, &d);
+                    PSVECScale(&d, &d, 5.0f);
+                    PSVECAdd(&fan->velocity, &d, &fan->velocity);
+                    PSVECSubtract(&other->velocity, &d, &other->velocity);
+                }
+            }
+        }
+    }
+
+    {
+        const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
+        fan = fan_wp->poses;
+        for (i = 0; i < fan_wp->poseNum; i++, fan++) {
+        if (fan->field_0x2 != 0) {
+            continue;
+        }
+        switch (check_hammer(fan)) {
+        case 1:
+            fan->field_0x2 = 10;
+            {
+                f32 a = (TWO_PI * (135.0f + (f32)rand() / 32767.0f * 90.0f)) / 360.0f;
+                f32 dist = 400.0f + (f32)rand() / 32767.0f * 100.0f;
+                f32 s = fanSinf(a);
+                f32 c;
+                f32 vx, vz;
+
+                vx = fan->position.x + dist * s;
+                c = fanCosf(a);
+                vz = fan->position.z - dist * c;
+                {
+                    Vec v = { 0.0f, 0.0f, 0.0f };
+                    v.x = vx;
+                    v.y = -100.0f;
+                    v.z = vz;
+                    fan->target = v;
+                }
+                fan->field_0x3C = 4.0f + (f32)rand() / 32767.0f * 2.0f;
+                fan->field_0x40 = 0.1f + (f32)rand() / 32767.0f * 0.1f;
+                {
+                    f32 dy = fan->target.y - fan->position.y;
+                    f32 dxy = distABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
+                    f32 ang = angleABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
+
+                    fan->field_0x44 = (s16)(dxy / fan->field_0x3C);
+                    fan->field_0x38 = fan->field_0x40 * (f32)fan->field_0x44 * 0.5f + dy / (f32)fan->field_0x44;
+                    (void)ang;
+                }
+                psndSFXOn_3D(flySfx, &fan->position);
+            }
+            break;
+        case 2:
+            {
+                f32 ang = angleABf(mario->position.x, mario->position.z, fan->position.x, fan->position.z);
+                f32 breath = cloudGetBreathDir();
+                f32 a;
+
+                fan->field_0x2 = 20;
+                fan->target.x = 0.0f;
+                fan->target.y = 0.0f;
+                fan->target.z = 0.0f;
+                a = (ang + breath) * 0.5f;
+                a = TWO_PI * a / 360.0f;
+                {
+                    f32 scale = 0.1f + (f32)rand() / 32767.0f * 0.1f;
+                    f32 s = fanSinf(a);
+                    f32 c;
+
+                    fan->field_0x38 = scale * s;
+                    c = fanCosf(a);
+                    fan->field_0x3C = 0.03f + (f32)rand() / 32767.0f * 0.03f;
+                    fan->field_0x40 = -scale * c;
+                    fan->field_0x44 = 120;
+                }
+                psndSFXOn_3D(flySfx, &fan->position);
+            }
+            break;
+        default:
+            break;
+        }
+        }
+    }
+    fan_wp->field_0x510 = fan_wp->poseNum;
+
+    pose = extGetPosePtr();
+    fan = fan_wp->poses;
+    for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
+        switch (fan->field_0x2) {
+        case 0:
+            PSVECNormalize(&fan->velocity, &fan->velocity);
+            {
+                f32 mag = PSVECMag(&fan->velocity);
+                HitCheckQuery query;
+
+                query.singleSided = 0;
+                query.targetPos.x = fan->position.x;
+                query.targetPos.y = fan->position.y + 4.0f;
+                query.targetPos.z = fan->position.z;
+                query.targetDir.x = fan->velocity.x;
+                query.targetDir.y = 0.0f;
+                query.targetDir.z = fan->velocity.z;
+                query.targetDistance = 25.0f + mag;
+                if (hitCheckVecFilter(&query, NULL) != NULL) {
+                    C_VECReflect(&fan->velocity, &query.hitNormal, &fan->velocity);
+                } else {
+                    fan->position.x += fan->velocity.x;
+                    fan->position.z += fan->velocity.z;
+                    fan->velocity.x *= 0.6f;
+                    fan->velocity.z *= 0.6f;
+                }
+            }
+            if (fan->position.x < -350.0f) {
+                fan->position.x = -350.0f;
+            }
+            if (fan->position.x > 350.0f) {
+                fan->position.x = 350.0f;
+            }
+            if (fan->position.z > 195.0f + (f32)i / 100.0f) {
+                fan->position.z = 195.0f + (f32)i / 100.0f;
+            }
+            break;
+        case 10:
+            fan->position.y += fan->field_0x38;
+            fan->field_0x38 -= fan->field_0x40;
+            {
+                f32 ang = angleABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
+                f32 a = TWO_PI * ang / 360.0f;
+                f32 s = fanSinf(a);
+                f32 c;
+
+                fan->position.x += fan->field_0x3C * s;
+                c = fanCosf(a);
+                fan->position.z += fan->field_0x3C * -c;
+            }
+            fan->field_0x44--;
+            if (fan->field_0x44 < 0) {
+                fan->field_0x2 = 100;
+            }
+            break;
+        case 20:
+            fan->field_0x44--;
+            if (fan->field_0x44 > 0) {
+                fan->target.x += fan->field_0x38;
+                fan->target.y += fan->field_0x3C;
+                fan->target.z += fan->field_0x40;
+                fan->position.x += fan->target.x;
+                fan->position.y += fan->target.y;
+                fan->position.z += fan->target.z;
+            } else {
+                fan->field_0x2 = 100;
+            }
+            break;
+        case 100:
+            pose->flags &= ~3;
+            fan->field_0x2++;
+            break;
+        default:
+            break;
+        }
+        if (fan->flags & 1) {
+            fan_wp->field_0x510--;
+        } else if (fan->field_0x2 != 0) {
+            fan_wp->field_0x510--;
+        }
+        (*pose->matrix)[0][3] = fan->position.x;
+        (*pose->matrix)[1][3] = fan->position.y;
+        (*pose->matrix)[2][3] = fan->position.z;
+        pose->field_0x4 = angleABf(vec.x, vec.z, fan->position.x, fan->position.z);
+    }
+    psndSFX_pos(fan_wp->sfxId, &vec);
+    psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
+}
+#pragma opt_propagation reset
 
 // NONMATCHING (98.79%): only general-purpose register allocation differs from the original.
 void ext_fan_dispent(void) {
@@ -1692,9 +1930,81 @@ void ext_fan_dispent(void) {
     dispEntry(4, 0.0f, 1, (DispCallback)fan_disp, NULL);
 }
 
-// NONMATCHING (54.58%): structure matches but the sin/cos coefficient loads are not
-// hoisted before the branch (the original loads 0.00761/0.16605/1.0 and 0.03705/0.4967 early)
-// and the resulting fpr allocation differs.
+static inline f32 fanSinf(f32 rad) {
+    f32 f0, f1, sinv = 0.00761f;
+    f32 c1 = 0.16605f;
+    f32 c2 = 1.0f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - 1.5707964f;
+            f1 = 1.5707964f - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - 3.1415927f;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f - f0;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 fanCosf(f32 rad) {
+    f32 f0, cosv = 0.03705f;
+    f32 c1 = 0.4967f;
+    f32 c2 = 1.0f;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - 1.5707964f;
+            f0 = 1.5707964f - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - 3.1415927f;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        f0 = 1.5707964f - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// NONMATCHING (93.69%): the body is otherwise identical; only floating-point register
+// allocation differs (the original keeps rad/s/coeffs in f6/f4/f3/f2/f1).
+#pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
 s32 check_hammer(FanPose* pose) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party;
@@ -1712,77 +2022,17 @@ s32 check_hammer(FanPose* pose) {
         return 0;
     }
     if (mario->currMotionId == 0x12 && fan_wp->field_0x50C > 10) {
-        f32 t;
-
         ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
         rad = TWO_PI * ang / 360.0f;
-        s = 0.00761f;
-        if (rad <= PI) {
-            t = MTXDegToRad(90.0f);
-            if (rad <= t) {
-                f32 x2 = rad * rad;
-                s = (s * x2) - 0.16605f;
-                s = (s * x2) + 1.0f;
-                s = s * rad;
-            } else {
-                f32 d = t - (rad - t);
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-            }
-        } else {
-            t = MTXDegToRad(270.0f);
-            if (rad < t) {
-                f32 d = rad - PI;
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-                s = -s;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (rad - t);
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-                s = -s;
-            }
-        }
+        s = fanSinf(rad);
         x = 35.0f * s + mario->position.x;
-        c = 0.03705f;
-        if (rad <= PI) {
-            if (rad <= MTXDegToRad(90.0f)) {
-                f32 x2 = rad * rad;
-                c = (c * x2) - 0.4967f;
-                c = (c * x2) + 1.0f;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (rad - MTXDegToRad(90.0f));
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-                c = -c;
-            }
-        } else {
-            if (rad < MTXDegToRad(270.0f)) {
-                f32 d = rad - PI;
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-                c = -c;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (rad - MTXDegToRad(270.0f));
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-            }
-        }
+        c = fanCosf(rad);
         z = mario->position.z - 35.0f * c;
         if (distABf(pose->position.x, pose->position.z, x, z) < 35.0f) {
             return 1;
         }
     }
-    if (mario->currMotionId == 0x13 && mario->currSubMotionId == 0x14) {
+    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
         if (PSVECDistance(&mario->position, &pose->position) < 65.0f) {
             return 1;
         }
@@ -1791,72 +2041,13 @@ s32 check_hammer(FanPose* pose) {
     if (party != NULL && party->currentMemberId == 5 && (party->flags & 0x100)) {
         Vec local;
         f32 dist;
-        f32 t;
 
         ang = TWO_PI * cloudGetBreathDir() / 360.0f;
         dist = cloudGetBreathDist();
-        s = 0.00761f;
-        if (ang <= PI) {
-            t = MTXDegToRad(90.0f);
-            if (ang <= t) {
-                f32 x2 = ang * ang;
-                s = (s * x2) - 0.16605f;
-                s = (s * x2) + 1.0f;
-                s = s * ang;
-            } else {
-                f32 d = t - (ang - t);
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-            }
-        } else {
-            t = MTXDegToRad(270.0f);
-            if (ang < t) {
-                f32 d = ang - PI;
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-                s = -s;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (ang - t);
-                f32 d2 = d * d;
-                s = (s * d2) - 0.16605f;
-                s = (s * d2) + 1.0f;
-                s = s * d;
-                s = -s;
-            }
-        }
+        s = fanSinf(ang);
         local.x = party->position.x + dist * s;
         local.y = party->position.y;
-        c = 0.03705f;
-        if (ang <= PI) {
-            if (ang <= MTXDegToRad(90.0f)) {
-                f32 x2 = ang * ang;
-                c = (c * x2) - 0.4967f;
-                c = (c * x2) + 1.0f;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (ang - MTXDegToRad(90.0f));
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-                c = -c;
-            }
-        } else {
-            if (ang < MTXDegToRad(270.0f)) {
-                f32 d = ang - PI;
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-                c = -c;
-            } else {
-                f32 d = MTXDegToRad(90.0f) - (ang - MTXDegToRad(270.0f));
-                f32 d2 = d * d;
-                c = (c * d2) - 0.4967f;
-                c = (c * d2) + 1.0f;
-            }
-        }
+        c = fanCosf(ang);
         local.z = party->position.z - dist * c;
         if (ang >= 0.0f) {
             if (PSVECDistance(&local, &pose->position) < 30.0f) {
@@ -1866,6 +2057,7 @@ s32 check_hammer(FanPose* pose) {
     }
     return 0;
 }
+#pragma opt_propagation reset
 
 USER_FUNC(evt_end_count) {
     evtSetValue(event, event->args[0], fan_wp->field_0x510);

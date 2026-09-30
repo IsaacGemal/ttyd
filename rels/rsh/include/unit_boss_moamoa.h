@@ -2,6 +2,12 @@
 
 #include "evt/evt_cmd.h"
 
+typedef struct MoamoaAnimData {
+    const char* name1; // 0x0
+    const char* name2; // 0x4
+    f32 frame;         // 0x8
+} MoamoaAnimData;
+
 USER_FUNC(moamoa_set_bodyScale);
 void moamoa_draw(void);  // TODO: real signature
 void moamoa_pose(void* pose);

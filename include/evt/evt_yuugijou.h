@@ -87,6 +87,8 @@ typedef struct PiantaParlorWork {
 
 void monteCountDisp(void);
 
+extern PiantaParlorWork* yuwp;
+
 void yuugijou_init(void);
 
 struct EventEntry* evtYuuWindow(void);

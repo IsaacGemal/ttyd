@@ -103,7 +103,9 @@ typedef struct PartyEntry {
     Vec field_B8;                // 0xB8
     u8 field_C4[0xE4 - 0xC4];    // 0xC4
     f32 field_E4;                // 0xE4
-    u8 field_E8[0xFC - 0xE8];    // 0xE8
+    u8 field_E8[0xF4 - 0xE8];    // 0xE8
+    f32 field_F4;                // 0xF4
+    u8 field_F8[0xFC - 0xF8];    // 0xF8
     f32 field_FC;                // 0xFC
     f32 dir;                     // 0x100
     f32 speed;                   // 0x104

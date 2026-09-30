@@ -8,7 +8,7 @@ void _prolog(void);
 void _epilog(void);
 void _unresolved(void);
 
-extern BattleSetupData btlsetup_jin_tbl[];
+extern BattleSetupData btlsetup_jin_tbl[26];
 extern u32 btl_jin_setup_no_tbl[];
 
 EVT_DEF(jin_00_init_evt);
