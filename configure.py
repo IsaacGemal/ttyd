@@ -656,7 +656,7 @@ config.libs = [
             Object(NonMatching, "effect/n64/eff_stardust_n64.c"),
             Object(NonMatching, "effect/n64/eff_stone_smoke_n64.c"),
             Object(NonMatching, "effect/n64/eff_sunlight_n64.c"),
-            Object(NonMatching, "effect/n64/eff_sweat_n64.c"),
+            Object(Matching, "effect/n64/eff_sweat_n64.c"),
             Object(NonMatching, "effect/n64/eff_thruhammer_n64.c"),
             Object(Matching, "effect/n64/eff_thunder_n64.c"),
             Object(NonMatching, "effect/n64/eff_thunderflare_n64.c"),

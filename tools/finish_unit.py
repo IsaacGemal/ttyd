@@ -178,10 +178,27 @@ try:
     r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
     tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
     print("  autolink:", " / ".join(tail))
-    if "LINKED" not in "".join(tail) and all(v >= 100 for v in secs.values()):
+    if "LINKED" not in "".join(tail):
         # every section scores 100 but the dol differs: named pool constants sit before the pooled literals, so the
         # order can be off; let the compiler pool the floats itself
-        step("pool_floats", run_tool("pool_floats"))
+        # the section scores no longer say anything (an object that the compiler pools itself scores lower until the link):
+        # keep the change when every function is still at 100% and the build works
+        saved = open(src).read()
+        try:
+            for f in (drop_int_double, literal_strings, run_tool("pool_floats")):
+                try:
+                    f()
+                except Exception:
+                    pass
+            f2, s2, ok2 = measure()
+            if ok2 and min(f2.values()) >= 100:
+                print("  all-literal pool: functions still 100%")
+            else:
+                open(src, "w").write(saved)
+                print("  all-literal pool: reverted")
+        except BaseException:
+            open(src, "w").write(saved)
+            raise
         r = subprocess.run(["python3", "tools/autolink.py", unit + ".c"], capture_output=True, text=True)
         tail = (r.stdout + r.stderr).strip().splitlines()[-2:]
         print("  autolink:", " / ".join(tail))

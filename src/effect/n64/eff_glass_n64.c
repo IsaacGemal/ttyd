@@ -7,7 +7,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const f64 double_to_int_802fa708 = 4503601774854144.0;
 
 // .data vertex arrays, local to this file.
 static u32 size16x16_tex32x32_vtx[0x38 / 4] = {
