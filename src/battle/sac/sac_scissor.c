@@ -55,7 +55,11 @@ extern f32 float_37_804217a0;
 extern f32 float_2_804217a4;
 extern f32 float_2160_804217a8;
 extern f32 float_1p5_804217ac;
-extern char str_802FF570[];
+extern const Vec vec3_802ff59c;
+extern const Vec vec3_802ff5a8;
+extern const Vec vec3_802ff5b4;
+extern const Vec vec3_802ff5c0;
+extern const Vec vec3_802ff5cc;
 extern char str_802FF648[];
 extern u32 dat_80421718;
 extern u32 dat_8042171c;
@@ -715,11 +719,10 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (88.51%): the int->float magic double is an anonymous pool copy (@863) instead
-// of the folded double_to_int_802ff638 at vec+0xC8, which shifts the FP registers through case 1;
-// intplGetValue also loads r4 before f1/f2. Same instructions otherwise. See REPORT.md.
+// NONMATCHING (77.45%): the original addresses the five vectors from one common base; the int->float magic double is an anonymous pool copy (@863) instead
+// of the folded double_to_int_802ff638, which shifts the FP registers through case 1;
+// intplGetValue also loads r4 before f1/f2. See REPORT.md.
 s32 star_control(void) {
-    const f32* vec = (const f32*)str_802FF570;
     ScissorWork* work = GetScissorPtr();
     StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -752,8 +755,8 @@ s32 star_control(void) {
         *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
         work->field_0x140 += float_50_80421770;
         work->field_0x144 += float_neg1_80421750;
-        *(Vec*)&work->field_0x154 = *(const Vec*)&vec[0x2C / 4];
-        *(Vec*)&work->field_0x160 = *(const Vec*)&vec[0x38 / 4];
+        *(Vec*)&work->field_0x154 = vec3_802ff59c;
+        *(Vec*)&work->field_0x160 = vec3_802ff5a8;
         /* fallthrough */
     case 2:
         work->field_0x120++;
@@ -793,9 +796,9 @@ s32 star_control(void) {
                 f32 neg = float_neg1000_8042179c;
                 f32 zero = float_0_80421734;
 
-                *(Vec*)&work->field_0x124 = *(const Vec*)&vec[0x44 / 4];
-                *(Vec*)&work->field_0x154 = *(const Vec*)&vec[0x50 / 4];
-                *(Vec*)&work->field_0x160 = *(const Vec*)&vec[0x5C / 4];
+                *(Vec*)&work->field_0x124 = vec3_802ff5b4;
+                *(Vec*)&work->field_0x154 = vec3_802ff5c0;
+                *(Vec*)&work->field_0x160 = vec3_802ff5cc;
                 work->field_0x134 = work->field_0x128;
                 work->field_0x140 = zero;
                 star->velX = work->field_0x124;

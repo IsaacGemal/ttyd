@@ -1069,19 +1069,10 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-#ifdef MUST_MATCH
-// With the literal seed MWCC hoists the accumulator's initial load out of the loop and keeps
-// it in a register separate from the result, growing the frame from 0xf0 to 0x110. Reading the
-// seed from a file-scope variable keeps the load at the loop top. The natural form is the
-// #else branches below.
-static f32 env_ff_cos0 = 0.03705f;
-static f32 env_ff_sin0 = 0.00761f;
-#endif
-
 // opt_propagation off is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
 #pragma opt_propagation off
-// NONMATCHING (97.89%): FPR allocator permutation only (target sinv=f20, cosv=f22, scale=f25,
+// NONMATCHING (94.30%): FPR allocator permutation, and the literal seeds hoist the accumulators out of the loop (target sinv=f20, cosv=f22, scale=f25,
 // sinC1=f21, cosC1=f23, one=f24, pi=f29; ours results f20/f21, scale f26, coeffs f22-f25),
 // which shifts the inline-sqrt block by one register. Frame and every opcode match.
 void envDisp_FF(void) {
@@ -1124,11 +1115,7 @@ void envDisp_FF(void) {
             f32 pi = 3.1415927f;
             f32 sinC1 = 0.16605f;
 
-#ifdef MUST_MATCH
-            cosv = env_ff_cos0;
-#else
             cosv = 0.03705f;
-#endif
             if (angle <= pi) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
@@ -1156,11 +1143,7 @@ void envDisp_FF(void) {
                 cosv = cosv * f0 + one;
             }
 
-#ifdef MUST_MATCH
-            sinv = env_ff_sin0;
-#else
             sinv = 0.00761f;
-#endif
             if (angle <= pi) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
