@@ -60,4 +60,5 @@ void BattleAttackDeclare(s32* out1, s32* out2);
 s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out);
 s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags);
 s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part, BattleWeapon* weapon, s32* damageCode, s32 flags);
+s32 BattleCalculateDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32* damageCode, s32 flags);
 void __declare(s32 unitId, s32 partId, s32* out1, s32* out2);

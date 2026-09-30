@@ -60,6 +60,25 @@ s32 mario_plane_cancel(void) {
 	return 0;
 }
 
+// Paper animation names indexed by mario's current color (paper_plane@sda21 in the asm).
+const char* paper_plane[4] = {
+    "p_hikohki",
+    "p_hikohki_g",
+    "p_hikohki_y",
+    "p_hikohki_v",
+};
+
+void marioForcePlaneAnime(void) {
+    MarioWork* mario = marioGetPtr();
+
+    marioPaperOff();
+    marioChgPaper(NULL);
+    marioPaperOn(paper_plane[marioGetColor()]);
+    marioChgPaper("PM_P_1B");
+    marioChgPose("M_Z_1");
+    mario->dispFlags |= 0x8;
+}
+
 // NONMATCHING (3.48%): 6 instructions differ, 891 missing, plus register differences.
 void mot_plane(void) {
 	MarioWork* mario;

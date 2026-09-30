@@ -50,3 +50,6 @@ void DrawMenuPinchMark(void);
 void DrawMainIconHukidasi(BattleMenuWork* window, void* entry, Mtx* mtx, f32 scale);
 void DrawMainIconCircle(BattleMenuWork* window, void* entry, Mtx* mtx, Vec* pos, f32 scale);
 void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table, s32 flag);
+void GetRingOffset(f32* x, f32* y, f32 angle);
+void GetRingCenter(Vec* out);
+extern f32 kakutable[3][5];

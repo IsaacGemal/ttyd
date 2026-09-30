@@ -16,20 +16,31 @@ extern const f32 float_96_8041f0f4;
 extern const f32 float_deg2rad_8041f0f8;
 extern const f32 float_0p0039062_8041f100;
 extern const f32 float_1_8041f104;
+extern const f32 float_256_8041f0fc;
 
 extern u8 cnt_table[4];
 extern u8 anim_data[16];
 extern u8 radius_data[16];
+extern u8 fire_data[16];
+// Declared as an incomplete array so MWCC addresses this .rodata Vec with lis/addi instead of sda21
+// (the original copies it to a stack Vec each loop iteration).
+extern Vec vec3_802fa784[];
+
+// Shared scratch GXColors (zero-initialised in the original .sbss2; only their bytes are overwritten).
+GXColor unk_80423138;
+GXColor unk_8042313c;
 
 // Vertex descriptor table for the 32x32 texture; 5 entries of 0x38 bytes.
 extern effVtxArray size32x32_tex32x32_vtx[];
+
+static void main_dl(EffectEntry* effect, Mtx matrix);
 
 typedef struct effHitData {
 	s32 type;
 	Vec position;
 	u8 pad_0x10[0x28 - 0x10];
 	f32 field_0x28;
-	u8 pad_0x2c[0x30 - 0x2c];
+	s32 field_0x2c;
 	s32 lifetime;
 	s32 timer;
 	f32 field_0x38;
@@ -174,6 +185,142 @@ void effHitMain(EffectEntry* effect) {
 		data->position.z = float_0_8041f0f0;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effHitDisp, effect);
+}
+
+// These two inlines are inlined in the original; keeping them as separate scopes reproduces the
+// per-call by-value GXColor stack slots (local 0x10/copy 0x14 and local 0x8/copy 0xC).
+static inline void effHitSetColor1(s32 r, s32 g, s32 b, s32 a) {
+	GXColor color = unk_80423138;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void effHitSetColor2(s32 r, s32 g, s32 b, s32 a) {
+	GXColor color = unk_8042313c;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	GXSetTevColor(GX_TEVREG1, color);
+}
+
+void effHitDisp(CameraId camId, void* param) {
+	effHitData* data;
+	CameraEntry* cam;
+	Mtx mtxA;
+	Mtx mtxC;
+	Mtx mtxB;
+	Mtx mtx;
+	Mtx mtxLoop;
+	GXTexObj texObj;
+	Vec axis;
+	f32 frames;
+	f32 scale;
+	s32 frame;
+	s32 timer;
+	s32 i;
+	s32 type;
+	s32 c1r;
+	s32 c1g;
+	s32 c1b;
+	s32 c2r;
+	s32 c2g;
+	s32 c2b;
+	s32 alpha;
+	s32 c1a;
+	EffectEntry* effect = param;
+	s32 fire;
+
+	cam = camGetPtr(camId);
+	data = effect->userdata;
+	timer = data->timer;
+	type = data->type;
+	frames = float_5_8041f0e0 * data->field_0x38;
+	frame = (s32)frames;
+	if (frame > 4) {
+		return;
+	}
+
+	scale = data->field_0x28;
+	PSMTXTrans(mtxA, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(mtxB, 'y', float_deg2rad_8041f0f8 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXScale(mtxC, scale, scale, scale);
+	PSMTXConcat(mtxA, mtxB, mtxA);
+	PSMTXConcat(mtxA, mtxC, mtx);
+
+	alpha = (s32)((frames - (f32)frame) * float_256_8041f0fc);
+	c1a = data->field_0x2c;
+
+	switch (type) {
+	case 1:
+		fire = (timer - 1 < 13) ? fire_data[timer - 1] : 0;
+		c1r = data->color[0];
+		c1g = data->color[1] * fire >> 8;
+		c1b = data->color[2] * fire >> 8;
+		c2r = data->color[3] * fire >> 8;
+		c2g = data->color[4] * fire >> 8;
+		c2b = data->color[5] * fire >> 8;
+		break;
+	case 2:
+		if (timer & 1) {
+			c1r = data->color[0];
+			c1g = data->color[1];
+			c1b = data->color[2];
+			c2r = data->color[3];
+			c2g = data->color[4];
+			c2b = data->color[5];
+		}
+		else {
+			c1r = 0;
+			c1g = 0;
+			c1b = 0;
+			c2r = data->color[0];
+			c2g = data->color[1];
+			c2b = data->color[2];
+		}
+		break;
+	case 0:
+	default:
+		c1r = data->color[0];
+		c1g = data->color[1];
+		c1b = data->color[2];
+		c2r = data->color[3];
+		c2g = data->color[4];
+		c2b = data->color[5];
+		break;
+	}
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(2);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_C1, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_TEXA, GX_CA_A1, GX_CA_ZERO);
+	effHitSetColor1(c1r, c1g, c1b, c1a);
+	effHitSetColor2(c2r, c2g, c2b, alpha);
+	effGetTexObjN64(0x4a, &texObj);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXLoadTexObj(&texObj, GX_TEXMAP1);
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
+
+	for (i = 0; i < 3; i++) {
+		axis = vec3_802fa784[0];
+		PSMTXRotAxisRad(mtxLoop, &axis, float_deg2rad_8041f0f8 * (f32)(i * 120));
+		PSMTXConcat(mtx, mtxLoop, mtxLoop);
+		main_dl(effect, mtxLoop);
+	}
 }
 
 static void main_dl(EffectEntry* effect, Mtx matrix) {

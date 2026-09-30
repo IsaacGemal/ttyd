@@ -21,6 +21,7 @@
 #include "eff/eff_starstone.h"
 #include "eff/eff_small_star.h"
 #include "battle/battle_camera.h"
+#include "battle/battle_event_cmd.h"
 #include "battle/sac/sac_deka.h"
 #include "battle/sac/sac_genki.h"
 #include <stdlib.h>
@@ -33,7 +34,8 @@ static void yuka_main(void);  // local to this file in the original
 static void yuka_init(void);  // local to this file in the original
 
 // LOCAL_PROTO(psndSFX_pit): retail callers disagree on pitch width and signedness; the shared u16 signature regresses matched sound commands.
-void psndSFX_pit(s32 id, s16 pitch);
+// main_base is this file's only caller and passes a full int (no extsh in its asm), so it uses the s32 width.
+void psndSFX_pit(s32 id, s32 pitch);
 
 
 // The original sac_deka unit was compiled with -O4,s (optimize for size): the
@@ -131,6 +133,11 @@ typedef struct DekaYukaMesh {
 } DekaYukaMesh;
 
 extern Vec vec3_803004f8[];
+// EVT script, local to this file in the original (.sdata).
+static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
+extern const char str_80300670[0x18];
+extern const char str_80300688[0x14];
+extern const char str_8030069C[0x14];
 
 const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
@@ -656,6 +663,164 @@ void main_gauge(void) {
     }
 }
 
+// .text:0x8C8 | 0x80245120 | size: 0x4D8
+// The original addresses main_base's .rodata objects (the DOKKAN strings and the
+// int->double constant) as offsets from vec3_803004f8, held in r30. Under MUST_MATCH
+// reuse party_hit.c's RO trick to force that base; the natural form is under #else.
+#ifdef MUST_MATCH
+#define RO(base, off, sym) ((const char*)(base) + (off))
+#else
+#define RO(base, off, sym) ((const char*)&(sym))
+#endif
+// The int->double magic constant is a local @660 instead of the pooled
+// double_to_int_80300630 at 0x138(r30) (one extra lis; the file's .rodata pool is
+// incomplete), and the third loop holds 7 in f2 and beatPos in f1 where the original
+// holds 7 in f1 and beatPos in f2 (same instructions, swapped f-registers).
+// NONMATCHING (99.60%): only those two register-allocation differences remain.
+static void main_base(void) {
+    const u8* base = (const u8*)&vec3_803004f8;
+    DekaWork* p = get_ptr();
+    s32 idx[8];
+    f32 times[8];
+    s32 i, j;
+    s32 found;
+    f32 tf;
+    s32 ti;
+
+    switch (p->baseState) {
+    case 1:
+        p->baseState = 2;
+        p->beatCount = 1;
+        p->combo = 0;
+        p->beatPeriod = float_180_80421edc;
+        p->beatPos = float_0_80421e8c;
+        create_timing();
+        p->gaugeState = 1;
+        /* fallthrough */
+    case 2:
+        if (p->gaugeState != 3) {
+            break;
+        }
+        p->baseState = 3;
+        p->sndHandle = psndSFXOn(RO(base, 0x178, str_80300670));
+        /* fallthrough */
+    case 3:
+        if (p->gaugeState == 3) {
+            p->beatPos += float_0p8_80421ee0 + float_0p1_80421ee4 * (f32)p->combo;
+            psndSFX_pit(p->sndHandle,
+                (s32)(float_683_80421ee8 * (f32)p->combo + float_4096_80421eec * p->beatPos / p->beatPeriod));
+            if (p->beatPos >= p->beatPeriod) {
+                p->beatPos = float_0_80421e8c;
+                p->beatCount++;
+                p->combo++;
+                p->starState = 6;
+                psndSFXOff(p->sndHandle);
+                {
+                    EventEntry* e = evtEntry(nice_event, 0, 0x20);
+                    s32 n = p->combo + 1;
+                    e->lwData[0] = n < 6 ? n : 6;
+                }
+                if (p->beatCount > 5) {
+                    p->baseState = 5;
+                    p->gaugeState = 5;
+                }
+                else {
+                    p->baseState = 4;
+                    p->baseTimer = 30;
+                    p->unk4C = float_neg40_80421ef0;
+                    create_timing();
+                }
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            idx[i] = i;
+            times[i] = p->timing[i].time;
+        }
+        for (i = 0; i < 7; i++) {
+            for (j = i + 1; j < 8; j++) {
+                tf = times[i];
+                if (tf > times[j]) {
+                    ti = idx[i];
+                    times[i] = times[j];
+                    idx[i] = idx[j];
+                    idx[j] = ti;
+                    times[j] = tf;
+                }
+            }
+        }
+
+        if (keyGetButtonTrg(0) & 0x100) {
+            for (i = 0; i < 8; i++) {
+                DekaTiming* t = &p->timing[idx[i]];
+                if (t->state == 2 && p->beatPos >= t->time - float_7_80421e78 &&
+                    p->beatPos <= float_7_80421e78 + t->time) {
+                    if (t->unk08 == 1) {
+                        t->state = 3;
+                        t->flag = 1;
+                        psndSFXOn(RO(base, 0x190, str_80300688));
+                        BattleAudienceSoundHandBeat();
+                    }
+                    else {
+                        p->combo = 0;
+                        p->baseState = 5;
+                        p->gaugeState = 4;
+                        p->starState = 8;
+                        t->flag = 2;
+                        psndSFXOn(RO(base, 0x1A4, str_8030069C));
+                        BattleAudienceSoundBooing();
+                        psndSFXOff(p->sndHandle);
+                    }
+                    break;
+                }
+            }
+            if (i == 8) {
+                found = 0;
+                for (i = 0; i < 8; i++) {
+                    DekaTiming* t = &p->timing[idx[i]];
+                    if (t->state == 2 && t->unk08 == 1) {
+                        p->baseState = 5;
+                        p->gaugeState = 4;
+                        t->flag = 2;
+                        psndSFXOn(RO(base, 0x1A4, str_8030069C));
+                        BattleAudienceSoundBooing();
+                        psndSFXOff(p->sndHandle);
+                        found = 1;
+                        break;
+                    }
+                }
+                if (found == 1) {
+                    return;
+                }
+            }
+        }
+
+        for (i = 0; i < 8; i++) {
+            DekaTiming* t = &p->timing[idx[i]];
+            if (t->state == 2 && t->unk08 != 2 && p->beatPos > float_7_80421e78 + t->time) {
+                p->baseState = 5;
+                p->gaugeState = 4;
+                t->flag = 2;
+                psndSFXOn(RO(base, 0x1A4, str_8030069C));
+                BattleAudienceSoundBooing();
+                psndSFXOff(p->sndHandle);
+                break;
+            }
+        }
+        break;
+    case 4:
+        p->baseTimer--;
+        p->unk4C = intplGetValue(0, 30 - p->baseTimer, 30, float_neg40_80421ef0, float_0_80421e8c);
+        if (p->baseTimer <= 0) {
+            p->baseState = 3;
+            p->sndHandle = psndSFXOn(RO(base, 0x178, str_80300670));
+        }
+        break;
+    case 5:
+    default:
+        break;
+    }
+}
+
 // .text:0x2600 | 0x802455F8 | size: 0x6C
 s32 yuka_end(EventEntry* event) {
     DekaWork* p = get_ptr();
@@ -931,3 +1096,6 @@ const f64 double_15p75_80300628 = 15.75;
 const f64 double_to_int_80300630 = 4503601774854144.0;
 const f64 double_0p21817_80300638 = 0.21816615760326385;
 const f64 double_to_int_mask_80300640 = 4503599627370496.0;
+const char str_80300670[0x18] = "SFX_BTL_SAC_DOKKAN1_1";
+const char str_80300688[0x14] = "SFX_BTL_SAC_DOKKAN2";
+const char str_8030069C[0x14] = "SFX_BTL_SAC_DOKKAN3";

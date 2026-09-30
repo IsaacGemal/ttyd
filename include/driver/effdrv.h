@@ -30,6 +30,11 @@ typedef struct EffectWork {
     s32 language;         // 0x14
 } EffectWork;
 
+typedef struct EffectMayaAnimEntry {
+    f32 mtx[3][4];  // 0x0
+    f32 field_0x30; // 0x30
+} EffectMayaAnimEntry;
+
 void effInit(void);
 void effTexSetup(void);
 void effGetTexObj(u32 id, GXTexObj* obj);
@@ -46,3 +51,4 @@ void effPlayMayaAnim(void* anim);
 void effCalcMayaAnim(void* anim);
 void effDeleteMayaAnim(void* anim);
 void effDrawMayaPoly(void* data);
+void effCalcMayaAnimMatrix(void* anim, void* data, void* matrix, void* frame);

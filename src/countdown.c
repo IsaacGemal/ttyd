@@ -1,6 +1,7 @@
 #include "countdown.h"
 
 #include "mario/mariost.h"
+#include "pmario_sound.h"
 #include <string.h>
 
 extern GlobalWork* gp;
@@ -35,6 +36,12 @@ void countDownEnd(void) {
     if ((wp->flags & 1) != 0) {
         wp->unk30 = 2;
     }
+}
+
+void countDownStop(void) {
+    wp->flags |= 8;
+    // offset 0x38 is unnamed in CountdownWork (inside field_0x34 padding)
+    psndSFXOff(*(s32*)(wp->field_0x34 + 4));
 }
 
 void countDownFlagOn(u16 flag) {

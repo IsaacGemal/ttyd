@@ -24,4 +24,5 @@ void* aramMgrToAram(void* data, u32 size);
 void aramMgrToMram(void* aram, void* mram);
 void* aramMgrToAramAsync(void* data, u32 size);
 void arqCallbackToAram(u32 request);
+void arqCallbackToMram(u32 request);
 void aramCallbackGarbage(u32 request);

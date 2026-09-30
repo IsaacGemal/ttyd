@@ -1,5 +1,6 @@
 #include "eff/eff_n64.h"
 
+#include "manager/dvdmgr.h"
 #include <string.h>
 
 //.sbss
@@ -7,6 +8,14 @@ static eff_n64_work work;
 
 //.sdata
 static eff_n64_work* wp = &work;
+
+static void _callback_tpl(s32 error, DVDFileInfo* info) {
+	DVDEntry* entry = info->cb.userData;
+
+	UnpackTexPalette(wp->effTexture);
+	DVDMgrClose(entry);
+	wp->effTextureLoaded = TRUE;
+}
 
 void effInit64(void) {
 	memset(wp, 0, sizeof(eff_n64_work));

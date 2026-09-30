@@ -2,6 +2,7 @@
 #include "evt/evt_cmd.h"
 #include "mario/mariost.h"
 #include <dolphin/os.h>
+#include <stdlib.h>
 #include "manager/evtmgr_cmd.h"
 
 extern GlobalWork* gp;
@@ -50,6 +51,41 @@ USER_FUNC(evt_lottery) {
 
 
 
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_lottery_buy) {
+	s32* args = event->args;
+	OSTime time = OSGetTime();
+	lottery_info* info = &gp->mLotteryInfo;
+
+	do {
+		*(s16*)((u8*)info + 0x20) = rand() % 10000;
+	} while (*(s16*)((u8*)info + 0x20) == *(s16*)((u8*)info + 0x10)
+		|| *(s16*)((u8*)info + 0x20) % 1000 == *(s16*)((u8*)info + 0x10) % 1000
+		|| *(s16*)((u8*)info + 0x20) % 100 == *(s16*)((u8*)info + 0x10) % 100
+		|| *(s16*)((u8*)info + 0x20) % 10 == *(s16*)((u8*)info + 0x10) % 10);
+
+	*(OSTime*)((u8*)info + 0x18) = time;
+	*(s16*)((u8*)info + 0x22) = 0x18b - rand() % 60;
+	*(s16*)((u8*)info + 0x24) = 0x73 - rand() % 30;
+	*(s16*)((u8*)info + 0x26) = 0x23 - rand() % 10;
+	*(s16*)((u8*)info + 0x28) = 0xa - rand() % 6;
+
+	if (info->mFlags & 4) {
+		info->mFlags |= 8;
+		*(OSTime*)((u8*)info + 0x08) = time;
+		*(OSTime*)((u8*)info + 0x30) = time;
+		*(OSTime*)((u8*)info + 0x38) = time;
+	}
+	if (info->mFlags & 2) {
+		info->mFlags |= 8;
+		*(OSTime*)((u8*)info + 0x08) = time;
+		*(OSTime*)((u8*)info + 0x30) = time;
+		*(OSTime*)((u8*)info + 0x38) = time;
+	}
+	info->mFlags |= 2;
+	evtSetValue(event, args[0], *(s16*)((u8*)info + 0x20));
 	return EVT_RETURN_DONE;
 }
 

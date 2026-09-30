@@ -1,4 +1,5 @@
 #include "eff/n64/eff_bomb_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/effdrv.h"
 #include "driver/dispdrv.h"
 #include "eff/n64/eff_confetti_n64.h"
@@ -39,6 +40,8 @@ typedef struct effBombN64Data {
 } effBombN64Data;
 
 // .sdata2 float constants, named after their original addresses.
+extern const f32 float_deg2rad_8041e9d8;
+extern const f32 float_0p0625_8041e9dc;
 extern const f32 float_0_8041e9e0;
 extern const f32 float_1_8041e9e4;
 extern const f32 float_0p4_8041e9e8;
@@ -55,6 +58,18 @@ extern const f32 float_2p4_8041ea10;
 extern const f32 float_17p8_8041ea14;
 extern const f32 float_3p2_8041ea18;
 extern const f32 float_30_8041ea1c;
+
+// .sdata2 GXColor seeds the original builds its TEV colours from.
+extern const GXColor dat_8041e9d0;
+extern const GXColor dat_8041e9d4;
+
+// .data vertex array, local to this file in the original.
+static u32 size8x8_tex32x32_vtx[0x38 / 4] = {
+	0xFFFCFFFC, 0x00000000, 0x0000FFFF, 0xFFFF0004,
+	0xFFFC0000, 0x04000000, 0xFFFFFFFF, 0x00040004,
+	0x00000400, 0x0400FFFF, 0xFFFFFFFC, 0x00040000,
+	0x00000400, 0xFFFFFFFF,
+};
 
 // Local to this file in the original (`.fn effBombMain, local`).
 static void effBombMain(EffectEntry* effect);
@@ -179,4 +194,112 @@ static void effBombMain(EffectEntry* effect) {
 
 	data->field_0xB0 += data->field_0xB4;
 	dispEntry(camId, dispCalcZ(&position), 2, effBombDisp, effect);
+}
+
+// Two MWCC allocation artifacts keep this below 100%. (1) The original keeps data/camera/timer in
+// r29/r30/r31 (data coalesces with the saved param); this build puts timer in r29 and data/camera in
+// r30/r31. (2) color2's GXColor local/outgoing-copy land in the opposite stack slots (target builds at
+// 0x8 and copies to 0xc; this build builds at 0x14 reusing color1's own outgoing slot and copies to
+// 0x8). Making color2 a block-local fixes neither without moving color1 too. Same mwcc by-value-GXColor
+// quirk as effStoneSmokeDisp/effConfettiDisp.
+// NONMATCHING (99.53%): (1) data/camera/timer are r30/r31/r29 here vs r29/r30/r31 original;
+// (2) color2's GXColor local/copy slots are swapped (0x14/0x8 here vs 0x8/0xc original).
+static void effBombDisp(CameraId camId, void* param) {
+	effBombN64Data* data;
+	CameraEntry* camera;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	Mtx outMtx;
+	GXTexObj texObj;
+	GXColor color2;
+	s32 timer;
+	s32 alpha;
+	s32 blue;
+	s32 tmp;
+
+	camera = camGetPtr(camId);
+	data = ((EffectEntry*)param)->userdata;
+	timer = data->field_0x34;
+
+	PSMTXTrans(mtx, data->x, data->y, data->z);
+	PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041e9d8 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(mtx, rotMtx, outMtx);
+	PSMTXConcat(camera->view, outMtx, outMtx);
+
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	PSMTXScale(mtx, float_0p0625_8041e9dc, float_0p0625_8041e9dc, float_0_8041e9e0);
+	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
+	GXSetCullMode(GX_CULL_NONE);
+	effSetVtxDescN64((effVtxArray*)size8x8_tex32x32_vtx);
+
+	if (data->field_0x44 != -1) {
+		GXColor color1;
+
+		effGetTexObjN64(0x18, &texObj);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+		color1 = dat_8041e9d0;
+		color1.a = data->field_0x7C;
+		GXSetTevColor(GX_TEVREG0, color1);
+		PSMTXScale(scaleMtx, data->field_0x64, data->field_0x64, float_1_8041e9e4);
+		PSMTXConcat(outMtx, scaleMtx, scaleMtx);
+		GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
+		GXSetCurrentMtx(GX_PNMTX0);
+		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+		tri2(0, 1, 2, 0, 0, 2, 3, 0);
+	}
+
+	if (timer == 1) {
+		alpha = 0xC0;
+	} else if (timer == 2) {
+		alpha = 0xFF;
+	} else {
+		alpha = data->field_0xC0;
+	}
+	if (timer > 2) {
+		tmp = 0x7F;
+		if (timer < 8) {
+			tmp = timer * 16;
+		}
+		blue = tmp + 0x80;
+	} else {
+		blue = 0xFF;
+	}
+	color2 = dat_8041e9d4;
+	color2.b = blue;
+	color2.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color2);
+
+	PSMTXScale(scaleMtx, data->field_0xA8, data->field_0xA8, data->field_0xA8);
+	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e9d8 * data->field_0xB0);
+	PSMTXConcat(rotMtx, scaleMtx, scaleMtx);
+	PSMTXConcat(outMtx, scaleMtx, scaleMtx);
+	GXLoadPosMtxImm(scaleMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+
+	switch (timer % 3) {
+	case 0:
+		effGetTexObjN64(0x19, &texObj);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+		break;
+	case 1:
+		effGetTexObjN64(0x1A, &texObj);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+		break;
+	case 2:
+		effGetTexObjN64(0x1B, &texObj);
+		GXLoadTexObj(&texObj, GX_TEXMAP0);
+		break;
+	}
+
+	GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
+	tri2(0, 1, 2, 0, 0, 2, 3, 0);
 }

@@ -49,7 +49,6 @@ extern s32 marioAttackEvent_ZubaStar[];
 extern s32 weaponGetPowerFromMarioJumpLv[];
 extern s32 weaponGetPowerOverlapHammer1[];
 extern s32 weaponGetPowerOverlapJump1[];
-extern s32 weaponGetPowerTatsumaki[];
 extern s32 weaponGetPower_Deka[];
 extern s32 weaponGetPower_Scissor[];
 extern s32 weaponGetPower_ZubaStar[];

@@ -307,16 +307,18 @@ EffectSet* effGetSet(const char* name) {
 }
 
 typedef struct EffectMayaAnimData {
-	u8 field_0x0[0x8]; // 0x0
-	s32* count;        // 0x8
+	u32 field_0x0; // 0x0
+	f32 field_0x4; // 0x4
+	s32* count;    // 0x8
 } EffectMayaAnimData;
 
 typedef struct EffectMayaAnim {
-	u16 flags;         // 0x0
-	u8 field_0x2[0x2]; // 0x2
-	f32 field_0x4;     // 0x4
-	OSTime startTime;  // 0x8
-	void* animData;    // 0x10
+	u16 flags;                      // 0x0
+	u8 field_0x2[0x2];              // 0x2
+	f32 field_0x4;                  // 0x4
+	OSTime startTime;               // 0x8
+	EffectMayaAnimData* animData;   // 0x10
+	EffectMayaAnimEntry entries[];  // 0x14
 } EffectMayaAnim;
 
 void* effMayaAnimAlloc(void* animData) {
@@ -338,4 +340,27 @@ void effPlayMayaAnim(void* animPtr) {
 	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
 	anim->field_0x4 = 0.0f;
 	anim->flags |= 1;
+}
+
+void effCalcMayaAnim(void* animPtr) {
+	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
+	s32 i;
+
+	if (!(anim->flags & 1)) {
+		return;
+	}
+	if (anim->flags & 2) {
+		return;
+	}
+
+	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / 1000.0f;
+
+	if (anim->field_0x4 >= anim->animData->field_0x4) {
+		anim->field_0x4 = anim->animData->field_0x4;
+		anim->flags |= 2;
+	}
+
+	for (i = 0; i < anim->animData->count[0]; i++) {
+		effCalcMayaAnimMatrix(anim, (u8*)anim->animData->count[1] + i * 0x10, anim->entries[i].mtx, &anim->entries[i].field_0x30);
+	}
 }
