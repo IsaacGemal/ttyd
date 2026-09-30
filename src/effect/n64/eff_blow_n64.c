@@ -3,6 +3,8 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "memory.h"
+#include <stdlib.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -22,11 +24,6 @@ static inline void blowSetColor(u8 a) {
     color.a = a;
     GXSetTevColor(1, color);
 }
-
-// .rodata anchor: the zero-Vec literal in effBlowMain is emitted at .rodata+0xC, right after this symbol, which
-// the original unit also has (it belongs to the not-yet-decompiled effBlowN64Entry). Without it the literal lands
-// at .rodata+0 and objdiff maps it to the wrong target symbol. Reuse this definition in effBlowN64Entry.
-const Vec vec3_802fa250 = { 0.0f, 0.0f, 0.0f };
 
 typedef struct effBlowParticle {
 	s32 field_0x00;  // 0x00
@@ -61,6 +58,197 @@ extern const f32 float_0p2_8041e9ac;
 extern const f32 float_0p225_8041e9b0;
 extern const f32 float_0p45_8041e9b4;
 extern const f32 float_0p8_8041e9b8;
+extern const f32 float_0_8041e988;
+extern const f32 float_deg2rad_8041e98c;
+extern const f32 float_0p5_8041e990;
+extern const f32 float_4_8041e994;
+extern const f32 float_20_8041e998;
+extern const f32 float_8_8041e99c;
+extern const f32 float_neg1_8041e9bc;
+extern const f32 float_1_8041e9c0;
+extern const f32 float_2_8041e9c4;
+extern const f32 float_0p05_8041e9c8;
+extern const f32 float_0p1_8041e9cc;
+
+// Inlined MetroWerks sqrtf (copy of the shape used in eff_kemuri10_n64.c / eff_sstar_n64.c).
+int __float_nan[];
+#define NAN (*(f32*)__float_nan)
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+static inline s32 __fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			}
+			else {
+				return FP_INFINITE;
+			}
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			}
+			else {
+				return FP_ZERO;
+			}
+		default:
+			return FP_NORMAL;
+	}
+}
+
+#define fpclassify(x) __fpclassifyf(x)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+
+static inline f32 sqrtf(f32 x) {
+	const f64 _half = .5;
+	const f64 _three = 3.0;
+
+	if (x > float_0_8041e988) {
+		f64 guess = __frsqrte(x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		guess = _half * guess * (_three - guess * guess * x);
+		return x * guess;
+	}
+	else if (x < 0.0) {
+		return NAN;
+	}
+	else if (isnan(x)) {
+		return NAN;
+	}
+	return x;
+}
+
+// Inlined vector builder: original copies the shared zero Vec then writes the fields,
+// then copies the temp out as the return value (same idiom as initializeVec elsewhere).
+static inline Vec blowInitVec(f32 x, f32 y, f32 z) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = x;
+	temp.y = y;
+	temp.z = z;
+	return temp;
+}
+
+// Only register allocation/instruction scheduling differs: the original keeps the per-particle -0.2*dir
+// accelerations in f20-f22 and the loop-persistent float_0/deg2rad/double_to_int in f27-f29, while this
+// build swaps those groups; the 2*dir velocities also land in the opposite register order, the second
+// mag==0 check reuses float_0 instead of reloading it, and the .rodata+0 zero Vec resolves to the section
+// symbol instead of the target's named vec3_802fa250.
+// NONMATCHING (98.05%): see above and REPORT.md.
+EffectEntry* effBlowN64Entry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 dirX, f32 dirY, f32 dirZ) {
+	EffectEntry* effect;
+	effBlowParticle* data;
+	effBlowParticle* work;
+	Vec axis;
+	Mtx mtx;
+	f32 mag;
+	f32 norm;
+	f32 px;
+	f32 py;
+	f32 pz;
+	f32 angle;
+	s32 i;
+
+	effect = effEntry();
+	if (count == 0) {
+		return NULL;
+	}
+
+	mag = dirX * dirX + dirY * dirY + dirZ * dirZ;
+	if (mag == float_0_8041e988) {
+		return NULL;
+	}
+	norm = float_neg1_8041e9bc / sqrtf(mag);
+	dirX *= norm;
+	dirY *= norm;
+	dirZ *= norm;
+
+	if (dirX != float_0_8041e988) {
+		px = -dirY / dirX;
+		py = float_1_8041e9c0;
+		pz = float_0_8041e988;
+	}
+	else if (dirY != float_0_8041e988) {
+		px = float_1_8041e9c0;
+		py = -dirX / dirY;
+		pz = float_0_8041e988;
+	}
+	else {
+		px = float_1_8041e9c0;
+		py = float_0_8041e988;
+		pz = -dirX / dirZ;
+	}
+
+	mag = px * px + py * py + pz * pz;
+	if (mag == float_0_8041e988) {
+		return NULL;
+	}
+	norm = float_1_8041e9c0 / sqrtf(mag);
+	px *= norm;
+	py *= norm;
+	pz *= norm;
+
+	dirX *= float_8_8041e99c;
+	dirY *= float_8_8041e99c;
+	dirZ *= float_8_8041e99c;
+	px *= float_8_8041e99c;
+	py *= float_8_8041e99c;
+	pz *= float_8_8041e99c;
+
+	effect->type = "BlowN64";
+	effect->count = count + 1;
+	data = __memAlloc(HEAP_EFFECT, (count + 1) * sizeof(effBlowParticle));
+	effect->userdata = data;
+	effect->callback = effBlowMain;
+
+	data->type = 0;
+	data->field_0x00 = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->life = 10;
+	data->field_0x60 = 0;
+
+	work = data + 1;
+	for (i = 1; i < count + 1; i++, work++) {
+		work->x = float_0_8041e988;
+		work->y = float_0_8041e988;
+		work->z = float_0_8041e988;
+		angle = float_deg2rad_8041e98c * (f32)(i * 360 / 5);
+		axis = blowInitVec(dirX, dirY, dirZ);
+		PSMTXRotAxisRad(mtx, &axis, angle);
+
+		work->field_0x20 = float_2_8041e9c4 * dirX;
+		work->vx = float_2_8041e9c4 * dirX;
+		work->field_0x24 = float_2_8041e9c4 * dirY;
+		work->vy = float_2_8041e9c4 * dirY;
+		work->field_0x28 = float_2_8041e9c4 * dirZ;
+		work->vz = float_2_8041e9c4 * dirZ;
+		work->field_0x38 = -dirX * float_0p05_8041e9c8 * float_4_8041e994;
+		work->field_0x3C = -dirY * float_0p05_8041e9c8 * float_4_8041e994;
+		work->field_0x40 = -dirZ * float_0p05_8041e9c8 * float_4_8041e994;
+		work->field_0x2C = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[0][0] * px + mtx[0][1] * py + mtx[0][2] * pz));
+		work->field_0x30 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[1][0] * px + mtx[1][1] * py + mtx[1][2] * pz));
+		work->field_0x34 = float_4_8041e994 * (float_0p1_8041e9cc * (mtx[2][0] * px + mtx[2][1] * py + mtx[2][2] * pz));
+
+		work->scaleX = float_0p5_8041e990;
+		work->scaleY = float_4_8041e994;
+		work->field_0x50 = float_20_8041e998;
+		angle = (f32)(rand() % 360);
+		work->field_0x54 = angle;
+		work->rotZ = angle;
+		work->field_0x58 = 0xFF;
+		work->field_0x64 = ((i - 1) / 5) * 2;
+		work->life = 10;
+	}
+
+	return effect;
+}
 
 void effBlowMain(EffectEntry* effect) {
 	effBlowParticle* data;

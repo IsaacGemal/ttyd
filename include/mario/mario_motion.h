@@ -6,6 +6,7 @@ BOOL marioChkItemMotion(void);
 BOOL marioChkJump(void);
 BOOL marioChkTransform(void);
 
+void marioChgMoveMotion(void);
 void marioChgStayMotion(void);
 void marioChgShipMotion(void);
 f32 marioMakeJumpPara(void);

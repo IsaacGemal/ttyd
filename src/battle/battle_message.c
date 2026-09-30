@@ -3,10 +3,13 @@
 #include "battle/battle.h"
 #include "driver/dispdrv.h"
 #include "driver/msgdrv.h"
+#include "driver/windowdrv.h"
+#include "manager/fontmgr.h"
 #include "data/item_data.h"
 #include <stdio.h>
 
 f32 float_900_8041e850 = 900.0f;
+const GXColor dat_8041e840 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // The original saves r25-r31 with stmw/lmw (size-oriented prologue); battle_message.c wants -O4,s.
 //s32 kind, s32 x, s32 y, const char* tag, s32 duration
@@ -48,6 +51,38 @@ USER_FUNC(btlevtcmd_AnnounceMessage) {
     dispEntry(CAMERA_2D, float_900_8041e850, 1, _disp, NULL);
     event->userdata[0]--;
     return event->userdata[0] <= 0;
+}
+
+void _disp(CameraId cameraId, void* param) {
+    BattleWork* wp = _battleWorkPointer;
+    u8* base = (u8*)wp + 0x20000;
+    s16 x = *(s16*)(base - 0x7390);
+    s16 y = *(s16*)(base - 0x738e);
+    f32 fx = (f32)x;
+    f32 fy = (f32)(y + 0x78);
+    GXColor color;
+    u16 lines;
+    u16 width = FontGetMessageWidthLine((const char*)(base - 0x737c), &lines);
+
+    lines++;
+    color = *(GXColor*)&dat_8041e840;
+    fx -= (f32)(width / 2);
+    // The original passes the GXColor by value, and the header's by-value prototype copies it to a stack temp
+    // as usual. Calling through a by-pointer prototype is ABI-identical (the struct is passed by reference) but
+    // steers MWCC's register allocation: the 0x4330 conversion magic lands in r6 and the colour in r7, where
+    // the by-value form swaps them. Same match-only trick as battle_stage_object.c's local prototype, spelled
+    // as a cast so it needs no local declaration.
+#ifdef MUST_MATCH
+    ((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, fx - 10.0f,
+                                                                             -29.0f + (3.0f + fy),
+                                                                             (f32)(width + 0x14),
+                                                                             (f32)(lines * 0x1d + 3), 10.0f);
+#else
+    windowDispGX_Waku_col(0, color, fx - 10.0f, -29.0f + (3.0f + fy), (f32)(width + 0x14),
+                          (f32)(lines * 0x1d + 3), 10.0f);
+#endif
+    FontDrawStart();
+    FontDrawMessage((s32)fx, (s32)fy - 0x1d, (const char*)(base - 0x737c));
 }
 
 //s32 index, s32 value

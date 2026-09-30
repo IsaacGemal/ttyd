@@ -3,6 +3,7 @@
 #include <dolphin/types.h>
 void* effSmallStarN64Entry(s32 type, s32 a, f32 x, f32 y, f32 z, f32 f4, f32 f5, f32 f6);
 #include "driver/effdrv.h"
+#include "driver/camdrv.h"
 typedef struct effSmallStarN64Data {
     s32 type;       // 0x0
     f32 x;          // 0x4
@@ -20,3 +21,5 @@ typedef struct effSmallStarN64Data {
     u8 pad_0x31[3]; // 0x31
 } effSmallStarN64Data;
 void effSmallStarN64CamChg(EffectEntry* effect, s32 camId);
+void effSmallStarMain(EffectEntry* effect);
+void effSmallStarDisp(CameraId camId, void* param);

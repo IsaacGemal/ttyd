@@ -2,6 +2,8 @@
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
+#include "memory.h"
+#include <stdlib.h>
 #include <dolphin/mtx.h>
 
 // Constants referenced by the original update code (defined in this unit's data).
@@ -25,7 +27,9 @@ extern effVtxArray size32x32_tex32x32_vtx[];
 typedef struct effHitData {
 	s32 type;
 	Vec position;
-	u8 pad_0x10[0x30 - 0x10];
+	u8 pad_0x10[0x28 - 0x10];
+	f32 field_0x28;
+	u8 pad_0x2c[0x30 - 0x2c];
 	s32 lifetime;
 	s32 timer;
 	f32 field_0x38;
@@ -36,11 +40,15 @@ typedef struct effHitData {
 typedef struct effHitParticle {
 	s32 field_0x0;
 	Vec position;
-	u8 pad_0x10[0x1c - 0x10];
+	f32 field_0x10;
+	f32 field_0x14;
+	u8 pad_0x18[0x1c - 0x18];
 	f32 rotZ;
 	f32 field_0x20;
 	f32 rotY;
-	u8 pad_0x28[0x44 - 0x28];
+	u8 pad_0x28[0x2c - 0x28];
+	s32 field_0x2C;
+	u8 pad_0x30[0x44 - 0x30];
 } effHitParticle;
 
 static inline Vec effHitInitVec(Vec* input) {
@@ -49,6 +57,91 @@ static inline Vec effHitInitVec(Vec* input) {
 	temp.y = input->y;
 	temp.z = input->z;
 	return temp;
+}
+
+// The instruction sequence matches; only MWCC's callee-saved register colouring and the loop-body
+// schedule still differ (details in REPORT.md).
+// NONMATCHING (90.08%): effect/angle/magic registers permuted, the two int->double conversions serialized.
+EffectEntry* effHitN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
+	s32 angle;
+	effHitParticle* part;
+	s32 i;
+	s32 count;
+	s32 r;
+	effHitData* data;
+	EffectEntry* effect;
+
+	effect = effEntry();
+	count = (duration * 5 + 20) / 3 + 1;
+	effect->type = "HitN64";
+	effect->count = count;
+	data = __memAlloc(HEAP_EFFECT, count * sizeof(effHitData));
+	effect->userdata = data;
+	effect->callback = effHitMain;
+
+	data->type = type;
+	data->position.x = x;
+	data->position.y = y;
+	data->position.z = z;
+	data->lifetime = cnt_table[type];
+	data->timer = 0;
+	data->field_0x38 = float_0_8041f0f0;
+
+	switch (type) {
+	case 0:
+		data->color[0] = 0xff;
+		data->color[1] = 0xff;
+		data->color[2] = 0xff;
+		data->color[3] = 0xff;
+		data->color[4] = 0xff;
+		data->color[5] = 0xff;
+		break;
+	case 1:
+		data->color[0] = 0xff;
+		data->color[1] = 0xff;
+		data->color[2] = 0x00;
+		data->color[3] = 0xff;
+		data->color[4] = 0x00;
+		data->color[5] = 0x00;
+		break;
+	case 2:
+		data->color[0] = 0xff;
+		data->color[1] = 0xff;
+		data->color[2] = 0x00;
+		data->color[3] = 0xc8;
+		data->color[4] = 0xff;
+		data->color[5] = 0xe6;
+		break;
+	case 3:
+	default:
+		data->color[0] = 0x00;
+		data->color[1] = 0xff;
+		data->color[2] = 0xff;
+		data->color[3] = 0x00;
+		data->color[4] = 0x00;
+		data->color[5] = 0xe6;
+		break;
+	}
+
+	data->field_0x28 = scale;
+
+	part = (effHitParticle*)(data + 1);
+	for (i = 1; i < count; i++, part++) {
+		r = rand();
+		angle = (i * 360) / (count - 1);
+		part->rotZ = (f32)angle;
+		part->position.x = float_0_8041f0f0;
+		part->position.y = float_0_8041f0f0;
+		part->position.z = float_0_8041f0f0;
+		part->field_0x10 = float_0_8041f0f0;
+		part->field_0x14 = float_0_8041f0f0;
+		part->field_0x20 = float_0_8041f0f0;
+		part->field_0x0 = 0;
+		part->rotY = (f32)(r % 360);
+		part->field_0x10 = float_0_8041f0f0;
+		part->field_0x2C = 0xff;
+	}
+	return effect;
 }
 
 void effHitMain(EffectEntry* effect) {

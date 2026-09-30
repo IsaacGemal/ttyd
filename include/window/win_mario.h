@@ -2,6 +2,11 @@
 
 #include "win/win_main.h"
 
+// .sdata2/.sdata data this unit reads from elsewhere
+extern const char* hammer_pose[4];
+extern const f32 float_10_8041d61c;
+extern const f32 float_12_8041d670;
+
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx);
 s32 winMarioMain(WindowWork* work);
 void winMarioMain2(WindowWork* work);

@@ -3,6 +3,7 @@
 typedef struct EffectEntry EffectEntry;
 
 #include <dolphin/types.h>
+#include "driver/camdrv.h"
 EffectEntry* effMajinaiEntry(s32 type, f32 x, f32 y, f32 z);
 typedef struct MajinaiWork {
     s32 type;       // 0x0
@@ -15,3 +16,4 @@ typedef struct MajinaiWork {
     s32 animPose;   // 0x1C
 } MajinaiWork;
 void effMajinaiMain(EffectEntry* effect);
+void effMajinaiDisp(CameraId cameraId, void* param);

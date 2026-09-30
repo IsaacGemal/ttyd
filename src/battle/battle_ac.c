@@ -165,3 +165,12 @@ void BattleAcGaugeSeInit(void) {
 	work->actionCommands.field_0x288 = psndSFXOn("SFX_AC_POWER_GAUGE1");
 	*(f32*)&work->actionCommands.field_0x28C[0] = 0.0f;
 }
+
+void BattleAcGaugeSeDelete(void) {
+	BattleWork* work = _battleWorkPointer;
+
+	if ((u32)work->actionCommands.field_0x288 != -1) {
+		psndSFXOff(work->actionCommands.field_0x288);
+		work->actionCommands.field_0x288 = -1;
+	}
+}

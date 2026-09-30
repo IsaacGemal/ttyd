@@ -17,6 +17,10 @@
 #include "driver/swdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/mapdrv.h"
+#include "driver/hitdrv.h"
+#include "driver/itemdrv.h"
+#include "window/win_main.h"
+#include "party.h"
 #include "window/win_mario.h"
 
 extern GlobalWork* gp;
@@ -102,6 +106,145 @@ extern u32 dat_8041bc0c;
 extern const f32 float_0p6_8041bc2c;
 extern const f32 float_40_8041bc30;
 extern const f32 float_0p64_8041bc38;
+
+USER_FUNC(evt_shop_main_func) {
+	ShopWork* wp = (ShopWork*)event->lwData[0];
+	s32 selected = 0;
+	MarioWork* mario = marioGetPtr();
+	PartyEntry* party = partyGetPtr(0);
+	HitEntry* hit = (HitEntry*)mario->hitobjStandOn;
+	s32 buttons;
+	s32 i;
+
+	wp->flags &= ~1;
+	buttons = keyGetButtonTrg(0);
+	{
+#ifdef MUST_MATCH
+		// The original shares one buttons=0 tail between the two checks; the natural
+		// short-circuit below materialises the second compare instead of branching on it.
+		BOOL notCtrl = (marioChkCtrl() == 0);
+
+		do {
+			if (!notCtrl) {
+				notCtrl = (marioChkKey() == 0);
+				if (!notCtrl) {
+					break;
+				}
+			}
+			buttons = 0;
+		} while (0);
+#else
+		if (!marioChkCtrl() || !marioChkKey()) {
+			buttons = 0;
+		}
+#endif
+	}
+
+	if (strncmp(gp->currentMapName, str_802ECDE0, strlen(str_802ECDE0)) == 0) {
+		if (evtGetValue(event, 0xF5DE0180) >= 0x148 && evtGetValue(event, 0xF5DE0180) < 0x14C &&
+		    evtGetValue(event, 0xF84068F2) == 0) {
+			return 0;
+		}
+	}
+
+	if (party != NULL && (party->flags & 0x100)) {
+		if (wp->field_0xD0 != -1) {
+			wp->field_0xD0 = -1;
+			winMgrClose(wp->field_0x50);
+			winMgrClose(wp->field_0x54);
+		}
+		return 0;
+	}
+
+	if (winGhostDiaryChk() || N_itemPickUpFromFieldCheck()) {
+		if (wp->field_0xD0 != -1) {
+			wp->field_0xD0 = -1;
+			winMgrClose(wp->field_0x50);
+			winMgrClose(wp->field_0x54);
+		}
+		return 0;
+	}
+
+	if (!(wp->flags & 2)) {
+		if (hit != NULL) {
+			for (i = 0; i < wp->field_0x20; i++) {
+				if (strcmp(((ShopObj*)wp->field_0x4)[i].hitName, hitGetName(hit)) == 0) {
+					break;
+				}
+			}
+			if (!(wp->field_0x14[i] & 1) && i < wp->field_0x20) {
+				if (wp->field_0xD0 != i) {
+					if (wp->field_0xD0 == -1) {
+						winMgrOpen(wp->field_0x50);
+						winMgrOpen(wp->field_0x54);
+					}
+					wp->field_0xD0 = i;
+					wp->field_0x2C = i;
+					winMgrHelpInit(winMgrGetPtr(wp->field_0x54));
+				}
+				selected = 1;
+			}
+		}
+		if (selected == 0 && wp->field_0xD0 != -1) {
+			wp->field_0xD0 = -1;
+			winMgrClose(wp->field_0x50);
+			winMgrClose(wp->field_0x54);
+		}
+		if (wp->field_0xD0 != -1) {
+			wp->flags |= 1;
+			if (buttons & 0x100) {
+				marioKeyOff();
+				wp->field_0x28 = evtEntry(buy_evt, 0, 0);
+				wp->field_0x28->lwData[0] = (s32)wp;
+				wp->flags |= 2;
+				winMgrClose(wp->field_0x50);
+				winMgrClose(wp->field_0x54);
+				wp->field_0xD0 = -1;
+				wp->field_0xD4 = 0;
+			}
+		}
+	} else {
+		if (evtCheckID(wp->field_0x28->eventId) == 0) {
+			wp->flags &= ~2;
+			marioKeyOn();
+			if (wp->field_0xD4 == 0x33) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+			if (wp->field_0xD4 == 0x37) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+			if (wp->field_0xD4 == 0x38) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+			if (wp->field_0xD4 == 0x39) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+			if (wp->field_0xD4 == 0x3A) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+			if (wp->field_0xD4 == 0x3B) {
+				wp->field_0x14[wp->field_0x2C] |= 1;
+			}
+		}
+	}
+
+	for (i = 0; i < wp->field_0x20; i++) {
+		MapObject* obj = mapGetMapObj(((ShopObj*)wp->field_0x4)[i].name);
+		if (obj != NULL) {
+			char name[32];
+
+			sprintf(name, str_8041BC1C, i);
+			if (wp->field_0x14[i] & 1) {
+				iconFlagOn(name, 2);
+			} else if (*(u32*)obj & 1) {
+				iconFlagOn(name, 2);
+			} else {
+				iconFlagOff(name, 2);
+			}
+		}
+	}
+	return 0;
+}
 
 s32 evtShopIsActive(void) {
 	s32 active;

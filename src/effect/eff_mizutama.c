@@ -1,6 +1,9 @@
 #include "eff/eff_mizutama.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "math_ext.h"
+#include "memory.h"
+#include "system.h"
 #include <dolphin/mtx.h>
 #include <dolphin/types.h>
 
@@ -22,9 +25,15 @@ extern const f32 float_0p3_8042128c;
 extern const f32 float_0p99_80421290;
 extern const f32 float_0p01_80421294;
 extern const f32 float_8_80421270;
-extern const f32 float_360_80421274;
 extern const f32 float_0p5_80421278;
 extern const f32 float_4_8042127c;
+extern const f32 float_360_80421274;
+extern const f32 float_6p2832_80421298;
+extern const f32 float_2_8042129c;
+extern const f32 float_100_804212a0;
+extern const f32 float_225_804212a4;
+extern const f32 float_135_804212a8;
+
 #ifdef MUST_MATCH
 /* MUST_MATCH: the original reloads these two .sdata2 constants before every FIFO store;
    as plain `const` MWCC keeps them live in f0/f3 and the vertex block differs. */
@@ -34,6 +43,93 @@ extern volatile const f32 float_1_80421284;
 extern const f32 float_0_80421280;
 extern const f32 float_1_80421284;
 #endif
+
+const char str_802FE6E4[12] = "mizutama";
+
+EffectEntry* effMizutamaEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
+	s32 timer;
+	s32 radius;
+	EffectEntry* entry;
+	MizutamaData* data;
+	s32 count;
+
+	entry = effEntry();
+
+	switch (type) {
+	case 0:
+	case 4:
+		count = irand(2) + 3;
+		break;
+	case 1:
+	case 5:
+		count = irand(5) + 6;
+		break;
+	case 2:
+	case 6:
+		count = irand(10) + 11;
+		break;
+	case 3:
+	case 7:
+		count = irand(15) + 16;
+		break;
+	}
+
+	entry->type = str_802FE6E4;
+	entry->count = count;
+	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(MizutamaData));
+	entry->userdata = data;
+	entry->callback = effMizutamaMain;
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = float_1_80421284;
+	data->field_0x1C = 0;
+	data->field_0x20 = 0;
+	radius = (type + 1) * 10;
+
+	data++;
+	for (count = 1, timer = 2; count < entry->count; timer += 2, count++, data++) {
+		f32 a;
+
+		if (type < 4) {
+			f32 r = (f32)radius;
+
+			a = float_6p2832_80421298 * (f32)irand(360) / float_360_80421274;
+			data->x = r * (f32)sin(a);
+			data->y = r * -(f32)cos(a);
+			data->z = float_0_80421280;
+			a = float_6p2832_80421298 * angle / float_360_80421274;
+			data->vx = float_2_8042129c * (f32)sin(a);
+			data->vy = float_2_8042129c * (f32)cos(a);
+			data->scale = (f32)(irand(20) + 80) / float_100_804212a0;
+			data->timer = timer;
+		} else {
+			f32 r = (f32)radius;
+
+			irand(360);
+			data->x = (f32)irand((s32)r * 2) - r;
+#ifdef MUST_MATCH
+			/* MUST_MATCH: float_0 is volatile here so Disp reloads it; the literal 0.0f lets MWCC
+			   share a single load for y, z and the compare instead of issuing three. */
+			data->y = 0.0f;
+			data->z = 0.0f;
+			angle = (data->x < 0.0f) ? float_225_804212a4 : float_135_804212a8;
+#else
+			data->y = float_0_80421280;
+			data->z = float_0_80421280;
+			angle = (data->x < float_0_80421280) ? float_225_804212a4 : float_135_804212a8;
+#endif
+			a = float_6p2832_80421298 * angle / float_360_80421274;
+			data->vx = float_2_8042129c * (f32)sin(a);
+			data->vy = float_2_8042129c * (f32)cos(a);
+			data->scale = (f32)(irand(20) + 80) / float_100_804212a0;
+			data->timer = timer;
+		}
+	}
+
+	return entry;
+}
 
 void effMizutamaMain(EffectEntry* effect) {
 #ifdef MUST_MATCH

@@ -23,10 +23,20 @@ typedef struct IndirectData {
 } IndirectData;
 
 extern const char str_8030134C[];
+extern const u32 dat_804222c0;
+extern const f32 float_deg2rad_804222c4;
+extern const f32 float_25_804222c8;
+extern const f32 float_1p2667_804222cc;
+extern const f32 float_0p5_804222d0;
+extern const f32 float_neg0p5_804222d4;
+extern const f32 float_0p505_804222d8;
+extern const f32 float_1_804222dc;
+extern const f32 float_2_804222e0;
+extern const f32 float_32_804222e4;
+extern const f32 float_16_804222e8;
 extern const f32 float_0_804222ec;
 extern const f32 float_neg0p05_804222f4;
 extern const f32 float_neg5_804222f0;
-extern const f32 float_1_804222dc;
 
 EffectEntry* effIndirectEntry(s32 type, s32 timer, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -93,4 +103,119 @@ void effIndirectMain(EffectEntry* effect) {
 	}
 
 	dispEntry(CAMERA_3D_EFFECTB, dispCalcZ(&pos2), 2, effIndirectDisp, effect);
+}
+
+static inline GXColor effIndirectMatColor(u8 alpha) {
+	GXColor color = *(GXColor*)&dat_804222c0;
+	color.a = alpha;
+	return color;
+}
+
+// NONMATCHING (96.62%): body, constants and control flow match. The FP register allocator assigns the
+// quad's half/16/0.0 temporaries f5/f2/f1 and holds 0.0 in a register, where the original uses f2/f1/f0 and
+// rematerialises 0.0 (6 extra lfs). Everything else, including the GXColor temp at r1+8/0xC, matches.
+void effIndirectDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	IndirectData* data = effect->userdata;
+	CameraEntry* cam;
+	GXTexObj texObj;
+	Mtx lightMtx;
+	Mtx rotMtx;
+	Mtx scaleMtx;
+	Mtx trans;
+	GXColor color;
+	s32 type;
+	u8 alpha;
+	void* image;
+	f32 u;
+	f32 v;
+	f32 half;
+
+	cam = camGetPtr(CAMERA_2D);
+	type = data->type;
+	alpha = data->alpha;
+	GXSetBlendMode(1, 4, 5, 0);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetZMode(0, 3, 0);
+	switch (type) {
+	case 0:
+		effGetTexObj(0x86, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		break;
+	case 1:
+		effGetTexObj(0x45, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		break;
+	}
+	GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+	GXSetTexCopyDst(0x130, 0xF0, 4, 1);
+	image = smartAlloc(GXGetTexBufferSize(0x130, 0xF0, 4, 0, 0), 3)->address;
+	GXCopyTex(image, 0);
+	GXPixModeSync();
+	GXInitTexObj(&texObj, image, 0x130, 0xF0, 4, 0, 0, 0);
+	GXLoadTexObj(&texObj, 1);
+	PSMTXTrans(lightMtx, data->x, data->y, data->z);
+	PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
+	PSMTXRotRad(rotMtx, 'y', float_deg2rad_804222c4 * -cam->viewYaw);
+	PSMTXConcat(lightMtx, scaleMtx, scaleMtx);
+	PSMTXConcat(scaleMtx, rotMtx, trans);
+	PSMTXRotRad(rotMtx, 'z', float_deg2rad_804222c4 * data->rotZ);
+	PSMTXConcat(trans, rotMtx, trans);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetChanMatColor(4, effIndirectMatColor(alpha));
+	GXSetNumTexGens(2);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetTexCoordGen2(1, 0, 0, 0x1E, 0, 0x7D);
+	C_MTXLightPerspective(lightMtx, float_25_804222c8, float_1p2667_804222cc, float_0p5_804222d0, float_neg0p5_804222d4,
+	                      float_0p505_804222d8, float_0p505_804222d8);
+	PSMTXConcat(lightMtx, cam->view, lightMtx);
+	PSMTXConcat(lightMtx, trans, lightMtx);
+	GXLoadTexMtxImm(lightMtx, 0x1E, 0);
+	GXSetNumTevStages(2);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevOp(0, 0);
+	GXSetTevOrder(1, 1, 1, 0xFF);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0xF, 0xF, 0xF, 8);
+	GXSetTevAlphaIn(1, 7, 7, 7, 0);
+	GXSetCullMode(0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	PSMTXConcat(cam->view, trans, trans);
+	GXLoadPosMtxImm(trans, 0);
+	GXSetCurrentMtx(0);
+	GXBegin(0x80, 0, 4);
+	u = float_1_804222dc;
+	v = u;
+	switch (type) {
+	case 0:
+		u = float_2_804222e0;
+		break;
+	case 1:
+		u = float_2_804222e0;
+		v = u;
+		break;
+	}
+#ifdef MUST_MATCH
+	// The two-step form keeps MWCC's FP allocator from folding the fneg into the
+	// constant load; the single expression still differs only in FP registers.
+	half = -float_32_804222e4;
+	half = half * float_0p5_804222d0;
+#else
+	half = -float_32_804222e4 * float_0p5_804222d0;
+#endif
+	GXPosition3f32(half, float_16_804222e8, float_0_804222ec);
+	GXTexCoord2f32(float_0_804222ec, float_0_804222ec);
+	GXPosition3f32(float_16_804222e8, float_16_804222e8, float_0_804222ec);
+	GXTexCoord2f32(u, float_0_804222ec);
+	GXPosition3f32(float_16_804222e8, half, float_0_804222ec);
+	GXTexCoord2f32(u, v);
+	GXPosition3f32(half, half, float_0_804222ec);
+	GXTexCoord2f32(float_0_804222ec, v);
 }

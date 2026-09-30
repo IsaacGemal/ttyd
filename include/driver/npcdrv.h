@@ -290,6 +290,7 @@ NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius);
 void npcKoopaModeEncountCheck(void);
 void npcMoveG(NpcEntry* entry);
 void fbatTalkMode(void);
+void fbatBattleMode(void);
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param);
 void fbatSandersBombTriggerOn(void);
 void npcClearDeadInfo(void);

@@ -126,6 +126,10 @@ const char str_80300BC0[0x10] = "sac_suki_img3";
 const char str_80300BD0[0x10] = "sac_suki_img4";
 const char str_80300BE0[0x10] = "sac_suki_img5";
 extern u8 N_ohko_rate_tbl[6];
+extern const f32 float_1_804220d8;
+extern const f32 float_0_804220e8;
+extern const f32 float_60_804220ec;
+extern const f32 float_80_804220e4;
 extern u8 weapon[];
 extern s32 nice_event[];
 extern const GXColor dat_804220a0;
@@ -399,6 +403,95 @@ static void disp_3D_alpha(CameraId camera, void* param) {
 static void disp_3D(CameraId camera, void* param) {
 }
 
+// .text:0x66C | 0x80249F8C | size: 0x1F0
+// NONMATCHING (99.52%): the only difference is `extsh r5, r31` where the original has `mr r5, r31`
+// at the iconDispGx call. The original's prototype for iconDispGx/iconDispGxAlpha takes the icon id
+// as s32 (callers pass s32 without sign-extending, and the wrapper does not convert), but the header
+// declares it s16, so this build must sign-extend. With iconDispGx and iconDispGxAlpha changed to s32
+// in include/driver/icondrv.h and src/driver/icondrv.c this function is 100% (verified) with no
+// regressions; that edit is outside the one allowed source file, so it is reported instead.
+void N__disp_2D(s32 type, s32 index) {
+    SukiWork* work = get_ptr();
+    SukiButton* button;
+    s32 selected;
+    s32 iconId;
+    f32 yoff;
+    Vec pos;
+
+    if (type == 0) {
+        button = &work->buttons2[index];
+        selected = work->prevSelected;
+        yoff = float_80_804220e4;
+    }
+    else {
+        button = &work->buttons[index];
+        selected = work->selected;
+        yoff = float_0_804220e8;
+    }
+
+    if (type == 0 && button->state == 0) {
+        return;
+    }
+    if (type == 1 && button->state != 2) {
+        return;
+    }
+
+    switch (button->button) {
+    case 0x100: {
+        u16 t = 0x64;
+        if (index < selected) t = 0x65;
+        iconId = t;
+        break;
+    }
+    case 0x200: {
+        u16 t = 0x66;
+        if (index < selected) t = 0x67;
+        iconId = t;
+        break;
+    }
+    case 0x400: {
+        u16 t = 0x68;
+        if (index < selected) t = 0x69;
+        iconId = t;
+        break;
+    }
+    case 0x800: {
+        u16 t = 0x6A;
+        if (index < selected) t = 0x6B;
+        iconId = t;
+        break;
+    }
+    case 0x40: {
+        u16 t = 0x7E;
+        if (index < selected) t = 0x7F;
+        iconId = t;
+        break;
+    }
+    case 0x20: {
+        u16 t = 0x80;
+        if (index < selected) t = 0x81;
+        iconId = t;
+        break;
+    }
+    case 0x10: {
+        u16 t = 0x82;
+        if (index < selected) t = 0x83;
+        iconId = t;
+        break;
+    }
+    default:
+        break;
+    }
+    if ((u16)iconId == 0) {
+        return;
+    }
+
+    pos = vec3_80300a90;
+    pos.x = button->pos.x;
+    pos.y = button->pos.y + yoff + work->alpha + float_60_804220ec;
+    pos.z = button->pos.z;
+    iconDispGx(&pos, 0x10, iconId, float_1_804220d8);
+}
 // .text:0x85C | 0x8024A17C | size: 0x180
 // NONMATCHING (82.40%): 8 instructions differ, 8 missing, 4 extra, plus register differences.
 static void disp_2D(CameraId camera, void* param) {

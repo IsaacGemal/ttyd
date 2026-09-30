@@ -1,4 +1,7 @@
 #include "battle/ac/ac_timing_a.h"
+#include "system.h"
+
+static void actionCommandDisp(f32 x, f32 y);
 
 // TimingA's action-command work area at BattleWork+0x1F4C. No header declares it.
 typedef struct AcTimingADecWork {
@@ -15,6 +18,10 @@ typedef struct AcTimingAEntry {
 
 // One window table per difficulty level (indexed by BattleActionCommandGetDifficulty).
 extern AcTimingAEntry* _ac_timing_a_timing_tbl[7];
+
+// .sdata2 interpolation endpoints.
+extern const f32 float_neg300_8041c434;
+extern const f32 float_30_8041c438;
 
 // NONMATCHING (1.54%): 64 missing.
 s32 battleAcMain_TimingA(BattleWork* work) {
@@ -58,6 +65,43 @@ s32 battleAcTimingA_GetSuccessFrame(BattleWork* work) {
 	return result;
 }
 #pragma optimize_for_size reset
+
+// The disp base pointer is the only difference. The original materialises `disp = param + 0x1F20` in r31
+// (`addi r31, r4, 0x1f20`) and reads the state from r4; MWCC folds the disp pointer into the BattleWork
+// base (`mr r31, r4` plus 0x1f3x offsets) instead. Every pragma tried (optimize_for_size, opt_common_subs/
+// opt_propagation/opt_lifetimes/global_optimizer off) and source form (u8*/member pointer, member order,
+// register/volatile) gives the same merge or worse.
+// NONMATCHING (98.81%): see above.
+void battleAcDisp_TimingA(CameraId camId, void* param) {
+	BattleACDispParams* disp = &((BattleWork*)param)->actionCommands.dispParams;
+	s32 state = ((BattleWork*)param)->actionCommands.mAcState;
+
+	switch (state) {
+	case 0x63:
+		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_8041c434, float_30_8041c438);
+		// fallthrough
+	case 0x64:
+		disp->iconX = float_30_8041c438;
+		actionCommandDisp(disp->iconX, disp->iconY);
+		if (disp->counter > 0) {
+			disp->counter--;
+		}
+		break;
+	case 0x3E8:
+	case 0x3E9:
+		if (disp->counter >= 0x28) {
+			disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041c438, float_neg300_8041c434);
+		}
+		else {
+			disp->iconX = float_30_8041c438;
+		}
+		actionCommandDisp(disp->iconX, disp->iconY);
+		if (disp->counter < 0x3C) {
+			disp->counter++;
+		}
+		break;
+	}
+}
 
 void battleAcDelete_TimingA(BattleWork* work) {
 	work->actionCommands.mAcState = 1000;

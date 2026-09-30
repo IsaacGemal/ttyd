@@ -14,4 +14,12 @@ typedef struct evt_shop_work {
 	u8 field_0x24[0xD8 - 0x24]; //0x24
 } evt_shop_work;
 
+typedef struct ShopObj {
+	const char* name;    //0x0
+	const char* hitName; //0x4
+} ShopObj;
+
+extern u32 buy_evt[];
+extern const char str_802ECDE0[];
+
 USER_FUNC(evt_shop_setup);

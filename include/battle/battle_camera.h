@@ -46,6 +46,7 @@ typedef struct BattleCameraWork {
 void battleCameraInit(void);
 
 void battleCameraMain(void);
+void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4, f32* p5, f32* p6, f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6);
 void btl_camera_shake_h(s32 id, s32 a, s32 b, f32 x, f32 y);
 void btl_camera_set_mode(s32 id, s32 mode);
 void btl_camera_set_moveSpeedLv(s32 id, s32 lv);

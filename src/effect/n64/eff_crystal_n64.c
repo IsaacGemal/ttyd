@@ -1,13 +1,12 @@
 #include "eff/n64/eff_crystal_n64.h"
 #include "eff/eff_n64.h"
 #include "driver/camdrv.h"
+#include "driver/dispdrv.h"
 #include "driver/effdrv.h"
+#include "math_ext.h"
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-
-// .rodata vector used by effCrystalMain.
-const f32 vec3_802fa488[3] = { 0.0f, 0.0f, 0.0f };
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 GXColor unk_804230d0;
@@ -101,6 +100,149 @@ EffectEntry* effCrystalN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 sca
 	}
 
 	return effect;
+}
+
+void effCrystalMain(EffectEntry* effect) {
+	EffCrystalData* data = effect->userdata;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail builds the Vec in a scratch slot and copies it into a second local
+	   before dispCalcZ; a single local folds the copy away (same idiom as effGlassMain). */
+	Vec position;
+#endif
+	Vec disp = { 0 };
+	s32 alpha;
+	s32 fade;
+	s32 timer;
+	s32 life;
+	s32 type;
+
+	disp.x = data->x;
+	disp.y = data->y;
+	disp.z = data->z;
+#ifdef MUST_MATCH
+	position = disp;
+#endif
+
+	if (effect->flags & 4) {
+		effect->flags &= ~4;
+		data->lifetime = 30;
+	}
+
+	if (data->lifetime < 100) {
+		data->lifetime--;
+	}
+	data->timer++;
+
+	life = data->lifetime;
+	if (life < 0) {
+		effDelete(effect);
+		return;
+	}
+	timer = data->timer;
+
+	alpha = 255;
+	type = data->field_0x1C;
+	fade = 255;
+	if (timer < 16) {
+		alpha = timer * 16 - 1;
+	}
+	if (life < 16) {
+		alpha = alpha * life * 16 / 256;
+	}
+	if (life < 16) {
+		fade = life * 16;
+	}
+
+	switch (type) {
+	case 0:
+		data->field_0x20 = 70;
+		data->field_0x24 = 180;
+		data->field_0x28 = 120;
+		data->field_0x2C = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 1:
+		data->field_0x20 = 70;
+		data->field_0x24 = 255;
+		data->field_0x28 = 230;
+		data->field_0x2C = 255;
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 2:
+		data->field_0x20 = 170;
+		data->field_0x24 = 40;
+		data->field_0x28 = 110;
+		data->field_0x2C = 190 + (s32)(10.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 3:
+		data->field_0x20 = 220;
+		data->field_0x24 = 40;
+		data->field_0x28 = 170;
+		data->field_0x2C = 255;
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 4:
+		data->field_0x20 = 235;
+		data->field_0x24 = 235;
+		data->field_0x28 = 200;
+		data->field_0x2C = 215 + (s32)(15.0f * (f32)sin(6.2831855f * (f32)(timer * 2) / 360.0f));
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 5:
+		data->field_0x20 = 235;
+		data->field_0x24 = 235;
+		data->field_0x28 = 200;
+		data->field_0x2C = 255;
+		data->field_0x2C = data->field_0x2C * alpha / 255;
+		break;
+	case 6:
+		data->field_0x20 = 70;
+		data->field_0x24 = 180;
+		data->field_0x28 = 120;
+		data->field_0x2C = 127;
+		data->field_0x2C = data->field_0x2C * fade / 255;
+		data->scale *= 1.1f;
+		break;
+	case 7:
+		data->field_0x20 = 162;
+		data->field_0x24 = 189;
+		data->field_0x28 = 174;
+		data->field_0x2C = 160;
+		data->field_0x2C = data->field_0x2C * fade / 255;
+		data->scale *= 1.1f;
+		break;
+	case 8:
+		data->field_0x20 = 170;
+		data->field_0x24 = 40;
+		data->field_0x28 = 110;
+		data->field_0x2C = 127;
+		data->field_0x2C = data->field_0x2C * fade / 255;
+		data->scale *= 1.1f;
+		break;
+	case 9:
+		data->field_0x20 = 180;
+		data->field_0x24 = 178;
+		data->field_0x28 = 174;
+		data->field_0x2C = 160;
+		data->field_0x2C = data->field_0x2C * fade / 255;
+		data->scale *= 1.1f;
+		break;
+	default:
+		data->field_0x20 = 50;
+		data->field_0x24 = 50;
+		data->field_0x28 = 255;
+		data->field_0x2C = 160;
+		data->field_0x2C = data->field_0x2C * fade / 255;
+		data->scale += data->field_0x34;
+		break;
+	}
+
+#ifdef MUST_MATCH
+	dispEntry(data->field_0x38, dispCalcZ(&position), 2, effCrystalDisp, effect);
+#else
+	dispEntry(data->field_0x38, dispCalcZ(&disp), 2, effCrystalDisp, effect);
+#endif
 }
 
 // Helper keeps the GXColor build in a separate local (r1+0x8 → arg r1+0xc), as the original does.

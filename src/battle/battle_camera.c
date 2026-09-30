@@ -58,6 +58,196 @@ USER_FUNC(evt_btl_camera_wait_move_end) {
   return EVT_RETURN_DONE;
 }
 
+void battleCameraMoveTo(s32 id, s32 a, f32* p1, f32* p2, f32* p3, f32* p4,
+                        f32* p5, f32* p6, f32 f1, f32 f2, f32 f3, f32 f4,
+                        f32 f5, f32 f6) {
+  CameraEntry* cam = camGetPtr(4);
+  BattleWork* wp = _battleWorkPointer;
+  BattleUnit* mario = BattleGetMarioPtr(wp);
+  f32 limit;
+
+  if (wp->cameraWork.moveSpeedLv < 0 || wp->cameraWork.moveSpeedLv >= 5) {
+    wp->cameraWork.moveSpeedLv = 1;
+  }
+  if (wp->cameraWork.zoomSpeedLv < 0 || wp->cameraWork.zoomSpeedLv >= 6) {
+    wp->cameraWork.zoomSpeedLv = 1;
+  }
+
+  if (id == 1) {
+    if (wp->flags & 0x100) {
+// MUST_MATCH: with the literal `+= 0.0f` below MWCC folds the two adds away and assigns
+// the temporaries to different registers; the named zero/tmp keep the original schedule.
+#ifdef MUST_MATCH
+      f32 d = mario->mHomePosition.z;
+      f32 zero = 0.0f;
+      f32 tmp = 0.25f * -d;
+      f1 += zero;
+      f3 += d;
+      f4 += zero;
+      f6 += d;
+      f2 += tmp;
+      f5 += tmp;
+#else
+      f32 d = mario->mHomePosition.z;
+      f1 += 0.0f;
+      f3 += d;
+      f4 += 0.0f;
+      f6 += d;
+      f2 += 0.25f * -d;
+      f5 += 0.25f * -d;
+#endif
+    }
+    f1 += wp->cameraWork.position.x;
+    f2 += wp->cameraWork.position.y;
+    f3 += wp->cameraWork.position.z;
+    f4 += wp->cameraWork.position.x;
+    f5 += wp->cameraWork.position.y;
+    f6 += wp->cameraWork.position.z;
+  }
+
+  // MUST_MATCH: / 2.0f (not * 0.5f) makes MWCC schedule the subtraction before the halving.
+  limit = (600.0f - f3) / 2.0f;
+  if (limit < 0.0f) {
+    limit = 0.0f;
+  }
+
+  if (a == 1) {
+    if (f1 > 100.0f + limit) {
+      f1 = 100.0f + limit;
+    }
+    if (f1 < -100.0f - limit) {
+      f1 = -100.0f - limit;
+    }
+    if (f4 > 100.0f + limit) {
+      f4 = 100.0f + limit;
+    }
+    if (f4 < -100.0f - limit) {
+      f4 = -100.0f - limit;
+    }
+  }
+
+  switch (wp->cameraWork.moveSpeedLv) {
+  case 0:
+    *p1 = (f1 - cam->cameraPos.x) / 1.5f;
+    *p2 = (f2 - cam->cameraPos.y) / 1.5f;
+    *p4 = (f4 - cam->cameraAt.x) / 1.5f;
+    *p5 = (f5 - cam->cameraAt.y) / 1.5f;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  case 1:
+    *p1 = (f1 - cam->cameraPos.x) / 15.0f;
+    *p2 = (f2 - cam->cameraPos.y) / 15.0f;
+    *p4 = (f4 - cam->cameraAt.x) / 15.0f;
+    *p5 = (f5 - cam->cameraAt.y) / 15.0f;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  case 2:
+    *p1 = (f1 - cam->cameraPos.x) / 5.0f;
+    *p2 = (f2 - cam->cameraPos.y) / 5.0f;
+    *p4 = (f4 - cam->cameraAt.x) / 5.0f;
+    *p5 = (f5 - cam->cameraAt.y) / 5.0f;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  case 3:
+    *p1 = f1 - cam->cameraPos.x;
+    *p2 = f2 - cam->cameraPos.y;
+    *p4 = f4 - cam->cameraAt.x;
+    *p5 = f5 - cam->cameraAt.y;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  case 4:
+    *p1 = (f1 - cam->cameraPos.x) / 200.0f;
+    *p2 = (f2 - cam->cameraPos.y) / 200.0f;
+    *p4 = (f4 - cam->cameraAt.x) / 200.0f;
+    *p5 = (f5 - cam->cameraAt.y) / 200.0f;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  case 5:
+    *p1 = (f1 - cam->cameraPos.x) / 100.0f;
+    *p2 = (f2 - cam->cameraPos.y) / 100.0f;
+    *p4 = (f4 - cam->cameraAt.x) / 100.0f;
+    *p5 = (f5 - cam->cameraAt.y) / 100.0f;
+    cam->cameraPos.x += *p1;
+    cam->cameraPos.y += *p2;
+    cam->cameraAt.x += *p4;
+    cam->cameraAt.y += *p5;
+    cam->cameraUp.x = 0.0f;
+    cam->cameraUp.y = 1.0f;
+    cam->cameraUp.z = 0.0f;
+    break;
+  }
+
+  switch (wp->cameraWork.zoomSpeedLv) {
+  case 0:
+    *p3 = (f3 - cam->cameraPos.z) / 1.5f;
+    *p6 = (f6 - cam->cameraAt.z) / 1.5f;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  case 1:
+    *p3 = (f3 - cam->cameraPos.z) / 15.0f;
+    *p6 = (f6 - cam->cameraAt.z) / 15.0f;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  case 2:
+    *p3 = (f3 - cam->cameraPos.z) / 5.0f;
+    *p6 = (f6 - cam->cameraAt.z) / 5.0f;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  case 3:
+    *p3 = f3 - cam->cameraPos.z;
+    *p6 = f6 - cam->cameraAt.z;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  case 4:
+    *p3 = (f3 - cam->cameraPos.z) / 200.0f;
+    *p6 = (f6 - cam->cameraAt.z) / 200.0f;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  case 5:
+    *p3 = (f3 - cam->cameraPos.z) / 100.0f;
+    *p6 = (f6 - cam->cameraAt.z) / 100.0f;
+    cam->cameraPos.z += *p3;
+    cam->cameraAt.z += *p6;
+    break;
+  }
+}
+
 f32 battleCameraGetPosMoveSpeed(void) {
   BattleCameraWork *camera = &_battleWorkPointer->cameraWork;
   f32 x = camera->unk68.x;

@@ -16,9 +16,11 @@ void parseInit(void* ptr, u32 size) {
 
 
 // NONMATCHING (0.84%): empty placeholder, not decompiled yet.
+#pragma dont_inline on // stub body must stay a real call for callers to match
 BOOL parsePush(const char* tag) {
 
 }
+#pragma dont_inline reset
 
 
 
@@ -60,4 +62,19 @@ BOOL parseGet1Next(s32 type, void* data) {
 		}
 	}
 	return result;
+}
+
+
+
+
+
+// .text:0x0 | 0x80083A6C | size: 0x68
+BOOL parseTagGet1(const char* tag, s32 type, void* data) {
+	if (parsePush(tag)) {
+		BOOL result = parseGet1Next(type, data);
+
+		parse.field_0x54--;
+		return result;
+	}
+	return FALSE;
 }

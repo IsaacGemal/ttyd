@@ -5,6 +5,7 @@
 #include "data/item_data.h"
 #include "driver/msgdrv.h"
 #include "memory.h"
+#include "system.h"
 #include <string.h>
 
 extern PiantaParlorWork* yuwp;
@@ -1013,4 +1014,148 @@ s32 comp_aiueo_r(s16* a, s16* b) {
 	((u8*)buf_b)[i * 2] = 0;
 
 	return strcmp((const char*)buf_b, (const char*)buf_a);
+}
+
+void pouchSortItem(s32 type) {
+	s16 badgeList[MAX_BADGES];
+	s16 equippedList[MAX_BADGES];
+	s16 keyList[MAX_KEY_ITEMS];
+	s16 holdList[MAX_HELD_ITEMS];
+	ItemData* itemA;
+	ItemData* itemB;
+	s32 count;
+#ifdef MUST_MATCH
+	// Calling the inlined pouchGetPtr() instead of reading mpp directly is what makes MWCC keep the
+	// pouch pointer in r29 for the whole function (the original caches it there).
+	PouchData* pouch = pouchGetPtr();
+#else
+	PouchData* pouch = mpp;
+#endif
+	s32 i, j, k, badgeCount;
+	BOOL swap;
+	s16 temp1, temp2;
+	s32 bpA, bpB;
+	const char *idA, *idB;
+
+	if (type == 0 || type == 1 || type == 7 || type == 8) {
+		count = 0;
+		for (i = 0; i < MAX_HELD_ITEMS; i++) {
+			if (pouch->heldItems[i] != ITEM_NULL) {
+				holdList[count++] = pouch->heldItems[i];
+			}
+		}
+		for (i = count; i < MAX_HELD_ITEMS; i++) {
+			holdList[i] = 0;
+		}
+		if (type == 0) {
+			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_aiueo);
+		}
+		else if (type == 1) {
+			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_kind);
+		}
+		else if (type == 7) {
+			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_aiueo_r);
+		}
+		else if (type == 8) {
+			qqsort(holdList, count, 2, (int (*)(void*, void*))comp_kind_r);
+		}
+		memcpy(pouch->heldItems, holdList, sizeof(holdList));
+	}
+	if (type == 2 || type == 3 || type == 9 || type == 10) {
+		count = 0;
+		for (i = 0; i < MAX_KEY_ITEMS; i++) {
+			if (pouch->keyItems[i] != ITEM_NULL) {
+				keyList[count++] = pouch->keyItems[i];
+			}
+		}
+		for (i = count; i < MAX_KEY_ITEMS; i++) {
+			keyList[i] = 0;
+		}
+		if (type == 2) {
+			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_aiueo);
+		}
+		else if (type == 3) {
+			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_kind);
+		}
+		else if (type == 9) {
+			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_aiueo_r);
+		}
+		else if (type == 10) {
+			qqsort(keyList, count, 2, (int (*)(void*, void*))comp_kind_r);
+		}
+		memcpy(pouch->keyItems, keyList, sizeof(keyList));
+	}
+	if (type == 4 || type == 5 || type == 6 || type == 11 || type == 12 || type == 13) {
+		badgeCount = 0;
+		for (k = 0; k < MAX_BADGES; k++) {
+			if (pouch->badges[k] != ITEM_NULL) {
+				badgeList[badgeCount] = pouch->badges[k];
+				equippedList[badgeCount] = pouch->equippedBadges[k];
+				badgeCount++;
+			}
+		}
+		for (k = badgeCount; k < MAX_BADGES; k++) {
+			badgeList[k] = 0;
+			equippedList[k] = 0;
+		}
+		for (i = 0; i < badgeCount - 1; i++) {
+			for (j = i + 1; j < badgeCount; j++) {
+				itemA = &itemDataTable[badgeList[i]];
+				itemB = &itemDataTable[badgeList[j]];
+				bpA = itemA->bp_cost;
+				bpB = itemB->bp_cost;
+				idA = itemA->id;
+				idB = itemB->id;
+				swap = FALSE;
+				if (type == 4) {
+					if (strcmp(idA, idB) > 0) {
+						swap = TRUE;
+					}
+				}
+				else if (type == 11) {
+					if (strcmp(idA, idB) < 0) {
+						swap = TRUE;
+					}
+				}
+				else if (type == 5) {
+					if (itemA->type_sort_order > itemB->type_sort_order) {
+						swap = TRUE;
+					}
+				}
+				else if (type == 12) {
+					if (itemA->type_sort_order < itemB->type_sort_order) {
+						swap = TRUE;
+					}
+				}
+				else if (type == 6) {
+					if (bpA > bpB) {
+						swap = TRUE;
+					}
+					else if (bpA == bpB && itemA->type_sort_order > itemB->type_sort_order) {
+						swap = TRUE;
+					}
+				}
+				else if (type == 13) {
+					if (bpA < bpB) {
+						swap = TRUE;
+					}
+					else if (bpA == bpB && itemA->type_sort_order < itemB->type_sort_order) {
+						swap = TRUE;
+					}
+				}
+				if (swap) {
+					temp1 = badgeList[i];
+					temp2 = badgeList[j];
+					badgeList[i] = temp2;
+					badgeList[j] = temp1;
+					temp1 = equippedList[i];
+					temp2 = equippedList[j];
+					equippedList[i] = temp2;
+					equippedList[j] = temp1;
+				}
+			}
+		}
+		memcpy(pouch->badges, badgeList, sizeof(badgeList));
+		memcpy(pouch->equippedBadges, equippedList, sizeof(equippedList));
+	}
 }

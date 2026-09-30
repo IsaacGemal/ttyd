@@ -8,6 +8,22 @@ typedef struct BattleWork BattleWork;
 
 #include <dolphin/types.h>
 
+// Scratch space for BattleCheckCounter, zeroed and flagged by BattleInitCounterPreCheckWork.
+typedef struct CounterPreCheckWork {
+	s32 field_0x0;  // 0x0
+	s32 field_0x4;  // 0x4
+	s32 field_0x8;  // 0x8
+	s32 field_0xC;  // 0xC
+	s32 field_0x10; // 0x10
+	s32 field_0x14; // 0x14
+	s32 field_0x18; // 0x18
+	s32 field_0x1C; // 0x1C
+	s32 field_0x20; // 0x20, counter type (0x2B..0x36)
+	s32 field_0x24; // 0x24, damage code (0x12B..0x136)
+	s32 field_0x28; // 0x28, counter count
+	s32 field_0x2C; // 0x2C, status id (0x1F..0x24)
+} CounterPreCheckWork;
+
 typedef struct BattleVulnerableStatus {
 	u8 sleepRate; //0x0
 	u8 stopRate; //0x1

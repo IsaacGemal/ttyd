@@ -1709,6 +1709,31 @@ typedef struct BtlUnitSeMode {
     s32 field_0x18; // 0x18
 } BtlUnitSeMode;
 
+// Source layout BtlUnit_LoadSeMode copies the four se-mode variants from. The
+// variants live at 0x0, 0x8, 0x18 and 0x28; the header leaves the owning regions
+// unnamed, so the fields are listed at their offsets.
+typedef struct BtlUnitSeModeSrc {
+    s32 field_0x0;  // 0x0
+    s32 field_0x4;  // 0x4
+    s32 field_0x8;  // 0x8
+    s32 field_0xC;  // 0xC
+    s16 field_0x10; // 0x10
+    s16 field_0x12; // 0x12
+    s16 field_0x14; // 0x14
+    s16 field_0x16; // 0x16
+    s32 field_0x18; // 0x18
+    s32 field_0x1C; // 0x1C
+    s16 field_0x20; // 0x20
+    s16 field_0x22; // 0x22
+    s16 field_0x24; // 0x24
+    s16 field_0x26; // 0x26
+    s32 field_0x28; // 0x28
+    s32 field_0x2C; // 0x2C
+    s16 field_0x30; // 0x30
+    s16 field_0x32; // 0x32
+    s16 field_0x34; // 0x34
+} BtlUnitSeModeSrc;
+
 void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
     BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
     BOOL flag = FALSE;
@@ -1723,6 +1748,70 @@ void BtlUnit_SetCommandAnimPose(BattleUnit* unit) {
         ((BattleUnitPartFields*)part)->mFlags |= 0x80;
     } else {
         btlDispPoseAnime(part);
+    }
+}
+
+// NONMATCHING (98.80%): the original emits one dead `b .L_801211F0` between its
+// switch (b) comparison tree and the first case body; MWCC here emits only the
+// tree's single fall-through branch. Every other instruction matches.
+void BtlUnit_LoadSeMode(s32 a, s32 b, void* c, void* d) {
+    BtlUnitSeModeSrc* src = c;
+    BtlUnitSeMode* dst = d;
+
+    dst->field_0x14 = 0;
+    dst->field_0x18 = -1;
+    switch (b) {
+        case -1:
+            switch (a) {
+                case 0:
+                    dst->field_0x0 = src->field_0x8;
+                    dst->field_0x4 = src->field_0xC;
+                    dst->field_0xC = src->field_0x10;
+                    dst->field_0xE = src->field_0x12;
+                    dst->field_0x10 = src->field_0x14;
+                    break;
+                case 1:
+                    dst->field_0x0 = src->field_0x18;
+                    dst->field_0x4 = src->field_0x1C;
+                    dst->field_0xC = src->field_0x20;
+                    dst->field_0xE = src->field_0x22;
+                    dst->field_0x10 = src->field_0x24;
+                    break;
+                case 2:
+                    dst->field_0x0 = src->field_0x0;
+                    dst->field_0x4 = src->field_0x4;
+                    dst->field_0xC = 0;
+                    dst->field_0xE = 0;
+                    dst->field_0x10 = 0;
+                    break;
+                case 3:
+                    dst->field_0x0 = src->field_0x28;
+                    dst->field_0x4 = src->field_0x2C;
+                    dst->field_0xC = src->field_0x30;
+                    dst->field_0xE = src->field_0x32;
+                    dst->field_0x10 = src->field_0x34;
+                    break;
+                default:
+                    dst->field_0x0 = 0;
+                    dst->field_0x4 = 0;
+                    dst->field_0xC = 0;
+                    dst->field_0xE = 0;
+                    dst->field_0x10 = 0;
+                    break;
+            }
+            dst->field_0x12 = dst->field_0xC;
+            break;
+        case -2:
+            dst->field_0x12 = dst->field_0xC;
+            break;
+        default:
+            dst->field_0x0 = 0;
+            dst->field_0x4 = 0;
+            dst->field_0xC = 0;
+            dst->field_0xE = 0;
+            dst->field_0x10 = 0;
+            dst->field_0x12 = dst->field_0xC;
+            break;
     }
 }
 

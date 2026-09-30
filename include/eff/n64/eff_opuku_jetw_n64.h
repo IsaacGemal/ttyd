@@ -22,5 +22,14 @@ typedef struct effOpukuJetwData {
     f32 field_0x3C; // 0x3C
     f32 field_0x40; // 0x40
 } effOpukuJetwData;
+// 10-byte entry of the spiral tables (adata / a2data).
+typedef struct effOpukuJetwPoint {
+    s8 field_0x0;  // 0x0
+    s8 field_0x1;  // 0x1
+    s16 field_0x2; // 0x2
+    s16 field_0x4; // 0x4
+    s16 field_0x6; // 0x6
+    u8 field_0x8;  // 0x8
+} effOpukuJetwPoint; // 0xA
 void effOpukuJetwDisp(CameraId camId, void* param);
 void effOpukuJetwMain(EffectEntry* effect);

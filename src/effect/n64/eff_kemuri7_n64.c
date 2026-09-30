@@ -1,14 +1,19 @@
 #include "eff/n64/eff_kemuri7_n64.h"
+#include "eff/eff_n64.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 #include "system.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <math.h>
 
 // .sdata2 constants (defined by this unit in the original).
+extern const u32 dat_8041f3e8;
+extern const f32 float_0p03125_8041f3ec;
 extern const f32 float_0_8041f3f0;
+extern const f32 float_neg1_8041f3f4;
 extern const f32 float_1_8041f3f8;
 extern const f32 float_deg2rad_8041f3fc;
 extern const f32 float_30_8041f400;
@@ -21,6 +26,17 @@ extern const f32 float_5_8041f418;
 
 // .rodata string defined by this unit.
 const char str_802FA964[] = "Kemuri7N64";
+
+// .data vertex array defined by this unit.
+extern effVtxArray foot_vtx;
+
+// Build the TEV register colour as the original does; the inline keeps the GXColor
+// local at r1+0x8 with its outgoing copy at r1+0xc.
+static inline void kemuri7SetColor(u8 a) {
+    GXColor color = *(GXColor*)&dat_8041f3e8;
+    color.a = a;
+    GXSetTevColor(1, color);
+}
 
 typedef struct effKemuri7Data {
     s32 field_0x0;               // 0x0
@@ -136,5 +152,49 @@ void effKemuri7Main(EffectEntry* effect) {
     }
     else {
         dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKemuri7Disp, effect);
+    }
+}
+
+void effKemuri7Disp(CameraId camId, void* param) {
+    EffectEntry* effect = param;
+    effKemuri7Data* data;
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx work;
+    Mtx scale;
+    s32 i;
+
+    cam = camGetPtr(camId);
+    data = effect->userdata;
+
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+    PSMTXScale(scale, float_0p03125_8041f3ec, float_0p03125_8041f3ec, float_0_8041f3f0);
+    GXLoadTexMtxImm(scale, 0x1e, 1);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xff);
+    GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(0, 0xf, 0xf, 0xf, 0xf);
+    GXSetTevAlphaIn(0, 7, 4, 1, 7);
+    effGetTexObjN64(0x4f, &texObj);
+    GXLoadTexObj(&texObj, 0);
+    GXSetCullMode(0);
+    effSetVtxDescN64(&foot_vtx);
+
+    for (i = 0; i < effect->count; i++, data++) {
+        if (data->field_0x0 == 0) {
+            continue;
+        }
+        kemuri7SetColor(data->field_0x8);
+        PSMTXConcat(cam->view, data->field_0x30, work);
+        if (data->field_0x60 == float_0_8041f3f0) {
+            PSMTXScale(scale, float_neg1_8041f3f4, float_1_8041f3f8, float_1_8041f3f8);
+            PSMTXConcat(work, scale, work);
+        }
+        GXLoadPosMtxImm(work, 0);
+        GXBegin(0x90, 0, 6);
+        tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }

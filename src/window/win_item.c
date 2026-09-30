@@ -1,5 +1,7 @@
 #include "window/win_item.h"
 #include "window/win_root.h"
+#include "data/item_data.h"
+#include <dolphin/gx.h>
 #include "window/win_main.h"
 #include "win/win_main.h"
 #include "manager/winmgr.h"
@@ -34,6 +36,23 @@ extern const f32 float_4_8041d540;
 extern const GXColor dat_8041d468;
 extern const GXColor dat_8041d46c;
 extern const GXColor dat_8041d470;
+extern const GXColor dat_8041d474;
+extern const GXColor dat_8041d478;
+extern const GXColor dat_8041d47c;
+extern const f32 float_100_8041d4e4;
+extern const f32 float_10_8041d4ec;
+extern const f32 float_240_8041d4f0;
+extern const f32 float_125_8041d4f8;
+extern const f32 float_250_8041d500;
+extern const f32 float_18_8041d504;
+extern const f32 float_110_8041d508;
+extern const f32 float_113_8041d50c;
+extern const f32 float_90_8041d510;
+extern const f32 float_15_8041d514;
+extern const f32 float_0p7_8041d518;
+extern const f32 float_220_8041d51c;
+extern const f32 float_92_8041d520;
+extern const f32 float_30_8041d524;
 
 extern const Vec vec3_802f5288;
 extern const Vec vec3_802f5294;
@@ -41,6 +60,24 @@ extern const Vec vec3_802f52a0;
 extern const Vec vec3_802f52ac;
 extern const Vec vec3_802f52b8;
 extern const Vec vec3_802f52c4;
+extern const Vec vec3_802f52d0;
+extern const Vec vec3_802f52dc;
+extern const Vec vec3_802f52e8;
+extern const Vec vec3_802f52f4;
+extern const Vec vec3_802f5300;
+extern const Vec vec3_802f530c;
+extern const Vec vec3_802f5318;
+extern const Vec vec3_802f5324;
+extern const Vec vec3_802f5330;
+extern const Vec vec3_802f533c;
+extern const Vec vec3_802f5348;
+extern const Vec vec3_802f5354;
+extern const Vec vec3_802f5360;
+extern const Vec vec3_802f536c;
+extern const Vec vec3_802f5378;
+extern const Vec vec3_802f5384;
+extern const Vec vec3_802f5390;
+extern const char str_802F55F4[];
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
@@ -130,6 +167,210 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
 
     item_disp(work, x, y);
+}
+
+// Draws the item window: the held/key-item grid, the selected item's large
+// icon and name, the overflow arrows and the sort label. The two int->float pool
+// doubles come out as anonymous @NNN@ instead of double_to_int_802f55e0 /
+// double_to_int_mask_802f55d8 (the .rodata block is extern in this unit; same
+// limitation as winItemDisp).
+// NONMATCHING (68.53%): 73 instructions inserted and 54 deleted against the original, plus
+// register colouring (work lands in r22 instead of r31).
+void item_disp(WindowWork* work, f32 x, f32 y) {
+    GXColor white = dat_8041d474;
+    GXColor dark = dat_8041d478;
+    GXColor gray = dat_8041d47c;
+    f32 base = float_100_8041d4e4 + y;
+    f32 f22;
+    f32 f25;
+    f32 f26;
+    s32 count;
+    s32 i;
+
+    if (WW_S32(work, 0x210) == 0) {
+        count = pouchGetHaveItemCnt();
+    } else {
+        count = WW_S16(work, 0x3DA);
+    }
+
+    GXSetScissor(0, 0x6D, 0x260, 0xC0);
+
+    for (i = 0; i < count; i++) {
+        s32 item;
+        s32 half = i / 2;
+        s32 parity = i % 2;
+        s32 colored;
+        s32 grayFlag;
+
+        if (WW_S32(work, 0x210) == 0) {
+            item = pouchHaveItem(i);
+        } else {
+            item = *(s16*)((u8*)work + i * 2 + 0x2E8);
+        }
+        f25 = *(f32*)((u8*)work + WW_S32(work, 0x210) * 4 + 0x224);
+
+        colored = (WW_S32(work, 0x210) != 0) || (itemDataTable[item].usable_locations & 4);
+        f26 = base - (f32)(half * 0x26);
+        grayFlag = (colored == 0);
+        f22 = f25 + (float_20_8041d4e8 + (f26 - float_10_8041d4ec));
+        if (f22 > float_240_8041d4f0) {
+            continue;
+        }
+        if (f22 < float_neg240_8041d4f4) {
+            break;
+        }
+
+        if (grayFlag) {
+            winIconGrayInit();
+        } else {
+            winIconInit();
+        }
+
+        {
+            GXColor iconColor = white;
+            Vec translate = vec3_802f52d0;
+            Vec scale;
+#ifdef MUST_MATCH
+            // The original calls winIconSet with by-value Vecs (one copy per struct);
+            // the shared header declares Vec* (see report), so copy them here to match.
+            Vec tcopy;
+            Vec scopy;
+#endif
+
+            if (WW_S32(work, 0x210) == 0) {
+                scale = vec3_802f52dc;
+            } else {
+                scale = vec3_802f52e8;
+            }
+
+            translate.x = (x - float_125_8041d4f8) + (f32)(parity * 0xCC);
+            translate.y = f22;
+#ifdef MUST_MATCH
+            tcopy = translate;
+            scopy = scale;
+            winIconSet(*(u16*)&itemDataTable[item].icon_id, &tcopy, &scopy, &iconColor);
+#else
+            winIconSet(*(u16*)&itemDataTable[item].icon_id, &translate, &scale, &iconColor);
+#endif
+        }
+        winFontInit();
+        {
+            GXColor color = grayFlag ? gray : dark;
+            Vec translate = vec3_802f52f4;
+            Vec scale = vec3_802f5300;
+
+            translate.x = (x - float_105_8041d4fc) + (f32)(parity * 0xCC);
+            translate.y = f25 + (float_20_8041d4e8 + f26);
+            winFontSetPitch(&translate, &scale, &color, float_20_8041d4e8,
+                            msgSearch(itemDataTable[item].name));
+        }
+    }
+
+    GXSetScissor(0, 0, 0x260, 0x1E0);
+
+    {
+        if (WW_S32(work, 0x21C + WW_S32(work, 0x210) * 4) > 0) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            f22 = float_250_8041d500 + x;
+            {
+                Vec translate = vec3_802f530c;
+                Vec scale = vec3_802f5318;
+
+                translate.x = f22;
+                translate.y = float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y));
+                winTexSet(0x17, translate, scale, white);
+            }
+            winIconInit();
+            {
+                Vec translate = vec3_802f5324;
+                Vec scale = vec3_802f5330;
+#ifdef MUST_MATCH
+                Vec tcopy;
+                Vec scopy;
+#endif
+
+                translate.x = f22;
+                translate.y = float_20_8041d4e8 + (float_113_8041d50c + y);
+#ifdef MUST_MATCH
+                tcopy = translate;
+                scopy = scale;
+                winIconSet(0x7E, &tcopy, &scopy, &white);
+#else
+                winIconSet(0x7E, &translate, &scale, &white);
+#endif
+            }
+        }
+        if (count > WW_S32(work, 0x21C + WW_S32(work, 0x210) * 4) * 10 + 10) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            f22 = float_250_8041d500 + x;
+            {
+                Vec translate = vec3_802f533c;
+                Vec scale = vec3_802f5348;
+
+                translate.x = f22;
+                translate.y = float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514);
+                winTexSet(0x17, translate, scale, white);
+            }
+            winIconInit();
+            {
+                Vec translate = vec3_802f5354;
+                Vec scale = vec3_802f5360;
+#ifdef MUST_MATCH
+                Vec tcopy;
+                Vec scopy;
+#endif
+
+                translate.x = f22;
+                translate.y = float_20_8041d4e8 + (y - float_90_8041d510);
+#ifdef MUST_MATCH
+                tcopy = translate;
+                scopy = scale;
+                winIconSet(0x80, &tcopy, &scopy, &white);
+#else
+                winIconSet(0x80, &translate, &scale, &white);
+#endif
+            }
+        }
+    }
+
+    {
+        const char* msg = msgSearch(str_802F55F4);
+        f32 w = float_0p7_8041d518 * (f32)FontGetMessageWidth(msg);
+
+        winFontInit();
+        f22 = x + (float_220_8041d51c - w);
+        {
+            Vec translate = vec3_802f536c;
+            Vec scale = vec3_802f5378;
+
+            translate.x = f22;
+            translate.y = float_20_8041d4e8 + ((y - float_92_8041d520) - float_10_8041d4ec);
+            winFontSet(&translate, &scale, &dark, msgSearch(str_802F55F4));
+        }
+        winIconInit();
+        {
+            Vec translate = vec3_802f5384;
+            Vec scale = vec3_802f5390;
+#ifdef MUST_MATCH
+            Vec tcopy;
+            Vec scopy;
+#endif
+
+            translate.x = f22 - float_30_8041d524;
+            translate.y = float_20_8041d4e8 + ((y - float_100_8041d4e4) - float_10_8041d4ec);
+#ifdef MUST_MATCH
+            tcopy = translate;
+            scopy = scale;
+            winIconSet(0x217, &tcopy, &scopy, &white);
+#else
+            winIconSet(0x217, &translate, &scale, &white);
+#endif
+        }
+    }
+
+    if (WW_F32(work, 0x234) < float_320_8041d528 && WW_F32(work, 0x23C) > float_neg240_8041d4f4) {
+        winBookGX(work, 0);
+    }
 }
 
 void winItemExit(WindowWork* work) {

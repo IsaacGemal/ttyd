@@ -312,8 +312,11 @@ typedef struct EffectMayaAnimData {
 } EffectMayaAnimData;
 
 typedef struct EffectMayaAnim {
-	u8 field_0x0[0x10]; // 0x0
-	void* animData;     // 0x10
+	u16 flags;         // 0x0
+	u8 field_0x2[0x2]; // 0x2
+	f32 field_0x4;     // 0x4
+	OSTime startTime;  // 0x8
+	void* animData;    // 0x10
 } EffectMayaAnim;
 
 void* effMayaAnimAlloc(void* animData) {
@@ -327,4 +330,12 @@ void* effMayaAnimAlloc(void* animData) {
 
 void effDeleteMayaAnim(void* anim) {
 	__memFree(HEAP_EFFECT, anim);
+}
+
+void effPlayMayaAnim(void* animPtr) {
+	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
+
+	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
+	anim->field_0x4 = 0.0f;
+	anim->flags |= 1;
 }

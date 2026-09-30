@@ -1,8 +1,14 @@
 #include "eff/eff_syuryou.h"
+#include "driver/animdrv.h"
+#include "driver/camdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
 
+#include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+
+// Full white with a zero alpha, replaced by the effect's colour below.
+const u32 dat_804222f8 = 0xFFFFFF00;
 
 /* Full work data for the syuryou effect. Its first fields (type/position/scale)
    line up with EffSyuryouData in the header, which las_28.c reads. */
@@ -42,4 +48,32 @@ EffectEntry* effSyuryouEntry(s32 type, s32 duration, f32 x, f32 y, f32 z) {
 	data->color = 0xFF;
 	data->poseId = -1;
 	return effect;
+}
+
+static inline void syuryouSetColor(SyuryouData* data) {
+	GXColor color = *(GXColor*)&dat_804222f8;
+	color.a = data->color;
+	animPoseSetMaterialEvtColor(data->poseId, color);
+}
+
+void effSyuryouDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	SyuryouData* data = effect->userdata;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+
+	if (data->poseId != -1) {
+		PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
+		PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
+		PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+		PSMTXConcat(mtx, rotMtx, mtx);
+		PSMTXConcat(mtx, scaleMtx, mtx);
+		animPoseSetMaterialFlagOn(data->poseId, 0x40);
+		syuryouSetColor(data);
+		animPoseMain(data->poseId);
+		animPoseDrawMtx(data->poseId, mtx, 1, 0.0f, 10.0f);
+		animPoseDrawMtx(data->poseId, mtx, 2, 0.0f, 10.0f);
+		animPoseDrawMtx(data->poseId, mtx, 3, 0.0f, 10.0f);
+	}
 }

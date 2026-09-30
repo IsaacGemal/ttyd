@@ -1,4 +1,5 @@
 #include "eff/n64/eff_sweat_n64.h"
+#include "matching.h"
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "memory.h"
@@ -20,6 +21,12 @@ extern const f32 float_deg2rad_8041ffac;
 extern const f32 float_0_8041ffbc;
 extern const f32 float_neg1_8041ffb8;
 extern const f32 float_16_8041ffd8;
+extern const f32 float_9p6_8041ffb0;
+extern const f32 float_6p4_8041ffb4;
+extern const f32 float_0p5_8041ffc0;
+extern const f32 float_4p8_8041ffc4;
+extern const f32 float_1_8041ffc8;
+extern const u32 dat_8041ffa8;
 
 EffectEntry* effSweatN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale, f32 angle) {
 	EffectEntry* effect;
@@ -144,5 +151,98 @@ void effSweatMain(EffectEntry* effect) {
 		effDelete(effect);
 	} else {
 		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effSweatDisp, effect);
+	}
+}
+
+static inline void effSweatSetColor(u8 alpha) {
+	GXColor color = *(GXColor*)&dat_8041ffa8;
+	color.a = alpha;
+	GXSetChanMatColor(4, color);
+}
+
+// NONMATCHING (99.75%): retail reloads float_0/float_1 before every FIFO store. MATCH_F32 forces
+// those reloads (a file-scope volatile would break effSweatN64Entry, which shares float_0) and the
+// direct GXWGFifo.f32 stores keep them at the store; only the -width temp register (f0 vs f2) differs.
+void effSweatDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	effSweatData* data;
+	CameraEntry* camera;
+	GXTexObj tex;
+	Mtx trans;
+	Mtx rot;
+	Mtx view;
+	s32 i;
+	f32 negHeight;
+	f32 x0, x1, y0, y1;
+
+	camera = camGetPtr(camId);
+	data = effect->userdata;
+	PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+	PSMTXRotRad(rot, 'y', float_deg2rad_8041ffac * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXConcat(trans, rot, view);
+	PSMTXConcat(camera->view, view, view);
+
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaIn(0, 7, 5, 4, 7);
+	GXSetCullMode(0);
+	effGetTexObj(0x5D, &tex);
+	GXLoadTexObj(&tex, 0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xD, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+	negHeight = -float_9p6_8041ffb0;
+	for (i = 1, data++; i < effect->count; i++, data++) {
+		if (data->timer != 0) {
+			continue;
+		}
+		effSweatSetColor(data->alpha);
+
+		PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
+		PSMTXRotRad(rot, 'z', float_deg2rad_8041ffac * data->angle);
+		PSMTXConcat(trans, rot, trans);
+		PSMTXConcat(view, trans, trans);
+		GXLoadPosMtxImm(trans, 0);
+		GXSetCurrentMtx(0);
+
+		GXBegin(0x80, 0, 4);
+		x1 = float_6p4_8041ffb4;
+		if (data->angle > float_0_8041ffbc) {
+			x1 = x1 * float_neg1_8041ffb8;
+		}
+		x0 = float_0p5_8041ffc0 * -x1;
+		x1 = x1 * float_0p5_8041ffc0;
+		y1 = float_4p8_8041ffc4;
+		y0 = negHeight * float_0p5_8041ffc0;
+		GXWGFifo.f32 = x0;
+		GXWGFifo.f32 = y1;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = x1;
+		GXWGFifo.f32 = y1;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = x1;
+		GXWGFifo.f32 = y0;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
+		GXWGFifo.f32 = x0;
+		GXWGFifo.f32 = y0;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041ffbc);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041ffc8);
 	}
 }
