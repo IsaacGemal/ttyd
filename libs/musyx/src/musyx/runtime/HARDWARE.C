@@ -249,7 +249,9 @@ u8 hwGetSampleType(u32 voice) { return dspVoice[voice].smp_info.compType; }
 
 u16 hwGetSampleID(u32 voice) { return dspVoice[voice].smp_id; }
 
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
 void* hwGetSampleExtraData(u32 v) { return dspVoice[v].smp_info.extraData; }
+#endif
 
 void hwSetStreamLoopPS(u32 voice, u8 ps) { dspVoice[voice].streamLoopPS = ps; }
 
@@ -538,7 +540,11 @@ void hwSaveSample(void* header, void* data
   u32 len = ((u32*)*((u32*)header))[1] & 0xFFFFFF;
   u8 type = ((u32*)*((u32*)header))[1] >> 0x18;
   len = convert_length(len, type);
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
   *((u32*)data) = (u32)aramStoreData((void*)*((u32*)data), len, aramInfo);
+#else
+  *((u32*)data) = (u32)aramStoreData((void*)*((u32*)data), len);
+#endif
 #endif
 }
 
@@ -560,7 +566,11 @@ void hwRemoveSample(void* header, void* data
   u8 type = (((u32*)header))[1] >> 0x18;
   u32 len = convert_length((((u32*)header))[1] & 0xFFFFFF, type);
 #endif
+#if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
   aramRemoveData(data, len, aramInfo);
+#else
+  aramRemoveData(data, len);
+#endif
 }
 
 void hwSyncSampleMem() { aramSyncTransferQueue(); }
