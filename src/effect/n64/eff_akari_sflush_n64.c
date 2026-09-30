@@ -114,19 +114,38 @@ void effAkariSflushMain(EffectEntry* effect) {
 #endif
 }
 
-// The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each inner
-// iteration (pool entries float_1_8041e914 / float_30_8041e918 / float_0_8041e91c); referencing the named
-// externs instead makes mwcc hoist them into callee-saved FPRs and shifts every other constant's register.
-// The only remaining differences are (1) the first GXSetTevColor colour is built at r1+0x10 and copied to the
-// outgoing slot at r1+0xc (original: local r1+0xc, arg r1+0x10; the mwcc quirk also in eff_akari_pose_n64.c /
-// eff_confetti_n64.c), and (2) the four 1.0f/30.0f/0.0f pool loads get local labels @212-@214 instead of the
-// named .sdata2 symbols (same class as eff_confetti_n64.c's @194). Every other instruction, GPR and FPR matches.
-// NONMATCHING (99.97%): the GXColor stack-slot direction and the @212-@214 pool labels above.
+// effAkariSflushDisp: the TEV colour build is routed through two inlines, one per GXSetTevColor.  A plain
+// `color = <global>; color.r = ...; GXSetTevColor(1, color);` puts mwcc's colour local at the higher
+// stack slot and the by-value copy at the lower one (target: local r1+0xc, first copy r1+0x10, second
+// call's copy r1+0x8).  Two helpers that each build a local and make the call put all three slots where
+// the original has them (the same shape as effPikkyoloDisp).  MUST_MATCH only: a codegen shape, with the
+// plain build under #else.
+//
+// The 1.0f/30.0f/0.0f arguments stay as literals: the original rematerialises them from the pool each
+// inner iteration (pool entries float_1_8041e914 / float_30_8041e918 / float_0_8041e91c); referencing
+// the named externs makes mwcc hoist them into callee-saved FPRs and shifts every other constant's
+// register.  The literals get anonymous .sdata2 labels (@227-@229), which objdiff scores as equal to
+// the named symbols, so the function is 100%.
+#ifdef MUST_MATCH
+static inline void effAkariSflushColor1(s32 r, s32 g, s32 b, s32 a) {
+	GXColor c = unk_804230a0;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	GXSetTevColor(1, c);
+}
+
+static inline void effAkariSflushColor2(void) {
+	GXColor c = dat_8041e900;
+	GXSetTevColor(2, c);
+}
+#endif
+
 void effAkariSflushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	EffAkariSflushData* data;
 	CameraEntry* cam;
-	GXColor color;
 	Mtx mtx;
 	Mtx scaleMtx;
 	Mtx rotMtx;
@@ -138,6 +157,11 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	s32 alpha;
 	s32 j;
 	f32 scaleVal;
+#ifdef MUST_MATCH
+	/* colours are built inside the MUST_MATCH inlines above */
+#else
+	GXColor color;
+#endif
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -165,14 +189,18 @@ void effAkariSflushDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(1, 7, 7, 7, 0);
 	GXSetNumTexGens(0);
 
+#ifdef MUST_MATCH
+	effAkariSflushColor1(data->field_0x18, data->field_0x1C, data->field_0x20, alpha);
+	effAkariSflushColor2();
+#else
 	color = unk_804230a0;
 	color.r = data->field_0x18;
 	color.g = data->field_0x1C;
 	color.b = data->field_0x20;
 	color.a = alpha;
 	GXSetTevColor(1, color);
-
 	GXSetTevColor(2, dat_8041e900);
+#endif
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);

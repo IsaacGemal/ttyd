@@ -160,9 +160,8 @@ static inline void effSweatSetColor(u8 alpha) {
 	GXSetChanMatColor(4, color);
 }
 
-// NONMATCHING (99.75%): retail reloads float_0/float_1 before every FIFO store. MATCH_F32 forces
-// those reloads (a file-scope volatile would break effSweatN64Entry, which shares float_0) and the
-// direct GXWGFifo.f32 stores keep them at the store; only the -width temp register (f0 vs f2) differs.
+// MATCH_F32 forces float_0/float_1 to reload before every FIFO store (a file-scope volatile would
+// break effSweatN64Entry, which shares float_0).
 void effSweatDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effSweatData* data;
@@ -173,7 +172,8 @@ void effSweatDisp(CameraId camId, void* param) {
 	Mtx view;
 	s32 i;
 	f32 negHeight;
-	f32 x0, x1, y0, y1;
+	// Declaration order is part of the match: y1 first makes MWCC pin it to f1 and shift the rest.
+	f32 y1, x0, x1, y0;
 
 	camera = camGetPtr(camId);
 	data = effect->userdata;
@@ -220,8 +220,17 @@ void effSweatDisp(CameraId camId, void* param) {
 		if (data->angle > float_0_8041ffbc) {
 			x1 = x1 * float_neg1_8041ffb8;
 		}
+#ifdef MUST_MATCH
+		// Splitting the negate from the scaling lets MWCC coalesce it into x0's register, as retail
+		// does; the natural single expression gets a separate temp. y1 is declared before x0 for the
+		// same reason (its live range pins f1). Same values as the #else form.
+		x0 = -x1;
+		x1 = x1 * float_0p5_8041ffc0;
+		x0 = x0 * float_0p5_8041ffc0;
+#else
 		x0 = float_0p5_8041ffc0 * -x1;
 		x1 = x1 * float_0p5_8041ffc0;
+#endif
 		y1 = float_4p8_8041ffc4;
 		y0 = negHeight * float_0p5_8041ffc0;
 		GXWGFifo.f32 = x0;

@@ -2544,3 +2544,16 @@ After this wave the cheap dol pool is 16 small functions; 75 dol files have only
 - kemuri7 `effKemuri7Disp`: `if (data->field_0x60 == 0.0f)` with the pool constant loaded before the field needs
   `{ f32 z = 0.0f; if (data->field_0x60 == z) ... }` under MUST_MATCH once the constant is a literal; with `pool_define` the
   code is unchanged and none of it is needed.
+
+## Wave 28: near-misses, one per file (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
+
+Instead of untouched functions, each agent got one file's closest near-miss (90-99%), 37 of them the only open
+function left in their unit, with the brief's new "Code shapes that fixed near-misses" section, the file as it was in
+./orig_file.c and the rule "never lower its score". Sandboxed, no network, 01:23-02:40, from main da08abe; all 48
+merged cleanly. **29 of 48 reached 100%, 8 improved, 11 unchanged, 0 worse; 21 units are now code-complete.** The best
+result per agent of any wave: finishing near-misses with the idiom pack beats starting large untouched functions.
+Fixed at collection: eff_mist2's .sbss2 scratch lost its definition (restored with the eff_queen2 section idiom),
+party_bomhei and evt_nannpc named constants where main's literals pool correctly. eff_hibashira's .rodata score
+drops 95.82 -> 94.12 only because effHibashiraMain's zero Vec is now an anonymous literal: the bytes match the
+original's, and main already carries the extra 2^52 double at the end.
+The wave also fixed three bugs on main: evt_npc's moveFlags read args[10], win_main's TEVREG1 colour had its bytes in the wrong order, and evt_telop wrote .b instead of .a.

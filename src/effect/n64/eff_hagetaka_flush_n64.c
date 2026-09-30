@@ -31,9 +31,10 @@ static u32 size16x16_tex64x64_vtx[0x38 / 4] = {
 };
 
 // Inlined in the original; the helper scope reproduces the stack slot the compiler
-// picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC).
-static inline void hagetakaFlushSetColor(effHagetakaFlushData* data, s32 alpha) {
-	s32 idx = data->field_0x14 * 3 % 24;
+// picks for the by-value GXColor copy (local at 0x8, outgoing copy at 0xC). Its index
+// argument is computed with `%=` in the caller (as in eff_wangflush_n64.c) so the
+// remainder reuses the dividend register r7.
+static inline void hagetakaFlushSetColor(s32 idx, s32 alpha) {
 	GXColor color = unk_80423130;
 
 	color.r = color_rotation_data[idx];
@@ -116,8 +117,9 @@ void effHagetakaFlushMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (99.91%): the color-index modulo's remainder lands in r0 instead of r7
-// (`subf r0,r0,r7` + the following `add`/`lbzx` index), so three instructions differ.
+// The color index is computed here with `%=` rather than `% 24` at the call site:
+// the in-place form makes the remainder reuse the dividend register (r7), matching
+// the original's subf/add/lbzx.
 void effHagetakaFlushDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effHagetakaFlushData* data;
@@ -128,6 +130,7 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	Mtx mtxRot;
 	f32 scale;
 	s32 alpha;
+	s32 idx;
 
 	cam = camGetPtr(camId);
 	data = effect->userdata;
@@ -156,7 +159,13 @@ void effHagetakaFlushDisp(CameraId camId, void* param) {
 	effGetTexObjN64(0x1c, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
-	hagetakaFlushSetColor(data, alpha);
+	idx = data->field_0x14 * 3;
+#ifdef MUST_MATCH
+	idx %= 24;
+#else
+	idx = idx % 24;
+#endif
+	hagetakaFlushSetColor(idx, alpha);
 
 	GXSetCullMode(0);
 	effSetVtxDescN64((effVtxArray*)size16x16_tex64x64_vtx);

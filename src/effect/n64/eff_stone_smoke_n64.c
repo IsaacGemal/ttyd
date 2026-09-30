@@ -117,19 +117,38 @@ void effStoneSmokeMain(EffectEntry* effect) {
 #endif
 }
 
-// The only difference is the stack-slot layout of the two by-value GXColor arguments to
-// GXSetTevColor. The target interleaves each colour's local with its by-value copy
-// (0x8/0xc and 0x10/0x14); this build groups the locals (0x10/0x14) and the copies
-// (0x8/0xc) separately. Known mwcc quirk, also seen in eff_confetti_n64.c and
-// eff_release_n64.c.
-// NONMATCHING (99.90%): GXColor by-value stack-slot layout differs.
+#ifdef MUST_MATCH
+static inline void effStoneSmokeSetColor0(effStoneSmokeN64Data* data, s32 alpha) {
+	GXColor c = unk_80423288;
+	c.r = data->field_0x18;
+	c.g = data->field_0x1C;
+	c.b = data->field_0x20;
+	c.a = alpha;
+	GXSetTevColor(GX_TEVREG0, c);
+}
+static inline void effStoneSmokeSetColor1(effStoneSmokeN64Data* data) {
+	GXColor c = unk_8042328c;
+	c.r = data->field_0x28;
+	c.g = data->field_0x2C;
+	c.b = data->field_0x30;
+	GXSetTevColor(GX_TEVREG1, c);
+}
+#endif
+
+// Building each TEV colour and calling GXSetTevColor inside the same inline makes mwcc
+// allocate that colour's build slot and its by-value argument copy together
+// (0x8/0xc for colour1, 0x10/0x14 for colour0), as retail does. Building both colours
+// first and calling GXSetTevColor afterwards groups the build slots and the copies
+// (the old 99.90% layout). Two separate inlines, one per colour, are needed.
 void effStoneSmokeDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStoneSmokeN64Data* data;
 	CameraEntry* cam;
 	GXTexObj texObj;
+#ifndef MUST_MATCH
 	GXColor color0;
 	GXColor color1;
+#endif
 	Mtx mtx;
 	Mtx scaleMtx;
 	s32 alpha;
@@ -145,6 +164,10 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	PSMTXConcat(cam->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+	effStoneSmokeSetColor0(data, alpha);
+	effStoneSmokeSetColor1(data);
+#else
 	color0 = unk_80423288;
 	color0.r = data->field_0x18;
 	color0.g = data->field_0x1C;
@@ -156,6 +179,7 @@ void effStoneSmokeDisp(CameraId camId, void* param) {
 	color1.g = data->field_0x2C;
 	color1.b = data->field_0x30;
 	GXSetTevColor(GX_TEVREG1, color1);
+#endif
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);

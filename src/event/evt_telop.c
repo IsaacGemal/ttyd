@@ -11,14 +11,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-// .rodata / .sdata2 constants this translation unit owns (named by their original address).
-extern const char str_802FA0CC[];
+// .sdata2 constants this translation unit owns (named by their original address).
 extern const GXColor dat_8041e7b8;
 extern const GXColor dat_8041e7bc;
 extern const GXColor dat_8041e7c0;
-extern const GXColorS10 zero_802fa0c4;
 #ifdef MUST_MATCH
-// volatile: telop scores higher with it (95.5% vs 91.9%); see telop's comment.
+// volatile: the quad loop reloads the FP constants; non-volatile scored 92% vs 99.6%.
 extern const volatile f32 float_0_8041e7c4;
 extern const volatile f32 float_0p2_8041e7c8;
 extern const volatile f32 float_1_8041e7cc;
@@ -35,7 +33,6 @@ extern const f32 float_24_8041e7e0;
 extern const f32 float_neg256_8041e7e4;
 extern const f32 float_256_8041e7e8;
 extern const f32 float_300_8041e7ec;
-const f64 double_to_int_mask_802fa0d8 = 4503599627370496.0;
 
 // The telop's private work. Only the fields this file uses are named.
 typedef struct TelopWork {
@@ -56,14 +53,33 @@ static const char* msg_tbl[] = {
     "menu_monosiri_aji", "menu_monosiri_las",
 };
 
-// All telop logic matches, but:
-// (1) every aggregate local is allocated 4 bytes lower than the original (texObj at 0x24 vs
-//     0x28, the matrices likewise);
-// (2) the int->float conversions use compiler-generated pool constants (@288, @291) where the
-//     original uses double_to_int_mask_802fa0d8 and double_to_int_802fa0e0;
-// (3) float_1_8041e7cc and float_0_8041e7c4 are reloaded where the original reuses a register
-//     (fmr). Declaring them volatile (under MUST_MATCH) gets closer than not.
-// NONMATCHING (95.53%): the three points above.
+// .rodata objects this translation unit owns, after the message strings.
+const GXColorS10 zero_802fa0c4 = { 0, 0, 0, 0 };
+const char str_802FA0CC[] = "\201H\201H\201H";
+
+#ifdef MUST_MATCH
+// Reproduce the original's by-value struct temporaries (local below, copy above).
+static inline GXColor telopMakeColor(u8 a) {
+    GXColor c = dat_8041e7c0;
+    c.a = a;
+    return c;
+}
+
+static inline GXColorS10 telopMakeColorS10(s16 a) {
+    GXColorS10 c = zero_802fa0c4;
+    c.a = a;
+    return c;
+}
+#endif
+
+// (1) the by-value GXColor temporaries in the quad loop and for FontDrawColor land in
+//     different stack slots (loop temps 0x10/0xc vs 0x14/0x10, colour copy 0x14 vs 0xc);
+// (2) the ratio's int->float mask and the "width - 100" subtraction come out in
+//     swapped FP registers (f1/f2) and the branch is `blt` to the join where the original
+//     emits `bge` to the body plus a `b` over it;
+// (3) the font PSMTXTrans y/scale expression keeps 0.5 in f6 and msgWidth in f5, the
+//     original the other way round.
+// NONMATCHING (99.62%): the three points above.
 void telop(CameraId cameraId, void* param) {
     CameraEntry* cam = camGetPtr(cameraId);
     GXColor color;
@@ -79,6 +95,7 @@ void telop(CameraId cameraId, void* param) {
     f32 scale;
     s32 y;
     s32 i;
+    s32 alpha;
 
     effGetTexObj(0x81, &texObj);
     width = (f32)GXGetTexObjWidth(&texObj);
@@ -99,7 +116,14 @@ void telop(CameraId cameraId, void* param) {
 
         PSMTXTrans(texTrans, tx, ty, float_0_8041e7c4);
     }
+#ifdef MUST_MATCH
+    {
+        f32 s = float_0p2_8041e7c8;
+        PSMTXScale(texScale, s, s, float_1_8041e7cc);
+    }
+#else
     PSMTXScale(texScale, float_0p2_8041e7c8, float_0p2_8041e7c8, float_1_8041e7cc);
+#endif
     PSMTXConcat(texTrans, texScale, texTrans);
     GXLoadTexMtxImm(texTrans, GX_TEXMTX0, GX_MTX2x4);
 
@@ -120,14 +144,25 @@ void telop(CameraId cameraId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_C1, GX_CC_ZERO);
     GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_A1, GX_CA_ZERO);
 
+#ifdef MUST_MATCH
+    GXSetTevColorS10(GX_TEVREG0, telopMakeColorS10(wp->alpha));
+#else
     colorS10 = zero_802fa0c4;
-    colorS10.b = wp->alpha;
+    colorS10.a = wp->alpha;
     GXSetTevColorS10(GX_TEVREG0, colorS10);
+#endif
 
     effGetTexObj(0x81, &texObj);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     effGetTexObj(0x80, &texObj);
+#ifdef MUST_MATCH
+    {
+        f32 z = float_0_8041e7c4;
+        GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, z, z, z, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    }
+#else
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, float_0_8041e7c4, float_0_8041e7c4, float_0_8041e7c4, GX_FALSE, GX_FALSE, GX_ANISO_1);
+#endif
     GXLoadTexObj(&texObj, GX_TEXMAP1);
 
     GXSetCullMode(GX_CULL_NONE);
@@ -174,25 +209,32 @@ void telop(CameraId cameraId, void* param) {
 
     {
         u16 msgWidth = FontGetMessageWidth(msg);
-        s32 alpha;
 
         scale = float_1_8041e7cc;
+#ifdef MUST_MATCH
+        if ((u32)gp->language != 0) {
+            if (!((f32)msgWidth / (width - float_100_8041e7d8) < scale)) {
+#else
         if (gp->language != 0) {
-            if ((f32)msgWidth / (width - float_100_8041e7d8) >= float_1_8041e7cc) {
+            if ((f32)msgWidth / (width - float_100_8041e7d8) >= scale) {
+#endif
                 scale = (width - float_100_8041e7d8) / (f32)msgWidth;
             }
         }
 
-        if (wp->alpha < 0) {
+        alpha = wp->alpha;
+        if (alpha < 0) {
             alpha = 0;
-        } else if (wp->alpha > 0xFF) {
-            alpha = 0xFF;
         } else {
-            alpha = wp->alpha;
+            alpha = alpha > 0xFF ? 0xFF : alpha;
         }
         FontDrawStart();
+#ifdef MUST_MATCH
+        color = telopMakeColor(alpha);
+#else
         color = dat_8041e7c0;
         color.a = alpha;
+#endif
         FontDrawColor(&color);
 
         msgWidth = FontGetMessageWidth(msg);
@@ -200,7 +242,14 @@ void telop(CameraId cameraId, void* param) {
                    (width - scale * (f32)msgWidth) * float_0p5_8041e7dc + float_neg15_8041e7d0,
                    float_neg105_8041e7d4 - (height - float_24_8041e7e0) * float_0p5_8041e7dc,
                    float_0_8041e7c4);
+#ifdef MUST_MATCH
+        {
+            f32 one = float_1_8041e7cc;
+            PSMTXScale(fontScale, scale, one, one);
+        }
+#else
         PSMTXScale(fontScale, scale, float_1_8041e7cc, float_1_8041e7cc);
+#endif
         PSMTXConcat(fontTrans, fontScale, fontTrans);
         FontDrawStringMtx(fontTrans, msg);
     }

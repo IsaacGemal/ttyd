@@ -111,9 +111,15 @@ static inline GXColor effIndirectMatColor(u8 alpha) {
 	return color;
 }
 
-// NONMATCHING (96.62%): body, constants and control flow match. The FP register allocator assigns the
-// quad's half/16/0.0 temporaries f5/f2/f1 and holds 0.0 in a register, where the original uses f2/f1/f0 and
-// rematerialises 0.0 (6 extra lfs). Everything else, including the GXColor temp at r1+8/0xC, matches.
+// The original rematerialises the vertex 0.0 pool entry before every store. Naming the extern lets MWCC CSE
+// it into one FPR, which shifts the whole quad's FPR allocation; the anonymous literal keeps the per-store
+// loads (same pool entry, and it does not lower the unit's data score).
+#ifdef MUST_MATCH
+#define IND_VERT_ZERO 0.0f
+#else
+#define IND_VERT_ZERO float_0_804222ec
+#endif
+
 void effIndirectDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	IndirectData* data = effect->userdata;
@@ -127,9 +133,10 @@ void effIndirectDisp(CameraId camId, void* param) {
 	s32 type;
 	u8 alpha;
 	void* image;
+	// half must be declared before u/v so MWCC assigns it f2 (target: half f2, u f3, v f4).
+	f32 half;
 	f32 u;
 	f32 v;
-	f32 half;
 
 	cam = camGetPtr(CAMERA_2D);
 	type = data->type;
@@ -210,12 +217,12 @@ void effIndirectDisp(CameraId camId, void* param) {
 #else
 	half = -float_32_804222e4 * float_0p5_804222d0;
 #endif
-	GXPosition3f32(half, float_16_804222e8, float_0_804222ec);
-	GXTexCoord2f32(float_0_804222ec, float_0_804222ec);
-	GXPosition3f32(float_16_804222e8, float_16_804222e8, float_0_804222ec);
-	GXTexCoord2f32(u, float_0_804222ec);
-	GXPosition3f32(float_16_804222e8, half, float_0_804222ec);
+	GXPosition3f32(half, float_16_804222e8, IND_VERT_ZERO);
+	GXTexCoord2f32(IND_VERT_ZERO, IND_VERT_ZERO);
+	GXPosition3f32(float_16_804222e8, float_16_804222e8, IND_VERT_ZERO);
+	GXTexCoord2f32(u, IND_VERT_ZERO);
+	GXPosition3f32(float_16_804222e8, half, IND_VERT_ZERO);
 	GXTexCoord2f32(u, v);
-	GXPosition3f32(half, half, float_0_804222ec);
-	GXTexCoord2f32(float_0_804222ec, v);
+	GXPosition3f32(half, half, IND_VERT_ZERO);
+	GXTexCoord2f32(IND_VERT_ZERO, v);
 }
