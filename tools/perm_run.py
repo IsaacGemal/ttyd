@@ -14,7 +14,8 @@ One line per finished run goes to the log, tab separated:
   ISO-time  unit  func  base_score  best_score  runtime_s  exit_reason
 exit_reason is one of: zero (score 0 reached), finished (permuter ended by itself), timeout, killed-overdue, load, disk,
 prepare-failed, permuter-error, interrupted. best_score is the lowest `output-SCORE-N` directory (none: `-`).
-Wins are in PERM_ROOT/inputs/UNIT__FUNC/output-*/source.c; nothing is applied to the repo."""
+Wins are in PERM_ROOT/inputs/UNIT__FUNC/output-*/source.c; nothing is applied to the repo.
+A file base.c.manual in the input directory replaces the generated base.c after each prepare (manual PERM_* macros)."""
 import argparse
 import atexit
 import glob
@@ -110,6 +111,9 @@ def launch(unit, func):
     if p.returncode:
         log(r, "prepare-failed")
         return
+    manual = os.path.join(d, "base.c.manual")
+    if os.path.exists(manual):  # a hand-edited base.c (PERM_GENERAL macros) survives the re-prepare
+        shutil.copy(manual, os.path.join(d, "base.c"))
     for old in glob.glob(os.path.join(d, "output-*")):
         shutil.rmtree(old, ignore_errors=True)
     out = open(os.path.join(d, "run.out"), "w")
