@@ -69,7 +69,8 @@ if FINAL:
     if REL:
         # a REL unit is done when it links: its object equals the original and the REL's checksum passes
         link = subprocess.run(["python3", "tools/rel_link.py", unit_path], capture_output=True, text=True)
-        linked = link.stdout.strip()
+        linked = link.stdout.strip() if link.returncode == 0 else ("NOT LINKED: tools/rel_link.py failed (exit "
+                  f"{link.returncode})\n" + (link.stdout + link.stderr).strip()[-2000:])
     lint = subprocess.run(["python3", "tools/lint_patch.py", src, base], capture_output=True, text=True)
     fns = u.get("functions", [])
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)

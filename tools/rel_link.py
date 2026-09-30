@@ -4,7 +4,10 @@
     python3 tools/rel_link.py MOD/UNIT     e.g. gor/gor_12 or aji/unit/unit_barriern
 Prints LINKED (and leaves the unit Matching in configure.py) or NOT LINKED with what differs (and leaves the unit as it
 was before the check)."""
-import json, re, subprocess, sys
+import json, re, signal, subprocess, sys
+
+# a kill (SIGTERM) must go through the same cleanup as an exception or Ctrl-C
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
 
 mod, unit = sys.argv[1].split("/", 1)
 name = f'"{unit}.c"'
