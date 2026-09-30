@@ -863,7 +863,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "sdk/arc.c"),
-            Object(NonMatching, "sdk/DEMOInit.c"),
+            Object(Matching, "sdk/DEMOInit.c"),
             Object(NonMatching, "sdk/DEMOPad.c"),
             Object(Matching, "sdk/texPalette.c"),
         ],
