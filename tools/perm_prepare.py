@@ -30,7 +30,9 @@ if not m:
 cflags = re.sub(r"\s+", " ", re.sub(r"\$\n\s*", "", m.group(1))).strip()
 toks = [t for t in shlex.split(cflags) if t != "-MMD"]
 pre = subprocess.run(["build/tools/wibo", "build/tools/sjiswrap.exe", "build/compilers/GC/2.6/mwcceppc.exe", *toks, "-E",
-                      os.path.join("src", unit + ".c")], capture_output=True, text=True, cwd=ROOT)
+                      os.path.join("src", unit + ".c")], capture_output=True, cwd=ROOT)
+pre.stdout = pre.stdout.decode("utf-8", errors="replace")  # Shift-JIS string literals: the code is what is scored
+pre.stderr = pre.stderr.decode("utf-8", errors="replace")
 if pre.returncode:
     sys.exit("mwcc -E failed:\n" + (pre.stdout + pre.stderr)[-2000:])
 text = re.sub(r"__declspec\s*\((?:[^()]|\([^()]*\))*\)", "", pre.stdout)  # the parser cannot read it; it only places data

@@ -15,13 +15,18 @@ s16 IconBinEntry[6][numEntries] (?, width override? height override? numImages, 
 
 #define numBinEntries 0x218
 
+typedef struct IconFrame {
+    u16 tplId;      // for tpl lookup
+    u16 frameDelay; // if animated, number of frames until next
+} IconFrame;
+
+// An 8-byte header followed by numIcons packed frames (frames[0] doubles as the plain icon's tplId/frameDelay).
 typedef struct IconBinaryEntry {
-    u16 type;       // 0x0, 1 if animated
-    u16 width;      // 0x2, overrides tpl size
-    u16 height;     // 0x4, overrides tpl size
-    u16 numIcons;   // 0x6, for simple anims like button press
-    u16 tplId;      // 0x8, for tpl lookup
-    u16 frameDelay; // 0xA, if animated, number of frames until next
+    u16 type;         // 0x0, 1 if animated
+    u16 width;        // 0x2, overrides tpl size
+    u16 height;       // 0x4, overrides tpl size
+    u16 numIcons;     // 0x6, for simple anims like button press
+    IconFrame frames[1]; // 0x8
 } IconBinaryEntry;
 
 typedef struct IconBinary {

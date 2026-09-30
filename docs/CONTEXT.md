@@ -2858,6 +2858,15 @@ Linked `eff_whirlwind_n64`, `eff_butterfly_n64`, `eff_fire_spark_n64`, `eff_rapp
 - The ratchet compares per-symbol data: `eff_whirlwind_n64` matched_data 91.18 -> 16.18 because its named string/double/colors became compiler-pooled; the unit is byte-exact and linked.
 - Near-misses that stay open because the pool only matches with a named constant that changes the function (permuter targets, queued on the tower): `eff_magic3_n64` `effMagic3N64Entry` (99.84%, named `float_100`), `eff_peach_dust_n64` `effPeachDustDisp` (99.73%, named 0.7: f2/f4 allocation).
 
+## Grind 36: first permuter wins (2026-09-30, Claude Sonnet 5.5 "TTYD Claude #3")
+
+Tower batch 2 (`~/permuter/runs.log`) found, and these were re-expressed by hand:
+
+- `iconGetTexObj` 97.54 -> 100% (permuter score 0): `IconBinaryEntry` is now modelled as its real layout (8-byte header + `IconFrame frames[]`; `IconFrame` moved to the header), and the natural loops read `data->frames[i]`. Under `MUST_MATCH` the frame table is walked through a local pointer from an inline accessor (`iconFramesOf`, `frames[i + 2]` from the entry start): the permuter's `inline_fn(arg) { return (IconFrame*)arg; }` + `new_var`. The accessor matters (a plain cast or `frames = data->frames` scores 96.65 / 95.38). Macros `ICON_FRAMES_DECL/INIT`, `ICON_FRAME` keep both forms. Same change: `iconDispGx2` 93.48 -> 96.0, `iconDispGxCol` 92.88 -> 95.5, `iconDispGxAlpha` 96.60 -> 98.56.
+- `BattleAudienceCtrlProcessKinopioDamage` 97.50 -> 99.76: the 270.0f constant is loaded into a local before the stores (`f32 angle`, `MUST_MATCH` only; the natural form stores `float_270_8041e170` directly).
+- Not applied: `kpaSwimMove` (220 -> 90) adds a duplicate `f31 = ... * fabs(speed)` statement inside a clamp; it is not natural code.
+- Pitfalls: `perm_prepare` needs the tower's `build.ninja` to be the Mac's (copy it over `~/ttyd-perm/build.ninja`), and `mwcc -E` output holds Shift-JIS bytes (decoded with `errors="replace"`). `prepare-failed` lines in the log mean one of those two. The supervisor stopped once at load 20 (other waves), as designed.
+
 ## Wave 34: REL files outside #87, whole-file finishing (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 The 20 REL files with open functions that #87 didn't touch, one agent per file on all of its open functions
