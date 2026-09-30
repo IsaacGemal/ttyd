@@ -157,28 +157,30 @@ def ratchet(allowed=()):
     # Data sections of units that aren't linked yet: `changes` leaves them out, and a function can reach 100% while
     # the unit's .rodata/.sdata2 gets worse (e.g. a named constant left behind next to the literal that replaced it).
     def sections(report):
-        scores = {}
+        scores, units = {}, set()
         for u in json.loads(report.read_text()).get("units") or []:
             if (u.get("metadata") or {}).get("complete"):
                 continue  # linked: the checksum is the check, and some linked units have imperfect data scores
+            units.add(u["name"])
             seen = {}
             for s in u.get("sections") or []:
                 n = seen[s["name"]] = seen.get(s["name"], 0) + 1
-                if s["name"] != ".text" and s.get("fuzzy_match_percent") is not None:
-                    scores[(u["name"], s["name"] + (f"#{n}" if n > 1 else ""))] = s["fuzzy_match_percent"]
-        return scores
+                if s["name"] != ".text":  # objdiff omits the score when it's 0
+                    scores[(u["name"], s["name"] + (f"#{n}" if n > 1 else ""))] = s.get("fuzzy_match_percent") or 0.0
+        return scores, units
 
-    before = sections(ACCEPTED)
-    for (u, sec), b in sections(current).items():
-        if (u, sec) in before:
-            a = before[(u, sec)]
-            (worse if b < a else better if b > a else []).append((f"{u}[{sec}]", "fuzzy_match_percent", a, b))
+    (before, units_before), (after, units_now) = sections(ACCEPTED), sections(current)
+    for key in before.keys() | after.keys():
+        if key[0] not in units_now or key[0] not in units_before:
+            continue  # unit linked, removed or new: the checksum and the unit measures cover it
+        a, b = before.get(key, 0.0), after.get(key, 0.0)
+        (worse if b < a else better if b > a else []).append((f"{key[0]}[{key[1]}]", "fuzzy_match_percent", a, b))
     if allowed:
         # A name is a function (its fuzzy drop, while below 100%, excuses its unit's and the total's fuzzy drop)
         # or a unit path such as MarioSt/event/evt_eff (any of its measures, and the total's same measure).
         named = [w for w in worse if (w[0].split(":")[-1] in allowed and w[2] < 100) or w[0] in allowed
                  or w[0].split("[")[0] in allowed]
-        units = {n.split(":", 1)[0].split("[")[0] for n, _, _, _ in named}
+        units = {n.split(":", 1)[0] for n, _, _, _ in named if "[" not in n}
         keys = {k for n, k, _, _ in named if ":" not in n and "[" not in n}
         excused = named + [w for w in worse if w not in named and (
             (w[1] == "fuzzy_match_percent" and (w[0] == "TOTAL" or w[0] in units))
