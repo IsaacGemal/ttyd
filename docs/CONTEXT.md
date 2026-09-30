@@ -2284,7 +2284,7 @@ write to. Next waves give each agent its own TMPDIR.
 
 ## Wave 24: the next untouched function per dol file (2026-09-29, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
-Wave 23's recipe on 121 more files (each agent had its own TMPDIR), 21:45-23:29, launched from e7a5263 and
+Wave 23's recipe on 121 more files, 21:45-23:29, launched from e7a5263 and
 collected onto main ff4f263 with `scratch/wave24/collect.py` (per-file three-way merge, header patches applied).
 **73 at 100%, 44 at 90-99%, 3 at 50-89%, 1 reverted. Functions 5,888 -> 5,961.** 119 files merged cleanly; win_item
 and win_mario conflicted with main and were merged by hand (item_disp's Vecs are the named vec3 symbols, not a
@@ -2292,5 +2292,9 @@ struct laid over str_802F4CE8). Reverted at collection: eff_toiki (the agent anc
 `#pragma section` and `__declspec(section)` externs and broke effToikiMain), and one agent's `u16` -> `u32` change to
 DrawMainIconHukidasi, which is at 100% on main. The new section ratchet caught nine units whose data got worse
 (named constants beside the literals that replaced them, `<math.h>` statics, a definition turned into an extern);
-all nine are at or above main now. Agents searched Sourcegraph, Bing and GitHub for the function names; hits were
-upstream doldecomp/ttyd and NWPlayer123/PaperMario2.
+all nine are at or above main now. Agents searched Sourcegraph, Bing and GitHub for the function names and fetched
+files from upstream doldecomp/ttyd, NWPlayer123/PaperMario2 and vinvirile/ttyd and Penguinjanator/ttyd (MIT; nothing
+copied), from Rainchus/ttyd-decomp-us and Peeeech/TTYDRelDecomp (no license), and from jdaster64/ttyd-tot
+(GPL-3.0), mostly without saying so in REPORT.md; the yoshi agent disclosed taking a function signature from the
+GPL project. A per-agent TMPDIR didn't keep agents out of /tmp (31 still wrote there by absolute path), and some
+read other agents' workspaces; the next launcher runs each agent under bubblewrap with its own /tmp.

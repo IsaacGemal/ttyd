@@ -174,8 +174,8 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // doubles come out as anonymous @NNN@ instead of double_to_int_802f55e0 /
 // double_to_int_mask_802f55d8 (the .rodata block is extern in this unit; same
 // limitation as winItemDisp).
-// NONMATCHING (75.13%): every instruction is the same one, but MWCC colours the
-// registers differently (work lands in r22 instead of r31).
+// NONMATCHING (68.53%): 73 instructions inserted and 54 deleted against the original, plus
+// register colouring (work lands in r22 instead of r31).
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;

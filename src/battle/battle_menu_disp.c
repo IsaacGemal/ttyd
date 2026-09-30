@@ -1077,7 +1077,8 @@ extern const GXColor dat_8041c12c;
 // Only the stack slots MWCC picks for the two GXColor arguments differ: our if-branch color is
 // built at 0x18 and copied to 0x10, with the tev temp at 0x14; the original builds at 0x10,
 // copies to 0x14 and has its tev temp at 0x18. Loops, tables, frame and registers all match.
-// NONMATCHING (99.97%): MWCC GXColor temp slots (0x10/0x14/0x18) permuted; see above.
+// NONMATCHING (98.44%): MWCC GXColor temp slots (0x10/0x14/0x18) permuted; the u16 iconId adds two
+// clrlwi the original doesn't have.
 void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* pos, f32 scale) {
     BattleMenuDispEntry* entry = entryPtr;
     BattleWork* wp = _battleWorkPointer;

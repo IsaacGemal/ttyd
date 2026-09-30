@@ -36,16 +36,14 @@ GXColor dat_80421a24 = { 0x2b, 0xa4, 0xff, 0x00 };
 // .sdata2
 // GXColor dat_80421a28..dat_80421a60 are used by select_disp_party / select_disp_mario (not written yet).
 // Defined here only as far as select_disp_luigi needs them.
-GXColor dat_80421a64 = { 0xFF, 0x00, 0x00, 0x00 };
-GXColor dat_80421a68 = { 0xFF, 0xA0, 0xA0, 0xA0 };
-GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
-GXColor dat_80421a70 = { 0xFF, 0xFF, 0xFF, 0xFF };
-GXColor dat_80421a74 = { 0xFF, 0xF0, 0xF0, 0xF0 };
+const GXColor dat_80421a64 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80421a68 = { 0xA0, 0xA0, 0xA0, 0xFF };
+const GXColor dat_80421a6c = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a70 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80421a74 = { 0xF0, 0xF0, 0xF0, 0xFF };
 
 // .sdata2
 f32 float_0_80421a80 = 0.0f;
-f32 float_32_80421a84 = 32.0f;
-f32 float_0p5_80421a94 = 0.5f;
 f32 float_1_80421a90 = 1.0f;
 f32 float_28_80421aac = 28.0f;
 f32 float_neg144_80421aa8 = -144.0f;
@@ -187,7 +185,7 @@ char str_804219FC[] = "\x82\x67\x82\x6f";
 char str_80421A04[] = "\x82\x65\x82\x6f";
 char str_80421A0C[] = "\x82\x61\x82\x6f";
 char str_80421A78[] = "help";
-char str_80421A88[] = "%3d";
+const char str_80421A88[] = "%3d";
 
 //.sdata
 static char* party_labelname_table[7] = { str_804219B8, str_804219C0, str_804219C8, str_804219D0, str_804219D8, str_804219E0, str_804219E8 };
@@ -1112,7 +1110,7 @@ void select_disp_luigi(WinMgrEntry* entry) {
         PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx1, mtx2, mtx1);
-        iconDispGxCol(mtx1, 0x10, 0x211, *(GXColor*)&dat_80421a74);
+        iconDispGxCol(mtx1, 0x10, 0x211, dat_80421a74);
         posLuigi = vec3_802ffd08;
         posLuigi.x = (f32)(entry->field_0x18 + 0x10c);
         posLuigi.y = (f32)(entry->field_0x1C - 0xc);

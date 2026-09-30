@@ -8,9 +8,92 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// The two 10-byte-per-entry spiral tables live in .data and are addressed through the
-// shared base symbol lbl_803A33D8 by the original display code.
-extern f32 lbl_803A33D8[];
+// .data
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A33E8[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
+__declspec(section ".data") f32 lbl_803A33F8[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static f32 negone_one_360[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A3408[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_359[2] = { 1.0f, -1.0f };
+// The two spiral tables hold 10-byte effOpukuJetwPoint entries.
+u32 adata[150] = {
+    0x0000001E, 0x008C0000, 0xFF000006, 0x001E0078,
+    0x0000FA00, 0x010C001E, 0x006EFFFB, 0xF0000111,
+    0x00320064, 0xFFECF000, 0x0216003C, 0x005AFFE2,
+    0xF000021A, 0x0046005A, 0xFFD8F000, 0x031C0050,
+    0x0055FFCE, 0xF0000420, 0x005A005A, 0xFFC4F000,
+    0x05230064, 0x0064FFBA, 0xF0000726, 0x006E006E,
+    0xFFB0F000, 0x08280078, 0x0078FFA6, 0xF0000B2A,
+    0x00820082, 0xFF9CF000, 0x0E2B0096, 0x0096FF92,
+    0xF000122C, 0x00BE00BE, 0xFF88F000, 0x152D00E6,
+    0x00E6FF7E, 0xF000182E, 0x010E010E, 0xFF74F000,
+    0x1B2F0136, 0x0136FF6A, 0xF0001E30, 0x015E015E,
+    0xFF60C800, 0x2131017C, 0x017CFF56, 0x8C002432,
+    0x01900190, 0xFF4C2800, 0x0000001E, 0x008C0000,
+    0xFF000006, 0x001E0078, 0x0000F000, 0xFF0C001E,
+    0x006E0005, 0xE600FF11, 0x00320064, 0x0014DC00,
+    0xFE16003C, 0x005A001E, 0xD200FE1A, 0x0046005A,
+    0x0028C800, 0xFD1C0050, 0x00550032, 0xBE00FC20,
+    0x005A0050, 0x003CB400, 0xFB230064, 0x004D0046,
+    0xAA00F926, 0x006E0041, 0x0050A000, 0xF8280078,
+    0x0036005A, 0x9600F52A, 0x0082003C, 0x00648C00,
+    0xF22B008C, 0x0046006E, 0x8200EE2C, 0x00960050,
+    0x00787800, 0xEB2D00A0, 0x005A0082, 0x6E00E82E,
+    0x00AA0064, 0x008C5A00, 0xE52F00B4, 0x006E0096,
+    0x5000E230, 0x00BE0078, 0x00A04600, 0xDF3100C8,
+    0x008200AA, 0x1E00DC32, 0x00D2008C, 0x00B40A00,
+    0x0000001E, 0x008C0000, 0xFF000006, 0x001E0078,
+    0x0000F000, 0x000C001E, 0x006E0005, 0xE6000011,
+    0x00320064, 0x0014DC00, 0x0016003C, 0x005A001E,
+    0xD200001A, 0x0046005A, 0x0028C800, 0x001C0050,
+    0x00550032, 0xBE000020, 0x005A0050, 0x003CB400,
+    0x00230064, 0x004D0046, 0xAA000026, 0x006E0041,
+    0x0050A000, 0x00280078, 0x0036005A, 0x9600002A,
+    0x0082003C, 0x00648C00, 0x002B008C, 0x0046006E,
+    0x8200002C, 0x00960050, 0x00787800, 0x002D00A0,
+    0x005A0082, 0x6E00002E, 0x00AA0064, 0x008C5A00,
+    0x002F00B4, 0x006E0096, 0x50000030, 0x00BE0078,
+    0x00A04600, 0x003100C8, 0x008200AA, 0x1E000032,
+    0x00D2008C, 0x00B40A00,
+};
+u32 a2data[83] = {
+    0x0000001E, 0x008C0000, 0xFF000006, 0x001E0078,
+    0x0000F000, 0x010C001E, 0x006EFFFB, 0xE6000111,
+    0x00320064, 0xFFECDC00, 0x0216003C, 0x005AFFE2,
+    0xD200021A, 0x0046005A, 0xFFD8C800, 0x031C0050,
+    0x0055FFCE, 0xBE000420, 0x005A0050, 0xFFC4B400,
+    0x05230064, 0x004DFFBA, 0x78000726, 0x006E0041,
+    0xFFB05000, 0x08280078, 0x0036FFA6, 0x28000000,
+    0x001E008C, 0x0000FF00, 0x0006001E, 0x00780000,
+    0xF000FF0C, 0x001E006E, 0x0005E600, 0xFF110032,
+    0x00640014, 0xDC00FE16, 0x003C005A, 0x001ED200,
+    0xFE1A0046, 0x005A0028, 0xC800FD1C, 0x00500055,
+    0x0032BE00, 0xFC20005A, 0x0050003C, 0xB400FB23,
+    0x0064004D, 0x00467800, 0xF926006E, 0x00410050,
+    0x5000F828, 0x00780036, 0x005A2800, 0x0000001E,
+    0x008C0000, 0xFF000006, 0x001E0078, 0x0000F000,
+    0x000C001E, 0x006E0005, 0xE6000011, 0x00320064,
+    0x0014DC00, 0x0016003C, 0x005A001E, 0xD200001A,
+    0x0046005A, 0x0028C800, 0x001C0050, 0x00550032,
+    0xBE000020, 0x005A0050, 0x003CB400, 0x00240064,
+    0x004D0046, 0x78000027, 0x006E0041, 0x00505000,
+    0x002A0078, 0x0036005A, 0x28000000,
+};
+static u32 size16x16_tex32x32_vtx[14] = {
+    0xFFF8FFF8, 0x00000000, 0x0000FFFF, 0xFFFF0008,
+    0xFFF80000, 0x04000000, 0xFFFFFFFF, 0x00080008,
+    0x00000400, 0x0400FFFF, 0xFFFFFFF8, 0x00080000,
+    0x00000400, 0xFFFFFFFF,
+};
+u32 size6x22_tex32x32_vtx[14] = {
+    0xFFFD0000, 0x00000000, 0x0000FFFF, 0xFFFF0003,
+    0x00000000, 0x04000000, 0xFFFFFFFF, 0x00030016,
+    0x00000400, 0x0400FFFF, 0xFFFFFFFD, 0x00160000,
+    0x00000400, 0xFFFFFFFF,
+};
+
+// .sdata
 s32 dat_ry[8] = { 0, 0x28, 0x37, 0xBE, 0x14, 0x82, 0x10E, 0x12C };
 const f32 float_deg2rad_8041f7c0 = 0.017453292f;
 const f32 float_0p03125_8041f7c4 = 0.03125f;
@@ -90,16 +173,13 @@ void effOpukuJetwMain(EffectEntry* effect) {
     }
 }
 
-// NONMATCHING (89.00%): register allocation and loop codegen differ. Details:
-// The original keeps the .data base in r20 and the selected spiral table in r22; mwcc here uses
-// r31 for the base and spills the table to 0x12c(r1), reloading it every inner iteration. It
-// also hoists `columns - 1` and `half` into stack slots (0x130/0x128) instead of recomputing
-// `columns - 1` inline and keeping `half` in a register, which in turn pushes the cached data
-// fields into r19-r23 instead of r25-r31. Because the GXColor call temporaries overlap here,
-// every Mtx stack slot is 8 bytes lower (work 0x38 not 0x40), and the dat_ry index is `slwi`
-// here but `clrlslwi r0, r0, 29, 2` in the original. All instructions and constants are
-// otherwise the ones from build/G8MJ01/asm/effect/n64/eff_opuku_jetw_n64.s.
-// NONMATCHING (89.00%): register allocation / loop codegen only; see the comment above.
+// NONMATCHING (89.18%): register allocation and loop codegen differ. Details:
+// The original keeps the selected spiral table in r22; mwcc here spills it to the stack and reloads it
+// every inner iteration. It also hoists `columns - 1` and `half` into stack slots instead of
+// recomputing `columns - 1` inline and keeping `half` in a register, which in turn pushes the cached
+// data fields into r19-r23 instead of r25-r31. Because the GXColor call temporaries overlap here,
+// every Mtx stack slot is 8 bytes lower (work 0x38 not 0x40). The .data objects are reached by name
+// (adata, a2data, size16x16_tex32x32_vtx) where the original addresses them off one base register.
 void effOpukuJetwDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effOpukuJetwData* data;
@@ -127,7 +207,6 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     s32 threshold;
     s32 half;
     s32 rowOffset;
-    u8* base = (u8*)lbl_803A33D8;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
@@ -139,10 +218,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     field20 = data->field_0x20;
 
     if (data->type == 0) {
-        table = (effOpukuJetwPoint*)(base + 0x40);
+        table = (effOpukuJetwPoint*)adata;
         columns = 20;
     } else {
-        table = (effOpukuJetwPoint*)(base + 0x298);
+        table = (effOpukuJetwPoint*)a2data;
         columns = 11;
     }
     rows = 3;
@@ -179,7 +258,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     color.g = data->field_0x2C;
     color.b = data->field_0x30;
     color.a = field24;
-    GXSetTevColor(GX_TEVREG2, color);
+    GXSetTevColor(GX_TEVREG1, color);
 
     if (columns - 1 <= lifetime) {
         color = unk_804231cc;
@@ -187,10 +266,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
         color.g = field1c;
         color.b = field20;
         color.a = field24;
-        GXSetTevColor(GX_TEVREG1, color);
+        GXSetTevColor(GX_TEVREG0, color);
         GXLoadPosMtxImm(work, 0);
         GXSetCurrentMtx(0);
-        effSetVtxDescN64((effVtxArray*)(base + 0x3e4));
+        effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
         GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
@@ -213,7 +292,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             PSMTXTrans(trans, (f32)colPtr->field_0x0, float_10_8041f7d0 + (f32)colPtr->field_0x1, float_0_8041f7c8);
             PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
             PSMTXConcat(trans, scale, trans);
-            PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[i + j]));
+            PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(i + j) & 7]));
             PSMTXConcat(trans, rot, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
@@ -223,8 +302,8 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             color.g = field1c;
             color.b = field20;
             color.a = (field24 * colPtr->field_0x8) >> 8;
-            GXSetTevColor(GX_TEVREG1, color);
-            effSetVtxDescN64((effVtxArray*)(base + 0x3e4));
+            GXSetTevColor(GX_TEVREG0, color);
+            effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }

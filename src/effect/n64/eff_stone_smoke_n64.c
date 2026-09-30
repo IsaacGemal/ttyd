@@ -15,8 +15,11 @@ extern GXColor unk_8042328c;
 extern const f32 float_0p03125_8041ff50;
 extern const f32 float_0_8041ff54;
 
-// .data vertex array belonging to this unit.
-extern u32 size16x16_tex32x32_vtx[];
+// .data
+static u32 size16x16_tex32x32_vtx[14] = {
+	0xFFF8FFF8, 0x00000000, 0x00000000, 0x00FF0008, 0xFFF80000, 0x04000000, 0x000000FF,
+	0x00080008, 0x00000400, 0x04000000, 0x00FFFFF8, 0x00080000, 0x00000400, 0x000000FF,
+};
 
 const char str_802FB7B8[] = "StoneSmokeN64";
 

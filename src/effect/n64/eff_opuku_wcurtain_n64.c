@@ -10,6 +10,17 @@
 #include <dolphin/os/OSCache.h>
 #include <stdlib.h>
 
+// Retail stores the transformed vertex through psq_st (GQR5, s16), which saturates to the s16 range.
+static inline s16 clampS16(f32 value) {
+	if (value > 32767.0f) {
+		return 32767;
+	}
+	if (value < -32768.0f) {
+		return -32768;
+	}
+	return (s16)value;
+}
+
 // .rodata
 const char str_802FB2A4[] = "OpukuWcurtainN64";
 
@@ -103,11 +114,10 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
-// The packed s16<->f32 vertex conversions lower to xoris/lfd/fsubs + fctiwz under GC/2.6 -O4,p
-// instead of retail's scalar psq_l/psq_st through GQR5, so the transform loop body, the saved FPRs
-// (f28-f31 vs f31) and every local stack offset differ; tri2's u16 prototype also adds a clrlwi the
-// untruncated retail call does not have. Everything else matches modulo register allocation.
-// NONMATCHING (77.01%): see above.
+// NONMATCHING (75.16%): the packed s16<->f32 vertex conversions are psq_l/psq_st through GQR5 in
+// retail (the store saturates, which clampS16 reproduces); they need inline asm, so here they lower to
+// xoris/lfd/fsubs loads and compare/fctiwz/sth stores. That changes the transform loop body, the saved
+// FPRs and every local stack offset; tri2's u16 prototype also adds a clrlwi the retail call lacks.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -187,9 +197,9 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 			v.y = p->y;
 			v.z = p->z;
 			PSMTXMultVec(transMtx, &v, &v);
-			p->x = v.x;
-			p->y = v.y;
-			p->z = v.z;
+			p->x = clampS16(v.x);
+			p->y = clampS16(v.y);
+			p->z = clampS16(v.z);
 		}
 	}
 

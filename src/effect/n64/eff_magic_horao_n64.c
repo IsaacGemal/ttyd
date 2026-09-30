@@ -170,7 +170,7 @@ extern const f32 float_200_8041f778;
 // colorAlpha in r27 (here r26) and counter in r26 (here r25), and its loop keeps off1/off2/y/v/vp in
 // r28/r30/r29/r24/r31 where this build uses r28/r27/r26/r25/r30. The final draw loop also emits
 // `clrlwi` on the tri2 u16 arguments that the original does not.
-// NONMATCHING (95.51%): only the register names above differ.
+// NONMATCHING (96.47%): only the register names above differ.
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effMagicHoraoData* data;

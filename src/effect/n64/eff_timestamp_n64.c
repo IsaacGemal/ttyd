@@ -184,7 +184,7 @@ void effTimestampMain(EffectEntry* effect) {
 #endif
 }
 
-// NONMATCHING (95.3%): integer register allocation differs; the s32->f32 and /255 constants are
+// NONMATCHING (96.63%): integer register allocation differs; the s32->f32 and /255 constants are
 // pool-loaded instead of double_to_int_802fb8c8 and lis 0x8081/subi 0x7f7f; tri2's u16 prototype forces clrlwi. See REPORT.md.
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

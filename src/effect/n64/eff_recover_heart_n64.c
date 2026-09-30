@@ -32,10 +32,49 @@ extern const f32 float_deg2rad_8041fb08;
 extern const f32 float_0p03125_8041fb0c;
 extern const f32 float_0p0026042_8041fb18;
 
-// uninitialized GXColor base (alpha is filled in per particle) and the .data vertex-array base
-// that sits 8 bytes before this file's own .data block.
+// uninitialized GXColor (alpha is filled in per particle)
 extern u32 unk_80423238;
-extern u8 lbl_803A4A60[];
+
+// .data
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A4A70[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
+__declspec(section ".data") f32 lbl_803A4A80[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static f32 negone_one_360[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A4A90[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_359[2] = { 1.0f, -1.0f };
+u32 size32x32_tex32x32_heart_vtx[14] = {
+	0xFFF0FFF0, 0x00000000, 0x0000FFFF, 0xFFFF0010, 0xFFF00000, 0x04000000, 0xFFFFFFFF,
+	0x00100010, 0x00000400, 0x0400FFFF, 0xFFFFFFF0, 0x00100000, 0x00000400, 0xFFFFFFFF,
+};
+u32 size16x16_tex32x32_heart_vtx[14] = {
+	0xFFF8FFF8, 0x00000000, 0x0000FFFF, 0xFFFF0008, 0xFFF80000, 0x04000000, 0xFFFFFFFF,
+	0x00080008, 0x00000400, 0x0400FFFF, 0xFFFFFFF8, 0x00080000, 0x00000400, 0xFFFFFFFF,
+};
+u32 size24x24_tex32x32_heart_vtx[14] = {
+	0xFFF4FFF1, 0x00000000, 0x0000FAFA, 0xFAFF000C, 0xFFF10000, 0x04000000, 0xFAFAFAFF,
+	0x000C0009, 0x00000400, 0x0400FAFA, 0xFAFFFFF4, 0x00090000, 0x00000400, 0xFAFAFAFF,
+};
+u32 size16x24_tex32x32_l_heart_vtx[14] = {
+	0xFFF0FFF1, 0x00000000, 0x0000FAFA, 0xFAFF0004, 0xFFF10000, 0x04000000, 0xFAFAFAFF,
+	0x00040009, 0x00000400, 0x0400FAFA, 0xFAFFFFF0, 0x00090000, 0x00000400, 0xFAFAFAFF,
+};
+u32 size16x24_tex32x32_r_heart_vtx[14] = {
+	0xFFFCFFF1, 0x00000000, 0x0000FAFA, 0xFAFF0010, 0xFFF10000, 0x04000000, 0xFAFAFAFF,
+	0x00100009, 0x00000400, 0x0400FAFA, 0xFAFFFFFC, 0x00090000, 0x00000400, 0xFAFAFAFF,
+};
+u32 size24x24_tex32x32_flower_vtx[14] = {
+	0xFFF4FFF1, 0x00000000, 0x000024BE, 0x14FF000C, 0xFFF10000, 0x04000000, 0x24BE14FF,
+	0x000C0009, 0x00000400, 0x040024BE, 0x14FFFFF4, 0x00090000, 0x00000400, 0x24BE14FF,
+};
+u32 size16x24_tex32x32_l_flower_vtx[14] = {
+	0xFFF0FFF1, 0x00000000, 0x000024BE, 0x14FF0004, 0xFFF10000, 0x04000000, 0x24BE14FF,
+	0x00040009, 0x00000400, 0x040024BE, 0x14FFFFF0, 0x00090000, 0x00000400, 0x24BE14FF,
+};
+u32 size16x24_tex32x32_r_flower_vtx[14] = {
+	0xFFFCFFF1, 0x00000000, 0x000024BE, 0x14FF0010, 0xFFF10000, 0x04000000, 0x24BE14FF,
+	0x00100009, 0x00000400, 0x040024BE, 0x14FFFFFC, 0x00090000, 0x00000400, 0x24BE14FF,
+};
 
 typedef struct RecoverHeartData {
 	s32 type;       // 0x00
@@ -179,7 +218,7 @@ void effRecoverHeartMain(EffectEntry* effect) {
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the tile-offset float-conversion loads and reorders them vs the target
-// NONMATCHING (96.93%): only the callee-saved register permutation and one hoisted tile-offset differ; full detail in REPORT.md.
+// NONMATCHING (96.91%): only the callee-saved register permutation and one hoisted tile-offset differ; full detail in REPORT.md.
 void effRecoverHeartDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 flag;
@@ -189,7 +228,6 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 	RecoverHeartData* data;
 	s32 quotient;
 	s32 unknown;
-	u8* base = lbl_803A4A60;
 	CameraEntry* cam;
 	s32 stripe;
 	u32 texId;
@@ -270,7 +308,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 		PSMTXConcat(mtx, rot, finalMtx);
 
 		if (i == 1 && type != 2) {
-			effSetVtxDescN64((effVtxArray*)(base + 0x40));
+			effSetVtxDescN64((effVtxArray*)size32x32_tex32x32_heart_vtx);
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
@@ -292,9 +330,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(base + 0xb0));
+					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)(base + 0x158));
+					effSetVtxDescN64((effVtxArray*)size24x24_tex32x32_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -310,9 +348,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(base + 0x120));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)(base + 0x1c8));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_r_flower_vtx);
 				}
 				PSMTXConcat(cam->view, mtx, trans);
 				GXLoadPosMtxImm(trans, 0);
@@ -325,9 +363,9 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 				PSMTXConcat(scale, trans, scale);
 				GXLoadTexMtxImm(scale, 0x1e, 1);
 				if (type == 0) {
-					effSetVtxDescN64((effVtxArray*)(base + 0xe8));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_heart_vtx);
 				} else {
-					effSetVtxDescN64((effVtxArray*)(base + 0x190));
+					effSetVtxDescN64((effVtxArray*)size16x24_tex32x32_l_flower_vtx);
 				}
 				GXBegin(0x90, 0, 6);
 				tri2(0, 1, 2, 0, 0, 2, 3, 0);
@@ -336,7 +374,7 @@ void effRecoverHeartDisp(CameraId camId, void* param) {
 			PSMTXConcat(cam->view, finalMtx, trans);
 			GXLoadPosMtxImm(trans, 0);
 			GXSetCurrentMtx(0);
-			effSetVtxDescN64((effVtxArray*)(base + 0x78));
+			effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_heart_vtx);
 			GXBegin(0x90, 0, 6);
 			tri2(0, 1, 2, 0, 0, 2, 3, 0);
 		}

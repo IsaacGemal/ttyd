@@ -19,19 +19,6 @@ char unk_803dfbf8[0x100];
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
 extern const char str_8041D578[];
-extern const char str_8041D630[];
-extern const char str_8041D638[];
-extern const char str_8041D5A8[];
-extern const char str_8041D5AC[];
-extern const char str_8041D5B0[];
-extern const char str_8041D5B4[];
-extern const char str_8041D5B8[];
-extern const char str_8041D5BC[];
-extern const char str_8041D5C0[];
-extern const char str_8041D5C4[];
-extern const char str_8041D5C8[];
-extern const char str_8041D5CC[];
-extern const f32 float_0_8041d634;
 const f64 double_to_int_802f5e78 = 4503601774854144.0;
 
 // .data table: one entry per window "link" (see linkDt in win_mario.s)
@@ -400,7 +387,7 @@ void winMarioInit2(WindowWork* work) {
     WW_S32(work, 0x194) = 0;
 }
 
-// NONMATCHING (91.48%): the body is correct; only the pooled literals
+// NONMATCHING (96.58%): the body is correct; only the pooled literals
 // (str_802F5650 base + offset) and callee-saved register rotation differ, both
 // of which resolve once the rest of the unit's literals exist.
 void winMarioInit(WindowWork* work) {

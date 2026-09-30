@@ -50,6 +50,7 @@ extern f32 float_neg1000_80421d88;
 extern f32 float_1_80421d74;
 extern f32 float_901_80421e28;
 extern const f32 vec3_803002b0[];
+extern const Vec vec3_803002bc;
 extern f32 float_37_80421d8c;
 extern f32 float_50_80421d90;
 extern f32 float_neg1_80421d94;
@@ -479,7 +480,7 @@ void main_mario(void) {
 // int->float magic double and the two switch jump tables as anonymous `@...@` entries instead of
 // double_to_int_80300468 / jumptable_803B3C40 / jumptable_803B3C24. All other differences are
 // register allocation and instruction scheduling.
-// NONMATCHING (91.98%): the anonymous pool entries listed above.
+// NONMATCHING (91.58%): the anonymous pool entries listed above.
 void main_weapon(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -508,7 +509,7 @@ void main_weapon(s32 idx) {
         weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
         weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
         {
-            Vec vel = *(const Vec*)&vec[3];
+            Vec vel = vec3_803002bc;
 
             vel.x = float_10_80421d54 * (f32)cos(angle);
             vel.y = float_10_80421d54 * (f32)sin(angle);

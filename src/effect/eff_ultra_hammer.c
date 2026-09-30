@@ -6,12 +6,23 @@
 #include "pmario_sound.h"
 #include <demo/DEMOInit.h>
 #include <dolphin/os.h>
+#include <dolphin/base/PPCArch.h>
 #include <dolphin/vi.h>
 #include <string.h>
 #include <stdio.h>
 
 // These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob).
-extern const char str_803019E0[];
+extern const char str_803019E0[24];
+extern const char str_803019F8[24];
+extern const char str_80301A10[28];
+extern const char str_80301A2C[28];
+extern const char str_80301A48[36];
+extern const char str_80301A6C[32];
+extern const char str_80301A8C[32];
+extern const char str_80301AAC[32];
+extern const char str_80301ACC[40];
+extern const char str_80301AF4[28];
+extern const char str_80301B10[96];
 extern const u32 dat_80422600;
 extern const char str_80422604[4];
 extern const f32 float_0_80422608;
@@ -26,16 +37,14 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING notes for N_systemErrorHandler (93.92%): logic and stack slots are right; what still
-// differs is (1) the original's inline FPU-enable sequence (mfmsr/ori 0x8000/ori 2/mtmsr/isync) after
-// OSFillFPUContext, which this repo's no-inline-hardware-sequence rule forbids reproducing, and (2)
-// register allocation: the original keeps context/error/dsisr/dar in r26/r23/r25/r24 and the string base
-// in r29 with an indexed gpr loop, while this compiler uses r30/r25/r29/r28, r27, and a running pointer,
-// so two more callee-saved registers (r23/r24) and 0x10 of frame differ; (3) the font MTXScale's
-// u16->float conversion: the original's uses the unsigned magic double_to_int_mask_80301b70, which lives
-// in unk_0x8025de70.o's .rodata, not this unit's. Converted as unsigned here, it adds a pool double this
-// unit's .rodata doesn't have, so under MUST_MATCH it converts as signed and shares double_to_int_803019d8.
-// NONMATCHING (93.64%): register allocation, the FPU-enable sequence and the signed int->float conversion.
+// NONMATCHING (89.04%): register allocation, the signed int->float conversion, and the interrupt
+// restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm
+// is not allowed here), written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. The original keeps
+// context/error/dsisr/dar in r26/r23/r25/r24 and the string base in r29 with an indexed gpr loop, while
+// this compiler uses different callee-saved registers and a running pointer, so two more callee-saved
+// registers and 0x10 of frame differ. The original's font MTXScale u16->float conversion uses the
+// unsigned magic double_to_int_mask_80301b70 from unk_0x8025de70.o's .rodata; under MUST_MATCH it
+// converts as signed and shares double_to_int_803019d8.
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	//registers
 	OSFontHeader* fontHeader;
@@ -56,12 +65,10 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	s32 x; // 0x18
 	s32 y; // 0x14
 	s32 width; // 0x10
-	const char* strTable;
 #ifdef MUST_MATCH
 	u32 clearColor;
 #endif
 
-	strTable = str_803019E0;
 	if (N_getDebugMode() >= 0) {
 		psndExit();
 		while (1) {} //softlock
@@ -69,45 +76,46 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 
 	switch (error) {
 		case OS_ERROR_DSI:
-			strcpy(print_buffer, strTable);
+			strcpy(print_buffer, str_803019E0);
 			break;
 		case OS_ERROR_ISI:
-			strcpy(print_buffer, strTable + 0x18);
+			strcpy(print_buffer, str_803019F8);
 			break;
 		case OS_ERROR_PROGRAM:
-			strcpy(print_buffer, strTable + 0x30);
+			strcpy(print_buffer, str_80301A10);
 			break;
 	}
-	sprintf(print_buffer2, strTable + 0x4C, context);
+	sprintf(print_buffer2, str_80301A2C, context);
 	strcat(print_buffer, print_buffer2);
 	for (i = 0; i < 16; i++) {
-		sprintf(print_buffer2, strTable + 0x68,
+		sprintf(print_buffer2, str_80301A48,
 			i, context->gpr[i],
 			i + 16, context->gpr[i + 16]
 		);
 		strcat(print_buffer, print_buffer2);
 	}
-	sprintf(print_buffer2, strTable + 0x8C, context->lr, context->cr);
+	sprintf(print_buffer2, str_80301A6C, context->lr, context->cr);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, strTable + 0xAC, context->srr0, context->srr1);
+	sprintf(print_buffer2, str_80301A8C, context->srr0, context->srr1);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, strTable + 0xCC, dsisr, dar);
+	sprintf(print_buffer2, str_80301AAC, dsisr, dar);
 	strcat(print_buffer, print_buffer2);
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, strTable + 0xEC);
+	sprintf(print_buffer2, str_80301ACC);
 	strcat(print_buffer, print_buffer2);
 	stack = context->gpr[1]; //get r1 (stack)
 	i = 0;
 	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
-		sprintf(print_buffer2, strTable + 0x114, stack, *(u32*)stack, *(u32*)(stack + 4));
+		sprintf(print_buffer2, str_80301AF4, stack, *(u32*)stack, *(u32*)(stack + 4));
 		strcat(print_buffer, print_buffer2);
 		stack = *(u32*)stack;
 	}
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, strTable + 0x130, context->srr0, dar);
+	sprintf(print_buffer2, str_80301B10, context->srr0, dar);
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);
+	PPCMtmsr(PPCMfmsr() | 0x8002);
 	L_smartReInit();
 	if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
 		fontHeader = smartAlloc(OS_FONT_SIZE_SJIS, 0)->address;

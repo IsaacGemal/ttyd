@@ -143,15 +143,11 @@ void effSunlightMain(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSunlightDisp, effect);
 }
 
-// Register allocation / stack-slot artifacts only, no wrong logic:
-// the target keeps the vec3_802fb7c8 base in r31 across the whole function so it can load
-// double_to_int as `lfd f31, 0x30(r31)`; mwcc here puts the userdata pointer in r31 and the vec
-// base in r11 (dead after the three Vec copies), which also swaps the r30/r31 pair used for the
-// 0x4330 conversion constant and the i*11 loop counter. The GXColor locals land at 0x14/0x10 and
-// are copied to the outgoing slots 0xc/0x8; the target builds at 0x10/0x8 and copies to 0x14/0xc
-// (the same local/outgoing swap eff_akari_pose_n64.c / eff_booboo_n64.c document).
-// NONMATCHING (97.88%): register allocation (r11 vs r31 vec base, r30/r31 swap) and the GXColor
-// local/outgoing slots differ.
+// NONMATCHING (96.78%): the target keeps one r31 base across the function and reaches the three Vecs
+// and the int->float double as offsets from it, while mwcc addresses vec3_802fb7d4/e0/ec and
+// double_to_int_802fb7f8 separately; the userdata pointer and the 0x4330 constant / loop counter swap
+// r30/r31, and the GXColor locals land at 0x14/0x10 and are copied to 0xc/0x8 where the target builds
+// at 0x10/0x8 and copies to 0x14/0xc.
 void effSunlightDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	effSunlightData* data;
@@ -176,9 +172,9 @@ void effSunlightDisp(CameraId cameraId, void* param) {
 	type = data->type;
 	alpha = data->field_0x38;
 
-	target = vec3_802fb7c8[1];
-	eye = vec3_802fb7c8[2];
-	up = vec3_802fb7c8[3];
+	target = vec3_802fb7d4;
+	eye = vec3_802fb7e0;
+	up = vec3_802fb7ec;
 
 	if (alpha == 0) {
 		return;

@@ -102,6 +102,9 @@ void effKemuri1Main(EffectEntry* effect) {
 }
 
 // Draws every live entry as a camera-facing textured quad.
+// NONMATCHING (91.71%): the frame is 0x180 instead of 0x160 (two more saved FPRs, f27/f28), the
+// shared `fneg` is CSE'd differently, registers are permuted, and the int->float magic double is a
+// local @263@ instead of double_to_int_802fa898.
 void effKemuri1Disp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri1Data* data = effect->userdata;

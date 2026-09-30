@@ -36,8 +36,8 @@ extern const f32 float_0_8041fde8;
 extern GXColor unk_80423270;
 extern GXColor unk_80423274;
 
-// .data vertex array, local to this file (0x38 bytes).
-static u32 size16x16_tex64x32_vtx[0x38 / 4] = {
+// .data
+u32 size16x16_tex64x32_vtx[0x38 / 4] = {
     0xFFF80000, 0x00000000, 0x00000000, 0x00000008, 0x00000000, 0x08000000, 0x00000000,
     0x000A0010, 0x00000800, 0x04000000, 0x00FFFFF6, 0x00100000, 0x00000400, 0x000000FF,
 };
@@ -167,6 +167,8 @@ void effStampMain(EffectEntry* effect) {
     dispEntry(4, dispCalcZ(&position2), 2, effStampDisp, effect);
 }
 
+// NONMATCHING (98.60%): the by-value GXColor argument slots (0x8/0xc/0x10/0x14) are permuted and one
+// `addi r29` is scheduled a slot earlier.
 void effStampDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     effStampData* data;
