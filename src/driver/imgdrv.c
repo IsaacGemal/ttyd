@@ -190,7 +190,6 @@ s32 imgEntry(const char* name, s32 type) { //1:1, needs variable names
 	return i;
 }
 
-// NONMATCHING (99.88%): 3 instructions differ, plus register differences.
 void imgMain(void) { //1:1
 	s32 type = gp->inBattle != 0;
 	int shadow, i, count;
@@ -202,7 +201,7 @@ void imgMain(void) { //1:1
 		if (entry->flags & 1 && entry->poseId != -1 && !(entry->flags & 2)) {
 			if (entry->type == 2 || entry->type == type) {
 				for (shadow = 0; shadow < 3; shadow++) {
-					if (!(entry->shadows[shadow].flags & 4)) break;
+					if (entry->shadows[shadow].flags & 4) break;
 				}
 				if (shadow != 3) {
 					dispEntry(entry->camId, entry->order, 1, imgDisp, entry);
@@ -211,13 +210,13 @@ void imgMain(void) { //1:1
 							animPoseSetMaterialFlagOff(entry->poseId, 0x10000);
 							break;
 						case 1:
-							dispEntry(CAMERA_SHADOW, 0.0f, 1, imgShadowDisp, entry);
-							dispEntry(CAMERA_3D_IMAGE, 0.0f, 5, imgDisp_ProjPlane, entry);
+							dispEntry(CAMERA_SHADOW, float_0_8041a280, 1, imgShadowDisp, entry);
+							dispEntry(CAMERA_3D_IMAGE, float_0_8041a280, 5, imgDisp_ProjPlane, entry);
 							break;
 						case 2:
 							animPoseSetMaterialFlagOn(entry->poseId, 0x10000);
-							dispEntry(CAMERA_SHADOW, 0.0f, 6, imgShadowDisp, entry);
-							dispEntry(CAMERA_3D_IMAGE, 0.0f, 5, imgDisp_ProjPlane, entry);
+							dispEntry(CAMERA_SHADOW, float_0_8041a280, 6, imgShadowDisp, entry);
+							dispEntry(CAMERA_3D_IMAGE, float_0_8041a280, 5, imgDisp_ProjPlane, entry);
 							break;
 					}
 				}
@@ -226,7 +225,7 @@ void imgMain(void) { //1:1
 	}
 
 	for (i = 0; i < 13; i++) {
-		dispEntry(i, 0.0f, 7, imgCapture, NULL);
+		dispEntry(i, float_0_8041a280, 7, imgCapture, NULL);
 	}
 }
 

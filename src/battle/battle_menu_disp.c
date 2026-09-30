@@ -1050,8 +1050,6 @@ void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.91%): f31 = x1 + x2 then *= 0.5f puts the sum in f31; the
-// original keeps it in a temp f1 and multiplies into f31 (2 instructions).
 void DrawMenuPartyChangeButton(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1085,8 +1083,7 @@ void DrawMenuPartyChangeButton(void) {
     } else {
         btlGetScreenPoint(&mario->mPosition, &screen1);
         btlGetScreenPoint(&party->mPosition, &screen2);
-        f31 = screen1.x + screen2.x;
-        f31 *= 0.5f;
+        f31 = (screen1.x + screen2.x) / 2.0f;
         f30 = screen1.y;
         BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
         if (memberId != -1) {

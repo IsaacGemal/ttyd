@@ -35,9 +35,10 @@ BattleIcon* BtlIconGetPtr(s32 index) {
 #pragma optimize_for_size reset
 #pragma dont_inline reset
 
-// NONMATCHING (99.92%): same instructions; only register numbers or operands differ.
+// The header declares BattleWork.icons as [10], but the original clears 16 entries (0x9C0 bytes);
+// BtlIconGetPtr and BtlIcon_Entry also iterate 16 times. Use the real count here (see REPORT.md).
 void BattleIconInit(void) {
-	memset(_battleWorkPointer->icons, 0, sizeof(_battleWorkPointer->icons));
+	memset(_battleWorkPointer->icons, 0, 16 * sizeof(BattleIcon));
 }
 
 // NONMATCHING (59.35%): 8 instructions differ, 7 missing, 7 extra, plus register differences.

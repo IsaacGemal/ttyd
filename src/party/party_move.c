@@ -1639,20 +1639,33 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
     *speed = scale * partySqrtf(f31 * f31 + f30 * f30);
 }
 
-// NONMATCHING (99.86%): three float compares put the field in f0 where the original puts it in f1
-// (`work->speed != 0.0f`, `work->jumpPara2 == 0.0f`). All opcodes otherwise match. The original
-// returns a state code in r3, so the header's `void` is wrong; see REPORT.md.
+// partyMoveMain returns a state code in r3.
+// Match note: the three zero compares need the named zero below to keep the constant in f0 and
+// the field in f1 as the original does.
+#ifdef MUST_MATCH
+// Match shape: for these zero compares the original loads the field into f1 and 0.0f into f0;
+// comparing against a named zero makes this compiler allocate the same registers.
+#define PARTY_MOVE_ZERO zero
+#else
+#define PARTY_MOVE_ZERO 0.0f
+#endif
 s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     PartyEntry* work = party;
     Vec pos;
     f32 speed;
     f32 angle;
+#ifdef MUST_MATCH
+    f32 zero;
+#endif
     HitEntry* hit;
 
     work->field_12C = NULL;
     work->field_134 = NULL;
     pos = party->position;
     speed = 0.0f;
+#ifdef MUST_MATCH
+    zero = 0.0f;
+#endif
 
     if (hosei != 0) {
         partyGetMoveDirSpd(party, &angle, &speed);
@@ -1664,7 +1677,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
         hit = partySearchFrontWall(party, &pos, speed, angle);
         if (hit != NULL) {
             work->field_12C = hit;
-            if (work->speed != 0.0f) {
+            if (work->speed != PARTY_MOVE_ZERO) {
                 work->field_134 = hit;
             }
         }
@@ -1708,7 +1721,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
                 party->flags &= ~PARTY_FLAG_IS_GROUNDED;
                 if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
                     party->flags |= PARTY_FLAG_IS_FALLING;
-                    if (work->jumpPara2 == 0.0f) {
+                    if (work->jumpPara2 == PARTY_MOVE_ZERO) {
                         work->jumpPara2 = -1.4f;
                     }
                 }
@@ -1729,7 +1742,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
             party->flags &= ~PARTY_FLAG_IS_GROUNDED;
             if (!(party->flags & PARTY_FLAG_IS_FALLING)) {
                 party->flags |= PARTY_FLAG_IS_FALLING;
-                if (work->jumpPara2 == 0.0f) {
+                if (work->jumpPara2 == PARTY_MOVE_ZERO) {
                     work->jumpPara2 = -1.4f;
                 }
             }
@@ -1750,6 +1763,7 @@ s32 partyMoveMain(PartyEntry* party, s32 hosei) {
     }
     return 0;
 }
+#undef PARTY_MOVE_ZERO
 
 // Inlined footmark writer used by partyRecordFootmark. The extra marioGetPtr() is present in the
 // original bytes (its result is discarded).

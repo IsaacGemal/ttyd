@@ -3286,8 +3286,8 @@ s32 evt_mobj_breaking_floor(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.96%): base+offset immediates for the 4 pooled anim names differ (unit .rodata is not defined locally).
 s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
+    u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f31 = evtGetFloat(event, args[1]);
@@ -3303,17 +3303,17 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            asyncName = "MOBJ_FlowBrickBlock";
+            asyncName = (const char*)(base + 0x488);
             break;
         case 1:
-            asyncName = "MOBJ_block_ky";
+            asyncName = (const char*)(base + 0x49C);
             break;
         case 2:
-            asyncName = "MOBJ_bigblock_01";
+            asyncName = (const char*)(base + 0x4AC);
             break;
         case 3:
         default:
-            asyncName = "MOBJ_bigblock_02";
+            asyncName = (const char*)(base + 0x4C0);
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -3330,9 +3330,9 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     obj->unk1DC = 0;
     *(s32*)obj->unk1A0 = unk1A0;
     mobjCalcMtx(obj);
-    animPoseSetAnim(obj->poseId, "S_1", 1);
+    animPoseSetAnim(obj->poseId, str_8041A12C, 1);
     if (evtGetValue(event, unk1E4) != 0) {
-        animPoseSetAnim(obj->poseId, "S_1", 1);
+        animPoseSetAnim(obj->poseId, str_8041A12C, 1);
         obj->unk1DC = 0x63;
     }
     return 2;

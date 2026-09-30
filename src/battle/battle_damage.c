@@ -320,7 +320,6 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
     return damage;
 }
 
-// NONMATCHING (99.86%): one `cmpw` has its operands swapped (r4,r0 vs r0,r4); everything else matches.
 void BattleAttackDeclareAll(BattleWork* wp) {
     s32 i;
     u8* sampling = wp->field_428;
@@ -335,7 +334,8 @@ void BattleAttackDeclareAll(BattleWork* wp) {
             s32 j;
 
             for (j = 0; j < (s8)sampling[0xa6c]; j++) {
-                if (*(s16*)(sampling + (s8)sampling[0xa6d + j] * 0x24 + 4) == out1) {
+                s16 matchId = *(s16*)(sampling + (s8)sampling[0xa6d + j] * 0x24 + 4);
+                if (matchId == out1) {
                     s32 k;
 
                     for (k = j; k < (s8)sampling[0xa6c] - 1; k++) {

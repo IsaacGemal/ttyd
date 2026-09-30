@@ -1110,9 +1110,16 @@ s32 scissor_intersection3(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.85%): the two independent `fabs` at each axis test are scheduled
-// |dx| before |dy|, while the original computes |dy| first. The 0.0f/1.0f literals
-// also pool as anonymous @NNN constants rather than the named float_0/float_1 symbols.
+#ifdef MUST_MATCH
+// MUST_MATCH: calling fabs through a helper makes MWCC evaluate the second argument
+// first, so the original's |dy|-before-|dx| schedule comes out.
+static inline f32 scissor_abs(f32 x) {
+    return __fabsf(x);
+}
+#else
+#define scissor_abs(x) __fabs(x)
+#endif
+
 s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx, f32 dy, f32* ox, f32* oy) {
     f32 d1x, d1y, d2x, d2y;
     f32 minX1, minY1, maxX1, maxY1;
@@ -1151,21 +1158,21 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
 
     d1x = bx - ax;
     type1 = 0;
-    if (d1x == 0.0f) type1 = 1;
+    if (0.0f == d1x) type1 = 1;
     d1y = by - ay;
-    if (d1y == 0.0f) type1 = 2;
+    if (0.0f == d1y) type1 = 2;
     d2x = dx - cx;
     type2 = 0;
-    if (d2x == 0.0f) type2 = 1;
+    if (0.0f == d2x) type2 = 1;
     d2y = dy - cy;
-    if (d2y == 0.0f) type2 = 2;
+    if (0.0f == d2y) type2 = 2;
 
     if (type1 == 0 && type2 == 0) {
         f32 m1, m2, den;
 
-        if (__fabs(d1x) > __fabs(d1y)) {
+        if (scissor_abs(d1x) > scissor_abs(d1y)) {
             m1 = d1y / d1x;
-            if (__fabs(d2x) > __fabs(d2y)) {
+            if (scissor_abs(d2x) > scissor_abs(d2y)) {
                 m2 = d2y / d2x;
                 if (m1 - m2 != 0.0f) {
                     den = m1 - m2;
@@ -1175,10 +1182,20 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
                 *ox = ((cy - ay) + (m1 * ax - m2 * cx)) / den;
                 *oy = m1 * (*ox - ax) + ay;
             } else {
+#ifdef MUST_MATCH
+                // MUST_MATCH: the named temp makes MWCC load 1.0 into f3 and reuse it
+                // for both the compare and the subtraction, as the original does.
+                f32 one = 1.0f;
+                m2 = d2x / d2y;
+                if (m1 * m2 != one) {
+                    den = one - m1 * m2;
+                } else {
+#else
                 m2 = d2x / d2y;
                 if (m1 * m2 != 1.0f) {
                     den = 1.0f - m1 * m2;
                 } else {
+#endif
                     den = float_1Eneg06_804217b4;
                 }
                 *ox = (m2 * (-m1 * ax + ay - cy) + cx) / den;
@@ -1186,11 +1203,20 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
             }
         } else {
             m1 = d1x / d1y;
-            if (__fabs(d2x) > __fabs(d2y)) {
+            if (scissor_abs(d2x) > scissor_abs(d2y)) {
+#ifdef MUST_MATCH
+                // MUST_MATCH: named temp for the same reason as the branch above.
+                f32 one = 1.0f;
+                m2 = d2y / d2x;
+                if (m1 * m2 != one) {
+                    den = one - m1 * m2;
+                } else {
+#else
                 m2 = d2y / d2x;
                 if (m1 * m2 != 1.0f) {
                     den = 1.0f - m1 * m2;
                 } else {
+#endif
                     den = float_1Eneg06_804217b4;
                 }
                 *oy = (m2 * (-m1 * ay + ax - cx) + cy) / den;

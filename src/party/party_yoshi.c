@@ -263,11 +263,16 @@ void evt_set_yoshi_frm(s32 msec) {
     evt_yoshi_frm = sysMsec2Frame(msec);
 }
 
-// NONMATCHING (99.93%): code matches. Remaining: the PYS_* literals and the
-// int->float double are at different .rodata offsets (target: double at
-// vec3+0x28, PYS_S_2/H_1/R_2/H_2/F_1 at +0x30/0x38/0x40/0x48/0x50). Our
-// object has PYS_S_2 at +0x24 and the double at +0x30; the H_1/H_2 literals
-// are only emitted by the not-yet-written yoshi_use.
+// NONMATCHING (99.93%): the instruction stream is identical; the only
+// differences are four .rodata offsets (arg_mismatches).  They are a
+// file-level layout problem, not this function: the target pool is
+// vec3(0x00) / double_to_int 0x0010000080000000 (0x28) / PYS_S_2 (0x30) /
+// PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48) / PYS_F_1 (0x50) /
+// mask (0x58).  In our object the slot at 0x28 is missing and the wrong
+// double 0x4330000080000000 lands at 0x30, so PYS_S_2 sits at 0x24 and
+// R/F at 0x38/0x40.  The double belongs to the partial L_getStick/inertia
+// and PYS_H_1/H_2 are emitted (as r31+0x38/0x48 strcmps) only by the
+// unwritten yoshi_use.  Blocked until those functions are done.
 void unk_800b45e0(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 

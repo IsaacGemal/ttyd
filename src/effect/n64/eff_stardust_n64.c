@@ -56,6 +56,10 @@ extern const f32 float_0p9_8041ff28;
 // NONMATCHING (99.84%): type-0 random branch: conversion stack slots swapped, shared double in f4
 // not f5 (0.5 in f5 not f4), and `fmuls f1,f2,f1` for `fmuls f1,f1,f2`: 12 instruction diffs.
 // `#pragma opt_propagation off` fixes the slots (8 diffs) but scores 99.78.
+// Writing angle before radius fixes the slots too (9 diffs) but shifts every volatile FPR (frnd f0
+// instead of f2, 360 f2/f0, 0.5 f3/f4, p f4/f1, i&3 f1/f3) and scores 99.73; with either source order
+// only `#pragma opt_lifetimes`/`opt_common_subs`/`global_optimizer` off or option combos were tried,
+// none reaches 100%.
 void effStardustMain(EffectEntry* effect) {
     EffStardustN64Data* data = effect->userdata;
 #ifdef MUST_MATCH

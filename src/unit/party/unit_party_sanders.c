@@ -180,15 +180,19 @@ extern BattleWeapon partyWeapon_SandersSuperBombAttack;
         (char*)msgSearch(*(char**)((u8*)cmd->mWeaponTable[*count].mWeaponParams + 0));     \
     (*count)++;
 
-// NONMATCHING (99.98%): every instruction but the base address matches. The target keeps the +0x330 in the
-// symbol addend (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`, then
-// +0x650/+0x710/+0x7d0/+0x890); MWCC folds it into the later immediates instead (+0x980/+0xa40/+0xb00/
-// +0xbc0). Same final addresses. Root cause, confirmed over the built objects: MWCC puts a symbol+offset into
-// an @ha/@l addend only for a LOCAL symbol defined in the unit; an extern/UND symbol always gets addend 0 and
-// the constant moves into the following addi immediate. attack_audience_event is in unit_party_chuchurina.c
-// (and there is no symbol at the 0x803848D8 base), so no C form can emit the addend.
-// unit_party_christine.c has the identical shape and the same 99.98%; the only matching siblings
-// (clauda/vivian/chuchurina/nokotarou/yoshi) have a lbl_XXXX symbol sitting exactly on the base.
+// NONMATCHING (99.98%): the only difference is where the +0x330 sits. The target materializes it in the base
+// (`lis r5, attack_audience_event_803845A8+0x330@ha` / `addi r30, r5, ...+0x330@l`) and then uses the four
+// +0x650/+0x710/+0x7d0/+0x890 offsets; this toolchain always folds the +0x330 into the later immediates
+// (+0x980/+0xa40/+0xb00/+0xbc0) and leaves addend 0 in the @ha/@l reloc. Final addresses are identical.
+// The earlier "addend only for a LOCAL symbol" note was wrong: a local array and a unit-defined global (the
+// btlataudevtDummy case in battle_attack_audience.c) also come out addend 0 from this mwcceppc build, while
+// the original objects carry nonzero addends in both (unit_party_sanders.o's .comment says GC/1.3).
+// Tested GC 1.3/2.0/2.5/2.6/2.7/3.0a3/3.0a5 and flags -O4,p/-O4,s/-O3..-O0/-opt off/-sdata 0|8|48/
+// -inline off/-schedule off, and base forms pointer+const, &arr[i], casts, u8/u16/u32/struct-member externs,
+// const/volatile, a variable offset and lbl_803848DC-4; none emit the addend. This is a toolchain
+// relocation-encoding difference, so no C form reaches 100% with the compiler available here.
+// unit_party_christine.c has the same shape and the same 99.98%; the matching siblings
+// (clauda/vivian/chuchurina/nokotarou/yoshi) put a lbl_XXXX symbol directly on the base.
 static void __makeTechMenuFunc(BattleWorkCommand* cmd, s32* count) {
 #ifdef MUST_MATCH
     u8* weaponBase = attack_audience_event_803845A8 + 0x330;

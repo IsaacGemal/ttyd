@@ -805,9 +805,9 @@ void sort_1_1_func(WindowWork* work) {
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
 }
 
-// NONMATCHING (99.88%): only the pooled int->float magic constant differs
-// (double_to_int_802f44d0 vs a local @773@; resolves once the pool is complete).
-// The two trailing fmadds now match (0.125 multiply with the constant on the left).
+// The two trailing lerps use separate deltas so MWCC keeps the first fmadd's
+// difference/accumulator in the original's FPRs.
+// NONMATCHING (99.9%): the int->float magic pools as @NNN@, not double_to_int_802f44d0.
 void winSortMain(WindowWork* work) {
     u32 trg = work->buttonTrg;
     u32 rep = work->dirRep;
@@ -869,8 +869,21 @@ void winSortMain(WindowWork* work) {
         }
     }
 
-    WW_F32(work, 0x164) += float_0p125_8041d104 * (WW_F32(work, 0x16C) - WW_F32(work, 0x164));
-    WW_F32(work, 0x168) += float_0p125_8041d104 * (WW_F32(work, 0x170) - WW_F32(work, 0x168));
+    {
+#ifdef MUST_MATCH
+        // Two deltas (the natural form shares one): a single temp makes MWCC swap
+        // the first fmadd's difference and accumulator registers.
+        f32 d1;
+        f32 d2;
+        d1 = WW_F32(work, 0x16C) - WW_F32(work, 0x164);
+        WW_F32(work, 0x164) += d1 * float_0p125_8041d104;
+        d2 = WW_F32(work, 0x170) - WW_F32(work, 0x168);
+        WW_F32(work, 0x168) += d2 * float_0p125_8041d104;
+#else
+        WW_F32(work, 0x164) += float_0p125_8041d104 * (WW_F32(work, 0x16C) - WW_F32(work, 0x164));
+        WW_F32(work, 0x168) += float_0p125_8041d104 * (WW_F32(work, 0x170) - WW_F32(work, 0x168));
+#endif
+    }
 }
 
 extern const f32 float_neg800_8041d1b0;
