@@ -2736,3 +2736,43 @@ Follow-ups done (Sep 30, Claude #2): evt_lect_muj links: its named `zero_muj_*`/
 literals, and `lect_itemget_kesan`'s `field * 0.5f` is written `/ 2.0f` (the same register-order idiom as
 moo_04), which was the last two bytes. batten_leader's `VecData` is a static inside
 `battleGetBattenSatelliteInitPos`, as retail's `VecData$634` shows (only the `$N` suffix and one register differ).
+
+## The first unattended night (2026-09-29 23:40 to 2026-09-30 ~08:00, TTYD Claude #1 orchestrating)
+
+Isaac went to bed with standing orders: keep waves running until 8 am, review every PR (one Claude review, plus
+Codex for waves and tool/flag/struct changes), merge what passes, and hold split, compiler-flag and shared-tool
+changes for him. Three Claude sessions ran: #1 orchestrated (waves 24-26, 28, 29, 31, collection, reviews, merges),
+#2 ran the REL waves (22, 27, 30, the wave 27 salvage), #3 finished units and near-misses. A 45-minute timer was the
+heartbeat.
+
+**Result: 5,888 -> 7,836 matched functions; code linked 20.2% -> 23.7%; data linked 52% -> 62.7%; 27 PRs merged
+after 03:30 alone.** The biggest single jumps were wave 22 (+1,490 REL functions) and wave 27 (+173); the most
+efficient per agent were the near-miss waves 28 and 29 (29/48 and 25/48 to 100%, none worse).
+
+What we learned, for the autonomous flow:
+- **Near-miss waves beat untouched-function waves** once the cheap untouched pool is gone: give each agent one
+  file's closest 90-99% function, the brief's "Code shapes" section, the original file, and "never lower the
+  score". The dol's untouched pool under 1 KB was exhausted by wave 26.
+- **Every wave's partials hid behaviour bugs that scores can't see**: byte-reversed colour tables, a dropped `& 7`
+  index mask, wrong TEV register ids, wrong random ranges, flipped signs, a missing switch, calls that only
+  happened under MUST_MATCH. The Claude + Codex review pair found at least one in every wave; neither alone did.
+  Near-miss waves also fixed real bugs on main (evt_npc's args index, win_main's colour byte order, release's
+  case fall-through, crane_timing's early return).
+- **CI now ratchets data sections** (#49): functions reaching 100% while a unit's .rodata got worse was the most
+  common collection regression (named constants left next to the literals that replaced them, `<math.h>` statics,
+  extern'd constants the unit pools itself).
+- **Sandboxing held**: bubblewrap per-agent /tmp plus "no network" stopped the /tmp collisions and the
+  undisclosed fetches (wave 24 had fetched from GPL and unlicensed repos; waves 26+ fetched nothing).
+- **The orchestrator merges; fix subagents only edit.** A fix subagent that ran `git stash` mid-merge silently
+  dropped #63's changes; the regression gate caught it. Fix prompts now forbid history operations.
+- **Peers go idle unless pushed**: a session that finishes a turn waits for a message. Every heartbeat now
+  checks each peer's last activity and gives idle ones their next task.
+- **Nothing that needs Isaac's approval should be assigned overnight**: Claude #3 correctly asked him before
+  cloning decomp-permuter and then sat blocked for hours. And the tower's Tailscale SSH re-check (a sign-in only
+  he can approve) stopped all waves from ~04:15.
+- **Split errors are systematic**: 32 dol units' .data splits start 8 bytes late (a `{-1.0f, 1.0f}` pair the next
+  unit uses as its base register); `tools/split_scan.py` in #68 lists them for one systematic fix.
+
+Waiting for Isaac: #57 (churantalar split), #60 (flag sweep, Codex-reviewed), #68 (nokotarou split + typed data +
+the 32-unit scan, Codex-reviewed), the decomp-permuter clone, and the Tailscale approval. Wave 31 (48 near-misses)
+and Claude #2's wave 32 (55 REL near-misses) resume once the tower answers.
