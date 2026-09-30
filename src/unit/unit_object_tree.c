@@ -155,17 +155,16 @@ static EVT_BEGIN(damage_event)
     RETURN
 EVT_END()
 
-// TODO: type
 static s32 _data[35] = {
-    0xFFFFFFFB, 0x00000000, 0x0000000F, 0x00000000,
-    0xFFFFFFF1, 0x00000000, 0x0000000E, 0x00000000,
-    0xFFFFFFF3, 0x00000000, 0x0000000C, 0x00000000,
-    0xFFFFFFF5, 0x00000000, 0x0000000A, 0x00000000,
-    0xFFFFFFF7, 0x00000000, 0x00000008, 0x00000000,
-    0xFFFFFFF9, 0x00000000, 0x00000006, 0x00000000,
-    0xFFFFFFFA, 0x00000000, 0x00000005, 0x00000000,
-    0xFFFFFFFC, 0x00000000, 0x00000002, 0x00000000,
-    0xFFFFFFFE, 0x00000000, 0x00000000,
+    -5, 0, 15, 0,
+    -15, 0, 14, 0,
+    -13, 0, 12, 0,
+    -11, 0, 10, 0,
+    -9, 0, 8, 0,
+    -7, 0, 6, 0,
+    -6, 0, 5, 0,
+    -4, 0, 2, 0,
+    -2, 0, 0,
 };
 
 static BattleUnitDefense defence = { { 0, 0, 0, 0, 0 } };
