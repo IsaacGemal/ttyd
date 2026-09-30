@@ -93,22 +93,34 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
 
 
 def extend_data_ids():
-    """extend_data(id) is an inline function forcedata<id>: two files of one REL with the same id are merged by the
-    linker and the second one's constants vanish. Ids must be unique inside each rels/<mod>/src (common's are unit-named)."""
-    import re
+    """extend_data(id) is an inline function forcedata<id>: two files linked into one module with the same id are
+    merged by the linker and the second one's constants vanish. Ids must be unique among the sources each REL links
+    (objdiff.json's source paths, shared rels/common units included), and among everything linked into the dol."""
+    import json, re
+    r = run([sys.executable, "configure.py"])
+    if r.returncode:
+        fail("extend_data", "configure.py failed:\n" + r.stderr[-2000:])
+    rels = {d.name for d in (ROOT / "rels").iterdir() if d.is_dir() and d.name != "common"}
+    sources = {}
+    for u in json.load(open(ROOT / "objdiff.json"))["units"]:
+        path = u.get("metadata", {}).get("source_path")
+        if path:
+            module = u["name"].split("/", 1)[0]
+            sources.setdefault(module if module in rels else "dol", set()).add(path)
     problems = []
-    for mod_dir in sorted((ROOT / "rels").glob("*")):
-        if mod_dir.name == "common":   # its ids are named after the unit; variants (v2/) are never linked into one REL together
-            continue
+    for module, paths in sorted(sources.items()):
         seen = {}
-        for f in sorted(mod_dir.glob("src/**/*.c")):
-            for ident in set(re.findall(r"extend_data\((\w+),", f.read_text(errors="replace"))):
-                if ident in seen:
-                    problems.append(f"{f.relative_to(ROOT)}: extend_data({ident}) is also used in {seen[ident]}")
-                seen[ident] = f.relative_to(ROOT)
+        for path in sorted(paths):
+            f = ROOT / path
+            if not f.exists():
+                continue
+            for ident in set(re.findall(r"extend_data\s*\(\s*(\w+)\s*,", f.read_text(errors="replace"))):
+                if ident in seen and seen[ident] != path:
+                    problems.append(f"{module}: extend_data({ident}) in {path} and {seen[ident]}")
+                seen[ident] = path
     if problems:
         fail("extend_data", "\n  " + "\n  ".join(problems))
-    print("ok   [extend_data] ids unique per REL directory")
+    print(f"ok   [extend_data] ids unique within each of {len(sources)} modules' linked sources")
 
 
 def build():

@@ -16,6 +16,9 @@
 #include "party/party_motion.h"
 #include "system.h"
 #include "unit_boss_koopa_tou.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_disp.h"
+#include "battle/battle_unit.h"
 
 #pragma pool_data off
 
@@ -25,9 +28,9 @@ static USER_FUNC(_icon_jump_icon);
 static USER_FUNC(party_cannot_use_command);
 static USER_FUNC(mario_cannot_use_command);
 static u32 cmd_disable_string[5];
-static u32 regist[6];
-static u32 data_table[4];
-static u32 parts[19];
+static BattleVulnerableStatus regist;
+static BattleDataEntry data_table[2];
+static BattleUnitKindPart parts[1];
 static s32 init_event[72];
 static s32 entry_event[45];
 static s32 damage_event[10];
@@ -60,141 +63,459 @@ extend_data(153,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: type
-u32 unit_boss_koopa_tou[49] = {
-    0x0000003F, (u32)"btl_un_koopa", 0x001E0000, 0x01012700,
-    0x00640032, 0x00090056, 0x00500000, 0x00460000,
-    0x00000000, 0x42200000, 0x00000000, 0x00000000,
-    0x42200000, 0x42200000, 0x00000000, 0x422C0000,
-    0x00000000, 0xC1200000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x41A80000,
-    0x00000000, 0x00000000, 0x42100000, 0x42900000,
-    0x00000000, 0x00000000, 0x42200000, 0x00000000,
-    0x42AC0000, 0x42A00000, 0x00000002, 0x64140000,
-    0x00000000, 0x00000000, 0x00000000, (u32)"SFX_BOSS_KOOPA_DAMAGED1",
-    (u32)"SFX_BTL_DAMAGE_FIRE1", (u32)"SFX_BTL_DAMAGE_ICE1", (u32)"SFX_BTL_DAMAGE_BIRIBIRI1", 0x00000000,
-    (u32)&regist, 0x01000000, (u32)&parts, (u32)&init_event,
-    (u32)&data_table,
+BattleUnitKind unit_boss_koopa_tou = {
+    UNIT_BOWSER_CHAPTER3,       // mUnitType
+    "btl_un_koopa",             // name
+    30,                         // maxHp
+    0,                          // maxFp
+    1,                          // mDangerHP
+    1,                          // mPerilHP
+    39,                         // mLevel
+    0,                          // mBonusExp
+    0,                          // bonusCoinRolls
+    100,                        // bonusCoinRate
+    0,                          // baseCoin
+    50,                         // field_0x13
+    9,                          // field_0x14
+    86,                         // width
+    80,                         // height
+    { 0, 70 },                  // statusIconOffset
+    { 0.0f, 40.0f, 0.0f },      // centerOffset
+    { 0, 0 },                   // hpGaugeOffset
+    { 40.0f, 40.0f, 0.0f },     // talkTogeBaseOffset
+    { 43.0f, 0.0f, -10.0f },    // field_0x3C
+    { 0.0f, 0.0f, 0.0f },       // burnFlameOffset
+    0.0f,                       // field_0x54
+    0.0f,                       // field_0x58
+    { 21.0f, 0.0f, 0.0f },      // bintaHitOffset
+    { 36.0f, 72.0f, 0.0f },     // kissHitOffset
+    { 0.0f, 40.0f, 0.0f },      // cutBaseOffset
+    86.0f,                      // cutWidth
+    80.0f,                      // cutHeight
+    0,                          // turnOrder
+    0,                          // turnOrderVariance
+    0,                          // swallowRate
+    2,                          // swallowAttribute
+    100,                        // field_0x8C
+    20,                         // itemStealParam
+    { 0.0f, 0.0f, 0.0f },       // starPointDispOffset
+    "SFX_BOSS_KOOPA_DAMAGED1",  // damageSfxName
+    "SFX_BTL_DAMAGE_FIRE1",     // fireDamageSfxName
+    "SFX_BTL_DAMAGE_ICE1",      // iceDamageSfxName
+    "SFX_BTL_DAMAGE_BIRIBIRI1", // electricDamageSfxName
+    0,                          // attributeFlags
+    &regist,                    // vulnStatus
+    1,                          // numParts
+    parts,                      // mParts
+    init_event,                 // initEvtScript
+    data_table,                 // dataTable
 };
 
-// TODO: type
-static u32 defence[2] = {
-    0x01010101, 0x01000000,
+static BattleUnitDefense defence = { { 1, 1, 1, 1, 1 } };
+
+static BattleUnitDefenseAttr defence_attr = { { 0, 0, 0, 0, 0 } };
+
+static BattleVulnerableStatus regist = {
+    70,  // sleepRate
+    60,  // stopRate
+    60,  // dizzyRate
+    100, // poisonRate
+    70,  // confuseRate
+    100, // electricRate
+    100, // burnRate
+    40,  // freezeRate
+    100, // hugeRate
+    75,  // tinyRate
+    100, // attackUpRate
+    75,  // attackDownRate
+    100, // defenseUpRate
+    90,  // defenseDownRate
+    60,  // allergicRate
+    0,   // frightRate
+    0,   // galeForceRate
+    100, // fastRate
+    60,  // slowRate
+    100, // dodgyRate
+    100, // invisibleRate
+    0,   // instaKillRate
 };
 
-// TODO: type
-static u32 defence_attr[2] = {
-    0x00000000, 0x00000000,
+static BattleDispPose pose_table[18] = {
+    { 0x01, "KPA_N_3" },
+    { 0x02, "KPA_Z_6" },
+    { 0x09, "KPA_Z_6" },
+    { 0x05, "KPA_K_2" },
+    { 0x04, "KPA_S_2" },
+    { 0x03, "KPA_S_2" },
+    { 0x1C, "KPA_S_1" },
+    { 0x1D, "KPA_Q_2" },
+    { 0x1E, "KPA_Q_2" },
+    { 0x1F, "KPA_D_1" },
+    { 0x27, "KPA_D_1" },
+    { 0x32, "KPA_S_1" },
+    { 0x2A, "KPA_R_1" },
+    { 0x28, "KPA_W_1" },
+    { 0x38, "KPA_S_1" },
+    { 0x39, "KPA_S_1" },
+    { 0x41, "KPA_T_1" },
+    { 0x45, "KPA_S_1" },
 };
 
-// TODO: type
-static u32 regist[6] = {
-    0x463C3C64, 0x46646428, 0x644B644B, 0x645A3C00,
-    0x00643C64, 0x64000000,
+static BattleDispPose pose_table_forward_leaning[18] = {
+    { 0x01, "KPA_N_2" },
+    { 0x02, "KPA_Z_5" },
+    { 0x09, "KPA_Z_5" },
+    { 0x05, "KPA_K_1" },
+    { 0x04, "KPA_X_1" },
+    { 0x03, "KPA_X_1" },
+    { 0x1C, "KPA_S_8" },
+    { 0x1D, "KPA_D_4" },
+    { 0x1E, "KPA_D_4" },
+    { 0x1F, "KPA_D_4" },
+    { 0x27, "KPA_D_4" },
+    { 0x32, "KPA_S_8" },
+    { 0x2A, "KPA_R_1" },
+    { 0x28, "KPA_W_1" },
+    { 0x38, "KPA_S_8" },
+    { 0x39, "KPA_S_8" },
+    { 0x41, "KPA_T_9" },
+    { 0x45, "KPA_S_8" },
 };
 
-// TODO: type
-static u32 pose_table[36] = {
-    0x00000001, (u32)"KPA_N_3", 0x00000002, (u32)"KPA_Z_6",
-    0x00000009, (u32)"KPA_Z_6", 0x00000005, (u32)"KPA_K_2",
-    0x00000004, (u32)"KPA_S_2", 0x00000003, (u32)"KPA_S_2",
-    0x0000001C, (u32)"KPA_S_1", 0x0000001D, (u32)"KPA_Q_2",
-    0x0000001E, (u32)"KPA_Q_2", 0x0000001F, (u32)"KPA_D_1",
-    0x00000027, (u32)"KPA_D_1", 0x00000032, (u32)"KPA_S_1",
-    0x0000002A, (u32)"KPA_R_1", 0x00000028, (u32)"KPA_W_1",
-    0x00000038, (u32)"KPA_S_1", 0x00000039, (u32)"KPA_S_1",
-    0x00000041, (u32)"KPA_T_1", 0x00000045, (u32)"KPA_S_1",
+static BattleDataEntry data_table[2] = {
+    { 0x31, dead_event },
+    { 0x00, NULL },
 };
 
-// TODO: type
-static u32 pose_table_forward_leaning[36] = {
-    0x00000001, (u32)"KPA_N_2", 0x00000002, (u32)"KPA_Z_5",
-    0x00000009, (u32)"KPA_Z_5", 0x00000005, (u32)"KPA_K_1",
-    0x00000004, (u32)"KPA_X_1", 0x00000003, (u32)"KPA_X_1",
-    0x0000001C, (u32)"KPA_S_8", 0x0000001D, (u32)"KPA_D_4",
-    0x0000001E, (u32)"KPA_D_4", 0x0000001F, (u32)"KPA_D_4",
-    0x00000027, (u32)"KPA_D_4", 0x00000032, (u32)"KPA_S_8",
-    0x0000002A, (u32)"KPA_R_1", 0x00000028, (u32)"KPA_W_1",
-    0x00000038, (u32)"KPA_S_8", 0x00000039, (u32)"KPA_S_8",
-    0x00000041, (u32)"KPA_T_9", 0x00000045, (u32)"KPA_S_8",
+static BattleUnitKindPart parts[1] = {
+    {
+        1,                      // partNum
+        "btl_un_koopa",         // partName
+        "c_koopa",              // modelName
+        { 0.0f, 0.0f, 0.0f },   // positionOffset
+        { 34.0f, 62.0f, 0.0f }, // hitBaseOffset
+        { 22.0f, 78.0f, 0.0f }, // hitCursorBaseOffset
+        70,                     // field_0x30
+        80,                     // field_0x32
+        255,                    // baseAlpha
+        &defence,               // defense
+        &defence_attr,          // defenseAttr
+        0x00000009,             // attributes
+        0,                      // counterAttributes
+        pose_table,             // poseTable
+    },
 };
 
-// TODO: type
-static u32 data_table[4] = {
-    0x00000031, (u32)&dead_event, 0x00000000, 0x00000000,
+static BattleWeapon weapon_koopa_hip_attack = {
+    NULL,                                       // name
+    0,                                          // icon
+    ITEM_NULL,                                  // item
+    NULL,                                       // description
+    100,                                        // baseAccuracy
+    0,                                          // baseFpCost
+    0,                                          // baseSpCost
+    1,                                          // superguardType
+    1.0f,                                       // field_0x14
+    1,                                          // mStylishCommandMultiplier
+    1,                                          // field_0x19
+    1,                                          // mBingoSlotChance
+    1,                                          // field_0x1B
+    weaponGetPowerDefault,                      // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },                 // hpDamageWork
+    NULL,                                       // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },                 // fpDamageWork
+    0x01101260,                                 // targetClassFlags
+    0x20001004,                                 // targetPropertyFlags
+    0,                                          // element
+    10,                                         // field_0x6D
+    3,                                          // actionLevel
+    2,                                          // field_0x6F
+    NULL,                                       // acHelpMsg
+    0x00001087,                                 // special
+    0x0000000C,                                 // counterResistanceFlags
+    0x80000000,                                 // targetWeightingFlags
+    0,                                          // sleepChance
+    0,                                          // sleepTime
+    0,                                          // stopChance
+    0,                                          // stopTime
+    0,                                          // dizzyChance
+    0,                                          // dizzyTime
+    0,                                          // poisonChance
+    0,                                          // poisonTime
+    0,                                          // poisonStrength
+    0,                                          // confuseChance
+    0,                                          // confuseTime
+    0,                                          // electricChance
+    0,                                          // electricTime
+    0,                                          // dodgyChance
+    0,                                          // dodgyTime
+    0,                                          // burnChance
+    0,                                          // burnTime
+    0,                                          // freezeChance
+    0,                                          // freezeTime
+    0,                                          // sizeChangeChance
+    0,                                          // sizeChangeTime
+    0,                                          // sizeChangeStrength
+    0,                                          // atkChangeChance
+    0,                                          // atkChangeTime
+    0,                                          // atkChangeStrength
+    0,                                          // defChangeChance
+    0,                                          // defChangeTime
+    0,                                          // defChangeStrength
+    0,                                          // allergicChance
+    0,                                          // allergicTime
+    0,                                          // ohkoChance
+    0,                                          // chargeStrength
+    0,                                          // fastChance
+    0,                                          // fastTime
+    0,                                          // slowChance
+    0,                                          // slowTime
+    0,                                          // frightChance
+    0,                                          // galeForceChance
+    0,                                          // paybackTime
+    0,                                          // holdFastTime
+    0,                                          // invisibleChance
+    0,                                          // invisibleTime
+    0,                                          // hpRegenTime
+    0,                                          // hpRegenStrength
+    0,                                          // fpRegenTime
+    0,                                          // fpRegenStrength
+    NULL,                                       // mAttackEvtScript
+    { 0, 25, 25, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 parts[19] = {
-    0x00000001, (u32)"btl_un_koopa", (u32)"c_koopa", 0x00000000,
-    0x00000000, 0x00000000, 0x42080000, 0x42780000,
-    0x00000000, 0x41B00000, 0x429C0000, 0x00000000,
-    0x00460050, 0x00FF0000, (u32)&defence, (u32)&defence_attr,
-    0x00000009, 0x00000000, (u32)&pose_table,
+static BattleWeapon weapon_koopa_bite_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    30,                                       // poisonChance
+    10,                                       // poisonTime
+    1,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_koopa_hip_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x20001004, 0x000A0302,
-    0x00000000, 0x00001087, 0x0000000C, 0x80000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00191964, 0x00000000, 0x00000000,
+static BattleWeapon weapon_koopa_critical_bite_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    1,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 2, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01101260,                               // targetClassFlags
+    0x21002000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000087,                               // special
+    0x00000002,                               // counterResistanceFlags
+    0x00000004,                               // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// TODO: type
-static u32 weapon_koopa_bite_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000002, 0x00000004,
-    0x00000000, 0x00001E0A, 0x01000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_koopa_critical_bite_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000001, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000002, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x01101260, 0x21002000, 0x00000302,
-    0x00000000, 0x00000087, 0x00000002, 0x00000004,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
-};
-
-// TODO: type
-static u32 weapon_koopa_fire_attack[48] = {
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x64000000, 0x3F800000, 0x01010101, (u32)weaponGetPowerDefault,
-    0x00000003, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x02101260, 0x20000000, 0x01000302,
-    0x00000000, 0x00000047, 0x000007FF, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000000, 0x00000000, 0x00000000,
-    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+static BattleWeapon weapon_koopa_fire_attack = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    1,                                        // field_0x19
+    1,                                        // mBingoSlotChance
+    1,                                        // field_0x1B
+    weaponGetPowerDefault,                    // hpDamageFn
+    { 3, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02101260,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    1,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00000047,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
 static EVT_BEGIN(koopa_zoom)
@@ -328,31 +649,31 @@ static EVT_BEGIN(attack_event)
     CALL(btlevtcmd_GetUnitWork, -2, 4, LW(0))
     SWITCH(LW(0))
         CASE_EQUAL(0)
-        SET_VALUE(LW(9), PTR(weapon_koopa_fire_attack))
+        SET_VALUE(LW(9), PTR(&weapon_koopa_fire_attack))
         CALL_CHILD(fire_attack_event)
         CALL(btlevtcmd_SetUnitWork, -2, 4, 1)
         CASE_EQUAL(1)
-        SET_VALUE(LW(9), PTR(weapon_koopa_bite_attack))
+        SET_VALUE(LW(9), PTR(&weapon_koopa_bite_attack))
         CALL_CHILD(bite_attack_event)
         CALL(btlevtcmd_SetUnitWork, -2, 4, 2)
         CASE_EQUAL(2)
-        SET_VALUE(LW(9), PTR(weapon_koopa_hip_attack))
+        SET_VALUE(LW(9), PTR(&weapon_koopa_hip_attack))
         CALL_CHILD(hip_attack_event)
         CALL(btlevtcmd_SetUnitWork, -2, 4, 3)
         CASE_DEFAULT
         CALL(btlevtcmd_DrawLots, LW(0), 4, 30, 30, 0, 30)
         SWITCH(LW(0))
             CASE_EQUAL(0)
-            SET_VALUE(LW(9), PTR(weapon_koopa_hip_attack))
+            SET_VALUE(LW(9), PTR(&weapon_koopa_hip_attack))
             CALL_CHILD(hip_attack_event)
             CASE_EQUAL(1)
-            SET_VALUE(LW(9), PTR(weapon_koopa_bite_attack))
+            SET_VALUE(LW(9), PTR(&weapon_koopa_bite_attack))
             CALL_CHILD(bite_attack_event)
             CASE_EQUAL(2)
-            SET_VALUE(LW(9), PTR(weapon_koopa_critical_bite_attack))
+            SET_VALUE(LW(9), PTR(&weapon_koopa_critical_bite_attack))
             CALL_CHILD(critical_bite_attack_event)
             CASE_EQUAL(3)
-            SET_VALUE(LW(9), PTR(weapon_koopa_fire_attack))
+            SET_VALUE(LW(9), PTR(&weapon_koopa_fire_attack))
             CALL_CHILD(fire_attack_event)
         END_SWITCH
     END_SWITCH
