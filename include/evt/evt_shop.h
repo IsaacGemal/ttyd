@@ -19,7 +19,6 @@ typedef struct ShopObj {
 	const char* hitName; //0x4
 } ShopObj;
 
-extern u32 buy_evt[];
 extern const char str_802ECDE0[];
 
 USER_FUNC(evt_shop_setup);

@@ -1,0 +1,77 @@
+#pragma once
+
+#include <dolphin/gx.h>
+#include "evt/evt_cmd.h"
+#include "driver/camdrv.h"
+#include "memory.h"
+
+typedef struct ShadowWork {
+    GXTexObj texObj;      // 0x0
+    smartEntry* texEntry; // 0x20
+} ShadowWork;
+
+USER_FUNC(yami_oowareru_check);
+USER_FUNC(eff_sleep_off);
+USER_FUNC(eff_sleep_on);
+USER_FUNC(make_shadow);
+void make_shadow_disp(CameraId camId, void* param);
+EVT_DEF(evt_door_1_open);
+EVT_DEF(evt_door_1_close);
+EVT_DEF(evt_sakaba_1);
+EVT_DEF(evt_sakaba_2);
+EVT_DEF(evt_sakaba_3);
+EVT_DEF(evt_sakaba_4);
+EVT_DEF(evt_wall2);
+EVT_DEF(evt_door_2_open);
+EVT_DEF(evt_door_2_close);
+EVT_DEF(evt_hotdog);
+EVT_DEF(evt_ship_shadow);
+EVT_DEF(init_hikuu);
+EVT_DEF(talk_hikuu);
+EVT_DEF(init_sakaba);
+EVT_DEF(talk_sakaba);
+EVT_DEF(init_mise);
+EVT_DEF(talk_mise);
+EVT_DEF(init_hot);
+EVT_DEF(talk_hot);
+EVT_DEF(init_musume_1);
+EVT_DEF(talk_musume_1);
+EVT_DEF(init_musume_2);
+EVT_DEF(talk_musume_2);
+EVT_DEF(init_musume_3);
+EVT_DEF(talk_musume_3);
+EVT_DEF(init_kino_1);
+EVT_DEF(reg_kino_1);
+EVT_DEF(talk_kino_1);
+EVT_DEF(init_kino_2);
+EVT_DEF(talk_kino_2);
+EVT_DEF(init_roten_1);
+EVT_DEF(talk_roten_1);
+EVT_DEF(init_roten_2);
+EVT_DEF(talk_roten_2);
+EVT_DEF(init_jugem_1);
+EVT_DEF(talk_jugem_1);
+EVT_DEF(init_jugem_2);
+EVT_DEF(talk_jugem_2);
+EVT_DEF(init_bijyo);
+EVT_DEF(talk_bijyo);
+EVT_DEF(select_number);
+EVT_DEF(evt_uron);
+EVT_DEF(evt_tamago_sleep);
+EVT_DEF(dummy);
+EVT_DEF(hot_move_evt);
+EVT_DEF(hot_move_evt2);
+EVT_DEF(evt_oyaji_move);
+EVT_DEF(evt_tamago_move);
+EVT_DEF(evt_tamago);
+EVT_DEF(talk_tamago);
+EVT_DEF(evt_gondora_updown);
+EVT_DEF(evt_gondora_mon);
+EVT_DEF(evt_gondora);
+EVT_DEF(evt_gondora2);
+EVT_DEF(evt_search_light);
+EVT_DEF(evt_dummy_sw);
+EVT_DEF(evt_peach_after);
+EVT_DEF(evt_telbox);
+EVT_DEF(evt_mail);
+EVT_DEF(tou_01_init_evt);

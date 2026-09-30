@@ -241,6 +241,7 @@ void BattleAudienceAddTargetNumSub(f32 value);
 void BattleAudienceAddTargetNum(f32 value, f32 delta);
 void BattleAudienceAddPhaseEvtList(s32 evtId);
 void BattleAudienceJoy(s32 a);
+void BattleAudienceJoySACLecture(void);
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d);
 void BattleAudienceSoundCheer(s32 a, s32 b);
 void BattleAudienceSoundBooingKind(s32 kind);

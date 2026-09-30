@@ -7,6 +7,7 @@ BOOL marioSlitKeyDisable(void);
 void N_marioSlitSetAfterLand(void);
 void unk_800a4e40(void);
 void motSlitCancel(void);
+void motSlitCancel3(void);
 s32 marioGetMotSlitCancel3(void);
 void marioClearSlitFloor(void);
 BOOL marioChkSlitThrouhEnd(void);

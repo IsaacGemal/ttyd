@@ -24,6 +24,7 @@ typedef struct effVtxArray {
 extern u8 flowers_v[];
 
 void effInit64(void);
+struct EffectEntry* effGlassN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale);
 void effTexSetupN64(void);
 void effGetTexObjN64(u32 id, GXTexObj* obj);
 eff_set* effGetSetN64(const char* name);

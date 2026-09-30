@@ -209,3 +209,4 @@ typedef struct PartyData {
 } PartyData;
 void partySetFamicomMode(PartyEntry* party, s32 mode);
 extern s32 partyCtrlNo;
+extern char* partyPoseTbl[20][15];

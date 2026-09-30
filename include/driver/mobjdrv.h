@@ -67,3 +67,4 @@ void mobjCalcMtx2(MapObjectEntry* entry);
 s32 mobjCheckItemboxOpen(MapObjectEntry* entry);
 MapObjectEntry* mobjNearDistCheck2(f32 x, f32 y, f32 z, f32 minMagnitude, char** names);
 void mobjReset(BOOL inBattle);
+void mobjKoopaOn(void);

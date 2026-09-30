@@ -7,6 +7,8 @@
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
 
+extern u32 anim_ext_tex_size;
+
 typedef struct AnimData AnimData;
 typedef struct AnimPoseNode AnimPoseNode;
 typedef struct AnimTexMtx AnimTexMtx;
@@ -294,6 +296,7 @@ s32 animPoseGetVivianType(s32 poseId);
 f32 animPoseGetLoopTimes(s32 id);
 
 void animPoseWorldPositionEvalOn(s32 poseId);
+void L_animPoseWorldPositionEvalOff(s32 poseId);
 void animPoseWorldMatrixEvalOn(s32 poseId);
 void animPoseMain(s32 poseId);
 
@@ -321,6 +324,10 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
                                         f32 f2, s32* out0, s32* out1, s32* out2, s32* out3);
 void animPoseAutoRelease(s32 type);
 void animPoseVivianMain(s32 poseId, Vec* pos);
-void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData);
-void animPoseDrawShape(s32 poseId, s32 shapeId);
 void materialProc(s32 shapeId, s32 field_0x28);
+typedef struct MoamoaChainEntry {
+    char* name; // 0x0
+    char* anim; // 0x4
+} MoamoaChainEntry;
+extern MoamoaChainEntry g_moamoa_chain_tbl[47];
+extern const s32 dat_80419a28;

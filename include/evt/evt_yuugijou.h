@@ -85,6 +85,8 @@ typedef struct PiantaParlorWork {
 	u32 field_0x134; //0x134
 } PiantaParlorWork;
 
+void monteCountDisp(void);
+
 void yuugijou_init(void);
 
 struct EventEntry* evtYuuWindow(void);
@@ -100,3 +102,4 @@ USER_FUNC(yuugijou_montemedal_keep);
 USER_FUNC(yuugijou_montemedal_return);
 USER_FUNC(yuugijou_montemedal_wait);
 USER_FUNC(yuugijou_set_yupflag);
+void unk_8022439c(s32 value);

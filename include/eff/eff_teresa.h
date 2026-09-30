@@ -1,6 +1,12 @@
 #pragma once
 
 #include "driver/effdrv.h"
+#include <dolphin/types.h>
+
+EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z);
+#pragma once
+
+#include "driver/effdrv.h"
 typedef struct EffTeresaData {
 	s32 type;            // 0x0
 	f32 x;               // 0x4
@@ -14,7 +20,6 @@ typedef struct EffTeresaData {
 	f32 angle;           // 0x38
 	s32 field_0x3C;      // 0x3C
 } EffTeresaData;
-EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z);
 void effTeresaMain(EffectEntry* effect);
 #include "driver/camdrv.h"
 void effTeresaDisp(CameraId camId, void* param);

@@ -16,6 +16,7 @@ void nannpc_ext_init(void);
 void nannpc_ext_shadow_disp(void);
 void nannpc_ext_disp(void);
 s32 nannpc_zcompare(ExtSortEntry* a, ExtSortEntry* b);
+void evt_nannpc_set_animtbl_sub(struct NanNpcEntry* entry, s16* table);
 
 USER_FUNC(evt_nannpc_entry);
 USER_FUNC(evt_nannpc_flag_onoff);

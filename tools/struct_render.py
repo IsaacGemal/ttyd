@@ -723,6 +723,8 @@ def auto_types(cfile, objs):
             alias[units[0]] = 'UNIT_DATA_SYM'
     def fits(sym, typ):
         o = objs.get(sym)
+        if o is not None and o['sec'] in ('.bss', '.sbss'):
+            return False  # uninitialized: nothing to render, and an initializer would move it to .data
         size = LAYOUTS[typ][0]
         stride = (size + ALIGN[typ] - 1) // ALIGN[typ] * ALIGN[typ]
         return o is not None and o['data'] is not None and o['size'] >= size and o['size'] % stride < 4
