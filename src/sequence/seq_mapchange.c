@@ -16,6 +16,7 @@
 #include "driver/swdrv.h"
 #include "driver/windowdrv.h"
 #include "evt/evt_badgeshop.h"
+#include "evt/evt_nannpc.h"
 #include "manager/evtmgr.h"
 #include "manager/winmgr.h"
 #include "mario/mario.h"
@@ -34,7 +35,6 @@
 
 extern BadgeShopWork* bdsw;
 extern BOOL dbg_lotteryinfo; // evt_lottery
-extern void* nanNPCWork;     // evt_nannpc.c keeps this static locally
 
 //.sbss
 char _next_bero[0x20];

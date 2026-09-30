@@ -18,20 +18,7 @@
 char unk_803dfbf8[0x100];
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
-extern const char str_8041D630[];
-extern const char str_8041D638[];
 extern const char str_8041D578[];
-extern const char str_8041D5A8[];
-extern const char str_8041D5AC[];
-extern const char str_8041D5B0[];
-extern const char str_8041D5B4[];
-extern const char str_8041D5B8[];
-extern const char str_8041D5BC[];
-extern const char str_8041D5C0[];
-extern const char str_8041D5C4[];
-extern const char str_8041D5C8[];
-extern const char str_8041D5CC[];
-extern const f32 float_0_8041d634;
 const f64 double_to_int_802f5e78 = 4503601774854144.0;
 
 // .data table: one entry per window "link" (see linkDt in win_mario.s)
@@ -63,58 +50,51 @@ extern const f32 float_0p89_8041d728;
 const char* hammer_help[4] = { NULL, "msg_hammer_1", "msg_hammer_2", "msg_hammer_3" };
 const char* boots_help[4] = { NULL, "msg_boots_1", "msg_boots_2", "msg_boots_3" };
 
-// NONMATCHING (72.63%): the original copies its digit table from
-// jumptable_802F57D4 and this file's .rodata pool is still incomplete, so the
-// pool base/offsets differ; `out` also stays in a register instead of reloading.
 char* unk_8016af5c(s32 num, s32 width) {
-    char buf[0x100];
+    signed char buf[0x100];
     const char* tbl[10] = {
-        str_8041D5A8, str_8041D5AC, str_8041D5B0, str_8041D5B4, str_8041D5B8,
-        str_8041D5BC, str_8041D5C0, str_8041D5C4, str_8041D5C8, str_8041D5CC,
+        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
+        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
     };
-    char* out = unk_803dfbf8;
     s32 i;
 
     if (num < 0) {
-        strcpy(out, str_8041D630);
+        strcpy(unk_803dfbf8, "-");
         num = -num;
     } else {
-        strcpy(out, (const char*)&float_0_8041d634);
+        strcpy(unk_803dfbf8, "");
     }
-    sprintf(buf, str_8041D638, num);
+    sprintf((char*)buf, "%d", num);
     for (i = 0; i < width; i++) {
-        if (i < width - strlen(buf)) {
-            strcat(out, str_8041D5A8);
+        if (i < width - strlen((char*)buf)) {
+            strcat(unk_803dfbf8, "\x82\x4F");
         } else {
-            strcat(out, tbl[buf[i - (width - (s32)strlen(buf))] - 0x30]);
+            strcat(unk_803dfbf8, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
         }
     }
-    return out;
+    return unk_803dfbf8;
 }
 
-// NONMATCHING (76.40%): same digit-table/pool issue as unk_8016af5c; no `width`
-// padding here.
 char* winZenkakuStr(s32 num) {
-    char buf[0x100];
+    signed char buf[0x100];
     const char* tbl[10] = {
-        str_8041D5A8, str_8041D5AC, str_8041D5B0, str_8041D5B4, str_8041D5B8,
-        str_8041D5BC, str_8041D5C0, str_8041D5C4, str_8041D5C8, str_8041D5CC,
+        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
+        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
     };
     static char tmp2[0x100];
-    char* out = tmp2;
-    s32 i;
+    u32 i;
 
     if (num < 0) {
-        strcpy(out, str_8041D630);
+        strcpy(tmp2, "-");
         num = -num;
     } else {
-        strcpy(out, (const char*)&float_0_8041d634);
+        strcpy(tmp2, "");
     }
-    sprintf(buf, str_8041D638, num);
-    for (i = 0; i < (s32)strlen(buf); i++) {
-        strcat(out, tbl[buf[i] - 0x30]);
+    sprintf((char*)buf, "%d", num);
+    for (i = 0; i < strlen((char*)buf); i++) {
+        strcat(tmp2, tbl[buf[i] - 0x30]);
     }
-    return out;
+    return tmp2;
 }
 
 void winMarioMain2(WindowWork* work) {

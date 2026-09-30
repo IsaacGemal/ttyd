@@ -405,7 +405,7 @@ void envDisp_DepthOfField(void) {
                 f0 = (f31 * f0);
                 f3 = f0 * f29;
                 if (f3 <= f28) {
-                    f1 = 1.5707964f;
+                    f1 = MTXDegToRad(90.0f);
                     if (f3 <= f1) {
                         f0 = f3 * f3;
                         f2 = (f2 * f0) - f26;
@@ -422,10 +422,10 @@ void envDisp_DepthOfField(void) {
                     }
                 }
                 else {
-                    f0 = 4.712389f;
+                    f0 = MTXDegToRad(270.0f);
                     if (f3 <= f0) {
                         f0 = f3 - f0;
-                        f1 = 1.5707964f;
+                        f1 = MTXDegToRad(90.0f);
                         f1 = f1 - f0;
                         f0 = f1 * f1;
                         f2 = (f2 * f0) - f26;
@@ -444,10 +444,10 @@ void envDisp_DepthOfField(void) {
                 }
                 f4 = 0.03705f;
                 if (f3 > f28) {
-                    f0 = 4.712389f;
+                    f0 = MTXDegToRad(270.0f);
                     if (f3 >= f1) {
                         f0 = f3 - f0;
-                        f1 = 1.5707964f;
+                        f1 = MTXDegToRad(90.0f);
                         f0 = f1 - f0;
                         f0 = f0 * f0;
                         f4 = (f4 * f0) - f25;
@@ -463,7 +463,7 @@ void envDisp_DepthOfField(void) {
 
                 }
                 else {
-                    f1 = 1.5707964f;
+                    f1 = MTXDegToRad(90.0f);
                     if (f3 > f1) {
                         f0 = f3 - f1;
                         f0 = f1 - f0;
@@ -497,38 +497,38 @@ void envDisp_DepthOfField(void) {
             v81 = (f32)i;
             v26 = (v15 * v81) * v18;
             if (v26 <= v23) {
-            if (v26 <= 1.5707964f) {
+            if (v26 <= MTXDegToRad(90.0f)) {
             v27 = (((((0.00761f * (v26 * v26)) - v20) * (v26 * v26)) + v22) * v26);
             }
             else {
-            v28 = (1.5707964f - (((v15 * v81) * v18) - 1.5707964f));
+            v28 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(90.0f)));
             v27 = (((((0.00761f * (v28 * v28)) - v20) * (v28 * v28)) + v22) * v28);
             }
             }
             else {
-            if (v26 < 4.712389f) {
+            if (v26 < MTXDegToRad(270.0f)) {
             v27 = -(((((0.00761f * ((v26 - v23) * (v26 - v23))) - v20) * ((v26 - v23) * (v26 - v23))) + v22) * (v26 - v23));
             }
             else {
-            v29 = (1.5707964f - (((v15 * v81) * v18) - 4.712389f));
+            v29 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(270.0f)));
             v27 = -(((((0.00761f * (v29 * v29)) - v20) * (v29 * v29)) + v22) * v29);
             }
             }
             if (v26 <= v23) {
-            if (v26 <= 1.5707964f) {
+            if (v26 <= MTXDegToRad(90.0f)) {
             v30 = ((((0.03705f * (v26 * v26)) - v24) * (v26 * v26)) + v22);
             }
             else {
-            v31 = (1.5707964f - (((v15 * v81) * v18) - 1.5707964f));
+            v31 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(90.0f)));
             v30 = -((((0.03705f * (v31 * v31)) - v24) * (v31 * v31)) + v22);
             }
             }
             else {
-            if (v26 < 4.712389f) {
+            if (v26 < MTXDegToRad(270.0f)) {
             v30 = -((((0.03705f * ((v26 - v23) * (v26 - v23))) - v24) * ((v26 - v23) * (v26 - v23))) + v22);
             }
             else {
-            v32 = (1.5707964f - (((v15 * v81) * v18) - 4.712389f));
+            v32 = (MTXDegToRad(90.0f) - (((v15 * v81) * v18) - MTXDegToRad(270.0f)));
             v30 = ((((0.03705f * (v32 * v32)) - v24) * (v32 * v32)) + v22);
             }
             }
@@ -584,7 +584,7 @@ void envDisp_DepthOfField(void) {
             var_f2 = ((((temp_f2 * temp_f0_2) - temp_f26) * temp_f0_2) + temp_f27) * temp_f1_2;
             }
             } else {
-            temp_f0_3 = 4.712389f;
+            temp_f0_3 = MTXDegToRad(270.0f);
             if (temp_f3 < temp_f0_3) {
             temp_f1_3 = temp_f3 - temp_f28;
             temp_f0_4 = temp_f1_3 * temp_f1_3;
@@ -607,7 +607,7 @@ void envDisp_DepthOfField(void) {
             var_f4 = -((((temp_f4 * temp_f0_8) - temp_f25) * temp_f0_8) + temp_f27);
             }
             } else {
-            temp_f0_9 = 4.712389f;
+            temp_f0_9 = MTXDegToRad(270.0f);
             if (temp_f3 < temp_f0_9) {
             temp_f0_10 = temp_f3 - temp_f28;
             temp_f0_11 = temp_f0_10 * temp_f0_10;
@@ -713,7 +713,7 @@ void envDisp_DepthOfField(void) {
                         var_f2_2 = ((((temp_f2_2 * temp_f0_16) - temp_f26_2) * temp_f0_16) + temp_f25_2) * temp_f1_7;
                     }
                 } else {
-                    temp_f0_17 = 4.712389f;
+                    temp_f0_17 = MTXDegToRad(270.0f);
                     if (temp_f3_3 < temp_f0_17) {
                         temp_f1_8 = temp_f3_3 - temp_f31_2;
                         temp_f0_18 = temp_f1_8 * temp_f1_8;
@@ -736,7 +736,7 @@ void envDisp_DepthOfField(void) {
                         var_f4_2 = -((((temp_f4_2 * temp_f0_22) - temp_f27_2) * temp_f0_22) + temp_f25_2);
                     }
                 } else {
-                    temp_f0_23 = 4.712389f;
+                    temp_f0_23 = MTXDegToRad(270.0f);
                     if (temp_f3_3 < temp_f0_23) {
                         temp_f0_24 = temp_f3_3 - temp_f31_2;
                         temp_f0_25 = temp_f0_24 * temp_f0_24;
@@ -1069,19 +1069,10 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-#ifdef MUST_MATCH
-// With the literal seed MWCC hoists the accumulator's initial load out of the loop and keeps
-// it in a register separate from the result, growing the frame from 0xf0 to 0x110. Reading the
-// seed from a file-scope variable keeps the load at the loop top. The natural form is the
-// #else branches below.
-static f32 env_ff_cos0 = 0.03705f;
-static f32 env_ff_sin0 = 0.00761f;
-#endif
-
 // opt_propagation off is required or MWCC rematerialises the polynomial coefficients into
 // every branch instead of hoisting them (same as evt_sub.c).
 #pragma opt_propagation off
-// NONMATCHING (97.89%): FPR allocator permutation only (target sinv=f20, cosv=f22, scale=f25,
+// NONMATCHING (94.30%): FPR allocator permutation, and the literal seeds hoist the accumulators out of the loop (target sinv=f20, cosv=f22, scale=f25,
 // sinC1=f21, cosC1=f23, one=f24, pi=f29; ours results f20/f21, scale f26, coeffs f22-f25),
 // which shifts the inline-sqrt block by one register. Frame and every opcode match.
 void envDisp_FF(void) {
@@ -1124,11 +1115,7 @@ void envDisp_FF(void) {
             f32 pi = 3.1415927f;
             f32 sinC1 = 0.16605f;
 
-#ifdef MUST_MATCH
-            cosv = env_ff_cos0;
-#else
             cosv = 0.03705f;
-#endif
             if (angle <= pi) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;
@@ -1156,11 +1143,7 @@ void envDisp_FF(void) {
                 cosv = cosv * f0 + one;
             }
 
-#ifdef MUST_MATCH
-            sinv = env_ff_sin0;
-#else
             sinv = 0.00761f;
-#endif
             if (angle <= pi) {
                 if (angle <= 1.5707964f) {
                     f0 = angle * angle;

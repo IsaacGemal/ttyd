@@ -91,6 +91,7 @@ static inline void effPikkyoloSetColor2(effPikkyoloN64Data* data) {
 	GXSetTevColor(2, color);
 }
 
+// NONMATCHING (96.90%)
 void effPikkyoloDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effPikkyoloN64Data* data;

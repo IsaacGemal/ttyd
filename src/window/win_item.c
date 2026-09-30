@@ -35,22 +35,12 @@ extern const GXColor dat_8041d468;
 extern const GXColor dat_8041d46c;
 extern const GXColor dat_8041d470;
 
-// The function reaches the Vec constants and the int->float double through one
-// base register (r31 = str_802F4CE8) plus displacements; MWCC only pools them
-// that way when they share the symbol's section, so model the .rodata block.
-typedef struct WinItemRodata {
-    u8 pad0[0x5A0];
-    Vec v0; // 0x5A0 vec3_802f5288
-    Vec v1; // 0x5AC vec3_802f5294
-    Vec v2; // 0x5B8 vec3_802f52a0
-    Vec v3; // 0x5C4 vec3_802f52ac
-    Vec v4; // 0x5D0 vec3_802f52b8
-    Vec v5; // 0x5DC vec3_802f52c4
-    u8 pad1[0x8F8 - 0x5E8];
-    f64 d; // 0x8F8 double_to_int_802f55e0
-} WinItemRodata;
-
-extern const WinItemRodata str_802F4CE8;
+extern const Vec vec3_802f5288;
+extern const Vec vec3_802f5294;
+extern const Vec vec3_802f52a0;
+extern const Vec vec3_802f52ac;
+extern const Vec vec3_802f52b8;
+extern const Vec vec3_802f52c4;
 extern const char str_802F560C[];
 extern const char str_802F5620[];
 extern const char str_802F5638[];
@@ -87,13 +77,11 @@ void winItemMain2(WindowWork* work) {
     WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) * float_0p25_8041d548;
 }
 
-// win_item's .rodata is not decompiled in this unit, which leaves three groups
-// of differences; see the report for details. Everything else (control flow,
-// all constants, the GX calls, the str_802F4CE8 offset addressing) matches.
-// NONMATCHING (89.96%): local int->float magic double @247@ instead of
-// lfd 0x8f8(r31); work in r28 not r29; per-call temp stack slots differ.
+// The original reaches the six Vecs and the int->float double through one base register
+// (r31 = str_802F4CE8) plus displacements, which MWCC only does once win_item's .rodata is
+// defined in this unit; declared extern, each symbol gets its own lis/addi.
+// NONMATCHING (65.91%): only the .rodata addressing and the register/stack shifts it causes differ.
 void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
-    const WinItemRodata* rod = &str_802F4CE8;
     GXColor color = dat_8041d468;
     f32 c;
     f32 b;
@@ -115,28 +103,28 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
         if (i == WW_S32(work, 0x210)) {
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             {
-                Vec translate = rod->v0;
+                Vec translate = vec3_802f5288;
 
                 translate.x = x - float_215_8041d53c;
                 translate.y = float_20_8041d4e8 + (a - (f32)ofs);
-                winTexSet(0xB3, translate, rod->v1, dat_8041d46c);
+                winTexSet(0xB3, translate, vec3_802f5294, dat_8041d46c);
             }
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             {
-                Vec translate = rod->v2;
+                Vec translate = vec3_802f52a0;
 
                 translate.x = c;
                 translate.y = float_20_8041d4e8 + (b - (f32)ofs);
-                winTexSet_x2(i + 0x18, 0xB3, translate, rod->v3, color);
+                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52ac, color);
             }
         } else {
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             {
-                Vec translate = rod->v4;
+                Vec translate = vec3_802f52b8;
 
                 translate.x = x - float_215_8041d53c;
                 translate.y = float_20_8041d4e8 + (a - (f32)ofs);
-                winTexSet_x2(i + 0x18, 0xB3, translate, rod->v5, dat_8041d470);
+                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52c4, dat_8041d470);
             }
         }
     }
