@@ -1601,15 +1601,13 @@ void BattleAudience_SetPresentItemType(s32 value) {
 	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
 }
 
-// NONMATCHING (99.51%): after the waiting-member collection loop the allocator puts the picked
-// member in r27/r28 instead of the original r28/r30; the body is otherwise identical.
 void BattleAudienceSoundWhistleKind(s32 kind) {
 	s32 waiting[200];
 	s32 i;
-	s32 count = 0;
 	s32 vol;
 	s32 member;
 	s32 kindIdx;
+	s32 count = 0;
 	Vec pos;
 	BattleAudienceSound* sound;
 

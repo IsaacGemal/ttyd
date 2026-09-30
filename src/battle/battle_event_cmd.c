@@ -375,12 +375,11 @@ USER_FUNC(btlevtcmd_ChangeParty) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to set current)
-// NONMATCHING (98.63%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetPos) {
     f32 x, y, z, currX, currY, currZ;
-    s32 indexX, indexY, indexZ, id;
     s32* args = event->args;
     BattleUnit* unit;
+    s32 indexX, indexY, indexZ, id;
 
     id = evtGetValue(event, args[0]);
     id = BattleTransID(event, id);
@@ -658,14 +657,13 @@ USER_FUNC(btlevtcmd_SetPartsHomePos) {
 }
 
 //s32* battleId, s32* partId, s32 indexX, s32 indexY, s32 indexZ
-// NONMATCHING (99.44%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_GetHitPos) {
     s32* args = event->args;
-    s32 indexX, indexY, indexZ;
     BattleUnit* unit;
     BattleUnitPart* part;
     s32 id, partId;
     f32 x, y, z;
+    s32 indexX, indexY, indexZ;
 
     id = evtGetValue(event, args[0]);
     id = BattleTransID(event, id);
@@ -931,12 +929,11 @@ USER_FUNC(btlevtcmd_GetRotate) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
-// NONMATCHING (98.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetRotate) {
     s32* args = event->args;
-    s32 id, indexX, indexY, indexZ;
     f32 x, y, z, currX, currY, currZ;
     BattleUnit* unit;
+    s32 id, indexX, indexY, indexZ;
 
     id = evtGetValue(event, args[0]);
     id = BattleTransID(event, id);
@@ -1034,12 +1031,11 @@ USER_FUNC(btlevtcmd_AddPartsRotate) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
-// NONMATCHING (98.80%): same instructions; only register numbers or operands differ.
 USER_FUNC(btlevtcmd_SetBaseRotate) {
     s32* args = event->args;
-    s32 id, indexX, indexY, indexZ;
     f32 x, y, z, currX, currY, currZ;
     BattleUnit* unit;
+    s32 id, indexX, indexY, indexZ;
 
     id = evtGetValue(event, args[0]);
     id = BattleTransID(event, id);

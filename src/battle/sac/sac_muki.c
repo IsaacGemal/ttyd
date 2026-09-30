@@ -467,13 +467,13 @@ static void disp_2D(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (97.96%): the entry-loop induction variables land in different registers
+// NONMATCHING (98.70%): the entry-loop induction variables land in different registers
 // (r30/r31 swapped); every instruction otherwise matches.
 // .text:0xF80 | 0x80247CE0 | size: 0x6C
 s32 end_muki(EventEntry* event, BOOL isFirstCall) {
     MukiWork* work = get_ptr();
-    s32 i;
     s32 off;
+    s32 i;
     MukiEntry* entry;
 
     effDelete(*(EffectEntry**)((u8*)work->starStone->userdata + 0x34));
