@@ -1733,9 +1733,14 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	return 0;
 }
 
-// NONMATCHING (99.97%): only the eight pooled string offsets differ (the target's
-// str_802EF640 base vs this file's local .rodata pool, all shifted 0xa8); they should
-// line up once the rest of the file's string literals are present.
+// NONMATCHING (99.97%): the code is byte-for-byte right; all eight pooled string offsets
+// are 0xa8 short of the target (this function's literals land at .rodata+0x25c instead of
+// +0x304, e.g. "btl_cmd_op_chg_party"). 0x28 of that is "btl_wn_dummy_noitem"/
+// "msg_dummy_noitem", allocated by the local static defaultWeapon_Dummy_NoItem$743 in the
+// not-yet-written _btlcmd_MakeSelectWeaponTable; the other 0x80 is the double/SFX pool
+// entries the functions around this one (BattleDrawEnemyHP, the display functions) allocate
+// first, which currently land after this function instead of before it. Both depend on
+// functions outside this one, so they can't be fixed here.
 void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	BattleWeapon* weapon;
 	NpcBattleInfo* setup;

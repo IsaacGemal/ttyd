@@ -325,8 +325,17 @@ void effMugiKemuri2Main(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effMugiKemuri2Disp, effect);
 }
 
-// NONMATCHING (99.95%): same as effMugiKemuri2Disp: the GXColor temp and its
-// outgoing-argument copy are in the opposite 0x8/0xc slots.
+#ifdef MUST_MATCH
+// Returning the colour from an inline makes mwcc put the local GXColor at r1+0x8 and the
+// outgoing-argument copy at r1+0xc, the way the original does; building it inline in the caller
+// puts that pair the other way round.
+static inline GXColor mugiKemuriColor(u8 alpha) {
+	GXColor c = dat_8041ca68;
+	c.a = alpha;
+	return c;
+}
+#endif
+
 void effMugiKemuriDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MugiKemuriWork* work = entry->userdata;
@@ -349,8 +358,12 @@ void effMugiKemuriDisp(CameraId cameraId, void* param) {
 		PSMTXConcat(trans, scale, trans);
 		if (work->animPose != -1) {
 			animPoseSetMaterialFlagOn(work->animPose, 0x40);
+#ifdef MUST_MATCH
+			color = mugiKemuriColor(work->alpha);
+#else
 			color = dat_8041ca68;
 			color.a = work->alpha;
+#endif
 			animPoseSetMaterialEvtColor(work->animPose, color);
 			animPoseMain(work->animPose);
 			animPoseDrawMtx(work->animPose, trans, 1, float_0_8041ca74, float_15_8041ca78);

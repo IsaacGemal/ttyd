@@ -1450,9 +1450,9 @@ void renderProc(s32 shapeId, s32 field_0x28) {
 }
 
 // dispProc
-// NONMATCHING (99.88%): only the first block's register allocation differs (mulli r4 vs r0, `data` r6 vs r4).
 void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f32 f1) {
     AnimPoseGroup* group;
+    AnimPoseGroup* groups;
     AnimationPoseData* data;
     f32* nodes;
     f32* node;
@@ -1462,15 +1462,22 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
         return;
     }
     data = wp->mpCurPoseData;
-    group = &ANIM_POSE_DATA_GROUPS(data)[groupId];
+    groups = ANIM_POSE_DATA_GROUPS(data);
+    group = &groups[groupId];
+#ifdef MUST_MATCH
+    // MWCC picks the original registers only when the sign extension is a cast on the loaded element; the
+    // pointer form under #else is the natural equivalent (same exceptions, other registers).
+    if ((s8)wp->mpCurPose->mpGroupVisibility[group->visibilityId] != 0) {
+#else
     if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
+#endif
         nodes = (f32*)wp->mpCurPose->mpNodes;
         node = &nodes[group->nodeId];
         if (group->useSSC) {
             if (parentGroupId == -1) {
                 x = y = z = float_1_80419a44;
             } else {
-                AnimPoseGroup* parent = &ANIM_POSE_DATA_GROUPS(data)[parentGroupId];
+                AnimPoseGroup* parent = &groups[parentGroupId];
                 if (!parent->useSSC) {
                     x = y = z = float_1_80419a44;
                 } else {

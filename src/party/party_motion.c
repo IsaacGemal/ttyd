@@ -698,9 +698,9 @@ s32 party_motion_fall(PartyEntry* party) {
 }
 
 // The `f3 = 0.1f` reloads in each arm and the repeated `f2 = mario->position.y`
-// are needed to reproduce the original scheduler. Remaining: the final
-// `position.y += f2 * 0.05f` emits `fmadds f0,f1,f2,f0`, not `f0,f2,f1` (operand order).
-// NONMATCHING (99.93%): operand order of the final fmadds.
+// are needed to reproduce the original scheduler. In the else arm, assigning
+// `f1 = 0.05f` to a variable (rather than using the literal inline) makes the
+// final `fmadds` emit `f0,f2,f1` instead of `f0,f1,f2`.
 void unk_8014b824(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -787,8 +787,9 @@ void unk_8014b824(PartyEntry* party) {
         f0 = 5.0f;
         f1 = party->position.y;
         f2 = f2 - f1;
+        f1 = 0.05f;
         if (f2 > f0 || 0.0f > f2) {
-            party->position.y += f2 * 0.05f;
+            party->position.y += f2 * f1;
         }
     }
 }

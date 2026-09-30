@@ -516,7 +516,6 @@ void winMgrHelpMain(WinMgrEntry* entry) {
 
 // Keep winMgrHelpDraw out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (99.90%): just written.
 void winMgrHelpDraw(WinMgrEntry* entry) {
     Mtx mtx1;
     Mtx mtx2;
@@ -540,7 +539,8 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
     if (entry->field_0x3C > 2) {
-        if (entry->field_0x38 == 0) {
+        s32 row = entry->field_0x38;
+        if (row == 0) {
             if ((gp->retraceCount & 0x1F) < 20) {
                 PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
                            (f32)(entry->field_0x1C - entry->field_0x24 - 4), 0.0f);
@@ -548,7 +548,7 @@ void winMgrHelpDraw(WinMgrEntry* entry) {
                 PSMTXConcat(mtx1, mtx2, mtx1);
                 iconDispGx2(mtx1, 0x10, 0x1B6);
             }
-        } else if (entry->field_0x38 + 2 == entry->field_0x3C) {
+        } else if (row + 2 == entry->field_0x3C) {
             if ((gp->retraceCount & 0x1F) < 20) {
                 PSMTXTrans(mtx1, (f32)(entry->field_0x18 + entry->field_0x20 - 0xC),
                            (f32)(entry->field_0x1C - entry->field_0x24 + 0x2C), 0.0f);

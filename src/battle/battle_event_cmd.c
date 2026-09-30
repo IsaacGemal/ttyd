@@ -4535,11 +4535,9 @@ USER_FUNC(btlevtcmd_GetTakeoffPosition) {
 }
 
 //s32* battleId, s32* partId, s32* tx, s32* ty, s32* tz, s32* frame
-// NONMATCHING (99.86%): the parts analogue of btlevtcmd_FallPosition. Complete logic; the only
-// remaining difference is the same `tx - x` direction-test FPR naming (target keeps the difference in
-// f1 and 0.0f in f0; ours is swapped). Declaration order `unit; s32 btlId, id; s32* args; s32
-// partId, frame; BattleUnitPart* part;` is needed for the callee-saved allocation; the speed guard
-// must be written with the constant on the left (`float_0_8041bf98 == part->mMoveSpeedXZ`).
+// Declaration order `unit; s32 btlId, id; s32* args; s32 partId, frame; BattleUnitPart* part;` is
+// needed for the callee-saved allocation; the speed guard must be written with the constant on the
+// left (`float_0_8041bf98 == part->mMoveSpeedXZ`).
 USER_FUNC(btlevtcmd_FallPartsPosition) {
     BattleUnit* unit;
     s32 btlId, id;
@@ -4566,11 +4564,21 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
         BtlUnit_SetPartsMoveTargetPos(part, tx, ty, tz);
         *(f32*)((u8*)part + 0xB0) = angleABf(x, z, tx, tz);
         *(f32*)((u8*)part + 0xB4) = distABf(x, z, tx, tz);
+#ifdef MUST_MATCH
+        // the literal 0.0f (not the named float_0_8041bf98) is what puts the difference in f1 and
+        // 0.0f in f0 as the target does; the named constant allocates them the other way round
+        if (tx - x > 0.0f) {
+            part->moveDirection = 1;
+        } else if (tx - x < 0.0f) {
+            part->moveDirection = -1;
+        }
+#else
         if (tx - x > float_0_8041bf98) {
             part->moveDirection = 1;
         } else if (tx - x < float_0_8041bf98) {
             part->moveDirection = -1;
         }
+#endif
         y = ty - y;
         if (*(s32*)((u8*)part + 0xA0) == 0) {
             if (float_0_8041bf98 == part->mMoveSpeedXZ) {

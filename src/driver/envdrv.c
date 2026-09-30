@@ -846,13 +846,27 @@ void envDisp_DepthOfField(void) {
     }
 }
 
-// NONMATCHING (99.98%): only the if-branch GXColor temporary differs: the original builds the local at
-// sp+0xC and copies it to the by-value argument at sp+0x10; MWCC puts the local at sp+0x10 and the argument
-// at sp+0xC. Everything else (alpha math, all GX calls, the vertex math) is byte-identical.
+// MUST_MATCH: a by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at
+// the higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour
+// in an inline that returns it puts the return temporary at sp+0xC and the argument at sp+0x10, as the
+// original does. The default (duration == 0) colour must go through a void helper too, or its argument
+// temp takes sp+0x8 and pushes the if-branch temporaries back up. The plain form is under #else.
+#ifdef MUST_MATCH
+static inline GXColor envDisp_MakeBlurColor(u8 alpha) {
+    GXColor color = dat_8041e514;
+    color.a = alpha;
+    return color;
+}
+static inline void envDisp_SetBlurColorDefault(void) {
+    GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
+}
+#endif
 void envDisp_Blur(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+#ifndef MUST_MATCH
     GXColor color;
+#endif
     CameraEntry* cam;
     s32 alpha;
     f32 ratio;
@@ -890,11 +904,19 @@ void envDisp_Blur(void) {
             } else {
                 alpha = (s32)(120.0f * (1.0f - ratio) + 128.0f);
             }
+#ifdef MUST_MATCH
+            GXSetTevKColor(GX_KCOLOR0, envDisp_MakeBlurColor(alpha));
+#else
             color = dat_8041e514;
             color.a = alpha;
             GXSetTevKColor(GX_KCOLOR0, color);
+#endif
         } else {
+#ifdef MUST_MATCH
+            envDisp_SetBlurColorDefault();
+#else
             GXSetTevKColor(GX_KCOLOR0, dat_8041e518);
+#endif
         }
 
         GXLoadTexObj(&wp->envBlurObj, GX_TEXMAP0);

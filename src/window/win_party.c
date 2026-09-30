@@ -168,9 +168,14 @@ void winPartyInit2(WindowWork* work) {
     winMsgEntry(work, 0, winPartyDt[WW_S32(work, 0x1D8)].field_0xC, 0);
 }
 
-// NONMATCHING (99.97%): only the .rodata-base offsets differ (the addi/lfd immediates for
-// the yoshi strings and the u32->double constant); winPartyDt/winPartyDisp are not decompiled,
-// so the strings that precede them are missing. Every instruction opcode/register matches.
+// NONMATCHING (99.97%): every opcode and register matches; the 23 differing arguments are
+// all symbol addresses. winPartyInit's literals are pooled with the undecompiled winPartyDt /
+// winPartyDisp data, which is emitted ahead of them in the same sections, so the referenced
+// symbols land at different offsets from our object: .rodata (the seven EFF_m_yoshi* strings
+// and the u32->double constant), .sdata2 (the R_5..R_11 and W_1 strings and the 360.0f
+// constant) and .data (the three switch jump tables). Nothing inside winPartyInit can move
+// them; declaring the strings as named locals instead only perturbs register allocation
+// (99.57%).
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
 #ifndef MUST_MATCH
