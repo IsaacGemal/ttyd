@@ -7,19 +7,12 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const char str_802FE944[] = "Teresa";
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_8042332c;
+__declspec(section ".sdata") GXColor unk_80423328;
+
 const Vec vec3_802fe920 = {0.0f, 0.0f, 0.0f};
-extern const f32 float_0p1_80421564;
-extern const f32 float_0p8_80421568;
-extern const f32 float_1_8042156c;
-extern const f32 float_10_80421570;
-extern const f32 float_178p5_80421574;
-extern const f32 float_20_80421578;
-extern const f32 float_30_8042157c;
-extern const f32 float_3_80421580;
-extern const f32 float_0p98_80421584;
-extern const f32 float_0_8042155c;
-GXColor unk_80423328;
 const GXColor dat_80421548 = { 0xFF, 0xFF, 0xFF, 0 };
 const f32 float_deg2rad_8042154c = 0.01745329252f;
 const f32 float_32_80421550 = 32.0f;
@@ -31,7 +24,7 @@ EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	Vec pos;
 
 	entry = effEntry();
-	entry->type = str_802FE944;
+	entry->type = "Teresa";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffTeresaData));
 	entry->userdata = data;
@@ -41,7 +34,7 @@ EffectEntry* effTeresaEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scale = (type == 0) ? float_30_8042157c : float_0_8042155c;
+	data->scale = (type == 0) ? 30.f : 0.0f;
 	data->field_0x30 = 0;
 	data->field_0x2C = 0;
 	data->alpha = (f32)((type == 0) ? 0 : 255);
@@ -71,34 +64,34 @@ void effTeresaMain(EffectEntry* effect) {
 
 	if (data->type == 0) {
 		if (data->field_0x3C == 0) {
-			if (data->scale > float_0p1_80421564) {
-				data->scale *= float_0p8_80421568;
+			if (data->scale > 0.1f) {
+				data->scale *= 0.8f;
 			} else {
 				Vec pos;
 
 				data->field_0x3C = 1;
-				effKemuTestEntry(8, data->x, data->y, data->z, float_1_8042156c);
+				effKemuTestEntry(8, data->x, data->y, data->z, 1.0f);
 				pos = (Vec){0.0f, 0.0f, 0.0f};
 				pos.x = data->x;
 				pos.y = data->y;
 				pos.z = data->z;
 				psndSFXOn_3D((const char*)0x5D6, &pos);
 			}
-			data->angle += float_10_80421570;
-			data->alpha = float_178p5_80421574;
+			data->angle += 10.f;
+			data->alpha = 178.5f;
 		} else {
-			data->angle = float_0_8042155c;
-			data->scale += (float_20_80421578 - data->scale) / float_30_8042157c;
-			data->alpha *= float_0p8_80421568;
-			if (data->alpha < float_3_80421580) {
+			data->angle = 0.0f;
+			data->scale += (20.f - data->scale) / 30.f;
+			data->alpha *= 0.8f;
+			if (data->alpha < 3.0f) {
 				effDelete(effect);
 				return;
 			}
 		}
 	} else {
-		data->scale += (float_20_80421578 - data->scale) / float_30_8042157c;
-		data->alpha *= float_0p98_80421584;
-		if (data->alpha < float_3_80421580) {
+		data->scale += (20.f - data->scale) / 30.f;
+		data->alpha *= 0.98f;
+		if (data->alpha < 3.0f) {
 			effDelete(effect);
 			return;
 		}
@@ -205,3 +198,5 @@ void effTeresaDisp(CameraId camId, void* param) {
 	GXPosition3f32(negSize, negSize, 0.0f);
 	GXTexCoord2f32(0.0f, 2.0f);
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
