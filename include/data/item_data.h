@@ -17,7 +17,7 @@ typedef struct ItemData {
 	s8 bp_cost; //0x1C
 	u8 hp_restored; //0x1D
 	u8 fp_restored; //0x1E
-	s8 sp_restored; //0x1F
+	u8 sp_restored; //0x1F
 	s16 icon_id; //0x20
 	s16 field_0x22; //0x22
 	BattleWeapon* battle_params; //0x24
@@ -32,10 +32,3 @@ typedef struct ItemDataView {
 	u16 buy_price; //0x14
 	u8 pad_0x16[0x28 - 0x16];
 } ItemDataView;
-// battle_detect's BattleChoiceSamplingEnemy reads ItemData.sp_restored with `lbz`/`cmplwi` (unsigned), while
-// the field above is s8. This view has the field unsigned; fix ItemData.sp_restored and delete this when the
-// header is corrected.
-typedef struct ItemDataSpView {
-	u8 pad_0x0[0x1F];
-	u8 sp_restored; //0x1F
-} ItemDataSpView;

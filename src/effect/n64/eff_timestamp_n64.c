@@ -209,8 +209,7 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 // The first-loop `data`/`i` pair is still swapped (ours data=r28 i=r26, target data=r26 i=r28), the
 // first-loop FP constants are rotated (ours 360=f27 500=f28 200=f29 6.2832=f30 double=f31, target
 // 6.2832=f27 double=f28 200=f29 500=f30 360=f31), and the second loop swaps the colr/data pointers and
-// the j/magic pair. `texT = offset` is folded to `li` by our compiler (`mr` in the target). Separate
-// loop counters and declaration-order searches were tried: no change or worse.
+// the j/magic pair. `texT = offset` is folded to `li` by our compiler (`mr` in the target).
 // NONMATCHING (99.00%): instruction shapes and frame match; only the register colours differ (above).
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;

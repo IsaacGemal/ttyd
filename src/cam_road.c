@@ -294,7 +294,7 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
         wp->unk_D0 += getV60FPS(wp->unk_D4, wp->unk_1C8, gp->renderFieldTime);
 #ifdef MUST_MATCH
         // Match-only: the literal makes MWCC keep 1.0 in f0 and the accumulator in f2/f1 like the original;
-        // the natural named constant below instead puts the constant in f2. The literal adds a pool entry.
+        // the natural named constant below instead puts the constant in f2.
         if (wp->unk_D0 > 1.0f) {
             wp->unk_D0 = 1.0f;
         }

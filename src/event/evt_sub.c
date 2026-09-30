@@ -614,7 +614,7 @@ USER_FUNC(evt_sub_get_language) {
 
 // The original keeps the zero-test as a branch rather than folding it into a branchless
 // bool-to-int. The one-iteration loop (removed by the optimizer) stops the peephole that would
-// fold it; the `#else` is the plain form. Without the loop this scores 82%.
+// fold it. Without the loop this scores 82%.
 USER_FUNC(evt_sub_animgroup_async) {
 	s32* args = event->args;
 	const char* name = (const char*)evtGetValue(event, args[0]);
@@ -626,12 +626,15 @@ USER_FUNC(evt_sub_animgroup_async) {
 			return EVT_RETURN_BLOCK;
 		}
 	}
+	return EVT_RETURN_DONE;
 #else
-	if (ret == 0) {
+	switch (ret) {
+	default:
+		return EVT_RETURN_DONE;
+	case 0:
 		return EVT_RETURN_BLOCK;
 	}
 #endif
-	return EVT_RETURN_DONE;
 }
 
 

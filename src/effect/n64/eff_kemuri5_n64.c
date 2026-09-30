@@ -84,12 +84,9 @@ static inline Vec initializeVec(Vec* input) {
 // the ones used after it in f17-f22 (rad in f16). MWCC colours ours with the arguments in f19-f22 and
 // constants f23-f31/f17-f18 (rad f16), i.e. it treats the post-rand constants as long-lived. Reordering
 // declarations/statements, named temporaries, the Vec and compound-literal position forms, and
-// opt_common_subs/opt_propagation/optimize_for_size/opt_lifetimes/global_optimizer pragmas all leave the
-// colouring unchanged. The int->float magic also emits an anonymous @N entry instead of the named
-// double_to_int_802fa930 (a project-wide folded-pool issue; it does not lower objdiff's score).
-// The best shape found (99.48%) splits the four post-rand constants into locals defined after the second
-// rand() but long before their stores (which keep their original order): MWCC then colours them f23-f26
-// (still reversed) and puts 6p2832/360 in f17/f18, a hair closer than the inline-constant form (99.04%).
+// opt_common_subs/opt_propagation/optimize_for_size pragmas all leave the colouring unchanged. The
+// int->float magic also emits an anonymous @N entry instead of the named double_to_int_802fa930 (a
+// project-wide folded-pool issue; it does not lower objdiff's score).
 // NONMATCHING (99.48%): only the callee-saved FPR colouring differs (the four reset constants are f23-f26
 // instead of the target's f17-f20 in forward order, 6p2832/360 are f17/f18 instead of f21/f22, and the
 // arguments are f19-f22 instead of f23-f26).

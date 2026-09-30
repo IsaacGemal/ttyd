@@ -58,9 +58,6 @@ typedef struct BattleSampling {
     s8 attackDirection;            // 0xAC8
 } BattleSampling;
 
-// ItemData.sp_restored is s8 in the header but the original reads it unsigned; ItemDataSpView (declared in
-// include/data/item_data.h, alongside ItemDataView) gives that field its original u8 type.
-
 // NONMATCHING (72.20%): logic follows the asm (checked in review); register allocation is globally shifted
 // (sampling r31 vs r30, wp r26 vs r31) and the int->double pool constant is an anonymous @N@ symbol.
 void _btlSamplingEnemy(u8* sampling) {
@@ -380,12 +377,11 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
 
 // Remaining diff: the default itemDataTable FP block colours its three float temps f3/f4/f2
 // (magic/float_0p1/diff) where the original uses f4/f2/f3; the instruction sequence, stack slots and
-// every other block match. The `e = order[n]` load and the sp_restored signedness are fixed (order is s8;
-// ItemDataSpView).
+// every other block match. The `e = order[n]` load is fixed (order is s8).
 // NONMATCHING (99.93%): only the default block's f2/f3/f4 colouring differs.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
-    s8 e;
+    s32 e;
     BattleUnit* unit;
     f32 rate;
     BattleWork* wp = _battleWorkPointer;
@@ -520,7 +516,7 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                                             float_0p1_8041bf0c * fpDiff) * (f32)weights[e]);
                     } else {
                         if (itemDataTable[s->weapon->item].hp_restored == 0 &&
-                            ((ItemDataSpView*)&itemDataTable[s->weapon->item])->sp_restored == 0) {
+                            itemDataTable[s->weapon->item].sp_restored == 0) {
                             weights[e] = 1;
                         }
                     }

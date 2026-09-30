@@ -3062,9 +3062,14 @@ retail). Labels that blamed the wrong cause are rewritten.
 ## Wave 39: near-misses 98.5-99.98% (2026-09-30, TTYD Claude #1; agents DeepSeek V4.1 Flash)
 
 The next 48 closest dol near-misses outside the permuter's queues, 18:06-19:34, from main 157e3e2. **23 of 48 reached
-100%, 11 improved, 14 unchanged, 0 worse.** Fixed at collection: eff_mahorn2's externs for constants it pools itself;
+100%, 10 improved, 15 unchanged, 0 worse.** Fixed at collection: eff_mahorn2's externs for constants it pools itself;
 party_cloud's `pf ? -90 : 90` pooled -90 ahead of 90/270 (`pf != 0 ?` restores the order); mot_jump's new zero-Vec
 literal added a duplicate pool entry, so the file is back to main's version.
+Four rewrites fix behaviour bugs in main, each checked against the asm: camRoadMain's unk_1C8 store now runs every
+time (main did it only inside the unk_D0 > 1.0 clamp); hitCheckSphereFilter tests entries[0].count (main read the count
+through the moving entry pointer); effDamageStarDisp's else-quad texcoords are 2.0 (main had 1.0); effGetTexObj's id
+compare is signed (`cmpwi`, not `cmplwi`). Two agents read the tower's main checkout, and four touched
+/home/isaac/permuter (timestamp ran permuter.py). No third-party code came in.
 
 ## Wave 40: DOL whole-file pass (2026-09-30, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 

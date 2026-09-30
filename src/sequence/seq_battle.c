@@ -80,11 +80,6 @@ void seq_battleExit(SequenceWork* work) {
 // can only be moved by an emitter defined before seq_battleMain (an unused static function does
 // it), which is outside this function. The do-while, the switch(type) (which gives the `bge`/`b`
 // shape) and the function-scope fbat/case-2 store are what got it to 99.98%.
-// Tried and rejected (kept the function at 99.98%): reordering the switch cases (MWCC emits case
-// bodies in source order, so the code stops matching), function-scope `static const char[]`
-// names (parse-time data, so they pool before vec3/gon_11), a static inline helper (its literals
-// pool at the inlined call site), local `const char*` temps (extra callee-saved registers),
-// #pragma pool_data and -inline tweaks (no change).
 // NONMATCHING (99.98%): .rodata string-pool order only; all instructions match.
 void seq_battleMain(SequenceWork* work) {
     FieldBattleData* fbat;

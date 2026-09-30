@@ -652,9 +652,6 @@ static inline GXColor boobooColor(u8 v) {
 // instead of a local `effect` fixes effect/camera (r29/r28) but swaps the word/byte induction pointers
 // (word r27, byte r26) and scores 99.29%, below the original, so it is not used.
 // NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
-// Also tried without success: declaration/statement reordering (all permutations), opt_lifetimes/opt_propagation/
-// opt_common_subs/pool_data/optimize_for_size, explicit word/byte pointers, per-block data aliases, poly/tex
-// locals, continue instead of the outer if, and accessor/colour inline helpers. See REPORT.md.
 void effBoobooDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* camera;

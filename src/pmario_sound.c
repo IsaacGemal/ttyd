@@ -4928,7 +4928,7 @@ u8 psndSFX_get_vol(s32 id) {
 // `addi r30,r4,psenv@l` directly. env still lands in r30 and the body is byte-for-byte
 // identical otherwise. The index form (`env = &psenv[i]` inside the loop) does give
 // the direct addi, but MWCC then colours the induction variable r31 and sfx r30,
-// swapping the two callee-saved registers. See REPORT.md for everything tried.
+// swapping the two callee-saved registers.
 void psndENV_stop(u32 id) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;
