@@ -2185,3 +2185,19 @@ root update at >= 2.0.2; the pre-2.0.1 `voiceAllocate` stays under `#else`, unte
   Vec would explain it but lands in .data), **evt_twoddisp** `twoddisp_disp` 95.3 -> 98.9% by declaration order (the
   rest: an `extsh` on the icon id and the GXColor temporaries' stack slots; changing `iconDispGx` to a `u16` id fixes
   it there and regresses ac_timing_wide and others).
+
+## Grind 16: SDK units and small unwritten game functions (2026-09-29, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **DEMOInit linked.** `DEMOGetCurrentBuffer` was named `L_DEMOGetCurrentBuffer` in symbols.txt (renamed: a protected-path
+  edit, the only one). Fixes: the non-AA pixel format is `GX_PF_RGBA6_Z24`, the two hang-message buffers are both 4096
+  bytes with `fullmsg` declared last, `DemoStatEnable` is `u8`, the "invalid TV format" panic reports line 518 (the retail
+  file was longer: `#line 518`), and the uninitialized statics are declared in the reverse of their `.sbss` order.
+- **DEMOPad linked** from the reference SDK source (`DEMOPadCopy` is global in the original; the reference declares
+  `DemoNumValidPads` before `Pad` so the uninitialized statics come out in retail order).
+- **arc.c** (the ARC archive reader): `ARCConvertEntrynumToPath`, `ARCGetCurrentDir`, `entryToPath`, `myStrncpy` and the
+  getters are written from the DVD reference (`dvdfs.c`) with the FST/strings pointers cached in locals; the
+  `myStrncpy` char is `signed char` (the dol builds `-char unsigned`, the SDK signed). 7/10 at 100%; `ARCOpen` 97.6%
+  (the retail build drops the `OSReport` but still calls `ARCGetCurrentDir`); `ARCConvertPathToEntrynum` 72.7% (the
+  original keeps far fewer registers live). `ARCClose` takes the file info now.
+- **BattleInformationInit** matches: the four setters are `dont_inline` (they are real calls in retail, including
+  `BattleInformationSetResult`, which is defined after `Init`). **romFontGetWidth** 96.8% (the cached `wp` register).
