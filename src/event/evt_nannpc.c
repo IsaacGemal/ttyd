@@ -97,7 +97,6 @@ static inline NanNpcEntry* nannpcFind(const char* name) {
     return NULL;
 }
 
-
 USER_FUNC(evt_nannpcwork_flag_onoff) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);

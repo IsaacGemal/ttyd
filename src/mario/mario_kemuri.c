@@ -134,8 +134,6 @@ void unk_80130374(void) {
     }
 }
 
-// The compare chain is `2, 1, 0, 13` as four separate `cmplwi ... beq`. `== 0` written as `== 0` next to `== 1` merges the
-// pair into `cmplwi 1; ble`, and written after `13` swaps the last two; `!currMotionId` keeps the order.
 void mario_kemuri_landon(void) {
     MarioWork* mario = marioGetPtr();
     s32 waterKind = 0;
@@ -155,7 +153,12 @@ void mario_kemuri_landon(void) {
         cnt492 = 10;
     }
 
+    #ifdef MUST_MATCH
+    // `== 0` next to `== 1` merges into `cmplwi 1; ble`, and after `13` swaps the last two tests; `!x` keeps the order.
     if (mario->currMotionId == 2 || mario->currMotionId == 1 || !mario->currMotionId || mario->currMotionId == 13) {
+#else
+    if (mario->currMotionId == 2 || mario->currMotionId == 1 || mario->currMotionId == 0 || mario->currMotionId == 13) {
+#endif
         if (mario->currMotionId == 13) {
             cnt491 = 0;
         }

@@ -129,7 +129,7 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.0174532924f);
+    PSMTXRotRad(rotMtx, 'y', -camGetPtr(CAMERA_3D)->viewYaw * 0.017453292f);
     PSMTXConcat(mtx, rotMtx, mtx);
     PSMTXConcat(cam->view, mtx, viewMtx);
 
@@ -138,7 +138,7 @@ void effRotHammerSuccessDisp(CameraId camId, void* param) {
 
     for (i = 1, data++; i < effect->count; i++, data++) {
         PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(rotMtx, 'z', 0.0174532924f * data->angle);
+        PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->angle);
         PSMTXScale(scaleMtx, data->scale, data->scale, data->scale);
         PSMTXConcat(mtx, rotMtx, mtx);
         PSMTXConcat(mtx, scaleMtx, mtx);

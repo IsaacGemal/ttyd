@@ -24,7 +24,6 @@ typedef struct MissStarData {
     f32 field_0x40; // 0x40
 } MissStarData;
 
-
 // .data: initial velocity vectors used to fan the stars out.
 Vec spd_tbl[15] = {
     { 0.0f, 4.5f, 0.0f },  { 1.0f, 4.0f, 0.0f },  { 2.0f, 3.0f, 0.0f },
@@ -43,8 +42,6 @@ Vec scale_tbl[15] = {
     { 1.0f, 1.0f, 1.0f },    { 0.8f, 0.8f, 0.8f },    { 0.9f, 0.9f, 0.9f },
 };
 
-// .sdata2
-
 EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 angle) {
     EffectEntry* entry;
     MissStarData* data;
@@ -54,12 +51,12 @@ EffectEntry* effMissStarEntry(s32 type, f32 x, f32 y, f32 z, s32 lifetime, s32 a
     f32 speed;
 
     entry = effEntry();
-    scale = 0.800000012f;
+    scale = 0.8f;
     speed = 1.0f;
     if (type <= 0) {
         type = 1;
-        scale = 0.400000006f;
-        speed = 0.699999988f;
+        scale = 0.4f;
+        speed = 0.7f;
     }
 
     sign = 1;
@@ -128,7 +125,7 @@ void effMissStarMain(EffectEntry* effect) {
     disp.y = data->position.y;
     disp.z = data->position.z;
     position = disp;
-    angleVelScale = 0.800000012f;
+    angleVelScale = 0.8f;
 
     for (i = 0; i < effect->count; i++, data++) {
         if (data->field_0x28 != 0) {

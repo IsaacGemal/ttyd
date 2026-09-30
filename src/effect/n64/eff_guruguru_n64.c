@@ -131,7 +131,7 @@ void effGuruguruDisp(CameraId camId, void* param) {
         effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
         PSMTXTrans(mtx0, data->field_0x04, data->field_0x08, data->field_0x0C);
-        PSMTXRotRad(mtx1, 'y', 0.0174532924f * -camGetPtr(CAMERA_3D)->viewYaw);
+        PSMTXRotRad(mtx1, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
         PSMTXScale(scaleMtx, data->field_0x2C, data->field_0x2C, data->field_0x2C);
         PSMTXConcat(mtx0, mtx1, mtx2);
         PSMTXConcat(mtx2, scaleMtx, mtx2);
@@ -140,7 +140,7 @@ void effGuruguruDisp(CameraId camId, void* param) {
         color = (GXColor){ 0xDC, 0xDC, 0x28, 0xFF };
         GXSetTevColor(GX_TEVREG0, color);
 
-        deg2rad = 0.0174532924f;
+        deg2rad = 0.017453292f;
         i = 1;
         data++;
         for (; i < effect->count; i++, data++) {

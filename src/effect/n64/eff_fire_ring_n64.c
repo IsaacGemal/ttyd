@@ -6,11 +6,7 @@
 
 #include "math_ext.h"
 
-// .sdata2 float constants (named after their original addresses).
-
 // .sdata2 TEV colour initialisers (global in the original, no header declares them).
-
-
 
 // .data vertex array, local to this unit in the original.
 static u32 stg__s_v[0x348 / 4] = {
@@ -116,12 +112,12 @@ EffectEntry* effFireRingN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 sc
 	data->rotY = 0.0f;
 	data->rotZ = 0.0f;
 	data->rotW = 0.0f;
-	data->rotSpeedX = -1.10000002f;
+	data->rotSpeedX = -1.1f;
 	data->rotSpeedY = 0.0f;
-	data->rotSpeedZ = 0.400000006f;
+	data->rotSpeedZ = 0.4f;
 	data->rotSpeedW = 1.0f;
 	data->angle = 0.0f;
-	data->angleSpeed = 0.100000001f * scale;
+	data->angleSpeed = 0.1f * scale;
 	data->colorR = 0xff;
 	data->colorG = 0xff;
 	data->colorB = 0x40;
@@ -163,7 +159,7 @@ void effFireRingMain(EffectEntry* effect) {
 	counter = data->counter;
 	if (counter & 1) {
 		r = effTblRandN64(0x168, counter);
-		angle = 6.28318548f * (f32)r / 360.0f;
+		angle = 6.2831855f * (f32)r / 360.0f;
 		sin(angle);
 		cos(angle);
 		effFireDustN64Entry(0, 10, 20, data->x, data->y, data->z, (f32)(counter * 8), 10.0f);
@@ -237,12 +233,12 @@ void effFireRingDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 
-	PSMTXScale(scale, 0.0158730168f, 0.0158730168f, 0.0f);
+	PSMTXScale(scale, 0.015873017f, 0.015873017f, 0.0f);
 	PSMTXTrans(trans, data->rotX, data->rotY, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX0, GX_MTX2x4);
 
-	PSMTXScale(scale, 0.0322580636f, 0.0322580636f, 0.0f);
+	PSMTXScale(scale, 0.032258064f, 0.032258064f, 0.0f);
 	PSMTXTrans(trans, data->rotZ, data->rotW, 0.0f);
 	PSMTXConcat(scale, trans, trans);
 	GXLoadTexMtxImm(trans, GX_TEXMTX1, GX_MTX2x4);
