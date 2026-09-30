@@ -268,3 +268,20 @@ void effKemuri3Disp(CameraId camId, void* param) {
 }
 
 const char str_802FA8E4[] = "Kemuri3N64";
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041f2e8 = 0x70601900;
+const f32 float_8_8041f2ec = 8.0f;
+const f32 float_0_8041f2f0 = 0.0f;
+const f32 float_1_8041f2f4 = 1.0f;
+const f32 float_neg8_8041f2f8 = -8.0f;
+const f32 float_0p85_8041f2fc = 0.85f;
+const f32 float_0p004_8041f300 = 0.004f;
+const f32 float_neg100_8041f304 = -100.0f;
+const f32 float_deg2rad_8041f308 = 0.017453292f;
+const f32 float_0p3_8041f30c = 0.29999998f;
+const f32 float_1p75_8041f310 = 1.75f;
+const f32 float_neg0p08_8041f314 = -0.08f;
+const f32 float_neg3p9_8041f318 = -3.9f;
+const f32 float_6p2832_8041f31c = 6.2831855f;
+const f32 float_360_8041f320 = 360.0f;
